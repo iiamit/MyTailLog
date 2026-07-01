@@ -1,0 +1,23 @@
+# Supabase local development config. `supabase start` uses these; production
+# settings live in the hosted project dashboard. Project ref is set via
+# `supabase link --project-ref <ref>`.
+project_id = "mytaillog"
+
+[db]
+port = 54322
+major_version = 15
+
+[api]
+port = 54321
+schemas = ["public", "storage"]
+
+[studio]
+port = 54323
+
+[auth]
+enable_signup = true
+site_url = "http://localhost:3000"
+
+[storage]
+# Logbook page images can be large phone photos; allow generous per-file size.
+file_size_limit = "25MiB"

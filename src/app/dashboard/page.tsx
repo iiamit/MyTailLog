@@ -1,0 +1,64 @@
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { Disclaimer } from "@/components/Disclaimer";
+import { SignOutButton } from "./SignOutButton";
+
+export default async function Dashboard() {
+  const supabase = await createClient();
+
+  const { data: aircraft } = await supabase
+    .from("aircraft")
+    .select("id, tail_number, make, model, year, home_base, enrollment_date")
+    .order("created_at", { ascending: true });
+
+  return (
+    <main className="mx-auto max-w-3xl px-6 py-10">
+      <header className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Your aircraft</h1>
+        <SignOutButton />
+      </header>
+
+      <div className="mb-6">
+        <Disclaimer />
+      </div>
+
+      {aircraft && aircraft.length > 0 ? (
+        <ul className="flex flex-col gap-3">
+          {aircraft.map((a) => (
+            <li key={a.id}>
+              <Link
+                href={`/aircraft/${a.id}`}
+                className="block rounded-lg border border-slate-200 bg-white px-5 py-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
+              >
+                <div className="flex items-baseline justify-between">
+                  <span className="text-lg font-semibold">{a.tail_number}</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    enrolled {a.enrollment_date}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {[a.year, a.make, a.model].filter(Boolean).join(" ") ||
+                    "Details not set"}
+                  {a.home_base ? ` · ${a.home_base}` : ""}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          No aircraft enrolled yet.
+        </p>
+      )}
+
+      <div className="mt-6">
+        <Link
+          href="/aircraft/enroll"
+          className="inline-block rounded-md bg-slate-900 px-5 py-2.5 font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+        >
+          Enroll an aircraft
+        </Link>
+      </div>
+    </main>
+  );
+}
