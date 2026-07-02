@@ -359,3 +359,35 @@ don't build the UI for them yet).
 Feed Claude Code this document plus the design principle, entity list, and
 OCR/AD sections above as the spec for step 1-2 - the rest of the plan can
 follow once that foundation is running against your own three logbooks.
+
+## Findings from patient-zero testing
+
+Notes captured as steps 3-8 are built against a real set of logbooks.
+
+**Steps 3-4 (capture/upload + extraction) - validated on real pages:**
+- Cover pages and aircraft/engine/prop general-information pages correctly
+  produce no maintenance entries (empty entries array), while still capturing
+  their printed text. The extractor must not hallucinate entries from
+  non-entry pages.
+- A single scanned image is frequently a **two-page spread** (two facing
+  logbook pages). Detection works (`page.detected_page_count`); the entries
+  from both halves come back correctly. Physically splitting one spread image
+  into two `page` rows is deferred - entries are already separated logically,
+  and the review UI flags the spread. Revisit if the merged-image page record
+  proves limiting.
+- Pages **mix printed and handwritten content within the same entry** - typed
+  work descriptions, printed inspection/337/8130 stickers, and pre-printed
+  AD/SB numbers alongside handwritten dates, hobbs/tach, and signatures. This
+  is not the clean "printed page vs handwritten page" split the OCR-routing
+  section assumed. Implication for the deferred classic-OCR routing: routing
+  should be per-field/per-region, not per-page, or simply keep vision as the
+  primary extractor (its transcription already covers both). Extraction prompt
+  updated (schema v1) to extract both kinds and merge them into the right
+  fields.
+
+**Change to Phase 1 / step 5 (Review UI):** the review screen must show the
+**page image alongside the extracted raw text**, not just the parsed fields.
+Because entries combine printed and handwritten content and confidence varies
+per field, the owner needs to see the source image and the model's full
+transcription together to confirm, correct, or add data accurately. Low-
+confidence and unextractable fields get explicit "needs your input" prompts.

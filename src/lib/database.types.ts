@@ -7,6 +7,7 @@
 
 export type LogbookType = "airframe" | "engine" | "prop";
 export type ReviewStatus = "unreviewed" | "confirmed" | "disputed";
+export type ExtractionStatus = "pending" | "processing" | "extracted" | "failed";
 export type DocumentType =
   | "form_337"
   | "form_8130_3"
@@ -55,6 +56,10 @@ export type Page = {
   extraction_confidence: number | null;
   review_status: ReviewStatus;
   is_handwritten: boolean | null;
+  extraction_status: ExtractionStatus;
+  extraction_error: string | null;
+  detected_page_count: number | null;
+  extracted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -150,6 +155,7 @@ export type Database = {
       logbook_type: LogbookType;
       review_status: ReviewStatus;
       document_type: DocumentType;
+      extraction_status: ExtractionStatus;
     };
     CompositeTypes: Record<string, never>;
   };

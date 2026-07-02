@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
+import { PagesPanel, type PageRow } from "./PagesPanel";
 
 const LOGBOOK_LABEL: Record<string, string> = {
   airframe: "Airframe",
@@ -31,16 +32,49 @@ export default async function AircraftPage({
     .select("id, type, component_ref, title")
     .eq("aircraft_id", id);
 
-  // Per-logbook captured-page counts, for the logbook cards below.
+  const labelFor = (logbookId: string) => {
+    const lb = logbooks?.find((l) => l.id === logbookId);
+    return lb ? lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type : "Logbook";
+  };
+
   const { data: pages } = await supabase
     .from("page")
-    .select("logbook_id")
+    .select(
+      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error",
+    )
+    .eq("aircraft_id", id)
+    .order("logbook_id", { ascending: true })
+    .order("page_sequence", { ascending: true, nullsFirst: false });
+
+  // Per-page extracted-entry counts.
+  const { data: entries } = await supabase
+    .from("log_entry")
+    .select("page_id")
     .eq("aircraft_id", id);
 
+  const entryCounts = new Map<string, number>();
+  for (const e of entries ?? []) {
+    if (e.page_id) entryCounts.set(e.page_id, (entryCounts.get(e.page_id) ?? 0) + 1);
+  }
+
+  // Per-logbook captured-page counts, for the logbook cards below.
   const pageCounts = new Map<string, number>();
   for (const p of pages ?? []) {
     pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);
   }
+
+  const pageRows: PageRow[] = (pages ?? []).map((p) => ({
+    id: p.id,
+    logbookLabel: labelFor(p.logbook_id),
+    pageSequence: p.page_sequence,
+    reviewStatus: p.review_status,
+    extractionStatus: p.extraction_status,
+    detectedPageCount: p.detected_page_count,
+    extractionError: p.extraction_error,
+    entryCount: entryCounts.get(p.id) ?? 0,
+  }));
+
+  const extractionConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -106,9 +140,13 @@ export default async function AircraftPage({
         </ul>
       </section>
 
-      <section className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-        Pages you capture are queued on-device and uploaded when you have signal.
-        Extraction, review, and the unified timeline come next in Phase 1.
+      <section>
+        <PagesPanel pages={pageRows} extractionConfigured={extractionConfigured} />
+        <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+          Extraction reads each page with a vision model and saves entries with
+          per-field confidence. Nothing is auto-confirmed — a review step (coming
+          next) confirms entries before they drive any maintenance reminder.
+        </p>
       </section>
     </main>
   );
