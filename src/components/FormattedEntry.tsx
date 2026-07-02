@@ -25,19 +25,31 @@ export function FormattedEntry({
         ) : b.ordered ? (
           <ol
             key={i}
-            className="ml-4 list-decimal space-y-0.5 text-sm leading-relaxed text-slate-700 dark:text-slate-200"
+            className="ml-5 list-decimal space-y-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200"
           >
-            {b.items.map((it, j) => (
-              <li key={j}>{it}</li>
+            {b.items.map((lines, j) => (
+              <li key={j} className="pl-1">
+                {lines.map((ln, k) => (
+                  <span key={k} className={k === 0 ? "" : "block text-slate-600 dark:text-slate-300"}>
+                    {ln}
+                  </span>
+                ))}
+              </li>
             ))}
           </ol>
         ) : (
           <ul
             key={i}
-            className="ml-4 list-disc space-y-0.5 text-sm leading-relaxed text-slate-700 dark:text-slate-200"
+            className="ml-5 list-disc space-y-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200"
           >
-            {b.items.map((it, j) => (
-              <li key={j}>{it}</li>
+            {b.items.map((lines, j) => (
+              <li key={j} className="pl-1">
+                {lines.map((ln, k) => (
+                  <span key={k} className={k === 0 ? "" : "block text-slate-600 dark:text-slate-300"}>
+                    {ln}
+                  </span>
+                ))}
+              </li>
             ))}
           </ul>
         ),

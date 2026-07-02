@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { FormattedEntry } from "@/components/FormattedEntry";
 import { ZoomableImage } from "@/components/ZoomableImage";
+import { LOGBOOK_TYPES, LOGBOOK_LABEL } from "@/lib/logbooks";
 
 export type TimelineEntry = {
   id: string;
@@ -185,9 +186,27 @@ export function TimelineClient({
     };
   }, [query, aircraftId, logbookMap, thumbnailByPageId]);
 
-  const shown = results ?? entries;
+  // Logbook types present in the data, in canonical order, for the filter row.
+  const availableTypes = useMemo(
+    () => LOGBOOK_TYPES.filter((t) => entries.some((e) => e.logbookType === t)),
+    [entries],
+  );
+  // Which types are currently shown (default: all).
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(
+    () => new Set(availableTypes),
+  );
+  const toggleType = (t: string) =>
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
 
-  // Group consecutively by year for scannability (entries arrive date-desc).
+  const searchActive = results !== null;
+  const shown = (results ?? entries).filter((e) => activeTypes.has(e.logbookType));
+
+  // Group consecutively by year (entries arrive date-desc).
   const groups: { year: string; items: TimelineEntry[] }[] = [];
   for (const e of shown) {
     const y = yearOf(e);
@@ -195,6 +214,22 @@ export function TimelineClient({
     if (last && last.year === y) last.items.push(e);
     else groups.push({ year: y, items: [e] });
   }
+
+  // Collapse older years: the first (most recent) group is expanded, prior
+  // years collapsed until clicked. `toggledYears` holds years the user flipped
+  // from their default, so filtering never leaves everything collapsed. While
+  // searching, expand everything so results show.
+  const [toggledYears, setToggledYears] = useState<Set<string>>(new Set());
+  const toggleYear = (y: string) =>
+    setToggledYears((prev) => {
+      const next = new Set(prev);
+      if (next.has(y)) next.delete(y);
+      else next.add(y);
+      return next;
+    });
+  // index 0 (most recent) defaults open; a toggle flips the default.
+  const isExpanded = (index: number, y: string) =>
+    searchActive || (index === 0) !== toggledYears.has(y);
 
   return (
     <div className="flex flex-col gap-4">
@@ -207,35 +242,77 @@ export function TimelineClient({
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
         />
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          {results !== null
+          {searchActive
             ? searching
               ? "Searching…"
               : `${shown.length} result${shown.length === 1 ? "" : "s"} for “${query.trim()}”`
-            : `${entries.length} entr${entries.length === 1 ? "y" : "ies"} across all logbooks`}
+            : `${shown.length} entr${shown.length === 1 ? "y" : "ies"}${
+                activeTypes.size < availableTypes.length ? " (filtered)" : " across all logbooks"
+              }`}
           {error && <span className="text-red-600 dark:text-red-400"> · {error}</span>}
         </p>
       </div>
 
+      {/* Logbook-type filter toggles */}
+      {availableTypes.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {availableTypes.map((t) => {
+            const on = activeTypes.has(t);
+            return (
+              <button
+                key={t}
+                onClick={() => toggleType(t)}
+                aria-pressed={on}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  on
+                    ? `${typeColor(t)} border-transparent`
+                    : "border-slate-300 text-slate-400 hover:border-slate-400 dark:border-slate-700 dark:text-slate-500"
+                }`}
+              >
+                {LOGBOOK_LABEL[t as keyof typeof LOGBOOK_LABEL] ?? t}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {shown.length === 0 ? (
         <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-          {results !== null
+          {searchActive
             ? "No entries match your search."
-            : "No entries yet. Extract some pages to build the timeline."}
+            : activeTypes.size === 0
+              ? "No logbooks selected — enable a filter above."
+              : "No entries yet. Extract some pages to build the timeline."}
         </p>
       ) : (
-        <div className="flex flex-col gap-5">
-          {groups.map((g) => (
-            <section key={g.year}>
-              <h2 className="mb-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                {g.year}
-              </h2>
-              <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-                {g.items.map((e) => (
-                  <EntryRow key={e.id} aircraftId={aircraftId} e={e} />
-                ))}
-              </ul>
-            </section>
-          ))}
+        <div className="flex flex-col gap-3">
+          {groups.map((g, gi) => {
+            const open = isExpanded(gi, g.year);
+            return (
+              <section key={g.year}>
+                <button
+                  onClick={() => toggleYear(g.year)}
+                  disabled={searchActive}
+                  className="flex w-full items-center gap-2 rounded-md py-1 text-left text-sm font-semibold text-slate-600 hover:text-slate-900 disabled:cursor-default dark:text-slate-300 dark:hover:text-slate-100"
+                >
+                  <span className={`text-xs transition-transform ${open ? "rotate-90" : ""}`}>
+                    ▶
+                  </span>
+                  {g.year}
+                  <span className="font-normal text-slate-400 dark:text-slate-500">
+                    {g.items.length} {g.items.length === 1 ? "entry" : "entries"}
+                  </span>
+                </button>
+                {open && (
+                  <ul className="mt-1 divide-y divide-slate-100 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+                    {g.items.map((e) => (
+                      <EntryRow key={e.id} aircraftId={aircraftId} e={e} />
+                    ))}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
         </div>
       )}
     </div>
