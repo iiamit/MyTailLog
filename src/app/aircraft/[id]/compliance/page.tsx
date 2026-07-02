@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { AdKind } from "@/lib/database.types";
+import type { AdKind, AdReference } from "@/lib/database.types";
 import { ComplianceClient, type UntrackedRef } from "./ComplianceClient";
 
 export default async function CompliancePage({
@@ -47,6 +47,19 @@ export default async function CompliancePage({
     .filter(([key]) => !tracked.has(key))
     .map(([, v]) => v);
 
+  // Official FR references attached to any of these records.
+  const refIds = [
+    ...new Set((records ?? []).map((r) => r.ad_reference_id).filter(Boolean)),
+  ] as string[];
+  const adReferences: Record<string, AdReference> = {};
+  if (refIds.length > 0) {
+    const { data: refRows } = await supabase
+      .from("ad_reference")
+      .select("*")
+      .in("id", refIds);
+    for (const ref of refRows ?? []) adReferences[ref.id] = ref;
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
       <Link
@@ -71,6 +84,7 @@ export default async function CompliancePage({
         records={records ?? []}
         untracked={untracked}
         currentHours={currentHours}
+        adReferences={adReferences}
       />
     </main>
   );

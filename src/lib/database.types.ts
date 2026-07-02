@@ -144,6 +144,32 @@ export type AdCompliance = {
   next_due_hours: number | null;
   reference_entry_id: string | null;
   notes: string | null;
+  ad_reference_id: string | null;
+  component_id: string | null;
+  reason: string | null;
+  status_changed_on: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AdReference = {
+  id: string;
+  ad_number: string | null;
+  fr_document_number: string | null;
+  title: string | null;
+  abstract: string | null;
+  effective_date: string | null;
+  fr_html_url: string | null;
+  pdf_url: string | null;
+  full_text_url: string | null;
+  citation: string | null;
+  rin: string | null;
+  supersedes: string | null;
+  source: string;
+  drs_url: string | null;
+  drs_doc_id: string | null;
+  document_status: string | null;
+  fetched_at: string;
   created_at: string;
   updated_at: string;
 }
@@ -173,6 +199,7 @@ export type Database = {
       document: { Row: DocumentRecord; Insert: Partial<DocumentRecord>; Update: Partial<DocumentRecord>; Relationships: [] };
       component: { Row: Component; Insert: Partial<Component>; Update: Partial<Component>; Relationships: [] };
       ad_compliance: { Row: AdCompliance; Insert: Partial<AdCompliance>; Update: Partial<AdCompliance>; Relationships: [] };
+      ad_reference: { Row: AdReference; Insert: Partial<AdReference>; Update: Partial<AdReference>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {

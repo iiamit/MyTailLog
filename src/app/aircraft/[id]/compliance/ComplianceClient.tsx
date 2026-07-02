@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AdCompliance, AdKind, AdStatus } from "@/lib/database.types";
+import type { AdCompliance, AdKind, AdStatus, AdReference } from "@/lib/database.types";
 import { AD_STATUS_LABEL, urgencyOf, type Urgency } from "@/lib/compliance";
-import { upsertAdRecord, deleteAdRecord, trackRef, type AdInput } from "./actions";
+import {
+  upsertAdRecord,
+  deleteAdRecord,
+  trackRef,
+  enrichAdRecord,
+  type AdInput,
+} from "./actions";
 
 export type UntrackedRef = { kind: AdKind; reference: string };
 
@@ -42,6 +48,8 @@ type FormState = {
   complied_date: string;
   complied_hours: string;
   notes: string;
+  reason: string;
+  status_changed_on: string;
 };
 
 function blankForm(seed?: Partial<FormState>): FormState {
@@ -58,6 +66,8 @@ function blankForm(seed?: Partial<FormState>): FormState {
     complied_date: "",
     complied_hours: "",
     notes: "",
+    reason: "",
+    status_changed_on: "",
     ...seed,
   };
 }
@@ -77,6 +87,8 @@ function fromRecord(r: AdCompliance): FormState {
     complied_date: r.complied_date ?? "",
     complied_hours: r.complied_hours?.toString() ?? "",
     notes: r.notes ?? "",
+    reason: r.reason ?? "",
+    status_changed_on: r.status_changed_on ?? "",
   };
 }
 
@@ -104,6 +116,8 @@ function toInput(f: FormState): AdInput {
     complied_date: str(f.complied_date),
     complied_hours: num(f.complied_hours),
     notes: str(f.notes),
+    reason: str(f.reason),
+    status_changed_on: str(f.status_changed_on),
   };
 }
 
@@ -147,16 +161,32 @@ export function ComplianceClient({
   records,
   untracked,
   currentHours,
+  adReferences,
 }: {
   aircraftId: string;
   records: AdCompliance[];
   untracked: UntrackedRef[];
   currentHours: number | null;
+  adReferences: Record<string, AdReference>;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState | null>(null);
   const [busy, setBusy] = useState(false);
+  const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function enrich(id: string) {
+    setEnrichingId(id);
+    setError(null);
+    const res = await enrichAdRecord(aircraftId, id);
+    setEnrichingId(null);
+    if ("error" in res) setError(res.error);
+    else if (!res.found)
+      setError(
+        `Couldn't find AD in the Federal Register or FAA DRS. Double-check the number, or it may be a very old AD indexed differently.`,
+      );
+    else router.refresh();
+  }
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -354,6 +384,32 @@ export function ComplianceClient({
                 className={inputClass}
               />
             </label>
+            {(form.status === "not_applicable" || form.status === "superseded") && (
+              <>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  {form.status === "superseded" ? "Superseded on" : "N/A since"}
+                  <input
+                    type="date"
+                    value={form.status_changed_on}
+                    onChange={(e) => set("status_changed_on", e.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Reason
+                  <input
+                    value={form.reason}
+                    onChange={(e) => set("reason", e.target.value)}
+                    placeholder={
+                      form.status === "superseded"
+                        ? "superseded by AD …"
+                        : "e.g. vacuum pump removed"
+                    }
+                    className={inputClass}
+                  />
+                </label>
+              </>
+            )}
           </div>
           <div className="mt-3 flex gap-2">
             <button
@@ -418,9 +474,17 @@ export function ComplianceClient({
                 {r.title && <p className="mt-1 text-sm">{r.title}</p>}
 
                 <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {(r.status === "not_applicable" || r.status === "superseded") &&
+                    (r.reason || r.status_changed_on) && (
+                      <div className="text-slate-600 dark:text-slate-300">
+                        {r.status === "superseded" ? "Superseded" : "Not applicable"}
+                        {r.status_changed_on ? ` since ${r.status_changed_on}` : ""}
+                        {r.reason ? ` — ${r.reason}` : ""}
+                      </div>
+                    )}
                   {r.status === "complied" && r.complied_date && (
                     <span>
-                      Complied {r.complied_date}
+                      Last complied {r.complied_date}
                       {r.complied_hours != null ? ` at ${r.complied_hours} hrs` : ""}
                       {r.method ? ` · ${r.method}` : ""}
                     </span>
@@ -433,13 +497,55 @@ export function ComplianceClient({
                   {r.notes && <div className="mt-1">{r.notes}</div>}
                 </div>
 
-                <div className="mt-2 flex gap-2">
+                {/* Official reference (Federal Register or DRS) */}
+                {r.ad_reference_id && adReferences[r.ad_reference_id] && (() => {
+                  const ref = adReferences[r.ad_reference_id];
+                  const isDrs = ref.source === "drs";
+                  return (
+                    <div className="mt-2 rounded-md bg-slate-50 px-3 py-2 text-xs dark:bg-slate-950">
+                      <div className="font-medium text-slate-700 dark:text-slate-200">
+                        {isDrs ? "FAA DRS" : "FAA · Federal Register"} ·{" "}
+                        {ref.title ?? "official record"}
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-slate-500 dark:text-slate-400">
+                        {ref.effective_date && <span>effective {ref.effective_date}</span>}
+                        {isDrs && ref.document_status && <span>{ref.document_status}</span>}
+                        {ref.fr_html_url && (
+                          <a href={ref.fr_html_url} target="_blank" rel="noreferrer" className="text-sky-600 underline dark:text-sky-400">
+                            Federal Register ↗
+                          </a>
+                        )}
+                        {ref.pdf_url && (
+                          <a href={ref.pdf_url} target="_blank" rel="noreferrer" className="text-sky-600 underline dark:text-sky-400">
+                            Official PDF ↗
+                          </a>
+                        )}
+                        {ref.drs_url && (
+                          <a href={ref.drs_url} target="_blank" rel="noreferrer" className="text-sky-600 underline dark:text-sky-400">
+                            FAA DRS document ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     onClick={() => setForm(fromRecord(r))}
                     className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
                   >
                     Edit
                   </button>
+                  {r.kind === "ad" && !r.ad_reference_id && (
+                    <button
+                      onClick={() => enrich(r.id)}
+                      disabled={enrichingId === r.id}
+                      className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+                    >
+                      {enrichingId === r.id ? "Looking up…" : "Look up FAA record"}
+                    </button>
+                  )}
                   <button
                     onClick={() => remove(r.id, r.reference)}
                     disabled={busy}
