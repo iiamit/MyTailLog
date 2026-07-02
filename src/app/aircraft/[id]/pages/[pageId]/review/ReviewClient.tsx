@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CONFIDENCE_THRESHOLD } from "@/lib/extraction/schema";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import {
@@ -348,6 +349,7 @@ export function ReviewClient({
   detectedPageCount: number | null;
   entries: ReviewEntry[];
 }) {
+  const router = useRouter();
   const [entries, setEntries] = useState<ReviewEntry[]>(initialEntries);
   const [drafts, setDrafts] = useState<ReviewEntry[]>([]);
   const [review, setReview] = useState<ReviewStatus>(reviewStatus);
@@ -377,8 +379,19 @@ export function ReviewClient({
   async function markReviewed(status: ReviewStatus) {
     setPageBusy(true);
     const res = await setPageReview(aircraftId, pageId, status);
-    setPageBusy(false);
-    if (!("error" in res)) setReview(status);
+    if ("error" in res) {
+      setPageBusy(false);
+      return;
+    }
+    setReview(status);
+    // Marking a page reviewed returns you to the aircraft page (same as Done),
+    // so you can move straight to the next page that needs review. Flagging a
+    // dispute stays put. Leave pageBusy set — the component unmounts on nav.
+    if (status === "confirmed") {
+      router.push(`/aircraft/${aircraftId}`);
+    } else {
+      setPageBusy(false);
+    }
   }
 
   const confirmedCount = entries.filter((e) => e.owner_confirmed).length;

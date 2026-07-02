@@ -104,11 +104,32 @@ export function PagesPanel({
   const pendingCount = rows.filter(
     (r) => r.extractionStatus === "pending" || r.extractionStatus === "failed",
   ).length;
+  const extractedCount = rows.filter((r) => r.extractionStatus === "extracted").length;
+  const needsReviewCount = rows.filter(
+    (r) => r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed",
+  ).length;
+  const reviewedCount = rows.filter((r) => r.reviewStatus === "confirmed").length;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Pages</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Pages</h2>
+          {extractedCount > 0 && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {needsReviewCount > 0 ? (
+                <span className="font-medium text-amber-600 dark:text-amber-400">
+                  {needsReviewCount} need review
+                </span>
+              ) : (
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  all extracted pages reviewed
+                </span>
+              )}
+              {reviewedCount > 0 && ` · ${reviewedCount} reviewed`}
+            </p>
+          )}
+        </div>
         {extractionConfigured ? (
           <button
             onClick={extractAllPending}
@@ -127,8 +148,26 @@ export function PagesPanel({
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-        {rows.map((r) => (
-          <li key={r.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+        {rows.map((r) => {
+          const needsReview =
+            r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed";
+          const reviewBadge =
+            r.reviewStatus === "confirmed"
+              ? { label: "✓ reviewed", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" }
+              : r.reviewStatus === "disputed"
+                ? { label: "disputed", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" }
+                : needsReview
+                  ? { label: "needs review", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" }
+                  : null;
+          return (
+            <li
+              key={r.id}
+              className={`flex items-center gap-3 border-l-4 px-4 py-3 text-sm ${
+                needsReview
+                  ? "border-l-amber-400 dark:border-l-amber-500"
+                  : "border-l-transparent"
+              }`}
+            >
             <div className="w-14 shrink-0 text-slate-500 dark:text-slate-400">
               {r.pageSequence != null ? `#${r.pageSequence}` : "—"}
             </div>
@@ -150,6 +189,13 @@ export function PagesPanel({
                 )}
               </div>
             </div>
+            {reviewBadge && (
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${reviewBadge.className}`}
+              >
+                {reviewBadge.label}
+              </span>
+            )}
             <span
               className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${STATUS_STYLE[r.extractionStatus]}`}
             >
@@ -157,7 +203,11 @@ export function PagesPanel({
             </span>
             <Link
               href={`/aircraft/${aircraftId}/pages/${r.id}/review`}
-              className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:border-slate-500 dark:border-slate-700"
+              className={`shrink-0 rounded-md border px-3 py-1.5 text-xs ${
+                needsReview
+                  ? "border-amber-400 font-medium text-amber-700 hover:border-amber-500 dark:border-amber-500 dark:text-amber-300"
+                  : "border-slate-300 hover:border-slate-500 dark:border-slate-700"
+              }`}
             >
               Review
             </Link>
@@ -178,8 +228,9 @@ export function PagesPanel({
             >
               {deletingId === r.id ? "Deleting…" : "Delete"}
             </button>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
