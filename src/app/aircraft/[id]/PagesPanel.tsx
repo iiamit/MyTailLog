@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
+import { deletePage } from "./actions";
 
 export type PageRow = {
   id: string;
@@ -33,6 +34,7 @@ export function PagesPanel({
 }) {
   const [rows, setRows] = useState<PageRow[]>(pages);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function patch(id: string, next: Partial<PageRow>) {
@@ -57,6 +59,25 @@ export function PagesPanel({
     } catch {
       patch(id, { extractionStatus: "failed", extractionError: "Network error." });
     }
+  }
+
+  async function deleteRow(row: PageRow): Promise<void> {
+    const msg =
+      row.entryCount > 0
+        ? `Delete this page and its ${row.entryCount} extracted ${
+            row.entryCount === 1 ? "entry" : "entries"
+          }? This can't be undone.`
+        : "Delete this page? This can't be undone.";
+    if (!window.confirm(msg)) return;
+    setError(null);
+    setDeletingId(row.id);
+    const res = await deletePage(aircraftId, row.id);
+    setDeletingId(null);
+    if ("error" in res) {
+      setError(res.error);
+      return;
+    }
+    setRows((rs) => rs.filter((r) => r.id !== row.id));
   }
 
   async function extractAllPending(): Promise<void> {
@@ -143,12 +164,20 @@ export function PagesPanel({
             {extractionConfigured && (
               <button
                 onClick={() => extractOne(r.id)}
-                disabled={busy || r.extractionStatus === "processing"}
+                disabled={busy || deletingId === r.id || r.extractionStatus === "processing"}
                 className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
               >
                 {r.extractionStatus === "extracted" ? "Re-extract" : "Extract"}
               </button>
             )}
+            <button
+              onClick={() => deleteRow(r)}
+              disabled={busy || deletingId === r.id}
+              className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+              title="Delete this page and its extracted entries"
+            >
+              {deletingId === r.id ? "Deleting…" : "Delete"}
+            </button>
           </li>
         ))}
       </ul>
