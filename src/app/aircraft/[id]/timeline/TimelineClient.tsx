@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { FormattedEntry } from "@/components/FormattedEntry";
+import { ZoomableImage } from "@/components/ZoomableImage";
 
 export type TimelineEntry = {
   id: string;
@@ -20,6 +22,7 @@ export type TimelineEntry = {
   sbRefs: string[];
   confidence: number | null;
   ownerConfirmed: boolean;
+  thumbnailUrl: string | null;
 };
 
 export type LogbookMeta = { label: string; type: string };
@@ -41,9 +44,23 @@ function EntryRow({
   e: TimelineEntry;
 }) {
   const refs = [...e.adRefs.map((r) => `AD ${r}`), ...e.sbRefs.map((r) => `SB ${r}`)];
+  // Prefer the description; append work_performed if it adds detail.
+  const body =
+    e.description && e.workPerformed && e.workPerformed.trim() !== e.description.trim()
+      ? `${e.description}\n${e.workPerformed}`
+      : e.description || e.workPerformed || null;
   return (
     <li className="flex gap-3 px-4 py-3">
-      <div className="w-24 shrink-0 text-sm text-slate-500 dark:text-slate-400">
+      {e.thumbnailUrl ? (
+        <ZoomableImage
+          src={e.thumbnailUrl}
+          alt={`${e.logbookLabel} page`}
+          className="h-14 w-14 shrink-0 rounded border border-slate-200 object-cover dark:border-slate-700"
+        />
+      ) : (
+        <div className="h-14 w-14 shrink-0 rounded bg-slate-100 dark:bg-slate-800" />
+      )}
+      <div className="w-20 shrink-0 text-sm text-slate-500 dark:text-slate-400">
         {e.entryDate ?? "undated"}
       </div>
       <div className="min-w-0 flex-1">
@@ -66,13 +83,13 @@ function EntryRow({
             </span>
           )}
         </div>
-        <p className="text-sm text-slate-700 dark:text-slate-200">
-          {e.description || e.workPerformed || (
-            <span className="italic text-slate-400">no description</span>
-          )}
-        </p>
+        {body ? (
+          <FormattedEntry text={body} />
+        ) : (
+          <p className="text-sm italic text-slate-400">no description</p>
+        )}
         {refs.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
+          <div className="mt-1.5 flex flex-wrap gap-1">
             {refs.map((r) => (
               <span
                 key={r}
@@ -104,10 +121,12 @@ export function TimelineClient({
   aircraftId,
   entries,
   logbookMap,
+  thumbnailByPageId,
 }: {
   aircraftId: string;
   entries: TimelineEntry[];
   logbookMap: Record<string, LogbookMeta>;
+  thumbnailByPageId: Record<string, string>;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TimelineEntry[] | null>(null);
@@ -156,6 +175,7 @@ export function TimelineClient({
           sbRefs: r.sb_refs ?? [],
           confidence: r.confidence,
           ownerConfirmed: r.owner_confirmed,
+          thumbnailUrl: r.page_id ? thumbnailByPageId[r.page_id] ?? null : null,
         })),
       );
     }, 300);
@@ -163,7 +183,7 @@ export function TimelineClient({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query, aircraftId, logbookMap]);
+  }, [query, aircraftId, logbookMap, thumbnailByPageId]);
 
   const shown = results ?? entries;
 

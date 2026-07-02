@@ -43,6 +43,21 @@ export default async function ReviewPage({
     .from(BUCKET)
     .createSignedUrl(page.storage_path, 3600);
 
+  // Prev/next page within the same logbook, ordered by capture sequence — so a
+  // reviewer (especially handling a split entry) can page back and forth. Pages
+  // without a sequence fall back to creation order.
+  const { data: siblings } = await supabase
+    .from("page")
+    .select("id, page_sequence, created_at")
+    .eq("logbook_id", page.logbook_id)
+    .order("page_sequence", { ascending: true, nullsFirst: true })
+    .order("created_at", { ascending: true });
+  const ordered = siblings ?? [];
+  const pos = ordered.findIndex((p) => p.id === pageId);
+  const prevPageId = pos > 0 ? ordered[pos - 1].id : null;
+  const nextPageId = pos >= 0 && pos < ordered.length - 1 ? ordered[pos + 1].id : null;
+  const pagePosition = pos >= 0 ? `${pos + 1} of ${ordered.length}` : null;
+
   const reviewEntries: ReviewEntry[] = (entries ?? []).map((e) => ({
     id: e.id,
     entry_date: e.entry_date,
@@ -75,11 +90,42 @@ export default async function ReviewPage({
       </Link>
 
       <header className="mt-2 mb-6">
-        <h1 className="text-2xl font-bold">
-          Review {logbookLabel}
-          {page.page_sequence != null ? ` · page #${page.page_sequence}` : ""}
-        </h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">
+            Review {logbookLabel}
+            {page.page_sequence != null ? ` · page #${page.page_sequence}` : ""}
+          </h1>
+          <nav className="flex items-center gap-2 text-sm">
+            {prevPageId ? (
+              <Link
+                href={`/aircraft/${id}/pages/${prevPageId}/review`}
+                className="rounded-md border border-slate-300 px-3 py-1.5 hover:border-slate-500 dark:border-slate-700"
+              >
+                ← Previous
+              </Link>
+            ) : (
+              <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-300 dark:border-slate-800 dark:text-slate-600">
+                ← Previous
+              </span>
+            )}
+            {pagePosition && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">{pagePosition}</span>
+            )}
+            {nextPageId ? (
+              <Link
+                href={`/aircraft/${id}/pages/${nextPageId}/review`}
+                className="rounded-md border border-slate-300 px-3 py-1.5 hover:border-slate-500 dark:border-slate-700"
+              >
+                Next →
+              </Link>
+            ) : (
+              <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-300 dark:border-slate-800 dark:text-slate-600">
+                Next →
+              </span>
+            )}
+          </nav>
+        </div>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           Confirm or correct what the extractor read. Nothing here is a legal
           record — it&apos;s an index of your physical logbooks.
         </p>

@@ -8,6 +8,8 @@ import {
   type LogbookMeta,
 } from "./TimelineClient";
 
+const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
+
 export default async function TimelinePage({
   params,
 }: {
@@ -43,6 +45,27 @@ export default async function TimelinePage({
     .order("entry_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
+  // Signed thumbnail URL per page (private bucket), keyed by page id so both the
+  // rendered timeline and live search results can show the page image.
+  const { data: pages } = await supabase
+    .from("page")
+    .select("id, storage_path")
+    .eq("aircraft_id", id);
+
+  const thumbnailByPageId: Record<string, string> = {};
+  const pathToId = new Map<string, string>();
+  for (const p of pages ?? []) if (p.storage_path) pathToId.set(p.storage_path, p.id);
+  const paths = [...pathToId.keys()];
+  if (paths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrls(paths, 3600);
+    for (const s of signed ?? []) {
+      const pid = s.path ? pathToId.get(s.path) : undefined;
+      if (pid && s.signedUrl) thumbnailByPageId[pid] = s.signedUrl;
+    }
+  }
+
   const timeline: TimelineEntry[] = (entries ?? []).map((e) => ({
     id: e.id,
     pageId: e.page_id,
@@ -59,6 +82,7 @@ export default async function TimelinePage({
     sbRefs: e.sb_refs ?? [],
     confidence: e.confidence,
     ownerConfirmed: e.owner_confirmed,
+    thumbnailUrl: e.page_id ? thumbnailByPageId[e.page_id] ?? null : null,
   }));
 
   return (
@@ -78,7 +102,12 @@ export default async function TimelinePage({
         </p>
       </header>
 
-      <TimelineClient aircraftId={id} entries={timeline} logbookMap={logbookMap} />
+      <TimelineClient
+        aircraftId={id}
+        entries={timeline}
+        logbookMap={logbookMap}
+        thumbnailByPageId={thumbnailByPageId}
+      />
     </main>
   );
 }
