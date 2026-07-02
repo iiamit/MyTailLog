@@ -85,10 +85,13 @@ export async function extractPage(
       .eq("owner_confirmed", false);
 
     if (result.entries.length > 0) {
-      const rows = result.entries.map((e) => ({
+      const rows = result.entries.map((e, i) => ({
         page_id: page.id,
         logbook_id: page.logbook_id,
         aircraft_id: page.aircraft_id,
+        entry_index: i,
+        continues_next: e.continues_next ?? false,
+        is_continuation: e.is_continuation ?? false,
         entry_date: e.entry_date,
         hobbs: e.hobbs,
         tach: e.tach,

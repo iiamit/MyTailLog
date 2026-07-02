@@ -10,7 +10,7 @@
 // the prompt changes materially.
 // ===========================================================================
 
-export const EXTRACTION_SCHEMA_VERSION = 1;
+export const EXTRACTION_SCHEMA_VERSION = 2;
 
 // Any field below this confidence is NOT auto-trusted: it's flagged for the
 // review UI (step 5) and never drives a maintenance reminder unconfirmed.
@@ -36,6 +36,9 @@ export type ExtractedEntry = {
   // Field names (from this object) the model is unsure about. The pipeline maps
   // these to low per-field confidence so the review UI flags exactly them.
   low_confidence_fields: string[];
+  // Page-spanning detection: a single entry can straddle a page break.
+  continues_next: boolean; // runs off the bottom of this page (no closing signature)
+  is_continuation: boolean; // begins mid-entry (no header) — continues from prior page
 };
 
 export type ExtractionResult = {
@@ -73,11 +76,19 @@ const ENTRY_SCHEMA = {
       items: { type: "string" },
       description: "Names of fields in this entry you are unsure about (e.g. \"hobbs\", \"entry_date\").",
     },
+    continues_next: {
+      type: "boolean",
+      description: "True if this entry runs off the bottom of the page without its closing signature and clearly continues onto the next page. Usually only the last entry, and usually false.",
+    },
+    is_continuation: {
+      type: "boolean",
+      description: "True if this entry begins mid-entry — it has no date/header of its own and starts partway through a work item because it continues from the previous page. Usually only the first entry, and usually false.",
+    },
   },
   required: [
     "entry_date", "hobbs", "tach", "description", "work_performed", "parts",
     "signature_name", "mechanic_cert_number", "ad_refs", "sb_refs",
-    "confidence", "low_confidence_fields",
+    "confidence", "low_confidence_fields", "continues_next", "is_continuation",
   ],
 } as const;
 
@@ -107,4 +118,5 @@ Rules:
 - One logbook page may contain multiple dated entries — return one object per entry, in top-to-bottom order.
 - For every entry, set confidence (0 to 1) reflecting how sure you are overall, and list in low_confidence_fields the specific fields you are unsure about (illegible handwriting, ambiguous numbers, smudges). Be conservative: it is better to flag a field than to guess.
 - Numbers like hobbs/tach: transcribe digits exactly as written; if a digit is ambiguous, flag the field rather than guessing.
+- A single entry can SPAN A PAGE BREAK: it begins near the bottom of one page and finishes at the top of the next. You only see one page, so judge from this page alone: set continues_next=true on an entry that reaches the bottom of the page still mid-work, without its closing signature/date-out (it will finish on the next page); set is_continuation=true on an entry that starts partway through — no date or header of its own, beginning in the middle of a work item — because it began on the previous page. These are usually the last and first entries respectively; for a normal self-contained entry both are false. Do not fabricate the missing half; just flag it.
 - Put the complete plain-text transcription in raw_text.`;

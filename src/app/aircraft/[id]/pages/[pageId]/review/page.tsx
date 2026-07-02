@@ -58,6 +58,7 @@ export default async function ReviewPage({
     confidence: e.confidence,
     field_confidence: e.field_confidence,
     owner_confirmed: e.owner_confirmed,
+    is_continuation: e.is_continuation,
   }));
 
   const logbookLabel = logbook

@@ -12,6 +12,7 @@ import {
   deleteEntry,
   setEntryConfirmed,
   setPageReview,
+  mergeContinuation,
   type EntryFields,
 } from "./actions";
 
@@ -30,6 +31,7 @@ export type ReviewEntry = {
   confidence: number | null;
   field_confidence: Record<string, number> | null;
   owner_confirmed: boolean;
+  is_continuation: boolean;
 };
 
 const blankEntry = (): ReviewEntry => ({
@@ -47,6 +49,7 @@ const blankEntry = (): ReviewEntry => ({
   confidence: null,
   field_confidence: null,
   owner_confirmed: false,
+  is_continuation: false,
 });
 
 // Local editable form state — everything as strings for controlled inputs.
@@ -118,6 +121,8 @@ function EntryCard({
   onCreated,
   onDeleted,
   onCancelNew,
+  onMerge,
+  merging,
 }: {
   entry: ReviewEntry;
   isNew: boolean;
@@ -128,6 +133,8 @@ function EntryCard({
   onCreated: (draftId: string, newId: string, fields: EntryFields) => void;
   onDeleted: (id: string) => void;
   onCancelNew: (draftId: string) => void;
+  onMerge: (tailId: string) => void;
+  merging: boolean;
 }) {
   const [form, setForm] = useState<FormState>(toForm(entry));
   const [busy, setBusy] = useState(false);
@@ -203,6 +210,22 @@ function EntryCard({
               : "reviewed"}
         </span>
       </div>
+
+      {!isNew && entry.is_continuation && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+          <span>
+            This looks like the continuation of an entry that started on the
+            previous page.
+          </span>
+          <button
+            onClick={() => onMerge(entry.id)}
+            disabled={merging}
+            className="rounded-md bg-amber-600 px-2.5 py-1 font-medium text-white hover:bg-amber-500 disabled:opacity-50"
+          >
+            {merging ? "Merging…" : "Merge into that entry"}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <label className="col-span-2">
@@ -317,6 +340,16 @@ function EntryCard({
             {entry.owner_confirmed ? "Unconfirm" : "Confirm as-is"}
           </button>
         )}
+        {!isNew && !entry.is_continuation && (
+          <button
+            onClick={() => onMerge(entry.id)}
+            disabled={busy || merging}
+            title="Merge this into the entry that ends on the previous page (for entries that span a page break)"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+          >
+            Merge ↑ prev page
+          </button>
+        )}
         <button
           onClick={handleDelete}
           disabled={busy}
@@ -355,7 +388,24 @@ export function ReviewClient({
   const [drafts, setDrafts] = useState<ReviewEntry[]>([]);
   const [review, setReview] = useState<ReviewStatus>(reviewStatus);
   const [pageBusy, setPageBusy] = useState(false);
+  const [mergingId, setMergingId] = useState<string | null>(null);
+  const [mergeError, setMergeError] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
+
+  // Merge a page-spanning continuation into its head on the previous page. The
+  // tail disappears from this page; the head (on the previous page) absorbs it.
+  async function mergeTail(tailId: string) {
+    setMergingId(tailId);
+    setMergeError(null);
+    const res = await mergeContinuation(aircraftId, pageId, tailId);
+    setMergingId(null);
+    if ("error" in res) {
+      setMergeError(res.error);
+      return;
+    }
+    setEntries((es) => es.filter((e) => e.id !== tailId));
+    router.refresh();
+  }
 
   function patchEntry(id: string, fields: EntryFields) {
     setEntries((es) =>
@@ -466,6 +516,10 @@ export function ReviewClient({
           </p>
         )}
 
+        {mergeError && (
+          <p className="text-sm text-red-600 dark:text-red-400">{mergeError}</p>
+        )}
+
         {entries.map((e) => (
           <EntryCard
             key={e.id}
@@ -478,6 +532,8 @@ export function ReviewClient({
             onCreated={onCreated}
             onDeleted={(id) => setEntries((es) => es.filter((x) => x.id !== id))}
             onCancelNew={() => {}}
+            onMerge={mergeTail}
+            merging={mergingId === e.id}
           />
         ))}
 
@@ -495,6 +551,8 @@ export function ReviewClient({
             onCancelNew={(draftId) =>
               setDrafts((ds) => ds.filter((x) => x.id !== draftId))
             }
+            onMerge={() => {}}
+            merging={false}
           />
         ))}
 

@@ -91,6 +91,9 @@ export type LogEntry = {
   extraction_schema_version: number;
   extraction_model: string | null;
   owner_confirmed: boolean;
+  entry_index: number | null;
+  continues_next: boolean;
+  is_continuation: boolean;
   created_at: string;
   updated_at: string;
 }

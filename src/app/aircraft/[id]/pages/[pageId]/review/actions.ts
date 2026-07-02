@@ -26,6 +26,97 @@ function reviewPath(aircraftId: string, pageId: string) {
   return `/aircraft/${aircraftId}/pages/${pageId}/review`;
 }
 
+const joinText = (a: string | null, b: string | null): string | null =>
+  [a, b].map((x) => x?.trim()).filter(Boolean).join(" ") || null;
+const unionRefs = (a: string[] | null, b: string[] | null): string[] => [
+  ...new Set([...(a ?? []), ...(b ?? [])]),
+];
+
+/**
+ * Consolidate a page-spanning entry. `tailId` is the continuation (the orphaned
+ * top-of-page half). We find its "head" — the entry that runs off the bottom of
+ * the previous page in the same logbook — merge the two into the head (keeping
+ * the head's date/tach, concatenating the work text, taking the closing
+ * signature from the tail, unioning AD/SB refs), then delete the tail. The
+ * merged entry drops back to unconfirmed so the owner vets the result.
+ */
+export async function mergeContinuation(
+  aircraftId: string,
+  pageId: string,
+  tailId: string,
+): Promise<Result> {
+  const supabase = await createClient();
+
+  const { data: tail } = await supabase
+    .from("log_entry")
+    .select("*")
+    .eq("id", tailId)
+    .single();
+  if (!tail || tail.aircraft_id !== aircraftId) return { error: "Entry not found." };
+
+  const { data: tailPage } = await supabase
+    .from("page")
+    .select("page_sequence, logbook_id")
+    .eq("id", tail.page_id ?? "")
+    .single();
+  if (!tailPage || tailPage.page_sequence == null) {
+    return { error: "This page has no sequence number, so the previous page can't be found." };
+  }
+
+  const { data: prevPages } = await supabase
+    .from("page")
+    .select("id")
+    .eq("logbook_id", tailPage.logbook_id)
+    .lt("page_sequence", tailPage.page_sequence)
+    .order("page_sequence", { ascending: false })
+    .limit(1);
+  const prevPage = prevPages?.[0];
+  if (!prevPage) return { error: "There's no previous page in this logbook to merge into." };
+
+  const { data: candidates } = await supabase
+    .from("log_entry")
+    .select("*")
+    .eq("page_id", prevPage.id)
+    .order("entry_index", { ascending: false, nullsFirst: false });
+  const heads = candidates ?? [];
+  // Prefer the entry the model flagged as continuing; else one still "open" (no
+  // signature); else the last entry on the page.
+  const head =
+    heads.find((h) => h.continues_next) ??
+    heads.find((h) => !h.signature_name) ??
+    heads[0];
+  if (!head) return { error: "The previous page has no entry to merge into." };
+  if (head.id === tail.id) return { error: "Nothing to merge." };
+
+  const { error: updateError } = await supabase
+    .from("log_entry")
+    .update({
+      entry_date: head.entry_date ?? tail.entry_date,
+      hobbs: head.hobbs ?? tail.hobbs,
+      tach: head.tach ?? tail.tach,
+      description: joinText(head.description, tail.description),
+      work_performed: joinText(head.work_performed, tail.work_performed),
+      parts: joinText(head.parts, tail.parts),
+      signature_name: tail.signature_name ?? head.signature_name,
+      mechanic_cert_number: tail.mechanic_cert_number ?? head.mechanic_cert_number,
+      ad_refs: unionRefs(head.ad_refs, tail.ad_refs),
+      sb_refs: unionRefs(head.sb_refs, tail.sb_refs),
+      continues_next: tail.continues_next, // the tail may itself run onward (3+ pages)
+      is_continuation: head.is_continuation,
+      field_confidence: null,
+      owner_confirmed: false,
+    })
+    .eq("id", head.id);
+  if (updateError) return { error: updateError.message };
+
+  const { error: deleteError } = await supabase.from("log_entry").delete().eq("id", tail.id);
+  if (deleteError) return { error: deleteError.message };
+
+  revalidatePath(reviewPath(aircraftId, pageId));
+  revalidatePath(`/aircraft/${aircraftId}`);
+  return { ok: true };
+}
+
 /** Save edits to an extracted entry. Editing implicitly confirms it — a human
  *  has now vetted the fields, so it's trustworthy enough to drive reminders. */
 export async function saveEntry(
