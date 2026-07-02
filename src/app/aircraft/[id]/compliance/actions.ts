@@ -25,6 +25,8 @@ export type AdInput = {
   // "does not apply" (e.g. equipment removed on a date) or was superseded.
   reason: string | null;
   status_changed_on: string | null;
+  // The installed component this AD concerns, if any (removing it retires the AD).
+  component_id: string | null;
 };
 
 type Result = { ok: true } | { error: string };
@@ -60,6 +62,7 @@ export async function upsertAdRecord(
     notes: input.notes,
     reason: input.reason,
     status_changed_on: input.status_changed_on,
+    component_id: input.component_id,
   };
   const { error } = input.id
     ? await supabase.from("ad_compliance").update(row).eq("id", input.id)

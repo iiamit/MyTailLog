@@ -50,6 +50,14 @@ type FormState = {
   notes: string;
   reason: string;
   status_changed_on: string;
+  component_id: string;
+};
+
+export type ComponentLite = {
+  id: string;
+  name: string;
+  make: string | null;
+  is_installed: boolean;
 };
 
 function blankForm(seed?: Partial<FormState>): FormState {
@@ -68,6 +76,7 @@ function blankForm(seed?: Partial<FormState>): FormState {
     notes: "",
     reason: "",
     status_changed_on: "",
+    component_id: "",
     ...seed,
   };
 }
@@ -89,6 +98,7 @@ function fromRecord(r: AdCompliance): FormState {
     notes: r.notes ?? "",
     reason: r.reason ?? "",
     status_changed_on: r.status_changed_on ?? "",
+    component_id: r.component_id ?? "",
   };
 }
 
@@ -118,6 +128,7 @@ function toInput(f: FormState): AdInput {
     notes: str(f.notes),
     reason: str(f.reason),
     status_changed_on: str(f.status_changed_on),
+    component_id: f.component_id || null,
   };
 }
 
@@ -162,12 +173,14 @@ export function ComplianceClient({
   untracked,
   currentHours,
   adReferences,
+  components,
 }: {
   aircraftId: string;
   records: AdCompliance[];
   untracked: UntrackedRef[];
   currentHours: number | null;
   adReferences: Record<string, AdReference>;
+  components: ComponentLite[];
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState | null>(null);
@@ -375,6 +388,28 @@ export function ComplianceClient({
                 className={inputClass}
               />
             </label>
+            {components.length > 0 && (
+              <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                Related equipment
+                <select
+                  value={form.component_id}
+                  onChange={(e) => set("component_id", e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">— none —</option>
+                  {components.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                      {c.make ? ` (${c.make})` : ""}
+                      {c.is_installed ? "" : " — removed"}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-0.5 block font-normal text-slate-400 dark:text-slate-500">
+                  Removing this equipment will mark the AD not applicable.
+                </span>
+              </label>
+            )}
             <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
               Applicability / notes
               <textarea

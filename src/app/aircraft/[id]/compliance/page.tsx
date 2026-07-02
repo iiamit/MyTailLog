@@ -25,6 +25,14 @@ export default async function CompliancePage({
     .eq("aircraft_id", id)
     .order("reference", { ascending: true });
 
+  // Installed/removed components, so an AD can be linked to the equipment it
+  // concerns (removing that equipment then retires the AD).
+  const { data: components } = await supabase
+    .from("component")
+    .select("id, name, make, is_installed")
+    .eq("aircraft_id", id)
+    .order("name", { ascending: true });
+
   // Current hours = highest hobbs seen in the logs, else the enrollment hobbs.
   // Also collect every AD/SB number referenced across entries, to surface any
   // that aren't tracked yet.
@@ -85,6 +93,7 @@ export default async function CompliancePage({
         untracked={untracked}
         currentHours={currentHours}
         adReferences={adReferences}
+        components={components ?? []}
       />
     </main>
   );

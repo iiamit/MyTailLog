@@ -115,6 +115,8 @@ export type Component = {
   id: string;
   aircraft_id: string;
   name: string;
+  make: string | null;
+  category: string | null;
   part_number: string | null;
   serial_number: string | null;
   install_entry_id: string | null;
