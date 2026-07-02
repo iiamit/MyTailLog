@@ -141,7 +141,11 @@ export default async function AircraftPage({
       </section>
 
       <section>
-        <PagesPanel pages={pageRows} extractionConfigured={extractionConfigured} />
+        <PagesPanel
+          aircraftId={id}
+          pages={pageRows}
+          extractionConfigured={extractionConfigured}
+        />
         <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
           Extraction reads each page with a vision model and saves entries with
           per-field confidence. Nothing is auto-confirmed — a review step (coming

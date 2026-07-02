@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 
 export type PageRow = {
@@ -22,9 +23,11 @@ const STATUS_STYLE: Record<ExtractionStatus, string> = {
 };
 
 export function PagesPanel({
+  aircraftId,
   pages,
   extractionConfigured,
 }: {
+  aircraftId: string;
   pages: PageRow[];
   extractionConfigured: boolean;
 }) {
@@ -131,6 +134,12 @@ export function PagesPanel({
             >
               {r.extractionStatus}
             </span>
+            <Link
+              href={`/aircraft/${aircraftId}/pages/${r.id}/review`}
+              className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:border-slate-500 dark:border-slate-700"
+            >
+              Review
+            </Link>
             {extractionConfigured && (
               <button
                 onClick={() => extractOne(r.id)}
