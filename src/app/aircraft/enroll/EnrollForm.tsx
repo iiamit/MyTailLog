@@ -10,6 +10,7 @@ function Field({
   required = false,
   placeholder,
   hint,
+  step,
 }: {
   label: string;
   name: string;
@@ -17,6 +18,7 @@ function Field({
   required?: boolean;
   placeholder?: string;
   hint?: string;
+  step?: string;
 }) {
   return (
     <label className="flex flex-col gap-1">
@@ -27,6 +29,7 @@ function Field({
       <input
         name={name}
         type={type}
+        step={step}
         required={required}
         placeholder={placeholder}
         className="rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
@@ -87,12 +90,14 @@ export function EnrollForm() {
           label="Hobbs at enrollment"
           name="enrollment_hobbs"
           type="number"
+          step="0.1"
           placeholder="2450.3"
         />
         <Field
           label="Tach at enrollment"
           name="enrollment_tach"
           type="number"
+          step="0.1"
           placeholder="1890.5"
         />
       </div>
