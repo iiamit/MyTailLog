@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ZoomableImage } from "@/components/ZoomableImage";
 import { CONFIDENCE_THRESHOLD } from "@/lib/extraction/schema";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import {
@@ -402,12 +403,16 @@ export function ReviewClient({
           original (entries mix printed and handwritten content). */}
       <div className="lg:sticky lg:top-6 lg:self-start">
         {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageUrl}
-            alt="Logbook page"
-            className="w-full rounded-lg border border-slate-200 dark:border-slate-800"
-          />
+          <div>
+            <ZoomableImage
+              src={imageUrl}
+              alt="Logbook page"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-800"
+            />
+            <p className="mt-1 text-center text-xs text-slate-400 dark:text-slate-500">
+              Click the image to magnify (click again for full resolution).
+            </p>
+          </div>
         ) : (
           <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
             Image unavailable.

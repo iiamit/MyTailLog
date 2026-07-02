@@ -1,0 +1,86 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+/**
+ * An image that opens a full-screen, zoomable lightbox on click — so a scanned
+ * logbook page can be read at full resolution and cross-referenced against the
+ * extracted text. In the lightbox: click the image to toggle fit-to-screen vs.
+ * actual size (scroll to pan), Esc or a background/×  click to close.
+ */
+export function ZoomableImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onClick={() => {
+          setZoomed(false);
+          setOpen(true);
+        }}
+        className={`cursor-zoom-in ${className ?? ""}`}
+      />
+
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-50 overflow-auto bg-black/90"
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+            }}
+            className="fixed right-4 top-4 z-10 rounded-full bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20"
+            aria-label="Close"
+          >
+            ✕ Close
+          </button>
+          <div className="flex min-h-full items-center justify-center p-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={alt}
+              onClick={(e) => {
+                e.stopPropagation();
+                setZoomed((z) => !z);
+              }}
+              className={
+                zoomed
+                  ? "max-w-none cursor-zoom-out"
+                  : "max-h-[92vh] max-w-[96vw] cursor-zoom-in object-contain"
+              }
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

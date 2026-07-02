@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
-import { PagesPanel, type PageRow } from "./PagesPanel";
+import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
+
+const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export default async function AircraftPage({
   params,
@@ -35,11 +37,24 @@ export default async function AircraftPage({
   const { data: pages } = await supabase
     .from("page")
     .select(
-      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error",
+      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error, storage_path",
     )
     .eq("aircraft_id", id)
     .order("logbook_id", { ascending: true })
     .order("page_sequence", { ascending: true, nullsFirst: false });
+
+  // Short-lived signed URLs for page thumbnails (private bucket). Batch-signed;
+  // the thumbnails lazy-load and click through to a full-screen magnifier.
+  const thumbByPath = new Map<string, string>();
+  const paths = (pages ?? []).map((p) => p.storage_path).filter(Boolean);
+  if (paths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrls(paths, 3600);
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) thumbByPath.set(s.path, s.signedUrl);
+    }
+  }
 
   // Per-page extracted-entry counts.
   const { data: entries } = await supabase
@@ -60,6 +75,7 @@ export default async function AircraftPage({
 
   const pageRows: PageRow[] = (pages ?? []).map((p) => ({
     id: p.id,
+    logbookId: p.logbook_id,
     logbookLabel: labelFor(p.logbook_id),
     pageSequence: p.page_sequence,
     reviewStatus: p.review_status,
@@ -67,6 +83,14 @@ export default async function AircraftPage({
     detectedPageCount: p.detected_page_count,
     extractionError: p.extraction_error,
     entryCount: entryCounts.get(p.id) ?? 0,
+    thumbnailUrl: thumbByPath.get(p.storage_path) ?? null,
+  }));
+
+  const logbookTiles: LogbookTile[] = (logbooks ?? []).map((lb) => ({
+    id: lb.id,
+    label: lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type,
+    componentRef: lb.component_ref,
+    pageCount: pageCounts.get(lb.id) ?? 0,
   }));
 
   const extractionConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
@@ -109,9 +133,9 @@ export default async function AircraftPage({
         </Link>
       </div>
 
-      <section className="mb-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Logbooks</h2>
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Logbooks &amp; pages</h2>
           <div className="flex gap-2">
             <Link
               href={`/aircraft/${id}/upload`}
@@ -127,40 +151,16 @@ export default async function AircraftPage({
             </Link>
           </div>
         </div>
-        <ul className="grid gap-3 sm:grid-cols-3">
-          {logbooks?.map((lb) => {
-            const count = pageCounts.get(lb.id) ?? 0;
-            return (
-              <li
-                key={lb.id}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-5 text-center dark:border-slate-800 dark:bg-slate-900"
-              >
-                <div className="font-medium">
-                  {lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type}
-                </div>
-                {lb.component_ref && (
-                  <div className="text-xs text-slate-500">{lb.component_ref}</div>
-                )}
-                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {count} page{count === 1 ? "" : "s"}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <section>
+        <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+          Click a logbook to show only its pages. Click a page thumbnail to
+          magnify it.
+        </p>
         <PagesPanel
           aircraftId={id}
+          logbooks={logbookTiles}
           pages={pageRows}
           extractionConfigured={extractionConfigured}
         />
-        <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
-          Extraction reads each page with a vision model and saves entries with
-          per-field confidence. Nothing is auto-confirmed — a review step (coming
-          next) confirms entries before they drive any maintenance reminder.
-        </p>
       </section>
     </main>
   );
