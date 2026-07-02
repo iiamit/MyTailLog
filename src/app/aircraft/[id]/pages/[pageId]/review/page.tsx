@@ -1,13 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { ReviewClient, type ReviewEntry } from "./ReviewClient";
-
-const LOGBOOK_LABEL: Record<string, string> = {
-  airframe: "Airframe",
-  engine: "Engine",
-  prop: "Propeller",
-};
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 

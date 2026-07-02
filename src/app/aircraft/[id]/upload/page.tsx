@@ -2,13 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { CaptureLogbook } from "../capture/CaptureClient";
+import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { UploadClient } from "./UploadClient";
-
-const LOGBOOK_LABEL: Record<string, string> = {
-  airframe: "Airframe",
-  engine: "Engine",
-  prop: "Propeller",
-};
 
 export default async function UploadPage({
   params,

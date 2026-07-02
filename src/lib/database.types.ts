@@ -5,7 +5,7 @@
  * Until then this keeps the app type-safe against the schema.
  */
 
-export type LogbookType = "airframe" | "engine" | "prop";
+export type LogbookType = "airframe" | "engine" | "prop" | "avionics";
 export type ReviewStatus = "unreviewed" | "confirmed" | "disputed";
 export type ExtractionStatus = "pending" | "processing" | "extracted" | "failed";
 export type DocumentType =
@@ -149,6 +149,10 @@ export type Database = {
       has_aircraft_access: {
         Args: { target_aircraft: string };
         Returns: boolean;
+      };
+      search_log_entries: {
+        Args: { target_aircraft: string; q: string };
+        Returns: LogEntry[];
       };
     };
     Enums: {

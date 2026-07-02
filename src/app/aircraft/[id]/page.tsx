@@ -2,13 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
+import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { PagesPanel, type PageRow } from "./PagesPanel";
-
-const LOGBOOK_LABEL: Record<string, string> = {
-  airframe: "Airframe",
-  engine: "Engine",
-  prop: "Propeller",
-};
 
 export default async function AircraftPage({
   params,
@@ -95,8 +90,17 @@ export default async function AircraftPage({
         </p>
       </header>
 
-      <div className="mb-8">
+      <div className="mb-6">
         <Disclaimer />
+      </div>
+
+      <div className="mb-8">
+        <Link
+          href={`/aircraft/${id}/timeline`}
+          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+        >
+          Logbook timeline &amp; search →
+        </Link>
       </div>
 
       <section className="mb-8">

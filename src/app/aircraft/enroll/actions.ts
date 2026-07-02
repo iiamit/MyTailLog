@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { LogbookType } from "@/lib/database.types";
+import { LOGBOOK_TYPES } from "@/lib/logbooks";
 
 function parseNum(value: FormDataEntryValue | null): number | null {
   if (value == null || value === "") return null;
@@ -61,10 +61,10 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
     return { error: aircraftError?.message ?? "Failed to enroll aircraft." };
   }
 
-  // Seed the three standard logbooks. A single annual usually touches all three.
-  const types: LogbookType[] = ["airframe", "engine", "prop"];
+  // Seed the standard logbooks (airframe/engine/prop/avionics). A single annual
+  // usually touches several of them.
   const { error: logbookError } = await supabase.from("logbook").insert(
-    types.map((type) => ({ aircraft_id: aircraft.id, type })),
+    LOGBOOK_TYPES.map((type) => ({ aircraft_id: aircraft.id, type })),
   );
 
   if (logbookError) {
