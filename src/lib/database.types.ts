@@ -8,6 +8,13 @@
 export type LogbookType = "airframe" | "engine" | "prop" | "avionics";
 export type ReviewStatus = "unreviewed" | "confirmed" | "disputed";
 export type ExtractionStatus = "pending" | "processing" | "extracted" | "failed";
+export type AdKind = "ad" | "sb";
+export type AdStatus =
+  | "open"
+  | "complied"
+  | "previously_complied"
+  | "not_applicable"
+  | "superseded";
 export type DocumentType =
   | "form_337"
   | "form_8130_3"
@@ -119,6 +126,28 @@ export type Component = {
   updated_at: string;
 }
 
+export type AdCompliance = {
+  id: string;
+  aircraft_id: string;
+  kind: AdKind;
+  reference: string;
+  title: string | null;
+  applicability: string | null;
+  recurring: boolean;
+  interval_hours: number | null;
+  interval_months: number | null;
+  status: AdStatus;
+  method: string | null;
+  complied_date: string | null;
+  complied_hours: number | null;
+  next_due_date: string | null;
+  next_due_hours: number | null;
+  reference_entry_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Profile = {
   id: string;
   full_name: string | null;
@@ -143,6 +172,7 @@ export type Database = {
       log_entry: { Row: LogEntry; Insert: Partial<LogEntry>; Update: Partial<LogEntry>; Relationships: [] };
       document: { Row: DocumentRecord; Insert: Partial<DocumentRecord>; Update: Partial<DocumentRecord>; Relationships: [] };
       component: { Row: Component; Insert: Partial<Component>; Update: Partial<Component>; Relationships: [] };
+      ad_compliance: { Row: AdCompliance; Insert: Partial<AdCompliance>; Update: Partial<AdCompliance>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {
@@ -160,6 +190,8 @@ export type Database = {
       review_status: ReviewStatus;
       document_type: DocumentType;
       extraction_status: ExtractionStatus;
+      ad_kind: AdKind;
+      ad_status: AdStatus;
     };
     CompositeTypes: Record<string, never>;
   };

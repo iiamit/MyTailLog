@@ -94,12 +94,18 @@ export default async function AircraftPage({
         <Disclaimer />
       </div>
 
-      <div className="mb-8">
+      <div className="mb-8 flex flex-wrap gap-2">
         <Link
           href={`/aircraft/${id}/timeline`}
           className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
         >
           Logbook timeline &amp; search →
+        </Link>
+        <Link
+          href={`/aircraft/${id}/compliance`}
+          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+        >
+          AD / SB compliance →
         </Link>
       </div>
 

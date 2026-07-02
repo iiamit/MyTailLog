@@ -1,0 +1,458 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type { AdCompliance, AdKind, AdStatus } from "@/lib/database.types";
+import { AD_STATUS_LABEL, urgencyOf, type Urgency } from "@/lib/compliance";
+import { upsertAdRecord, deleteAdRecord, trackRef, type AdInput } from "./actions";
+
+export type UntrackedRef = { kind: AdKind; reference: string };
+
+const STATUS_STYLE: Record<AdStatus, string> = {
+  open: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  complied: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  previously_complied: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+  not_applicable: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+  superseded: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+};
+const URGENCY_STYLE: Record<Exclude<Urgency, "none">, string> = {
+  overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  upcoming: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+};
+const AD_STATUSES: AdStatus[] = [
+  "open",
+  "complied",
+  "previously_complied",
+  "not_applicable",
+  "superseded",
+];
+
+type FormState = {
+  id?: string;
+  kind: AdKind;
+  reference: string;
+  title: string;
+  applicability: string;
+  recurring: boolean;
+  interval_hours: string;
+  interval_months: string;
+  status: AdStatus;
+  method: string;
+  complied_date: string;
+  complied_hours: string;
+  notes: string;
+};
+
+function blankForm(seed?: Partial<FormState>): FormState {
+  return {
+    kind: "ad",
+    reference: "",
+    title: "",
+    applicability: "",
+    recurring: false,
+    interval_hours: "",
+    interval_months: "",
+    status: "open",
+    method: "",
+    complied_date: "",
+    complied_hours: "",
+    notes: "",
+    ...seed,
+  };
+}
+
+function fromRecord(r: AdCompliance): FormState {
+  return {
+    id: r.id,
+    kind: r.kind,
+    reference: r.reference,
+    title: r.title ?? "",
+    applicability: r.applicability ?? "",
+    recurring: r.recurring,
+    interval_hours: r.interval_hours?.toString() ?? "",
+    interval_months: r.interval_months?.toString() ?? "",
+    status: r.status,
+    method: r.method ?? "",
+    complied_date: r.complied_date ?? "",
+    complied_hours: r.complied_hours?.toString() ?? "",
+    notes: r.notes ?? "",
+  };
+}
+
+function toInput(f: FormState): AdInput {
+  const num = (s: string) => {
+    const n = Number(s.trim());
+    return s.trim() !== "" && Number.isFinite(n) ? n : null;
+  };
+  const int = (s: string) => {
+    const n = parseInt(s.trim(), 10);
+    return Number.isFinite(n) ? n : null;
+  };
+  const str = (s: string) => (s.trim() === "" ? null : s.trim());
+  return {
+    id: f.id,
+    kind: f.kind,
+    reference: f.reference.trim(),
+    title: str(f.title),
+    applicability: str(f.applicability),
+    recurring: f.recurring,
+    interval_hours: f.recurring ? num(f.interval_hours) : null,
+    interval_months: f.recurring ? int(f.interval_months) : null,
+    status: f.status,
+    method: str(f.method),
+    complied_date: str(f.complied_date),
+    complied_hours: num(f.complied_hours),
+    notes: str(f.notes),
+  };
+}
+
+function urgencyRank(r: AdCompliance, currentHours: number | null): number {
+  const u = urgencyOf(r, currentHours);
+  if (u === "overdue") return 0;
+  if (r.status === "open") return 1;
+  if (u === "due_soon") return 2;
+  if (u === "upcoming") return 3;
+  return 4;
+}
+
+function dueText(r: AdCompliance, currentHours: number | null): string | null {
+  const parts: string[] = [];
+  if (r.next_due_date) {
+    const today = new Date().toISOString().slice(0, 10);
+    const days = Math.round(
+      (Date.parse(r.next_due_date + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) /
+        86_400_000,
+    );
+    parts.push(
+      days < 0 ? `${-days}d overdue` : days === 0 ? "due today" : `in ${days}d (${r.next_due_date})`,
+    );
+  }
+  if (r.next_due_hours != null) {
+    if (currentHours != null) {
+      const h = Math.round((r.next_due_hours - currentHours) * 10) / 10;
+      parts.push(h < 0 ? `${-h} hrs over` : `${h} hrs left`);
+    } else {
+      parts.push(`at ${r.next_due_hours} hrs`);
+    }
+  }
+  return parts.length ? parts.join(" · ") : null;
+}
+
+const inputClass =
+  "w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+
+export function ComplianceClient({
+  aircraftId,
+  records,
+  untracked,
+  currentHours,
+}: {
+  aircraftId: string;
+  records: AdCompliance[];
+  untracked: UntrackedRef[];
+  currentHours: number | null;
+}) {
+  const router = useRouter();
+  const [form, setForm] = useState<FormState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((f) => (f ? { ...f, [key]: value } : f));
+  }
+
+  async function save() {
+    if (!form) return;
+    setBusy(true);
+    setError(null);
+    const res = await upsertAdRecord(aircraftId, toInput(form));
+    setBusy(false);
+    if ("error" in res) {
+      setError(res.error);
+      return;
+    }
+    setForm(null);
+    router.refresh();
+  }
+
+  async function remove(id: string, reference: string) {
+    if (!window.confirm(`Delete tracking for ${reference}?`)) return;
+    setBusy(true);
+    const res = await deleteAdRecord(aircraftId, id);
+    setBusy(false);
+    if ("error" in res) setError(res.error);
+    else router.refresh();
+  }
+
+  async function track(u: UntrackedRef) {
+    setBusy(true);
+    const res = await trackRef(aircraftId, u.kind, u.reference);
+    setBusy(false);
+    if ("error" in res) setError(res.error);
+    else router.refresh();
+  }
+
+  const sorted = [...records].sort(
+    (a, b) =>
+      urgencyRank(a, currentHours) - urgencyRank(b, currentHours) ||
+      a.reference.localeCompare(b.reference),
+  );
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          {currentHours != null ? `Current hours ≈ ${currentHours}` : "Current hours unknown"}
+        </span>
+        {!form && (
+          <button
+            onClick={() => setForm(blankForm())}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          >
+            Add AD / SB
+          </button>
+        )}
+      </div>
+
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+      {/* Referenced in the logs but not tracked yet */}
+      {untracked.length > 0 && (
+        <section className="rounded-lg border border-dashed border-slate-300 p-4 dark:border-slate-700">
+          <h2 className="mb-2 text-sm font-medium">
+            Referenced in your logs — not tracked yet
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {untracked.map((u) => (
+              <button
+                key={`${u.kind}:${u.reference}`}
+                onClick={() => track(u)}
+                disabled={busy}
+                className="rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+              >
+                + {u.kind.toUpperCase()} {u.reference}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Add / edit form */}
+      {form && (
+        <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="mb-3 text-sm font-semibold">
+            {form.id ? "Edit record" : "New record"}
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Type
+              <select
+                value={form.kind}
+                onChange={(e) => set("kind", e.target.value as AdKind)}
+                className={inputClass}
+              >
+                <option value="ad">AD (mandatory)</option>
+                <option value="sb">SB (advisory)</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Number
+              <input
+                value={form.reference}
+                onChange={(e) => set("reference", e.target.value)}
+                placeholder="2015-19-07"
+                className={inputClass}
+              />
+            </label>
+            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+              Title
+              <input
+                value={form.title}
+                onChange={(e) => set("title", e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Status
+              <select
+                value={form.status}
+                onChange={(e) => set("status", e.target.value as AdStatus)}
+                className={inputClass}
+              >
+                {AD_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {AD_STATUS_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 pt-5 text-xs font-medium text-slate-600 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={form.recurring}
+                onChange={(e) => set("recurring", e.target.checked)}
+              />
+              Recurring
+            </label>
+            {form.recurring && (
+              <>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Interval (hours)
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={form.interval_hours}
+                    onChange={(e) => set("interval_hours", e.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Interval (months)
+                  <input
+                    type="number"
+                    value={form.interval_months}
+                    onChange={(e) => set("interval_months", e.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+              </>
+            )}
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Complied date
+              <input
+                type="date"
+                value={form.complied_date}
+                onChange={(e) => set("complied_date", e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Complied hours
+              <input
+                type="number"
+                step="0.1"
+                value={form.complied_hours}
+                onChange={(e) => set("complied_hours", e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+              Method of compliance
+              <input
+                value={form.method}
+                onChange={(e) => set("method", e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+              Applicability / notes
+              <textarea
+                rows={2}
+                value={form.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={save}
+              disabled={busy}
+              className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900"
+            >
+              {busy ? "Saving…" : "Save"}
+            </button>
+            <button
+              onClick={() => setForm(null)}
+              disabled={busy}
+              className="rounded-md border border-slate-300 px-4 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Records */}
+      {sorted.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          No AD/SB records yet. Add one, or track a number referenced in your logs.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {sorted.map((r) => {
+            const urgency = urgencyOf(r, currentHours);
+            const due = dueText(r, currentHours);
+            return (
+              <li
+                key={r.id}
+                className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[11px] font-medium text-white dark:bg-slate-700">
+                    {r.kind.toUpperCase()}
+                  </span>
+                  <span className="font-semibold">{r.reference}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLE[r.status]}`}>
+                    {AD_STATUS_LABEL[r.status]}
+                  </span>
+                  {urgency !== "none" && (
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${URGENCY_STYLE[urgency]}`}>
+                      {urgency === "overdue" ? "OVERDUE" : urgency === "due_soon" ? "due soon" : "upcoming"}
+                    </span>
+                  )}
+                  {r.recurring && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      recurring{" "}
+                      {[
+                        r.interval_hours != null ? `${r.interval_hours} hrs` : null,
+                        r.interval_months != null ? `${r.interval_months} mo` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" / ") || ""}
+                    </span>
+                  )}
+                </div>
+
+                {r.title && <p className="mt-1 text-sm">{r.title}</p>}
+
+                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {r.status === "complied" && r.complied_date && (
+                    <span>
+                      Complied {r.complied_date}
+                      {r.complied_hours != null ? ` at ${r.complied_hours} hrs` : ""}
+                      {r.method ? ` · ${r.method}` : ""}
+                    </span>
+                  )}
+                  {due && (
+                    <span className={r.status === "complied" && r.complied_date ? " · " : ""}>
+                      Next due: {due}
+                    </span>
+                  )}
+                  {r.notes && <div className="mt-1">{r.notes}</div>}
+                </div>
+
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => setForm(fromRecord(r))}
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => remove(r.id, r.reference)}
+                    disabled={busy}
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
