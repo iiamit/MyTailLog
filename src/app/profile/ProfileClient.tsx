@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MfbSyncButton } from "@/components/MfbSyncButton";
-import { updateProfile, saveMfbCredentials, disconnectMfb } from "./actions";
+import type { AlertSettings } from "@/lib/reminders";
+import { updateProfile, updateNotifications, saveMfbCredentials, disconnectMfb } from "./actions";
 
 type MfbState = {
   clientId: string;
@@ -36,22 +37,58 @@ function Status({ msg }: { msg: { ok: boolean; text: string } | null }) {
   );
 }
 
+// One notification category: an enable checkbox + its lead-time number input(s).
+function AlertRow({
+  label,
+  enableName,
+  enableDefault,
+  fields,
+}: {
+  label: string;
+  enableName: string;
+  enableDefault: boolean;
+  fields: { name: string; unit: string; value: number }[];
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <label className="flex min-w-[13rem] items-center gap-2">
+        <input type="checkbox" name={enableName} defaultChecked={enableDefault} />
+        <span>{label}</span>
+      </label>
+      {fields.map((f) => (
+        <label key={f.name} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <input
+            type="number"
+            min={0}
+            name={f.name}
+            defaultValue={f.value}
+            className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          />
+          {f.unit}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 export function ProfileClient({
   email,
   fullName,
   certNumber,
   notifyDue,
+  alerts,
   mfb,
 }: {
   email: string;
   fullName: string;
   certNumber: string;
   notifyDue: boolean;
+  alerts: AlertSettings;
   mfb: MfbState;
 }) {
   const router = useRouter();
 
-  // Details + preferences (server action → DB)
+  // Details (server action → DB)
   const [detailsMsg, setDetailsMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [savingDetails, setSavingDetails] = useState(false);
 
@@ -63,6 +100,19 @@ export function ProfileClient({
     setDetailsMsg(
       res.error ? { ok: false, text: res.error } : { ok: true, text: "Saved." },
     );
+  }
+
+  // Notification settings (master toggle + per-category lead times)
+  const [notifyOn, setNotifyOn] = useState(notifyDue);
+  const [notifMsg, setNotifMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [savingNotif, setSavingNotif] = useState(false);
+
+  async function saveNotifications(formData: FormData) {
+    setSavingNotif(true);
+    setNotifMsg(null);
+    const res = await updateNotifications(formData);
+    setSavingNotif(false);
+    setNotifMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Saved." });
   }
 
   // Email change (Supabase auth → confirmation email)
@@ -136,11 +186,6 @@ export function ProfileClient({
           <span className="font-medium">A&amp;P / IA certificate number</span>
           <input name="cert_number" defaultValue={certNumber} className={inputClass} placeholder="Optional" />
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="notify_due" defaultChecked={notifyDue} />
-          Email me when maintenance or AD items come due
-          <span className="text-xs text-slate-400">(reminders not sent yet)</span>
-        </label>
         <div className="flex items-center gap-3">
           <button
             type="submit"
@@ -150,6 +195,74 @@ export function ProfileClient({
             {savingDetails ? "Saving…" : "Save"}
           </button>
           <Status msg={detailsMsg} />
+        </div>
+      </form>
+
+      {/* Notifications */}
+      <form action={saveNotifications} className={card}>
+        <h2 className="font-semibold">Notifications</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          A daily check emails you before maintenance, inspections, and ADs come due. Set how far
+          in advance per category. The oil-change <em>interval</em> (hours between changes) is set
+          on the oil item on each aircraft&apos;s Maintenance page — this only controls how early
+          you&apos;re alerted.
+        </p>
+
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="notify_due"
+            checked={notifyOn}
+            onChange={(e) => setNotifyOn(e.target.checked)}
+          />
+          Email me reminders before items come due
+        </label>
+
+        <fieldset
+          disabled={!notifyOn}
+          className="flex flex-col gap-3 border-t border-slate-100 pt-3 disabled:opacity-50 dark:border-slate-800"
+        >
+          <AlertRow
+            label="Annual inspection"
+            enableName="annual_enabled"
+            enableDefault={alerts.annual.enabled}
+            fields={[{ name: "annual_lead_days", unit: "days before", value: alerts.annual.lead_days }]}
+          />
+          <AlertRow
+            label="Oil change"
+            enableName="oil_enabled"
+            enableDefault={alerts.oil.enabled}
+            fields={[{ name: "oil_lead_hours", unit: "hours before", value: alerts.oil.lead_hours }]}
+          />
+          <AlertRow
+            label="Airworthiness Directives (AD/SB)"
+            enableName="ad_enabled"
+            enableDefault={alerts.ad.enabled}
+            fields={[
+              { name: "ad_lead_days", unit: "days before", value: alerts.ad.lead_days },
+              { name: "ad_lead_hours", unit: "hours before", value: alerts.ad.lead_hours },
+            ]}
+          />
+          <AlertRow
+            label="Everything else"
+            enableName="default_enabled"
+            enableDefault={alerts.default.enabled}
+            fields={[
+              { name: "default_lead_days", unit: "days before", value: alerts.default.lead_days },
+              { name: "default_lead_hours", unit: "hours before", value: alerts.default.lead_hours },
+            ]}
+          />
+        </fieldset>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={savingNotif}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900"
+          >
+            {savingNotif ? "Saving…" : "Save notifications"}
+          </button>
+          <Status msg={notifMsg} />
         </div>
       </form>
 

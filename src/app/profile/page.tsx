@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { resolveAlerts } from "@/lib/reminders";
 import { ProfileClient } from "./ProfileClient";
 
 export default async function ProfilePage() {
@@ -42,6 +43,7 @@ export default async function ProfilePage() {
         fullName={profile?.full_name ?? ""}
         certNumber={profile?.cert_number ?? ""}
         notifyDue={Boolean(profile?.preferences?.notify_due)}
+        alerts={resolveAlerts(profile?.preferences)}
         mfb={{
           clientId: mfb?.client_id ?? "",
           hasSecret: Boolean(mfb?.client_secret),

@@ -284,6 +284,55 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "notifications",
+    icon: <AlertIcon />,
+    title: "Notifications (reminder emails)",
+    body: (
+      <>
+        <p>
+          A daily background check emails you <strong>before</strong> maintenance, inspections, and
+          ADs come due — and once they&apos;re overdue. Turn reminders on and tune the lead times in{" "}
+          <L href="/profile">Profile → Notifications</L>. The master switch is the on/off for{" "}
+          <em>all</em> reminder email; below it, each category sets how far in advance you&apos;re
+          warned:
+        </p>
+        <ul className="ml-4 mt-1 list-disc space-y-1">
+          <li>
+            <strong>Annual inspection</strong> — a number of <em>days</em> before it&apos;s due
+            (default 90).
+          </li>
+          <li>
+            <strong>Oil change</strong> — a number of <em>hours</em> before it&apos;s due (default
+            10).
+          </li>
+          <li>
+            <strong>ADs / SBs</strong> and <strong>everything else</strong> — both a days-before and
+            an hours-before window (defaults 30 days / 25 hours); whichever is reached first triggers
+            the reminder.
+          </li>
+        </ul>
+        <p className="mt-2">
+          Reminders are grouped into <strong>one digest email per day</strong>, organized by
+          aircraft, each item linking to its Status page. You&apos;re reminded once per due-cycle:
+          after you mark an item done and it schedules a new next-due, the reminder arms again for the
+          next cycle. You never get an empty email.
+        </p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Note: the oil-change <em>interval</em> (hours between changes) is set on the oil item on
+          each aircraft&apos;s <L href="#maintenance">Maintenance</L> page — the setting here only
+          controls how early you&apos;re alerted, not when the item is due.
+        </p>
+        <Effects>
+          What counts as &ldquo;due&rdquo; comes straight from the{" "}
+          <L href="#status">Status</L> grid — <strong>current hours</strong> (logs, enrollment, and{" "}
+          <L href="#myflightbook">MyFlightBook</L> syncs) and last-done dates drive it. The same
+          daily job also auto-syncs connected MyFlightBook accounts once a day, so a reminder can
+          reflect hours flown since you last opened the app.
+        </Effects>
+      </>
+    ),
+  },
+  {
     id: "compliance",
     icon: <ShieldIcon />,
     title: "AD / SB compliance",
@@ -391,8 +440,8 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         Sign in with a magic link (no password) or set a password to use either. Manage your name,
-        A&amp;P/IA certificate number, email, and notification preference from{" "}
-        <L href="/profile">Profile</L>.
+        A&amp;P/IA certificate number, email, and <L href="#notifications">notification settings</L>{" "}
+        from <L href="/profile">Profile</L>.
       </p>
     ),
   },

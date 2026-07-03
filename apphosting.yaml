@@ -29,6 +29,26 @@ env:
     availability:
       - RUNTIME
 
+  # Server-only — the daily reminder/sync cron. NEVER exposed to the browser.
+  # SUPABASE_SECRET_KEY is a Supabase *secret API key* (sb_secret_...), created
+  # under Project Settings → API Keys → "Create secret key" — the recommended,
+  # individually-revocable replacement for the legacy service_role JWT. It
+  # bypasses RLS, so it is used ONLY by src/app/api/cron/daily.
+  - variable: SUPABASE_SECRET_KEY
+    secret: SUPABASE_SECRET_KEY
+    availability:
+      - RUNTIME
+  # Resend API key for outbound reminder emails.
+  - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY
+    availability:
+      - RUNTIME
+  # Shared bearer secret gating POST /api/cron/daily (Cloud Scheduler sends it).
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
+    availability:
+      - RUNTIME
+
   # Non-sensitive defaults.
   - variable: EXTRACTION_MODEL # vision / handwriting (keep strong)
     value: claude-opus-4-8

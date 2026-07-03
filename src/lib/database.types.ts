@@ -255,8 +255,19 @@ export type ScannedDocument = {
 export type ShareRole = "viewer" | "editor";
 
 export type Preferences = {
-  /** Opt-in to reminder emails when maintenance / AD items come due. */
+  /** Master switch for reminder emails. When false, no emails are ever sent. */
   notify_due?: boolean;
+  /**
+   * Per-category alert lead times (how far in advance to email). Any missing
+   * field falls back to ALERT_DEFAULTS in @/lib/reminders. The oil-change
+   * *interval* is set on the maintenance item, not here.
+   */
+  alerts?: {
+    annual?: { enabled: boolean; lead_days: number };
+    oil?: { enabled: boolean; lead_hours: number };
+    ad?: { enabled: boolean; lead_days: number; lead_hours: number };
+    default?: { enabled: boolean; lead_days: number; lead_hours: number };
+  };
 };
 
 export type Profile = {
@@ -292,8 +303,20 @@ export type MfbConnection = {
   token_expires_at: string | null;
   mfb_username: string | null;
   connected_at: string | null;
+  // Last time the daily cron auto-synced this connection (once/day throttle).
+  last_synced_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** One reminder email sent for an item's current due-cycle (dedup key). */
+export type ReminderLog = {
+  id: string;
+  user_id: string;
+  aircraft_id: string;
+  item_key: string;
+  due_signature: string;
+  sent_at: string;
 }
 
 /** Latest recorded hobbs/tach for an aircraft, e.g. synced from MyFlightBook. */
@@ -335,6 +358,7 @@ export type Database = {
       scanned_document: { Row: ScannedDocument; Insert: Partial<ScannedDocument>; Update: Partial<ScannedDocument>; Relationships: [] };
       mfb_connection: { Row: MfbConnection; Insert: Partial<MfbConnection>; Update: Partial<MfbConnection>; Relationships: [] };
       hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
+      reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {
