@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
+import { urgencyOf } from "@/lib/compliance";
+import { effectiveNextDue } from "@/lib/maintenance";
+import { getCurrentHours } from "@/lib/aircraftHours";
 import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
@@ -79,6 +82,21 @@ export default async function AircraftPage({
     .select("id", { count: "exact", head: true })
     .eq("aircraft_id", id);
 
+  // Overdue/due-soon maintenance count for the forecast badge.
+  const { data: mxItems } = await supabase
+    .from("maintenance_item")
+    .select("kind, interval_hours, last_done_hours, next_due_date, next_due_hours")
+    .eq("aircraft_id", id);
+  const currentHobbs = await getCurrentHours(supabase, id, {
+    hobbs: aircraft.enrollment_hobbs,
+    tach: aircraft.enrollment_tach,
+  });
+  const mxList = mxItems ?? [];
+  const dueSoonCount = mxList.filter((m) => {
+    const u = urgencyOf(effectiveNextDue(m, mxList), currentHobbs);
+    return u === "overdue" || u === "due_soon";
+  }).length;
+
   const pageRows: PageRow[] = (pages ?? []).map((p) => ({
     id: p.id,
     logbookId: p.logbook_id,
@@ -130,6 +148,17 @@ export default async function AircraftPage({
           className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
         >
           Logbook timeline &amp; search →
+        </Link>
+        <Link
+          href={`/aircraft/${id}/maintenance`}
+          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+        >
+          Maintenance forecast →
+          {dueSoonCount > 0 ? (
+            <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+              {dueSoonCount} due
+            </span>
+          ) : null}
         </Link>
         <Link
           href={`/aircraft/${id}/compliance`}

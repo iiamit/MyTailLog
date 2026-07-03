@@ -1,0 +1,396 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { MaintenanceItem } from "@/lib/database.types";
+import type { Urgency } from "@/lib/compliance";
+import { STANDARD_ITEMS } from "@/lib/maintenance";
+import {
+  upsertMaintenanceItem,
+  deleteMaintenanceItem,
+  markMaintenanceDone,
+  seedStandardItems,
+  type MaintenanceInput,
+} from "./actions";
+
+export type DueItem = {
+  id: string;
+  source: "maintenance" | "ad";
+  label: string;
+  kind: string;
+  regulatory: boolean;
+  intervalMonths: number | null;
+  intervalHours: number | null;
+  lastDoneDate: string | null;
+  lastDoneHours: number | null;
+  nextDueDate: string | null;
+  nextDueHours: number | null;
+  notes: string | null;
+  urgency: Urgency;
+};
+
+const URGENCY_STYLE: Record<Exclude<Urgency, "none">, string> = {
+  overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  upcoming: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+};
+
+function dueText(d: DueItem, currentHours: number | null): string {
+  const parts: string[] = [];
+  if (d.nextDueDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    const days = Math.round(
+      (Date.parse(d.nextDueDate + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86_400_000,
+    );
+    parts.push(
+      days < 0 ? `${-days}d overdue` : days === 0 ? "due today" : `in ${days}d (${d.nextDueDate})`,
+    );
+  }
+  if (d.nextDueHours != null) {
+    if (currentHours != null) {
+      const h = Math.round((d.nextDueHours - currentHours) * 10) / 10;
+      parts.push(h < 0 ? `${-h} hrs over` : `${h} hrs left`);
+    } else parts.push(`at ${d.nextDueHours} hrs`);
+  }
+  return parts.length ? parts.join(" · ") : "no due date set";
+}
+
+type FormState = {
+  id?: string;
+  kind: string;
+  label: string;
+  regulatory: boolean;
+  interval_months: string;
+  interval_hours: string;
+  last_done_date: string;
+  last_done_hours: string;
+  notes: string;
+};
+
+const blank = (): FormState => ({
+  kind: "other", label: "", regulatory: true,
+  interval_months: "", interval_hours: "", last_done_date: "", last_done_hours: "", notes: "",
+});
+
+function fromItem(m: MaintenanceItem): FormState {
+  return {
+    id: m.id,
+    kind: m.kind,
+    label: m.label,
+    regulatory: m.regulatory,
+    interval_months: m.interval_months?.toString() ?? "",
+    interval_hours: m.interval_hours?.toString() ?? "",
+    last_done_date: m.last_done_date ?? "",
+    last_done_hours: m.last_done_hours?.toString() ?? "",
+    notes: m.notes ?? "",
+  };
+}
+
+function toInput(f: FormState): MaintenanceInput {
+  const num = (s: string) => {
+    const n = Number(s.trim());
+    return s.trim() !== "" && Number.isFinite(n) ? n : null;
+  };
+  const int = (s: string) => {
+    const n = parseInt(s.trim(), 10);
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    id: f.id,
+    kind: f.kind,
+    label: f.label.trim(),
+    regulatory: f.regulatory,
+    interval_months: int(f.interval_months),
+    interval_hours: num(f.interval_hours),
+    last_done_date: f.last_done_date || null,
+    last_done_hours: num(f.last_done_hours),
+    notes: f.notes.trim() || null,
+  };
+}
+
+const inputClass =
+  "w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+
+export function MaintenanceClient({
+  aircraftId,
+  items,
+  dueItems,
+  currentHours,
+  extractionConfigured,
+}: {
+  aircraftId: string;
+  items: MaintenanceItem[];
+  dueItems: DueItem[];
+  currentHours: number | null;
+  extractionConfigured: boolean;
+}) {
+  const router = useRouter();
+  const [form, setForm] = useState<FormState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function scanLogs() {
+    setScanning(true);
+    setError(null);
+    setStatus(null);
+    try {
+      const res = await fetch(`/api/aircraft/${aircraftId}/maintenance/scan`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) setError(data.error ?? "Scan failed.");
+      else {
+        setStatus(
+          data.updated > 0
+            ? `Updated ${data.updated} item${data.updated === 1 ? "" : "s"} from ${data.entryCount} entries.`
+            : data.detected > 0
+              ? `Found ${data.detected} completion${data.detected === 1 ? "" : "s"} but items were already current.`
+              : `Scanned ${data.entryCount} entries — no recurring-maintenance completions detected.`,
+        );
+        router.refresh();
+      }
+    } catch {
+      setError("Network error during scan.");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  function set<K extends keyof FormState>(k: K, v: FormState[K]) {
+    setForm((f) => (f ? { ...f, [k]: v } : f));
+  }
+
+  // When picking a standard kind in the form, prefill its label/interval.
+  function pickKind(kind: string) {
+    const std = STANDARD_ITEMS.find((s) => s.kind === kind);
+    setForm((f) =>
+      f
+        ? {
+            ...f,
+            kind,
+            label: std && !f.label ? std.label : f.label,
+            regulatory: std ? std.regulatory : f.regulatory,
+            interval_months: std?.interval_months?.toString() ?? f.interval_months,
+            interval_hours: std?.interval_hours?.toString() ?? f.interval_hours,
+          }
+        : f,
+    );
+  }
+
+  async function save() {
+    if (!form) return;
+    setBusy(true);
+    setError(null);
+    const res = await upsertMaintenanceItem(aircraftId, toInput(form));
+    setBusy(false);
+    if ("error" in res) return setError(res.error);
+    setForm(null);
+    router.refresh();
+  }
+
+  async function seed() {
+    setBusy(true);
+    setError(null);
+    const res = await seedStandardItems(aircraftId);
+    setBusy(false);
+    if ("error" in res) return setError(res.error);
+    router.refresh();
+  }
+
+  async function markDone(m: MaintenanceItem) {
+    const date = window.prompt(`Date ${m.label} was last done (YYYY-MM-DD)?`, new Date().toISOString().slice(0, 10));
+    if (date === null) return;
+    let hours: number | null = null;
+    if (m.interval_hours != null) {
+      const h = window.prompt(`Aircraft hours when done (optional)?`, currentHours?.toString() ?? "");
+      hours = h && h.trim() !== "" && Number.isFinite(Number(h)) ? Number(h) : null;
+    }
+    setBusy(true);
+    const res = await markMaintenanceDone(aircraftId, m.id, date.trim() || null, hours);
+    setBusy(false);
+    if ("error" in res) return setError(res.error);
+    router.refresh();
+  }
+
+  async function del(m: MaintenanceItem) {
+    if (!window.confirm(`Delete "${m.label}"?`)) return;
+    setBusy(true);
+    const res = await deleteMaintenanceItem(aircraftId, m.id);
+    setBusy(false);
+    if ("error" in res) return setError(res.error);
+    router.refresh();
+  }
+
+  const itemById = new Map(items.map((m) => [m.id, m]));
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          {currentHours != null ? `Current hours ≈ ${currentHours}` : "Current hours unknown"}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {extractionConfigured && (
+            <button
+              onClick={scanLogs}
+              disabled={scanning || busy}
+              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            >
+              {scanning ? "Updating from logs…" : "Update from logs"}
+            </button>
+          )}
+          {items.length === 0 && (
+            <button
+              onClick={seed}
+              disabled={busy}
+              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            >
+              Add standard Part 91 items
+            </button>
+          )}
+          {!form && (
+            <button
+              onClick={() => setForm(blank())}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            >
+              Add item
+            </button>
+          )}
+        </div>
+      </div>
+
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        Last-done dates update automatically as pages are extracted; use “Update
+        from logs” to rescan the full history. Verify against the physical logs.
+      </p>
+
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {status && <p className="text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}
+
+      {form && (
+        <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="mb-3 text-sm font-semibold">{form.id ? "Edit item" : "New item"}</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Type
+              <select value={form.kind} onChange={(e) => pickKind(e.target.value)} className={inputClass}>
+                <option value="other">Custom</option>
+                {STANDARD_ITEMS.map((s) => (
+                  <option key={s.kind} value={s.kind}>{s.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Label
+              <input value={form.label} onChange={(e) => set("label", e.target.value)} className={inputClass} />
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Interval (months)
+              <input type="number" value={form.interval_months} onChange={(e) => set("interval_months", e.target.value)} className={inputClass} />
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Interval (hours)
+              <input type="number" step="0.1" value={form.interval_hours} onChange={(e) => set("interval_hours", e.target.value)} className={inputClass} />
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Last done date
+              <input type="date" value={form.last_done_date} onChange={(e) => set("last_done_date", e.target.value)} className={inputClass} />
+            </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Last done hours
+              <input type="number" step="0.1" value={form.last_done_hours} onChange={(e) => set("last_done_hours", e.target.value)} className={inputClass} />
+            </label>
+            <label className="col-span-2 flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+              <input type="checkbox" checked={form.regulatory} onChange={(e) => set("regulatory", e.target.checked)} />
+              Regulatory (mandatory under Part 91) — uncheck for advisory items like TBO
+            </label>
+            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+              Notes
+              <textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} className={inputClass} />
+            </label>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button onClick={save} disabled={busy} className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900">
+              {busy ? "Saving…" : "Save"}
+            </button>
+            <button onClick={() => setForm(null)} disabled={busy} className="rounded-md border border-slate-300 px-4 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700">
+              Cancel
+            </button>
+          </div>
+        </section>
+      )}
+
+      {dueItems.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          No maintenance items yet. Seed the standard Part 91 items or add your own.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {dueItems.map((d) => {
+            const m = d.source === "maintenance" ? itemById.get(d.id) : null;
+            return (
+              <li
+                key={`${d.source}-${d.id}`}
+                className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold">{d.label}</span>
+                  {d.urgency !== "none" && (
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${URGENCY_STYLE[d.urgency]}`}>
+                      {d.urgency === "overdue" ? "OVERDUE" : d.urgency === "due_soon" ? "due soon" : "upcoming"}
+                    </span>
+                  )}
+                  {!d.regulatory && (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                      advisory
+                    </span>
+                  )}
+                  {d.source === "ad" && (
+                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                      AD
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {dueText(d, currentHours)}
+                  {(d.intervalMonths || d.intervalHours) && (
+                    <span>
+                      {" · every "}
+                      {[
+                        d.intervalHours != null ? `${d.intervalHours} hrs` : null,
+                        d.intervalMonths != null ? `${d.intervalMonths} mo` : null,
+                      ].filter(Boolean).join(" / ")}
+                    </span>
+                  )}
+                  {d.lastDoneDate && <span>{` · last ${d.lastDoneDate}`}</span>}
+                  {d.notes && <div className="mt-1">{d.notes}</div>}
+                </div>
+
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {m ? (
+                    <>
+                      <button onClick={() => markDone(m)} disabled={busy} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-emerald-400 disabled:opacity-50 dark:border-slate-700">
+                        Mark done
+                      </button>
+                      <button onClick={() => setForm(fromItem(m))} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
+                        Edit
+                      </button>
+                      <button onClick={() => del(m)} disabled={busy} className="rounded-md border border-slate-300 px-3 py-1 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400">
+                        Delete
+                      </button>
+                    </>
+                  ) : (
+                    <Link href={`/aircraft/${aircraftId}/compliance`} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
+                      Manage in compliance →
+                    </Link>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}

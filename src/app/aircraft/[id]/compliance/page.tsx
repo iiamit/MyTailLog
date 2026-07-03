@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { AdKind, AdReference } from "@/lib/database.types";
+import { getCurrentHours } from "@/lib/aircraftHours";
 import { ComplianceClient, type UntrackedRef } from "./ComplianceClient";
 
 export default async function CompliancePage({
@@ -14,7 +15,7 @@ export default async function CompliancePage({
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, tail_number, enrollment_hobbs")
+    .select("id, tail_number, enrollment_hobbs, enrollment_tach")
     .eq("id", id)
     .single();
   if (!aircraft) notFound();
@@ -33,22 +34,23 @@ export default async function CompliancePage({
     .eq("aircraft_id", id)
     .order("name", { ascending: true });
 
-  // Current hours = highest hobbs seen in the logs, else the enrollment hobbs.
-  // Also collect every AD/SB number referenced across entries, to surface any
-  // that aren't tracked yet.
+  // Collect every AD/SB number referenced across entries, to surface any that
+  // aren't tracked yet.
   const { data: entries } = await supabase
     .from("log_entry")
-    .select("hobbs, ad_refs, sb_refs")
+    .select("ad_refs, sb_refs")
     .eq("aircraft_id", id);
 
-  let maxHobbs: number | null = null;
   const refs = new Map<string, UntrackedRef>();
   for (const e of entries ?? []) {
-    if (e.hobbs != null && (maxHobbs == null || e.hobbs > maxHobbs)) maxHobbs = e.hobbs;
     for (const r of e.ad_refs ?? []) refs.set(`ad:${r}`, { kind: "ad" as AdKind, reference: r });
     for (const r of e.sb_refs ?? []) refs.set(`sb:${r}`, { kind: "sb" as AdKind, reference: r });
   }
-  const currentHours = maxHobbs ?? aircraft.enrollment_hobbs ?? null;
+  // Current hours = highest reading across hobbs and tach, else enrollment.
+  const currentHours = await getCurrentHours(supabase, id, {
+    hobbs: aircraft.enrollment_hobbs,
+    tach: aircraft.enrollment_tach,
+  });
 
   const tracked = new Set((records ?? []).map((r) => `${r.kind}:${r.reference}`));
   const untracked = [...refs.entries()]

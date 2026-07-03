@@ -197,6 +197,23 @@ export type EquipmentProposal = {
   created_at: string;
 }
 
+export type MaintenanceItem = {
+  id: string;
+  aircraft_id: string;
+  kind: string;
+  label: string;
+  regulatory: boolean;
+  interval_months: number | null;
+  interval_hours: number | null;
+  last_done_date: string | null;
+  last_done_hours: number | null;
+  next_due_date: string | null;
+  next_due_hours: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Profile = {
   id: string;
   full_name: string | null;
@@ -224,6 +241,7 @@ export type Database = {
       ad_compliance: { Row: AdCompliance; Insert: Partial<AdCompliance>; Update: Partial<AdCompliance>; Relationships: [] };
       ad_reference: { Row: AdReference; Insert: Partial<AdReference>; Update: Partial<AdReference>; Relationships: [] };
       equipment_proposal: { Row: EquipmentProposal; Insert: Partial<EquipmentProposal>; Update: Partial<EquipmentProposal>; Relationships: [] };
+      maintenance_item: { Row: MaintenanceItem; Insert: Partial<MaintenanceItem>; Update: Partial<MaintenanceItem>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {
