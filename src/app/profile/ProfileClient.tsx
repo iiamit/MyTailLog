@@ -1,9 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { updateProfile } from "./actions";
+import { MfbSyncButton } from "@/components/MfbSyncButton";
+import { updateProfile, saveMfbCredentials, disconnectMfb } from "./actions";
+
+type MfbState = {
+  clientId: string;
+  hasSecret: boolean;
+  connected: boolean;
+  username: string;
+};
+
+// Maps the ?mfb=<status> the OAuth callback / authorize routes redirect back with.
+const MFB_STATUS: Record<string, { ok: boolean; text: string }> = {
+  connected: { ok: true, text: "MyFlightBook connected." },
+  denied: { ok: false, text: "Authorization was denied at MyFlightBook." },
+  state: { ok: false, text: "Couldn’t verify the sign-in request — please try again." },
+  noclient: { ok: false, text: "Save your MyFlightBook client ID and secret first." },
+  error: { ok: false, text: "Something went wrong talking to MyFlightBook." },
+};
 
 const inputClass =
   "rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
@@ -24,11 +41,13 @@ export function ProfileClient({
   fullName,
   certNumber,
   notifyDue,
+  mfb,
 }: {
   email: string;
   fullName: string;
   certNumber: string;
   notifyDue: boolean;
+  mfb: MfbState;
 }) {
   const router = useRouter();
 
@@ -73,6 +92,29 @@ export function ProfileClient({
       setNewPassword("");
       setPwMsg({ ok: true, text: "Password updated — you can now sign in with it." });
     }
+  }
+
+  // MyFlightBook connection
+  const search = useSearchParams();
+  const oauthStatus = search.get("mfb");
+  const [mfbMsg, setMfbMsg] = useState<{ ok: boolean; text: string } | null>(
+    oauthStatus ? MFB_STATUS[oauthStatus] ?? null : null,
+  );
+  const [savingMfb, setSavingMfb] = useState(false);
+
+  async function saveMfb(formData: FormData) {
+    setSavingMfb(true);
+    setMfbMsg(null);
+    const res = await saveMfbCredentials(formData);
+    setSavingMfb(false);
+    setMfbMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Saved." });
+    if (!res.error) router.refresh();
+  }
+
+  async function disconnect() {
+    const res = await disconnectMfb();
+    setMfbMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Disconnected." });
+    if (!res.error) router.refresh();
   }
 
   async function signOut() {
@@ -161,6 +203,97 @@ export function ProfileClient({
             <Status msg={emailMsg} />
           </div>
         </form>
+      </div>
+
+      {/* MyFlightBook */}
+      <div className={card}>
+        <h2 className="font-semibold">MyFlightBook</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Pull each aircraft&apos;s latest recorded hobbs &amp; tach from your{" "}
+          <a
+            href="https://myflightbook.com/logbook/mvc/oauth"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+          >
+            MyFlightBook
+          </a>{" "}
+          logbook. Register your own OAuth app there, then paste its client ID and
+          secret below. Aircraft are matched by tail number. Your secret is stored
+          securely and never shown again.
+        </p>
+
+        <p className="text-sm">
+          Status:{" "}
+          {mfb.connected ? (
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+              Connected{mfb.username ? ` as ${mfb.username}` : ""}
+            </span>
+          ) : (
+            <span className="text-slate-500 dark:text-slate-400">Not connected</span>
+          )}
+        </p>
+
+        <form action={saveMfb} className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Client ID</span>
+            <input
+              name="mfb_client_id"
+              defaultValue={mfb.clientId}
+              className={inputClass}
+              placeholder="From your MyFlightBook OAuth app"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Client secret</span>
+            <input
+              type="password"
+              name="mfb_client_secret"
+              autoComplete="off"
+              className={inputClass}
+              placeholder={mfb.hasSecret ? "•••••••• (leave blank to keep)" : "Client secret"}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">MyFlightBook username</span>
+            <input
+              name="mfb_username"
+              defaultValue={mfb.username}
+              className={inputClass}
+              placeholder="Optional — shown as “Connected as …”"
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={savingMfb}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900"
+            >
+              {savingMfb ? "Saving…" : "Save credentials"}
+            </button>
+            {mfb.clientId && (
+              <a
+                href="/api/myflightbook/authorize"
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+              >
+                {mfb.connected ? "Reconnect" : "Connect MyFlightBook"}
+              </a>
+            )}
+            <Status msg={mfbMsg} />
+          </div>
+        </form>
+
+        {mfb.connected && (
+          <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <MfbSyncButton />
+            <button
+              onClick={disconnect}
+              className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:border-slate-500 dark:border-slate-700"
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
       </div>
 
       <div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentHours } from "@/lib/aircraftHours";
+import { getCurrentHours, getLatestMfbReading } from "@/lib/aircraftHours";
 import { buildStatusItems, sortStatusItems } from "@/lib/status";
 import { MaintenanceClient } from "./MaintenanceClient";
 
@@ -40,6 +40,9 @@ export default async function MaintenancePage({
     tach: aircraft.enrollment_tach,
   });
 
+  // Latest reading synced from MyFlightBook, for an honest "as of <date>" note.
+  const mfbReading = await getLatestMfbReading(supabase, id);
+
   // Unified due list (maintenance items + recurring ADs), sorted by urgency.
   const dueItems = sortStatusItems(
     buildStatusItems(items ?? [], ads ?? [], currentHours),
@@ -69,6 +72,7 @@ export default async function MaintenancePage({
         items={items ?? []}
         dueItems={dueItems}
         currentHours={currentHours}
+        mfbReading={mfbReading}
         extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
       />
     </main>

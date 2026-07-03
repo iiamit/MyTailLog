@@ -16,6 +16,14 @@ export default async function ProfilePage() {
     .eq("id", user.id)
     .single();
 
+  // MyFlightBook: only non-sensitive state reaches the browser — never the
+  // client secret or tokens. `connected` = we hold a live access token.
+  const { data: mfb } = await supabase
+    .from("mfb_connection")
+    .select("client_id, client_secret, access_token, mfb_username")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   return (
     <main className="mx-auto max-w-xl px-6 py-10">
       <Link
@@ -34,6 +42,12 @@ export default async function ProfilePage() {
         fullName={profile?.full_name ?? ""}
         certNumber={profile?.cert_number ?? ""}
         notifyDue={Boolean(profile?.preferences?.notify_due)}
+        mfb={{
+          clientId: mfb?.client_id ?? "",
+          hasSecret: Boolean(mfb?.client_secret),
+          connected: Boolean(mfb?.access_token),
+          username: mfb?.mfb_username ?? "",
+        }}
       />
     </main>
   );

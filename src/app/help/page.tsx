@@ -14,6 +14,7 @@ import {
   CameraIcon,
   UploadIcon,
   UserIcon,
+  PlaneIcon,
 } from "@/components/icons";
 
 export const metadata = { title: "Help & documentation — MyTailLog" };
@@ -242,6 +243,42 @@ const SECTIONS: Section[] = [
           &ldquo;Update from logs&rdquo; advance last-done automatically. The 100-hour resets off the
           later of the last 100-hour <em>or</em> the last annual. Everything here also feeds{" "}
           <L href="#status">Status</L>.
+        </Effects>
+      </>
+    ),
+  },
+  {
+    id: "myflightbook",
+    icon: <PlaneIcon />,
+    title: "MyFlightBook (hours sync)",
+    body: (
+      <>
+        <p>
+          Connect your own <strong>MyFlightBook</strong> pilot logbook to pull each
+          aircraft&apos;s latest recorded <strong>hobbs and tach</strong> into MyTailLog. There is{" "}
+          <strong>no app-wide account</strong>: in <L href="/profile">Profile → MyFlightBook</L> you
+          register your <em>own</em> OAuth app on MyFlightBook and paste its client ID and secret
+          (the secret is stored server-side and never shown again), then click{" "}
+          <strong>Connect</strong> and approve access. Once connected, <strong>Sync</strong> matches
+          your MyFlightBook aircraft to MyTailLog aircraft <strong>by tail number</strong> and
+          records the ending hours from the most recent flight.
+        </p>
+        <p className="mt-2">
+          Because matching is by tail, a <strong>shared aircraft</strong> can receive hours from{" "}
+          <em>any</em> connected co-owner — whoever flew (and logged) most recently supplies the
+          current reading.
+        </p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Honesty caveat: MyFlightBook has no authoritative &ldquo;current&rdquo; meter for a
+          shared plane, and a flight&apos;s ending hours may go unlogged. So this is the latest{" "}
+          <strong>recorded</strong> hobbs/tach, shown as <em>&ldquo;as of &lt;date&gt;&rdquo;</em> —
+          treat it as the last known reading, not a live gauge, and confirm against the aircraft.
+        </p>
+        <Effects>
+          A synced reading feeds <strong>current hours</strong> (the max across logs, enrollment,
+          and synced readings), so it flows straight into the{" "}
+          <L href="#maintenance">maintenance forecast</L>, recurring{" "}
+          <L href="#compliance">AD next-due</L>, and the <L href="#status">Status</L> grid.
         </Effects>
       </>
     ),

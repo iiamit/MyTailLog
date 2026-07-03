@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { MfbSyncButton } from "@/components/MfbSyncButton";
 import type { MaintenanceItem } from "@/lib/database.types";
 import { dueText, URGENCY_STYLE, urgencyLabel } from "@/lib/compliance";
 import type { StatusItem } from "@/lib/status";
@@ -81,12 +82,14 @@ export function MaintenanceClient({
   items,
   dueItems,
   currentHours,
+  mfbReading,
   extractionConfigured,
 }: {
   aircraftId: string;
   items: MaintenanceItem[];
   dueItems: DueItem[];
   currentHours: number | null;
+  mfbReading: { date: string | null; hobbs: number | null; tach: number | null } | null;
   extractionConfigured: boolean;
 }) {
   const router = useRouter();
@@ -196,10 +199,27 @@ export function MaintenanceClient({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-slate-500 dark:text-slate-400">
-          {currentHours != null ? `Current hours ≈ ${currentHours}` : "Current hours unknown"}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            {currentHours != null ? `Current hours ≈ ${currentHours}` : "Current hours unknown"}
+          </span>
+          {mfbReading && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              {[
+                mfbReading.hobbs != null ? `hobbs ${mfbReading.hobbs}` : null,
+                mfbReading.tach != null ? `tach ${mfbReading.tach}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "reading"}
+              {mfbReading.date ? ` as of ${mfbReading.date}` : ""} · from MyFlightBook
+            </span>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
+          <MfbSyncButton
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            label="Sync hours"
+          />
           {extractionConfigured && (
             <button
               onClick={scanLogs}

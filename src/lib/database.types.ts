@@ -278,6 +278,39 @@ export type AircraftShare = {
 }
 
 /**
+ * Per-user MyFlightBook OAuth app credentials + tokens. client_secret and the
+ * tokens are SENSITIVE — only ever read server-side, never returned to the
+ * browser (the profile UI shows connection state + a masked hint at most).
+ */
+export type MfbConnection = {
+  id: string;
+  user_id: string;
+  client_id: string | null;
+  client_secret: string | null;
+  access_token: string | null;
+  refresh_token: string | null;
+  token_expires_at: string | null;
+  mfb_username: string | null;
+  connected_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Latest recorded hobbs/tach for an aircraft, e.g. synced from MyFlightBook. */
+export type HoursReading = {
+  id: string;
+  aircraft_id: string;
+  reading_date: string | null;
+  hobbs: number | null;
+  tach: number | null;
+  source: string;
+  synced_by: string | null;
+  external_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
  * Database shape for @supabase/ssr generic typing. Tables are written as
  * concrete inline Row/Insert/Update triples (not via a generic wrapper) —
  * Supabase's type utilities deep-index this shape and a generic alias wrapper
@@ -300,6 +333,8 @@ export type Database = {
       aircraft_share: { Row: AircraftShare; Insert: Partial<AircraftShare>; Update: Partial<AircraftShare>; Relationships: [] };
       weight_balance: { Row: WeightBalance; Insert: Partial<WeightBalance>; Update: Partial<WeightBalance>; Relationships: [] };
       scanned_document: { Row: ScannedDocument; Insert: Partial<ScannedDocument>; Update: Partial<ScannedDocument>; Relationships: [] };
+      mfb_connection: { Row: MfbConnection; Insert: Partial<MfbConnection>; Update: Partial<MfbConnection>; Relationships: [] };
+      hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {
