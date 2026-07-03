@@ -69,7 +69,12 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
   }
 
   if (aircraftError || !aircraft) {
-    return { error: aircraftError?.message ?? "Failed to enroll aircraft." };
+    // TEMP diagnostic: what identity does the DB actually see for this action?
+    // whoami() returns auth.uid() from Postgres directly (unambiguous).
+    const { data: dbUid, error: rpcErr } = await supabase.rpc("whoami");
+    return {
+      error: `${aircraftError?.message ?? "Failed to enroll aircraft."} [db_uid=${dbUid ?? "null"} app_uid=${user.id} match=${dbUid === user.id} rpc=${rpcErr?.message ?? "ok"}]`,
+    };
   }
 
   // Seed the standard logbooks (airframe/engine/prop/avionics). A single annual
