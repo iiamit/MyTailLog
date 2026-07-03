@@ -58,7 +58,18 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
     .single();
 
   if (aircraftError || !aircraft) {
-    return { error: aircraftError?.message ?? "Failed to enroll aircraft." };
+    // TEMP diagnostic: does THIS server action carry auth.uid() for DB access?
+    // Reading the user's own profile is RLS-gated on id = auth.uid(); if it
+    // returns null here, the write ran unauthenticated despite getUser() working.
+    const { data: probe, error: probeErr } = await supabase
+      .from("profile")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    const actionAuthed = probe?.id === user.id;
+    return {
+      error: `${aircraftError?.message ?? "Failed to enroll aircraft."} [diag: user=${user.id.slice(0, 8)} action_authed=${actionAuthed} probe=${probeErr?.message ?? (probe ? "ok" : "null")}]`,
+    };
   }
 
   // Seed the standard logbooks (airframe/engine/prop/avionics). A single annual
