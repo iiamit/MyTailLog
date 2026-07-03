@@ -287,6 +287,12 @@ export function CaptureClient({
               already captured
             </span>
           )}
+          {selected?.label === "Other" && (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400">
+              Scan A&amp;P Weight &amp; Balance sheets and AD compliance reports here —
+              they&apos;re auto-classified and applied to your W&amp;B and AD tracking.
+            </span>
+          )}
         </label>
 
         <div className="flex flex-col gap-2 sm:pt-6">

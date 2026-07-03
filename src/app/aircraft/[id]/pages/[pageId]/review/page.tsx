@@ -50,6 +50,19 @@ export default async function ReviewPage({
     .order("entry_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
 
+  // Pages in the 'other' logbook are classified A&P documents, not log entries —
+  // surface what the classifier read and what it updated.
+  const { data: scanned } = await supabase
+    .from("scanned_document")
+    .select("doc_type, document_date, summary")
+    .eq("page_id", pageId)
+    .maybeSingle();
+  const SCANNED_LABEL: Record<string, string> = {
+    weight_balance: "Weight & Balance document",
+    ad_report: "AD compliance report",
+    other: "Unrecognized document",
+  };
+
   // Private bucket: hand the browser a short-lived signed URL for the image.
   const { data: signed } = await supabase.storage
     .from(BUCKET)
@@ -143,6 +156,28 @@ export default async function ReviewPage({
           record — it&apos;s an index of your physical logbooks.
         </p>
       </header>
+
+      {scanned && (
+        <div className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm dark:border-emerald-800 dark:bg-emerald-900/20">
+          <span className="font-medium">
+            Classified as {SCANNED_LABEL[scanned.doc_type] ?? scanned.doc_type}
+            {scanned.document_date ? ` · ${scanned.document_date}` : ""}
+          </span>
+          {scanned.summary && (
+            <span className="text-slate-600 dark:text-slate-300"> — {scanned.summary}.</span>
+          )}{" "}
+          {scanned.doc_type === "weight_balance" && (
+            <Link href={`/aircraft/${id}/weight-balance`} className="underline">
+              View weight &amp; balance
+            </Link>
+          )}
+          {scanned.doc_type === "ad_report" && (
+            <Link href={`/aircraft/${id}/compliance`} className="underline">
+              View AD compliance
+            </Link>
+          )}
+        </div>
+      )}
 
       <ReviewClient
         aircraftId={id}

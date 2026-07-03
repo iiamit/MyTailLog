@@ -471,6 +471,18 @@ export function ComplianceClient({
                       {urgencyLabel(urgency)}
                     </span>
                   )}
+                  {r.verified_report_page_id && (
+                    <span
+                      title={
+                        r.verified_at
+                          ? `Corroborated by a scanned A&P AD compliance report on ${r.verified_at.slice(0, 10)}`
+                          : "Corroborated by a scanned A&P AD compliance report"
+                      }
+                      className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                    >
+                      ✓ A&amp;P report
+                    </span>
+                  )}
                   {r.recurring && (
                     <span className="text-xs text-slate-500 dark:text-slate-400">
                       recurring{" "}

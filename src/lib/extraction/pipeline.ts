@@ -23,6 +23,7 @@ import type { EquipmentEntryInput } from "./equipment";
 import { applyMaintenanceFromEntries } from "./maintenanceUpdates";
 import type { MaintenanceEntryInput } from "./maintenance";
 import { entryText } from "./entryText";
+import { classifyOtherDocument, applyScannedDocument } from "./otherDocument";
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
@@ -44,6 +45,11 @@ export type PipelineResult = {
   detectedPageCount: number;
   minConfidence: number | null;
   equipmentProposed: number;
+  // Set only for pages in the 'other' logbook (classified A&P documents).
+  docType?: "weight_balance" | "ad_report" | "other";
+  wbApplied?: boolean;
+  adsCorrelated?: number;
+  adsCreated?: number;
 };
 
 /**
@@ -80,6 +86,20 @@ export async function extractPage(
     }
 
     const base64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+
+    // Pages captured into the 'other' logbook are A&P documents (W&B sheets /
+    // AD compliance reports), not running log pages — classify + apply instead
+    // of extracting log entries. Best-effort: on failure the outer catch marks
+    // the page failed, exactly like the normal path.
+    const { data: logbook } = await supabase
+      .from("logbook")
+      .select("type")
+      .eq("id", page.logbook_id)
+      .single();
+    if (logbook?.type === "other") {
+      return await extractOtherDocument(supabase, page, base64);
+    }
+
     const result = await extractFromImage(base64, "image/jpeg");
 
     // Re-extraction is idempotent for machine output: clear prior UNCONFIRMED
@@ -184,4 +204,47 @@ export async function extractPage(
       .eq("id", page.id);
     throw err;
   }
+}
+
+/**
+ * Handle a page in the 'other' logbook: classify the printed A&P document and
+ * apply it (W&B revision / AD corroboration). No log_entry rows are produced;
+ * the classification + what it updated live on scanned_document, and the page's
+ * transcription lands in ocr_text so full-text search still sees it. Runs inside
+ * extractPage's try, so any throw here marks the page failed like a normal page.
+ */
+async function extractOtherDocument(
+  supabase: SupabaseClient<Database>,
+  page: PageForExtraction,
+  base64: string,
+): Promise<PipelineResult> {
+  const payload = await classifyOtherDocument(base64, "image/jpeg");
+  const applied = await applyScannedDocument(
+    supabase,
+    { id: page.id, aircraft_id: page.aircraft_id },
+    payload,
+  );
+
+  await supabase
+    .from("page")
+    .update({
+      ocr_text: payload.raw_text || null,
+      extraction_confidence: payload.confidence,
+      detected_page_count: 1,
+      extraction_status: "extracted",
+      extraction_error: null,
+      extracted_at: new Date().toISOString(),
+    })
+    .eq("id", page.id);
+
+  return {
+    entryCount: 0,
+    detectedPageCount: 1,
+    minConfidence: payload.confidence,
+    equipmentProposed: 0,
+    docType: applied.docType,
+    wbApplied: applied.wbApplied,
+    adsCorrelated: applied.adsCorrelated,
+    adsCreated: applied.adsCreated,
+  };
 }

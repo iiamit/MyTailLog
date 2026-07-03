@@ -5,7 +5,7 @@
  * Until then this keeps the app type-safe against the schema.
  */
 
-export type LogbookType = "airframe" | "engine" | "prop" | "avionics";
+export type LogbookType = "airframe" | "engine" | "prop" | "avionics" | "other";
 export type ReviewStatus = "unreviewed" | "confirmed" | "disputed";
 export type ExtractionStatus = "pending" | "processing" | "extracted" | "failed";
 export type AdKind = "ad" | "sb";
@@ -154,6 +154,9 @@ export type AdCompliance = {
   component_id: string | null;
   reason: string | null;
   status_changed_on: string | null;
+  // Set when this AD is corroborated by a scanned A&P compliance report.
+  verified_report_page_id: string | null;
+  verified_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -227,6 +230,24 @@ export type WeightBalance = {
   reference: string | null;
   reason: string | null;
   notes: string | null;
+  // The scanned page this revision was derived from ("view source"), if any.
+  source_page_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ScannedDocumentType = "weight_balance" | "ad_report" | "other";
+
+export type ScannedDocument = {
+  id: string;
+  aircraft_id: string;
+  page_id: string;
+  doc_type: ScannedDocumentType;
+  document_date: string | null;
+  extracted: Record<string, unknown>;
+  summary: string | null;
+  applied: boolean;
+  confidence: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -278,6 +299,7 @@ export type Database = {
       maintenance_item: { Row: MaintenanceItem; Insert: Partial<MaintenanceItem>; Update: Partial<MaintenanceItem>; Relationships: [] };
       aircraft_share: { Row: AircraftShare; Insert: Partial<AircraftShare>; Update: Partial<AircraftShare>; Relationships: [] };
       weight_balance: { Row: WeightBalance; Insert: Partial<WeightBalance>; Update: Partial<WeightBalance>; Relationships: [] };
+      scanned_document: { Row: ScannedDocument; Insert: Partial<ScannedDocument>; Update: Partial<ScannedDocument>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {

@@ -22,6 +22,9 @@ export type StatusItem = {
   nextDueHours: number | null;
   notes: string | null;
   urgency: Urgency;
+  // True for an AD corroborated by a scanned A&P compliance report.
+  verifiedReport: boolean;
+  verifiedReportAt: string | null;
 };
 
 export type AdLite = {
@@ -31,6 +34,8 @@ export type AdLite = {
   next_due_date: string | null;
   next_due_hours: number | null;
   status: string;
+  verified_report_page_id: string | null;
+  verified_at: string | null;
 };
 
 /** Build the unified list from maintenance items + recurring ADs. The 100-hour
@@ -57,6 +62,8 @@ export function buildStatusItems(
       nextDueHours: due.next_due_hours,
       notes: m.notes,
       urgency: urgencyOf(due, currentHours),
+      verifiedReport: false,
+      verifiedReportAt: null,
     });
   }
   for (const a of ads) {
@@ -77,6 +84,8 @@ export function buildStatusItems(
         { next_due_date: a.next_due_date, next_due_hours: a.next_due_hours },
         currentHours,
       ),
+      verifiedReport: Boolean(a.verified_report_page_id),
+      verifiedReportAt: a.verified_at,
     });
   }
   return out;

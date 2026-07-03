@@ -28,7 +28,7 @@ export default async function MaintenancePage({
   // Recurring ADs that have a next-due join the same forecast list.
   const { data: ads } = await supabase
     .from("ad_compliance")
-    .select("id, reference, kind, next_due_date, next_due_hours, status")
+    .select("id, reference, kind, next_due_date, next_due_hours, status, verified_report_page_id, verified_at")
     .eq("aircraft_id", id)
     .eq("recurring", true)
     .not("status", "in", "(not_applicable,superseded)");

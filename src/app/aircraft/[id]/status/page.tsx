@@ -58,7 +58,7 @@ export default async function StatusPage({
     supabase.from("maintenance_item").select("*").eq("aircraft_id", id),
     supabase
       .from("ad_compliance")
-      .select("id, reference, kind, next_due_date, next_due_hours, status")
+      .select("id, reference, kind, next_due_date, next_due_hours, status, verified_report_page_id, verified_at")
       .eq("aircraft_id", id)
       .eq("recurring", true)
       .not("status", "in", "(not_applicable,superseded)"),
@@ -141,6 +141,18 @@ export default async function StatusPage({
                     {s.source === "ad" && (
                       <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
                         AD
+                      </span>
+                    )}
+                    {s.verifiedReport && (
+                      <span
+                        title={
+                          s.verifiedReportAt
+                            ? `Corroborated by a scanned A&P AD compliance report on ${s.verifiedReportAt.slice(0, 10)}`
+                            : "Corroborated by a scanned A&P AD compliance report"
+                        }
+                        className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                      >
+                        ✓ A&amp;P
                       </span>
                     )}
                     {!s.regulatory && (
