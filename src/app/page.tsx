@@ -13,11 +13,30 @@ export default async function Home() {
       <div>
         <h1 className="text-4xl font-bold tracking-tight">MyTailLog</h1>
         <p className="mt-3 text-lg text-slate-600 dark:text-slate-300">
-          Turn 50 years of paper airframe, engine, and prop logbooks into a
-          searchable, gap-auditable maintenance index — sized for a single
-          piston GA owner.
+          Turn decades of paper airframe, engine, prop, and avionics logbooks
+          into a searchable maintenance index — capture or upload scans, let
+          vision extraction read them, then track AD/SB compliance, a
+          maintenance forecast, and records gaps in one place.
         </p>
       </div>
+
+      <ul className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2 dark:text-slate-300">
+        {[
+          "Capture or upload scans — camera or PDF/JPEG/PNG",
+          "Vision extraction with per-field confidence + review",
+          "Unified, searchable cross-logbook timeline",
+          "AD/SB compliance with FAA reference lookup",
+          "Part 91 maintenance forecast from your logs",
+          "Records gap audit + full backup/export",
+        ].map((f) => (
+          <li key={f} className="flex gap-2">
+            <span aria-hidden className="text-emerald-500">
+              ✓
+            </span>
+            {f}
+          </li>
+        ))}
+      </ul>
 
       <Disclaimer />
 
@@ -40,13 +59,8 @@ export default async function Home() {
       </div>
 
       <p className="text-sm text-slate-500 dark:text-slate-400">
-        Pre-alpha · Phase 1 (capture → extract → review → search) ·{" "}
-        <a
-          href="https://github.com"
-          className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
-        >
-          source
-        </a>
+        Private beta · an index and decision-support layer, not the legal
+        maintenance record.
       </p>
     </main>
   );

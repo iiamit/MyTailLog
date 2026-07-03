@@ -120,11 +120,11 @@ export function EnrollForm() {
       {lookupNote && (
         <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">{lookupNote}</p>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Make" name="make" placeholder="Cessna" />
         <Field label="Model" name="model" placeholder="172N" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Year" name="year" type="number" placeholder="1978" />
         <Field label="Serial number" name="serial_number" placeholder="17271234" />
       </div>
@@ -146,7 +146,7 @@ export function EnrollForm() {
         placeholder="KXYZ"
         hint="Sensitive — stored private to your account."
       />
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           label="Hobbs at enrollment"
           name="enrollment_hobbs"
