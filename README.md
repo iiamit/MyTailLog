@@ -1,153 +1,174 @@
 # MyTailLog
 
-Aircraft logbook digitization & maintenance tracker for piston GA owners.
+Aircraft logbook digitization & maintenance tracker for piston GA owners — live at **[mytaillog.com](https://mytaillog.com)**.
 
 > **This tool is an index and decision-support layer, not the legal record.**
 > The physical logbooks remain the system of record per **14 CFR 91.417**.
 > MyTailLog does not replace official maintenance records, does not constitute
 > an airworthiness determination, and is not a maintenance sign-off. Every
-> maintenance/AD due date it shows is derived from OCR/extraction and must be
+> value it shows is derived from AI extraction or data you entered, and must be
 > confirmed against the physical logbook before you rely on it.
 
 ## What it is
 
-A free, self-hostable tool that turns 50 years of paper airframe/engine/prop
-logbooks into a searchable, gap-auditable, compliance-forecasting index — sized
-for a **single piston GA owner**, not a fleet. It fills the gap left by
-PlaneLogix (human transcription service), Bluetail, and Veryon (enterprise
-tiers): none offer a free, owner-run tool with automated vision-LLM extraction.
+MyTailLog turns decades of paper airframe / engine / prop / avionics logbooks
+into a **searchable, gap-auditable, compliance-forecasting index** — sized for a
+single piston GA owner (and the people they share a plane with), not a fleet. You
+photograph or upload your logbook pages, AI reads them into structured entries,
+and the app tracks inspections, ADs, equipment, weight & balance, and flight
+hours — then reminds you before things come due.
 
-## Status
+## Features
 
-**Pre-alpha. Currently building Phase 1 (capture → extract → review → search).**
+**Capture → extract → review**
+- Camera capture with automatic document edge-detection / deskew / crop, or
+  upload scans (PDF / JPEG / PNG). Offline-friendly: pages queue on-device and
+  upload when back online.
+- Vision-LLM extraction into structured entries (date, hours, work, parts,
+  AD/SB refs, signature) with **per-field confidence**; a review screen shows the
+  page image beside editable entries and flags low-confidence fields.
+- Five logbook types — airframe, engine, prop, avionics, and **Other**.
 
-| Phase | Scope | State |
-|-------|-------|-------|
-| 1 | Capture, OCR/extraction, review, search + unified timeline | 🚧 in progress |
-| 2 | AD/SB tracking, maintenance forecasting, gap audit | ⏳ planned |
-| 3 | W&B, multi-owner sharing, exports | ⏳ planned |
-| 4 | Notifications, community AD layer, public share links | ⏳ planned |
+**"Other" A&P documents (auto-applied)**
+- Scan a **Weight & Balance sheet** → it creates a new W&B revision.
+- Scan an **AD compliance report** → it becomes the ground truth for your AD
+  state, corroborates matching tracked ADs (with a "✓ A&P report" badge), and
+  adds any it lists that you weren't tracking.
 
-Detailed build order lives in [`logbook-app-plan.md`](./logbook-app-plan.md).
+**Understand & forecast**
+- **Ask your logbook** — plain-English questions answered from your entries, with
+  the source entries cited.
+- **Timeline & search** across all logbooks; **Status** grid (color-coded, at a
+  glance); **Maintenance forecast** (Part 91 recurring items, hours- and
+  date-based); **AD/SB compliance** with official FAA reference lookup (Federal
+  Register + DRS fallback); **Installed equipment** reconstructed from the logs;
+  **Weight & Balance** history with a stale-since-last-equipment-change flag;
+  **Records gap audit**.
 
-## Stack
+**Flight hours & reminders**
+- **MyFlightBook integration** (per-user OAuth) pulls your latest hobbs/tach so
+  the forecast reflects real hours.
+- A **daily job** auto-syncs hours (once/day) and emails **reminders** before due
+  items — annual, oil, ADs, and more, each with a configurable lead time.
 
-- **Next.js 15 (App Router) + TypeScript + Tailwind** — frontend, API routes,
-  and the capture PWA in one deployable unit (Vercel / Fly.io / Render free tier).
-- **Supabase** — Postgres + auth + object storage, free tier, itself open
-  source so the whole thing can be self-hosted later without a rewrite.
-- **Classic OCR (Tesseract/PaddleOCR)** — printed text, zero marginal cost.
-- **Vision-LLM** — handwritten entries only. See Costs.
+**Own your data**
+- Print/PDF and CSV exports, plus a full **`.zip` backup** (records + scans) you
+  can **re-import**.
+- **Sharing** (viewer / contributor), **ownership transfer**, and delete.
+- In-app **Help** documenting every feature and how the pieces affect each other.
+
+## Architecture
+
+- **Next.js 15 (App Router) + TypeScript + Tailwind** — server components, server
+  actions, and route handlers in one deployable unit; a capture PWA (service
+  worker + IndexedDB queue) for offline capture.
+- **Supabase** — Postgres + Auth + object Storage. **Row-level security is the
+  enforcement boundary**, funneled through a single `has_aircraft_access()` /
+  `can_edit_aircraft()` choke point; every table and storage object is scoped to
+  the users who own or are shared on the aircraft.
+- **Anthropic** — a strong vision model (`claude-opus-4-8`) for handwriting/image
+  extraction (`EXTRACTION_MODEL`), and a cheap text model (`claude-haiku-4-5`) for
+  text-only reasoning — Q&A, equipment/maintenance detection (`TEXT_MODEL`).
+- **All image processing is browser-side** (thumbnails, PDF rasterization, zip
+  build/read) — the server never touches image bytes, keeping hosting at ~zero
+  marginal cost.
+- **Firebase App Hosting** (Cloud Run) for the app, **Cloud Scheduler** for the
+  daily job, and **Resend** for reminder email. **FAA data** comes from the
+  Federal Register API (source of truth) with a reverse-engineered DRS fallback.
+
+Data model (Postgres, migrations `supabase/migrations/000*`): `aircraft` →
+`logbook` → `page` → `log_entry`, plus `ad_compliance` / `ad_reference`,
+`component` / `equipment_proposal`, `maintenance_item`, `weight_balance`,
+`scanned_document`, `document`, `aircraft_share`, `mfb_connection` /
+`hours_reading`, `reminder_log`, and `profile`.
 
 ## Costs
 
-Everything here targets **zero marginal cost** except one line item:
-**vision-LLM calls for handwritten entries**. For a personal backlog of a few
-hundred to a few thousand pages this is a small, bounded, one-time cost (cents
-per page), then a trickle for new entries. **Bring your own API key**
-(`ANTHROPIC_API_KEY`).
+Targets **~zero marginal cost**: Firebase App Hosting (scale-to-zero) and Supabase
+free tiers cover a personal deployment, and all image work is client-side. The
+one metered line item is **LLM calls** — bounded (cents per page for the one-time
+backlog, then a trickle) and split so the cheap model does the high-volume text
+work. **Bring your own `ANTHROPIC_API_KEY`.**
 
-## Getting started
+## Getting started (local)
 
 ```bash
-# 1. Install deps
 npm install
-
-# 2. Configure environment
-cp .env.example .env.local   # fill in Supabase + API keys
-
-# 3. Set up the database (requires the Supabase CLI + a project)
-#    Applies supabase/migrations/*.sql
-supabase link --project-ref <your-project-ref>
-supabase db push
-
-# 4. Run
-npm run dev                  # http://localhost:3000
+cp .env.example .env.local     # fill in Supabase URL + anon key, ANTHROPIC_API_KEY, etc.
+# Apply supabase/migrations/*.sql in order via the Supabase dashboard SQL editor
+npm run dev                    # http://localhost:3000
 ```
 
-See [`supabase/README.md`](./supabase/README.md) for the schema and the
-single-owner data-isolation model (row-level security from day one).
+See [`.env.example`](./.env.example) for all config (required vs optional) and
+[`supabase/README.md`](./supabase/README.md) for the schema + RLS model.
 
 ## Deploy (Firebase App Hosting + Supabase)
 
-MyTailLog runs as a Next.js server on **Firebase App Hosting** (which provisions
-a Cloud Run service, builds on every GitHub push, and serves through a global
-CDN) on top of the **Supabase** project that hosts the database, auth, and
-storage. Config lives in [`apphosting.yaml`](./apphosting.yaml).
+MyTailLog runs as a Next.js server on **Firebase App Hosting** (Cloud Run, builds
+on every GitHub push, global CDN) over a **Supabase** project. Config is in
+[`apphosting.yaml`](./apphosting.yaml).
 
-**Prerequisites:** a Firebase project on the **Blaze** (pay-as-you-go) plan —
-App Hosting requires it — and the Firebase CLI (`npm i -g firebase-tools`).
-Blaze is metered but includes generous no-cost allowances; a personal
-deployment stays at ~$0 (set a budget alert, since Blaze has no hard cap).
+**Prerequisites:** a Firebase project on the **Blaze** plan (App Hosting requires
+it; metered but ~$0 at personal scale — set a budget alert) and the Firebase CLI.
 
-**1. Create the secrets** (Cloud Secret Manager; values never enter git):
+**1. Secrets** (Cloud Secret Manager, referenced by name in `apphosting.yaml`):
 ```bash
 firebase apphosting:secrets:set NEXT_PUBLIC_SUPABASE_URL
 firebase apphosting:secrets:set NEXT_PUBLIC_SUPABASE_ANON_KEY
 firebase apphosting:secrets:set ANTHROPIC_API_KEY
+# For the daily reminder/sync cron (optional but recommended):
+firebase apphosting:secrets:set SUPABASE_SECRET_KEY   # Supabase → API Keys → "Create secret key"
+firebase apphosting:secrets:set RESEND_API_KEY        # for reminder email
+firebase apphosting:secrets:set CRON_SECRET           # random string; gates the cron endpoint
 ```
-`apphosting.yaml` references these by name and grants the build/runtime service
-accounts access.
 
-**2. Create the App Hosting backend** — Firebase console → **App Hosting** →
-*Get started* → connect the GitHub repo and the `main` branch. Every push to
-`main` triggers a build + rollout. (`apphosting.yaml` sets scale-to-zero,
-`maxInstances: 2`, 1 vCPU / 1 GiB.)
+**2. Backend** — Firebase console → **App Hosting → Get started** → connect the
+GitHub repo + `main` branch. Every push to `main` builds and rolls out.
+(`apphosting.yaml` sets scale-to-zero, `maxInstances: 2`, 1 vCPU / 1 GiB.)
 
-**3. Point Supabase auth at the domain** (this is what makes magic links land on
-the site instead of `localhost`):
-- Supabase dashboard → **Authentication → URL Configuration**
-  - **Site URL**: `https://mytaillog.com`
-  - **Redirect URLs**: `https://mytaillog.com/auth/callback` (add the temporary
-    `*.web.app`/`*.run.app` URL too until the custom domain is live).
-- Enable email confirmation for password sign-up under
-  **Authentication → Providers → Email**.
+**3. Supabase auth URLs** (fixes magic links landing on `localhost`):
+Supabase → **Authentication → URL Configuration** → **Site URL**
+`https://mytaillog.com`, **Redirect URLs** `https://mytaillog.com/auth/callback`.
+Configure custom SMTP (e.g. Resend) to lift the built-in email rate limit.
 
-**4. Custom domain** — App Hosting → your backend → **Add custom domain** →
-`mytaillog.com` → add the DNS records it shows at your registrar. Google
-provisions a managed TLS cert automatically.
+**4. Custom domain** — App Hosting → **Add custom domain** → add the DNS records;
+Google provisions a managed TLS cert.
 
-**5. Migrations** — this deployment reuses the existing Supabase project, so the
-schema is already applied. For a fresh project, run `supabase/migrations/*.sql`
-in order via the dashboard SQL Editor.
+**5. Migrations** — run `supabase/migrations/*.sql` **in order** via the dashboard
+SQL editor (the repo isn't CLI-linked). Enum-adding migrations (e.g.
+`0004`/`0017`) must be run and committed **before** the migration that uses the
+new value.
+
+**6. Daily reminders (optional)** — create a **Cloud Scheduler** job that does a
+daily `POST https://mytaillog.com/api/cron/daily` with header
+`Authorization: Bearer <CRON_SECRET>`.
 
 ### Cost & known ceilings
+- **App Hosting / Cloud Run:** scale-to-zero → ~$0 idle; Cloud Run free tier
+  covers personal traffic. Blaze has no hard cap — set a budget alert.
+- **Request timeout:** Cloud Run default 300s covers extraction and full-history
+  scans (`maxDuration` in the routes is a Vercel-only hint, ignored here).
+- **Supabase free:** 1 GB storage (scans), 500 MB DB, pauses after 7 days idle,
+  no automatic backups (use the in-app `.zip` export, or Supabase Pro).
 
-- **App Hosting / Cloud Run:** scale-to-zero → ~$0 idle; Cloud Run's free tier
-  (2M req, 180k vCPU-s, 360k GiB-s/mo) covers personal traffic. Blaze has **no
-  hard spend cap** — set a **budget alert**. Container image storage in
-  Artifact Registry may cost a few cents/month.
-- **Request timeout:** Cloud Run's default (300s) covers extraction and
-  full-history scans — no Vercel-style 60s cap. (`maxDuration` in the API routes
-  is a Vercel-only hint, ignored here.)
-- **Supabase Storage (free = 1 GB):** scans live here; thumbnails are tiny,
-  originals are the bulk. One aircraft usually fits; the in-app `.zip` backup
-  lets you offload, and Supabase Pro raises this to 100 GB.
-- **Supabase pause (free = after 7 days idle)** and **no automatic backups** —
-  resume from the dashboard; back up with the in-app export, or go Pro.
-
-### Alternative: Vercel
-
-The app also deploys to **Vercel** (import the repo, set the same env vars from
-[`.env.example`](./.env.example)). Note the Vercel **Hobby** tier caps functions
-at **60s** (large full-history scans may 504 — raise `maxDuration` to 300 on
-Pro) and is non-commercial.
+The app also deploys to **Vercel** (Hobby caps functions at 60s and is
+non-commercial); Cloud Run avoids both.
 
 ## Data isolation & privacy
 
-Every record (aircraft, logbook, entry) belongs to exactly one owning user and
-is invisible to everyone else, enforced by Postgres row-level security — not
-just app code. Aircraft records (tail numbers, serials, owner names, home base)
-are treated as **sensitive personal data**. A future `aircraft_share` table
-grants explicit read/contribute access without a full multi-tenant permission
-system; the schema is designed for it but the sharing UI is deliberately not
-built yet.
+Every record belongs to the users who own or are shared on its aircraft, enforced
+by Postgres row-level security — not just app code. Aircraft records (tail
+numbers, serials, owner names, home base) are treated as **sensitive personal
+data**. Sharing is by email with viewer/contributor roles; a per-user secret
+(MyFlightBook OAuth tokens) is stored server-side only and never sent to the
+browser. The one elevated code path — the daily cron — uses a Supabase secret API
+key scoped to that endpoint behind a shared-secret gate.
 
 ## Explicitly out of scope
 
 eSignatures (keeps us in "index of the physical record" territory, avoiding
-AC 120-78A), parts procurement/inventory, work orders, flight scheduling, and
-MRO multi-fleet management. These are Veryon's territory, not this project's.
+AC 120-78A), parts procurement/inventory, work orders, flight scheduling, and MRO
+multi-fleet management.
 
 ## License
 
