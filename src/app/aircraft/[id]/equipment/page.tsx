@@ -38,6 +38,13 @@ export default async function EquipmentPage({
       adCountByComponent[a.component_id] = (adCountByComponent[a.component_id] ?? 0) + 1;
   }
 
+  // Pending, log-derived proposals awaiting the owner's confirmation.
+  const { data: proposals } = await supabase
+    .from("equipment_proposal")
+    .select("*")
+    .eq("aircraft_id", id)
+    .order("created_at", { ascending: false });
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
       <Link
@@ -61,6 +68,7 @@ export default async function EquipmentPage({
         aircraftId={id}
         components={components ?? []}
         adCountByComponent={adCountByComponent}
+        proposals={proposals ?? []}
         extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
       />
     </main>

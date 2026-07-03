@@ -89,6 +89,7 @@ Rules:
 
 export async function extractEquipmentFromEntries(
   entries: EquipmentEntryInput[],
+  opts: { knownComponents?: string[] } = {},
 ): Promise<EquipmentProposal[]> {
   if (entries.length === 0) return [];
   const client = getAnthropic();
@@ -99,6 +100,12 @@ export async function extractEquipmentFromEntries(
         `[${e.entry_id}] ${e.date ?? "undated"} · ${e.logbook}\n${e.text.trim()}`,
     )
     .join("\n\n");
+
+  // When scanning a single new page, tell the model what's already installed so
+  // it can match a removal to a known component and avoid re-proposing it.
+  const context = opts.knownComponents?.length
+    ? `Already-tracked components on this aircraft (do not re-propose these unless the entries show them being removed or replaced):\n${opts.knownComponents.map((c) => `- ${c}`).join("\n")}\n\n`
+    : "";
 
   const response = await client.messages.create({
     model: EXTRACTION_MODEL,
@@ -112,7 +119,7 @@ export async function extractEquipmentFromEntries(
     messages: [
       {
         role: "user",
-        content: `Maintenance entries in chronological order:\n\n${transcript}\n\nReconstruct the consolidated equipment list following the schema.`,
+        content: `${context}Maintenance entries in chronological order:\n\n${transcript}\n\nReconstruct the consolidated equipment list following the schema.`,
       },
     ],
   });

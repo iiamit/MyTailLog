@@ -73,6 +73,12 @@ export default async function AircraftPage({
     pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);
   }
 
+  // Pending equipment suggestions (from page extraction / log scans) to badge.
+  const { count: equipmentProposalCount } = await supabase
+    .from("equipment_proposal")
+    .select("id", { count: "exact", head: true })
+    .eq("aircraft_id", id);
+
   const pageRows: PageRow[] = (pages ?? []).map((p) => ({
     id: p.id,
     logbookId: p.logbook_id,
@@ -136,6 +142,11 @@ export default async function AircraftPage({
           className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
         >
           Installed equipment →
+          {equipmentProposalCount ? (
+            <span className="ml-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+              {equipmentProposalCount} new
+            </span>
+          ) : null}
         </Link>
       </div>
 

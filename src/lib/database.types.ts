@@ -179,6 +179,24 @@ export type AdReference = {
   updated_at: string;
 }
 
+export type EquipmentProposal = {
+  id: string;
+  aircraft_id: string;
+  page_id: string | null;
+  name: string;
+  make: string | null;
+  category: string | null;
+  part_number: string | null;
+  serial_number: string | null;
+  install_date: string | null;
+  removal_date: string | null;
+  is_installed: boolean;
+  action: string | null;
+  confidence: number | null;
+  source: string | null;
+  created_at: string;
+}
+
 export type Profile = {
   id: string;
   full_name: string | null;
@@ -205,6 +223,7 @@ export type Database = {
       component: { Row: Component; Insert: Partial<Component>; Update: Partial<Component>; Relationships: [] };
       ad_compliance: { Row: AdCompliance; Insert: Partial<AdCompliance>; Update: Partial<AdCompliance>; Relationships: [] };
       ad_reference: { Row: AdReference; Insert: Partial<AdReference>; Update: Partial<AdReference>; Relationships: [] };
+      equipment_proposal: { Row: EquipmentProposal; Insert: Partial<EquipmentProposal>; Update: Partial<EquipmentProposal>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {

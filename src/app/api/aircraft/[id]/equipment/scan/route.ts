@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { extractionConfigured } from "@/lib/extraction/anthropic";
-import {
-  extractEquipmentFromEntries,
-  type EquipmentEntryInput,
-} from "@/lib/extraction/equipment";
+import type { EquipmentEntryInput } from "@/lib/extraction/equipment";
+import { proposeEquipmentForEntries } from "@/lib/extraction/equipmentProposals";
 import { logbookLabel } from "@/lib/logbooks";
 
 export const runtime = "nodejs";
@@ -68,12 +66,14 @@ export async function POST(
     .filter((e) => e.text.length > 0);
 
   if (inputs.length === 0) {
-    return NextResponse.json({ ok: true, proposals: [], entryCount: 0 });
+    return NextResponse.json({ ok: true, proposed: 0, entryCount: 0 });
   }
 
   try {
-    const proposals = await extractEquipmentFromEntries(inputs);
-    return NextResponse.json({ ok: true, proposals, entryCount: inputs.length });
+    // Full-history scan (pageId null): stores new pending proposals, de-duped
+    // against existing components and any already-pending proposals.
+    const proposed = await proposeEquipmentForEntries(supabase, id, inputs, null);
+    return NextResponse.json({ ok: true, proposed, entryCount: inputs.length });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Equipment scan failed.";
     return NextResponse.json({ error: message }, { status: 500 });

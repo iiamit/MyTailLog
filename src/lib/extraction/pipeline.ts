@@ -18,6 +18,8 @@ import {
   type ExtractedEntry,
 } from "./schema";
 import { EXTRACTION_MODEL } from "./anthropic";
+import { proposeEquipmentForEntries } from "./equipmentProposals";
+import type { EquipmentEntryInput } from "./equipment";
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
@@ -38,6 +40,7 @@ export type PipelineResult = {
   entryCount: number;
   detectedPageCount: number;
   minConfidence: number | null;
+  equipmentProposed: number;
 };
 
 /**
@@ -127,10 +130,36 @@ export async function extractPage(
       })
       .eq("id", page.id);
 
+    // Keep the equipment list current: propose installed/removed components from
+    // this page's entries. Best-effort — never fail the extraction over it.
+    let equipmentProposed = 0;
+    try {
+      const equipEntries: EquipmentEntryInput[] = result.entries
+        .map((e) => ({
+          entry_id: page.id,
+          date: e.entry_date,
+          logbook: "logbook",
+          text: [e.description, e.work_performed, e.parts]
+            .map((s) => s?.trim())
+            .filter(Boolean)
+            .join(" — "),
+        }))
+        .filter((e) => e.text.length > 0);
+      equipmentProposed = await proposeEquipmentForEntries(
+        supabase,
+        page.aircraft_id,
+        equipEntries,
+        page.id,
+      );
+    } catch {
+      // ignore — equipment proposals are a convenience, not part of extraction
+    }
+
     return {
       entryCount: result.entries.length,
       detectedPageCount: result.detected_page_count,
       minConfidence,
+      equipmentProposed,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction failed.";

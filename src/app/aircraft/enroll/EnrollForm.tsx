@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { enrollAircraft } from "./actions";
 
 function Field({
@@ -44,6 +44,9 @@ function Field({
 export function EnrollForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [lookupNote, setLookupNote] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function action(formData: FormData) {
     setPending(true);
@@ -56,9 +59,67 @@ export function EnrollForm() {
     }
   }
 
+  // Prefill make/model/serial/year (and engine make/model as a note) from the
+  // FAA registry, so the owner rarely types these by hand.
+  async function lookupTail() {
+    const form = formRef.current;
+    if (!form) return;
+    const tail = (form.elements.namedItem("tail_number") as HTMLInputElement)?.value?.trim();
+    if (!tail) {
+      setLookupNote("Enter a tail number first.");
+      return;
+    }
+    setLookingUp(true);
+    setLookupNote(null);
+    try {
+      const res = await fetch(`/api/registry?tail=${encodeURIComponent(tail)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setLookupNote(data.error ?? "Lookup failed.");
+        return;
+      }
+      const r = data.record as {
+        make: string | null; model: string | null; serialNumber: string | null;
+        year: number | null; engineMake: string | null; engineModel: string | null;
+        registrantName: string | null;
+      };
+      const setVal = (name: string, v: string | number | null) => {
+        const el = form.elements.namedItem(name) as HTMLInputElement | null;
+        if (el && v != null && v !== "") el.value = String(v);
+      };
+      setVal("make", r.make);
+      setVal("model", r.model);
+      setVal("serial_number", r.serialNumber);
+      setVal("year", r.year);
+      const engine = [r.engineMake, r.engineModel].filter(Boolean).join(" ");
+      setLookupNote(
+        `Filled from FAA registry${r.registrantName ? ` · ${r.registrantName}` : ""}${engine ? ` · engine: ${engine}` : ""}. Review and adjust as needed.`,
+      );
+    } catch {
+      setLookupNote("Network error during lookup.");
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
   return (
-    <form action={action} className="flex flex-col gap-4">
-      <Field label="Tail number" name="tail_number" required placeholder="N12345" />
+    <form ref={formRef} action={action} className="flex flex-col gap-4">
+      <div className="flex items-end gap-2">
+        <div className="flex-1">
+          <Field label="Tail number" name="tail_number" required placeholder="N12345" />
+        </div>
+        <button
+          type="button"
+          onClick={lookupTail}
+          disabled={lookingUp}
+          className="mb-[2px] shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+        >
+          {lookingUp ? "Looking up…" : "Look up FAA registry"}
+        </button>
+      </div>
+      {lookupNote && (
+        <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">{lookupNote}</p>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Make" name="make" placeholder="Cessna" />
         <Field label="Model" name="model" placeholder="172N" />

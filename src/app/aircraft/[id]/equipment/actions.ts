@@ -115,45 +115,44 @@ export async function removeComponent(
   return { ok: true, adsUpdated: ids.length };
 }
 
-// A log-derived equipment proposal the owner has confirmed for import.
-export type ConfirmedProposal = {
-  name: string;
-  make: string | null;
-  category: string | null;
+const proposalKey = (p: {
   part_number: string | null;
   serial_number: string | null;
-  install_date: string | null;
-  removal_date: string | null;
-  is_installed: boolean;
-};
+  name: string;
+}) =>
+  p.part_number || p.serial_number
+    ? `ps:${(p.part_number ?? "").toLowerCase().trim()}|${(p.serial_number ?? "").toLowerCase().trim()}`
+    : `n:${p.name.trim().toLowerCase()}`;
 
 /**
- * Import confirmed, log-derived equipment. De-dupes against existing components
- * by (part_number+serial_number) or name, so re-scanning doesn't create
- * duplicates — an existing match is updated with any newly-known dates/removal.
+ * Confirm pending equipment proposals (by id): create/update components from
+ * them, de-duped against existing components by (P/N+S/N) or name, then delete
+ * the confirmed proposals. An existing match is updated with newly-known dates
+ * or removal state.
  */
-export async function applyEquipmentProposals(
+export async function confirmProposals(
   aircraftId: string,
-  proposals: ConfirmedProposal[],
+  proposalIds: string[],
 ): Promise<{ ok: true; added: number; updated: number } | { error: string }> {
+  if (proposalIds.length === 0) return { ok: true, added: 0, updated: 0 };
   const supabase = await createClient();
+
+  const { data: proposals } = await supabase
+    .from("equipment_proposal")
+    .select("*")
+    .eq("aircraft_id", aircraftId)
+    .in("id", proposalIds);
+  if (!proposals || proposals.length === 0) return { error: "Proposals not found." };
+
   const { data: existing } = await supabase
     .from("component")
     .select("id, name, part_number, serial_number")
     .eq("aircraft_id", aircraftId);
-  const rows = existing ?? [];
-
-  const key = (p: { part_number: string | null; serial_number: string | null; name: string }) =>
-    p.part_number || p.serial_number
-      ? `ps:${(p.part_number ?? "").toLowerCase()}|${(p.serial_number ?? "").toLowerCase()}`
-      : `n:${p.name.trim().toLowerCase()}`;
-  const byKey = new Map(rows.map((r) => [key(r), r.id]));
+  const byKey = new Map((existing ?? []).map((r) => [proposalKey(r), r.id]));
 
   let added = 0;
   let updated = 0;
   for (const p of proposals) {
-    if (!p.name.trim()) continue;
-    const existingId = byKey.get(key(p));
     const payload = {
       name: p.name.trim(),
       make: p.make,
@@ -164,21 +163,43 @@ export async function applyEquipmentProposals(
       removal_date: p.removal_date,
       is_installed: p.is_installed,
     };
+    const existingId = byKey.get(proposalKey(p));
     if (existingId) {
       const { error } = await supabase.from("component").update(payload).eq("id", existingId);
       if (error) return { error: error.message };
       updated++;
     } else {
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("component")
-        .insert({ aircraft_id: aircraftId, ...payload });
+        .insert({ aircraft_id: aircraftId, ...payload })
+        .select("id")
+        .single();
       if (error) return { error: error.message };
+      if (inserted) byKey.set(proposalKey(p), inserted.id);
       added++;
     }
   }
 
+  await supabase.from("equipment_proposal").delete().in("id", proposalIds);
   revalidatePath(equipmentPath(aircraftId));
   return { ok: true, added, updated };
+}
+
+/** Dismiss (delete) pending equipment proposals without importing them. */
+export async function dismissProposals(
+  aircraftId: string,
+  proposalIds: string[],
+): Promise<Result> {
+  if (proposalIds.length === 0) return { ok: true };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("equipment_proposal")
+    .delete()
+    .eq("aircraft_id", aircraftId)
+    .in("id", proposalIds);
+  if (error) return { error: error.message };
+  revalidatePath(equipmentPath(aircraftId));
+  return { ok: true };
 }
 
 /** Reinstall a previously removed component (does not touch AD statuses). */

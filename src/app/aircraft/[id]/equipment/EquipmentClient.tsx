@@ -2,23 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Component } from "@/lib/database.types";
+import type { Component, EquipmentProposal } from "@/lib/database.types";
 import {
   upsertComponent,
   deleteComponent,
   removeComponent,
   reinstallComponent,
-  applyEquipmentProposals,
+  confirmProposals,
+  dismissProposals,
   type ComponentInput,
-  type ConfirmedProposal,
 } from "./actions";
-
-// Shape returned by the /equipment/scan route.
-type Proposal = ConfirmedProposal & {
-  action: "installed" | "removed" | "present";
-  confidence: number;
-  source: string;
-};
 
 const CATEGORIES = ["airframe", "engine", "prop", "avionics", "other"] as const;
 const LIFE_UNITS = ["hours", "months", "cycles"] as const;
@@ -85,11 +78,13 @@ export function EquipmentClient({
   aircraftId,
   components,
   adCountByComponent,
+  proposals,
   extractionConfigured,
 }: {
   aircraftId: string;
   components: Component[];
   adCountByComponent: Record<string, number>;
+  proposals: EquipmentProposal[];
   extractionConfigured: boolean;
 }) {
   const router = useRouter();
@@ -98,26 +93,27 @@ export function EquipmentClient({
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  // Log-scan proposals awaiting the owner's confirmation.
+  // Pending proposals come from the DB (page extraction + full log scans).
   const [scanning, setScanning] = useState(false);
-  const [proposals, setProposals] = useState<Proposal[] | null>(null);
-  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [checked, setChecked] = useState<Set<string>>(
+    () => new Set(proposals.map((p) => p.id)),
+  );
 
   async function scanLogs() {
     setScanning(true);
     setError(null);
     setStatus(null);
-    setProposals(null);
     try {
       const res = await fetch(`/api/aircraft/${aircraftId}/equipment/scan`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Scan failed.");
-      } else {
-        const list = (data.proposals ?? []) as Proposal[];
-        setProposals(list);
-        setChecked(new Set(list.map((_, i) => i))); // default: all checked
-        if (list.length === 0) setStatus(`Scanned ${data.entryCount} entries — no equipment found.`);
+      if (!res.ok) setError(data.error ?? "Scan failed.");
+      else {
+        setStatus(
+          data.proposed > 0
+            ? `Found ${data.proposed} new suggestion${data.proposed === 1 ? "" : "s"} from ${data.entryCount} entries.`
+            : `Scanned ${data.entryCount} entries — no new equipment suggestions.`,
+        );
+        router.refresh();
       }
     } catch {
       setError("Network error during scan.");
@@ -126,37 +122,34 @@ export function EquipmentClient({
     }
   }
 
-  function toggleChecked(i: number) {
+  function toggleChecked(id: string) {
     setChecked((prev) => {
       const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
-  async function applyProposals() {
-    if (!proposals) return;
-    const confirmed: ConfirmedProposal[] = proposals
-      .filter((_, i) => checked.has(i))
-      .map((p) => ({
-        name: p.name,
-        make: p.make,
-        category: p.category,
-        part_number: p.part_number,
-        serial_number: p.serial_number,
-        install_date: p.install_date,
-        removal_date: p.removal_date,
-        is_installed: p.is_installed,
-      }));
-    if (confirmed.length === 0) return;
+  async function confirmSelected() {
+    const ids = proposals.filter((p) => checked.has(p.id)).map((p) => p.id);
+    if (ids.length === 0) return;
     setBusy(true);
     setError(null);
-    const res = await applyEquipmentProposals(aircraftId, confirmed);
+    const res = await confirmProposals(aircraftId, ids);
     setBusy(false);
     if ("error" in res) return setError(res.error);
-    setProposals(null);
     setStatus(`Imported ${res.added} new, updated ${res.updated} from the logs.`);
+    router.refresh();
+  }
+
+  async function dismissSelected() {
+    const ids = proposals.filter((p) => checked.has(p.id)).map((p) => p.id);
+    if (ids.length === 0) return;
+    setBusy(true);
+    const res = await dismissProposals(aircraftId, ids);
+    setBusy(false);
+    if ("error" in res) return setError(res.error);
     router.refresh();
   }
 
@@ -321,28 +314,28 @@ export function EquipmentClient({
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       {status && <p className="text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}
 
-      {/* Log-scan proposals for confirmation */}
-      {proposals && proposals.length > 0 && (
+      {/* Pending log-derived proposals for confirmation */}
+      {proposals.length > 0 && (
         <section className="rounded-lg border border-sky-300 bg-sky-50/50 p-4 dark:border-sky-800 dark:bg-sky-950/30">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-semibold">
-              {proposals.length} component{proposals.length === 1 ? "" : "s"} found in the logs — confirm to import
+              {proposals.length} equipment suggestion{proposals.length === 1 ? "" : "s"} from your logs
             </h2>
             <div className="flex gap-2 text-xs">
-              <button onClick={() => setChecked(new Set(proposals.map((_, i) => i)))} className="underline">all</button>
+              <button onClick={() => setChecked(new Set(proposals.map((p) => p.id)))} className="underline">all</button>
               <button onClick={() => setChecked(new Set())} className="underline">none</button>
             </div>
           </div>
           <ul className="flex flex-col gap-2">
-            {proposals.map((p, i) => (
+            {proposals.map((p) => (
               <li
-                key={i}
+                key={p.id}
                 className="flex gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-900"
               >
                 <input
                   type="checkbox"
-                  checked={checked.has(i)}
-                  onChange={() => toggleChecked(i)}
+                  checked={checked.has(p.id)}
+                  onChange={() => toggleChecked(p.id)}
                   className="mt-0.5"
                 />
                 <div className="min-w-0 flex-1">
@@ -363,7 +356,9 @@ export function EquipmentClient({
                     >
                       {p.is_installed ? "installed" : "removed"}
                     </span>
-                    <span className="text-xs text-slate-400">{Math.round(p.confidence * 100)}%</span>
+                    {p.confidence != null && (
+                      <span className="text-xs text-slate-400">{Math.round(p.confidence * 100)}%</span>
+                    )}
                   </div>
                   <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                     {[
@@ -382,18 +377,18 @@ export function EquipmentClient({
           </ul>
           <div className="mt-3 flex gap-2">
             <button
-              onClick={applyProposals}
+              onClick={confirmSelected}
               disabled={busy || checked.size === 0}
               className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900"
             >
               {busy ? "Importing…" : `Import ${checked.size} selected`}
             </button>
             <button
-              onClick={() => setProposals(null)}
-              disabled={busy}
+              onClick={dismissSelected}
+              disabled={busy || checked.size === 0}
               className="rounded-md border border-slate-300 px-4 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
             >
-              Dismiss
+              Dismiss selected
             </button>
           </div>
         </section>

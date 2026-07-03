@@ -78,8 +78,16 @@ export default async function CompliancePage({
       </Link>
 
       <header className="mt-2 mb-6">
-        <h1 className="text-2xl font-bold">AD / SB compliance</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold">AD / SB compliance</h1>
+          <Link
+            href={`/aircraft/${id}/compliance/explore`}
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+          >
+            Explore applicable ADs →
+          </Link>
+        </div>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           Track Airworthiness Directives and Service Bulletins for this aircraft,
           their compliance status, and when recurring ones come due. This is your
           private tracking record, not an airworthiness determination — the
