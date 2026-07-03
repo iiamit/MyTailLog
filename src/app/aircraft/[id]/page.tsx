@@ -7,7 +7,67 @@ import { urgencyOf } from "@/lib/compliance";
 import { effectiveNextDue } from "@/lib/maintenance";
 import { getCurrentHours } from "@/lib/aircraftHours";
 import { getAircraftRole, canEditRole } from "@/lib/access";
+import {
+  ClockIcon,
+  CpuIcon,
+  WrenchIcon,
+  ShieldIcon,
+  AlertIcon,
+  ArchiveIcon,
+  UsersIcon,
+  ChevronRightIcon,
+  CameraIcon,
+  UploadIcon,
+} from "@/components/icons";
 import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
+
+type Badge = { text: string; tone: string } | null;
+
+function HubCard({
+  href,
+  icon,
+  title,
+  desc,
+  badge,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  badge?: Badge;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 transition hover:border-slate-400 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
+    >
+      <span className="mt-0.5 text-lg text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">{title}</span>
+          {badge && (
+            <span className={`rounded-full px-2 py-0.5 text-xs ${badge.tone}`}>{badge.text}</span>
+          )}
+        </span>
+        <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{desc}</span>
+      </span>
+      <ChevronRightIcon className="mt-1 shrink-0 text-slate-300 group-hover:text-slate-500 dark:text-slate-600" />
+    </Link>
+  );
+}
+
+function HubSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+        {title}
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-2">{children}</div>
+    </div>
+  );
+}
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
@@ -80,6 +140,7 @@ export default async function AircraftPage({
     .select("page_id")
     .eq("aircraft_id", id);
 
+  const entryCount = entries?.length ?? 0;
   const entryCounts = new Map<string, number>();
   for (const e of entries ?? []) {
     if (e.page_id) entryCounts.set(e.page_id, (entryCounts.get(e.page_id) ?? 0) + 1);
@@ -167,61 +228,83 @@ export default async function AircraftPage({
         <Disclaimer />
       </div>
 
-      <div className="mb-8 flex flex-wrap gap-2">
-        <Link
-          href={`/aircraft/${id}/timeline`}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-        >
-          Logbook timeline &amp; search →
-        </Link>
-        <Link
-          href={`/aircraft/${id}/maintenance`}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-        >
-          Maintenance forecast →
-          {dueSoonCount > 0 ? (
-            <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-              {dueSoonCount} due
-            </span>
-          ) : null}
-        </Link>
-        <Link
-          href={`/aircraft/${id}/compliance`}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-        >
-          AD / SB compliance →
-        </Link>
-        <Link
-          href={`/aircraft/${id}/audit`}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-        >
-          Records gap audit →
-        </Link>
-        <Link
-          href={`/aircraft/${id}/export`}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-        >
-          Export / print →
-        </Link>
-        <Link
-          href={`/aircraft/${id}/equipment`}
-          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-        >
-          Installed equipment →
-          {equipmentProposalCount ? (
-            <span className="ml-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-              {equipmentProposalCount} new
-            </span>
-          ) : null}
-        </Link>
-        {isOwner && (
-          <Link
-            href={`/aircraft/${id}/share`}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-          >
-            Sharing, transfer &amp; delete →
-          </Link>
-        )}
+      <div className="mb-8 flex flex-col gap-6">
+        <HubSection title="Records">
+          <HubCard
+            href={`/aircraft/${id}/timeline`}
+            icon={<ClockIcon />}
+            title="Timeline & search"
+            desc="Every entry across all logbooks, merged by date"
+            badge={
+              entryCount > 0
+                ? {
+                    text: `${entryCount} ${entryCount === 1 ? "entry" : "entries"}`,
+                    tone: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+                  }
+                : null
+            }
+          />
+          <HubCard
+            href={`/aircraft/${id}/equipment`}
+            icon={<CpuIcon />}
+            title="Installed equipment"
+            desc="Components on the aircraft now, derived from the logs"
+            badge={
+              equipmentProposalCount
+                ? {
+                    text: `${equipmentProposalCount} new`,
+                    tone: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+                  }
+                : null
+            }
+          />
+        </HubSection>
+
+        <HubSection title="Airworthiness">
+          <HubCard
+            href={`/aircraft/${id}/maintenance`}
+            icon={<WrenchIcon />}
+            title="Maintenance forecast"
+            desc="Part 91 recurring items & when they're next due"
+            badge={
+              dueSoonCount > 0
+                ? {
+                    text: `${dueSoonCount} due`,
+                    tone: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+                  }
+                : null
+            }
+          />
+          <HubCard
+            href={`/aircraft/${id}/compliance`}
+            icon={<ShieldIcon />}
+            title="AD / SB compliance"
+            desc="Directives, compliance method, and next due"
+          />
+          <HubCard
+            href={`/aircraft/${id}/audit`}
+            icon={<AlertIcon />}
+            title="Records gap audit"
+            desc="Suspected gaps in the paper trail"
+          />
+        </HubSection>
+
+        <HubSection title="Manage">
+          <HubCard
+            href={`/aircraft/${id}/export`}
+            icon={<ArchiveIcon />}
+            title="Export & backup"
+            desc="Print/PDF, CSV, or a full re-importable .zip"
+          />
+          {isOwner && (
+            <HubCard
+              href={`/aircraft/${id}/share`}
+              icon={<UsersIcon />}
+              title="Sharing, transfer & delete"
+              desc="Invite viewers/editors, hand off, or delete"
+            />
+          )}
+        </HubSection>
       </div>
 
       <section>
@@ -231,14 +314,16 @@ export default async function AircraftPage({
             <div className="flex gap-2">
               <Link
                 href={`/aircraft/${id}/upload`}
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
               >
+                <UploadIcon />
                 Upload scans
               </Link>
               <Link
                 href={`/aircraft/${id}/capture`}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
+                <CameraIcon />
                 Capture pages
               </Link>
             </div>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/Toast";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import type { MaintenanceItem } from "@/lib/database.types";
 import { dueText, URGENCY_STYLE, urgencyLabel, type Urgency } from "@/lib/compliance";
 import { STANDARD_ITEMS } from "@/lib/maintenance";
@@ -100,22 +102,23 @@ export function MaintenanceClient({
   extractionConfigured: boolean;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [form, setForm] = useState<FormState | null>(null);
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Inline "mark done" form, keyed by item id (replaces window.prompt).
+  const [markId, setMarkId] = useState<string | null>(null);
+  const [markDate, setMarkDate] = useState("");
+  const [markHours, setMarkHours] = useState("");
 
   async function scanLogs() {
     setScanning(true);
-    setError(null);
-    setStatus(null);
     try {
       const res = await fetch(`/api/aircraft/${aircraftId}/maintenance/scan`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) setError(data.error ?? "Scan failed.");
+      if (!res.ok) toast.error(data.error ?? "Scan failed.");
       else {
-        setStatus(
+        toast.success(
           data.updated > 0
             ? `Updated ${data.updated} item${data.updated === 1 ? "" : "s"} from ${data.entryCount} entries.`
             : data.detected > 0
@@ -125,7 +128,7 @@ export function MaintenanceClient({
         router.refresh();
       }
     } catch {
-      setError("Network error during scan.");
+      toast.error("Network error during scan.");
     } finally {
       setScanning(false);
     }
@@ -154,45 +157,49 @@ export function MaintenanceClient({
 
   async function save() {
     if (!form) return;
+    const editing = Boolean(form.id);
     setBusy(true);
-    setError(null);
     const res = await upsertMaintenanceItem(aircraftId, toInput(form));
     setBusy(false);
-    if ("error" in res) return setError(res.error);
+    if ("error" in res) return toast.error(res.error);
+    toast.success(editing ? "Item updated." : "Item added.");
     setForm(null);
     router.refresh();
   }
 
   async function seed() {
     setBusy(true);
-    setError(null);
     const res = await seedStandardItems(aircraftId);
     setBusy(false);
-    if ("error" in res) return setError(res.error);
+    if ("error" in res) return toast.error(res.error);
+    toast.success("Added standard Part 91 items.");
     router.refresh();
   }
 
-  async function markDone(m: MaintenanceItem) {
-    const date = window.prompt(`Date ${m.label} was last done (YYYY-MM-DD)?`, new Date().toISOString().slice(0, 10));
-    if (date === null) return;
-    let hours: number | null = null;
-    if (m.interval_hours != null) {
-      const h = window.prompt(`Aircraft hours when done (optional)?`, currentHours?.toString() ?? "");
-      hours = h && h.trim() !== "" && Number.isFinite(Number(h)) ? Number(h) : null;
-    }
+  function openMark(m: MaintenanceItem) {
+    setMarkId(m.id);
+    setMarkDate(new Date().toISOString().slice(0, 10));
+    setMarkHours(m.interval_hours != null ? currentHours?.toString() ?? "" : "");
+  }
+
+  async function saveMark(m: MaintenanceItem) {
+    const hours =
+      markHours.trim() !== "" && Number.isFinite(Number(markHours)) ? Number(markHours) : null;
     setBusy(true);
-    const res = await markMaintenanceDone(aircraftId, m.id, date.trim() || null, hours);
+    const res = await markMaintenanceDone(aircraftId, m.id, markDate || null, hours);
     setBusy(false);
-    if ("error" in res) return setError(res.error);
+    if ("error" in res) return toast.error(res.error);
+    toast.success(`Marked "${m.label}" done.`);
+    setMarkId(null);
     router.refresh();
   }
 
   async function del(m: MaintenanceItem) {
-    if (!window.confirm(`Delete "${m.label}"?`)) return;
     setBusy(true);
     const res = await deleteMaintenanceItem(aircraftId, m.id);
     setBusy(false);
-    if ("error" in res) return setError(res.error);
+    if ("error" in res) return toast.error(res.error);
+    toast.success(`Deleted "${m.label}".`);
     router.refresh();
   }
 
@@ -238,9 +245,6 @@ export function MaintenanceClient({
         Last-done dates update automatically as pages are extracted; use “Update
         from logs” to rescan the full history. Verify against the physical logs.
       </p>
-
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      {status && <p className="text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}
 
       {form && (
         <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -341,25 +345,69 @@ export function MaintenanceClient({
                   {d.notes && <div className="mt-1">{d.notes}</div>}
                 </div>
 
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {m ? (
-                    <>
-                      <button onClick={() => markDone(m)} disabled={busy} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-emerald-400 disabled:opacity-50 dark:border-slate-700">
-                        Mark done
-                      </button>
-                      <button onClick={() => setForm(fromItem(m))} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
-                        Edit
-                      </button>
-                      <button onClick={() => del(m)} disabled={busy} className="rounded-md border border-slate-300 px-3 py-1 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400">
-                        Delete
-                      </button>
-                    </>
-                  ) : (
-                    <Link href={`/aircraft/${aircraftId}/compliance`} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
-                      Manage in compliance →
-                    </Link>
-                  )}
-                </div>
+                {m && markId === m.id ? (
+                  <div className="mt-3 flex flex-wrap items-end gap-2 rounded-md border border-slate-200 p-3 dark:border-slate-800">
+                    <label className="flex w-40 flex-col gap-1 text-xs">
+                      Date done
+                      <input
+                        type="date"
+                        value={markDate}
+                        onChange={(e) => setMarkDate(e.target.value)}
+                        className={inputClass}
+                      />
+                    </label>
+                    {m.interval_hours != null && (
+                      <label className="flex w-40 flex-col gap-1 text-xs">
+                        Hours (optional)
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={markHours}
+                          onChange={(e) => setMarkHours(e.target.value)}
+                          className={inputClass}
+                        />
+                      </label>
+                    )}
+                    <button
+                      onClick={() => saveMark(m)}
+                      disabled={busy}
+                      className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900"
+                    >
+                      {busy ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setMarkId(null)}
+                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:border-slate-500 dark:border-slate-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {m ? (
+                      <>
+                        <button onClick={() => openMark(m)} disabled={busy} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-emerald-400 disabled:opacity-50 dark:border-slate-700">
+                          Mark done
+                        </button>
+                        <button onClick={() => setForm(fromItem(m))} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
+                          Edit
+                        </button>
+                        <ConfirmButton
+                          onConfirm={() => del(m)}
+                          confirmLabel="Delete"
+                          disabled={busy}
+                          className="rounded-md border border-slate-300 px-3 py-1 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+                        >
+                          Delete
+                        </ConfirmButton>
+                      </>
+                    ) : (
+                      <Link href={`/aircraft/${aircraftId}/compliance`} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
+                        Manage in compliance →
+                      </Link>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}

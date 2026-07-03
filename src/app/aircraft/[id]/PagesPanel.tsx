@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { deletePage } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
+import { ConfirmButton } from "@/components/ConfirmButton";
+import { useToast } from "@/components/Toast";
 import { createClient } from "@/lib/supabase/client";
 import { makeThumbnail, thumbnailKey } from "@/lib/capture/thumbnail";
 
@@ -54,12 +56,12 @@ export function PagesPanel({
   extractionConfigured: boolean;
   canEdit: boolean;
 }) {
+  const toast = useToast();
   const [rows, setRows] = useState<PageRow[]>(pages);
   // Clicking a logbook tile filters the list to that logbook (null = all).
   const [selectedLogbookId, setSelectedLogbookId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   function patch(id: string, next: Partial<PageRow>) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...next } : r)));
@@ -86,22 +88,15 @@ export function PagesPanel({
   }
 
   async function deleteRow(row: PageRow): Promise<void> {
-    const msg =
-      row.entryCount > 0
-        ? `Delete this page and its ${row.entryCount} extracted ${
-            row.entryCount === 1 ? "entry" : "entries"
-          }? This can't be undone.`
-        : "Delete this page? This can't be undone.";
-    if (!window.confirm(msg)) return;
-    setError(null);
     setDeletingId(row.id);
     const res = await deletePage(aircraftId, row.id);
     setDeletingId(null);
     if ("error" in res) {
-      setError(res.error);
+      toast.error(res.error);
       return;
     }
     setRows((rs) => rs.filter((r) => r.id !== row.id));
+    toast.success("Page deleted.");
   }
 
   // One-time backfill for pages uploaded before thumbnails existed: resize the
@@ -111,8 +106,8 @@ export function PagesPanel({
     const todo = rows.filter((r) => r.needsThumbnail && r.thumbnailUrl);
     if (todo.length === 0) return;
     setBackfilling(true);
-    setError(null);
     const supabase = createClient();
+    let made = 0;
     for (const r of todo) {
       try {
         const orig = await fetch(r.thumbnailUrl!).then((res) => res.blob());
@@ -124,11 +119,13 @@ export function PagesPanel({
         if (upErr) continue;
         await supabase.from("page").update({ thumbnail_path: thumbPath }).eq("id", r.id);
         patch(r.id, { needsThumbnail: false });
+        made += 1;
       } catch {
         // skip this page; others still process
       }
     }
     setBackfilling(false);
+    if (made > 0) toast.success(`Generated ${made} thumbnail${made === 1 ? "" : "s"}.`);
   }
 
   const visibleRows = selectedLogbookId
@@ -139,7 +136,6 @@ export function PagesPanel({
 
   async function extractAllPending(): Promise<void> {
     setBusy(true);
-    setError(null);
     // Sequential to respect API rate limits/timeouts; scoped to what's shown.
     const pending = visibleRows
       .filter((r) => r.extractionStatus === "pending" || r.extractionStatus === "failed")
@@ -243,8 +239,6 @@ export function PagesPanel({
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-
       {rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
           No pages yet. Capture or upload logbook pages to extract entries.
@@ -338,14 +332,16 @@ export function PagesPanel({
                   </button>
                 )}
                 {canEdit && (
-                  <button
-                    onClick={() => deleteRow(r)}
+                  <ConfirmButton
+                    onConfirm={() => deleteRow(r)}
+                    confirmLabel={
+                      r.entryCount > 0 ? `Delete + ${r.entryCount} ${r.entryCount === 1 ? "entry" : "entries"}` : "Delete"
+                    }
                     disabled={busy || deletingId === r.id}
                     className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
-                    title="Delete this page and its extracted entries"
                   >
                     {deletingId === r.id ? "Deleting…" : "Delete"}
-                  </button>
+                  </ConfirmButton>
                 )}
               </li>
             );

@@ -33,14 +33,8 @@ export default async function Dashboard() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-6">
         <h1 className="text-2xl font-bold">Your aircraft</h1>
-        <Link
-          href="/profile"
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-        >
-          Profile
-        </Link>
       </header>
 
       <div className="mb-6">
