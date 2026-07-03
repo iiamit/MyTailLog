@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ShareRole } from "@/lib/database.types";
-import { addShare, removeShare, transferAircraft } from "./actions";
+import { addShare, removeShare, transferAircraft, deleteAircraft } from "./actions";
 
 export type ShareRow = { id: string; email: string; role: ShareRole };
 
@@ -57,6 +57,24 @@ export function ShareClient({
       return;
     }
     setRows((rs) => rs.filter((r) => r.id !== id));
+  }
+
+  // Delete
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
+  async function doDelete(e: React.FormEvent) {
+    e.preventDefault();
+    setDeleting(true);
+    setDeleteErr(null);
+    const res = await deleteAircraft(aircraftId, confirmText);
+    if (res.error) {
+      setDeleteErr(res.error);
+      setDeleting(false);
+      return;
+    }
+    router.push("/dashboard");
+    router.refresh();
   }
 
   // Transfer
@@ -169,6 +187,36 @@ export function ShareClient({
           </button>
         </form>
         {transferErr && <p className="text-sm text-red-600 dark:text-red-400">{transferErr}</p>}
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-lg border border-red-200 p-5 dark:border-red-900/50">
+        <h2 className="font-semibold text-red-700 dark:text-red-400">Delete this aircraft</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Permanently removes {tail} and everything under it — every logbook, page, scan, extracted
+          entry, AD/SB record, and maintenance item. This cannot be undone. Consider downloading a
+          backup first (Export / print → Download backup).
+        </p>
+        <form onSubmit={doDelete} className="flex flex-col gap-2">
+          <label className="text-sm">
+            Type <span className="font-mono font-semibold">DELETE</span> to confirm:
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className={`${inputClass} flex-1`}
+            />
+            <button
+              type="submit"
+              disabled={deleting || confirmText !== "DELETE"}
+              className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete forever"}
+            </button>
+          </div>
+        </form>
+        {deleteErr && <p className="text-sm text-red-600 dark:text-red-400">{deleteErr}</p>}
       </section>
     </div>
   );

@@ -219,7 +219,7 @@ export default async function AircraftPage({
             href={`/aircraft/${id}/share`}
             className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
           >
-            Sharing &amp; transfer →
+            Sharing, transfer &amp; delete →
           </Link>
         )}
       </div>

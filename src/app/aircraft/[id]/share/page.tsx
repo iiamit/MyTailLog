@@ -47,10 +47,10 @@ export default async function SharePage({
         ← {aircraft.tail_number}
       </Link>
       <header className="mb-6 mt-2">
-        <h1 className="text-2xl font-bold">Sharing &amp; transfer</h1>
+        <h1 className="text-2xl font-bold">Sharing, transfer &amp; delete</h1>
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          Invite people to view or contribute to {aircraft.tail_number}, or hand the aircraft to a
-          new owner.
+          Invite people to view or contribute to {aircraft.tail_number}, hand the aircraft to a new
+          owner, or delete it.
         </p>
       </header>
 

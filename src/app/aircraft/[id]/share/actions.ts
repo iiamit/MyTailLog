@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ShareRole } from "@/lib/database.types";
 
+const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
+
 async function assertOwner(aircraftId: string) {
   const supabase = await createClient();
   const {
@@ -61,6 +63,45 @@ export async function transferAircraft(
     new_owner_email: email.trim().toLowerCase(),
   });
   if (rpcErr) return { error: rpcErr.message };
+  revalidatePath("/dashboard");
+  return {};
+}
+
+/**
+ * Permanently delete an aircraft and everything under it. Requires the caller
+ * to be the owner and to type DELETE. Stored scans are removed FIRST (while the
+ * owner still has storage access), then the aircraft row — its cascades drop
+ * every child record (logbooks, pages, entries, compliance, maintenance,
+ * shares, …).
+ */
+export async function deleteAircraft(
+  aircraftId: string,
+  confirmation: string,
+): Promise<{ error?: string }> {
+  if (confirmation !== "DELETE") return { error: "Type DELETE to confirm." };
+  const { supabase, error } = await assertOwner(aircraftId);
+  if (error) return { error };
+
+  // Collect every stored object for this aircraft (exact paths from the rows).
+  const [{ data: pages }, { data: docs }] = await Promise.all([
+    supabase.from("page").select("storage_path, thumbnail_path").eq("aircraft_id", aircraftId),
+    supabase.from("document").select("storage_path").eq("aircraft_id", aircraftId),
+  ]);
+  const paths: string[] = [];
+  for (const p of pages ?? []) {
+    if (p.storage_path) paths.push(p.storage_path);
+    if (p.thumbnail_path) paths.push(p.thumbnail_path);
+  }
+  for (const d of docs ?? []) if (d.storage_path) paths.push(d.storage_path);
+
+  // Best-effort storage cleanup before the DB rows (which gate storage access) go.
+  for (let i = 0; i < paths.length; i += 100) {
+    await supabase.storage.from(BUCKET).remove(paths.slice(i, i + 100));
+  }
+
+  const { error: delErr } = await supabase.from("aircraft").delete().eq("id", aircraftId);
+  if (delErr) return { error: delErr.message };
+
   revalidatePath("/dashboard");
   return {};
 }

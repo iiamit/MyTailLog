@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
+import { getAircraftRole, canEditRole } from "@/lib/access";
 import { ReviewClient, type ReviewEntry } from "./ReviewClient";
+import { ReextractButton } from "./ReextractButton";
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
@@ -24,6 +26,16 @@ export default async function ReviewPage({
     .single();
 
   if (!page || page.aircraft_id !== id) notFound();
+
+  // Role gates the re-extract control (RLS is the real guard).
+  const { data: aircraft } = await supabase
+    .from("aircraft")
+    .select("owner_id")
+    .eq("id", id)
+    .single();
+  const role = aircraft ? await getAircraftRole(supabase, id, aircraft.owner_id) : "viewer";
+  const canEdit = canEditRole(role);
+  const extractionConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
 
   const { data: logbook } = await supabase
     .from("logbook")
@@ -95,7 +107,8 @@ export default async function ReviewPage({
             Review {logbookLabel}
             {page.page_sequence != null ? ` · page #${page.page_sequence}` : ""}
           </h1>
-          <nav className="flex items-center gap-2 text-sm">
+          <nav className="flex flex-wrap items-center gap-2 text-sm">
+            {canEdit && extractionConfigured && <ReextractButton pageId={pageId} />}
             {prevPageId ? (
               <Link
                 href={`/aircraft/${id}/pages/${prevPageId}/review`}
