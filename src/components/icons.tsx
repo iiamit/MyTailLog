@@ -132,6 +132,14 @@ export const CameraIcon = (p: P) => (
   </Base>
 );
 
+export const GaugeIcon = (p: P) => (
+  <Base {...p}>
+    <path d="M4 18a8 8 0 1 1 16 0" />
+    <path d="M12 18l4-5" />
+    <circle cx="12" cy="18" r="1.2" />
+  </Base>
+);
+
 export const ScaleIcon = (p: P) => (
   <Base {...p}>
     <path d="M12 3v18" />

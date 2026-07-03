@@ -19,6 +19,7 @@ import {
   CameraIcon,
   UploadIcon,
   ScaleIcon,
+  GaugeIcon,
 } from "@/components/icons";
 import { staleWBChanges, type EquipChange } from "@/lib/weightBalance";
 import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
@@ -285,6 +286,25 @@ export default async function AircraftPage({
         </HubSection>
 
         <HubSection title="Airworthiness">
+          <HubCard
+            href={`/aircraft/${id}/status`}
+            icon={<GaugeIcon />}
+            title="Status overview"
+            desc="Every inspection, item & AD at a glance, color-coded"
+            badge={
+              dueSoonCount > 0
+                ? {
+                    text: `${dueSoonCount} need attention`,
+                    tone: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+                  }
+                : mxList.length > 0
+                  ? {
+                      text: "all current",
+                      tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+                    }
+                  : null
+            }
+          />
           <HubCard
             href={`/aircraft/${id}/maintenance`}
             icon={<WrenchIcon />}

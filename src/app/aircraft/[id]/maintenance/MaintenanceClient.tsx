@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import type { MaintenanceItem } from "@/lib/database.types";
-import { dueText, URGENCY_STYLE, urgencyLabel, type Urgency } from "@/lib/compliance";
+import { dueText, URGENCY_STYLE, urgencyLabel } from "@/lib/compliance";
+import type { StatusItem } from "@/lib/status";
 import { STANDARD_ITEMS } from "@/lib/maintenance";
 import {
   upsertMaintenanceItem,
@@ -16,21 +17,8 @@ import {
   type MaintenanceInput,
 } from "./actions";
 
-export type DueItem = {
-  id: string;
-  source: "maintenance" | "ad";
-  label: string;
-  kind: string;
-  regulatory: boolean;
-  intervalMonths: number | null;
-  intervalHours: number | null;
-  lastDoneDate: string | null;
-  lastDoneHours: number | null;
-  nextDueDate: string | null;
-  nextDueHours: number | null;
-  notes: string | null;
-  urgency: Urgency;
-};
+// The forecast list and the Status grid share one shape (src/lib/status.ts).
+export type DueItem = StatusItem;
 
 type FormState = {
   id?: string;

@@ -1,17 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { urgencyOf, type Urgency } from "@/lib/compliance";
-import { effectiveNextDue } from "@/lib/maintenance";
 import { getCurrentHours } from "@/lib/aircraftHours";
-import { MaintenanceClient, type DueItem } from "./MaintenanceClient";
-
-const URGENCY_RANK: Record<Urgency, number> = {
-  overdue: 0,
-  due_soon: 1,
-  upcoming: 2,
-  none: 3,
-};
+import { buildStatusItems, sortStatusItems } from "@/lib/status";
+import { MaintenanceClient } from "./MaintenanceClient";
 
 export default async function MaintenancePage({
   params,
@@ -48,54 +40,9 @@ export default async function MaintenancePage({
     tach: aircraft.enrollment_tach,
   });
 
-  // Build the unified due list. The 100-hour resets off the last annual too, so
-  // its effective next-due considers the annual's last-done hours.
-  const allItems = items ?? [];
-  const dueItems: DueItem[] = [];
-  for (const m of allItems) {
-    const due = effectiveNextDue(m, allItems);
-    dueItems.push({
-      id: m.id,
-      source: "maintenance",
-      label: m.label,
-      kind: m.kind,
-      regulatory: m.regulatory,
-      intervalMonths: m.interval_months,
-      intervalHours: m.interval_hours,
-      lastDoneDate: m.last_done_date,
-      lastDoneHours: m.last_done_hours,
-      nextDueDate: due.next_due_date,
-      nextDueHours: due.next_due_hours,
-      notes: m.notes,
-      urgency: urgencyOf(due, currentHours),
-    });
-  }
-  for (const a of ads ?? []) {
-    dueItems.push({
-      id: a.id,
-      source: "ad",
-      label: `${a.kind.toUpperCase()} ${a.reference}`,
-      kind: "ad",
-      regulatory: true,
-      intervalMonths: null,
-      intervalHours: null,
-      lastDoneDate: null,
-      lastDoneHours: null,
-      nextDueDate: a.next_due_date,
-      nextDueHours: a.next_due_hours,
-      notes: null,
-      urgency: urgencyOf(
-        { next_due_date: a.next_due_date, next_due_hours: a.next_due_hours },
-        currentHours,
-      ),
-    });
-  }
-
-  // Sort by urgency, then soonest next-due date.
-  dueItems.sort(
-    (a, b) =>
-      URGENCY_RANK[a.urgency] - URGENCY_RANK[b.urgency] ||
-      (a.nextDueDate ?? "9999").localeCompare(b.nextDueDate ?? "9999"),
+  // Unified due list (maintenance items + recurring ADs), sorted by urgency.
+  const dueItems = sortStatusItems(
+    buildStatusItems(items ?? [], ads ?? [], currentHours),
   );
 
   return (
