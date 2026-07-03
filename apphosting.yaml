@@ -30,8 +30,12 @@ env:
       - RUNTIME
 
   # Non-sensitive defaults.
-  - variable: EXTRACTION_MODEL
+  - variable: EXTRACTION_MODEL # vision / handwriting (keep strong)
     value: claude-opus-4-8
+    availability:
+      - RUNTIME
+  - variable: TEXT_MODEL # text-only tasks: Q&A, equipment/maintenance detection
+    value: claude-haiku-4-5
     availability:
       - RUNTIME
   - variable: LOGBOOK_STORAGE_BUCKET
