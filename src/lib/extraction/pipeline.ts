@@ -22,6 +22,7 @@ import { proposeEquipmentForEntries } from "./equipmentProposals";
 import type { EquipmentEntryInput } from "./equipment";
 import { applyMaintenanceFromEntries } from "./maintenanceUpdates";
 import type { MaintenanceEntryInput } from "./maintenance";
+import { entryText } from "./entryText";
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
@@ -141,10 +142,7 @@ export async function extractPage(
           entry_id: page.id,
           date: e.entry_date,
           logbook: "logbook",
-          text: [e.description, e.work_performed, e.parts]
-            .map((s) => s?.trim())
-            .filter(Boolean)
-            .join(" — "),
+          text: entryText(e),
         }))
         .filter((e) => e.text.length > 0);
       equipmentProposed = await proposeEquipmentForEntries(
@@ -164,10 +162,7 @@ export async function extractPage(
         .map((e) => ({
           entry_id: page.id,
           date: e.entry_date,
-          text: [e.description, e.work_performed, e.parts]
-            .map((s) => s?.trim())
-            .filter(Boolean)
-            .join(" — "),
+          text: entryText(e),
         }))
         .filter((e) => e.text.length > 0);
       await applyMaintenanceFromEntries(supabase, page.aircraft_id, mxEntries);

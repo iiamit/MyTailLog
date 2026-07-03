@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { extractionConfigured } from "@/lib/extraction/anthropic";
 import type { MaintenanceEntryInput } from "@/lib/extraction/maintenance";
 import { applyMaintenanceFromEntries } from "@/lib/extraction/maintenanceUpdates";
+import { entryText } from "@/lib/extraction/entryText";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -39,10 +40,7 @@ export async function POST(
     .map((e) => ({
       entry_id: e.id,
       date: e.entry_date,
-      text: [e.description, e.work_performed, e.parts]
-        .map((s) => s?.trim())
-        .filter(Boolean)
-        .join(" — "),
+      text: entryText(e),
     }))
     .filter((e) => e.text.length > 0);
 

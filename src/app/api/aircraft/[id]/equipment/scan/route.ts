@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { extractionConfigured } from "@/lib/extraction/anthropic";
 import type { EquipmentEntryInput } from "@/lib/extraction/equipment";
 import { proposeEquipmentForEntries } from "@/lib/extraction/equipmentProposals";
+import { entryText } from "@/lib/extraction/entryText";
 import { logbookLabel } from "@/lib/logbooks";
 
 export const runtime = "nodejs";
@@ -58,10 +59,7 @@ export async function POST(
       entry_id: e.id,
       date: e.entry_date,
       logbook: labelById.get(e.logbook_id) ?? "logbook",
-      text: [e.description, e.work_performed, e.parts]
-        .map((s) => s?.trim())
-        .filter(Boolean)
-        .join(" — "),
+      text: entryText(e),
     }))
     .filter((e) => e.text.length > 0);
 

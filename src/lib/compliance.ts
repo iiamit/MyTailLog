@@ -85,3 +85,38 @@ export function urgencyOf(
   if (r.next_due_date || r.next_due_hours != null) return "upcoming";
   return "none";
 }
+
+// Shared urgency badge presentation.
+export const URGENCY_STYLE: Record<Exclude<Urgency, "none">, string> = {
+  overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+  due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  upcoming: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+};
+export function urgencyLabel(u: Exclude<Urgency, "none">): string {
+  return u === "overdue" ? "OVERDUE" : u === "due_soon" ? "due soon" : "upcoming";
+}
+
+/** Human "next due" text from a next-due date/hours vs current hours. */
+export function dueText(
+  nextDueDate: string | null,
+  nextDueHours: number | null,
+  currentHours: number | null,
+): string | null {
+  const parts: string[] = [];
+  if (nextDueDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    const days = Math.round(
+      (Date.parse(nextDueDate + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86_400_000,
+    );
+    parts.push(days < 0 ? `${-days}d overdue` : days === 0 ? "due today" : `in ${days}d (${nextDueDate})`);
+  }
+  if (nextDueHours != null) {
+    if (currentHours != null) {
+      const h = Math.round((nextDueHours - currentHours) * 10) / 10;
+      parts.push(h < 0 ? `${-h} hrs over` : `${h} hrs left`);
+    } else {
+      parts.push(`at ${nextDueHours} hrs`);
+    }
+  }
+  return parts.length ? parts.join(" · ") : null;
+}

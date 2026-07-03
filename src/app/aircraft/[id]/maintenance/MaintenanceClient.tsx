@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MaintenanceItem } from "@/lib/database.types";
-import type { Urgency } from "@/lib/compliance";
+import { dueText, URGENCY_STYLE, urgencyLabel, type Urgency } from "@/lib/compliance";
 import { STANDARD_ITEMS } from "@/lib/maintenance";
 import {
   upsertMaintenanceItem,
@@ -29,32 +29,6 @@ export type DueItem = {
   notes: string | null;
   urgency: Urgency;
 };
-
-const URGENCY_STYLE: Record<Exclude<Urgency, "none">, string> = {
-  overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  upcoming: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-};
-
-function dueText(d: DueItem, currentHours: number | null): string {
-  const parts: string[] = [];
-  if (d.nextDueDate) {
-    const today = new Date().toISOString().slice(0, 10);
-    const days = Math.round(
-      (Date.parse(d.nextDueDate + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86_400_000,
-    );
-    parts.push(
-      days < 0 ? `${-days}d overdue` : days === 0 ? "due today" : `in ${days}d (${d.nextDueDate})`,
-    );
-  }
-  if (d.nextDueHours != null) {
-    if (currentHours != null) {
-      const h = Math.round((d.nextDueHours - currentHours) * 10) / 10;
-      parts.push(h < 0 ? `${-h} hrs over` : `${h} hrs left`);
-    } else parts.push(`at ${d.nextDueHours} hrs`);
-  }
-  return parts.length ? parts.join(" · ") : "no due date set";
-}
 
 type FormState = {
   id?: string;
@@ -338,7 +312,7 @@ export function MaintenanceClient({
                   <span className="font-semibold">{d.label}</span>
                   {d.urgency !== "none" && (
                     <span className={`rounded-full px-2 py-0.5 text-xs ${URGENCY_STYLE[d.urgency]}`}>
-                      {d.urgency === "overdue" ? "OVERDUE" : d.urgency === "due_soon" ? "due soon" : "upcoming"}
+                      {urgencyLabel(d.urgency)}
                     </span>
                   )}
                   {!d.regulatory && (
@@ -353,7 +327,7 @@ export function MaintenanceClient({
                   )}
                 </div>
                 <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {dueText(d, currentHours)}
+                  {dueText(d.nextDueDate, d.nextDueHours, currentHours) ?? "no due date set"}
                   {(d.intervalMonths || d.intervalHours) && (
                     <span>
                       {" · every "}

@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AdCompliance, AdKind, AdStatus, AdReference } from "@/lib/database.types";
-import { AD_STATUS_LABEL, urgencyOf, type Urgency } from "@/lib/compliance";
+import {
+  AD_STATUS_LABEL,
+  urgencyOf,
+  dueText,
+  URGENCY_STYLE,
+  urgencyLabel,
+} from "@/lib/compliance";
 import {
   upsertAdRecord,
   deleteAdRecord,
@@ -20,11 +26,6 @@ const STATUS_STYLE: Record<AdStatus, string> = {
   previously_complied: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
   not_applicable: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
   superseded: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-};
-const URGENCY_STYLE: Record<Exclude<Urgency, "none">, string> = {
-  overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  upcoming: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
 };
 const AD_STATUSES: AdStatus[] = [
   "open",
@@ -139,29 +140,6 @@ function urgencyRank(r: AdCompliance, currentHours: number | null): number {
   if (u === "due_soon") return 2;
   if (u === "upcoming") return 3;
   return 4;
-}
-
-function dueText(r: AdCompliance, currentHours: number | null): string | null {
-  const parts: string[] = [];
-  if (r.next_due_date) {
-    const today = new Date().toISOString().slice(0, 10);
-    const days = Math.round(
-      (Date.parse(r.next_due_date + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) /
-        86_400_000,
-    );
-    parts.push(
-      days < 0 ? `${-days}d overdue` : days === 0 ? "due today" : `in ${days}d (${r.next_due_date})`,
-    );
-  }
-  if (r.next_due_hours != null) {
-    if (currentHours != null) {
-      const h = Math.round((r.next_due_hours - currentHours) * 10) / 10;
-      parts.push(h < 0 ? `${-h} hrs over` : `${h} hrs left`);
-    } else {
-      parts.push(`at ${r.next_due_hours} hrs`);
-    }
-  }
-  return parts.length ? parts.join(" · ") : null;
 }
 
 const inputClass =
@@ -474,7 +452,7 @@ export function ComplianceClient({
         <ul className="flex flex-col gap-2">
           {sorted.map((r) => {
             const urgency = urgencyOf(r, currentHours);
-            const due = dueText(r, currentHours);
+            const due = dueText(r.next_due_date, r.next_due_hours, currentHours);
             return (
               <li
                 key={r.id}
@@ -490,7 +468,7 @@ export function ComplianceClient({
                   </span>
                   {urgency !== "none" && (
                     <span className={`rounded-full px-2 py-0.5 text-xs ${URGENCY_STYLE[urgency]}`}>
-                      {urgency === "overdue" ? "OVERDUE" : urgency === "due_soon" ? "due soon" : "upcoming"}
+                      {urgencyLabel(urgency)}
                     </span>
                   )}
                   {r.recurring && (
