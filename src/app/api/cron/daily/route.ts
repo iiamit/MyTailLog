@@ -218,14 +218,11 @@ async function accessibleAircraft(
 /** userId → email, from Supabase Auth (admin). ponytail: pages of 1000; the
  *  loop covers larger user bases without change. */
 async function loadUserEmails(supabase: Service): Promise<Map<string, string>> {
+  // Read from profile (kept in sync with auth.users by triggers) rather than the
+  // GoTrue admin API — the secret key grants DB access but not admin.listUsers.
   const map = new Map<string, string>();
-  const perPage = 1000;
-  for (let page = 1; ; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error || !data) break;
-    for (const u of data.users) if (u.email) map.set(u.id, u.email);
-    if (data.users.length < perPage) break;
-  }
+  const { data } = await supabase.from("profile").select("id, email");
+  for (const p of data ?? []) if (p.email) map.set(p.id, p.email);
   return map;
 }
 

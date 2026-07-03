@@ -274,6 +274,7 @@ export type Profile = {
   id: string;
   full_name: string | null;
   cert_number: string | null;
+  email: string | null;
   preferences: Preferences;
   created_at: string;
   updated_at: string;
