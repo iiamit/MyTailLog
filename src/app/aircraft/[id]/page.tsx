@@ -40,22 +40,25 @@ export default async function AircraftPage({
   const { data: pages } = await supabase
     .from("page")
     .select(
-      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error, storage_path",
+      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error, storage_path, thumbnail_path",
     )
     .eq("aircraft_id", id)
     .order("logbook_id", { ascending: true })
     .order("page_sequence", { ascending: true, nullsFirst: false });
 
-  // Short-lived signed URLs for page thumbnails (private bucket). Batch-signed;
-  // the thumbnails lazy-load and click through to a full-screen magnifier.
-  const thumbByPath = new Map<string, string>();
-  const paths = (pages ?? []).map((p) => p.storage_path).filter(Boolean);
+  // Short-lived signed URLs for page thumbnails (private bucket). Prefer the
+  // small thumbnail; fall back to the original for pages without one yet.
+  const thumbById = new Map<string, string>();
+  const signPath = new Map<string, string>(); // path -> page id
+  for (const p of pages ?? []) signPath.set(p.thumbnail_path ?? p.storage_path, p.id);
+  const paths = [...signPath.keys()];
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage
       .from(BUCKET)
       .createSignedUrls(paths, 3600);
     for (const s of signed ?? []) {
-      if (s.path && s.signedUrl) thumbByPath.set(s.path, s.signedUrl);
+      const pid = s.path ? signPath.get(s.path) : undefined;
+      if (pid && s.signedUrl) thumbById.set(pid, s.signedUrl);
     }
   }
 
@@ -107,7 +110,9 @@ export default async function AircraftPage({
     detectedPageCount: p.detected_page_count,
     extractionError: p.extraction_error,
     entryCount: entryCounts.get(p.id) ?? 0,
-    thumbnailUrl: thumbByPath.get(p.storage_path) ?? null,
+    thumbnailUrl: thumbById.get(p.id) ?? null,
+    storagePath: p.storage_path,
+    needsThumbnail: !p.thumbnail_path,
   }));
 
   const logbookTiles: LogbookTile[] = (logbooks ?? []).map((lb) => ({

@@ -5,6 +5,11 @@ import Link from "next/link";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { deletePage } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
+import { createClient } from "@/lib/supabase/client";
+import { makeThumbnail, thumbnailKey } from "@/lib/capture/thumbnail";
+
+const BUCKET =
+  process.env.NEXT_PUBLIC_LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export type PageRow = {
   id: string;
@@ -17,6 +22,8 @@ export type PageRow = {
   extractionError: string | null;
   entryCount: number;
   thumbnailUrl: string | null;
+  storagePath: string;
+  needsThumbnail: boolean;
 };
 
 export type LogbookTile = {
@@ -94,10 +101,38 @@ export function PagesPanel({
     setRows((rs) => rs.filter((r) => r.id !== row.id));
   }
 
+  // One-time backfill for pages uploaded before thumbnails existed: resize the
+  // original in the browser and upload a thumbnail (no server image processing).
+  const [backfilling, setBackfilling] = useState(false);
+  async function backfillThumbnails(): Promise<void> {
+    const todo = rows.filter((r) => r.needsThumbnail && r.thumbnailUrl);
+    if (todo.length === 0) return;
+    setBackfilling(true);
+    setError(null);
+    const supabase = createClient();
+    for (const r of todo) {
+      try {
+        const orig = await fetch(r.thumbnailUrl!).then((res) => res.blob());
+        const thumb = await makeThumbnail(orig);
+        const thumbPath = thumbnailKey(r.storagePath);
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET)
+          .upload(thumbPath, thumb, { contentType: "image/jpeg", upsert: true });
+        if (upErr) continue;
+        await supabase.from("page").update({ thumbnail_path: thumbPath }).eq("id", r.id);
+        patch(r.id, { needsThumbnail: false });
+      } catch {
+        // skip this page; others still process
+      }
+    }
+    setBackfilling(false);
+  }
+
   const visibleRows = selectedLogbookId
     ? rows.filter((r) => r.logbookId === selectedLogbookId)
     : rows;
   const selectedLabel = logbooks.find((l) => l.id === selectedLogbookId)?.label;
+  const missingThumbs = rows.filter((r) => r.needsThumbnail).length;
 
   async function extractAllPending(): Promise<void> {
     setBusy(true);
@@ -178,19 +213,31 @@ export function PagesPanel({
             </p>
           )}
         </div>
-        {extractionConfigured ? (
-          <button
-            onClick={extractAllPending}
-            disabled={busy || pendingCount === 0}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-          >
-            {busy ? "Extracting…" : `Extract ${pendingCount} pending`}
-          </button>
-        ) : (
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            Set ANTHROPIC_API_KEY to enable extraction
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {missingThumbs > 0 && (
+            <button
+              onClick={backfillThumbnails}
+              disabled={backfilling}
+              title="Generate small thumbnails from the originals (one-time)"
+              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            >
+              {backfilling ? "Generating…" : `Thumbnails (${missingThumbs})`}
+            </button>
+          )}
+          {extractionConfigured ? (
+            <button
+              onClick={extractAllPending}
+              disabled={busy || pendingCount === 0}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            >
+              {busy ? "Extracting…" : `Extract ${pendingCount} pending`}
+            </button>
+          ) : (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Set ANTHROPIC_API_KEY to enable extraction
+            </span>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

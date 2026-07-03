@@ -11,6 +11,7 @@ import {
 import { assessQuality, type QualityReport } from "@/lib/capture/imageQuality";
 import { enqueuePage, countQueued } from "@/lib/capture/queue";
 import { drainQueue, registerBackgroundDrain } from "@/lib/capture/uploader";
+import { makeThumbnail } from "@/lib/capture/thumbnail";
 
 export type CaptureLogbook = {
   id: string;
@@ -227,6 +228,7 @@ export function CaptureClient({
         capturedAt: new Date().toISOString(),
         isHandwritten,
         blob: pending.blob,
+        thumbnailBlob: await makeThumbnail(pending.blob),
         width: pending.width,
         height: pending.height,
         sharpness: pending.report.sharpness,

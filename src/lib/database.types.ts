@@ -57,6 +57,7 @@ export type Page = {
   logbook_id: string;
   aircraft_id: string;
   storage_path: string;
+  thumbnail_path: string | null;
   page_sequence: number | null;
   captured_at: string | null;
   ocr_text: string | null;

@@ -49,12 +49,12 @@ export default async function TimelinePage({
   // rendered timeline and live search results can show the page image.
   const { data: pages } = await supabase
     .from("page")
-    .select("id, storage_path")
+    .select("id, storage_path, thumbnail_path")
     .eq("aircraft_id", id);
 
   const thumbnailByPageId: Record<string, string> = {};
   const pathToId = new Map<string, string>();
-  for (const p of pages ?? []) if (p.storage_path) pathToId.set(p.storage_path, p.id);
+  for (const p of pages ?? []) pathToId.set(p.thumbnail_path ?? p.storage_path, p.id);
   const paths = [...pathToId.keys()];
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage

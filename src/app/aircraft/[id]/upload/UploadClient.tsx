@@ -5,6 +5,7 @@ import Link from "next/link";
 import { enqueuePage, countQueued } from "@/lib/capture/queue";
 import { drainQueue, registerBackgroundDrain } from "@/lib/capture/uploader";
 import { rasterizeFile, isSupportedFile } from "@/lib/capture/importFiles";
+import { makeThumbnail } from "@/lib/capture/thumbnail";
 import type { CaptureLogbook } from "../capture/CaptureClient";
 
 // Per-file outcome shown in the results list after processing.
@@ -121,6 +122,7 @@ export function UploadClient({
               capturedAt: new Date(file.lastModified).toISOString(),
               isHandwritten,
               blob: raster.blob,
+              thumbnailBlob: await makeThumbnail(raster.blob),
               width: raster.width,
               height: raster.height,
               sharpness: raster.report.sharpness,

@@ -15,6 +15,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { listQueued, removeQueued, type QueuedPage } from "./queue";
+import { thumbnailKey } from "./thumbnail";
 
 const BUCKET = "logbook-pages";
 
@@ -43,6 +44,7 @@ async function uploadOne(
   page: QueuedPage,
 ): Promise<boolean> {
   const path = `${page.aircraftId}/${page.logbookId}/${page.id}.jpg`;
+  const thumbPath = thumbnailKey(path);
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
@@ -52,11 +54,18 @@ async function uploadOne(
     });
   if (uploadError) return false;
 
+  // Thumbnail: derived in the browser, uploaded alongside. Non-fatal if it
+  // fails — the page still works via a fallback to the original.
+  const { error: thumbError } = await supabase.storage
+    .from(BUCKET)
+    .upload(thumbPath, page.thumbnailBlob, { contentType: "image/jpeg", upsert: true });
+
   const { error: rowError } = await supabase.from("page").insert({
     id: page.id,
     logbook_id: page.logbookId,
     aircraft_id: page.aircraftId,
     storage_path: path,
+    thumbnail_path: thumbError ? null : thumbPath,
     page_sequence: page.pageSequence,
     captured_at: page.capturedAt,
     is_handwritten: page.isHandwritten,

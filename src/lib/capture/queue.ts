@@ -28,6 +28,8 @@ export type QueuedPage = {
   isHandwritten: boolean;
   /** Processed (cropped/deskewed) JPEG blob ready to upload. */
   blob: Blob;
+  /** Small JPEG thumbnail derived from the same image, uploaded alongside. */
+  thumbnailBlob: Blob;
   width: number;
   height: number;
   /** Quality metrics kept for later triage / debugging. */
