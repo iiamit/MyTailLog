@@ -12,18 +12,21 @@
 // solo/zero-cost deployment, and the fallback keeps the feature usable anyway.
 // ===========================================================================
 
-// OpenCV.js (~8MB WASM). docs.opencv.org first (known-good API), then a jsDelivr
-// mirror as a fallback — on slow/flaky mobile the docs host is the usual failure.
+// OpenCV.js — real, self-contained builds (the wasm is embedded as base64, so a
+// plain cross-origin <script> works with no separate .wasm fetch). 4.7.0 is the
+// smallest (~9MB, best for mobile) and is jscanify's documented pairing; 4.9.0
+// is the fallback. NOTE: a previously pinned "4.10.0" 404s on docs.opencv.org —
+// that dead URL is why auto-crop never loaded. Verify any version returns 200.
 const OPENCV_URLS = [
-  "https://docs.opencv.org/4.10.0/opencv.js",
-  "https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0/dist/opencv.js",
+  "https://docs.opencv.org/4.7.0/opencv.js",
+  "https://docs.opencv.org/4.9.0/opencv.js",
 ];
 const JSCANIFY_URL =
   "https://cdn.jsdelivr.net/gh/puffinsoft/jscanify@master/src/jscanify.min.js";
 
-// Mobile downloads of an 8MB script + WASM init are slow; be generous so a legit
+// Mobile downloads of a ~9MB script + WASM init are slow; be generous so a legit
 // slow load isn't cut off before it finishes.
-const SCRIPT_TIMEOUT_MS = 30_000;
+const SCRIPT_TIMEOUT_MS = 45_000;
 const INIT_TIMEOUT_MS = 45_000;
 
 type ScannerGlobals = {
