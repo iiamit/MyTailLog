@@ -46,11 +46,13 @@ export function PagesPanel({
   logbooks,
   pages,
   extractionConfigured,
+  canEdit,
 }: {
   aircraftId: string;
   logbooks: LogbookTile[];
   pages: PageRow[];
   extractionConfigured: boolean;
+  canEdit: boolean;
 }) {
   const [rows, setRows] = useState<PageRow[]>(pages);
   // Clicking a logbook tile filters the list to that logbook (null = all).
@@ -215,7 +217,7 @@ export function PagesPanel({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {missingThumbs > 0 && (
+          {missingThumbs > 0 && canEdit && (
             <button
               onClick={backfillThumbnails}
               disabled={backfilling}
@@ -335,14 +337,16 @@ export function PagesPanel({
                     {r.extractionStatus === "extracted" ? "Re-extract" : "Extract"}
                   </button>
                 )}
-                <button
-                  onClick={() => deleteRow(r)}
-                  disabled={busy || deletingId === r.id}
-                  className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
-                  title="Delete this page and its extracted entries"
-                >
-                  {deletingId === r.id ? "Deleting…" : "Delete"}
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => deleteRow(r)}
+                    disabled={busy || deletingId === r.id}
+                    className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+                    title="Delete this page and its extracted entries"
+                  >
+                    {deletingId === r.id ? "Deleting…" : "Delete"}
+                  </button>
+                )}
               </li>
             );
           })}

@@ -6,6 +6,7 @@ import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { urgencyOf } from "@/lib/compliance";
 import { effectiveNextDue } from "@/lib/maintenance";
 import { getCurrentHours } from "@/lib/aircraftHours";
+import { getAircraftRole, canEditRole } from "@/lib/access";
 import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
@@ -26,6 +27,10 @@ export default async function AircraftPage({
     .single();
 
   if (!aircraft) notFound();
+
+  const role = await getAircraftRole(supabase, id, aircraft.owner_id);
+  const isOwner = role === "owner";
+  const canEdit = canEditRole(role);
 
   const { data: logbooks } = await supabase
     .from("logbook")
@@ -142,7 +147,14 @@ export default async function AircraftPage({
       </Link>
 
       <header className="mt-2 mb-6">
-        <h1 className="text-3xl font-bold">{aircraft.tail_number}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold">{aircraft.tail_number}</h1>
+          {!isOwner && (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              Shared with you · {canEdit ? "contribute" : "view only"}
+            </span>
+          )}
+        </div>
         <p className="text-slate-600 dark:text-slate-300">
           {[aircraft.year, aircraft.make, aircraft.model]
             .filter(Boolean)
@@ -202,25 +214,35 @@ export default async function AircraftPage({
             </span>
           ) : null}
         </Link>
+        {isOwner && (
+          <Link
+            href={`/aircraft/${id}/share`}
+            className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+          >
+            Sharing &amp; transfer →
+          </Link>
+        )}
       </div>
 
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Logbooks &amp; pages</h2>
-          <div className="flex gap-2">
-            <Link
-              href={`/aircraft/${id}/upload`}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-            >
-              Upload scans
-            </Link>
-            <Link
-              href={`/aircraft/${id}/capture`}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-            >
-              Capture pages
-            </Link>
-          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <Link
+                href={`/aircraft/${id}/upload`}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+              >
+                Upload scans
+              </Link>
+              <Link
+                href={`/aircraft/${id}/capture`}
+                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              >
+                Capture pages
+              </Link>
+            </div>
+          )}
         </div>
         <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
           Click a logbook to show only its pages. Click a page thumbnail to
@@ -230,7 +252,8 @@ export default async function AircraftPage({
           aircraftId={id}
           logbooks={logbookTiles}
           pages={pageRows}
-          extractionConfigured={extractionConfigured}
+          extractionConfigured={extractionConfigured && canEdit}
+          canEdit={canEdit}
         />
       </section>
     </main>

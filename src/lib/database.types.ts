@@ -215,12 +215,29 @@ export type MaintenanceItem = {
   updated_at: string;
 }
 
+export type ShareRole = "viewer" | "editor";
+
+export type Preferences = {
+  /** Opt-in to reminder emails when maintenance / AD items come due. */
+  notify_due?: boolean;
+};
+
 export type Profile = {
   id: string;
   full_name: string | null;
   cert_number: string | null;
+  preferences: Preferences;
   created_at: string;
   updated_at: string;
+}
+
+export type AircraftShare = {
+  id: string;
+  aircraft_id: string;
+  invited_email: string;
+  role: ShareRole;
+  invited_by: string;
+  created_at: string;
 }
 
 /**
@@ -243,12 +260,21 @@ export type Database = {
       ad_reference: { Row: AdReference; Insert: Partial<AdReference>; Update: Partial<AdReference>; Relationships: [] };
       equipment_proposal: { Row: EquipmentProposal; Insert: Partial<EquipmentProposal>; Update: Partial<EquipmentProposal>; Relationships: [] };
       maintenance_item: { Row: MaintenanceItem; Insert: Partial<MaintenanceItem>; Update: Partial<MaintenanceItem>; Relationships: [] };
+      aircraft_share: { Row: AircraftShare; Insert: Partial<AircraftShare>; Update: Partial<AircraftShare>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {
       has_aircraft_access: {
         Args: { target_aircraft: string };
         Returns: boolean;
+      };
+      can_edit_aircraft: {
+        Args: { target_aircraft: string };
+        Returns: boolean;
+      };
+      transfer_aircraft: {
+        Args: { target_aircraft: string; new_owner_email: string };
+        Returns: undefined;
       };
       search_log_entries: {
         Args: { target_aircraft: string; q: string };
