@@ -7,7 +7,10 @@ import { entryText } from "@/lib/extraction/entryText";
 import { logbookLabel } from "@/lib/logbooks";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+// 60s is the Vercel Hobby (free) ceiling. A full-history rescan of many hundreds
+// of entries is the one flow that can approach it; on Hobby it may 504 on very
+// large logbooks. Raise to 300 on Vercel Pro, or chunk the scan client-side.
+export const maxDuration = 60;
 
 // Scan the aircraft's log entries and PROPOSE an equipment list. Read-only —
 // the owner confirms proposals before anything is written (see the apply

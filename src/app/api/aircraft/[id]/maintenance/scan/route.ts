@@ -6,7 +6,10 @@ import { applyMaintenanceFromEntries } from "@/lib/extraction/maintenanceUpdates
 import { entryText } from "@/lib/extraction/entryText";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+// 60s is the Vercel Hobby (free) ceiling. A full-history rescan of many hundreds
+// of entries is the one flow that can approach it; on Hobby it may 504 on very
+// large logbooks. Raise to 300 on Vercel Pro, or chunk the scan client-side.
+export const maxDuration = 60;
 
 // Full-history pass: scan all entries and advance the maintenance forecast's
 // last-done data from the logs. RLS scopes everything to the owner.
