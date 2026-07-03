@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
+import { ImportBackup } from "./ImportBackup";
 
 const ROLE_BADGE: Record<string, string> = {
   editor: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
@@ -85,13 +86,14 @@ export default async function Dashboard() {
         </p>
       )}
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <Link
           href="/aircraft/enroll"
           className="inline-block rounded-md bg-slate-900 px-5 py-2.5 font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
         >
           Enroll an aircraft
         </Link>
+        <ImportBackup />
       </div>
     </main>
   );

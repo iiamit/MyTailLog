@@ -17,6 +17,7 @@
     "@anthropic-ai/sdk": "^0.109.1",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.45.4",
+    "fflate": "^0.8.3",
     "next": "^15.1.6",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.0.0",
