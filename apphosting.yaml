@@ -1,0 +1,45 @@
+# Firebase App Hosting backend configuration (provisions a Cloud Run service).
+# Safe to commit: real secret values live in Cloud Secret Manager and are only
+# referenced by name here. See README "Deploy (Firebase App Hosting + Supabase)".
+
+runConfig:
+  cpu: 1
+  memoryMiB: 1024
+  minInstances: 0 # scale to zero when idle → ~no cost between visits
+  maxInstances: 2 # cap to bound cost (Blaze has no hard spend limit)
+  concurrency: 80
+
+env:
+  # Public Supabase config — needed at BUILD (baked into the client bundle) and
+  # at RUNTIME. Held as secrets so nothing real lands in a public repo.
+  - variable: NEXT_PUBLIC_SUPABASE_URL
+    secret: NEXT_PUBLIC_SUPABASE_URL
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_SUPABASE_ANON_KEY
+    secret: NEXT_PUBLIC_SUPABASE_ANON_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Server-only — never exposed to the browser.
+  - variable: ANTHROPIC_API_KEY
+    secret: ANTHROPIC_API_KEY
+    availability:
+      - RUNTIME
+
+  # Non-sensitive defaults.
+  - variable: EXTRACTION_MODEL
+    value: claude-opus-4-8
+    availability:
+      - RUNTIME
+  - variable: LOGBOOK_STORAGE_BUCKET
+    value: logbook-pages
+    availability:
+      - RUNTIME
+  - variable: NEXT_PUBLIC_LOGBOOK_STORAGE_BUCKET
+    value: logbook-pages
+    availability:
+      - BUILD
+      - RUNTIME

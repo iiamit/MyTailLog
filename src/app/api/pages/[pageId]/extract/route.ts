@@ -6,9 +6,10 @@ import { extractPage } from "@/lib/extraction/pipeline";
 // The vision call plus adaptive thinking can take a while; give it headroom.
 // Node runtime is required (Buffer, the Anthropic SDK) — not Edge.
 export const runtime = "nodejs";
-// 60s is the Vercel Hobby (free) ceiling; a single-page extraction fits within
-// it. Raise to 300 on Vercel Pro for very dense pages if needed.
-export const maxDuration = 60;
+// maxDuration is a Vercel-only hint. Self-hosted on Cloud Run / Firebase App
+// Hosting it's ignored — the Cloud Run request timeout applies (default 300s),
+// which comfortably covers extraction. On Vercel Hobby this is capped to 60.
+export const maxDuration = 300;
 
 export async function POST(
   _req: Request,
