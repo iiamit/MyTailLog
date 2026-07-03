@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { PlaneIcon, UserIcon, LogoutIcon } from "./icons";
+import { PlaneIcon, UserIcon, LogoutIcon, HelpIcon } from "./icons";
 import { APP_VERSION } from "@/lib/version";
 
 // Public routes render no app chrome.
@@ -43,6 +43,16 @@ export function AppHeader({ email }: { email: string | null }) {
         </Link>
 
         <nav className="flex items-center gap-1 text-sm">
+          <Link
+            href="/help"
+            aria-current={pathname.startsWith("/help") ? "page" : undefined}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 ${
+              pathname.startsWith("/help") ? "font-medium text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-300"
+            }`}
+          >
+            <HelpIcon />
+            <span className="hidden sm:inline">Help</span>
+          </Link>
           <Link
             href="/profile"
             aria-current={onProfile ? "page" : undefined}
