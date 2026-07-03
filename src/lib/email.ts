@@ -4,7 +4,10 @@
 // caller (the daily cron) never crashes on a delivery problem.
 // ===========================================================================
 
-const FROM = "MyTailLog <noreply@mytaillog.com>";
+// Must be an address on a Resend-verified domain. We verified the `send.`
+// subdomain, so send from there by default; override via EMAIL_FROM if you later
+// verify the root domain.
+const FROM = process.env.EMAIL_FROM || "MyTailLog <noreply@send.mytaillog.com>";
 
 export async function sendEmail(opts: {
   to: string;
