@@ -48,17 +48,24 @@ export default async function AircraftPage({
 
   // Short-lived signed URLs for page thumbnails (private bucket). Prefer the
   // small thumbnail; fall back to the original for pages without one yet.
+  // Sign both the thumbnail (list) and the original (lightbox on click).
   const thumbById = new Map<string, string>();
-  const signPath = new Map<string, string>(); // path -> page id
-  for (const p of pages ?? []) signPath.set(p.thumbnail_path ?? p.storage_path, p.id);
-  const paths = [...signPath.keys()];
+  const fullById = new Map<string, string>();
+  const pathMeta = new Map<string, { id: string; kind: "thumb" | "full" }>();
+  for (const p of pages ?? []) {
+    pathMeta.set(p.storage_path, { id: p.id, kind: "full" });
+    if (p.thumbnail_path) pathMeta.set(p.thumbnail_path, { id: p.id, kind: "thumb" });
+  }
+  const paths = [...pathMeta.keys()];
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage
       .from(BUCKET)
       .createSignedUrls(paths, 3600);
     for (const s of signed ?? []) {
-      const pid = s.path ? signPath.get(s.path) : undefined;
-      if (pid && s.signedUrl) thumbById.set(pid, s.signedUrl);
+      const meta = s.path ? pathMeta.get(s.path) : undefined;
+      if (meta && s.signedUrl) {
+        (meta.kind === "thumb" ? thumbById : fullById).set(meta.id, s.signedUrl);
+      }
     }
   }
 
@@ -110,7 +117,8 @@ export default async function AircraftPage({
     detectedPageCount: p.detected_page_count,
     extractionError: p.extraction_error,
     entryCount: entryCounts.get(p.id) ?? 0,
-    thumbnailUrl: thumbById.get(p.id) ?? null,
+    thumbnailUrl: thumbById.get(p.id) ?? fullById.get(p.id) ?? null,
+    fullUrl: fullById.get(p.id) ?? null,
     storagePath: p.storage_path,
     needsThumbnail: !p.thumbnail_path,
   }));

@@ -24,6 +24,7 @@ export type TimelineEntry = {
   confidence: number | null;
   ownerConfirmed: boolean;
   thumbnailUrl: string | null;
+  fullUrl: string | null;
 };
 
 export type LogbookMeta = { label: string; type: string };
@@ -55,6 +56,7 @@ function EntryRow({
       {e.thumbnailUrl ? (
         <ZoomableImage
           src={e.thumbnailUrl}
+          fullSrc={e.fullUrl}
           alt={`${e.logbookLabel} page`}
           className="h-14 w-14 shrink-0 rounded border border-slate-200 object-cover dark:border-slate-700"
         />
@@ -123,11 +125,13 @@ export function TimelineClient({
   entries,
   logbookMap,
   thumbnailByPageId,
+  fullByPageId,
 }: {
   aircraftId: string;
   entries: TimelineEntry[];
   logbookMap: Record<string, LogbookMeta>;
   thumbnailByPageId: Record<string, string>;
+  fullByPageId: Record<string, string>;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TimelineEntry[] | null>(null);
@@ -177,6 +181,7 @@ export function TimelineClient({
           confidence: r.confidence,
           ownerConfirmed: r.owner_confirmed,
           thumbnailUrl: r.page_id ? thumbnailByPageId[r.page_id] ?? null : null,
+          fullUrl: r.page_id ? fullByPageId[r.page_id] ?? null : null,
         })),
       );
     }, 300);
@@ -184,7 +189,7 @@ export function TimelineClient({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query, aircraftId, logbookMap, thumbnailByPageId]);
+  }, [query, aircraftId, logbookMap, thumbnailByPageId, fullByPageId]);
 
   // Logbook types present in the data, in canonical order, for the filter row.
   const availableTypes = useMemo(

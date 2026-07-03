@@ -53,18 +53,26 @@ export default async function TimelinePage({
     .eq("aircraft_id", id);
 
   const thumbnailByPageId: Record<string, string> = {};
-  const pathToId = new Map<string, string>();
-  for (const p of pages ?? []) pathToId.set(p.thumbnail_path ?? p.storage_path, p.id);
-  const paths = [...pathToId.keys()];
+  const fullByPageId: Record<string, string> = {};
+  const pathMeta = new Map<string, { id: string; kind: "thumb" | "full" }>();
+  for (const p of pages ?? []) {
+    pathMeta.set(p.storage_path, { id: p.id, kind: "full" });
+    if (p.thumbnail_path) pathMeta.set(p.thumbnail_path, { id: p.id, kind: "thumb" });
+  }
+  const paths = [...pathMeta.keys()];
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage
       .from(BUCKET)
       .createSignedUrls(paths, 3600);
     for (const s of signed ?? []) {
-      const pid = s.path ? pathToId.get(s.path) : undefined;
-      if (pid && s.signedUrl) thumbnailByPageId[pid] = s.signedUrl;
+      const meta = s.path ? pathMeta.get(s.path) : undefined;
+      if (meta && s.signedUrl) {
+        (meta.kind === "thumb" ? thumbnailByPageId : fullByPageId)[meta.id] = s.signedUrl;
+      }
     }
   }
+  // Thumbnail for the list; fall back to the original when no thumbnail exists.
+  const listThumbByPageId: Record<string, string> = { ...fullByPageId, ...thumbnailByPageId };
 
   const timeline: TimelineEntry[] = (entries ?? []).map((e) => ({
     id: e.id,
@@ -82,7 +90,8 @@ export default async function TimelinePage({
     sbRefs: e.sb_refs ?? [],
     confidence: e.confidence,
     ownerConfirmed: e.owner_confirmed,
-    thumbnailUrl: e.page_id ? thumbnailByPageId[e.page_id] ?? null : null,
+    thumbnailUrl: e.page_id ? listThumbByPageId[e.page_id] ?? null : null,
+    fullUrl: e.page_id ? fullByPageId[e.page_id] ?? null : null,
   }));
 
   return (
@@ -106,7 +115,8 @@ export default async function TimelinePage({
         aircraftId={id}
         entries={timeline}
         logbookMap={logbookMap}
-        thumbnailByPageId={thumbnailByPageId}
+        thumbnailByPageId={listThumbByPageId}
+        fullByPageId={fullByPageId}
       />
     </main>
   );

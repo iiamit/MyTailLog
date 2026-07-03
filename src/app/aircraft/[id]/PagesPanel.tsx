@@ -22,6 +22,7 @@ export type PageRow = {
   extractionError: string | null;
   entryCount: number;
   thumbnailUrl: string | null;
+  fullUrl: string | null;
   storagePath: string;
   needsThumbnail: boolean;
 };
@@ -275,6 +276,7 @@ export function PagesPanel({
                 {r.thumbnailUrl ? (
                   <ZoomableImage
                     src={r.thumbnailUrl}
+                    fullSrc={r.fullUrl}
                     alt={`${r.logbookLabel} page ${r.pageSequence ?? ""}`}
                     className="h-12 w-12 shrink-0 rounded border border-slate-200 object-cover dark:border-slate-700"
                   />

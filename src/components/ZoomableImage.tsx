@@ -10,15 +10,19 @@ import { useEffect, useState } from "react";
  */
 export function ZoomableImage({
   src,
+  fullSrc,
   alt,
   className,
 }: {
   src: string;
+  /** Full-resolution image for the lightbox; falls back to `src` (the thumbnail). */
+  fullSrc?: string | null;
   alt: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
+  const large = fullSrc || src;
 
   useEffect(() => {
     if (!open) return;
@@ -66,7 +70,7 @@ export function ZoomableImage({
           <div className="flex min-h-full items-center justify-center p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={src}
+              src={large}
               alt={alt}
               onClick={(e) => {
                 e.stopPropagation();
