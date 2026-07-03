@@ -67,7 +67,10 @@ export function ZoomableImage({
           >
             ✕ Close
           </button>
-          <div className="flex min-h-full items-center justify-center p-4">
+          {/* `safe` centering: centered when it fits, but falls back to
+              start-aligned (fully scrollable) when the zoomed image overflows —
+              otherwise the left/top edge is clipped and unreachable. */}
+          <div className="flex min-h-full [align-items:safe_center] [justify-content:safe_center] p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={large}
