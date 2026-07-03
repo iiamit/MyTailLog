@@ -37,39 +37,39 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
   const tail = String(formData.get("tail_number") ?? "").trim();
   if (!tail) return { error: "Tail number is required." };
 
-  const { data: aircraft, error: aircraftError } = await supabase
-    .from("aircraft")
-    .insert({
-      owner_id: user.id,
-      tail_number: tail.toUpperCase(),
-      make: (String(formData.get("make") ?? "").trim() || null) as string | null,
-      model: (String(formData.get("model") ?? "").trim() || null) as string | null,
-      serial_number:
-        (String(formData.get("serial_number") ?? "").trim() || null) as string | null,
-      year: parseNum(formData.get("year")),
-      engine_serials: parseCsv(formData.get("engine_serials")),
-      prop_serials: parseCsv(formData.get("prop_serials")),
-      home_base:
-        (String(formData.get("home_base") ?? "").trim() || null) as string | null,
-      enrollment_hobbs: parseNum(formData.get("enrollment_hobbs")),
-      enrollment_tach: parseNum(formData.get("enrollment_tach")),
-    })
-    .select("id")
-    .single();
+  const aircraftRow = {
+    owner_id: user.id,
+    tail_number: tail.toUpperCase(),
+    make: (String(formData.get("make") ?? "").trim() || null) as string | null,
+    model: (String(formData.get("model") ?? "").trim() || null) as string | null,
+    serial_number:
+      (String(formData.get("serial_number") ?? "").trim() || null) as string | null,
+    year: parseNum(formData.get("year")),
+    engine_serials: parseCsv(formData.get("engine_serials")),
+    prop_serials: parseCsv(formData.get("prop_serials")),
+    home_base:
+      (String(formData.get("home_base") ?? "").trim() || null) as string | null,
+    enrollment_hobbs: parseNum(formData.get("enrollment_hobbs")),
+    enrollment_tach: parseNum(formData.get("enrollment_tach")),
+  };
+
+  const insertAircraft = () =>
+    supabase.from("aircraft").insert(aircraftRow).select("id").single();
+
+  let { data: aircraft, error: aircraftError } = await insertAircraft();
+
+  // The first DB write in a server action can fire before the refreshed session
+  // token is applied, so it runs unauthenticated and trips the owner_id =
+  // auth.uid() check. Re-settle the session and retry once — the second call
+  // carries the token. ponytail: one retry covers the observed transient; widen
+  // to a shared wrapper only if other writes show the same symptom.
+  if (aircraftError && /row-level security/i.test(aircraftError.message)) {
+    await supabase.auth.getUser();
+    ({ data: aircraft, error: aircraftError } = await insertAircraft());
+  }
 
   if (aircraftError || !aircraft) {
-    // TEMP diagnostic: does THIS server action carry auth.uid() for DB access?
-    // Reading the user's own profile is RLS-gated on id = auth.uid(); if it
-    // returns null here, the write ran unauthenticated despite getUser() working.
-    const { data: probe, error: probeErr } = await supabase
-      .from("profile")
-      .select("id")
-      .eq("id", user.id)
-      .maybeSingle();
-    const actionAuthed = probe?.id === user.id;
-    return {
-      error: `${aircraftError?.message ?? "Failed to enroll aircraft."} [diag: user=${user.id.slice(0, 8)} action_authed=${actionAuthed} probe=${probeErr?.message ?? (probe ? "ok" : "null")}]`,
-    };
+    return { error: aircraftError?.message ?? "Failed to enroll aircraft." };
   }
 
   // Seed the standard logbooks (airframe/engine/prop/avionics). A single annual
