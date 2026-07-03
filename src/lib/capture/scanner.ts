@@ -12,9 +12,19 @@
 // solo/zero-cost deployment, and the fallback keeps the feature usable anyway.
 // ===========================================================================
 
-const OPENCV_URL = "https://docs.opencv.org/4.10.0/opencv.js";
+// OpenCV.js (~8MB WASM). docs.opencv.org first (known-good API), then a jsDelivr
+// mirror as a fallback — on slow/flaky mobile the docs host is the usual failure.
+const OPENCV_URLS = [
+  "https://docs.opencv.org/4.10.0/opencv.js",
+  "https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0/dist/opencv.js",
+];
 const JSCANIFY_URL =
   "https://cdn.jsdelivr.net/gh/puffinsoft/jscanify@master/src/jscanify.min.js";
+
+// Mobile downloads of an 8MB script + WASM init are slow; be generous so a legit
+// slow load isn't cut off before it finishes.
+const SCRIPT_TIMEOUT_MS = 30_000;
+const INIT_TIMEOUT_MS = 45_000;
 
 type ScannerGlobals = {
   cv?: { Mat: unknown; imread: unknown };
@@ -33,7 +43,7 @@ type ScannerGlobals = {
 
 let loadPromise: Promise<boolean> | null = null;
 
-function loadScript(src: string): Promise<void> {
+function loadScript(src: string, timeoutMs = SCRIPT_TIMEOUT_MS): Promise<void> {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(
       `script[src="${src}"]`,
@@ -45,10 +55,44 @@ function loadScript(src: string): Promise<void> {
     const s = document.createElement("script");
     s.src = src;
     s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    // A stalled mobile connection can leave a script pending forever (no load,
+    // no error); a timeout lets us reject and try the fallback CDN.
+    const timer = setTimeout(() => {
+      s.remove();
+      reject(new Error(`Timed out loading ${src}`));
+    }, timeoutMs);
+    s.onload = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    s.onerror = () => {
+      clearTimeout(timer);
+      s.remove();
+      reject(new Error(`Failed to load ${src}`));
+    };
     document.head.appendChild(s);
   });
+}
+
+/** Load one OpenCV build and wait for its WASM runtime to initialize. */
+async function loadOpenCVFrom(url: string): Promise<boolean> {
+  await loadScript(url);
+  await new Promise<void>((resolve, reject) => {
+    const g = window as unknown as ScannerGlobals & {
+      cv?: { Mat?: unknown; onRuntimeInitialized?: () => void };
+    };
+    if (g.cv && g.cv.Mat) return resolve();
+    if (!g.cv) return reject(new Error("OpenCV global missing after load"));
+    const timeout = setTimeout(
+      () => reject(new Error("OpenCV init timed out")),
+      INIT_TIMEOUT_MS,
+    );
+    g.cv.onRuntimeInitialized = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+  });
+  return true;
 }
 
 /**
@@ -59,30 +103,23 @@ function loadScript(src: string): Promise<void> {
 export function loadScanner(): Promise<boolean> {
   if (loadPromise) return loadPromise;
   loadPromise = (async () => {
+    let cvReady = false;
+    for (const url of OPENCV_URLS) {
+      try {
+        cvReady = await loadOpenCVFrom(url);
+        if (cvReady) break;
+      } catch {
+        // Try the next CDN.
+      }
+    }
+    if (!cvReady) return false;
     try {
-      await loadScript(OPENCV_URL);
-      // OpenCV signals readiness asynchronously after the script runs.
-      await new Promise<void>((resolve, reject) => {
-        const g = window as unknown as ScannerGlobals & {
-          cv?: { onRuntimeInitialized?: () => void };
-        };
-        if (g.cv && (g.cv as { Mat?: unknown }).Mat) return resolve();
-        const timeout = setTimeout(
-          () => reject(new Error("OpenCV init timed out")),
-          20000,
-        );
-        (g.cv as { onRuntimeInitialized?: () => void }).onRuntimeInitialized =
-          () => {
-            clearTimeout(timeout);
-            resolve();
-          };
-      });
       await loadScript(JSCANIFY_URL);
-      const g = window as unknown as ScannerGlobals;
-      return Boolean(g.cv && g.jscanify);
     } catch {
       return false;
     }
+    const g = window as unknown as ScannerGlobals;
+    return Boolean(g.cv && g.jscanify);
   })();
   return loadPromise;
 }
