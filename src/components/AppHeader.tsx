@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PlaneIcon, UserIcon, LogoutIcon } from "./icons";
+import { APP_VERSION } from "@/lib/version";
 
 // Public routes render no app chrome.
 const PUBLIC = (path: string) =>
@@ -36,6 +37,9 @@ export function AppHeader({ email }: { email: string | null }) {
         >
           <PlaneIcon className="text-base text-slate-900 dark:text-white" />
           MyTailLog
+          <span className="ml-1 font-normal text-[11px] text-slate-400 dark:text-slate-500">
+            v{APP_VERSION}
+          </span>
         </Link>
 
         <nav className="flex items-center gap-1 text-sm">

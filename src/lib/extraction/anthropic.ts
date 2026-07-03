@@ -9,10 +9,32 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 
+// Vision / handwriting extraction needs a strong model — default to the most
+// capable. Overridable so an operator can trade cost for capability.
 export const EXTRACTION_MODEL = process.env.EXTRACTION_MODEL || "claude-opus-4-8";
+
+// Text-only reasoning over ALREADY-extracted entries (Q&A, and — pending the
+// model audit — equipment/maintenance detection) doesn't need a vision-grade
+// model. Default to the cheapest capable model; override via TEXT_MODEL.
+export const TEXT_MODEL = process.env.TEXT_MODEL || "claude-haiku-4-5";
 
 export function extractionConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
+}
+
+// Adaptive thinking + `effort` exist only on 4.6+ / 5-gen models. Haiku 4.5
+// rejects both (400), but supports json_schema structured outputs. So the
+// request builder must gate these params on the model, letting TEXT_MODEL point
+// at Opus, Sonnet 5, OR Haiku 4.5 without breaking.
+const ADAPTIVE_MODEL = /opus-4-[5-9]|sonnet-5|sonnet-4-6|fable-5|mythos-5/;
+
+export function reasoningParams(model: string): {
+  thinking?: { type: "adaptive" };
+  effort?: "medium";
+} {
+  return ADAPTIVE_MODEL.test(model)
+    ? { thinking: { type: "adaptive" }, effort: "medium" }
+    : {};
 }
 
 let client: Anthropic | null = null;

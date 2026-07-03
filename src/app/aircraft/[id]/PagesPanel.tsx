@@ -62,6 +62,7 @@ export function PagesPanel({
   const [selectedLogbookId, setSelectedLogbookId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [queue, setQueue] = useState<"all" | "review" | "processing">("all");
 
   function patch(id: string, next: Partial<PageRow>) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...next } : r)));
@@ -154,6 +155,18 @@ export function PagesPanel({
     (r) => r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed",
   ).length;
   const reviewedCount = visibleRows.filter((r) => r.reviewStatus === "confirmed").length;
+  const processingCount = visibleRows.filter(
+    (r) => r.extractionStatus === "pending" || r.extractionStatus === "processing",
+  ).length;
+
+  // Queue filter pills (in addition to the logbook filter).
+  const isReview = (r: PageRow) =>
+    r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed";
+  const isProcessing = (r: PageRow) =>
+    r.extractionStatus === "pending" || r.extractionStatus === "processing";
+  const displayRows = visibleRows.filter((r) =>
+    queue === "review" ? isReview(r) : queue === "processing" ? isProcessing(r) : true,
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -239,17 +252,54 @@ export function PagesPanel({
         </div>
       </div>
 
+      {rows.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ["all", "All", visibleRows.length],
+              ["review", "Needs review", needsReviewCount],
+              ["processing", "Processing", processingCount],
+            ] as const
+          ).map(([key, label, n]) => {
+            const active = queue === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setQueue(key)}
+                aria-pressed={active}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  active
+                    ? "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900"
+                    : "border-slate-300 text-slate-600 hover:border-slate-500 dark:border-slate-700 dark:text-slate-300"
+                }`}
+              >
+                {label}
+                {key !== "all" && n > 0 && (
+                  <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] ${active ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"}`}>
+                    {n}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
           No pages yet. Capture or upload logbook pages to extract entries.
         </p>
-      ) : visibleRows.length === 0 ? (
+      ) : displayRows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-          No pages in {selectedLabel}.
+          {queue === "review"
+            ? "Nothing to review here."
+            : queue === "processing"
+              ? "Nothing processing."
+              : `No pages in ${selectedLabel}.`}
         </p>
       ) : (
         <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-          {visibleRows.map((r) => {
+          {displayRows.map((r) => {
             const needsReview =
               r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed";
             const reviewBadge =

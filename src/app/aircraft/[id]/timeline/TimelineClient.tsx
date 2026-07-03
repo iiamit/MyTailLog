@@ -46,6 +46,13 @@ function EntryRow({
   e: TimelineEntry;
 }) {
   const refs = [...e.adRefs.map((r) => `AD ${r}`), ...e.sbRefs.map((r) => `SB ${r}`)];
+  // Parts as chips — split the free-text field on common separators, keeping
+  // only token-length values (skip whole sentences).
+  const partChips = (e.parts ?? "")
+    .split(/[,;\n]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 1 && s.length <= 40)
+    .slice(0, 12);
   // Prefer the description; append work_performed if it adds detail.
   const body =
     e.description && e.workPerformed && e.workPerformed.trim() !== e.description.trim()
@@ -99,6 +106,19 @@ function EntryRow({
                 className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300"
               >
                 {r}
+              </span>
+            ))}
+          </div>
+        )}
+        {partChips.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {partChips.map((p, i) => (
+              <span
+                key={`${p}-${i}`}
+                className="rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
+                title="Part"
+              >
+                {p}
               </span>
             ))}
           </div>

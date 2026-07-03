@@ -12,7 +12,7 @@
 // text-only pass (no image), so it's cheap relative to page extraction.
 // ===========================================================================
 
-import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
+import { getAnthropic, TEXT_MODEL, reasoningParams } from "./anthropic";
 
 export const EQUIPMENT_SCHEMA_VERSION = 1;
 
@@ -107,13 +107,14 @@ export async function extractEquipmentFromEntries(
     ? `Already-tracked components on this aircraft (do not re-propose these unless the entries show them being removed or replaced):\n${opts.knownComponents.map((c) => `- ${c}`).join("\n")}\n\n`
     : "";
 
+  const { thinking, effort } = reasoningParams(TEXT_MODEL);
   const response = await client.messages.create({
-    model: EXTRACTION_MODEL,
+    model: TEXT_MODEL,
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
-    thinking: { type: "adaptive" },
+    ...(thinking ? { thinking } : {}),
     output_config: {
-      effort: "medium",
+      ...(effort ? { effort } : {}),
       format: { type: "json_schema", schema: EQUIPMENT_JSON_SCHEMA },
     },
     messages: [

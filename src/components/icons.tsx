@@ -132,6 +132,13 @@ export const CameraIcon = (p: P) => (
   </Base>
 );
 
+export const SparklesIcon = (p: P) => (
+  <Base {...p}>
+    <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z" />
+    <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
+  </Base>
+);
+
 export const GaugeIcon = (p: P) => (
   <Base {...p}>
     <path d="M4 18a8 8 0 1 1 16 0" />

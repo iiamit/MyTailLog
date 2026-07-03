@@ -20,6 +20,7 @@ import {
   UploadIcon,
   ScaleIcon,
   GaugeIcon,
+  SparklesIcon,
 } from "@/components/icons";
 import { staleWBChanges, type EquipChange } from "@/lib/weightBalance";
 import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
@@ -255,6 +256,12 @@ export default async function AircraftPage({
 
       <div className="mb-8 flex flex-col gap-6">
         <HubSection title="Records">
+          <HubCard
+            href={`/aircraft/${id}/ask`}
+            icon={<SparklesIcon />}
+            title="Ask your logbook"
+            desc="Plain-English questions, answered with cited entries"
+          />
           <HubCard
             href={`/aircraft/${id}/timeline`}
             icon={<ClockIcon />}

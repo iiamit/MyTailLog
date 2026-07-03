@@ -9,7 +9,7 @@
 // next-due.
 // ===========================================================================
 
-import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
+import { getAnthropic, TEXT_MODEL, reasoningParams } from "./anthropic";
 
 // Kinds must line up with STANDARD_ITEMS in src/lib/maintenance.ts.
 export type MaintenanceEvent = {
@@ -85,13 +85,14 @@ async function extractBatch(
     .map((e) => `[${e.entry_id}] ${e.date ?? "undated"}\n${e.text.trim()}`)
     .join("\n\n");
 
+  const { thinking, effort } = reasoningParams(TEXT_MODEL);
   const response = await client.messages.create({
-    model: EXTRACTION_MODEL,
+    model: TEXT_MODEL,
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
-    thinking: { type: "adaptive" },
+    ...(thinking ? { thinking } : {}),
     output_config: {
-      effort: "medium",
+      ...(effort ? { effort } : {}),
       format: { type: "json_schema", schema: MAINTENANCE_JSON_SCHEMA },
     },
     messages: [
