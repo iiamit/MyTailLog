@@ -132,6 +132,16 @@ export const CameraIcon = (p: P) => (
   </Base>
 );
 
+export const ScaleIcon = (p: P) => (
+  <Base {...p}>
+    <path d="M12 3v18" />
+    <path d="M7 21h10" />
+    <path d="M5 6h14l-2-2H7z" />
+    <path d="M6 6 3 13a3 3 0 0 0 6 0z" />
+    <path d="M18 6l-3 7a3 3 0 0 0 6 0z" />
+  </Base>
+);
+
 export const UploadIcon = (p: P) => (
   <Base {...p}>
     <path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" />

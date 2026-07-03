@@ -18,7 +18,9 @@ import {
   ChevronRightIcon,
   CameraIcon,
   UploadIcon,
+  ScaleIcon,
 } from "@/components/icons";
+import { staleWBChanges, type EquipChange } from "@/lib/weightBalance";
 import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
 
 type Badge = { text: string; tone: string } | null;
@@ -173,6 +175,28 @@ export default async function AircraftPage({
     return u === "overdue" || u === "due_soon";
   }).length;
 
+  // W&B staleness: equipment changes recorded after the last W&B revision.
+  const { data: wbLatest } = await supabase
+    .from("weight_balance")
+    .select("revision_date")
+    .eq("aircraft_id", id)
+    .order("revision_date", { ascending: false })
+    .limit(1);
+  const { data: wbComponents } = await supabase
+    .from("component")
+    .select("name, install_date, removal_date")
+    .eq("aircraft_id", id);
+  const wbChanges: EquipChange[] = [];
+  for (const c of wbComponents ?? []) {
+    if (c.install_date) wbChanges.push({ name: c.name, date: c.install_date, kind: "install" });
+    if (c.removal_date) wbChanges.push({ name: c.name, date: c.removal_date, kind: "removal" });
+  }
+  // Only badge the true "stale" case (a W&B exists but changes postdate it); an
+  // aircraft that simply hasn't started W&B isn't nagged here.
+  const wbStaleCount = wbLatest?.[0]
+    ? staleWBChanges(wbLatest[0].revision_date, wbChanges).length
+    : 0;
+
   const pageRows: PageRow[] = (pages ?? []).map((p) => ({
     id: p.id,
     logbookId: p.logbook_id,
@@ -280,6 +304,20 @@ export default async function AircraftPage({
             icon={<ShieldIcon />}
             title="AD / SB compliance"
             desc="Directives, compliance method, and next due"
+          />
+          <HubCard
+            href={`/aircraft/${id}/weight-balance`}
+            icon={<ScaleIcon />}
+            title="Weight & balance"
+            desc="Empty weight/CG history; flags changes since last revision"
+            badge={
+              wbStaleCount > 0
+                ? {
+                    text: `${wbStaleCount} to review`,
+                    tone: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+                  }
+                : null
+            }
           />
           <HubCard
             href={`/aircraft/${id}/audit`}

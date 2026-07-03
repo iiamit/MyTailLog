@@ -215,6 +215,22 @@ export type MaintenanceItem = {
   updated_at: string;
 }
 
+export type WeightBalance = {
+  id: string;
+  aircraft_id: string;
+  revision_date: string;
+  empty_weight: number | null;
+  empty_weight_arm: number | null;
+  empty_weight_moment: number | null;
+  max_gross_weight: number | null;
+  method: "weighed" | "computed" | null;
+  reference: string | null;
+  reason: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type ShareRole = "viewer" | "editor";
 
 export type Preferences = {
@@ -261,6 +277,7 @@ export type Database = {
       equipment_proposal: { Row: EquipmentProposal; Insert: Partial<EquipmentProposal>; Update: Partial<EquipmentProposal>; Relationships: [] };
       maintenance_item: { Row: MaintenanceItem; Insert: Partial<MaintenanceItem>; Update: Partial<MaintenanceItem>; Relationships: [] };
       aircraft_share: { Row: AircraftShare; Insert: Partial<AircraftShare>; Update: Partial<AircraftShare>; Relationships: [] };
+      weight_balance: { Row: WeightBalance; Insert: Partial<WeightBalance>; Update: Partial<WeightBalance>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {
