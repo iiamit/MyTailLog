@@ -307,10 +307,6 @@ export type Database = {
         Args: { target_aircraft: string };
         Returns: boolean;
       };
-      whoami: {
-        Args: Record<string, never>;
-        Returns: string;
-      };
       can_edit_aircraft: {
         Args: { target_aircraft: string };
         Returns: boolean;

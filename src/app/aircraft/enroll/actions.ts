@@ -53,34 +53,26 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
     enrollment_tach: parseNum(formData.get("enrollment_tach")),
   };
 
-  const insertAircraft = () =>
-    supabase.from("aircraft").insert(aircraftRow).select("id").single();
+  // Generate the id client-side and insert WITHOUT .select(): a returning insert
+  // (`.select()`) forces Postgres to also check the SELECT policy on the new
+  // row, and the aircraft SELECT policy is has_aircraft_access(id) — a STABLE
+  // function that re-queries the table and can't see the row mid-insert, so it
+  // wrongly reports "new row violates row-level security policy". No RETURNING,
+  // no SELECT-policy check; the INSERT with_check (owner_id = auth.uid()) is all
+  // that runs, and we already know the id.
+  const aircraftId = crypto.randomUUID();
+  const { error: aircraftError } = await supabase
+    .from("aircraft")
+    .insert({ id: aircraftId, ...aircraftRow });
 
-  let { data: aircraft, error: aircraftError } = await insertAircraft();
-
-  // The first DB write in a server action can fire before the refreshed session
-  // token is applied, so it runs unauthenticated and trips the owner_id =
-  // auth.uid() check. Re-settle the session and retry once — the second call
-  // carries the token. ponytail: one retry covers the observed transient; widen
-  // to a shared wrapper only if other writes show the same symptom.
-  if (aircraftError && /row-level security/i.test(aircraftError.message)) {
-    await supabase.auth.getUser();
-    ({ data: aircraft, error: aircraftError } = await insertAircraft());
-  }
-
-  if (aircraftError || !aircraft) {
-    // TEMP diagnostic: what identity does the DB actually see for this action?
-    // whoami() returns auth.uid() from Postgres directly (unambiguous).
-    const { data: dbUid, error: rpcErr } = await supabase.rpc("whoami");
-    return {
-      error: `${aircraftError?.message ?? "Failed to enroll aircraft."} [db_uid=${dbUid ?? "null"} app_uid=${user.id} match=${dbUid === user.id} rpc=${rpcErr?.message ?? "ok"}]`,
-    };
+  if (aircraftError) {
+    return { error: aircraftError.message };
   }
 
   // Seed the standard logbooks (airframe/engine/prop/avionics). A single annual
   // usually touches several of them.
   const { error: logbookError } = await supabase.from("logbook").insert(
-    LOGBOOK_TYPES.map((type) => ({ aircraft_id: aircraft.id, type })),
+    LOGBOOK_TYPES.map((type) => ({ aircraft_id: aircraftId, type })),
   );
 
   if (logbookError) {
@@ -88,5 +80,5 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
   }
 
   revalidatePath("/dashboard");
-  redirect(`/aircraft/${aircraft.id}`);
+  redirect(`/aircraft/${aircraftId}`);
 }
