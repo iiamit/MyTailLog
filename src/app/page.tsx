@@ -59,9 +59,43 @@ export default async function Home() {
       </div>
 
       <p className="text-sm text-slate-500 dark:text-slate-400">
-        Private beta · an index and decision-support layer, not the legal
-        maintenance record.
+        <strong className="font-medium text-slate-600 dark:text-slate-300">
+          Free &amp; open source
+        </strong>{" "}
+        (
+        <a
+          href="https://github.com/iiamit/MyTailLog"
+          className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
+        >
+          source on GitHub
+        </a>
+        , MIT) · an index and decision-support layer, not the legal maintenance
+        record ·{" "}
+        <Link
+          href="/help"
+          className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
+        >
+          see everything it does →
+        </Link>
       </p>
+
+      {/* Structured data for search engines. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "MyTailLog",
+            applicationCategory: "UtilitiesApplication",
+            operatingSystem: "Web",
+            url: "https://mytaillog.com",
+            description:
+              "Free, open-source aircraft logbook digitizer and maintenance tracker for general aviation owners.",
+            offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          }),
+        }}
+      />
     </main>
   );
 }

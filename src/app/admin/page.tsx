@@ -42,6 +42,11 @@ export default async function AdminPage() {
     { users: 0, aircraft: 0, logbooks: 0, pages: 0, entries: 0 },
   );
   const active = rows.filter((r) => r.aircraft > 0).length;
+  // Signup velocity — the number to watch during launch pushes.
+  const joinedWithin = (days: number) => {
+    const cutoff = Date.now() - days * 86_400_000;
+    return rows.filter((r) => r.joined && Date.parse(r.joined) >= cutoff).length;
+  };
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -59,9 +64,11 @@ export default async function AdminPage() {
         </p>
       </header>
 
-      <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           ["Users", totals.users],
+          ["New (7d)", joinedWithin(7)],
+          ["New (30d)", joinedWithin(30)],
           ["Active", active],
           ["Aircraft", totals.aircraft],
           ["Logbooks", totals.logbooks],

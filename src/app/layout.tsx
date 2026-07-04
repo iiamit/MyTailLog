@@ -6,9 +6,37 @@ import { AppHeader } from "@/components/AppHeader";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "MyTailLog — aircraft logbook index",
+  metadataBase: new URL("https://mytaillog.com"),
+  title: {
+    default: "MyTailLog — digitize your aircraft logbooks",
+    template: "%s · MyTailLog",
+  },
   description:
-    "Digitize and search your airframe, engine, and prop logbooks. An index and decision-support layer, not the legal maintenance record.",
+    "Free, open-source logbook digitizer & maintenance tracker for GA owners. AI reads your paper airframe/engine/prop logbooks into a searchable index — AD/SB tracking, maintenance forecasting, weight & balance, and reminders before things come due.",
+  keywords: [
+    "aircraft logbook",
+    "aircraft maintenance tracking",
+    "AD compliance",
+    "general aviation",
+    "logbook digitization",
+    "annual inspection tracker",
+  ],
+  openGraph: {
+    type: "website",
+    url: "https://mytaillog.com",
+    siteName: "MyTailLog",
+    title: "MyTailLog — digitize your aircraft logbooks",
+    description:
+      "Photograph your paper logbooks; AI turns them into a searchable maintenance tracker with AD/SB compliance, forecasting, and due-date reminders. Free & open source.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "MyTailLog" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MyTailLog — digitize your aircraft logbooks",
+    description:
+      "Free, open-source AI digitizer & maintenance tracker for paper aircraft logbooks.",
+    images: ["/og.png"],
+  },
   manifest: "/manifest.webmanifest",
 };
 
