@@ -13,7 +13,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profile")
-    .select("full_name, cert_number, preferences")
+    .select("full_name, cert_number, preferences, is_admin")
     .eq("id", user.id)
     .single();
 
@@ -33,9 +33,19 @@ export default async function ProfilePage() {
       >
         ← Your aircraft
       </Link>
-      <header className="mb-6 mt-2">
-        <h1 className="text-2xl font-bold">Your profile</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">{user.email}</p>
+      <header className="mb-6 mt-2 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Your profile</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-300">{user.email}</p>
+        </div>
+        {profile?.is_admin && (
+          <Link
+            href="/admin"
+            className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+          >
+            Admin dashboard →
+          </Link>
+        )}
       </header>
 
       <ProfileClient

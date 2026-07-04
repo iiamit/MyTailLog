@@ -3,9 +3,11 @@ import type { Database } from "@/lib/database.types";
 
 /**
  * ELEVATED Supabase client — bypasses row-level security and carries NO user
- * session. Cross-user by design, so it is CRON-ONLY: import it exclusively from
- * server-side background jobs (src/app/api/cron/*), never from a client
- * component or anything reachable by the browser.
+ * session. Cross-user by design, so import it ONLY from places that have
+ * independently verified privileged access: the daily cron (gated by
+ * CRON_SECRET) and the /admin dashboard (gated by profile.is_admin, checked with
+ * the normal authed client first). Never from a client component or anything
+ * reachable by the browser.
  *
  * Authenticates with a Supabase SECRET API KEY (`sb_secret_...`, created under
  * Project Settings → API Keys → "Create secret key") — the recommended,

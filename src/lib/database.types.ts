@@ -275,9 +275,22 @@ export type Profile = {
   full_name: string | null;
   cert_number: string | null;
   email: string | null;
+  is_admin: boolean;
   preferences: Preferences;
   created_at: string;
   updated_at: string;
+}
+
+export type AdminUserStat = {
+  id: string;
+  email: string | null;
+  is_admin: boolean;
+  joined: string;
+  aircraft: number;
+  logbooks: number;
+  pages: number;
+  entries: number;
+  last_entry_at: string | null;
 }
 
 export type AircraftShare = {
@@ -361,7 +374,9 @@ export type Database = {
       hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
     };
-    Views: Record<string, never>;
+    Views: {
+      admin_user_stats: { Row: AdminUserStat; Relationships: [] };
+    };
     Functions: {
       has_aircraft_access: {
         Args: { target_aircraft: string };
