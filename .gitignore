@@ -45,3 +45,4 @@ yarn-error.log*
 .firebase/
 firebase-debug.log*
 .firebaserc
+docs/social/

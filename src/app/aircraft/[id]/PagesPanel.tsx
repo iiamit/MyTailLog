@@ -226,6 +226,19 @@ export function PagesPanel({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {canEdit && extractedCount > 0 && (
+            <Link
+              href={`/aircraft/${aircraftId}/review`}
+              title="Scroll through every extracted entry and confirm them in bulk"
+              className={`rounded-md border px-4 py-2 text-sm font-medium ${
+                needsReviewCount > 0
+                  ? "border-amber-400 text-amber-700 hover:border-amber-500 dark:border-amber-500 dark:text-amber-300"
+                  : "border-slate-300 hover:border-slate-500 dark:border-slate-700"
+              }`}
+            >
+              Review all{needsReviewCount > 0 ? ` (${needsReviewCount})` : ""}
+            </Link>
+          )}
           {missingThumbs > 0 && canEdit && (
             <button
               onClick={backfillThumbnails}

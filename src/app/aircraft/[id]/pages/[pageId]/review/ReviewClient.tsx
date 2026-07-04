@@ -111,7 +111,7 @@ function fieldBorder(flagged: boolean) {
     : "border-slate-300 dark:border-slate-700";
 }
 
-function EntryCard({
+export function EntryCard({
   entry,
   isNew,
   logbookId,

@@ -145,6 +145,14 @@ const SECTIONS: Section[] = [
           entries. The <strong>Needs review / Processing</strong> pills on the aircraft page track
           the queue.
         </p>
+        <p>
+          To move faster, <strong>Review all</strong> (button on the aircraft page) puts every
+          extracted entry in one scrollable list — edit inline and confirm as you go, or hit{" "}
+          <strong>Confirm N clean</strong> to accept, in one click, every entry the AI was fully
+          confident on (high overall score, no flagged field, not a page-spanning fragment).
+          Anything with a low-confidence field is left for you; use <strong>Open page ↗</strong> on
+          any group to check it against the original scan.
+        </p>
         <Effects>
           Extracting a running-maintenance page also (best-effort) proposes{" "}
           <L href="#equipment">equipment</L> installs/removals and advances{" "}

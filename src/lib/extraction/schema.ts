@@ -16,6 +16,21 @@ export const EXTRACTION_SCHEMA_VERSION = 2;
 // review UI (step 5) and never drives a maintenance reminder unconfirmed.
 export const CONFIDENCE_THRESHOLD = 0.75;
 
+// An extracted entry is "clean" — safe to bulk-confirm without a human eyeballing
+// it — only when the model was confident overall AND flagged no individual field.
+// Strict on purpose: one low field or a missing overall score means hands-on review.
+// Continuations (page-spanning fragments) are excluded — they need a merge decision.
+export function isEntryClean(e: {
+  confidence: number | null;
+  field_confidence: Record<string, number> | null;
+  is_continuation?: boolean;
+}): boolean {
+  if (e.is_continuation) return false;
+  if (e.confidence == null || e.confidence < CONFIDENCE_THRESHOLD) return false;
+  const fc = e.field_confidence;
+  return !fc || Object.values(fc).every((v) => typeof v !== "number" || v >= CONFIDENCE_THRESHOLD);
+}
+
 // One structured record extracted from a logbook page. Mirrors the columns on
 // log_entry that come from extraction (the rest — ids, timestamps — are set by
 // the pipeline). Fields are nullable because handwritten entries are often
