@@ -71,6 +71,11 @@ const SECTIONS: Section[] = [
     body: (
       <ol className="ml-4 list-decimal space-y-1">
         <li>
+          <strong>Explore the demo</strong> — every account gets a read-only demo aircraft
+          (N734DM) on the dashboard, so you can poke at Status, Timeline, and Ask before
+          scanning anything of your own.
+        </li>
+        <li>
           <strong>Enroll an aircraft</strong> — the FAA registry lookup fills make/model/serial
           from the tail number. Five logbooks are created automatically: airframe, engine, prop,
           avionics, and <strong>Other</strong>.

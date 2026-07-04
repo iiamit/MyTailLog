@@ -38,6 +38,7 @@ export type Aircraft = {
   enrollment_hobbs: number | null;
   enrollment_tach: number | null;
   notes: string | null;
+  is_demo: boolean;
   created_at: string;
   updated_at: string;
 }

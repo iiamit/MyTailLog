@@ -20,7 +20,7 @@ export default async function Dashboard() {
   // RLS returns aircraft the user owns OR is shared on.
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, tail_number, make, model, year, home_base, enrollment_date, owner_id")
+    .select("id, tail_number, make, model, year, home_base, enrollment_date, owner_id, is_demo")
     .order("created_at", { ascending: true });
 
   const list = aircraft ?? [];
@@ -87,7 +87,12 @@ export default async function Dashboard() {
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-lg font-semibold">{a.tail_number}</span>
                     <div className="flex items-center gap-2">
-                      {shared && (
+                      {a.is_demo && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                          Demo
+                        </span>
+                      )}
+                      {shared && !a.is_demo && (
                         <span className={`rounded-full px-2 py-0.5 text-xs ${ROLE_BADGE[role] ?? ROLE_BADGE.viewer}`}>
                           shared · {role === "editor" ? "contribute" : "view"}
                         </span>
