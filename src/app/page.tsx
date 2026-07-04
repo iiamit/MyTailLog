@@ -1,6 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
+import shotReview from "../../docs/screenshots/review.png";
+import shotStatus from "../../docs/screenshots/status.png";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -37,6 +40,35 @@ export default async function Home() {
           </li>
         ))}
       </ul>
+
+      {/* The two shots that sell it: the extraction next to the real page, and
+          the color-coded status payoff. */}
+      <div className="flex flex-col gap-3">
+        <figure>
+          <Image
+            src={shotReview}
+            alt="Review screen — a handwritten 1979 logbook page beside the AI-extracted entry, with per-field confidence flags"
+            placeholder="blur"
+            className="w-full rounded-lg border border-slate-200 shadow-sm dark:border-slate-800"
+          />
+          <figcaption className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+            AI reads the page; you review it next to the original — low-confidence
+            fields are flagged.
+          </figcaption>
+        </figure>
+        <figure>
+          <Image
+            src={shotStatus}
+            alt="Status overview — every inspection, maintenance item, and AD color-coded by urgency"
+            placeholder="blur"
+            className="w-full rounded-lg border border-slate-200 shadow-sm dark:border-slate-800"
+          />
+          <figcaption className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+            Every inspection, item, and AD at a glance — with email reminders
+            before they come due.
+          </figcaption>
+        </figure>
+      </div>
 
       <Disclaimer />
 

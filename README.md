@@ -18,6 +18,20 @@ photograph or upload your logbook pages, AI reads them into structured entries,
 and the app tracks inspections, ADs, equipment, weight & balance, and flight
 hours — then reminds you before things come due.
 
+## Screenshots
+
+*The demo aircraft every new account gets — a fictional 1978 C172N.*
+
+![Aircraft overview — status badges, logbooks, and review queue](docs/screenshots/hub.png)
+
+| Status at a glance | Review: page beside extraction |
+|---|---|
+| ![Status grid](docs/screenshots/status.png) | ![Review screen](docs/screenshots/review.png) |
+
+| Ask your logbook (cited answers) | Timeline & search |
+|---|---|
+| ![Ask your logbook](docs/screenshots/ask.png) | ![Timeline](docs/screenshots/timeline.png) |
+
 ## Features
 
 **Capture → extract → review**
