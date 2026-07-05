@@ -22,9 +22,9 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">
+      <span className="text-sm font-medium text-ink">
         {label}
-        {required && <span className="text-red-500"> *</span>}
+        {required && <span className="text-annun-red"> *</span>}
       </span>
       <input
         name={name}
@@ -32,10 +32,10 @@ function Field({
         step={step}
         required={required}
         placeholder={placeholder}
-        className="rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+        className="rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent"
       />
       {hint && (
-        <span className="text-xs text-slate-500 dark:text-slate-400">{hint}</span>
+        <span className="text-xs text-faint">{hint}</span>
       )}
     </label>
   );
@@ -112,13 +112,13 @@ export function EnrollForm() {
           type="button"
           onClick={lookupTail}
           disabled={lookingUp}
-          className="mb-[2px] shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+          className="mb-[2px] shrink-0 rounded-md border border-line px-3 py-2 text-sm font-medium text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
         >
           {lookingUp ? "Looking up…" : "Look up FAA registry"}
         </button>
       </div>
       {lookupNote && (
-        <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">{lookupNote}</p>
+        <p className="-mt-2 text-xs text-faint">{lookupNote}</p>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Make" name="make" placeholder="Cessna" />
@@ -163,12 +163,12 @@ export function EnrollForm() {
         />
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-annun-red">{error}</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-md bg-slate-900 px-5 py-2.5 font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+        className="mt-2 rounded-md bg-accent px-5 py-2.5 font-medium text-bg hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Enrolling…" : "Enroll aircraft"}
       </button>

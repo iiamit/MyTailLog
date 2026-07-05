@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
@@ -47,24 +46,24 @@ export default async function CapturePage({
   }));
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <h1 className="text-3xl font-bold">Capture pages</h1>
-        <p className="text-slate-600 dark:text-slate-300">
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6">
+        <div className="eyebrow mb-2">Capture</div>
+        <h1 className="font-display text-[27px] font-semibold leading-none">
+          Capture pages
+        </h1>
+        <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
           Photograph logbook pages one at a time. Each shot is checked for blur,
           glare, and resolution, then queued on-device and uploaded when you have
           signal — so you can digitize a whole logbook in a hangar offline.
         </p>
       </header>
 
-      <CaptureClient aircraftId={id} logbooks={captureLogbooks} />
+      <CaptureClient
+        aircraftId={id}
+        logbooks={captureLogbooks}
+        tailNumber={aircraft.tail_number}
+      />
     </main>
   );
 }

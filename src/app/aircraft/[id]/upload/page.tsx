@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { CaptureLogbook } from "../capture/CaptureClient";
@@ -46,16 +45,9 @@ export default async function UploadPage({
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
       <header className="mt-2 mb-6">
         <h1 className="text-3xl font-bold">Upload scans</h1>
-        <p className="text-slate-600 dark:text-slate-300">
+        <p className="text-dim">
           Already have your logbooks scanned? Upload PDFs or images. Multi-page
           PDFs are split into individual pages, queued on-device, and uploaded —
           the same pipeline as camera capture, so pages are reviewed and

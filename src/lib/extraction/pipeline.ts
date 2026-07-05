@@ -13,9 +13,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { extractFromImage } from "./extract";
 import {
-  CONFIDENCE_THRESHOLD,
+  ENTRY_FIELDS,
   EXTRACTION_SCHEMA_VERSION,
   type ExtractedEntry,
+  type FieldBox,
 } from "./schema";
 import { EXTRACTION_MODEL } from "./anthropic";
 import { proposeEquipmentForEntries } from "./equipmentProposals";
@@ -26,12 +27,6 @@ import { entryText } from "./entryText";
 import { classifyOtherDocument, applyScannedDocument } from "./otherDocument";
 
 const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
-
-// Data fields that carry a per-field confidence in the review UI.
-const ENTRY_FIELDS = [
-  "entry_date", "hobbs", "tach", "description", "work_performed",
-  "parts", "signature_name", "mechanic_cert_number", "ad_refs", "sb_refs",
-] as const;
 
 export type PageForExtraction = {
   id: string;
@@ -52,18 +47,41 @@ export type PipelineResult = {
   adsCreated?: number;
 };
 
+const clamp01 = (n: unknown): number | null =>
+  typeof n === "number" && Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : null;
+
 /**
- * Build the field_confidence map the review UI reads: fields the model flagged
- * get a below-threshold score; everything else inherits the entry's overall
- * confidence. This is what lets the UI highlight exactly the fields to check.
+ * The real per-field confidence the model reported (clamped to 0..1). Any field
+ * the model omitted falls back to the entry's overall score, so the review UI
+ * always has a number to show and isEntryClean always has a value to test.
  */
 function fieldConfidence(entry: ExtractedEntry): Record<string, number> {
-  const flagged = new Set(entry.low_confidence_fields ?? []);
+  const src = entry.field_confidence ?? ({} as Record<string, number>);
+  const overall = clamp01(entry.confidence) ?? 0;
   const map: Record<string, number> = {};
+  for (const field of ENTRY_FIELDS) map[field] = clamp01(src[field]) ?? overall;
+  return map;
+}
+
+/**
+ * Per-field source boxes (fractions of the full image), dropping any that are
+ * malformed. Approximate boxes are expected — this is a "look here" hint the
+ * review UI crops beside each field, not a precise region.
+ */
+function fieldBoxes(entry: ExtractedEntry): Record<string, FieldBox | null> {
+  const src = entry.field_boxes ?? ({} as Record<string, number[]>);
+  const map: Record<string, FieldBox | null> = {};
   for (const field of ENTRY_FIELDS) {
-    map[field] = flagged.has(field)
-      ? Math.min(entry.confidence, CONFIDENCE_THRESHOLD - 0.01)
-      : entry.confidence;
+    const b = src[field];
+    // Model emits [x, y, w, h] fractions; [0,0,0,0] (or a zero-area box) means
+    // "not located" → store null. Otherwise convert the array to a FieldBox.
+    const ok =
+      Array.isArray(b) &&
+      b.length >= 4 &&
+      b.slice(0, 4).every((v) => typeof v === "number" && Number.isFinite(v)) &&
+      b[2] > 0 &&
+      b[3] > 0;
+    map[field] = ok ? { x: b[0], y: b[1], w: b[2], h: b[3] } : null;
   }
   return map;
 }
@@ -130,6 +148,7 @@ export async function extractPage(
         sb_refs: Array.isArray(e.sb_refs) ? e.sb_refs : [],
         confidence: e.confidence,
         field_confidence: fieldConfidence(e),
+        field_boxes: fieldBoxes(e),
         extraction_schema_version: EXTRACTION_SCHEMA_VERSION,
         extraction_model: EXTRACTION_MODEL,
         owner_confirmed: false,

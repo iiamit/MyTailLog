@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logbookLabel } from "@/lib/logbooks";
@@ -71,45 +70,52 @@ export default async function ExportPage({
     })
     .sort((a, b) => (a.due.next_due_date ?? "9999").localeCompare(b.due.next_due_date ?? "9999"));
 
-  const H2 = "mt-8 mb-2 border-b border-slate-300 pb-1 text-lg font-bold dark:border-slate-700";
+  const H2 = "mt-8 mb-2 border-b border-line pb-1 text-lg font-bold";
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10 print:px-0 print:py-0">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 print:hidden dark:text-slate-400"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <div className="mt-2">
-        <PrintBar aircraftId={id} />
-      </div>
-
-      <header>
-        <h1 className="text-2xl font-bold">{aircraft.tail_number} — records export</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          {[aircraft.year, aircraft.make, aircraft.model].filter(Boolean).join(" ")}
-          {aircraft.serial_number ? ` · S/N ${aircraft.serial_number}` : ""}
-        </p>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Generated {new Date().toISOString().slice(0, 10)} · current hours ≈{" "}
-          {currentHours ?? "—"}
-          {aircraft.engine_serials?.length ? ` · engine S/N ${aircraft.engine_serials.join(", ")}` : ""}
-          {aircraft.prop_serials?.length ? ` · prop S/N ${aircraft.prop_serials.join(", ")}` : ""}
-        </p>
-        <p className="mt-2 text-xs italic text-slate-500 dark:text-slate-400">
-          This is an index of the physical logbooks, not the legal maintenance
-          record or an airworthiness determination (14 CFR 91.417). Verify
-          against the original logbooks.
-        </p>
+    <main className="mx-auto max-w-6xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4 print:hidden">
+        <div>
+          <div className="eyebrow mb-2">Manage</div>
+          <h1 className="font-display text-[27px] font-semibold leading-none">
+            Export &amp; backup
+          </h1>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
+            Your data is yours. Print a status report, pull a spreadsheet, or
+            take a complete re-importable archive — no lock-in.
+          </p>
+        </div>
       </header>
 
-      {/* AD / SB compliance */}
+      <PrintBar aircraftId={id} />
+
+      {/* Printable report — hidden on screen (the cards above are the on-screen
+          view); rendered for "Generate PDF" / Cmd+P, which prints this page. */}
+      <div className="hidden print:block">
+        <header>
+          <h1 className="text-2xl font-bold">{aircraft.tail_number} — records export</h1>
+          <p className="text-sm text-dim">
+            {[aircraft.year, aircraft.make, aircraft.model].filter(Boolean).join(" ")}
+            {aircraft.serial_number ? ` · S/N ${aircraft.serial_number}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-faint">
+            Generated {new Date().toISOString().slice(0, 10)} · current hours ≈{" "}
+            {currentHours ?? "—"}
+            {aircraft.engine_serials?.length ? ` · engine S/N ${aircraft.engine_serials.join(", ")}` : ""}
+            {aircraft.prop_serials?.length ? ` · prop S/N ${aircraft.prop_serials.join(", ")}` : ""}
+          </p>
+          <p className="mt-2 text-xs italic text-faint">
+            This is an index of the physical logbooks, not the legal maintenance
+            record or an airworthiness determination (14 CFR 91.417). Verify
+            against the original logbooks.
+          </p>
+        </header>
+
+        {/* AD / SB compliance */}
       <h2 className={H2}>AD / SB compliance ({ads?.length ?? 0})</h2>
       {ads && ads.length > 0 ? (
         <table className="w-full text-left text-xs">
-          <thead className="text-slate-500 dark:text-slate-400">
+          <thead className="text-faint">
             <tr>
               <th className="py-1 pr-2">Ref</th>
               <th className="py-1 pr-2">Title</th>
@@ -120,7 +126,7 @@ export default async function ExportPage({
           </thead>
           <tbody>
             {ads.map((a, i) => (
-              <tr key={i} className="border-t border-slate-100 align-top dark:border-slate-800">
+              <tr key={i} className="border-t border-line align-top">
                 <td className="py-1 pr-2 font-medium">{a.kind.toUpperCase()} {a.reference}</td>
                 <td className="py-1 pr-2">{a.title ?? ""}</td>
                 <td className="py-1 pr-2">{AD_STATUS_LABEL[a.status as AdStatus] ?? a.status}</td>
@@ -133,14 +139,14 @@ export default async function ExportPage({
           </tbody>
         </table>
       ) : (
-        <p className="text-xs text-slate-500">None tracked.</p>
+        <p className="text-xs text-faint">None tracked.</p>
       )}
 
       {/* Equipment */}
       <h2 className={H2}>Equipment ({components?.length ?? 0})</h2>
       {components && components.length > 0 ? (
         <table className="w-full text-left text-xs">
-          <thead className="text-slate-500 dark:text-slate-400">
+          <thead className="text-faint">
             <tr>
               <th className="py-1 pr-2">Component</th>
               <th className="py-1 pr-2">Make</th>
@@ -151,7 +157,7 @@ export default async function ExportPage({
           </thead>
           <tbody>
             {components.map((c, i) => (
-              <tr key={i} className="border-t border-slate-100 align-top dark:border-slate-800">
+              <tr key={i} className="border-t border-line align-top">
                 <td className="py-1 pr-2 font-medium">{c.name}</td>
                 <td className="py-1 pr-2">{c.make ?? ""}</td>
                 <td className="py-1 pr-2">{[c.part_number, c.serial_number].filter(Boolean).join(" · ")}</td>
@@ -162,14 +168,14 @@ export default async function ExportPage({
           </tbody>
         </table>
       ) : (
-        <p className="text-xs text-slate-500">None tracked.</p>
+        <p className="text-xs text-faint">None tracked.</p>
       )}
 
       {/* Maintenance forecast */}
       <h2 className={H2}>Maintenance forecast ({forecast.length})</h2>
       {forecast.length > 0 ? (
         <table className="w-full text-left text-xs">
-          <thead className="text-slate-500 dark:text-slate-400">
+          <thead className="text-faint">
             <tr>
               <th className="py-1 pr-2">Item</th>
               <th className="py-1 pr-2">Next due</th>
@@ -178,7 +184,7 @@ export default async function ExportPage({
           </thead>
           <tbody>
             {forecast.map((f, i) => (
-              <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
+              <tr key={i} className="border-t border-line">
                 <td className="py-1 pr-2 font-medium">{f.label}</td>
                 <td className="py-1 pr-2">
                   {[f.due.next_due_date, f.due.next_due_hours != null ? `${f.due.next_due_hours} hrs` : null].filter(Boolean).join(" / ") || "—"}
@@ -189,16 +195,16 @@ export default async function ExportPage({
           </tbody>
         </table>
       ) : (
-        <p className="text-xs text-slate-500">No items.</p>
+        <p className="text-xs text-faint">No items.</p>
       )}
 
       {/* Logbook entries */}
       <h2 className={H2}>Logbook entries ({entries?.length ?? 0})</h2>
-      <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+      <div className="flex flex-col divide-y divide-line">
         {(entries ?? []).map((e) => (
           <div key={e.id} className="break-inside-avoid py-2">
-            <div className="flex flex-wrap items-baseline gap-x-3 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium text-slate-700 dark:text-slate-200">
+            <div className="flex flex-wrap items-baseline gap-x-3 text-xs text-faint">
+              <span className="font-medium text-dim">
                 {e.entry_date ?? "undated"}
               </span>
               <span>{label.get(e.logbook_id) ?? ""}</span>
@@ -209,6 +215,7 @@ export default async function ExportPage({
             <FormattedEntry text={[e.description, e.work_performed].filter(Boolean).join("\n")} />
           </div>
         ))}
+      </div>
       </div>
     </main>
   );

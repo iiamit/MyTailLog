@@ -97,6 +97,7 @@ export default async function ReviewPage({
     sb_refs: e.sb_refs ?? [],
     confidence: e.confidence,
     field_confidence: e.field_confidence,
+    field_boxes: e.field_boxes,
     owner_confirmed: e.owner_confirmed,
     is_continuation: e.is_continuation,
   }));
@@ -107,13 +108,6 @@ export default async function ReviewPage({
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← Back to aircraft
-      </Link>
-
       <header className="mt-2 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">
@@ -125,46 +119,49 @@ export default async function ReviewPage({
             {prevPageId ? (
               <Link
                 href={`/aircraft/${id}/pages/${prevPageId}/review`}
-                className="rounded-md border border-slate-300 px-3 py-1.5 hover:border-slate-500 dark:border-slate-700"
+                className="rounded-md border border-line px-3 py-1.5 hover:border-line2"
               >
                 ← Previous
               </Link>
             ) : (
-              <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-300 dark:border-slate-800 dark:text-slate-600">
+              <span className="rounded-md border border-line px-3 py-1.5 text-faint">
                 ← Previous
               </span>
             )}
             {pagePosition && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">{pagePosition}</span>
+              <span className="text-xs text-dim">{pagePosition}</span>
             )}
             {nextPageId ? (
               <Link
                 href={`/aircraft/${id}/pages/${nextPageId}/review`}
-                className="rounded-md border border-slate-300 px-3 py-1.5 hover:border-slate-500 dark:border-slate-700"
+                className="rounded-md border border-line px-3 py-1.5 hover:border-line2"
               >
                 Next →
               </Link>
             ) : (
-              <span className="rounded-md border border-slate-200 px-3 py-1.5 text-slate-300 dark:border-slate-800 dark:text-slate-600">
+              <span className="rounded-md border border-line px-3 py-1.5 text-faint">
                 Next →
               </span>
             )}
           </nav>
         </div>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-1 text-sm text-dim">
           Confirm or correct what the extractor read. Nothing here is a legal
           record — it&apos;s an index of your physical logbooks.
         </p>
       </header>
 
       {scanned && (
-        <div className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm dark:border-emerald-800 dark:bg-emerald-900/20">
-          <span className="font-medium">
+        <div
+          className="mb-6 rounded-lg border border-annun-green/40 px-4 py-3 text-sm"
+          style={{ background: "var(--grn-bg)" }}
+        >
+          <span className="font-medium text-ink">
             Classified as {SCANNED_LABEL[scanned.doc_type] ?? scanned.doc_type}
             {scanned.document_date ? ` · ${scanned.document_date}` : ""}
           </span>
           {scanned.summary && (
-            <span className="text-slate-600 dark:text-slate-300"> — {scanned.summary}.</span>
+            <span className="text-dim"> — {scanned.summary}.</span>
           )}{" "}
           {scanned.doc_type === "weight_balance" && (
             <Link href={`/aircraft/${id}/weight-balance`} className="underline">

@@ -71,30 +71,26 @@ export default async function CompliancePage({
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-2xl font-bold">AD / SB compliance</h1>
-          <Link
-            href={`/aircraft/${id}/compliance/explore`}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
-          >
-            Explore applicable ADs →
-          </Link>
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Airworthiness</div>
+          <h1 className="font-display text-[27px] font-semibold leading-none">
+            AD / SB compliance
+          </h1>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
+            Airworthiness Directives and Service Bulletins found in your logs,
+            with compliance method and next due. This is your private tracking
+            record, not an airworthiness determination — the physical logbooks
+            and the FAA remain authoritative.
+          </p>
         </div>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          Track Airworthiness Directives and Service Bulletins for this aircraft,
-          their compliance status, and when recurring ones come due. This is your
-          private tracking record, not an airworthiness determination — the
-          physical logbooks and the FAA remain authoritative.
-        </p>
+        <Link
+          href={`/aircraft/${id}/compliance/explore`}
+          className="rounded-md border border-line2 bg-panel2 px-4 py-2 text-sm font-medium text-ink hover:border-accent"
+        >
+          Explore applicable ADs →
+        </Link>
       </header>
 
       <ComplianceClient

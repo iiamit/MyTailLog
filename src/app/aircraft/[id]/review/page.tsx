@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
@@ -90,6 +89,7 @@ export default async function ReviewAllPage({
         sb_refs: e.sb_refs ?? [],
         confidence: e.confidence,
         field_confidence: e.field_confidence,
+        field_boxes: e.field_boxes,
         owner_confirmed: e.owner_confirmed,
         is_continuation: e.is_continuation,
         pageId: page.id,
@@ -103,18 +103,11 @@ export default async function ReviewAllPage({
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← Back to aircraft
-      </Link>
-
       <header className="mt-2 mb-6">
         <h1 className="text-2xl font-bold">
           Review all entries{aircraft.tail_number ? ` · ${aircraft.tail_number}` : ""}
         </h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p className="mt-1 text-sm text-dim">
           Every extracted entry in one scroll — edit inline, confirm as you go, or
           confirm all the clean ones at once. Low-confidence fields are flagged;
           use <span className="font-medium">Open page ↗</span> to check against the

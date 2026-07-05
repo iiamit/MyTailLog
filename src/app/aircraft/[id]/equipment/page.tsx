@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EquipmentClient } from "./EquipmentClient";
@@ -46,22 +45,20 @@ export default async function EquipmentPage({
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <h1 className="text-2xl font-bold">Installed equipment</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Track what&apos;s currently installed and what&apos;s been removed. This
-          drives AD applicability — removing a component marks its Airworthiness
-          Directives no longer applicable (with the removal date), and installed
-          equipment surfaces the ADs that apply to it.
-        </p>
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Records</div>
+          <h1 className="font-display text-[27px] font-semibold leading-none">
+            Installed equipment
+          </h1>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
+            Track what&apos;s currently installed and what&apos;s been removed. This
+            drives AD applicability — removing a component marks its Airworthiness
+            Directives no longer applicable (with the removal date), and installed
+            equipment surfaces the ADs that apply to it.
+          </p>
+        </div>
       </header>
 
       <EquipmentClient

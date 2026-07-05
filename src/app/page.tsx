@@ -40,7 +40,7 @@ export default async function Home() {
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
       <div>
         <h1 className="text-4xl font-bold tracking-tight">MyTailLog</h1>
-        <p className="mt-3 text-lg text-slate-600 dark:text-slate-300">
+        <p className="mt-3 text-lg text-dim">
           Turn decades of paper airframe, engine, prop, and avionics logbooks
           into a searchable maintenance index — capture or upload scans, let
           vision extraction read them, then track AD/SB compliance, a
@@ -48,7 +48,7 @@ export default async function Home() {
         </p>
       </div>
 
-      <ul className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2 dark:text-slate-300">
+      <ul className="grid gap-2 text-sm text-dim sm:grid-cols-2">
         {[
           "Capture or upload scans — camera or PDF/JPEG/PNG",
           "Vision extraction with per-field confidence + review",
@@ -58,7 +58,7 @@ export default async function Home() {
           "Records gap audit + full backup/export",
         ].map((f) => (
           <li key={f} className="flex gap-2">
-            <span aria-hidden className="text-emerald-500">
+            <span aria-hidden className="text-annun-green">
               ✓
             </span>
             {f}
@@ -75,28 +75,28 @@ export default async function Home() {
         {user ? (
           <Link
             href="/dashboard"
-            className="rounded-md bg-slate-900 px-5 py-2.5 font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            className="rounded-md bg-accent px-5 py-2.5 font-medium text-bg hover:opacity-90"
           >
             Go to dashboard
           </Link>
         ) : (
           <Link
             href="/login"
-            className="rounded-md bg-slate-900 px-5 py-2.5 font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            className="rounded-md bg-accent px-5 py-2.5 font-medium text-bg hover:opacity-90"
           >
             Sign in
           </Link>
         )}
       </div>
 
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        <strong className="font-medium text-slate-600 dark:text-slate-300">
+      <p className="text-sm text-faint">
+        <strong className="font-medium text-dim">
           Free &amp; open source
         </strong>{" "}
         (
         <a
           href="https://github.com/iiamit/MyTailLog"
-          className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
+          className="underline underline-offset-2 hover:text-ink"
         >
           source on GitHub
         </a>
@@ -104,7 +104,7 @@ export default async function Home() {
         record ·{" "}
         <Link
           href="/help"
-          className="underline underline-offset-2 hover:text-slate-700 dark:hover:text-slate-200"
+          className="underline underline-offset-2 hover:text-ink"
         >
           see everything it does →
         </Link>

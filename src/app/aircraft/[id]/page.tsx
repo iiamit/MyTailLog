@@ -1,79 +1,35 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Disclaimer } from "@/components/Disclaimer";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
-import { urgencyOf } from "@/lib/compliance";
-import { effectiveNextDue } from "@/lib/maintenance";
+import { dueText, type Urgency } from "@/lib/compliance";
 import { getCurrentHours } from "@/lib/aircraftHours";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import {
-  ClockIcon,
-  CpuIcon,
-  WrenchIcon,
-  ShieldIcon,
-  AlertIcon,
-  ArchiveIcon,
-  UsersIcon,
-  ChevronRightIcon,
-  CameraIcon,
-  UploadIcon,
-  ScaleIcon,
-  GaugeIcon,
-  SparklesIcon,
-} from "@/components/icons";
-import { staleWBChanges, type EquipChange } from "@/lib/weightBalance";
-import { PagesPanel, type PageRow, type LogbookTile } from "./PagesPanel";
+  buildStatusItems,
+  sortStatusItems,
+  daysUntil,
+  hoursRemaining,
+  type StatusItem,
+  type AdLite,
+} from "@/lib/status";
+import { CameraIcon, ArchiveIcon } from "@/components/icons";
 
-type Badge = { text: string; tone: string } | null;
+const U_COLOR: Record<Urgency, string> = {
+  overdue: "var(--red)",
+  due_soon: "var(--amb)",
+  upcoming: "var(--grn)",
+  none: "var(--faint)",
+};
 
-function HubCard({
-  href,
-  icon,
-  title,
-  desc,
-  badge,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  badge?: Badge;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 transition hover:border-slate-400 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
-    >
-      <span className="mt-0.5 text-lg text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">{title}</span>
-          {badge && (
-            <span className={`rounded-full px-2 py-0.5 text-xs ${badge.tone}`}>{badge.text}</span>
-          )}
-        </span>
-        <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{desc}</span>
-      </span>
-      <ChevronRightIcon className="mt-1 shrink-0 text-slate-300 group-hover:text-slate-500 dark:text-slate-600" />
-    </Link>
-  );
+// Compact "time/hours left" token for the forecast preview rows.
+function shortRemain(item: StatusItem, cur: number | null): string {
+  const d = daysUntil(item.nextDueDate);
+  if (d != null) return d < 0 ? `${-d}d over` : `${d}d`;
+  const h = hoursRemaining(item.nextDueHours, cur);
+  if (h != null) return h < 0 ? `${-h}h over` : `${h}h`;
+  return "—";
 }
-
-function HubSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-        {title}
-      </h2>
-      <div className="grid gap-3 sm:grid-cols-2">{children}</div>
-    </div>
-  );
-}
-
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export default async function AircraftPage({
   params,
@@ -83,329 +39,344 @@ export default async function AircraftPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  // RLS restricts this to the owner; a non-owner id simply returns no row.
-  const { data: aircraft } = await supabase
-    .from("aircraft")
-    .select("*")
-    .eq("id", id)
-    .single();
-
+  const { data: aircraft } = await supabase.from("aircraft").select("*").eq("id", id).single();
   if (!aircraft) notFound();
 
   const role = await getAircraftRole(supabase, id, aircraft.owner_id);
   const isOwner = role === "owner";
   const canEdit = canEditRole(role);
 
-  const { data: logbooks } = await supabase
-    .from("logbook")
-    .select("id, type, component_ref, title")
-    .eq("aircraft_id", id);
+  const [
+    { data: logbooks },
+    { data: pages },
+    { count: entryCount },
+    { data: recent },
+    { data: mxItems },
+    { data: ads },
+  ] = await Promise.all([
+    supabase.from("logbook").select("id, type, title").eq("aircraft_id", id),
+    supabase.from("page").select("logbook_id, review_status, extraction_status").eq("aircraft_id", id),
+    supabase.from("log_entry").select("id", { count: "exact", head: true }).eq("aircraft_id", id),
+    supabase
+      .from("log_entry")
+      .select("id, entry_date, logbook_id, tach, hobbs, description, work_performed")
+      .eq("aircraft_id", id)
+      .order("entry_date", { ascending: false, nullsFirst: false })
+      .limit(3),
+    supabase.from("maintenance_item").select("*").eq("aircraft_id", id),
+    supabase
+      .from("ad_compliance")
+      .select(
+        "id, reference, kind, next_due_date, next_due_hours, status, verified_report_page_id, verified_at",
+      )
+      .eq("aircraft_id", id)
+      .eq("recurring", true)
+      .not("status", "in", "(not_applicable,superseded)"),
+  ]);
 
-  const labelFor = (logbookId: string) => {
-    const lb = logbooks?.find((l) => l.id === logbookId);
-    return lb ? lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type : "Logbook";
-  };
-
-  const { data: pages } = await supabase
-    .from("page")
-    .select(
-      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error, storage_path, thumbnail_path",
-    )
-    .eq("aircraft_id", id)
-    .order("logbook_id", { ascending: true })
-    .order("page_sequence", { ascending: true, nullsFirst: false });
-
-  // Short-lived signed URLs for page thumbnails (private bucket). Prefer the
-  // small thumbnail; fall back to the original for pages without one yet.
-  // Sign both the thumbnail (list) and the original (lightbox on click).
-  const thumbById = new Map<string, string>();
-  const fullById = new Map<string, string>();
-  const pathMeta = new Map<string, { id: string; kind: "thumb" | "full" }>();
-  for (const p of pages ?? []) {
-    pathMeta.set(p.storage_path, { id: p.id, kind: "full" });
-    if (p.thumbnail_path) pathMeta.set(p.thumbnail_path, { id: p.id, kind: "thumb" });
-  }
-  const paths = [...pathMeta.keys()];
-  if (paths.length > 0) {
-    const { data: signed } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrls(paths, 3600);
-    for (const s of signed ?? []) {
-      const meta = s.path ? pathMeta.get(s.path) : undefined;
-      if (meta && s.signedUrl) {
-        (meta.kind === "thumb" ? thumbById : fullById).set(meta.id, s.signedUrl);
-      }
-    }
-  }
-
-  // Per-page extracted-entry counts.
-  const { data: entries } = await supabase
-    .from("log_entry")
-    .select("page_id")
-    .eq("aircraft_id", id);
-
-  const entryCount = entries?.length ?? 0;
-  const entryCounts = new Map<string, number>();
-  for (const e of entries ?? []) {
-    if (e.page_id) entryCounts.set(e.page_id, (entryCounts.get(e.page_id) ?? 0) + 1);
-  }
-
-  // Per-logbook captured-page counts, for the logbook cards below.
-  const pageCounts = new Map<string, number>();
-  for (const p of pages ?? []) {
-    pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);
-  }
-
-  // Pending equipment suggestions (from page extraction / log scans) to badge.
-  const { count: equipmentProposalCount } = await supabase
-    .from("equipment_proposal")
-    .select("id", { count: "exact", head: true })
-    .eq("aircraft_id", id);
-
-  // Overdue/due-soon maintenance count for the forecast badge.
-  const { data: mxItems } = await supabase
-    .from("maintenance_item")
-    .select("kind, interval_hours, last_done_hours, next_due_date, next_due_hours")
-    .eq("aircraft_id", id);
-  const currentHobbs = await getCurrentHours(supabase, id, {
+  const currentHours = await getCurrentHours(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
-  const mxList = mxItems ?? [];
-  const dueSoonCount = mxList.filter((m) => {
-    const u = urgencyOf(effectiveNextDue(m, mxList), currentHobbs);
-    return u === "overdue" || u === "due_soon";
-  }).length;
 
-  // W&B staleness: equipment changes recorded after the last W&B revision.
-  const { data: wbLatest } = await supabase
-    .from("weight_balance")
-    .select("revision_date")
-    .eq("aircraft_id", id)
-    .order("revision_date", { ascending: false })
-    .limit(1);
-  const { data: wbComponents } = await supabase
-    .from("component")
-    .select("name, install_date, removal_date")
-    .eq("aircraft_id", id);
-  const wbChanges: EquipChange[] = [];
-  for (const c of wbComponents ?? []) {
-    if (c.install_date) wbChanges.push({ name: c.name, date: c.install_date, kind: "install" });
-    if (c.removal_date) wbChanges.push({ name: c.name, date: c.removal_date, kind: "removal" });
+  // Unified airworthiness list → annunciator counts + most-urgent + forecast.
+  const status = buildStatusItems(mxItems ?? [], (ads ?? []) as AdLite[], currentHours);
+  const sorted = sortStatusItems(status);
+  const annun = {
+    overdue: status.filter((s) => s.urgency === "overdue").length,
+    due: status.filter((s) => s.urgency === "due_soon").length,
+    current: status.filter((s) => s.urgency === "upcoming" || s.urgency === "none").length,
+  };
+  const attention = annun.overdue + annun.due;
+  const total = annun.overdue + annun.due + annun.current || 1;
+  const gauge = `conic-gradient(var(--red) 0 ${(annun.overdue / total) * 100}%, var(--amb) 0 ${
+    ((annun.overdue + annun.due) / total) * 100
+  }%, var(--grn) 0 100%)`;
+  const attnColor = annun.overdue > 0 ? "var(--red)" : annun.due > 0 ? "var(--amb)" : "var(--grn)";
+  const mostUrgent = sorted[0]?.urgency === "overdue" || sorted[0]?.urgency === "due_soon" ? sorted[0] : null;
+  const forecast = sorted.filter((s) => s.source === "maintenance").slice(0, 4);
+
+  // Per-logbook page counts + pages awaiting review, for the capture card.
+  const labelFor = (lid: string) => {
+    const lb = logbooks?.find((l) => l.id === lid);
+    return lb ? lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type : "Logbook";
+  };
+  const typeFor = (lid: string) => logbooks?.find((l) => l.id === lid)?.type ?? "other";
+  const pageCounts = new Map<string, number>();
+  let reviewPending = 0;
+  for (const p of pages ?? []) {
+    pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);
+    if (p.extraction_status === "extracted" && p.review_status === "unreviewed") reviewPending++;
   }
-  // Only badge the true "stale" case (a W&B exists but changes postdate it); an
-  // aircraft that simply hasn't started W&B isn't nagged here.
-  const wbStaleCount = wbLatest?.[0]
-    ? staleWBChanges(wbLatest[0].revision_date, wbChanges).length
-    : 0;
-
-  const pageRows: PageRow[] = (pages ?? []).map((p) => ({
-    id: p.id,
-    logbookId: p.logbook_id,
-    logbookLabel: labelFor(p.logbook_id),
-    pageSequence: p.page_sequence,
-    reviewStatus: p.review_status,
-    extractionStatus: p.extraction_status,
-    detectedPageCount: p.detected_page_count,
-    extractionError: p.extraction_error,
-    entryCount: entryCounts.get(p.id) ?? 0,
-    thumbnailUrl: thumbById.get(p.id) ?? fullById.get(p.id) ?? null,
-    fullUrl: fullById.get(p.id) ?? null,
-    storagePath: p.storage_path,
-    needsThumbnail: !p.thumbnail_path,
-  }));
-
-  const logbookTiles: LogbookTile[] = (logbooks ?? []).map((lb) => ({
-    id: lb.id,
+  const capTiles = (logbooks ?? []).map((lb) => ({
     label: lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type,
-    componentRef: lb.component_ref,
-    pageCount: pageCounts.get(lb.id) ?? 0,
+    type: lb.type,
+    count: pageCounts.get(lb.id) ?? 0,
   }));
 
-  const extractionConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
+  const type = [aircraft.year, aircraft.make, aircraft.model].filter(Boolean).join(" ") || "Details not set";
+  const a = `/aircraft/${id}`;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href="/dashboard"
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← All aircraft
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-bold">{aircraft.tail_number}</h1>
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      {/* Header */}
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Aircraft overview</div>
+          <div className="flex flex-wrap items-baseline gap-3.5">
+            <h1 className="readout text-[34px] font-semibold tracking-[1px]">{aircraft.tail_number}</h1>
+            <span className="text-[15px] text-dim">
+              {type}
+              {aircraft.serial_number ? ` · S/N ${aircraft.serial_number}` : ""}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
           {!isOwner && (
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-              Shared with you · {canEdit ? "contribute" : "view only"}
+            <span className="rounded-full bg-panel2 px-2.5 py-0.5 text-xs font-medium text-dim">
+              Shared · {canEdit ? "contribute" : "view only"}
             </span>
           )}
+          {canEdit && (
+            <Link
+              href={`${a}/capture`}
+              className="inline-flex items-center gap-2 rounded-[9px] bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-bg hover:opacity-90"
+            >
+              <CameraIcon />
+              Capture pages
+            </Link>
+          )}
+          <Link
+            href={`${a}/export`}
+            className="inline-flex items-center gap-2 rounded-[9px] border border-line2 bg-panel2 px-4 py-2.5 text-[13.5px] text-ink hover:border-accent"
+          >
+            <ArchiveIcon />
+            Export &amp; backup
+          </Link>
         </div>
-        <p className="text-slate-600 dark:text-slate-300">
-          {[aircraft.year, aircraft.make, aircraft.model]
-            .filter(Boolean)
-            .join(" ") || "Details not set"}
-          {aircraft.serial_number ? ` · S/N ${aircraft.serial_number}` : ""}
-        </p>
       </header>
 
-      <div className="mb-6">
-        <Disclaimer />
-      </div>
-
-      <div className="mb-8 flex flex-col gap-6">
-        <HubSection title="Records">
-          <HubCard
-            href={`/aircraft/${id}/ask`}
-            icon={<SparklesIcon />}
-            title="Ask your logbook"
-            desc="Plain-English questions, answered with cited entries"
-          />
-          <HubCard
-            href={`/aircraft/${id}/timeline`}
-            icon={<ClockIcon />}
-            title="Timeline & search"
-            desc="Every entry across all logbooks, merged by date"
-            badge={
-              entryCount > 0
-                ? {
-                    text: `${entryCount} ${entryCount === 1 ? "entry" : "entries"}`,
-                    tone: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-                  }
-                : null
-            }
-          />
-          <HubCard
-            href={`/aircraft/${id}/equipment`}
-            icon={<CpuIcon />}
-            title="Installed equipment"
-            desc="Components on the aircraft now, derived from the logs"
-            badge={
-              equipmentProposalCount
-                ? {
-                    text: `${equipmentProposalCount} new`,
-                    tone: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-                  }
-                : null
-            }
-          />
-        </HubSection>
-
-        <HubSection title="Airworthiness">
-          <HubCard
-            href={`/aircraft/${id}/status`}
-            icon={<GaugeIcon />}
-            title="Status overview"
-            desc="Every inspection, item & AD at a glance, color-coded"
-            badge={
-              dueSoonCount > 0
-                ? {
-                    text: `${dueSoonCount} need attention`,
-                    tone: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-                  }
-                : mxList.length > 0
-                  ? {
-                      text: "all current",
-                      tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-                    }
-                  : null
-            }
-          />
-          <HubCard
-            href={`/aircraft/${id}/maintenance`}
-            icon={<WrenchIcon />}
-            title="Maintenance forecast"
-            desc="Part 91 recurring items & when they're next due"
-            badge={
-              dueSoonCount > 0
-                ? {
-                    text: `${dueSoonCount} due`,
-                    tone: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-                  }
-                : null
-            }
-          />
-          <HubCard
-            href={`/aircraft/${id}/compliance`}
-            icon={<ShieldIcon />}
-            title="AD / SB compliance"
-            desc="Directives, compliance method, and next due"
-          />
-          <HubCard
-            href={`/aircraft/${id}/weight-balance`}
-            icon={<ScaleIcon />}
-            title="Weight & balance"
-            desc="Empty weight/CG history; flags changes since last revision"
-            badge={
-              wbStaleCount > 0
-                ? {
-                    text: `${wbStaleCount} to review`,
-                    tone: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-                  }
-                : null
-            }
-          />
-          <HubCard
-            href={`/aircraft/${id}/audit`}
-            icon={<AlertIcon />}
-            title="Records gap audit"
-            desc="Suspected gaps in the paper trail"
-          />
-        </HubSection>
-
-        <HubSection title="Manage">
-          <HubCard
-            href={`/aircraft/${id}/export`}
-            icon={<ArchiveIcon />}
-            title="Export & backup"
-            desc="Print/PDF, CSV, or a full re-importable .zip"
-          />
-          {isOwner && (
-            <HubCard
-              href={`/aircraft/${id}/share`}
-              icon={<UsersIcon />}
-              title="Sharing, transfer & delete"
-              desc="Invite viewers/editors, hand off, or delete"
-            />
-          )}
-        </HubSection>
-      </div>
-
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Logbooks &amp; pages</h2>
-          {canEdit && (
-            <div className="flex gap-2">
+      {/* Row 1: airworthiness + forecast */}
+      <div className="mb-4 grid gap-4 lg:grid-cols-2">
+        {/* Airworthiness status */}
+        <div className="panel-raised p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="eyebrow">Airworthiness status</div>
+            <span className="readout text-[11px] text-dim">
+              current ≈ {currentHours != null ? currentHours.toFixed(1) : "—"} hrs
+            </span>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="relative h-[132px] w-[132px] shrink-0 rounded-full" style={{ background: gauge }}>
+              <div className="absolute inset-[15px] flex flex-col items-center justify-center rounded-full border border-line bg-panel">
+                <span className="readout text-[30px] font-semibold leading-none" style={{ color: attnColor }}>
+                  {attention}
+                </span>
+                {/* Wraps to two lines — the inner disc is too narrow for one. */}
+                <span
+                  className="mt-1 uppercase text-faint"
+                  style={{
+                    textAlign: "center",
+                    padding: "0 12%",
+                    lineHeight: 1.25,
+                    fontSize: "8.5px",
+                    letterSpacing: ".1em",
+                    maxWidth: "100%",
+                  }}
+                >
+                  need attention
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-1 flex-col gap-2.5">
+              {[
+                { c: "var(--red)", n: annun.overdue, l: "overdue" },
+                { c: "var(--amb)", n: annun.due, l: "due soon" },
+                { c: "var(--grn)", n: annun.current, l: "current" },
+              ].map((r) => (
+                <div key={r.l} className="flex items-center gap-2.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.c, boxShadow: `0 0 9px ${r.c}` }} />
+                  <span className="readout w-6 text-[15px]">{r.n}</span>
+                  <span className="text-[12.5px] text-dim">{r.l}</span>
+                </div>
+              ))}
               <Link
-                href={`/aircraft/${id}/upload`}
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+                href={`${a}/status`}
+                className="mt-1.5 self-start rounded-lg border border-line2 px-3 py-1.5 text-xs text-dim hover:border-accent hover:text-ink"
               >
-                <UploadIcon />
-                Upload scans
-              </Link>
-              <Link
-                href={`/aircraft/${id}/capture`}
-                className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-              >
-                <CameraIcon />
-                Capture pages
+                View all status →
               </Link>
             </div>
+          </div>
+          {mostUrgent && (
+            <Link
+              href={`${a}/status`}
+              className="mt-5 flex items-center gap-3.5 rounded-xl border px-4 py-3.5"
+              style={{ background: "var(--red-bg)", borderColor: "rgba(255,97,86,.35)" }}
+            >
+              <span
+                className="shrink-0 rounded-md px-1.5 py-1 text-[9px] font-semibold tracking-[0.12em] text-annun-red"
+                style={{ border: "1px solid rgba(255,97,86,.5)" }}
+              >
+                MOST URGENT
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[14.5px] font-semibold">{mostUrgent.label}</div>
+                <div className="readout mt-0.5 text-[11.5px] text-annun-red">
+                  {dueText(mostUrgent.nextDueDate, mostUrgent.nextDueHours, currentHours) ?? "due"}
+                </div>
+              </div>
+              <span className="text-lg text-annun-red">→</span>
+            </Link>
           )}
         </div>
-        <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
-          Click a logbook to show only its pages. Click a page thumbnail to
-          magnify it.
-        </p>
-        <PagesPanel
-          aircraftId={id}
-          logbooks={logbookTiles}
-          pages={pageRows}
-          extractionConfigured={extractionConfigured && canEdit}
-          canEdit={canEdit}
-        />
-      </section>
+
+        {/* Next due forecast */}
+        <div className="panel p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="eyebrow">Next due · Part 91 forecast</div>
+            <Link href={`${a}/maintenance`} className="text-xs text-accent hover:opacity-80">
+              all →
+            </Link>
+          </div>
+          {forecast.length > 0 ? (
+            <div>
+              {forecast.map((f) => (
+                <Link
+                  key={f.id}
+                  href={`${a}/maintenance`}
+                  className="flex items-center gap-3 border-b border-line py-2.5 last:border-0 hover:opacity-90"
+                >
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: U_COLOR[f.urgency] }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13.5px]">{f.label}</div>
+                    <div className="readout mt-0.5 text-[11px] text-faint">
+                      {dueText(f.nextDueDate, f.nextDueHours, currentHours) ?? "not scheduled"}
+                    </div>
+                  </div>
+                  <span className="readout shrink-0 text-xs" style={{ color: U_COLOR[f.urgency] }}>
+                    {shortRemain(f, currentHours)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="py-4 text-sm text-faint">
+              No recurring items yet.{" "}
+              <Link href={`${a}/maintenance`} className="text-accent">
+                Seed the Part 91 defaults →
+              </Link>
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Row 2: recent activity + capture/ask */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Recent activity */}
+        <div className="panel p-5">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="eyebrow">Recent activity</div>
+            <Link href={`${a}/timeline`} className="text-xs text-accent hover:opacity-80">
+              timeline &amp; search →
+            </Link>
+          </div>
+          {recent && recent.length > 0 ? (
+            <div>
+              {recent.map((e) => (
+                <div key={e.id} className="flex gap-3.5 border-b border-line py-3 last:border-0">
+                  <div className="readout w-[74px] shrink-0 pt-0.5 text-[11px] text-dim">
+                    {e.entry_date ?? "—"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span
+                        className="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                        style={{ background: "var(--panel2)", color: `var(--book-${typeFor(e.logbook_id)})` }}
+                      >
+                        {labelFor(e.logbook_id)}
+                      </span>
+                      {e.tach != null && (
+                        <span className="readout text-[10.5px] text-faint">tach {e.tach}</span>
+                      )}
+                    </div>
+                    <div className="line-clamp-2 text-[13px] text-ink">
+                      {e.description || e.work_performed || "—"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-4 text-sm text-faint">No entries yet — capture and review a page to get started.</p>
+          )}
+        </div>
+
+        {/* Capture + Ask */}
+        <div className="flex flex-col gap-4">
+          <div className="panel p-5">
+            <div className="mb-3.5 flex items-center justify-between">
+              <div className="eyebrow">Logbook capture</div>
+              {reviewPending > 0 && (
+                <span className="readout text-[11px] text-annun-amber">{reviewPending} pages need review</span>
+              )}
+            </div>
+            {capTiles.length > 0 ? (
+              <div className="mb-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {capTiles.map((t) => (
+                  <div key={t.label} className="rounded-[9px] border border-line p-2.5 text-center">
+                    <div className={`readout text-[17px] ${t.count ? "" : "text-faint"}`}>{t.count}</div>
+                    <div className="eyebrow mt-0.5 truncate">{t.label}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mb-3.5 text-sm text-faint">No pages captured yet.</p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {reviewPending > 0 ? (
+                <Link
+                  href={`${a}/review`}
+                  className="flex-1 rounded-[9px] px-3 py-2.5 text-center text-[13px] font-semibold text-bg hover:opacity-90"
+                  style={{ background: "var(--amb)" }}
+                >
+                  Review {reviewPending} pending pages →
+                </Link>
+              ) : (
+                <Link
+                  href={`${a}/pages`}
+                  className="flex-1 rounded-[9px] border border-line2 bg-panel2 px-3 py-2.5 text-center text-[13px] text-ink hover:border-accent"
+                >
+                  Browse logbooks &amp; pages →
+                </Link>
+              )}
+              {reviewPending > 0 && (
+                <Link
+                  href={`${a}/pages`}
+                  className="rounded-[9px] border border-line2 bg-panel2 px-3 py-2.5 text-center text-[13px] text-dim hover:border-accent hover:text-ink"
+                >
+                  All pages
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="panel-raised p-5">
+            <div className="eyebrow mb-3">Ask your logbook</div>
+            <Link
+              href={`${a}/ask`}
+              className="flex items-center gap-2.5 rounded-[10px] border border-line2 bg-bg px-3.5 py-3 text-[13px] text-faint hover:border-accent"
+            >
+              <span className="h-[15px] w-[15px] shrink-0 rounded-full border-[1.5px] border-faint" />
+              When was the engine last overhauled?
+            </Link>
+            <p className="mt-2.5 text-[11px] leading-relaxed text-faint">
+              Plain-English answers drawn only from your extracted entries — each one cites the source
+              entry.
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

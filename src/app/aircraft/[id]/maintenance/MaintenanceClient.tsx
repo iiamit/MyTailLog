@@ -7,7 +7,7 @@ import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { MfbSyncButton } from "@/components/MfbSyncButton";
 import type { MaintenanceItem } from "@/lib/database.types";
-import { dueText, URGENCY_STYLE, urgencyLabel } from "@/lib/compliance";
+import { dueText } from "@/lib/compliance";
 import type { StatusItem } from "@/lib/status";
 import { STANDARD_ITEMS } from "@/lib/maintenance";
 import {
@@ -75,7 +75,22 @@ function toInput(f: FormState): MaintenanceInput {
 }
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
+
+const secondaryBtn =
+  "rounded-md border border-line2 bg-panel2 px-4 py-2 text-sm font-medium text-ink hover:border-accent disabled:opacity-50";
+const rowBtn =
+  "rounded-md border border-line2 bg-panel2 px-2.5 py-1 text-xs text-ink hover:border-accent disabled:opacity-50";
+
+const FORECAST_COLS = "grid-cols-[1.6fr_1.1fr_0.8fr_0.9fr_0.8fr_auto]";
+
+// Dot + "remaining" text carry the urgency color; red/amber/green/faint.
+const URGENCY_COLOR: Record<DueItem["urgency"], string> = {
+  overdue: "var(--red)",
+  due_soon: "var(--amb)",
+  upcoming: "var(--grn)",
+  none: "var(--faint)",
+};
 
 export function MaintenanceClient({
   aircraftId,
@@ -198,13 +213,13 @@ export function MaintenanceClient({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm text-slate-500 dark:text-slate-400">
+          <span className="readout text-xs text-faint">
             {currentHours != null ? `Current hours ≈ ${currentHours}` : "Current hours unknown"}
           </span>
           {mfbReading && (
-            <span className="text-xs text-slate-400 dark:text-slate-500">
+            <span className="text-[11px] text-faint">
               {[
                 mfbReading.hobbs != null ? `hobbs ${mfbReading.hobbs}` : null,
                 mfbReading.tach != null ? `tach ${mfbReading.tach}` : null,
@@ -216,32 +231,21 @@ export function MaintenanceClient({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <MfbSyncButton
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
-            label="Sync hours"
-          />
+          <MfbSyncButton className={secondaryBtn} label="Sync hours" />
           {extractionConfigured && (
-            <button
-              onClick={scanLogs}
-              disabled={scanning || busy}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
-            >
+            <button onClick={scanLogs} disabled={scanning || busy} className={secondaryBtn}>
               {scanning ? "Updating from logs…" : "Update from logs"}
             </button>
           )}
           {items.length === 0 && (
-            <button
-              onClick={seed}
-              disabled={busy}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
-            >
+            <button onClick={seed} disabled={busy} className={secondaryBtn}>
               Add standard Part 91 items
             </button>
           )}
           {!form && (
             <button
               onClick={() => setForm(blank())}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90"
             >
               Add item
             </button>
@@ -249,16 +253,16 @@ export function MaintenanceClient({
         </div>
       </div>
 
-      <p className="text-xs text-slate-500 dark:text-slate-400">
+      <p className="text-[11.5px] text-faint">
         Last-done dates update automatically as pages are extracted; use “Update
         from logs” to rescan the full history. Verify against the physical logs.
       </p>
 
       {form && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="mb-3 text-sm font-semibold">{form.id ? "Edit item" : "New item"}</h2>
+        <section className="panel p-4">
+          <div className="eyebrow mb-3">{form.id ? "Edit item" : "New item"}</div>
           <div className="grid grid-cols-2 gap-3">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Type
               <select value={form.kind} onChange={(e) => pickKind(e.target.value)} className={inputClass}>
                 <option value="other">Custom</option>
@@ -267,40 +271,40 @@ export function MaintenanceClient({
                 ))}
               </select>
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Label
               <input value={form.label} onChange={(e) => set("label", e.target.value)} className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Interval (months)
               <input type="number" value={form.interval_months} onChange={(e) => set("interval_months", e.target.value)} className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Interval (hours)
               <input type="number" step="0.1" value={form.interval_hours} onChange={(e) => set("interval_hours", e.target.value)} className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Last done date
               <input type="date" value={form.last_done_date} onChange={(e) => set("last_done_date", e.target.value)} className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Last done hours
               <input type="number" step="0.1" value={form.last_done_hours} onChange={(e) => set("last_done_hours", e.target.value)} className={inputClass} />
             </label>
-            <label className="col-span-2 flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="col-span-2 flex items-center gap-2 text-xs font-medium text-dim">
               <input type="checkbox" checked={form.regulatory} onChange={(e) => set("regulatory", e.target.checked)} />
               Regulatory (mandatory under Part 91) — uncheck for advisory items like TBO
             </label>
-            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="col-span-2 text-xs font-medium text-dim">
               Notes
               <textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} className={inputClass} />
             </label>
           </div>
           <div className="mt-3 flex gap-2">
-            <button onClick={save} disabled={busy} className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900">
+            <button onClick={save} disabled={busy} className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50">
               {busy ? "Saving…" : "Save"}
             </button>
-            <button onClick={() => setForm(null)} disabled={busy} className="rounded-md border border-slate-300 px-4 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700">
+            <button onClick={() => setForm(null)} disabled={busy} className="rounded-md border border-line px-4 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink disabled:opacity-50">
               Cancel
             </button>
           </div>
@@ -308,118 +312,132 @@ export function MaintenanceClient({
       )}
 
       {dueItems.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        <p className="rounded-xl border border-dashed border-line px-5 py-8 text-center text-sm text-faint">
           No maintenance items yet. Seed the standard Part 91 items or add your own.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <div className="overflow-hidden rounded-xl border border-line bg-panel">
+          <div className={`grid ${FORECAST_COLS} gap-3 border-b border-line px-[18px] py-3`}>
+            <span className="eyebrow">Item</span>
+            <span className="eyebrow">Interval</span>
+            <span className="eyebrow">Last</span>
+            <span className="eyebrow">Next due</span>
+            <span className="eyebrow">Remaining</span>
+            <span className="eyebrow text-right">Actions</span>
+          </div>
           {dueItems.map((d) => {
             const m = d.source === "maintenance" ? itemById.get(d.id) : null;
+            const color = URGENCY_COLOR[d.urgency];
+            const remaining = dueText(d.nextDueDate, d.nextDueHours, currentHours);
+            const marking = m && markId === m.id;
             return (
-              <li
-                key={`${d.source}-${d.id}`}
-                className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{d.label}</span>
-                  {d.urgency !== "none" && (
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${URGENCY_STYLE[d.urgency]}`}>
-                      {urgencyLabel(d.urgency)}
-                    </span>
-                  )}
-                  {!d.regulatory && (
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                      advisory
-                    </span>
-                  )}
-                  {d.source === "ad" && (
-                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                      AD
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {dueText(d.nextDueDate, d.nextDueHours, currentHours) ?? "no due date set"}
-                  {(d.intervalMonths || d.intervalHours) && (
-                    <span>
-                      {" · every "}
-                      {[
-                        d.intervalHours != null ? `${d.intervalHours} hrs` : null,
-                        d.intervalMonths != null ? `${d.intervalMonths} mo` : null,
-                      ].filter(Boolean).join(" / ")}
-                    </span>
-                  )}
-                  {d.lastDoneDate && <span>{` · last ${d.lastDoneDate}`}</span>}
-                  {d.notes && <div className="mt-1">{d.notes}</div>}
-                </div>
-
-                {m && markId === m.id ? (
-                  <div className="mt-3 flex flex-wrap items-end gap-2 rounded-md border border-slate-200 p-3 dark:border-slate-800">
-                    <label className="flex w-40 flex-col gap-1 text-xs">
-                      Date done
-                      <input
-                        type="date"
-                        value={markDate}
-                        onChange={(e) => setMarkDate(e.target.value)}
-                        className={inputClass}
-                      />
-                    </label>
-                    {m.interval_hours != null && (
-                      <label className="flex w-40 flex-col gap-1 text-xs">
-                        Hours (optional)
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={markHours}
-                          onChange={(e) => setMarkHours(e.target.value)}
-                          className={inputClass}
-                        />
-                      </label>
+              <div key={`${d.source}-${d.id}`} className="border-b border-line last:border-b-0">
+                <div className={`grid ${FORECAST_COLS} items-center gap-3 px-[18px] py-3`}>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: color, boxShadow: `0 0 7px ${color}` }}
+                    />
+                    <span className="truncate text-[13.5px] font-semibold text-ink">{d.label}</span>
+                    {!d.regulatory && (
+                      <span className="rounded-full bg-panel2 px-2 py-0.5 text-[10px] text-faint">
+                        advisory
+                      </span>
                     )}
-                    <button
-                      onClick={() => saveMark(m)}
-                      disabled={busy}
-                      className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900"
-                    >
-                      {busy ? "Saving…" : "Save"}
-                    </button>
-                    <button
-                      onClick={() => setMarkId(null)}
-                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:border-slate-500 dark:border-slate-700"
-                    >
-                      Cancel
-                    </button>
+                    {d.source === "ad" && (
+                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] text-accent">
+                        AD
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="text-xs text-dim">
+                    {[
+                      d.intervalHours != null ? `${d.intervalHours} hrs` : null,
+                      d.intervalMonths != null ? `${d.intervalMonths} mo` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" / ") || "—"}
+                  </span>
+                  <span className="readout text-[11.5px] text-faint">{d.lastDoneDate ?? "—"}</span>
+                  <span className="readout text-[11.5px] text-dim">
+                    {d.nextDueDate ?? (d.nextDueHours != null ? `${d.nextDueHours} hrs` : "—")}
+                  </span>
+                  <span className="readout text-[11.5px]" style={{ color }}>
+                    {remaining ?? "—"}
+                  </span>
+                  <div className="flex flex-wrap justify-end gap-1.5">
                     {m ? (
                       <>
-                        <button onClick={() => openMark(m)} disabled={busy} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-emerald-400 disabled:opacity-50 dark:border-slate-700">
-                          Mark done
+                        <button onClick={() => openMark(m)} disabled={busy} className={`${rowBtn} hover:border-annun-green/60`}>
+                          Done
                         </button>
-                        <button onClick={() => setForm(fromItem(m))} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
+                        <button onClick={() => setForm(fromItem(m))} className={rowBtn}>
                           Edit
                         </button>
                         <ConfirmButton
                           onConfirm={() => del(m)}
                           confirmLabel="Delete"
                           disabled={busy}
-                          className="rounded-md border border-slate-300 px-3 py-1 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+                          className="rounded-md border border-line2 bg-panel2 px-2.5 py-1 text-xs text-annun-red hover:border-annun-red/60 disabled:opacity-50"
                         >
                           Delete
                         </ConfirmButton>
                       </>
                     ) : (
-                      <Link href={`/aircraft/${aircraftId}/compliance`} className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700">
-                        Manage in compliance →
+                      <Link href={`/aircraft/${aircraftId}/compliance`} className={rowBtn}>
+                        Compliance →
                       </Link>
                     )}
                   </div>
+                </div>
+
+                {(d.notes || marking) && (
+                  <div className="px-[18px] pb-3">
+                    {d.notes && <p className="text-xs text-faint">{d.notes}</p>}
+                    {marking && m && (
+                      <div className="mt-2 flex flex-wrap items-end gap-2 rounded-md border border-line bg-panel2 p-3">
+                        <label className="flex w-40 flex-col gap-1 text-xs">
+                          Date done
+                          <input
+                            type="date"
+                            value={markDate}
+                            onChange={(e) => setMarkDate(e.target.value)}
+                            className={inputClass}
+                          />
+                        </label>
+                        {m.interval_hours != null && (
+                          <label className="flex w-40 flex-col gap-1 text-xs">
+                            Hours (optional)
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={markHours}
+                              onChange={(e) => setMarkHours(e.target.value)}
+                              className={inputClass}
+                            />
+                          </label>
+                        )}
+                        <button
+                          onClick={() => saveMark(m)}
+                          disabled={busy}
+                          className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-bg hover:opacity-90 disabled:opacity-50"
+                        >
+                          {busy ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          onClick={() => setMarkId(null)}
+                          className="rounded-md border border-line2 bg-panel2 px-3 py-1.5 text-xs text-ink hover:border-accent"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

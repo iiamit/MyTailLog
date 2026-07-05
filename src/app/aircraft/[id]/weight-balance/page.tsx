@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAircraftRole, canEditRole } from "@/lib/access";
@@ -50,21 +49,19 @@ export default async function WeightBalancePage({
     : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <h1 className="text-2xl font-bold">Weight &amp; balance</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          A history of your W&amp;B revisions and the current empty weight and CG.
-          This is an index, not a loading calculator or the legal W&amp;B record —
-          confirm against the aircraft&apos;s official weight &amp; balance data.
-        </p>
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Airworthiness</div>
+          <h1 className="font-display text-[27px] font-semibold leading-none">
+            Weight &amp; balance
+          </h1>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
+            A history of your W&amp;B revisions and the current empty weight and CG.
+            This is an index, not a loading calculator or the legal W&amp;B record —
+            confirm against the aircraft&apos;s official weight &amp; balance data.
+          </p>
+        </div>
       </header>
 
       <WeightBalanceClient

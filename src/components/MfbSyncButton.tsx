@@ -54,7 +54,7 @@ export function MfbSyncButton({
       disabled={busy}
       className={
         className ??
-        "inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+        "inline-flex items-center gap-1.5 rounded-md border border-line px-4 py-2 text-sm font-medium hover:border-line2 disabled:opacity-50"
       }
     >
       <PlaneIcon />

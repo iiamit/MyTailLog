@@ -90,6 +90,7 @@ export type LogEntry = {
   sb_refs: string[];
   confidence: number | null;
   field_confidence: Record<string, number> | null;
+  field_boxes: Record<string, { x: number; y: number; w: number; h: number } | null> | null;
   extraction_schema_version: number;
   extraction_model: string | null;
   owner_confirmed: boolean;

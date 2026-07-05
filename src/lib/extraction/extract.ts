@@ -40,7 +40,7 @@ export async function extractFromImage(
 
   const response = await client.messages.create({
     model: EXTRACTION_MODEL,
-    max_tokens: 8000,
+    max_tokens: 16000,
     system: EXTRACTION_SYSTEM_PROMPT,
     // Structured outputs constrains the response to the schema. effort "medium"
     // balances careful reading against per-page cost; thinking stays adaptive so

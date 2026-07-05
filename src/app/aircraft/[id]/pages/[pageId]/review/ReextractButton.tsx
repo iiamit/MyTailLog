@@ -34,11 +34,11 @@ export function ReextractButton({ pageId }: { pageId: string }) {
       <button
         onClick={run}
         disabled={busy}
-        className="rounded-md border border-slate-300 px-3 py-1.5 hover:border-slate-500 disabled:opacity-60 dark:border-slate-700"
+        className="rounded-md border border-line px-3 py-1.5 hover:border-line2 disabled:opacity-60"
       >
         {busy ? "Re-extracting…" : "Re-extract page"}
       </button>
-      {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
+      {error && <span className="text-xs text-annun-red">{error}</span>}
     </span>
   );
 }

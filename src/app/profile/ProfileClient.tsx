@@ -24,14 +24,14 @@ const MFB_STATUS: Record<string, { ok: boolean; text: string }> = {
 };
 
 const inputClass =
-  "rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
 const card =
-  "flex flex-col gap-3 rounded-lg border border-slate-200 p-5 dark:border-slate-800";
+  "flex flex-col gap-3 rounded-lg border border-line p-5";
 
 function Status({ msg }: { msg: { ok: boolean; text: string } | null }) {
   if (!msg) return null;
   return (
-    <p className={`text-sm ${msg.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+    <p className={`text-sm ${msg.ok ? "text-annun-green" : "text-annun-red"}`}>
       {msg.text}
     </p>
   );
@@ -56,13 +56,13 @@ function AlertRow({
         <span>{label}</span>
       </label>
       {fields.map((f) => (
-        <label key={f.name} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+        <label key={f.name} className="flex items-center gap-1.5 text-xs text-faint">
           <input
             type="number"
             min={0}
             name={f.name}
             defaultValue={f.value}
-            className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="w-20 rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-none focus:border-accent"
           />
           {f.unit}
         </label>
@@ -190,7 +190,7 @@ export function ProfileClient({
           <button
             type="submit"
             disabled={savingDetails}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-60"
           >
             {savingDetails ? "Saving…" : "Save"}
           </button>
@@ -201,7 +201,7 @@ export function ProfileClient({
       {/* Notifications */}
       <form action={saveNotifications} className={card}>
         <h2 className="font-semibold">Notifications</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-faint">
           A daily check emails you before maintenance, inspections, and ADs come due. Set how far
           in advance per category. The oil-change <em>interval</em> (hours between changes) is set
           on the oil item on each aircraft&apos;s Maintenance page — this only controls how early
@@ -220,7 +220,7 @@ export function ProfileClient({
 
         <fieldset
           disabled={!notifyOn}
-          className="flex flex-col gap-3 border-t border-slate-100 pt-3 disabled:opacity-50 dark:border-slate-800"
+          className="flex flex-col gap-3 border-t border-line pt-3 disabled:opacity-50"
         >
           <AlertRow
             label="Annual inspection"
@@ -258,7 +258,7 @@ export function ProfileClient({
           <button
             type="submit"
             disabled={savingNotif}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-60"
           >
             {savingNotif ? "Saving…" : "Save notifications"}
           </button>
@@ -269,7 +269,7 @@ export function ProfileClient({
       {/* How you sign in */}
       <div className={card}>
         <h2 className="font-semibold">How you sign in</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-faint">
           Magic links to <strong>{email}</strong> always work. Set a password to also sign in
           with one.
         </p>
@@ -288,7 +288,7 @@ export function ProfileClient({
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+              className="rounded-md border border-line px-4 py-2 text-sm font-medium text-dim hover:border-line2 hover:text-ink"
             >
               Update password
             </button>
@@ -296,7 +296,7 @@ export function ProfileClient({
           </div>
         </form>
 
-        <form onSubmit={changeEmail} className="mt-2 flex flex-col gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+        <form onSubmit={changeEmail} className="mt-2 flex flex-col gap-2 border-t border-line pt-4">
           <label className="text-sm font-medium">Change email</label>
           <input
             type="email"
@@ -309,7 +309,7 @@ export function ProfileClient({
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+              className="rounded-md border border-line px-4 py-2 text-sm font-medium text-dim hover:border-line2 hover:text-ink"
             >
               Send confirmation
             </button>
@@ -321,13 +321,13 @@ export function ProfileClient({
       {/* MyFlightBook */}
       <div className={card}>
         <h2 className="font-semibold">MyFlightBook</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-faint">
           Pull each aircraft&apos;s latest recorded hobbs &amp; tach from your{" "}
           <a
             href="https://myflightbook.com/logbook/mvc/oauth"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+            className="underline decoration-line hover:decoration-line2"
           >
             MyFlightBook
           </a>{" "}
@@ -339,11 +339,11 @@ export function ProfileClient({
         <p className="text-sm">
           Status:{" "}
           {mfb.connected ? (
-            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="font-medium text-annun-green">
               Connected{mfb.username ? ` as ${mfb.username}` : ""}
             </span>
           ) : (
-            <span className="text-slate-500 dark:text-slate-400">Not connected</span>
+            <span className="text-faint">Not connected</span>
           )}
         </p>
 
@@ -380,14 +380,14 @@ export function ProfileClient({
             <button
               type="submit"
               disabled={savingMfb}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-60"
             >
               {savingMfb ? "Saving…" : "Save credentials"}
             </button>
             {mfb.clientId && (
               <a
                 href="/api/myflightbook/authorize"
-                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 dark:border-slate-700"
+                className="rounded-md border border-line px-4 py-2 text-sm font-medium text-dim hover:border-line2 hover:text-ink"
               >
                 {mfb.connected ? "Reconnect" : "Connect MyFlightBook"}
               </a>
@@ -397,11 +397,11 @@ export function ProfileClient({
         </form>
 
         {mfb.connected && (
-          <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
             <MfbSyncButton />
             <button
               onClick={disconnect}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:border-slate-500 dark:border-slate-700"
+              className="rounded-md border border-line px-4 py-2 text-sm text-dim hover:border-line2 hover:text-ink"
             >
               Disconnect
             </button>
@@ -412,7 +412,7 @@ export function ProfileClient({
       <div>
         <button
           onClick={signOut}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+          className="rounded-md border border-line px-4 py-2 text-sm text-dim hover:border-line2 hover:text-ink"
         >
           Sign out
         </button>

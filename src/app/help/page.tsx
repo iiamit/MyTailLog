@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AccountShell } from "@/components/shell/AccountShell";
 import {
   SparklesIcon,
   ClockIcon,
@@ -29,7 +30,10 @@ type Section = {
 // A "ripple" callout — what a given action changes elsewhere in the app.
 function Effects({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200">
+    <div
+      className="mt-3 rounded-md border border-annun-amber/40 px-3 py-2 text-sm text-annun-amber"
+      style={{ background: "var(--amb-bg)" }}
+    >
       <span className="font-semibold">Ripple effects: </span>
       {children}
     </div>
@@ -37,7 +41,7 @@ function Effects({ children }: { children: React.ReactNode }) {
 }
 
 const L = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <Link href={href} className="underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500">
+  <Link href={href} className="underline decoration-line underline-offset-2 hover:decoration-line2">
     {children}
   </Link>
 );
@@ -122,7 +126,7 @@ const SECTIONS: Section[] = [
           documents (see below). Pages queue on-device and upload when you&apos;re online, so
           capture works in a hangar with no signal.
         </p>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-faint">
           Note: scanned logbook spreads sometimes contain two physical pages side by side — the
           extractor flags these so you can review both halves.
         </p>
@@ -137,16 +141,20 @@ const SECTIONS: Section[] = [
       <>
         <p>
           Extraction reads a page image into structured entries (date, hours, work performed,
-          parts, AD/SB references, signature). Each field gets a confidence score; anything below
-          threshold is flagged in the <strong>Review</strong> screen, which shows the page image
-          beside the editable entries so you can verify against the original. Editing an entry
+          parts, AD/SB references, signature). Each field gets its own confidence score, shown as a
+          percentage right on that field in the <strong>Review</strong> screen — anything below
+          threshold is highlighted. Beside each field you also get a cropped snippet of the scan
+          showing where that value was read from, so you can confirm it without hunting the whole
+          page (snippets appear once a page is extracted under the current model; re-extract older
+          pages to get them). The full page image sits alongside the entries too. Editing an entry
           marks it confirmed. You can <strong>re-extract</strong> a page (e.g. if a multi-page
           entry wasn&apos;t linked) right from the review screen — it replaces that page&apos;s
-          entries. The <strong>Needs review / Processing</strong> pills on the aircraft page track
-          the queue.
+          entries. The <strong>Logbook pages</strong> view (in the left nav) lists every captured
+          scan grouped by logbook with its <strong>Needs review / Processing</strong> status; the
+          aircraft <strong>Overview</strong> summarizes how many pages still need review.
         </p>
         <p>
-          To move faster, <strong>Review all</strong> (button on the aircraft page) puts every
+          To move faster, <strong>Review all</strong> (in the left nav) puts every
           extracted entry in one scrollable list — edit inline and confirm as you go, or hit{" "}
           <strong>Confirm N clean</strong> to accept, in one click, every entry the AI was fully
           confident on (high overall score, no flagged field, not a page-spanning fragment).
@@ -229,9 +237,9 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         The at-a-glance dashboard: every recurring inspection, maintenance item, and AD as a
-        color-coded card — <span className="text-red-600 dark:text-red-400">red = overdue</span>,{" "}
-        <span className="text-amber-600 dark:text-amber-400">amber = due soon</span>,{" "}
-        <span className="text-emerald-600 dark:text-emerald-400">green = current</span> — with days
+        color-coded card — <span className="text-annun-red">red = overdue</span>,{" "}
+        <span className="text-annun-amber">amber = due soon</span>,{" "}
+        <span className="text-annun-green">green = current</span> — with days
         and hours remaining. It&apos;s a read-only rollup of your{" "}
         <L href="#maintenance">maintenance forecast</L> and recurring{" "}
         <L href="#compliance">ADs</L>; each card links to where you manage it.
@@ -281,7 +289,7 @@ const SECTIONS: Section[] = [
           <em>any</em> connected co-owner — whoever flew (and logged) most recently supplies the
           current reading.
         </p>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-faint">
           Honesty caveat: MyFlightBook has no authoritative &ldquo;current&rdquo; meter for a
           shared plane, and a flight&apos;s ending hours may go unlogged. So this is the latest{" "}
           <strong>recorded</strong> hobbs/tach, shown as <em>&ldquo;as of &lt;date&gt;&rdquo;</em> —
@@ -330,7 +338,7 @@ const SECTIONS: Section[] = [
           after you mark an item done and it schedules a new next-due, the reminder arms again for the
           next cycle. You never get an empty email.
         </p>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-faint">
           Note: the oil-change <em>interval</em> (hours between changes) is set on the oil item on
           each aircraft&apos;s <L href="#maintenance">Maintenance</L> page — the setting here only
           controls how early you&apos;re alerted, not when the item is due.
@@ -462,32 +470,27 @@ const SECTIONS: Section[] = [
 
 export default function HelpPage() {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href="/dashboard"
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← Dashboard
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <h1 className="text-3xl font-bold">Help &amp; documentation</h1>
-        <p className="mt-1 text-slate-600 dark:text-slate-300">
+    <AccountShell>
+    <main className="mx-auto max-w-3xl px-6 py-8">
+      <header className="mb-6">
+        <div className="eyebrow mb-2">Account</div>
+        <h1 className="font-display text-[27px] font-semibold leading-none">Help &amp; documentation</h1>
+        <p className="mt-2 text-dim">
           What every part of MyTailLog does — and, just as important, how the pieces affect each
-          other. The amber <span className="font-medium text-amber-700 dark:text-amber-300">Ripple effects</span>{" "}
+          other. The amber <span className="font-medium text-annun-amber">Ripple effects</span>{" "}
           notes call out where one action changes something elsewhere.
         </p>
       </header>
 
       {/* Table of contents */}
-      <nav className="mb-8 grid gap-1 rounded-lg border border-slate-200 p-4 text-sm sm:grid-cols-2 dark:border-slate-800">
+      <nav className="mb-8 grid gap-1 rounded-lg border border-line p-4 text-sm sm:grid-cols-2">
         {SECTIONS.map((s) => (
           <a
             key={s.id}
             href={`#${s.id}`}
-            className="flex items-center gap-2 rounded px-2 py-1 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex items-center gap-2 rounded px-2 py-1 text-dim hover:bg-panel2"
           >
-            <span className="text-slate-400">{s.icon}</span>
+            <span className="text-faint">{s.icon}</span>
             {s.title}
           </a>
         ))}
@@ -497,18 +500,19 @@ export default function HelpPage() {
         {SECTIONS.map((s) => (
           <section key={s.id} id={s.id} className="scroll-mt-20">
             <h2 className="mb-2 flex items-center gap-2 text-xl font-semibold">
-              <span className="text-slate-400">{s.icon}</span>
+              <span className="text-faint">{s.icon}</span>
               {s.title}
             </h2>
-            <div className="text-slate-700 dark:text-slate-200">{s.body}</div>
+            <div className="text-dim">{s.body}</div>
           </section>
         ))}
       </div>
 
-      <p className="mt-10 border-t border-slate-200 pt-4 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
+      <p className="mt-10 border-t border-line pt-4 text-sm text-faint">
         Reminder: MyTailLog is an index and decision-support tool, not the legal maintenance record.
         Confirm anything you rely on against the physical logbooks.
       </p>
     </main>
+    </AccountShell>
   );
 }

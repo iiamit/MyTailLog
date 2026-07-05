@@ -11,18 +11,24 @@ import {
   type StatusItem,
 } from "@/lib/status";
 
-// Card border + accent per urgency — the at-a-glance color code.
+// Card left-border + dot color per urgency — the at-a-glance color code.
 const BORDER: Record<Urgency, string> = {
-  overdue: "border-red-400 dark:border-red-600",
-  due_soon: "border-amber-400 dark:border-amber-600",
-  upcoming: "border-emerald-300 dark:border-emerald-700",
-  none: "border-slate-200 dark:border-slate-800",
+  overdue: "var(--red)",
+  due_soon: "var(--amb)",
+  upcoming: "var(--grn)",
+  none: "var(--line)",
 };
 const DOT: Record<Urgency, string> = {
-  overdue: "bg-red-500",
-  due_soon: "bg-amber-500",
-  upcoming: "bg-emerald-500",
-  none: "bg-slate-300 dark:bg-slate-600",
+  overdue: "bg-annun-red",
+  due_soon: "bg-annun-amber",
+  upcoming: "bg-annun-green",
+  none: "bg-faint",
+};
+const REMAIN_COLOR: Record<Urgency, string> = {
+  overdue: "text-annun-red",
+  due_soon: "text-annun-amber",
+  upcoming: "text-annun-green",
+  none: "text-faint",
 };
 
 function remainingText(item: StatusItem, currentHours: number | null): string {
@@ -37,6 +43,130 @@ function remainingText(item: StatusItem, currentHours: number | null): string {
   }
   if (parts.length === 0) return item.nextDueDate || item.nextDueHours != null ? "" : "not set";
   return parts.join(" · ");
+}
+
+// Fraction of the recurring interval elapsed, for the annunciator progress
+// bar. Prefers hours (more precise for engine/airframe items); falls back to
+// the calendar span between last-done and next-due. Null when we don't have
+// enough of either dimension to derive one — the bar is simply omitted then.
+function progressFraction(item: StatusItem, currentHours: number | null): number | null {
+  if (item.intervalHours && item.lastDoneHours != null && currentHours != null) {
+    return (currentHours - item.lastDoneHours) / item.intervalHours;
+  }
+  if (item.lastDoneDate && item.nextDueDate) {
+    const total = Date.parse(item.nextDueDate) - Date.parse(item.lastDoneDate);
+    const elapsed = Date.now() - Date.parse(item.lastDoneDate);
+    if (total > 0) return elapsed / total;
+  }
+  return null;
+}
+
+function StatusCard({
+  item,
+  aircraftId,
+  currentHours,
+}: {
+  item: StatusItem;
+  aircraftId: string;
+  currentHours: number | null;
+}) {
+  const href =
+    item.source === "ad" ? `/aircraft/${aircraftId}/compliance` : `/aircraft/${aircraftId}/maintenance`;
+  const rem = remainingText(item, currentHours);
+  const frac = progressFraction(item, currentHours);
+  const pct = frac != null ? Math.max(0, Math.min(100, frac * 100)) : null;
+
+  return (
+    <Link
+      href={href}
+      className="panel flex flex-col gap-1 p-4 transition hover:border-line2"
+      style={{ borderLeft: `3px solid ${BORDER[item.urgency]}` }}
+    >
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[item.urgency]}`} />
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold leading-tight text-ink">
+          {item.label}
+        </span>
+        {item.source === "ad" && (
+          <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] text-accent">AD</span>
+        )}
+        {item.verifiedReport && (
+          <span
+            title={
+              item.verifiedReportAt
+                ? `Corroborated by a scanned A&P AD compliance report on ${item.verifiedReportAt.slice(0, 10)}`
+                : "Corroborated by a scanned A&P AD compliance report"
+            }
+            className="rounded-full px-2 py-0.5 text-[11px] text-annun-green"
+            style={{ background: "var(--grn-bg)" }}
+          >
+            ✓ A&amp;P
+          </span>
+        )}
+        {!item.regulatory && (
+          <span className="rounded-full bg-panel2 px-2 py-0.5 text-[11px] text-faint">advisory</span>
+        )}
+      </div>
+
+      <div className={`text-[13px] font-medium ${REMAIN_COLOR[item.urgency]}`}>
+        {item.urgency === "none" ? "not scheduled" : urgencyLabel(item.urgency)}
+        {rem && <span className="text-faint"> · {rem}</span>}
+      </div>
+
+      <div className="readout mt-0.5 text-[10.5px] text-faint">
+        {[
+          item.nextDueDate ? `due ${item.nextDueDate}` : null,
+          item.nextDueHours != null ? `at ${item.nextDueHours} hrs` : null,
+          item.lastDoneDate ? `last ${item.lastDoneDate}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ") || "no schedule set"}
+      </div>
+
+      {pct != null && (
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-panel2">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${pct}%`, background: BORDER[item.urgency] }}
+          />
+        </div>
+      )}
+    </Link>
+  );
+}
+
+function UrgencySection({
+  title,
+  color,
+  items,
+  aircraftId,
+  currentHours,
+}: {
+  title: string;
+  color: string;
+  items: StatusItem[];
+  aircraftId: string;
+  currentHours: number | null;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mb-6">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="h-[9px] w-[9px] rounded-full" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
+        <span
+          className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+          style={{ color }}
+        >
+          {title}
+        </span>
+      </div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,210px),1fr))] gap-3">
+        {items.map((s) => (
+          <StatusCard key={`${s.source}-${s.id}`} item={s} aircraftId={aircraftId} currentHours={currentHours} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default async function StatusPage({
@@ -73,32 +203,29 @@ export default async function StatusPage({
     buildStatusItems(items ?? [], ads ?? [], currentHours),
   );
 
-  const counts = {
-    overdue: statusItems.filter((s) => s.urgency === "overdue").length,
-    due_soon: statusItems.filter((s) => s.urgency === "due_soon").length,
-    current: statusItems.filter((s) => s.urgency === "upcoming" || s.urgency === "none").length,
-  };
+  const overdueItems = statusItems.filter((s) => s.urgency === "overdue");
+  const dueItems = statusItems.filter((s) => s.urgency === "due_soon");
+  const currentItems = statusItems.filter((s) => s.urgency === "upcoming" || s.urgency === "none");
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <h1 className="text-2xl font-bold">Status</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Every recurring inspection, item, and AD at a glance — color-coded by
-          urgency. Derived from your logs and entered last-done data; verify
-          against the physical logbooks.
-        </p>
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Airworthiness</div>
+          <h1 className="font-display text-[27px] font-semibold leading-none">Status</h1>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
+            Every recurring inspection, item, and AD at a glance — grouped
+            worst-first and color-coded by urgency. Derived from your logs;
+            verify against the physical logbooks.
+          </p>
+        </div>
+        <span className="readout text-xs text-dim">
+          {currentHours != null ? `current ≈ ${currentHours} hrs` : "hours unknown"}
+        </span>
       </header>
 
       {statusItems.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        <p className="rounded-lg border border-dashed border-line px-5 py-10 text-center text-sm text-dim">
           No status items yet. Seed the standard Part 91 items on the{" "}
           <Link href={`/aircraft/${id}/maintenance`} className="underline">
             maintenance forecast
@@ -107,91 +234,51 @@ export default async function StatusPage({
         </p>
       ) : (
         <>
-          <div className="mb-5 flex flex-wrap gap-2 text-sm">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-              {counts.overdue} overdue
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-              {counts.due_soon} due soon
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-              {counts.current} current
-            </span>
-            <span className="ml-auto self-center text-xs text-slate-500 dark:text-slate-400">
-              {currentHours != null ? `current ≈ ${currentHours} hrs` : "hours unknown"}
-            </span>
+          <div className="mb-6 flex flex-wrap gap-2.5">
+            <div
+              className="flex items-center gap-2 rounded-lg border border-annun-red/30 px-3.5 py-1.5"
+              style={{ background: "var(--red-bg)" }}
+            >
+              <span className="readout text-[15px] text-annun-red">{overdueItems.length}</span>
+              <span className="text-xs text-dim">overdue</span>
+            </div>
+            <div
+              className="flex items-center gap-2 rounded-lg border border-annun-amber/30 px-3.5 py-1.5"
+              style={{ background: "var(--amb-bg)" }}
+            >
+              <span className="readout text-[15px] text-annun-amber">{dueItems.length}</span>
+              <span className="text-xs text-dim">due soon</span>
+            </div>
+            <div
+              className="flex items-center gap-2 rounded-lg border border-annun-green/30 px-3.5 py-1.5"
+              style={{ background: "var(--grn-bg)" }}
+            >
+              <span className="readout text-[15px] text-annun-green">{currentItems.length}</span>
+              <span className="text-xs text-dim">current</span>
+            </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {statusItems.map((s) => {
-              const href =
-                s.source === "ad"
-                  ? `/aircraft/${id}/compliance`
-                  : `/aircraft/${id}/maintenance`;
-              const rem = remainingText(s, currentHours);
-              return (
-                <Link
-                  key={`${s.source}-${s.id}`}
-                  href={href}
-                  className={`flex flex-col gap-1 rounded-lg border-l-4 border border-slate-200 bg-white p-4 transition hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 ${BORDER[s.urgency]}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[s.urgency]}`} />
-                    <span className="min-w-0 flex-1 truncate font-medium">{s.label}</span>
-                    {s.source === "ad" && (
-                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                        AD
-                      </span>
-                    )}
-                    {s.verifiedReport && (
-                      <span
-                        title={
-                          s.verifiedReportAt
-                            ? `Corroborated by a scanned A&P AD compliance report on ${s.verifiedReportAt.slice(0, 10)}`
-                            : "Corroborated by a scanned A&P AD compliance report"
-                        }
-                        className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                      >
-                        ✓ A&amp;P
-                      </span>
-                    )}
-                    {!s.regulatory && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                        advisory
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs font-medium">
-                    {s.urgency === "none" ? (
-                      <span className="text-slate-400">not scheduled</span>
-                    ) : (
-                      <span
-                        className={
-                          s.urgency === "overdue"
-                            ? "text-red-600 dark:text-red-400"
-                            : s.urgency === "due_soon"
-                              ? "text-amber-600 dark:text-amber-400"
-                              : "text-emerald-600 dark:text-emerald-400"
-                        }
-                      >
-                        {urgencyLabel(s.urgency)}
-                      </span>
-                    )}
-                    {rem && <span className="text-slate-500 dark:text-slate-400"> · {rem}</span>}
-                  </div>
-                  <div className="text-[11px] text-slate-400 dark:text-slate-500">
-                    {[
-                      s.nextDueDate ? `due ${s.nextDueDate}` : null,
-                      s.nextDueHours != null ? `at ${s.nextDueHours} hrs` : null,
-                      s.lastDoneDate ? `last ${s.lastDoneDate}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "no schedule set"}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <UrgencySection
+            title="Overdue"
+            color="var(--red)"
+            items={overdueItems}
+            aircraftId={id}
+            currentHours={currentHours}
+          />
+          <UrgencySection
+            title="Due soon"
+            color="var(--amb)"
+            items={dueItems}
+            aircraftId={id}
+            currentHours={currentHours}
+          />
+          <UrgencySection
+            title="Current"
+            color="var(--grn)"
+            items={currentItems}
+            aircraftId={id}
+            currentHours={currentHours}
+          />
         </>
       )}
     </main>

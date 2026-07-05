@@ -7,7 +7,7 @@
 export function Disclaimer({ variant = "banner" }: { variant?: "banner" | "inline" }) {
   if (variant === "inline") {
     return (
-      <p className="text-xs text-slate-500 dark:text-slate-400">
+      <p className="text-xs text-faint">
         Index only — not the legal maintenance record (14 CFR 91.417). Confirm
         against the physical logbook before relying on any value.
       </p>
@@ -17,7 +17,8 @@ export function Disclaimer({ variant = "banner" }: { variant?: "banner" | "inlin
   return (
     <div
       role="note"
-      className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+      className="rounded-md border border-annun-amber/40 px-4 py-3 text-sm text-annun-amber"
+      style={{ background: "var(--amb-bg)" }}
     >
       <strong className="font-semibold">This is an index, not the record.</strong>{" "}
       The physical logbooks remain the system of record per 14 CFR 91.417.

@@ -72,7 +72,7 @@ function toInput(f: FormState): ComponentInput {
 }
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
 
 export function EquipmentClient({
   aircraftId,
@@ -213,40 +213,39 @@ export function EquipmentClient({
 
   const Row = ({ c }: { c: Component }) => {
     const adCount = adCountByComponent[c.id] ?? 0;
+    const dotColor = c.category ? `var(--book-${c.category})` : "var(--faint)";
+    const meta = [
+      c.part_number ? `P/N ${c.part_number}` : null,
+      c.serial_number ? `S/N ${c.serial_number}` : null,
+      !c.is_installed && c.removal_date ? `removed ${c.removal_date}` : null,
+      c.life_limit_value != null
+        ? `life ${c.life_limit_value} ${c.life_limit_unit ?? ""}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
     return (
-      <li className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold">{c.name}</span>
-          {c.make && <span className="text-sm text-slate-500 dark:text-slate-400">{c.make}</span>}
-          {c.category && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-              {c.category}
-            </span>
-          )}
+      <li className="grid grid-cols-[1.4fr_1fr_0.8fr_auto] items-center gap-3 border-b border-line px-[18px] py-3.5 last:border-b-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ background: dotColor }}
+          />
+          <span className="truncate text-[13.5px] font-semibold text-ink">{c.name}</span>
           {adCount > 0 && (
-            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+            <span className="shrink-0 rounded-full border border-accent/40 bg-accent-soft px-2 py-0.5 text-[10px] text-accent">
               {adCount} AD{adCount === 1 ? "" : "s"}
             </span>
           )}
         </div>
-        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {[
-            c.part_number ? `P/N ${c.part_number}` : null,
-            c.serial_number ? `S/N ${c.serial_number}` : null,
-            c.install_date ? `installed ${c.install_date}` : null,
-            !c.is_installed && c.removal_date ? `removed ${c.removal_date}` : null,
-            c.life_limit_value != null
-              ? `life ${c.life_limit_value} ${c.life_limit_unit ?? ""}`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-          {c.notes && <div className="mt-1">{c.notes}</div>}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <span className="truncate text-[12.5px] text-dim">{c.make || "—"}</span>
+        <span className="readout text-[12px] text-dim">
+          {c.install_date ?? "—"}
+        </span>
+        <div className="flex flex-wrap justify-end gap-1.5">
           <button
             onClick={() => setForm(fromComponent(c))}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
+            className="rounded-md border border-line2 bg-panel2 px-3 py-1 text-xs text-ink hover:border-accent"
           >
             Edit
           </button>
@@ -254,7 +253,7 @@ export function EquipmentClient({
             <button
               onClick={() => remove(c)}
               disabled={busy}
-              className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-amber-400 disabled:opacity-50 dark:border-slate-700"
+              className="rounded-md border border-line px-3 py-1 text-xs text-dim hover:border-annun-amber/60 disabled:opacity-50"
             >
               Mark removed
             </button>
@@ -262,7 +261,7 @@ export function EquipmentClient({
             <button
               onClick={() => reinstall(c)}
               disabled={busy}
-              className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-emerald-400 disabled:opacity-50 dark:border-slate-700"
+              className="rounded-md border border-line px-3 py-1 text-xs text-dim hover:border-annun-green/60 disabled:opacity-50"
             >
               Reinstall
             </button>
@@ -270,11 +269,18 @@ export function EquipmentClient({
           <button
             onClick={() => del(c)}
             disabled={busy}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+            className="rounded-md border border-line px-3 py-1 text-xs text-annun-red hover:border-annun-red/60 disabled:opacity-50"
           >
             Delete
           </button>
         </div>
+        {(meta || c.category || c.notes) && (
+          <div className="col-span-4 mt-1.5 text-[11.5px] text-faint">
+            {c.category && <span className="mr-2">{c.category}</span>}
+            {meta}
+            {c.notes && <div className="mt-1">{c.notes}</div>}
+          </div>
+        )}
       </li>
     );
   };
@@ -282,7 +288,7 @@ export function EquipmentClient({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-slate-500 dark:text-slate-400">
+        <span className="eyebrow">
           {installed.length} installed · {removed.length} removed
         </span>
         <div className="flex gap-2">
@@ -290,7 +296,7 @@ export function EquipmentClient({
             <button
               onClick={scanLogs}
               disabled={scanning || busy}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+              className="rounded-md border border-line2 bg-panel2 px-4 py-2 text-sm font-medium text-ink hover:border-accent disabled:opacity-50"
             >
               {scanning ? "Scanning logs…" : "Scan logs for equipment"}
             </button>
@@ -298,7 +304,7 @@ export function EquipmentClient({
           {!form && (
             <button
               onClick={() => setForm(blankForm())}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90"
             >
               Add manually
             </button>
@@ -306,22 +312,25 @@ export function EquipmentClient({
         </div>
       </div>
 
-      <p className="text-xs text-slate-500 dark:text-slate-400">
+      <p className="text-xs text-faint">
         The equipment list is built primarily from your logbooks. Scan the logs
         to propose what was installed and removed over time, then confirm.
       </p>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      {status && <p className="text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}
+      {error && <p className="text-sm text-annun-red">{error}</p>}
+      {status && <p className="text-sm text-annun-green">{status}</p>}
 
       {/* Pending log-derived proposals for confirmation */}
       {proposals.length > 0 && (
-        <section className="rounded-lg border border-sky-300 bg-sky-50/50 p-4 dark:border-sky-800 dark:bg-sky-950/30">
+        <section
+          className="rounded-xl border border-accent/40 p-4"
+          style={{ background: "var(--accent-soft)" }}
+        >
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-sm font-semibold text-ink">
               {proposals.length} equipment suggestion{proposals.length === 1 ? "" : "s"} from your logs
             </h2>
-            <div className="flex gap-2 text-xs">
+            <div className="flex gap-2 text-xs text-accent">
               <button onClick={() => setChecked(new Set(proposals.map((p) => p.id)))} className="underline">all</button>
               <button onClick={() => setChecked(new Set())} className="underline">none</button>
             </div>
@@ -330,7 +339,7 @@ export function EquipmentClient({
             {proposals.map((p) => (
               <li
                 key={p.id}
-                className="flex gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-900"
+                className="panel flex gap-3 p-3 text-sm"
               >
                 <input
                   type="checkbox"
@@ -340,27 +349,26 @@ export function EquipmentClient({
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{p.name}</span>
-                    {p.make && <span className="text-xs text-slate-500">{p.make}</span>}
+                    <span className="font-medium text-ink">{p.name}</span>
+                    {p.make && <span className="text-xs text-faint">{p.make}</span>}
                     {p.category && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="rounded-full bg-panel2 px-2 py-0.5 text-xs text-dim">
                         {p.category}
                       </span>
                     )}
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs ${
-                        p.is_installed
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                        p.is_installed ? "text-annun-green" : "bg-panel2 text-faint"
                       }`}
+                      style={p.is_installed ? { background: "var(--grn-bg)" } : undefined}
                     >
                       {p.is_installed ? "installed" : "removed"}
                     </span>
                     {p.confidence != null && (
-                      <span className="text-xs text-slate-400">{Math.round(p.confidence * 100)}%</span>
+                      <span className="text-xs text-faint">{Math.round(p.confidence * 100)}%</span>
                     )}
                   </div>
-                  <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="mt-0.5 text-xs text-faint">
                     {[
                       p.part_number ? `P/N ${p.part_number}` : null,
                       p.serial_number ? `S/N ${p.serial_number}` : null,
@@ -379,14 +387,14 @@ export function EquipmentClient({
             <button
               onClick={confirmSelected}
               disabled={busy || checked.size === 0}
-              className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900"
+              className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50"
             >
               {busy ? "Importing…" : `Import ${checked.size} selected`}
             </button>
             <button
               onClick={dismissSelected}
               disabled={busy || checked.size === 0}
-              className="rounded-md border border-slate-300 px-4 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+              className="rounded-md border border-line2 bg-panel2 px-4 py-1.5 text-sm text-ink hover:border-accent disabled:opacity-50"
             >
               Dismiss selected
             </button>
@@ -395,18 +403,18 @@ export function EquipmentClient({
       )}
 
       {form && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="mb-3 text-sm font-semibold">{form.id ? "Edit equipment" : "New equipment"}</h2>
+        <section className="panel p-4">
+          <h2 className="mb-3 text-sm font-semibold text-ink">{form.id ? "Edit equipment" : "New equipment"}</h2>
           <div className="grid grid-cols-2 gap-3">
-            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="col-span-2 text-xs font-medium text-dim">
               Name
               <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Vacuum pump" className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Manufacturer
               <input value={form.make} onChange={(e) => set("make", e.target.value)} placeholder="Garmin, Dukes…" className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Category
               <select value={form.category} onChange={(e) => set("category", e.target.value)} className={inputClass}>
                 <option value="">—</option>
@@ -415,24 +423,24 @@ export function EquipmentClient({
                 ))}
               </select>
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Part number
               <input value={form.part_number} onChange={(e) => set("part_number", e.target.value)} className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Serial number
               <input value={form.serial_number} onChange={(e) => set("serial_number", e.target.value)} className={inputClass} />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Install date
               <input type="date" value={form.install_date} onChange={(e) => set("install_date", e.target.value)} className={inputClass} />
             </label>
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-dim">
                 Life limit
                 <input type="number" step="0.1" value={form.life_limit_value} onChange={(e) => set("life_limit_value", e.target.value)} className={inputClass} />
               </label>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="text-xs font-medium text-dim">
                 Unit
                 <select value={form.life_limit_unit} onChange={(e) => set("life_limit_unit", e.target.value)} className={inputClass}>
                   <option value="">—</option>
@@ -442,16 +450,16 @@ export function EquipmentClient({
                 </select>
               </label>
             </div>
-            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="col-span-2 text-xs font-medium text-dim">
               Notes
               <textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} className={inputClass} />
             </label>
           </div>
           <div className="mt-3 flex gap-2">
-            <button onClick={save} disabled={busy} className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900">
+            <button onClick={save} disabled={busy} className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50">
               {busy ? "Saving…" : "Save"}
             </button>
-            <button onClick={() => setForm(null)} disabled={busy} className="rounded-md border border-slate-300 px-4 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700">
+            <button onClick={() => setForm(null)} disabled={busy} className="rounded-md border border-line2 bg-panel2 px-4 py-1.5 text-sm text-ink hover:border-accent disabled:opacity-50">
               Cancel
             </button>
           </div>
@@ -459,15 +467,21 @@ export function EquipmentClient({
       )}
 
       {components.length === 0 && !form ? (
-        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        <p className="rounded-lg border border-dashed border-line px-5 py-8 text-center text-sm text-faint">
           No equipment tracked yet. Add installed components to drive AD applicability.
         </p>
       ) : (
         <>
           {installed.length > 0 && (
             <section>
-              <h2 className="mb-2 text-sm font-semibold">Installed</h2>
-              <ul className="flex flex-col gap-2">
+              <div className="eyebrow mb-2">Installed</div>
+              <ul className="overflow-hidden rounded-xl border border-line bg-panel">
+                <li className="grid grid-cols-[1.4fr_1fr_0.8fr_auto] gap-3 border-b border-line px-[18px] py-3">
+                  <span className="eyebrow">Component</span>
+                  <span className="eyebrow">Make / model</span>
+                  <span className="eyebrow">Installed</span>
+                  <span className="eyebrow text-right">Actions</span>
+                </li>
                 {installed.map((c) => (
                   <Row key={c.id} c={c} />
                 ))}
@@ -476,10 +490,8 @@ export function EquipmentClient({
           )}
           {removed.length > 0 && (
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                Removed
-              </h2>
-              <ul className="flex flex-col gap-2 opacity-75">
+              <div className="eyebrow mb-2">Removed</div>
+              <ul className="overflow-hidden rounded-xl border border-line bg-panel opacity-75">
                 {removed.map((c) => (
                   <Row key={c.id} c={c} />
                 ))}

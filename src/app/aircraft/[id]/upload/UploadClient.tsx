@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { enqueuePage, countQueued } from "@/lib/capture/queue";
 import { drainQueue, registerBackgroundDrain } from "@/lib/capture/uploader";
 import { rasterizeFile, isSupportedFile } from "@/lib/capture/importFiles";
@@ -158,7 +157,7 @@ export function UploadClient({
   );
 
   const inputClass =
-    "rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
 
   const totalPages = results.reduce((n, r) => n + r.pages, 0);
 
@@ -181,7 +180,7 @@ export function UploadClient({
             ))}
           </select>
           {selected && (
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-faint">
               Next page #{(sequences[selected.id] ?? 0) + 1} · {selected.existingPages}{" "}
               already captured
             </span>
@@ -202,14 +201,13 @@ export function UploadClient({
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${
-            online
-              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            online ? "text-annun-green" : "text-annun-amber"
           }`}
+          style={{ background: online ? "var(--grn-bg)" : "var(--amb-bg)" }}
         >
           {online ? "Online" : "Offline — pages queued on-device"}
         </span>
-        <span className="text-slate-500 dark:text-slate-400">
+        <span className="text-faint">
           {queueCount > 0
             ? `${queueCount} page${queueCount === 1 ? "" : "s"} waiting to upload`
             : "Queue empty"}
@@ -217,7 +215,7 @@ export function UploadClient({
         {queueCount > 0 && online && (
           <button
             onClick={drain}
-            className="rounded-md border border-slate-300 px-2.5 py-1 hover:border-slate-500 dark:border-slate-700"
+            className="rounded-md border border-line px-2.5 py-1 text-dim hover:border-line2 hover:text-ink"
           >
             Upload now
           </button>
@@ -227,8 +225,8 @@ export function UploadClient({
       <label
         className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-12 text-center ${
           processing
-            ? "border-slate-200 text-slate-400 dark:border-slate-800"
-            : "cursor-pointer border-slate-300 text-slate-600 hover:border-slate-500 dark:border-slate-700 dark:text-slate-300"
+            ? "border-line text-faint"
+            : "cursor-pointer border-line text-dim hover:border-line2"
         }`}
       >
         <input
@@ -243,29 +241,29 @@ export function UploadClient({
         <span className="font-medium">
           {processing ? "Processing…" : "Choose PDF, JPEG, or PNG files"}
         </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+        <span className="text-xs text-faint">
           Multi-page PDFs are split into one page each, in order.
         </span>
         {progress && (
-          <span className="text-xs text-slate-500 dark:text-slate-400">{progress}</span>
+          <span className="text-xs text-faint">{progress}</span>
         )}
       </label>
 
       {status && (
-        <p className="text-sm text-slate-600 dark:text-slate-300">{status}</p>
+        <p className="text-sm text-dim">{status}</p>
       )}
 
       {results.length > 0 && (
-        <section className="rounded-lg border border-slate-200 dark:border-slate-800">
-          <div className="border-b border-slate-200 px-4 py-2 text-sm font-medium dark:border-slate-800">
+        <section className="rounded-lg border border-line">
+          <div className="border-b border-line px-4 py-2 text-sm font-medium">
             Added {totalPages} page{totalPages === 1 ? "" : "s"} from {results.length}{" "}
             file{results.length === 1 ? "" : "s"}
           </div>
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-line">
             {results.map((r, i) => (
               <li key={`${r.name}-${i}`} className="flex items-center justify-between px-4 py-2 text-sm">
                 <span className="truncate pr-3">{r.name}</span>
-                <span className="shrink-0 text-slate-500 dark:text-slate-400">
+                <span className="shrink-0 text-faint">
                   {r.error
                     ? r.error
                     : `${r.pages} page${r.pages === 1 ? "" : "s"}` +
@@ -277,12 +275,9 @@ export function UploadClient({
         </section>
       )}
 
-      <p className="text-xs text-slate-400 dark:text-slate-500">
+      <p className="text-xs text-faint">
         Uploaded pages are queued on-device, then reviewed and extracted later.
-        MyTailLog is an index of your logbooks, not the legal maintenance record.{" "}
-        <Link href={`/aircraft/${aircraftId}`} className="underline">
-          Back to aircraft
-        </Link>
+        MyTailLog is an index of your logbooks, not the legal maintenance record.
       </p>
     </div>
   );

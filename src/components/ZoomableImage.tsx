@@ -62,7 +62,7 @@ export function ZoomableImage({
               e.stopPropagation();
               setOpen(false);
             }}
-            className="fixed right-4 top-4 z-10 rounded-full bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20"
+            className="fixed right-4 top-4 z-10 rounded-full bg-ink/10 px-3 py-1 text-sm text-ink hover:bg-ink/20"
             aria-label="Close"
           >
             ✕ Close

@@ -21,11 +21,16 @@ import {
 export type UntrackedRef = { kind: AdKind; reference: string };
 
 const STATUS_STYLE: Record<AdStatus, string> = {
-  open: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  complied: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  previously_complied: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-  not_applicable: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
-  superseded: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  open: "border-line text-dim",
+  complied: "border-annun-green/40 text-annun-green",
+  previously_complied: "border-accent/40 text-accent",
+  not_applicable: "border-line text-faint",
+  superseded: "border-annun-amber/40 text-annun-amber",
+};
+const STATUS_BG: Partial<Record<AdStatus, string>> = {
+  complied: "var(--grn-bg)",
+  previously_complied: "var(--accent-soft)",
+  superseded: "var(--amb-bg)",
 };
 const AD_STATUSES: AdStatus[] = [
   "open",
@@ -143,7 +148,18 @@ function urgencyRank(r: AdCompliance, currentHours: number | null): number {
 }
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
+const rowBtn =
+  "rounded-md border border-line2 bg-panel2 px-3 py-1 text-xs text-ink hover:border-accent disabled:opacity-50";
+
+// Left-border accent: overdue/due-soon from the due date, else a settled
+// status reads as green, anything else (open/N/A/superseded) stays neutral.
+function accentColor(urgency: ReturnType<typeof urgencyOf>, status: AdStatus): string {
+  if (urgency === "overdue") return "var(--red)";
+  if (urgency === "due_soon") return "var(--amb)";
+  if (status === "complied" || status === "previously_complied") return "var(--grn)";
+  return "var(--line2)";
+}
 
 export function ComplianceClient({
   aircraftId,
@@ -223,34 +239,32 @@ export function ComplianceClient({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-500 dark:text-slate-400">
+        <span className="readout text-xs text-faint">
           {currentHours != null ? `Current hours ≈ ${currentHours}` : "Current hours unknown"}
         </span>
         {!form && (
           <button
             onClick={() => setForm(blankForm())}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90"
           >
             Add AD / SB
           </button>
         )}
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-annun-red">{error}</p>}
 
       {/* Referenced in the logs but not tracked yet */}
       {untracked.length > 0 && (
-        <section className="rounded-lg border border-dashed border-slate-300 p-4 dark:border-slate-700">
-          <h2 className="mb-2 text-sm font-medium">
-            Referenced in your logs — not tracked yet
-          </h2>
+        <section className="rounded-xl border border-dashed border-line p-4">
+          <div className="eyebrow mb-2">Referenced in your logs — not tracked yet</div>
           <div className="flex flex-wrap gap-2">
             {untracked.map((u) => (
               <button
                 key={`${u.kind}:${u.reference}`}
                 onClick={() => track(u)}
                 disabled={busy}
-                className="rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+                className="rounded-full border border-line2 bg-panel2 px-3 py-1 text-xs text-ink hover:border-accent disabled:opacity-50"
               >
                 + {u.kind.toUpperCase()} {u.reference}
               </button>
@@ -261,12 +275,10 @@ export function ComplianceClient({
 
       {/* Add / edit form */}
       {form && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="mb-3 text-sm font-semibold">
-            {form.id ? "Edit record" : "New record"}
-          </h2>
+        <section className="panel p-4">
+          <div className="eyebrow mb-3">{form.id ? "Edit record" : "New record"}</div>
           <div className="grid grid-cols-2 gap-3">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Type
               <select
                 value={form.kind}
@@ -277,7 +289,7 @@ export function ComplianceClient({
                 <option value="sb">SB (advisory)</option>
               </select>
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Number
               <input
                 value={form.reference}
@@ -286,7 +298,7 @@ export function ComplianceClient({
                 className={inputClass}
               />
             </label>
-            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="col-span-2 text-xs font-medium text-dim">
               Title
               <input
                 value={form.title}
@@ -294,7 +306,7 @@ export function ComplianceClient({
                 className={inputClass}
               />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Status
               <select
                 value={form.status}
@@ -308,7 +320,7 @@ export function ComplianceClient({
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-2 pt-5 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="flex items-center gap-2 pt-5 text-xs font-medium text-dim">
               <input
                 type="checkbox"
                 checked={form.recurring}
@@ -318,7 +330,7 @@ export function ComplianceClient({
             </label>
             {form.recurring && (
               <>
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <label className="text-xs font-medium text-dim">
                   Interval (hours)
                   <input
                     type="number"
@@ -328,7 +340,7 @@ export function ComplianceClient({
                     className={inputClass}
                   />
                 </label>
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <label className="text-xs font-medium text-dim">
                   Interval (months)
                   <input
                     type="number"
@@ -339,7 +351,7 @@ export function ComplianceClient({
                 </label>
               </>
             )}
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Complied date
               <input
                 type="date"
@@ -348,7 +360,7 @@ export function ComplianceClient({
                 className={inputClass}
               />
             </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="text-xs font-medium text-dim">
               Complied hours
               <input
                 type="number"
@@ -358,7 +370,7 @@ export function ComplianceClient({
                 className={inputClass}
               />
             </label>
-            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="col-span-2 text-xs font-medium text-dim">
               Method of compliance
               <input
                 value={form.method}
@@ -367,7 +379,7 @@ export function ComplianceClient({
               />
             </label>
             {components.length > 0 && (
-              <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className="col-span-2 text-xs font-medium text-dim">
                 Related equipment
                 <select
                   value={form.component_id}
@@ -383,12 +395,12 @@ export function ComplianceClient({
                     </option>
                   ))}
                 </select>
-                <span className="mt-0.5 block font-normal text-slate-400 dark:text-slate-500">
+                <span className="mt-0.5 block font-normal text-faint">
                   Removing this equipment will mark the AD not applicable.
                 </span>
               </label>
             )}
-            <label className="col-span-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <label className="col-span-2 text-xs font-medium text-dim">
               Applicability / notes
               <textarea
                 rows={2}
@@ -399,7 +411,7 @@ export function ComplianceClient({
             </label>
             {(form.status === "not_applicable" || form.status === "superseded") && (
               <>
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <label className="text-xs font-medium text-dim">
                   {form.status === "superseded" ? "Superseded on" : "N/A since"}
                   <input
                     type="date"
@@ -408,7 +420,7 @@ export function ComplianceClient({
                     className={inputClass}
                   />
                 </label>
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <label className="text-xs font-medium text-dim">
                   Reason
                   <input
                     value={form.reason}
@@ -428,14 +440,14 @@ export function ComplianceClient({
             <button
               onClick={save}
               disabled={busy}
-              className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900"
+              className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50"
             >
               {busy ? "Saving…" : "Save"}
             </button>
             <button
               onClick={() => setForm(null)}
               disabled={busy}
-              className="rounded-md border border-slate-300 px-4 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+              className="rounded-md border border-line px-4 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
             >
               Cancel
             </button>
@@ -445,25 +457,58 @@ export function ComplianceClient({
 
       {/* Records */}
       {sorted.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        <p className="rounded-xl border border-dashed border-line px-5 py-8 text-center text-sm text-faint">
           No AD/SB records yet. Add one, or track a number referenced in your logs.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2.5">
           {sorted.map((r) => {
             const urgency = urgencyOf(r, currentHours);
             const due = dueText(r.next_due_date, r.next_due_hours, currentHours);
+            const accent = accentColor(urgency, r.status);
+            const hasStatusNote =
+              (r.status === "not_applicable" || r.status === "superseded") &&
+              (r.reason || r.status_changed_on);
             return (
               <li
                 key={r.id}
-                className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+                className="panel overflow-hidden"
+                style={{ borderLeft: `3px solid ${accent}` }}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[11px] font-medium text-white dark:bg-slate-700">
-                    {r.kind.toUpperCase()}
-                  </span>
-                  <span className="font-semibold">{r.reference}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLE[r.status]}`}>
+                {/* Design row: kind/id/method — subject — last/next due */}
+                <div className="flex flex-wrap items-center gap-4 p-4">
+                  <div className="w-[150px] shrink-0">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10.5px] font-medium ${
+                          r.kind === "ad" ? "bg-accent-soft text-accent" : "bg-panel2 text-dim"
+                        }`}
+                      >
+                        {r.kind.toUpperCase()}
+                      </span>
+                      <span className="readout text-[13px] font-semibold text-ink">{r.reference}</span>
+                    </div>
+                    {r.method && <div className="truncate text-[11px] text-faint">{r.method}</div>}
+                  </div>
+                  <div className="min-w-[160px] flex-1 text-[13px] text-ink">{r.title}</div>
+                  <div className="w-[130px] shrink-0 text-right">
+                    <div className="readout text-[11.5px] text-dim">
+                      {r.status === "complied" && r.complied_date
+                        ? `last ${r.complied_date}${r.complied_hours != null ? ` · ${r.complied_hours}h` : ""}`
+                        : "—"}
+                    </div>
+                    <div className="readout mt-0.5 text-[11px] text-faint">
+                      {due ? `next ${due}` : "no due date"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status / urgency / verification badges */}
+                <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-2.5">
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[r.status]}`}
+                    style={STATUS_BG[r.status] ? { background: STATUS_BG[r.status] } : undefined}
+                  >
                     {AD_STATUS_LABEL[r.status]}
                   </span>
                   {urgency !== "none" && (
@@ -478,13 +523,14 @@ export function ComplianceClient({
                           ? `Corroborated by a scanned A&P AD compliance report on ${r.verified_at.slice(0, 10)}`
                           : "Corroborated by a scanned A&P AD compliance report"
                       }
-                      className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                      className="rounded-full border border-annun-green/40 px-2 py-0.5 text-xs text-annun-green"
+                      style={{ background: "var(--grn-bg)" }}
                     >
                       ✓ A&amp;P report
                     </span>
                   )}
                   {r.recurring && (
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                    <span className="text-xs text-faint">
                       recurring{" "}
                       {[
                         r.interval_hours != null ? `${r.interval_hours} hrs` : null,
@@ -496,57 +542,44 @@ export function ComplianceClient({
                   )}
                 </div>
 
-                {r.title && <p className="mt-1 text-sm">{r.title}</p>}
-
-                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {(r.status === "not_applicable" || r.status === "superseded") &&
-                    (r.reason || r.status_changed_on) && (
-                      <div className="text-slate-600 dark:text-slate-300">
+                {(hasStatusNote || r.notes) && (
+                  <div className="border-t border-line px-4 py-2.5 text-xs text-faint">
+                    {hasStatusNote && (
+                      <div className="text-dim">
                         {r.status === "superseded" ? "Superseded" : "Not applicable"}
                         {r.status_changed_on ? ` since ${r.status_changed_on}` : ""}
                         {r.reason ? ` — ${r.reason}` : ""}
                       </div>
                     )}
-                  {r.status === "complied" && r.complied_date && (
-                    <span>
-                      Last complied {r.complied_date}
-                      {r.complied_hours != null ? ` at ${r.complied_hours} hrs` : ""}
-                      {r.method ? ` · ${r.method}` : ""}
-                    </span>
-                  )}
-                  {due && (
-                    <span className={r.status === "complied" && r.complied_date ? " · " : ""}>
-                      Next due: {due}
-                    </span>
-                  )}
-                  {r.notes && <div className="mt-1">{r.notes}</div>}
-                </div>
+                    {r.notes && <div className={hasStatusNote ? "mt-1" : ""}>{r.notes}</div>}
+                  </div>
+                )}
 
                 {/* Official reference (Federal Register or DRS) */}
                 {r.ad_reference_id && adReferences[r.ad_reference_id] && (() => {
                   const ref = adReferences[r.ad_reference_id];
                   const isDrs = ref.source === "drs";
                   return (
-                    <div className="mt-2 rounded-md bg-slate-50 px-3 py-2 text-xs dark:bg-slate-950">
-                      <div className="font-medium text-slate-700 dark:text-slate-200">
+                    <div className="border-t border-line bg-bg px-4 py-2.5 text-xs">
+                      <div className="font-medium text-dim">
                         {isDrs ? "FAA DRS" : "FAA · Federal Register"} ·{" "}
                         {ref.title ?? "official record"}
                       </div>
-                      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-slate-500 dark:text-slate-400">
+                      <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-faint">
                         {ref.effective_date && <span>effective {ref.effective_date}</span>}
                         {isDrs && ref.document_status && <span>{ref.document_status}</span>}
                         {ref.fr_html_url && (
-                          <a href={ref.fr_html_url} target="_blank" rel="noreferrer" className="text-sky-600 underline dark:text-sky-400">
+                          <a href={ref.fr_html_url} target="_blank" rel="noreferrer" className="text-accent underline hover:opacity-80">
                             Federal Register ↗
                           </a>
                         )}
                         {ref.pdf_url && (
-                          <a href={ref.pdf_url} target="_blank" rel="noreferrer" className="text-sky-600 underline dark:text-sky-400">
+                          <a href={ref.pdf_url} target="_blank" rel="noreferrer" className="text-accent underline hover:opacity-80">
                             Official PDF ↗
                           </a>
                         )}
                         {ref.drs_url && (
-                          <a href={ref.drs_url} target="_blank" rel="noreferrer" className="text-sky-600 underline dark:text-sky-400">
+                          <a href={ref.drs_url} target="_blank" rel="noreferrer" className="text-accent underline hover:opacity-80">
                             FAA DRS document ↗
                           </a>
                         )}
@@ -555,26 +588,19 @@ export function ComplianceClient({
                   );
                 })()}
 
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setForm(fromRecord(r))}
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
-                  >
+                <div className="flex flex-wrap gap-2 border-t border-line px-4 py-2.5">
+                  <button onClick={() => setForm(fromRecord(r))} className={rowBtn}>
                     Edit
                   </button>
                   {r.kind === "ad" && !r.ad_reference_id && (
-                    <button
-                      onClick={() => enrich(r.id)}
-                      disabled={enrichingId === r.id}
-                      className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
-                    >
+                    <button onClick={() => enrich(r.id)} disabled={enrichingId === r.id} className={rowBtn}>
                       {enrichingId === r.id ? "Looking up…" : "Look up FAA record"}
                     </button>
                   )}
                   <button
                     onClick={() => remove(r.id, r.reference)}
                     disabled={busy}
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+                    className="rounded-md border border-line2 bg-panel2 px-3 py-1 text-xs text-annun-red hover:border-annun-red/60 disabled:opacity-50"
                   >
                     Delete
                   </button>

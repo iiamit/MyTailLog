@@ -30,13 +30,21 @@ export type TimelineEntry = {
 export type LogbookMeta = { label: string; type: string };
 
 const TYPE_COLOR: Record<string, string> = {
-  airframe: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-  engine: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  prop: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  avionics: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  airframe: "bg-book-airframe/15 text-book-airframe",
+  engine: "bg-book-engine/15 text-book-engine",
+  prop: "bg-book-prop/15 text-book-prop",
+  avionics: "bg-book-avionics/15 text-book-avionics",
 };
-const typeColor = (t: string) =>
-  TYPE_COLOR[t] ?? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
+const typeColor = (t: string) => TYPE_COLOR[t] ?? "bg-book-other/15 text-book-other";
+
+// Logbook-type accent for the entry's left rail, as a CSS color value.
+const BOOK_ACCENT: Record<string, string> = {
+  airframe: "var(--book-airframe)",
+  engine: "var(--book-engine)",
+  prop: "var(--book-prop)",
+  avionics: "var(--book-avionics)",
+};
+const bookAccent = (t: string) => BOOK_ACCENT[t] ?? "var(--book-other)";
 
 function EntryRow({
   aircraftId,
@@ -59,51 +67,57 @@ function EntryRow({
       ? `${e.description}\n${e.workPerformed}`
       : e.description || e.workPerformed || null;
   return (
-    <li className="flex gap-3 px-4 py-3">
+    <li className="flex gap-4 border-b border-line py-3.5 last:border-b-0">
       {e.thumbnailUrl ? (
         <ZoomableImage
           src={e.thumbnailUrl}
           fullSrc={e.fullUrl}
           alt={`${e.logbookLabel} page`}
-          className="h-14 w-14 shrink-0 rounded border border-slate-200 object-cover dark:border-slate-700"
+          className="h-12 w-12 shrink-0 rounded border border-line object-cover"
         />
       ) : (
-        <div className="h-14 w-14 shrink-0 rounded bg-slate-100 dark:bg-slate-800" />
+        <div className="h-12 w-12 shrink-0 rounded bg-panel2" />
       )}
-      <div className="w-20 shrink-0 text-sm text-slate-500 dark:text-slate-400">
-        {e.entryDate ?? "undated"}
+      <div className="w-[76px] shrink-0 text-right">
+        <div className="readout text-xs text-dim">{e.entryDate ?? "undated"}</div>
+        {e.tach != null && (
+          <div className="readout mt-[3px] text-[10px] text-faint">tach {e.tach}</div>
+        )}
       </div>
+      <div
+        className="w-0.5 shrink-0 rounded-full opacity-50"
+        style={{ background: bookAccent(e.logbookType) }}
+      />
       <div className="min-w-0 flex-1">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2 py-0.5 text-xs ${typeColor(e.logbookType)}`}>
+        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+          <span className={`rounded-full px-2 py-0.5 text-[11px] ${typeColor(e.logbookType)}`}>
             {e.logbookLabel}
           </span>
           {e.ownerConfirmed ? (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400">✓ confirmed</span>
+            <span className="flex items-center gap-1 text-[10.5px] text-annun-green">
+              <span className="h-[5px] w-[5px] rounded-full bg-annun-green" />
+              confirmed
+            </span>
           ) : e.confidence != null ? (
-            <span className="text-xs text-slate-400">
+            <span className="readout text-[10.5px] text-faint">
               {Math.round(e.confidence * 100)}% · unconfirmed
             </span>
           ) : null}
-          {(e.hobbs != null || e.tach != null) && (
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {e.hobbs != null ? `Hobbs ${e.hobbs}` : ""}
-              {e.hobbs != null && e.tach != null ? " · " : ""}
-              {e.tach != null ? `Tach ${e.tach}` : ""}
-            </span>
+          {e.hobbs != null && (
+            <span className="readout text-[10.5px] text-dim">Hobbs {e.hobbs}</span>
           )}
         </div>
         {body ? (
           <FormattedEntry text={body} />
         ) : (
-          <p className="text-sm italic text-slate-400">no description</p>
+          <p className="text-sm italic text-faint">no description</p>
         )}
         {refs.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {refs.map((r) => (
               <span
                 key={r}
-                className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                className="rounded bg-panel2 px-1.5 py-0.5 text-[11px] text-dim"
               >
                 {r}
               </span>
@@ -115,7 +129,7 @@ function EntryRow({
             {partChips.map((p, i) => (
               <span
                 key={`${p}-${i}`}
-                className="rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
+                className="rounded bg-accent-soft px-1.5 py-0.5 text-[11px] text-accent"
                 title="Part"
               >
                 {p}
@@ -127,7 +141,7 @@ function EntryRow({
       {e.pageId && (
         <Link
           href={`/aircraft/${aircraftId}/pages/${e.pageId}/review`}
-          className="shrink-0 self-start text-xs text-slate-500 underline hover:text-slate-700 dark:text-slate-400"
+          className="shrink-0 self-start text-[11px] text-dim underline hover:text-ink"
         >
           source
         </Link>
@@ -256,90 +270,132 @@ export function TimelineClient({
   const isExpanded = (index: number, y: string) =>
     searchActive || (index === 0) !== toggledYears.has(y);
 
+  // "At a glance" sidebar stats — derived from the full (unfiltered) entry set.
+  const stats = useMemo(() => {
+    const years = entries
+      .map((e) => (e.entryDate ? Number(e.entryDate.slice(0, 4)) : null))
+      .filter((y): y is number => y != null && !Number.isNaN(y));
+    return {
+      total: entries.length,
+      span: years.length ? `${Math.min(...years)}–${Math.max(...years)}` : "—",
+      logbooks: Object.keys(logbookMap).length,
+    };
+  }, [entries, logbookMap]);
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search entries — e.g. oil change, magneto, AD 2015-19-07"
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-        />
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {searchActive
-            ? searching
-              ? "Searching…"
-              : `${shown.length} result${shown.length === 1 ? "" : "s"} for “${query.trim()}”`
-            : `${shown.length} entr${shown.length === 1 ? "y" : "ies"}${
-                activeTypes.size < availableTypes.length ? " (filtered)" : " across all logbooks"
-              }`}
-          {error && <span className="text-red-600 dark:text-red-400"> · {error}</span>}
-        </p>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_296px]">
+      <div>
+        {shown.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-line py-10 text-center text-[13px] text-faint">
+            {searchActive
+              ? `No entries match “${query.trim()}”.`
+              : activeTypes.size === 0
+                ? "No logbooks selected — enable a filter."
+                : "No entries yet. Extract some pages to build the timeline."}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {groups.map((g, gi) => {
+              const open = isExpanded(gi, g.year);
+              return (
+                <section key={g.year}>
+                  <div
+                    className="sticky top-0 z-[5] mb-1 flex items-center gap-2.5 py-2"
+                    style={{ background: "linear-gradient(180deg, var(--bg) 70%, transparent)" }}
+                  >
+                    <button
+                      onClick={() => toggleYear(g.year)}
+                      disabled={searchActive}
+                      className="readout flex items-center gap-2 text-[15px] font-semibold text-ink disabled:cursor-default"
+                    >
+                      <span className={`text-[10px] text-faint transition-transform ${open ? "rotate-90" : ""}`}>
+                        ▶
+                      </span>
+                      {g.year}
+                    </button>
+                    <span className="text-[11px] text-faint">{g.items.length}</span>
+                    <div className="h-px flex-1 bg-line" />
+                  </div>
+                  {open && (
+                    <ul>
+                      {g.items.map((e) => (
+                        <EntryRow key={e.id} aircraftId={aircraftId} e={e} />
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Logbook-type filter toggles */}
-      {availableTypes.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {availableTypes.map((t) => {
-            const on = activeTypes.has(t);
-            return (
-              <button
-                key={t}
-                onClick={() => toggleType(t)}
-                aria-pressed={on}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                  on
-                    ? `${typeColor(t)} border-transparent`
-                    : "border-slate-300 text-slate-400 hover:border-slate-400 dark:border-slate-700 dark:text-slate-500"
+      <div className="flex flex-col gap-3.5 lg:sticky lg:top-4">
+        <div className="panel p-4">
+          <div className="mb-3 flex items-center gap-2 rounded-[9px] border border-line2 bg-bg px-2.5 py-2">
+            <span className="h-[13px] w-[13px] shrink-0 rounded-full border-[1.5px] border-faint" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search all entries…"
+              className="w-full flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-faint"
+            />
+          </div>
+          <p className="mb-3 text-[11px] text-faint">
+            {searchActive
+              ? searching
+                ? "Searching…"
+                : `${shown.length} result${shown.length === 1 ? "" : "s"} for “${query.trim()}”`
+              : `${shown.length} entr${shown.length === 1 ? "y" : "ies"}${
+                  activeTypes.size < availableTypes.length ? " (filtered)" : " across all logbooks"
                 }`}
-              >
-                {LOGBOOK_LABEL[t as keyof typeof LOGBOOK_LABEL] ?? t}
-              </button>
-            );
-          })}
-        </div>
-      )}
+            {error && <span className="text-annun-red"> · {error}</span>}
+          </p>
 
-      {shown.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-          {searchActive
-            ? "No entries match your search."
-            : activeTypes.size === 0
-              ? "No logbooks selected — enable a filter above."
-              : "No entries yet. Extract some pages to build the timeline."}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {groups.map((g, gi) => {
-            const open = isExpanded(gi, g.year);
-            return (
-              <section key={g.year}>
-                <button
-                  onClick={() => toggleYear(g.year)}
-                  disabled={searchActive}
-                  className="flex w-full items-center gap-2 rounded-md py-1 text-left text-sm font-semibold text-slate-600 hover:text-slate-900 disabled:cursor-default dark:text-slate-300 dark:hover:text-slate-100"
-                >
-                  <span className={`text-xs transition-transform ${open ? "rotate-90" : ""}`}>
-                    ▶
-                  </span>
-                  {g.year}
-                  <span className="font-normal text-slate-400 dark:text-slate-500">
-                    {g.items.length} {g.items.length === 1 ? "entry" : "entries"}
-                  </span>
-                </button>
-                {open && (
-                  <ul className="mt-1 divide-y divide-slate-100 rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-                    {g.items.map((e) => (
-                      <EntryRow key={e.id} aircraftId={aircraftId} e={e} />
-                    ))}
-                  </ul>
-                )}
-              </section>
-            );
-          })}
+          {/* Logbook-type filter toggles */}
+          {availableTypes.length > 1 && (
+            <>
+              <div className="eyebrow mb-2">Filter by logbook</div>
+              <div className="flex flex-wrap gap-1.5">
+                {availableTypes.map((t) => {
+                  const on = activeTypes.has(t);
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => toggleType(t)}
+                      aria-pressed={on}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                        on
+                          ? `${typeColor(t)} border-transparent`
+                          : "border-line text-faint hover:border-line2"
+                      }`}
+                    >
+                      {LOGBOOK_LABEL[t as keyof typeof LOGBOOK_LABEL] ?? t}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+        <div className="panel p-4">
+          <div className="eyebrow mb-3">At a glance</div>
+          <div className="flex items-center justify-between border-b border-line py-1.5 text-[12.5px] text-dim">
+            <span>Total entries</span>
+            <span className="readout text-[13px] text-ink">{stats.total}</span>
+          </div>
+          <div className="flex items-center justify-between border-b border-line py-1.5 text-[12.5px] text-dim">
+            <span>Span</span>
+            <span className="readout text-[13px] text-ink">{stats.span}</span>
+          </div>
+          <div className="flex items-center justify-between py-1.5 text-[12.5px] text-dim">
+            <span>Logbooks</span>
+            <span className="readout text-[13px] text-ink">{stats.logbooks}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

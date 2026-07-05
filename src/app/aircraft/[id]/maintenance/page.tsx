@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentHours, getLatestMfbReading } from "@/lib/aircraftHours";
@@ -49,22 +48,20 @@ export default async function MaintenancePage({
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <h1 className="text-2xl font-bold">Maintenance forecast</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Standard Part 91 recurring items and recurring ADs, sorted by urgency.
-          Advisory items (TBO, overhaul) are informational, not regulatory. Due
-          dates are only as accurate as the last-done data you enter — verify
-          against the physical logbooks.
-        </p>
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Airworthiness</div>
+          <h1 className="font-display text-[27px] font-semibold leading-none">
+            Maintenance forecast
+          </h1>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
+            Standard Part 91 recurring items and recurring ADs, sorted by urgency.
+            Advisory items (TBO, overhaul) are informational, not regulatory. Due
+            dates are only as accurate as the last-done data you enter — verify
+            against the physical logbooks.
+          </p>
+        </div>
       </header>
 
       <MaintenanceClient

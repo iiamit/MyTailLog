@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import {
   loadScanner,
   scannerReady,
@@ -44,9 +43,11 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 export function CaptureClient({
   aircraftId,
   logbooks,
+  tailNumber,
 }: {
   aircraftId: string;
   logbooks: CaptureLogbook[];
+  tailNumber?: string | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -261,164 +262,250 @@ export function CaptureClient({
   ]);
 
   const inputClass =
-    "rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
+
+  const scannerLine =
+    scanner === "loading"
+      ? "Loading auto-crop…"
+      : scanner === "ready"
+        ? "Auto-crop + deskew on"
+        : "Auto-crop unavailable — capturing full frame";
+
+  const viewfinderBadge =
+    scanner === "loading"
+      ? "LOADING AUTO-CROP…"
+      : scanner === "ready"
+        ? "AUTO-CROP · HOLD STEADY"
+        : "FULL FRAME CAPTURE";
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Session settings */}
-      <section className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Logbook</span>
-          <select
-            value={logbookId}
-            onChange={(e) => setLogbookId(e.target.value)}
-            className={inputClass}
-          >
-            {logbooks.map((lb) => (
-              <option key={lb.id} value={lb.id}>
-                {lb.label}
-                {lb.componentRef ? ` (${lb.componentRef})` : ""}
-              </option>
-            ))}
-          </select>
-          {selected && (
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              Next page #{(sequences[selected.id] ?? 0) + 1} · {selected.existingPages}{" "}
-              already captured
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+      {/* Viewfinder — primary on mobile, fixed-width column on desktop */}
+      <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:w-[360px] lg:shrink-0">
+        <section className="panel overflow-hidden">
+          <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
+            <span className="eyebrow">
+              {selected?.label ?? "Logbook"}
+              {tailNumber ? ` · ${tailNumber}` : ""}
             </span>
-          )}
-          {selected?.label === "Other" && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400">
-              Scan A&amp;P Weight &amp; Balance sheets and AD compliance reports here —
-              they&apos;re auto-classified and applied to your W&amp;B and AD tracking.
+            {selected && (
+              <span className="readout text-[11px] text-faint">
+                Page #{(sequences[selected.id] ?? 0) + 1}
+              </span>
+            )}
+          </div>
+
+          {/* Camera / preview */}
+          <div className="relative aspect-[3/4] bg-black">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              className={`h-full w-full object-cover ${cameraOn ? "block" : "hidden"}`}
+            />
+            <canvas
+              ref={overlayRef}
+              className={`pointer-events-none absolute inset-0 h-full w-full ${
+                cameraOn && scanner === "ready" ? "block" : "hidden"
+              }`}
+            />
+            {cameraOn && (
+              <>
+                <div className="pointer-events-none absolute left-4 top-4 h-6 w-6 border-l-2 border-t-2 border-accent" />
+                <div className="pointer-events-none absolute right-4 top-4 h-6 w-6 border-r-2 border-t-2 border-accent" />
+                <div className="pointer-events-none absolute bottom-4 left-4 h-6 w-6 border-b-2 border-l-2 border-accent" />
+                <div className="pointer-events-none absolute bottom-4 right-4 h-6 w-6 border-b-2 border-r-2 border-accent" />
+                <span
+                  className="readout pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-[9.5px] tracking-[0.1em] text-accent"
+                  style={{ background: "rgba(4,18,31,.7)" }}
+                >
+                  {viewfinderBadge}
+                </span>
+              </>
+            )}
+            {!cameraOn && (
+              <div className="flex h-full items-center justify-center text-sm text-faint">
+                {cameraError ?? "Camera off"}
+              </div>
+            )}
+          </div>
+
+          {/* Queue + sync status */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5 text-xs">
+            <span className="text-faint">
+              {queueCount > 0
+                ? `${queueCount} page${queueCount === 1 ? "" : "s"} waiting to upload`
+                : "Queue empty"}
             </span>
-          )}
-        </label>
+            <span
+              className={online ? "text-annun-green" : "text-annun-amber"}
+            >
+              {online ? "Online" : "Offline — queued on-device"}
+            </span>
+          </div>
 
-        <div className="flex flex-col gap-2 sm:pt-6">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={isHandwritten}
-              onChange={(e) => setIsHandwritten(e.target.checked)}
-            />
-            Handwritten page (routes to vision extraction)
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={batchMode}
-              onChange={(e) => setBatchMode(e.target.checked)}
-            />
-            Batch mode (keep camera on after each page)
-          </label>
-        </div>
-      </section>
-
-      {/* Status strip */}
-      <div className="flex flex-wrap items-center gap-3 text-xs">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${
-            online
-              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-          }`}
-        >
-          {online ? "Online" : "Offline — pages queued on-device"}
-        </span>
-        <span className="text-slate-500 dark:text-slate-400">
-          {queueCount > 0
-            ? `${queueCount} page${queueCount === 1 ? "" : "s"} waiting to upload`
-            : "Queue empty"}
-        </span>
-        <span className="text-slate-500 dark:text-slate-400">
-          {scanner === "loading" && "Loading auto-crop…"}
-          {scanner === "ready" && "Auto-crop + deskew on"}
-          {scanner === "unavailable" &&
-            "Auto-crop unavailable — capturing full frame"}
-        </span>
-        {queueCount > 0 && online && (
-          <button
-            onClick={drain}
-            className="rounded-md border border-slate-300 px-2.5 py-1 hover:border-slate-500 dark:border-slate-700"
-          >
-            Upload now
-          </button>
-        )}
+          {/* Controls */}
+          <div className="flex items-center justify-between border-t border-line px-6 py-4">
+            {!cameraOn ? (
+              <button
+                onClick={startCamera}
+                disabled={!logbookId}
+                className="w-full rounded-md bg-accent px-5 py-2.5 font-medium text-bg hover:opacity-90 disabled:opacity-60"
+              >
+                Start camera
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={stopCamera}
+                  className="w-12 text-left text-[11px] text-faint hover:text-ink"
+                >
+                  Stop
+                </button>
+                <button
+                  onClick={capture}
+                  aria-label="Capture page"
+                  className="h-[62px] w-[62px] shrink-0 rounded-full bg-accent shadow-[0_0_0_2px_var(--accent)]"
+                  style={{ border: "4px solid var(--panel)" }}
+                />
+                <button
+                  onClick={drain}
+                  disabled={!(queueCount > 0 && online)}
+                  className="w-12 text-right text-[11px] text-accent hover:opacity-80 disabled:opacity-40"
+                >
+                  Sync
+                </button>
+              </>
+            )}
+          </div>
+        </section>
+        {status && <p className="text-xs text-dim">{status}</p>}
       </div>
 
-      {/* Camera / preview */}
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-black dark:border-slate-800">
-        <div className="relative">
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            className={`w-full ${cameraOn ? "block" : "hidden"}`}
-          />
-          <canvas
-            ref={overlayRef}
-            className={`pointer-events-none absolute inset-0 h-full w-full ${
-              cameraOn && scanner === "ready" ? "block" : "hidden"
-            }`}
-          />
-          {!cameraOn && (
-            <div className="flex aspect-video items-center justify-center text-sm text-slate-400">
-              {cameraError ?? "Camera off"}
+      {/* Session settings + real-capability notes */}
+      <div className="flex flex-1 flex-col gap-5">
+        <section className="panel grid gap-4 p-5 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">Logbook</span>
+            <select
+              value={logbookId}
+              onChange={(e) => setLogbookId(e.target.value)}
+              className={inputClass}
+            >
+              {logbooks.map((lb) => (
+                <option key={lb.id} value={lb.id}>
+                  {lb.label}
+                  {lb.componentRef ? ` (${lb.componentRef})` : ""}
+                </option>
+              ))}
+            </select>
+            {selected && (
+              <span className="text-xs text-faint">
+                Next page #{(sequences[selected.id] ?? 0) + 1} · {selected.existingPages}{" "}
+                already captured
+              </span>
+            )}
+            {selected?.label === "Other" && (
+              <span className="text-xs text-annun-green">
+                Scan A&amp;P Weight &amp; Balance sheets and AD compliance reports here —
+                they&apos;re auto-classified and applied to your W&amp;B and AD tracking.
+              </span>
+            )}
+          </label>
+
+          <div className="flex flex-col gap-2 sm:pt-6">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={isHandwritten}
+                onChange={(e) => setIsHandwritten(e.target.checked)}
+              />
+              Handwritten page (routes to vision extraction)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={batchMode}
+                onChange={(e) => setBatchMode(e.target.checked)}
+              />
+              Batch mode (keep camera on after each page)
+            </label>
+            {queueCount > 0 && online && (
+              <button
+                onClick={drain}
+                className="mt-1 self-start rounded-md border border-line px-2.5 py-1 text-xs text-dim hover:border-line2 hover:text-ink"
+              >
+                Upload now
+              </button>
+            )}
+          </div>
+        </section>
+
+        <div className="grid gap-4">
+          <div className="panel p-[18px]">
+            <div className="mb-2 flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-[7px] border border-accent bg-accent-soft text-[13px] text-accent">
+                ◳
+              </span>
+              <span className="text-sm font-semibold">Auto edge-detect &amp; deskew</span>
             </div>
-          )}
-        </div>
-      </section>
+            <p className="text-[12.5px] leading-relaxed text-dim">{scannerLine}</p>
+          </div>
 
-      {/* Controls */}
-      {!cameraOn ? (
-        <button
-          onClick={startCamera}
-          disabled={!logbookId}
-          className="rounded-md bg-slate-900 px-5 py-2.5 font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          Start camera
-        </button>
-      ) : (
-        <div className="flex gap-3">
-          <button
-            onClick={capture}
-            className="flex-1 rounded-md bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-          >
-            Capture page
-          </button>
-          <button
-            onClick={stopCamera}
-            className="rounded-md border border-slate-300 px-5 py-3 hover:border-slate-500 dark:border-slate-700"
-          >
-            Stop
-          </button>
-        </div>
-      )}
+          <div className="panel p-[18px]">
+            <div className="mb-2 flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-[7px] border border-accent bg-accent-soft text-[13px] text-accent">
+                ▦
+              </span>
+              <span className="text-sm font-semibold">Batch a whole logbook</span>
+            </div>
+            <p className="text-[12.5px] leading-relaxed text-dim">
+              {batchMode
+                ? "Batch mode is on — the camera stays live after each page so you can shoot the whole logbook in one pass."
+                : "Batch mode is off — the camera stops after each page. Turn it on to shoot page after page without restarting."}
+            </p>
+          </div>
 
-      {status && (
-        <p className="text-sm text-slate-600 dark:text-slate-300">{status}</p>
-      )}
+          <div className="panel p-[18px]">
+            <div className="mb-2 flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-[7px] border border-accent bg-accent-soft text-[13px] text-accent">
+                ⇅
+              </span>
+              <span className="text-sm font-semibold">Works with no signal</span>
+            </div>
+            <p className="text-[12.5px] leading-relaxed text-dim">
+              Hangars have bad reception. Captures are stored on-device and upload the
+              moment you&apos;re back on Wi-Fi — you&apos;ll never lose a page you already
+              shot.
+            </p>
+          </div>
+        </div>
+      </div>
+      </div>
 
       {/* Review modal for the pending shot */}
       {pending && (
         <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/70 p-4">
-          <div className="max-h-full w-full max-w-lg overflow-auto rounded-lg bg-white p-5 dark:bg-slate-900">
+          <div className="panel max-h-full w-full max-w-lg overflow-auto p-5">
             <h2 className="mb-3 text-lg font-semibold">Review page</h2>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={pending.dataUrl}
               alt="Captured logbook page"
-              className="mb-3 w-full rounded-md border border-slate-200 dark:border-slate-700"
+              className="mb-3 w-full rounded-md border border-line"
             />
-            <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mb-2 text-xs text-faint">
               {pending.width}×{pending.height} · sharpness{" "}
               {Math.round(pending.report.sharpness)} · glare{" "}
               {(pending.report.glareRatio * 100).toFixed(1)}%
             </p>
 
             {pending.report.issues.length > 0 && (
-              <ul className="mb-3 list-disc space-y-1 rounded-md bg-amber-50 p-3 pl-7 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+              <ul
+                className="mb-3 list-disc space-y-1 rounded-md p-3 pl-7 text-sm text-annun-amber"
+                style={{ background: "var(--amb-bg)" }}
+              >
                 {pending.report.issues.map((issue) => (
                   <li key={issue}>{issue}</li>
                 ))}
@@ -428,17 +515,14 @@ export function CaptureClient({
             <div className="flex gap-3">
               <button
                 onClick={keepPending}
-                className={`flex-1 rounded-md px-4 py-2.5 font-medium text-white ${
-                  pending.report.ok
-                    ? "bg-emerald-600 hover:bg-emerald-500"
-                    : "bg-amber-600 hover:bg-amber-500"
-                }`}
+                className="flex-1 rounded-md px-4 py-2.5 font-medium text-bg hover:opacity-90"
+                style={{ background: pending.report.ok ? "var(--grn)" : "var(--amb)" }}
               >
                 {pending.report.ok ? "Add to queue" : "Keep anyway"}
               </button>
               <button
                 onClick={discardPending}
-                className="flex-1 rounded-md border border-slate-300 px-4 py-2.5 hover:border-slate-500 dark:border-slate-700"
+                className="flex-1 rounded-md border border-line px-4 py-2.5 text-dim hover:border-line2 hover:text-ink"
               >
                 Retake
               </button>
@@ -447,13 +531,10 @@ export function CaptureClient({
         </div>
       )}
 
-      <p className="text-xs text-slate-400 dark:text-slate-500">
+      <p className="text-xs text-faint">
         Captured pages are stored on this device until uploaded, then reviewed
         and extracted later. MyTailLog is an index of your logbooks, not the
-        legal maintenance record.{" "}
-        <Link href={`/aircraft/${aircraftId}`} className="underline">
-          Back to aircraft
-        </Link>
+        legal maintenance record.
       </p>
     </div>
   );

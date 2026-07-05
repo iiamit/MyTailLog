@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AskClient } from "./AskClient";
@@ -19,21 +18,19 @@ export default async function AskPage({
   if (!aircraft) notFound();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/aircraft/${id}`}
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← {aircraft.tail_number}
-      </Link>
-
-      <header className="mt-2 mb-6">
-        <h1 className="text-2xl font-bold">Ask your logbook</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Ask a plain-English question about {aircraft.tail_number}&apos;s history.
-          Answers are drawn only from your extracted entries and cite the entries
-          they came from — verify against the physical logbooks.
-        </p>
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Records</div>
+          <h1 className="font-display text-[27px] font-semibold leading-none">
+            Ask your logbook
+          </h1>
+          <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
+            Ask a plain-English question about {aircraft.tail_number}&apos;s history.
+            Answers are drawn only from your extracted entries and cite the entries
+            they came from — verify against the physical logbooks.
+          </p>
+        </div>
       </header>
 
       <AskClient

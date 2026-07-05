@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ZoomableImage } from "@/components/ZoomableImage";
-import { CONFIDENCE_THRESHOLD } from "@/lib/extraction/schema";
+import { CONFIDENCE_THRESHOLD, type FieldBox } from "@/lib/extraction/schema";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import {
   saveEntry,
@@ -30,6 +30,7 @@ export type ReviewEntry = {
   sb_refs: string[];
   confidence: number | null;
   field_confidence: Record<string, number> | null;
+  field_boxes: Record<string, FieldBox | null> | null;
   owner_confirmed: boolean;
   is_continuation: boolean;
 };
@@ -48,6 +49,7 @@ const blankEntry = (): ReviewEntry => ({
   sb_refs: [],
   confidence: null,
   field_confidence: null,
+  field_boxes: null,
   owner_confirmed: false,
   is_continuation: false,
 });
@@ -104,11 +106,110 @@ function toFields(f: FormState): EntryFields {
 }
 
 const inputClass =
-  "w-full rounded-md border px-2.5 py-1.5 text-sm outline-none focus:border-slate-500 dark:bg-slate-900 dark:text-slate-100";
+  "w-full rounded-md border bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
 function fieldBorder(flagged: boolean) {
-  return flagged
-    ? "border-amber-400 dark:border-amber-500/70"
-    : "border-slate-300 dark:border-slate-700";
+  return flagged ? "border-annun-amber/70" : "border-line";
+}
+
+// A small monospace % chip, colored by whether the model cleared the trust
+// threshold. Null confidence (manual/new entries) shows nothing.
+function ConfChip({ conf }: { conf: number | null | undefined }) {
+  if (typeof conf !== "number") return null;
+  const ok = conf >= CONFIDENCE_THRESHOLD;
+  return (
+    <span
+      className={`readout rounded px-1 text-[10px] ${
+        ok ? "text-annun-green" : "text-annun-amber"
+      }`}
+      style={{ background: ok ? "var(--grn-bg)" : "var(--amb-bg)" }}
+      title={`${Math.round(conf * 100)}% model confidence in this field`}
+    >
+      {Math.round(conf * 100)}%
+    </span>
+  );
+}
+
+// Expand a box by a margin (fraction of its own size) so the crop shows a bit
+// of surrounding context, then clamp back into the image. Handwriting is hard
+// to read edge-to-edge; the padding is what makes the snippet legible.
+function padBox(b: FieldBox, m = 0.6): FieldBox {
+  const x = Math.max(0, b.x - b.w * m);
+  const y = Math.max(0, b.y - b.h * m);
+  const w = Math.min(1 - x, b.w * (1 + 2 * m));
+  const h = Math.min(1 - y, b.h * (1 + 2 * m));
+  return { x, y, w, h };
+}
+
+// The source-image snippet for one field: a CSS background-crop of the page
+// image to the field's (padded) box. No canvas — background-size/position scale
+// the full image so just the region shows. Boxes are approximate, so this is a
+// "look here" reference to confirm against, not a precise cut.
+function CropStrip({ imageUrl, box }: { imageUrl: string; box: FieldBox }) {
+  const b = padBox(box);
+  // Guard against degenerate boxes (w or h ≈ full image) that would divide by ~0.
+  if (b.w < 0.01 || b.h < 0.01 || b.w > 0.999 || b.h > 0.999) return null;
+  return (
+    <div
+      aria-hidden
+      className="mb-1 h-9 w-full overflow-hidden rounded border border-line bg-bg"
+      style={{
+        backgroundImage: `url(${imageUrl})`,
+        backgroundRepeat: "no-repeat",
+        backgroundSize: `${100 / b.w}% ${100 / b.h}%`,
+        backgroundPosition: `${(b.x / (1 - b.w)) * 100}% ${(b.y / (1 - b.h)) * 100}%`,
+      }}
+      title="Where this value appears on the scan (approximate)"
+    />
+  );
+}
+
+// One labelled field: label + a ◎ locate button (spotlight mode) or an inline
+// crop (fallback) + confidence chip + the input. Spotlight mode wins when an
+// onLocate handler is supplied (single-page reviewer, which has a sticky scan);
+// the flat "Review all" view has no persistent image, so it gets the crop.
+function Field({
+  label,
+  conf,
+  box,
+  imageUrl,
+  onLocate,
+  active,
+  className,
+  children,
+}: {
+  label: string;
+  conf: number | null | undefined;
+  box: FieldBox | null | undefined;
+  imageUrl: string | null;
+  onLocate?: (box: FieldBox | null) => void;
+  active?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const canLocate = Boolean(box && onLocate);
+  return (
+    <label className={className}>
+      <span className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-dim">
+        {label}
+        {canLocate && (
+          <button
+            type="button"
+            onClick={() => onLocate!(active ? null : box!)}
+            aria-pressed={active}
+            title="Show where this was read on the scan"
+            className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border text-[10px] leading-none ${
+              active ? "border-accent bg-accent-soft text-accent" : "border-line2 text-accent hover:border-accent"
+            }`}
+          >
+            ◎
+          </button>
+        )}
+        <ConfChip conf={conf} />
+      </span>
+      {box && imageUrl && !onLocate && <CropStrip imageUrl={imageUrl} box={box} />}
+      {children}
+    </label>
+  );
 }
 
 export function EntryCard({
@@ -117,6 +218,9 @@ export function EntryCard({
   logbookId,
   aircraftId,
   pageId,
+  imageUrl,
+  onLocate,
+  activeKey,
   onSaved,
   onCreated,
   onDeleted,
@@ -129,6 +233,11 @@ export function EntryCard({
   logbookId: string;
   aircraftId: string;
   pageId: string;
+  imageUrl: string | null;
+  // Spotlight mode (single-page reviewer): highlight a field's box on the
+  // shared sticky scan. Absent in the flat view, which falls back to crops.
+  onLocate?: (box: FieldBox | null, key: string) => void;
+  activeKey?: string | null;
   onSaved: (id: string, fields: EntryFields) => void;
   onCreated: (draftId: string, newId: string, fields: EntryFields) => void;
   onDeleted: (id: string) => void;
@@ -141,8 +250,22 @@ export function EntryCard({
   const [error, setError] = useState<string | null>(null);
 
   const fc = entry.field_confidence;
-  const flagged = (field: string) =>
-    !isNew && typeof fc?.[field] === "number" && fc[field] < CONFIDENCE_THRESHOLD;
+  const conf = (field: string): number | null =>
+    !isNew && typeof fc?.[field] === "number" ? fc[field] : null;
+  const flagged = (field: string) => {
+    const c = conf(field);
+    return c != null && c < CONFIDENCE_THRESHOLD;
+  };
+  const box = (field: string): FieldBox | null =>
+    (!isNew && entry.field_boxes?.[field]) || null;
+  // Per-field spotlight wiring (single-page reviewer only). Returns the props
+  // Field needs to drive/toggle the highlight on the shared sticky scan.
+  const locate = (field: string) => {
+    const b = box(field);
+    if (!onLocate || !b) return {};
+    const key = `${entry.id}:${field}`;
+    return { onLocate: (bx: FieldBox | null) => onLocate(bx, key), active: activeKey === key };
+  };
 
   function set<K extends keyof FormState>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -185,26 +308,15 @@ export function EntryCard({
     else onSaved(entry.id, toFields(form)); // reuse to bump confirmed via parent
   }
 
-  const Label = ({ name, text }: { name: string; text: string }) => (
-    <span className="mb-0.5 flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300">
-      {text}
-      {flagged(name) && (
-        <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-          check
-        </span>
-      )}
-    </span>
-  );
-
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="panel p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm font-semibold">
+        <span className="text-sm font-semibold text-ink">
           {isNew ? "New entry" : entry.owner_confirmed ? "Confirmed" : "Extracted"}
         </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+        <span className="readout text-xs text-dim">
           {!isNew && entry.confidence != null
-            ? `${Math.round(entry.confidence * 100)}% confidence`
+            ? `${Math.round(entry.confidence * 100)}% overall`
             : isNew
               ? "manual"
               : "reviewed"}
@@ -212,7 +324,10 @@ export function EntryCard({
       </div>
 
       {!isNew && entry.is_continuation && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+        <div
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-annun-amber/40 px-3 py-2 text-xs text-annun-amber"
+          style={{ background: "var(--amb-bg)" }}
+        >
           <span>
             This looks like the continuation of an entry that started on the
             previous page.
@@ -220,7 +335,7 @@ export function EntryCard({
           <button
             onClick={() => onMerge(entry.id)}
             disabled={merging}
-            className="rounded-md bg-amber-600 px-2.5 py-1 font-medium text-white hover:bg-amber-500 disabled:opacity-50"
+            className="rounded-md border border-annun-amber/60 px-2.5 py-1 font-medium text-annun-amber hover:bg-panel2 disabled:opacity-50"
           >
             {merging ? "Merging…" : "Merge into that entry"}
           </button>
@@ -228,17 +343,15 @@ export function EntryCard({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <label className="col-span-2">
-          <Label name="entry_date" text="Date" />
+        <Field label="Date" conf={conf("entry_date")} box={box("entry_date")} imageUrl={imageUrl} {...locate("entry_date")} className="col-span-2">
           <input
             type="date"
             value={form.entry_date}
             onChange={(e) => set("entry_date", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("entry_date"))}`}
           />
-        </label>
-        <label>
-          <Label name="hobbs" text="Hobbs" />
+        </Field>
+        <Field label="Hobbs" conf={conf("hobbs")} box={box("hobbs")} imageUrl={imageUrl} {...locate("hobbs")}>
           <input
             type="number"
             step="0.1"
@@ -247,9 +360,8 @@ export function EntryCard({
             onChange={(e) => set("hobbs", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("hobbs"))}`}
           />
-        </label>
-        <label>
-          <Label name="tach" text="Tach" />
+        </Field>
+        <Field label="Tach" conf={conf("tach")} box={box("tach")} imageUrl={imageUrl} {...locate("tach")}>
           <input
             type="number"
             step="0.1"
@@ -258,9 +370,8 @@ export function EntryCard({
             onChange={(e) => set("tach", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("tach"))}`}
           />
-        </label>
-        <label className="col-span-2">
-          <Label name="description" text="Description" />
+        </Field>
+        <Field label="Description" conf={conf("description")} box={box("description")} imageUrl={imageUrl} {...locate("description")} className="col-span-2">
           <textarea
             rows={2}
             value={form.description}
@@ -268,66 +379,60 @@ export function EntryCard({
             onChange={(e) => set("description", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("description"))}`}
           />
-        </label>
-        <label className="col-span-2">
-          <Label name="work_performed" text="Work performed" />
+        </Field>
+        <Field label="Work performed" conf={conf("work_performed")} box={box("work_performed")} imageUrl={imageUrl} {...locate("work_performed")} className="col-span-2">
           <textarea
             rows={2}
             value={form.work_performed}
             onChange={(e) => set("work_performed", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("work_performed"))}`}
           />
-        </label>
-        <label className="col-span-2">
-          <Label name="parts" text="Parts" />
+        </Field>
+        <Field label="Parts" conf={conf("parts")} box={box("parts")} imageUrl={imageUrl} {...locate("parts")} className="col-span-2">
           <textarea
             rows={2}
             value={form.parts}
             onChange={(e) => set("parts", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("parts"))}`}
           />
-        </label>
-        <label>
-          <Label name="signature_name" text="Signature" />
+        </Field>
+        <Field label="Signature" conf={conf("signature_name")} box={box("signature_name")} imageUrl={imageUrl} {...locate("signature_name")}>
           <input
             value={form.signature_name}
             onChange={(e) => set("signature_name", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("signature_name"))}`}
           />
-        </label>
-        <label>
-          <Label name="mechanic_cert_number" text="Cert #" />
+        </Field>
+        <Field label="Cert #" conf={conf("mechanic_cert_number")} box={box("mechanic_cert_number")} imageUrl={imageUrl} {...locate("mechanic_cert_number")}>
           <input
             value={form.mechanic_cert_number}
             onChange={(e) => set("mechanic_cert_number", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("mechanic_cert_number"))}`}
           />
-        </label>
-        <label>
-          <Label name="ad_refs" text="AD refs (comma-sep)" />
+        </Field>
+        <Field label="AD refs (comma-sep)" conf={conf("ad_refs")} box={box("ad_refs")} imageUrl={imageUrl} {...locate("ad_refs")}>
           <input
             value={form.ad_refs}
             onChange={(e) => set("ad_refs", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("ad_refs"))}`}
           />
-        </label>
-        <label>
-          <Label name="sb_refs" text="SB refs (comma-sep)" />
+        </Field>
+        <Field label="SB refs (comma-sep)" conf={conf("sb_refs")} box={box("sb_refs")} imageUrl={imageUrl} {...locate("sb_refs")}>
           <input
             value={form.sb_refs}
             onChange={(e) => set("sb_refs", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("sb_refs"))}`}
           />
-        </label>
+        </Field>
       </div>
 
-      {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-annun-red">{error}</p>}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           onClick={handleSave}
           disabled={busy}
-          className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50"
         >
           {busy ? "Saving…" : isNew ? "Add entry" : "Save & confirm"}
         </button>
@@ -335,7 +440,7 @@ export function EntryCard({
           <button
             onClick={toggleConfirm}
             disabled={busy}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
           >
             {entry.owner_confirmed ? "Unconfirm" : "Confirm as-is"}
           </button>
@@ -345,7 +450,7 @@ export function EntryCard({
             onClick={() => onMerge(entry.id)}
             disabled={busy || merging}
             title="Merge this into the entry that ends on the previous page (for entries that span a page break)"
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
           >
             Merge ↑ prev page
           </button>
@@ -353,7 +458,7 @@ export function EntryCard({
         <button
           onClick={handleDelete}
           disabled={busy}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-red-600 hover:border-red-400 disabled:opacity-50 dark:border-slate-700 dark:text-red-400"
+          className="rounded-md border border-line px-3 py-1.5 text-sm text-annun-red hover:border-annun-red/60 disabled:opacity-50"
         >
           {isNew ? "Cancel" : "Delete"}
         </button>
@@ -391,6 +496,10 @@ export function ReviewClient({
   const [mergingId, setMergingId] = useState<string | null>(null);
   const [mergeError, setMergeError] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
+  // Which field's box is spotlighted on the sticky scan (null = none).
+  const [spot, setSpot] = useState<{ box: FieldBox; key: string } | null>(null);
+  const locateField = (box: FieldBox | null, key: string) =>
+    setSpot(box ? { box, key } : null);
 
   // Merge a page-spanning continuation into its head on the previous page. The
   // tail disappears from this page; the head (on the previous page) absorbs it.
@@ -451,26 +560,45 @@ export function ReviewClient({
     <div className="grid gap-6 lg:grid-cols-2">
       {/* Source: image + raw transcription, so the owner can verify against the
           original (entries mix printed and handwritten content). */}
-      <div className="lg:sticky lg:top-6 lg:self-start">
+      <div className="lg:sticky lg:top-[72px] lg:self-start">
         {imageUrl ? (
           <div>
-            <ZoomableImage
-              src={imageUrl}
-              alt="Logbook page"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-800"
-            />
-            <p className="mt-1 text-center text-xs text-slate-400 dark:text-slate-500">
-              Click the image to magnify (click again for full resolution).
+            <div className="relative overflow-hidden rounded-lg border border-line">
+              <ZoomableImage
+                src={imageUrl}
+                alt="Logbook page"
+                className="w-full"
+              />
+              {/* Spotlight: dim the page and ring the located field's box. */}
+              {spot && (
+                <div
+                  className="pointer-events-none absolute rounded-[3px] transition-all duration-200"
+                  style={{
+                    left: `${spot.box.x * 100}%`,
+                    top: `${spot.box.y * 100}%`,
+                    width: `${spot.box.w * 100}%`,
+                    height: `${spot.box.h * 100}%`,
+                    border: "2px solid var(--accent)",
+                    boxShadow: "0 0 0 9999px rgba(4,10,20,0.55)",
+                  }}
+                />
+              )}
+            </div>
+            <p className="mt-1 text-center text-xs text-faint">
+              Tap a field&apos;s ◎ to spotlight where it was read. Click the image to magnify.
             </p>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
+          <div className="rounded-lg border border-dashed border-line p-8 text-center text-sm text-dim">
             Image unavailable.
           </div>
         )}
 
         {detectedPageCount === 2 && (
-          <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+          <p
+            className="mt-2 rounded-md border border-annun-amber/40 px-3 py-2 text-xs text-annun-amber"
+            style={{ background: "var(--amb-bg)" }}
+          >
             Detected as a two-page spread — entries from both pages are listed;
             check that none were missed.
           </p>
@@ -478,12 +606,12 @@ export function ReviewClient({
 
         <button
           onClick={() => setShowRaw((s) => !s)}
-          className="mt-3 text-xs text-slate-500 underline hover:text-slate-700 dark:text-slate-400"
+          className="mt-3 text-xs text-dim underline hover:text-ink"
         >
           {showRaw ? "Hide" : "Show"} extracted text
         </button>
         {showRaw && (
-          <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+          <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-line bg-bg p-3 text-xs text-dim">
             {rawText?.trim() || "No text transcribed."}
           </pre>
         )}
@@ -492,33 +620,38 @@ export function ReviewClient({
       {/* Entries */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-600 dark:text-slate-300">
+          <span className="text-sm text-dim">
             {entries.length} {entries.length === 1 ? "entry" : "entries"} ·{" "}
             {confirmedCount} confirmed
           </span>
           <span
-            className={`rounded-full px-2.5 py-0.5 text-xs ${
+            className={`rounded-full border px-2.5 py-0.5 text-xs ${
               review === "confirmed"
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                ? "border-annun-green/40 text-annun-green"
                 : review === "disputed"
-                  ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  ? "border-annun-red/40 text-annun-red"
+                  : "border-line text-dim"
             }`}
+            style={
+              review === "confirmed"
+                ? { background: "var(--grn-bg)" }
+                : review === "disputed"
+                  ? { background: "var(--red-bg)" }
+                  : undefined
+            }
           >
             {review}
           </span>
         </div>
 
         {extractionStatus !== "extracted" && entries.length === 0 && (
-          <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700">
+          <p className="rounded-md border border-dashed border-line p-4 text-sm text-dim">
             This page hasn&apos;t been extracted yet. Extract it from the aircraft
             page, or add entries manually below.
           </p>
         )}
 
-        {mergeError && (
-          <p className="text-sm text-red-600 dark:text-red-400">{mergeError}</p>
-        )}
+        {mergeError && <p className="text-sm text-annun-red">{mergeError}</p>}
 
         {entries.map((e) => (
           <EntryCard
@@ -528,6 +661,9 @@ export function ReviewClient({
             aircraftId={aircraftId}
             pageId={pageId}
             logbookId={logbookId}
+            imageUrl={imageUrl}
+            onLocate={locateField}
+            activeKey={spot?.key ?? null}
             onSaved={patchEntry}
             onCreated={onCreated}
             onDeleted={(id) => setEntries((es) => es.filter((x) => x.id !== id))}
@@ -545,6 +681,7 @@ export function ReviewClient({
             aircraftId={aircraftId}
             pageId={pageId}
             logbookId={logbookId}
+            imageUrl={imageUrl}
             onSaved={patchEntry}
             onCreated={onCreated}
             onDeleted={() => {}}
@@ -558,29 +695,29 @@ export function ReviewClient({
 
         <button
           onClick={addDraft}
-          className="rounded-md border border-dashed border-slate-300 px-4 py-2.5 text-sm hover:border-slate-500 dark:border-slate-700"
+          className="rounded-md border border-dashed border-line px-4 py-2.5 text-sm text-dim hover:border-line2 hover:text-ink"
         >
           + Add an entry the extractor missed
         </button>
 
-        <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+        <div className="mt-2 flex flex-wrap gap-2 border-t border-line pt-4">
           <button
             onClick={() => markReviewed("confirmed")}
             disabled={pageBusy}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-50"
           >
             Mark page reviewed
           </button>
           <button
             onClick={() => markReviewed("disputed")}
             disabled={pageBusy}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            className="rounded-md border border-line px-4 py-2 text-sm text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
           >
             Flag as disputed
           </button>
           <Link
             href={`/aircraft/${aircraftId}`}
-            className="rounded-md px-4 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400"
+            className="rounded-md px-4 py-2 text-sm text-dim hover:text-ink"
           >
             Done
           </Link>

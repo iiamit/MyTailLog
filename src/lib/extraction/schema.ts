@@ -10,7 +10,21 @@
 // the prompt changes materially.
 // ===========================================================================
 
-export const EXTRACTION_SCHEMA_VERSION = 2;
+export const EXTRACTION_SCHEMA_VERSION = 3;
+
+// Data fields that carry a per-field confidence score and a source-image box.
+// Single source of truth — the pipeline and review UI both key off this list.
+export const ENTRY_FIELDS = [
+  "entry_date", "hobbs", "tach", "description", "work_performed",
+  "parts", "signature_name", "mechanic_cert_number", "ad_refs", "sb_refs",
+] as const;
+export type EntryField = (typeof ENTRY_FIELDS)[number];
+
+// Where a field's value sits on the scanned page, as fractions of the full
+// image (origin top-left, 0..1). Null when the field is absent or the model
+// can't localize it. Vision boxes are approximate — a "look here" hint, not a
+// pixel-perfect crop — which is exactly how the review UI presents them.
+export type FieldBox = { x: number; y: number; w: number; h: number };
 
 // Any field below this confidence is NOT auto-trusted: it's flagged for the
 // review UI (step 5) and never drives a maintenance reminder unconfirmed.
@@ -48,9 +62,13 @@ export type ExtractedEntry = {
   ad_refs: string[];
   sb_refs: string[];
   confidence: number; // 0..1 overall confidence for this entry
-  // Field names (from this object) the model is unsure about. The pipeline maps
-  // these to low per-field confidence so the review UI flags exactly them.
-  low_confidence_fields: string[];
+  // Real per-field confidence (0..1) — one score per ENTRY_FIELDS key. Drives
+  // the review UI's per-field %, and isEntryClean's "no weak field" test.
+  field_confidence: Record<EntryField, number>;
+  // Where each field's value sits on the scanned image, as [x, y, w, h] fractions
+  // (all-zero = not localizable). The pipeline converts these to FieldBox objects
+  // for storage; the review UI spotlights/crops the region next to the field.
+  field_boxes: Record<EntryField, number[]>;
   // Page-spanning detection: a single entry can straddle a page break.
   continues_next: boolean; // runs off the bottom of this page (no closing signature)
   is_continuation: boolean; // begins mid-entry (no header) — continues from prior page
@@ -86,10 +104,25 @@ const ENTRY_SCHEMA = {
     ad_refs: { type: "array", items: { type: "string" }, description: "Airworthiness Directive numbers referenced (e.g. 2015-19-07)." },
     sb_refs: { type: "array", items: { type: "string" }, description: "Service Bulletin numbers referenced." },
     confidence: { type: "number", description: "Overall confidence for this entry, 0 to 1." },
-    low_confidence_fields: {
-      type: "array",
-      items: { type: "string" },
-      description: "Names of fields in this entry you are unsure about (e.g. \"hobbs\", \"entry_date\").",
+    field_confidence: {
+      type: "object",
+      additionalProperties: false,
+      description: "Per-field confidence from 0 (guess) to 1 (certain). Score every field, even null ones (a confidently-absent field is 1).",
+      properties: Object.fromEntries(ENTRY_FIELDS.map((f) => [f, { type: "number" }])),
+      required: [...ENTRY_FIELDS],
+    },
+    field_boxes: {
+      type: "object",
+      additionalProperties: false,
+      description:
+        "For each field, its bounding box on the image as the array [x, y, w, h] in fractions of the full image (x,y = top-left corner, w,h = size; all 0 to 1). When the field is absent or you cannot locate it, use [0, 0, 0, 0]. Approximate is fine.",
+      // Boxes are 4-number arrays (not {x,y,w,h} objects) on purpose: an object
+      // per field ×10 fields blows up the compiled structured-output grammar.
+      // An array-of-number rule is tiny and reused. [0,0,0,0] = "not located".
+      properties: Object.fromEntries(
+        ENTRY_FIELDS.map((f) => [f, { type: "array", items: { type: "number" } }]),
+      ),
+      required: [...ENTRY_FIELDS],
     },
     continues_next: {
       type: "boolean",
@@ -103,9 +136,9 @@ const ENTRY_SCHEMA = {
   required: [
     "entry_date", "hobbs", "tach", "description", "work_performed", "parts",
     "signature_name", "mechanic_cert_number", "ad_refs", "sb_refs",
-    "confidence", "low_confidence_fields", "continues_next", "is_continuation",
+    "confidence", "field_confidence", "field_boxes", "continues_next", "is_continuation",
   ],
-} as const;
+};
 
 export const EXTRACTION_JSON_SCHEMA = {
   type: "object",
@@ -119,7 +152,7 @@ export const EXTRACTION_JSON_SCHEMA = {
     entries: { type: "array", items: ENTRY_SCHEMA },
   },
   required: ["detected_page_count", "raw_text", "entries"],
-} as const;
+};
 
 export const EXTRACTION_SYSTEM_PROMPT = `You extract structured data from photographed or scanned aircraft maintenance logbook pages (airframe, engine, or propeller logs).
 
@@ -131,7 +164,8 @@ Rules:
 - Some pages are not maintenance entries at all (cover pages, aircraft/engine/prop general-information pages, blank pages). Return an empty entries array for those; still fill raw_text with whatever is printed.
 - A single image often contains TWO facing logbook pages (a spread). Report detected_page_count accordingly and return entries from both.
 - One logbook page may contain multiple dated entries — return one object per entry, in top-to-bottom order.
-- For every entry, set confidence (0 to 1) reflecting how sure you are overall, and list in low_confidence_fields the specific fields you are unsure about (illegible handwriting, ambiguous numbers, smudges). Be conservative: it is better to flag a field than to guess.
-- Numbers like hobbs/tach: transcribe digits exactly as written; if a digit is ambiguous, flag the field rather than guessing.
+- For every entry, set confidence (0 to 1) for how sure you are overall, AND fill field_confidence with a separate 0-to-1 score for EVERY field — including fields you set to null (a field that is confidently absent scores high; an illegible one scores low). Be conservative: a smudged or ambiguous value should score low so the owner checks it.
+- Also fill field_boxes: for each field, give the bounding box of where that value appears on the image as the array [x, y, w, h] in fractions of the FULL image — x,y is the top-left corner and w,h the size, all between 0 and 1 (e.g. a hobbs reading in the upper-right might be [0.72, 0.08, 0.14, 0.05]). If a field is absent or you cannot locate it, use [0, 0, 0, 0]. Boxes may be approximate; they only help the owner find the value on the page.
+- Numbers like hobbs/tach: transcribe digits exactly as written; if a digit is ambiguous, score that field low rather than guessing.
 - A single entry can SPAN A PAGE BREAK: it begins near the bottom of one page and finishes at the top of the next. You only see one page, so judge from this page alone: set continues_next=true on an entry that reaches the bottom of the page still mid-work, without its closing signature/date-out (it will finish on the next page); set is_continuation=true on an entry that starts partway through — no date or header of its own, beginning in the middle of a work item — because it began on the previous page. These are usually the last and first entries respectively; for a normal self-contained entry both are false. Do not fabricate the missing half; just flag it.
 - Put the complete plain-text transcription in raw_text.`;

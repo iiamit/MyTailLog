@@ -8,21 +8,29 @@ import { addShare, removeShare, transferAircraft, deleteAircraft } from "./actio
 export type ShareRow = { id: string; email: string; role: ShareRole };
 
 const inputClass =
-  "rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
 
 const ROLE_LABEL: Record<ShareRole, string> = {
   viewer: "View only",
   editor: "Can contribute",
 };
 
+// Two-letter avatar initials from an email's local part (e.g. "jane.doe@…" → "JA").
+function initials(email: string): string {
+  const local = email.split("@")[0] ?? "";
+  return (local.slice(0, 2) || "??").toUpperCase();
+}
+
 export function ShareClient({
   aircraftId,
   tail,
   shares,
+  ownerEmail,
 }: {
   aircraftId: string;
   tail: string;
   shares: ShareRow[];
+  ownerEmail: string;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState<ShareRow[]>(shares);
@@ -102,35 +110,47 @@ export function ShareClient({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-3 rounded-lg border border-slate-200 p-5 dark:border-slate-800">
-        <h2 className="font-semibold">People with access</h2>
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <section className="panel flex flex-col gap-1 p-5">
+        <h2 className="text-sm font-semibold text-ink">People with access</h2>
+        <p className="mb-3 text-xs text-faint">
+          Viewers see everything read-only; editors can review and add revisions.
+        </p>
 
-        {rows.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Not shared with anyone yet.
-          </p>
-        ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {rows.map((r) => (
-              <li key={r.id} className="flex items-center justify-between py-2 text-sm">
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{r.email}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{ROLE_LABEL[r.role]}</div>
-                </div>
-                <button
-                  onClick={() => remove(r.id)}
-                  className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-red-600 hover:border-red-400 dark:border-slate-700 dark:text-red-400"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="flex items-center gap-3 border-b border-line py-3">
+          <span className="readout flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full border border-accent bg-accent-soft text-[12px] text-accent">
+            {ownerEmail ? initials(ownerEmail) : "YOU"}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] font-semibold text-ink">You</div>
+            <div className="truncate text-[11px] text-faint">{ownerEmail || "owner"}</div>
+          </div>
+          <span className="text-[11px] text-dim">Owner</span>
+        </div>
+
+        {rows.map((r) => (
+          <div key={r.id} className="flex items-center gap-3 border-b border-line py-3">
+            <span className="readout flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full border border-line2 bg-panel2 text-[12px] text-dim">
+              {initials(r.email)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-semibold text-ink">{r.email}</div>
+              <div className="truncate text-[11px] text-faint">{ROLE_LABEL[r.role]}</div>
+            </div>
+            <button
+              onClick={() => remove(r.id)}
+              className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs text-annun-red hover:border-annun-red/60"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        {rows.length === 0 && (
+          <p className="border-b border-line py-3 text-sm text-dim">Not shared with anyone yet.</p>
         )}
 
-        <form onSubmit={add} className="flex flex-col gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-          <label className="text-sm font-medium">Invite by email</label>
+        <form onSubmit={add} className="flex flex-col gap-2 pt-4">
+          <label className="text-sm font-medium text-ink">Invite by email</label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="email"
@@ -151,73 +171,77 @@ export function ShareClient({
             <button
               type="submit"
               disabled={busy}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60 dark:bg-white dark:text-slate-900"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-bg hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? "Adding…" : "Invite"}
+              {busy ? "Adding…" : "+ Invite"}
             </button>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-dim">
             They get access as soon as they sign in with this email — no account needed first.
           </p>
-          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p className="text-sm text-annun-red">{error}</p>}
         </form>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-red-200 p-5 dark:border-red-900/50">
-        <h2 className="font-semibold text-red-700 dark:text-red-400">Transfer ownership</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Hands {tail} and all its records to another MyTailLog user. They must already have an
-          account. This can&apos;t be undone by you afterward.
-        </p>
-        <form onSubmit={transfer} className="flex flex-col gap-2 sm:flex-row">
-          <input
-            type="email"
-            required
-            value={transferEmail}
-            onChange={(e) => setTransferEmail(e.target.value)}
-            placeholder="new-owner@example.com"
-            className={`${inputClass} flex-1`}
-          />
-          <button
-            type="submit"
-            disabled={transferring}
-            className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-          >
-            {transferring ? "Transferring…" : "Transfer"}
-          </button>
-        </form>
-        {transferErr && <p className="text-sm text-red-600 dark:text-red-400">{transferErr}</p>}
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-lg border border-red-200 p-5 dark:border-red-900/50">
-        <h2 className="font-semibold text-red-700 dark:text-red-400">Delete this aircraft</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Permanently removes {tail} and everything under it — every logbook, page, scan, extracted
-          entry, AD/SB record, and maintenance item. This cannot be undone. Consider downloading a
-          backup first (Export / print → Download backup).
-        </p>
-        <form onSubmit={doDelete} className="flex flex-col gap-2">
-          <label className="text-sm">
-            Type <span className="font-mono font-semibold">DELETE</span> to confirm:
-          </label>
-          <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-3.5">
+        <section className="panel flex flex-col gap-2.5 p-[18px]">
+          <h2 className="text-[13.5px] font-semibold text-ink">Transfer at sale</h2>
+          <p className="text-xs leading-relaxed text-dim">
+            Hands {tail} and all its records to another MyTailLog user in one step. They must
+            already have an account. This can&apos;t be undone by you afterward.
+          </p>
+          <form onSubmit={transfer} className="flex flex-col gap-2 sm:flex-row">
             <input
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="DELETE"
+              type="email"
+              required
+              value={transferEmail}
+              onChange={(e) => setTransferEmail(e.target.value)}
+              placeholder="new-owner@example.com"
               className={`${inputClass} flex-1`}
             />
             <button
               type="submit"
-              disabled={deleting || confirmText !== "DELETE"}
-              className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              disabled={transferring}
+              className="rounded-md border border-line2 bg-panel2 px-4 py-2 text-[13px] text-ink hover:border-accent disabled:opacity-60"
             >
-              {deleting ? "Deleting…" : "Delete forever"}
+              {transferring ? "Transferring…" : "Transfer ownership"}
             </button>
-          </div>
-        </form>
-        {deleteErr && <p className="text-sm text-red-600 dark:text-red-400">{deleteErr}</p>}
-      </section>
+          </form>
+          {transferErr && <p className="text-sm text-annun-red">{transferErr}</p>}
+        </section>
+
+        <section
+          className="flex flex-col gap-2.5 rounded-xl border p-[18px]"
+          style={{ borderColor: "rgba(255,97,86,.3)", background: "var(--red-bg)" }}
+        >
+          <h2 className="text-[13.5px] font-semibold text-annun-red">Delete aircraft</h2>
+          <p className="text-xs leading-relaxed text-dim">
+            Permanently removes {tail} and everything under it — every logbook, page, scan,
+            extracted entry, AD/SB record, and maintenance item. Export a backup first.
+          </p>
+          <form onSubmit={doDelete} className="flex flex-col gap-2">
+            <label className="text-xs text-ink">
+              Type <span className="font-mono font-semibold">DELETE</span> to confirm:
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="DELETE"
+                className={`${inputClass} flex-1`}
+              />
+              <button
+                type="submit"
+                disabled={deleting || confirmText !== "DELETE"}
+                className="rounded-md border border-annun-red px-4 py-2 text-[13px] font-medium text-annun-red hover:bg-panel2 disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete…"}
+              </button>
+            </div>
+          </form>
+          {deleteErr && <p className="text-sm text-annun-red">{deleteErr}</p>}
+        </section>
+      </div>
     </div>
   );
 }

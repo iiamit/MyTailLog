@@ -37,7 +37,7 @@ export function ScreenshotCarousel({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative aspect-[16/10] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-lg border border-line bg-panel2">
         {slides.map((s, idx) => (
           <Image
             key={idx}
@@ -54,7 +54,7 @@ export function ScreenshotCarousel({
         ))}
       </div>
       <div className="flex items-center justify-between gap-3">
-        <figcaption className="text-xs text-slate-500 dark:text-slate-400">
+        <figcaption className="text-xs text-faint">
           {slides[i].caption}
         </figcaption>
         <div className="flex shrink-0 gap-1.5">
@@ -65,9 +65,7 @@ export function ScreenshotCarousel({
               aria-label={`Show screenshot ${idx + 1}: ${s.alt}`}
               aria-current={idx === i}
               className={`h-1.5 w-1.5 rounded-full transition ${
-                idx === i
-                  ? "bg-slate-700 dark:bg-slate-200"
-                  : "bg-slate-300 hover:bg-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600"
+                idx === i ? "bg-accent" : "bg-line2 hover:bg-dim"
               }`}
             />
           ))}

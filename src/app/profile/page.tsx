@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { resolveAlerts } from "@/lib/reminders";
+import { AccountShell } from "@/components/shell/AccountShell";
 import { ProfileClient } from "./ProfileClient";
 
 export default async function ProfilePage() {
@@ -26,41 +27,38 @@ export default async function ProfilePage() {
     .maybeSingle();
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-10">
-      <Link
-        href="/dashboard"
-        className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-      >
-        ← Your aircraft
-      </Link>
-      <header className="mb-6 mt-2 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Your profile</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-300">{user.email}</p>
-        </div>
-        {profile?.is_admin && (
-          <Link
-            href="/admin"
-            className="shrink-0 rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-          >
-            Admin dashboard →
-          </Link>
-        )}
-      </header>
+    <AccountShell>
+      <main className="mx-auto max-w-2xl px-6 py-8">
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="eyebrow mb-2">Account</div>
+            <h1 className="font-display text-[27px] font-semibold leading-none">Your profile</h1>
+            <p className="mt-2 text-[13.5px] text-dim">{user.email}</p>
+          </div>
+          {profile?.is_admin && (
+            <Link
+              href="/admin"
+              className="shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
+            >
+              Admin dashboard →
+            </Link>
+          )}
+        </header>
 
-      <ProfileClient
-        email={user.email ?? ""}
-        fullName={profile?.full_name ?? ""}
-        certNumber={profile?.cert_number ?? ""}
-        notifyDue={Boolean(profile?.preferences?.notify_due)}
-        alerts={resolveAlerts(profile?.preferences)}
-        mfb={{
-          clientId: mfb?.client_id ?? "",
-          hasSecret: Boolean(mfb?.client_secret),
-          connected: Boolean(mfb?.access_token),
-          username: mfb?.mfb_username ?? "",
-        }}
-      />
-    </main>
+        <ProfileClient
+          email={user.email ?? ""}
+          fullName={profile?.full_name ?? ""}
+          certNumber={profile?.cert_number ?? ""}
+          notifyDue={Boolean(profile?.preferences?.notify_due)}
+          alerts={resolveAlerts(profile?.preferences)}
+          mfb={{
+            clientId: mfb?.client_id ?? "",
+            hasSecret: Boolean(mfb?.client_secret),
+            connected: Boolean(mfb?.access_token),
+            username: mfb?.mfb_username ?? "",
+          }}
+        />
+      </main>
+    </AccountShell>
   );
 }

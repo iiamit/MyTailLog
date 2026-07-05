@@ -30,14 +30,14 @@ export function ConfirmButton({
             setArmed(false);
             onConfirm();
           }}
-          className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+          className="rounded-md bg-annun-red px-3 py-1 text-xs font-medium text-bg hover:opacity-90"
         >
           {confirmLabel}
         </button>
         <button
           type="button"
           onClick={() => setArmed(false)}
-          className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
+          className="rounded-md border border-line px-3 py-1 text-xs hover:border-line2"
         >
           Cancel
         </button>

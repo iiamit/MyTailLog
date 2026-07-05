@@ -33,7 +33,7 @@ export function ImportBackup() {
   }
 
   return (
-    <div className="inline-flex flex-col gap-1">
+    <>
       <input
         ref={inputRef}
         type="file"
@@ -48,13 +48,22 @@ export function ImportBackup() {
       <button
         onClick={() => inputRef.current?.click()}
         disabled={busy}
-        className="rounded-md border border-slate-300 px-5 py-2.5 text-sm font-medium hover:border-slate-500 disabled:opacity-60 dark:border-slate-700"
         title="Restore a .zip backup as a new aircraft"
+        className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border-[1.5px] border-dashed border-line2 p-6 text-center text-dim hover:border-accent disabled:opacity-60"
       >
-        {busy ? "Importing…" : "Import backup"}
+        <span className="flex h-[46px] w-[46px] items-center justify-center rounded-xl border border-line2 text-2xl text-accent">
+          ⇱
+        </span>
+        <span className="text-[15px] font-semibold text-ink">
+          {busy ? "Importing…" : "Import from backup"}
+        </span>
+        <span className="max-w-[210px] text-xs leading-relaxed text-faint">
+          Restore an aircraft from a MyTailLog <span className="readout">.zip</span> archive —
+          scans, extractions and status, intact.
+        </span>
+        {progress && <span className="text-xs text-faint">{progress}</span>}
+        {error && <span className="text-xs text-annun-red">{error}</span>}
       </button>
-      {progress && <span className="text-xs text-slate-500 dark:text-slate-400">{progress}</span>}
-      {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
-    </div>
+    </>
   );
 }

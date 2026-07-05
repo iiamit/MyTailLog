@@ -38,16 +38,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             role="status"
-            className={`pointer-events-auto flex max-w-md items-center gap-2 rounded-lg border px-4 py-2.5 text-sm shadow-lg ${
-              t.kind === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
-                : "border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
+            className={`pointer-events-auto flex max-w-md items-center gap-2 rounded-lg border px-4 py-2.5 text-sm text-ink shadow-lg ${
+              t.kind === "success" ? "border-annun-green/40" : "border-annun-red/40"
             }`}
+            style={{ background: t.kind === "success" ? "var(--grn-bg)" : "var(--red-bg)" }}
           >
             {t.kind === "success" ? (
-              <CheckIcon className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <CheckIcon className="shrink-0 text-annun-green" />
             ) : (
-              <AlertIcon className="shrink-0 text-red-600 dark:text-red-400" />
+              <AlertIcon className="shrink-0 text-annun-red" />
             )}
             <span>{t.message}</span>
           </div>

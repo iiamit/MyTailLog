@@ -19,18 +19,18 @@ export function FormattedEntry({
     <div className={`flex flex-col gap-1.5 ${className ?? ""}`}>
       {blocks.map((b, i) =>
         b.type === "p" ? (
-          <p key={i} className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+          <p key={i} className="text-sm leading-relaxed text-dim">
             {b.text}
           </p>
         ) : b.ordered ? (
           <ol
             key={i}
-            className="ml-5 list-decimal space-y-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200"
+            className="ml-5 list-decimal space-y-1 text-sm leading-relaxed text-dim"
           >
             {b.items.map((lines, j) => (
               <li key={j} className="pl-1">
                 {lines.map((ln, k) => (
-                  <span key={k} className={k === 0 ? "" : "block text-slate-600 dark:text-slate-300"}>
+                  <span key={k} className={k === 0 ? "" : "block text-dim"}>
                     {ln}
                   </span>
                 ))}
@@ -40,12 +40,12 @@ export function FormattedEntry({
         ) : (
           <ul
             key={i}
-            className="ml-5 list-disc space-y-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200"
+            className="ml-5 list-disc space-y-1 text-sm leading-relaxed text-dim"
           >
             {b.items.map((lines, j) => (
               <li key={j} className="pl-1">
                 {lines.map((ln, k) => (
-                  <span key={k} className={k === 0 ? "" : "block text-slate-600 dark:text-slate-300"}>
+                  <span key={k} className={k === 0 ? "" : "block text-dim"}>
                     {ln}
                   </span>
                 ))}
