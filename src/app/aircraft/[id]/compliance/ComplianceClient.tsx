@@ -10,11 +10,13 @@ import {
   URGENCY_STYLE,
   urgencyLabel,
 } from "@/lib/compliance";
+import { getADByNumber } from "@/lib/faa/federalRegister";
 import {
   upsertAdRecord,
   deleteAdRecord,
   trackRef,
-  enrichAdRecord,
+  saveAdReference,
+  enrichViaDRS,
   type AdInput,
 } from "./actions";
 
@@ -182,10 +184,21 @@ export function ComplianceClient({
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function enrich(id: string) {
+  async function enrich(id: string, reference: string) {
     setEnrichingId(id);
     setError(null);
-    const res = await enrichAdRecord(aircraftId, id);
+    // Federal Register lookup runs here in the browser (datacenter egress is
+    // 403'd by GPO's origin; the FR API is CORS-enabled). Fall back to the
+    // server-side DRS lookup when the FR has no match (or the fetch fails).
+    let frAd = null;
+    try {
+      frAd = await getADByNumber(reference);
+    } catch {
+      frAd = null;
+    }
+    const res = frAd
+      ? await saveAdReference(aircraftId, id, frAd)
+      : await enrichViaDRS(aircraftId, id);
     setEnrichingId(null);
     if ("error" in res) setError(res.error);
     else if (!res.found)
@@ -593,7 +606,7 @@ export function ComplianceClient({
                     Edit
                   </button>
                   {r.kind === "ad" && !r.ad_reference_id && (
-                    <button onClick={() => enrich(r.id)} disabled={enrichingId === r.id} className={rowBtn}>
+                    <button onClick={() => enrich(r.id, r.reference)} disabled={enrichingId === r.id} className={rowBtn}>
                       {enrichingId === r.id ? "Looking up…" : "Look up FAA record"}
                     </button>
                   )}

@@ -111,8 +111,15 @@ export async function searchADs(
   opts: { perPage?: number; page?: number } = {},
 ): Promise<{ count: number; ads: FaaAd[] }> {
   const perPage = Math.min(Math.max(opts.perPage ?? 20, 1), 1000);
+  // Fetch client-side (the user's browser) when possible: the FR API is
+  // Cloudflare/CORS-enabled AND GPO's origin nginx 403s our datacenter egress IP,
+  // so a residential IP is the only reliable path from production. The UA header
+  // is server-only — browsers forbid setting it (and would warn on every call).
   const res = await fetch(buildUrl(term, perPage, opts.page ?? 1), {
-    headers: { accept: "application/json", "user-agent": UA },
+    headers: {
+      accept: "application/json",
+      ...(typeof window === "undefined" ? { "user-agent": UA } : {}),
+    },
   });
   if (!res.ok) {
     // Include a snippet of the body — a Cloudflare block reads very differently

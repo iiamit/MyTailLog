@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { exploreApplicableADs, trackCandidate, type CandidateAd } from "./actions";
+import { searchADs, type FaaAd } from "@/lib/faa/federalRegister";
+import { getExploreTargets, trackCandidate, type CandidateAd } from "./actions";
 
 export function ExploreClient({
   aircraftId,
@@ -23,14 +24,41 @@ export function ExploreClient({
     setLoading(true);
     setError(null);
     const extraTerms = extra.split(",").map((s) => s.trim()).filter(Boolean);
-    const res = await exploreApplicableADs(aircraftId, extraTerms);
-    setLoading(false);
+    // Server resolves the terms + already-tracked numbers from the DB…
+    const res = await getExploreTargets(aircraftId, extraTerms);
     if ("error" in res) {
+      setLoading(false);
       setError(res.error);
       return;
     }
+    // …but the Federal Register fetch runs here in the browser (the datacenter
+    // egress IP is 403'd by GPO's origin; the FR API is CORS-enabled).
+    const trackedSet = new Set(res.tracked);
+    const byNumber = new Map<string, CandidateAd>();
+    try {
+      for (const term of res.terms) {
+        let ads: FaaAd[] = [];
+        try {
+          ({ ads } = await searchADs(term, { perPage: 40 }));
+        } catch {
+          continue; // one bad term shouldn't sink the whole explore
+        }
+        for (const ad of ads) {
+          if (!ad.adNumber) continue;
+          const key = ad.adNumber.replace(/\s+/g, "").toLowerCase();
+          if (trackedSet.has(key) || byNumber.has(key)) continue;
+          byNumber.set(key, { ...ad, term });
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
     setTerms(res.terms);
-    setCandidates(res.candidates);
+    setCandidates(
+      [...byNumber.values()].sort((a, b) =>
+        (b.effectiveOn ?? "").localeCompare(a.effectiveOn ?? ""),
+      ),
+    );
   }
 
   async function track(ad: CandidateAd) {

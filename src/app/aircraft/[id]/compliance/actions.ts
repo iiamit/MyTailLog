@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { AdKind, AdStatus, AdReference } from "@/lib/database.types";
 import { computeNextDue } from "@/lib/compliance";
-import { getADByNumber } from "@/lib/faa/federalRegister";
+import type { FaaAd } from "@/lib/faa/federalRegister";
 import { getADFromDRS } from "@/lib/faa/drs";
 
 export type AdInput = {
@@ -84,16 +84,20 @@ export async function deleteAdRecord(
   return { ok: true };
 }
 
-/**
- * Look up an AD in the Federal Register and attach the official reference
- * (title, FR page, signed PDF, effective date) to the compliance record.
- * Only ADs are in the FR — Service Bulletins are issued by manufacturers.
- */
-export async function enrichAdRecord(
+// AD enrichment. The Federal Register lookup runs in the BROWSER (ComplianceClient)
+// — GPO's origin 403s our datacenter egress IP, and the FR API is CORS-enabled —
+// then hands the result to saveAdReference. The DRS legacy fallback stays
+// server-side (drs.faa.gov doesn't block our egress). Both share the upsert+link.
+
+type AdRecordRef = { reference: string } | { error: string };
+type EnrichResult = { ok: true; found: boolean } | { error: string };
+
+/** Confirm the compliance record is an AD owned by this aircraft. */
+async function loadAdRecord(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   aircraftId: string,
   complianceId: string,
-): Promise<{ ok: true; found: boolean } | { error: string }> {
-  const supabase = await createClient();
+): Promise<AdRecordRef> {
   const { data: rec } = await supabase
     .from("ad_compliance")
     .select("id, aircraft_id, kind, reference")
@@ -103,57 +107,22 @@ export async function enrichAdRecord(
   if (rec.kind !== "ad") {
     return { error: "Federal Register lookup is for ADs; SBs come from the manufacturer." };
   }
+  return { reference: rec.reference };
+}
 
-  // 1) Federal Register — the official source, but only back to 1994.
-  let frAd;
-  try {
-    frAd = await getADByNumber(rec.reference);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Lookup failed." };
-  }
-
-  let row: Partial<AdReference>;
-  if (frAd) {
-    row = {
-      ad_number: frAd.adNumber ?? rec.reference,
-      source: "federal_register",
-      fr_document_number: frAd.documentNumber,
-      title: frAd.title,
-      abstract: frAd.abstract,
-      effective_date: frAd.effectiveOn,
-      fr_html_url: frAd.htmlUrl,
-      pdf_url: frAd.pdfUrl,
-      full_text_url: frAd.fullTextUrl,
-      citation: frAd.citation,
-      rin: frAd.rin,
-      fetched_at: new Date().toISOString(),
-    };
-  } else {
-    // 2) Legacy fallback: the FAA Dynamic Regulatory System (best-effort).
-    const drsAd = await getADFromDRS(rec.reference);
-    if (!drsAd) {
-      revalidatePath(compliancePath(aircraftId));
-      return { ok: true, found: false };
-    }
-    row = {
-      ad_number: drsAd.adNumber || rec.reference,
-      source: "drs",
-      title: drsAd.title,
-      drs_url: drsAd.viewUrl,
-      drs_doc_id: drsAd.docUniqueId,
-      document_status: drsAd.status,
-      fetched_at: new Date().toISOString(),
-    };
-  }
-
+/** Upsert the resolved reference and link it to the compliance record. */
+async function applyReference(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  aircraftId: string,
+  complianceId: string,
+  row: Partial<AdReference>,
+): Promise<{ ok: true; found: true } | { error: string }> {
   const { data: ref, error: refError } = await supabase
     .from("ad_reference")
     .upsert(row, { onConflict: "ad_number" })
     .select("id")
     .single();
-  if (refError || !ref) {
-    return { error: refError?.message ?? "Couldn't save the AD reference." };
-  }
+  if (refError || !ref) return { error: refError?.message ?? "Couldn't save the AD reference." };
 
   const { error: linkError } = await supabase
     .from("ad_compliance")
@@ -163,6 +132,63 @@ export async function enrichAdRecord(
 
   revalidatePath(compliancePath(aircraftId));
   return { ok: true, found: true };
+}
+
+/**
+ * Save a Federal Register AD (looked up in the browser) as the official
+ * reference for a compliance record: title, FR page, signed PDF, effective date.
+ */
+export async function saveAdReference(
+  aircraftId: string,
+  complianceId: string,
+  frAd: FaaAd,
+): Promise<{ ok: true; found: true } | { error: string }> {
+  const supabase = await createClient();
+  const rec = await loadAdRecord(supabase, aircraftId, complianceId);
+  if ("error" in rec) return rec;
+  return applyReference(supabase, aircraftId, complianceId, {
+    ad_number: frAd.adNumber ?? rec.reference,
+    source: "federal_register",
+    fr_document_number: frAd.documentNumber,
+    title: frAd.title,
+    abstract: frAd.abstract,
+    effective_date: frAd.effectiveOn,
+    fr_html_url: frAd.htmlUrl,
+    pdf_url: frAd.pdfUrl,
+    full_text_url: frAd.fullTextUrl,
+    citation: frAd.citation,
+    rin: frAd.rin,
+    fetched_at: new Date().toISOString(),
+  });
+}
+
+/**
+ * Legacy fallback when the Federal Register has no match (pre-1994 ADs): the FAA
+ * Dynamic Regulatory System, best-effort. Runs server-side.
+ */
+export async function enrichViaDRS(
+  aircraftId: string,
+  complianceId: string,
+): Promise<EnrichResult> {
+  const supabase = await createClient();
+  const rec = await loadAdRecord(supabase, aircraftId, complianceId);
+  if ("error" in rec) return rec;
+
+  const drsAd = await getADFromDRS(rec.reference);
+  if (!drsAd) {
+    revalidatePath(compliancePath(aircraftId));
+    return { ok: true, found: false };
+  }
+  const res = await applyReference(supabase, aircraftId, complianceId, {
+    ad_number: drsAd.adNumber || rec.reference,
+    source: "drs",
+    title: drsAd.title,
+    drs_url: drsAd.viewUrl,
+    drs_doc_id: drsAd.docUniqueId,
+    document_status: drsAd.status,
+    fetched_at: new Date().toISOString(),
+  });
+  return "error" in res ? res : { ok: true, found: true };
 }
 
 /** Start tracking an AD/SB number found in the logs — creates an open record. */
