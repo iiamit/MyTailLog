@@ -171,6 +171,32 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "duplicates",
+    icon: <AlertIcon />,
+    title: "Find duplicates",
+    body: (
+      <>
+        <p>
+          Re-uploading, re-capturing, or re-extracting the same page can leave
+          duplicate scans and entries behind. <strong>Find duplicates</strong>{" "}
+          (in the left nav, editor-only) flags likely duplicates by matching on
+          date, tach/hobbs, and work text — grouping pages that look like the
+          same scan and entries that look like the same logged event. One copy in
+          each group is marked <strong>suggested keep</strong>; delete any of the
+          others. Deleting a page also removes its entries. Matches are
+          heuristic, so review each group against the source scan (each row has an{" "}
+          <strong>Open</strong> link) before deleting.
+        </p>
+        <Effects>
+          Deleting duplicate entries or pages updates your{" "}
+          <L href="#extract">review</L> counts and the <L href="#timeline">timeline</L>;
+          if a deleted entry drove a <L href="#maintenance">maintenance</L> last-done
+          date or <L href="#status">status</L> item, re-scan or adjust as needed.
+        </Effects>
+      </>
+    ),
+  },
+  {
     id: "other",
     icon: <ArchiveIcon />,
     title: 'The "Other" scan type (A&P documents)',
