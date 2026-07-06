@@ -17,6 +17,12 @@ import { cleanAdNumber, adNumbersMatch } from "./adNumber";
 
 const BASE = "https://www.federalregister.gov/api/v1/documents.json";
 
+// The FR API is Cloudflare-fronted and 403s User-Agent-less requests from
+// datacenter IPs (i.e. our Cloud Run egress) — works from a laptop, fails in
+// prod. Send a browser-like UA, same as the DRS client already does.
+const UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15";
+
 const FIELDS = [
   "title",
   "document_number",
@@ -106,10 +112,15 @@ export async function searchADs(
 ): Promise<{ count: number; ads: FaaAd[] }> {
   const perPage = Math.min(Math.max(opts.perPage ?? 20, 1), 1000);
   const res = await fetch(buildUrl(term, perPage, opts.page ?? 1), {
-    headers: { accept: "application/json" },
+    headers: { accept: "application/json", "user-agent": UA },
   });
   if (!res.ok) {
-    throw new Error(`Federal Register API returned ${res.status}.`);
+    // Include a snippet of the body — a Cloudflare block reads very differently
+    // from an FR API error, which is the first thing to know when debugging.
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `Federal Register API returned ${res.status}.${body ? ` ${body.slice(0, 200).replace(/\s+/g, " ").trim()}` : ""}`,
+    );
   }
   const json = (await res.json()) as { count?: number; results?: RawDoc[] };
   return {
