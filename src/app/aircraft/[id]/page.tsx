@@ -49,14 +49,14 @@ export default async function AircraftPage({
   const [
     { data: logbooks },
     { data: pages },
-    { count: entryCount },
+    { data: entryRows },
     { data: recent },
     { data: mxItems },
     { data: ads },
   ] = await Promise.all([
     supabase.from("logbook").select("id, type, title").eq("aircraft_id", id),
-    supabase.from("page").select("logbook_id, review_status, extraction_status").eq("aircraft_id", id),
-    supabase.from("log_entry").select("id", { count: "exact", head: true }).eq("aircraft_id", id),
+    supabase.from("page").select("logbook_id").eq("aircraft_id", id),
+    supabase.from("log_entry").select("page_id, owner_confirmed").eq("aircraft_id", id),
     supabase
       .from("log_entry")
       .select("id, entry_date, logbook_id, tach, hobbs, description, work_performed")
@@ -103,11 +103,16 @@ export default async function AircraftPage({
   };
   const typeFor = (lid: string) => logbooks?.find((l) => l.id === lid)?.type ?? "other";
   const pageCounts = new Map<string, number>();
-  let reviewPending = 0;
   for (const p of pages ?? []) {
     pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);
-    if (p.extraction_status === "extracted" && p.review_status === "unreviewed") reviewPending++;
   }
+  const entryCount = entryRows?.length ?? 0;
+  // Pages needing review = extracted pages with an unconfirmed entry (matches
+  // the nav badge + Logbooks & pages), not merely review_status='unreviewed' —
+  // entry-less/fully-confirmed pages have nothing to review.
+  const reviewPending = new Set(
+    (entryRows ?? []).filter((e) => !e.owner_confirmed).map((e) => e.page_id).filter(Boolean),
+  ).size;
   const capTiles = (logbooks ?? []).map((lb) => ({
     label: lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type,
     type: lb.type,
