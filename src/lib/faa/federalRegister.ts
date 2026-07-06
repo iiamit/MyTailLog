@@ -2,6 +2,15 @@
 // Federal Register API client — the official source for Airworthiness
 // Directives (14 CFR part 39 final rules). Public JSON API, no key required.
 //
+// RUNS CLIENT-SIDE (in the browser). GPO's origin nginx IP-blocks Cloud Run's
+// datacenter egress with a bare 403 Forbidden — works from a laptop, fails in
+// prod. The API is CORS-enabled (access-control-allow-origin: *) and this module
+// is isomorphic (pure fetch/URLSearchParams), so the callers (ExploreClient,
+// ComplianceClient) invoke it from the user's residential IP; server actions only
+// supply DB inputs and persist results. Keep it dependency-free so it can bundle
+// to the client. The user-agent header below is gated to server-side calls
+// (browsers forbid setting it, and warn per request).
+//
 // Each AD final rule gives us: the AD number (parsed from docket_ids, e.g.
 // "AD 2026-13-06"), the title (naming the manufacturer/product), the abstract
 // (prose applicability), the effective date, and official links — the FR page,

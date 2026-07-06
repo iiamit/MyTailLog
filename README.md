@@ -102,8 +102,21 @@ AI reads the page; you review it next to the original, with low-confidence field
   build/read) — the server never touches image bytes, keeping hosting at ~zero
   marginal cost.
 - **Firebase App Hosting** (Cloud Run) for the app, **Cloud Scheduler** for the
-  daily job, and **Resend** for reminder email. **FAA data** comes from the
-  Federal Register API (source of truth) with a reverse-engineered DRS fallback.
+  daily job, and **Resend** for reminder email.
+- **FAA data** comes from the **Federal Register API** (source of truth for
+  post-1994 ADs — `src/lib/faa/federalRegister.ts`) with a reverse-engineered
+  **DRS fallback** for legacy ADs (`src/lib/faa/drs.ts`). Access model:
+  - The **Federal Register** fetch runs **client-side, in the browser**. GPO's
+    origin nginx IP-blocks Cloud Run's datacenter egress with a bare `403
+    Forbidden` (works from a laptop, fails in prod). The FR API is CORS-enabled
+    (`access-control-allow-origin: *`) and our client is isomorphic, so it runs
+    from the user's residential IP. Server actions only supply DB inputs
+    (`getExploreTargets`) and persist results (`saveAdReference`,
+    `trackCandidate`); the module's `user-agent` header is gated to server calls
+    (browsers forbid setting it).
+  - **DRS** runs **server-side** (`enrichViaDRS`) — `drs.faa.gov` does *not*
+    block our egress, and it needs a minted session cookie + browser-like UA
+    (see the client header comment). It's a best-effort scraper, not an API.
 
 Data model (Postgres, migrations `supabase/migrations/000*`): `aircraft` →
 `logbook` → `page` → `log_entry`, plus `ad_compliance` / `ad_reference`,
