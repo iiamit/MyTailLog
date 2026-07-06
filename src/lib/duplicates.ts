@@ -6,8 +6,10 @@
 // also leave the same entry on two different pages. These are pure heuristics
 // over the already-loaded rows — advisory only; the user confirms every delete.
 //
-// Approach: entry duplicates are the fundamental signal (fuzzy match on
-// date + meter + work text). Page duplicates are two pages that look like the
+// Approach: entry duplicates are the fundamental signal, gated HARD on date and
+// tach/hobbs — those identify the event. Recurring maintenance repeats verbatim
+// across dates, so matching text alone never counts; a differing date or meter
+// rules out a duplicate outright. Page duplicates are two pages that look like the
 // same scan (high OCR-text overlap, or every entry on one duplicated on the
 // other). The page listing subsumes the entry listing, so the caller filters
 // entry clusters that a page cluster already covers (see filterEntryClusters).
@@ -41,8 +43,7 @@ export type Cluster = { ids: string[]; keepId: string };
 // Tuning knobs (calibration) — deliberately exposed. Extraction/OCR drift is
 // real, so these are thresholds, not equality. Loosen if dupes slip through;
 // tighten if unrelated entries get grouped.
-export const ENTRY_TEXT_SIM = 0.5; // min token overlap when date + meter agree
-export const ENTRY_STRONG_SIM = 0.85; // min token overlap to match on text alone
+export const ENTRY_TEXT_SIM = 0.5; // min token overlap AFTER date/meter agree
 export const PAGE_TEXT_SIM = 0.7; // min OCR-text overlap for two pages to be dupes
 const METER_EPS = 0.05; // tach/hobbs within this are "the same reading"
 
@@ -65,17 +66,36 @@ function jaccard(a: Set<string>, b: Set<string>): number {
   return inter / (a.size + b.size - inter);
 }
 
-function meterMatch(a: DupEntry, b: DupEntry): boolean {
-  if (a.tach != null && b.tach != null) return Math.abs(a.tach - b.tach) <= METER_EPS;
-  if (a.hobbs != null && b.hobbs != null) return Math.abs(a.hobbs - b.hobbs) <= METER_EPS;
-  return a.tach == null && b.tach == null && a.hobbs == null && b.hobbs == null;
+// Date and tach/hobbs are the IDENTITY of a logged event. Recurring maintenance
+// (oil changes, annuals) reads verbatim the same on every occurrence, so text is
+// never sufficient on its own — a differing date or meter means different events.
+const closeMeter = (x: number | null, y: number | null) =>
+  x != null && y != null && Math.abs(x - y) <= METER_EPS;
+
+function datesConflict(a: DupEntry, b: DupEntry): boolean {
+  return !!a.entry_date && !!b.entry_date && a.entry_date !== b.entry_date;
+}
+function metersConflict(a: DupEntry, b: DupEntry): boolean {
+  if (a.tach != null && b.tach != null && Math.abs(a.tach - b.tach) > METER_EPS) return true;
+  if (a.hobbs != null && b.hobbs != null && Math.abs(a.hobbs - b.hobbs) > METER_EPS) return true;
+  return false;
+}
+// A shared, matching anchor must exist — a real equal date, or an equal meter.
+function sharedAnchor(a: DupEntry, b: DupEntry): boolean {
+  return (
+    (!!a.entry_date && a.entry_date === b.entry_date) ||
+    closeMeter(a.tach, b.tach) ||
+    closeMeter(a.hobbs, b.hobbs)
+  );
 }
 
 function entriesDuplicate(a: DupEntry, ta: Set<string>, b: DupEntry, tb: Set<string>): boolean {
-  const sim = jaccard(ta, tb);
-  if (sim >= ENTRY_STRONG_SIM) return true; // same text regardless of date/meter
-  const sameDate = a.entry_date === b.entry_date; // includes both null
-  return sameDate && meterMatch(a, b) && sim >= ENTRY_TEXT_SIM;
+  // Hard gate on date/tach: any disagreement, or the absence of a shared anchor,
+  // rules out a duplicate no matter how identical the text is.
+  if (datesConflict(a, b) || metersConflict(a, b) || !sharedAnchor(a, b)) return false;
+  // Same coordinates — confirm the work text agrees so two distinct items logged
+  // at the same date+meter (e.g. an oil change and a tire swap) aren't merged.
+  return jaccard(ta, tb) >= ENTRY_TEXT_SIM;
 }
 
 // --- Union-find over an index space -----------------------------------------
@@ -234,6 +254,23 @@ if (process.argv[1] && process.argv[1].endsWith("duplicates.ts")) {
     e({ id: "b", entry_date: "2024-03-01", tach: 1200.5, text: "Oil change and filter, ground run good", created_at: "t2" }),
   ]);
   assert(ec.length === 1 && ec[0].ids.length === 2 && ec[0].keepId === "a", "identical entries cluster, keep confirmed");
+
+  // Recurring maintenance: verbatim-same text on DIFFERENT dates → NOT dupes.
+  assert(
+    findEntryDuplicates([
+      e({ id: "a", entry_date: "2023-03-01", tach: 1100.0, text: "Oil change and filter, ground run good" }),
+      e({ id: "b", entry_date: "2024-03-01", tach: 1200.5, text: "Oil change and filter, ground run good" }),
+    ]).length === 0,
+    "identical text on different date+tach → not dupes",
+  );
+  // Same date but different tach, identical text → NOT dupes (different events).
+  assert(
+    findEntryDuplicates([
+      e({ id: "a", entry_date: "2024-03-01", tach: 1200.5, text: "Oil change and filter, ground run good" }),
+      e({ id: "b", entry_date: "2024-03-01", tach: 1250.0, text: "Oil change and filter, ground run good" }),
+    ]).length === 0,
+    "identical text, same date but different tach → not dupes",
+  );
 
   // Same date+meter but different work → NOT duplicates (two items same visit).
   assert(
