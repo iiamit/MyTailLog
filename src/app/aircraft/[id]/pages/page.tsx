@@ -69,11 +69,36 @@ export default async function LogbookPagesPage({
 
   const { data: entries } = await supabase
     .from("log_entry")
-    .select("page_id")
+    .select("page_id, entry_date, hobbs, tach")
     .eq("aircraft_id", id);
   const entryCounts = new Map<string, number>();
+  // Per page: the latest entry date and the tach/hobbs at that date, so a long
+  // list of pages can be scanned by when they cover (dates/hours often aren't on
+  // the scan itself, only in the extracted entries).
+  const pageContext = new Map<
+    string,
+    { date: string | null; tach: number | null; hobbs: number | null }
+  >();
   for (const e of entries ?? []) {
-    if (e.page_id) entryCounts.set(e.page_id, (entryCounts.get(e.page_id) ?? 0) + 1);
+    if (!e.page_id) continue;
+    entryCounts.set(e.page_id, (entryCounts.get(e.page_id) ?? 0) + 1);
+    const cur = pageContext.get(e.page_id);
+    // Prefer the newest-dated entry; undated entries only fill blanks.
+    const newer = !cur || (e.entry_date && (!cur.date || e.entry_date > cur.date));
+    if (newer) {
+      pageContext.set(e.page_id, {
+        date: e.entry_date ?? cur?.date ?? null,
+        tach: e.tach ?? cur?.tach ?? null,
+        hobbs: e.hobbs ?? cur?.hobbs ?? null,
+      });
+    } else if (cur) {
+      // Keep the latest date, but backfill tach/hobbs if the newest entry lacked them.
+      pageContext.set(e.page_id, {
+        date: cur.date,
+        tach: cur.tach ?? e.tach ?? null,
+        hobbs: cur.hobbs ?? e.hobbs ?? null,
+      });
+    }
   }
   const pageCounts = new Map<string, number>();
   for (const p of pages ?? []) pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);
@@ -88,6 +113,9 @@ export default async function LogbookPagesPage({
     detectedPageCount: p.detected_page_count,
     extractionError: p.extraction_error,
     entryCount: entryCounts.get(p.id) ?? 0,
+    latestDate: pageContext.get(p.id)?.date ?? null,
+    tach: pageContext.get(p.id)?.tach ?? null,
+    hobbs: pageContext.get(p.id)?.hobbs ?? null,
     thumbnailUrl: thumbById.get(p.id) ?? fullById.get(p.id) ?? null,
     fullUrl: fullById.get(p.id) ?? null,
     storagePath: p.storage_path,

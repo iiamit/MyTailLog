@@ -10,10 +10,13 @@ const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export default async function ReviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; pageId: string }>;
+  searchParams: Promise<{ logbook?: string }>;
 }) {
   const { id, pageId } = await params;
+  const { logbook: returnLogbookId } = await searchParams;
   const supabase = await createClient();
 
   // RLS scopes both queries to the owner.
@@ -186,6 +189,7 @@ export default async function ReviewPage({
         extractionStatus={page.extraction_status}
         detectedPageCount={page.detected_page_count}
         entries={reviewEntries}
+        returnLogbookId={returnLogbookId ?? null}
       />
     </main>
   );

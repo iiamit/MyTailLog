@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { deletePage } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
@@ -23,6 +24,9 @@ export type PageRow = {
   detectedPageCount: number | null;
   extractionError: string | null;
   entryCount: number;
+  latestDate: string | null;
+  tach: number | null;
+  hobbs: number | null;
   thumbnailUrl: string | null;
   fullUrl: string | null;
   storagePath: string;
@@ -59,7 +63,11 @@ export function PagesPanel({
   const toast = useToast();
   const [rows, setRows] = useState<PageRow[]>(pages);
   // Clicking a logbook tile filters the list to that logbook (null = all).
-  const [selectedLogbookId, setSelectedLogbookId] = useState<string | null>(null);
+  // Seed from ?logbook=<id> so returning from a page's review keeps the filter.
+  const searchParams = useSearchParams();
+  const [selectedLogbookId, setSelectedLogbookId] = useState<string | null>(
+    () => searchParams.get("logbook"),
+  );
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [queue, setQueue] = useState<"all" | "review" | "processing">("all");
@@ -359,6 +367,16 @@ export function PagesPanel({
                     )}
                   </div>
                 </div>
+                {(r.latestDate || r.tach != null || r.hobbs != null) && (
+                  <div className="hidden shrink-0 text-right font-mono text-xs leading-tight text-dim sm:block">
+                    {r.latestDate && <div>{r.latestDate}</div>}
+                    {r.tach != null ? (
+                      <div className="text-faint">{r.tach.toLocaleString()} tach</div>
+                    ) : r.hobbs != null ? (
+                      <div className="text-faint">{r.hobbs.toLocaleString()} hobbs</div>
+                    ) : null}
+                  </div>
+                )}
                 {reviewBadge && (
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${reviewBadge.className}`}
@@ -374,7 +392,9 @@ export function PagesPanel({
                   {r.extractionStatus}
                 </span>
                 <Link
-                  href={`/aircraft/${aircraftId}/pages/${r.id}/review`}
+                  href={`/aircraft/${aircraftId}/pages/${r.id}/review${
+                    selectedLogbookId ? `?logbook=${encodeURIComponent(selectedLogbookId)}` : ""
+                  }`}
                   className={`shrink-0 rounded-md border px-3 py-1.5 text-xs ${
                     needsReview
                       ? "border-annun-amber/60 font-medium text-annun-amber hover:border-annun-amber"

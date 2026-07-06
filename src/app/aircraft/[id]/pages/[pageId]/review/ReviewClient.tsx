@@ -477,6 +477,7 @@ export function ReviewClient({
   extractionStatus,
   detectedPageCount,
   entries: initialEntries,
+  returnLogbookId,
 }: {
   aircraftId: string;
   pageId: string;
@@ -487,8 +488,14 @@ export function ReviewClient({
   extractionStatus: ExtractionStatus;
   detectedPageCount: number | null;
   entries: ReviewEntry[];
+  returnLogbookId: string | null;
 }) {
   const router = useRouter();
+  // Reviewing exits back to the Logbooks & pages list (not the overview) so you
+  // can move straight to the next page; retain the logbook filter if one was set.
+  const backToPages = `/aircraft/${aircraftId}/pages${
+    returnLogbookId ? `?logbook=${encodeURIComponent(returnLogbookId)}` : ""
+  }`;
   const [entries, setEntries] = useState<ReviewEntry[]>(initialEntries);
   const [drafts, setDrafts] = useState<ReviewEntry[]>([]);
   const [review, setReview] = useState<ReviewStatus>(reviewStatus);
@@ -544,11 +551,11 @@ export function ReviewClient({
       return;
     }
     setReview(status);
-    // Marking a page reviewed returns you to the aircraft page (same as Done),
-    // so you can move straight to the next page that needs review. Flagging a
+    // Marking a page reviewed returns you to the pages list (same as Done), so
+    // you can move straight to the next page that needs review. Flagging a
     // dispute stays put. Leave pageBusy set — the component unmounts on nav.
     if (status === "confirmed") {
-      router.push(`/aircraft/${aircraftId}`);
+      router.push(backToPages);
     } else {
       setPageBusy(false);
     }
@@ -716,7 +723,7 @@ export function ReviewClient({
             Flag as disputed
           </button>
           <Link
-            href={`/aircraft/${aircraftId}`}
+            href={backToPages}
             className="rounded-md px-4 py-2 text-sm text-dim hover:text-ink"
           >
             Done
