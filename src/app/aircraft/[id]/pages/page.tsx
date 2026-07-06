@@ -69,9 +69,14 @@ export default async function LogbookPagesPage({
 
   const { data: entries } = await supabase
     .from("log_entry")
-    .select("page_id, entry_date, hobbs, tach")
+    .select("page_id, entry_date, hobbs, tach, owner_confirmed")
     .eq("aircraft_id", id);
   const entryCounts = new Map<string, number>();
+  // A page "needs review" when it still has an unconfirmed entry — NOT merely
+  // when review_status is 'unreviewed'. Entry-less extracted pages (covers,
+  // classified docs) and pages whose entries are all confirmed have nothing to
+  // review, so counting them nagged forever with no way to clear them.
+  const unconfirmedByPage = new Map<string, number>();
   // Per page: the latest entry date and the tach/hobbs at that date, so a long
   // list of pages can be scanned by when they cover (dates/hours often aren't on
   // the scan itself, only in the extracted entries).
@@ -82,6 +87,9 @@ export default async function LogbookPagesPage({
   for (const e of entries ?? []) {
     if (!e.page_id) continue;
     entryCounts.set(e.page_id, (entryCounts.get(e.page_id) ?? 0) + 1);
+    if (!e.owner_confirmed) {
+      unconfirmedByPage.set(e.page_id, (unconfirmedByPage.get(e.page_id) ?? 0) + 1);
+    }
     const cur = pageContext.get(e.page_id);
     // Prefer the newest-dated entry; undated entries only fill blanks.
     const newer = !cur || (e.entry_date && (!cur.date || e.entry_date > cur.date));
@@ -113,6 +121,7 @@ export default async function LogbookPagesPage({
     detectedPageCount: p.detected_page_count,
     extractionError: p.extraction_error,
     entryCount: entryCounts.get(p.id) ?? 0,
+    unconfirmedCount: unconfirmedByPage.get(p.id) ?? 0,
     latestDate: pageContext.get(p.id)?.date ?? null,
     tach: pageContext.get(p.id)?.tach ?? null,
     hobbs: pageContext.get(p.id)?.hobbs ?? null,

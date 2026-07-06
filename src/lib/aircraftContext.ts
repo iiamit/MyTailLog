@@ -44,7 +44,7 @@ export async function getAircraftShellContext(
     { data: items },
     { data: ads },
     { count: equipment },
-    { count: review },
+    { data: unconfirmed },
   ] = await Promise.all([
     getAircraftRole(supabase, id, aircraft.owner_id),
     supabase.from("log_entry").select("hobbs, tach, entry_date").eq("aircraft_id", id),
@@ -62,13 +62,18 @@ export async function getAircraftShellContext(
       .from("equipment_proposal")
       .select("id", { count: "exact", head: true })
       .eq("aircraft_id", id),
+    // Pages that need review = pages with at least one unconfirmed entry. Keyed
+    // off entries (not page.review_status) so entry-less pages (covers, classified
+    // docs) and fully-confirmed pages don't nag the badge with nothing to review.
     supabase
-      .from("page")
-      .select("id", { count: "exact", head: true })
+      .from("log_entry")
+      .select("page_id")
       .eq("aircraft_id", id)
-      .eq("extraction_status", "extracted")
-      .eq("review_status", "unreviewed"),
+      .eq("owner_confirmed", false),
   ]);
+  const review = new Set(
+    (unconfirmed ?? []).map((e) => e.page_id).filter(Boolean),
+  ).size;
 
   // The top bar shows each instrument's LATEST recorded reading — from the newest
   // logbook entry or synced MyFlightBook reading (by date), falling back to the

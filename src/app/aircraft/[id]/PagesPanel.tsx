@@ -24,6 +24,7 @@ export type PageRow = {
   detectedPageCount: number | null;
   extractionError: string | null;
   entryCount: number;
+  unconfirmedCount: number;
   latestDate: string | null;
   tach: number | null;
   hobbs: number | null;
@@ -39,6 +40,13 @@ export type LogbookTile = {
   componentRef: string | null;
   pageCount: number;
 };
+
+// A page needs review when it has been extracted and still has an unconfirmed
+// entry. Keyed off unconfirmed entries (not page.review_status) so entry-less
+// pages and fully-confirmed pages don't nag with nothing to review.
+function pageNeedsReview(r: PageRow): boolean {
+  return r.extractionStatus === "extracted" && r.unconfirmedCount > 0;
+}
 
 const STATUS_STYLE: Record<ExtractionStatus, { className: string; style?: CSSProperties }> = {
   pending: { className: "bg-panel2 text-dim" },
@@ -163,17 +171,17 @@ export function PagesPanel({
     (r) => r.extractionStatus === "pending" || r.extractionStatus === "failed",
   ).length;
   const extractedCount = visibleRows.filter((r) => r.extractionStatus === "extracted").length;
-  const needsReviewCount = visibleRows.filter(
-    (r) => r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed",
+  const needsReviewCount = visibleRows.filter(pageNeedsReview).length;
+  // "Reviewed" = an extracted page with nothing left to confirm.
+  const reviewedCount = visibleRows.filter(
+    (r) => r.extractionStatus === "extracted" && !pageNeedsReview(r),
   ).length;
-  const reviewedCount = visibleRows.filter((r) => r.reviewStatus === "confirmed").length;
   const processingCount = visibleRows.filter(
     (r) => r.extractionStatus === "pending" || r.extractionStatus === "processing",
   ).length;
 
   // Queue filter pills (in addition to the logbook filter).
-  const isReview = (r: PageRow) =>
-    r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed";
+  const isReview = (r: PageRow) => pageNeedsReview(r);
   const isProcessing = (r: PageRow) =>
     r.extractionStatus === "pending" || r.extractionStatus === "processing";
   const displayRows = visibleRows.filter((r) =>
@@ -323,15 +331,16 @@ export function PagesPanel({
       ) : (
         <ul className="divide-y divide-line rounded-lg border border-line">
           {displayRows.map((r) => {
-            const needsReview =
-              r.extractionStatus === "extracted" && r.reviewStatus === "unreviewed";
+            const needsReview = pageNeedsReview(r);
+            // Disputed (an explicit flag) wins; otherwise unconfirmed entries →
+            // needs review, and an extracted page with none left → reviewed.
             const reviewBadge =
-              r.reviewStatus === "confirmed"
-                ? { label: "✓ reviewed", className: "text-annun-green", style: { background: "var(--grn-bg)" } as CSSProperties }
-                : r.reviewStatus === "disputed"
-                  ? { label: "disputed", className: "text-annun-red", style: { background: "var(--red-bg)" } as CSSProperties }
-                  : needsReview
-                    ? { label: "needs review", className: "text-annun-amber", style: { background: "var(--amb-bg)" } as CSSProperties }
+              r.reviewStatus === "disputed"
+                ? { label: "disputed", className: "text-annun-red", style: { background: "var(--red-bg)" } as CSSProperties }
+                : needsReview
+                  ? { label: "needs review", className: "text-annun-amber", style: { background: "var(--amb-bg)" } as CSSProperties }
+                  : r.extractionStatus === "extracted"
+                    ? { label: "✓ reviewed", className: "text-annun-green", style: { background: "var(--grn-bg)" } as CSSProperties }
                     : null;
             return (
               <li
