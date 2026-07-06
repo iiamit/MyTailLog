@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { deletePage } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
@@ -61,6 +61,7 @@ export function PagesPanel({
   canEdit: boolean;
 }) {
   const toast = useToast();
+  const router = useRouter();
   const [rows, setRows] = useState<PageRow[]>(pages);
   // Clicking a logbook tile filters the list to that logbook (null = all).
   // Seed from ?logbook=<id> so returning from a page's review keeps the filter.
@@ -91,6 +92,9 @@ export function PagesPanel({
         entryCount: data.entryCount ?? 0,
         detectedPageCount: data.detectedPageCount ?? null,
       });
+      // Re-run the persistent shell so its Review nav badge picks up this newly
+      // extracted (and now unreviewed) page. Local `rows` state is preserved.
+      router.refresh();
     } catch {
       patch(id, { extractionStatus: "failed", extractionError: "Network error." });
     }

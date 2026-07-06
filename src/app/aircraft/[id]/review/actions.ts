@@ -63,6 +63,8 @@ export async function confirmClean(aircraftId: string): Promise<ConfirmResult> {
   }
 
   revalidatePath(`/aircraft/${aircraftId}/review`);
-  revalidatePath(`/aircraft/${aircraftId}`);
+  // 'layout' so the persistent shell's Review nav badge re-fetches (it lives in
+  // aircraft/[id]/layout.tsx, which a default 'page' revalidate never touches).
+  revalidatePath(`/aircraft/${aircraftId}`, "layout");
   return { confirmed: cleanIds.length, remaining };
 }

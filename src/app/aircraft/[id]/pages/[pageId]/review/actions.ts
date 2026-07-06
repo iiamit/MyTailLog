@@ -204,6 +204,8 @@ export async function setPageReview(
     .eq("id", pageId);
   if (error) return { error: error.message };
   revalidatePath(reviewPath(aircraftId, pageId));
-  revalidatePath(`/aircraft/${aircraftId}`);
+  // 'layout' so the persistent shell's Review nav badge re-fetches (it lives in
+  // aircraft/[id]/layout.tsx, which a default 'page' revalidate never touches).
+  revalidatePath(`/aircraft/${aircraftId}`, "layout");
   return { ok: true };
 }
