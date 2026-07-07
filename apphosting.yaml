@@ -68,6 +68,21 @@ env:
     value: claude-haiku-4-5
     availability:
       - RUNTIME
+  # AI usage limits (tune the number + redeploy — no code change). Per-user/day
+  # call caps for the shared vs a user's own key, and the GLOBAL daily $ ceiling
+  # on the shared key across all users (0 disables it). See src/lib/extraction/aiContext.ts.
+  - variable: AI_SHARED_USER_DAILY_CALLS
+    value: "100"
+    availability:
+      - RUNTIME
+  - variable: AI_OWN_USER_DAILY_CALLS
+    value: "1000"
+    availability:
+      - RUNTIME
+  - variable: AI_SHARED_DAILY_USD
+    value: "20"
+    availability:
+      - RUNTIME
   - variable: LOGBOOK_STORAGE_BUCKET
     value: logbook-pages
     availability:

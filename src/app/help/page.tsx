@@ -338,8 +338,9 @@ const SECTIONS: Section[] = [
       <>
         <p>
           Extraction and Q&amp;A run on <strong>Claude</strong>. By default they use the app&apos;s
-          shared key with a <strong>daily cap</strong> (100 AI calls/day). To bill AI usage to your
-          own account and raise that limit, add your own{" "}
+          shared key, which has a <strong>daily limit</strong> (both per person and an overall daily
+          budget). If the shared budget for the day is used up, AI pauses until tomorrow. To bill AI
+          usage to your own account and get a much higher limit, add your own{" "}
           <strong>Anthropic API key</strong> in <L href="/profile">Profile → AI &amp; your Anthropic
           key</L>. Your key is <strong>stored encrypted</strong> and never shown again; only the last
           four characters are kept for display.

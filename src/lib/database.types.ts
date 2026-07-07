@@ -420,6 +420,10 @@ export type Database = {
         Args: { target_aircraft: string; q: string };
         Returns: LogEntry[];
       };
+      shared_key_cost_today: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
     };
     Enums: {
       logbook_type: LogbookType;

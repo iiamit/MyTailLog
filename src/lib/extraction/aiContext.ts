@@ -32,13 +32,21 @@ export function currentAiContext(): AiCtx {
   return store.getStore() ?? {};
 }
 
-// Daily per-user cap on model CALLS (the cost unit). Own-key users get a much
-// higher backstop since it's their spend; shared-key users are held tighter.
-// ponytail: the cap bounds sustained abuse ACROSS requests — a single scan that
-// fans out to many calls isn't throttled mid-request. Add a per-request budget
-// if one request's fan-out ever needs bounding.
-const SHARED_DAILY_CAP = 100;
-const OWN_KEY_DAILY_CAP = 1000;
+// Usage limits, all env-tunable (change the number + redeploy, no code edit):
+//   AI_SHARED_USER_DAILY_CALLS — per-user/day cap on the SHARED key (default 100)
+//   AI_OWN_USER_DAILY_CALLS    — per-user/day cap on a user's OWN key (default 1000)
+//   AI_SHARED_DAILY_USD        — GLOBAL/day $ ceiling on the shared key across all
+//                                users (default 20; 0 disables the global guard)
+// ponytail: per-user caps bound abuse ACROSS requests — a single scan that fans
+// out to many calls isn't throttled mid-request. The global $ ceiling is the
+// real bound on total shared-key spend.
+const num = (v: string | undefined, d: number) => {
+  const n = v ? Number(v) : NaN;
+  return Number.isFinite(n) && n >= 0 ? n : d;
+};
+const SHARED_DAILY_CAP = num(process.env.AI_SHARED_USER_DAILY_CALLS, 100);
+const OWN_KEY_DAILY_CAP = num(process.env.AI_OWN_USER_DAILY_CALLS, 1000);
+const SHARED_DAILY_USD = num(process.env.AI_SHARED_DAILY_USD, 20);
 
 type Supabase = SupabaseClient<Database>;
 
@@ -78,6 +86,18 @@ export async function prepareAi(supabase: Supabase, userId: string): Promise<AiG
         : `Daily AI limit reached (${cap} calls). Add your own Anthropic API key in Settings to raise it.`,
       status: 429,
     };
+  }
+
+  // Global ceiling on the SHARED key only (own-key spend is the user's own).
+  if (!ownKey && SHARED_DAILY_USD > 0) {
+    const { data: spentToday } = await supabase.rpc("shared_key_cost_today");
+    if (Number(spentToday ?? 0) >= SHARED_DAILY_USD) {
+      return {
+        error:
+          "The app's shared AI budget for today is used up. Add your own Anthropic API key in Settings to keep using AI.",
+        status: 429,
+      };
+    }
   }
 
   return { apiKey: userKey ?? undefined, ownKey };
