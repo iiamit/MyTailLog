@@ -341,6 +341,7 @@ export type OilAnalysisSample = {
   oil_added_quarts: number | null;
   elements_ppm: Record<string, number>;
   oil_properties: Record<string, number> | null;
+  universal_averages: Record<string, number> | null;
   lab_comments: string | null;
   status: string | null;
   notes: string | null;

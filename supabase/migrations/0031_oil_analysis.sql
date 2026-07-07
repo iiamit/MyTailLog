@@ -28,9 +28,13 @@ create table if not exists oil_analysis_sample (
   oil_added_quarts numeric(6,2),
   -- { "iron": 12, "chromium": 2, "aluminum": 3, ... } ppm by element.
   elements_ppm jsonb not null default '{}',
-  -- { "viscosity": 21.5, "flashpoint": 400, "fuel_pct": 0, "water_pct": 0,
-  --   "insolubles_pct": 0.4, "tbn": 5.2 } — keys present only when the lab reports them.
+  -- { "viscosity_cst_100c": 19.26, "flashpoint_f": 450, "fuel_pct": 0.5,
+  --   "water_pct": 0, "insolubles_pct": 0.4, "tbn": 5.2 } — keys present only when reported.
   oil_properties jsonb,
+  -- The lab's engine-type "universal averages" per element (Blackstone) — the
+  -- baseline the trend chart draws a reference line from. Same key shape as
+  -- elements_ppm. Null if the report doesn't provide it.
+  universal_averages jsonb,
   lab_comments text,             -- the lab's written assessment
   status text,                   -- lab's flag if any (free text; labs differ)
   notes text,                    -- owner's own notes
