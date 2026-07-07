@@ -468,6 +468,10 @@ export function ProfileClient({
           to bill AI usage to your own account and get a much higher daily limit. Your key is stored
           encrypted and never shown again.
         </p>
+        <p className="text-xs text-faint">
+          Use an <strong>API key</strong> (<code>sk-ant-…</code>) from the Anthropic Console — a
+          Claude.ai Pro/Max subscription can&apos;t be used here.
+        </p>
 
         <p className="text-sm">
           Status:{" "}

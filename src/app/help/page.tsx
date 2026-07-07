@@ -345,6 +345,19 @@ const SECTIONS: Section[] = [
           key</L>. Your key is <strong>stored encrypted</strong> and never shown again; only the last
           four characters are kept for display.
         </p>
+        <p className="mt-2 text-sm text-faint">
+          This must be an <strong>API key</strong> (starts with <code>sk-ant-</code>) from the{" "}
+          <a
+            href="https://console.anthropic.com/settings/keys"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-line hover:decoration-line2"
+          >
+            Anthropic Console
+          </a>
+          , where you add a little pay-as-you-go credit. A <strong>Claude.ai (Pro/Max) subscription
+          won&apos;t work</strong> — it&apos;s a separate product with no API access.
+        </p>
         <p className="mt-2">
           With your own key connected, the panel shows your <strong>usage</strong> — calls, input and
           output tokens, and <strong>estimated cost so far</strong> (from token counts at
