@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { extractionConfigured } from "@/lib/extraction/anthropic";
 import type { EquipmentEntryInput } from "@/lib/extraction/equipment";
 import { proposeEquipmentForEntries } from "@/lib/extraction/equipmentProposals";
+import { prepareAi, runWithAiContext, logAiUsage } from "@/lib/extraction/aiContext";
 import { entryText } from "@/lib/extraction/entryText";
 import { logbookLabel } from "@/lib/logbooks";
 
@@ -21,18 +21,16 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  if (!extractionConfigured()) {
-    return NextResponse.json(
-      { error: "Extraction isn't configured. Set ANTHROPIC_API_KEY." },
-      { status: 501 },
-    );
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+
+  const gate = await prepareAi(supabase, user.id);
+  if ("error" in gate) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
 
   const { data: aircraft } = await supabase
     .from("aircraft")
@@ -73,7 +71,13 @@ export async function POST(
   try {
     // Full-history scan (pageId null): stores new pending proposals, de-duped
     // against existing components and any already-pending proposals.
-    const proposed = await proposeEquipmentForEntries(supabase, id, inputs, null);
+    const proposed = await runWithAiContext(
+      {
+        apiKey: gate.apiKey,
+        onUsage: (u) => logAiUsage(supabase, user.id, "equipment-scan", u, gate.ownKey),
+      },
+      () => proposeEquipmentForEntries(supabase, id, inputs, null),
+    );
     return NextResponse.json({ ok: true, proposed, entryCount: inputs.length });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Equipment scan failed.";

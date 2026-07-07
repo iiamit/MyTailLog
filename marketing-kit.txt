@@ -1,0 +1,161 @@
+# MyTailLog — launch week kit (local only, not in git)
+
+Everything needed for the 7-day push. Each post is ready to paste; each takes ~10 minutes
+including answering early comments. **One venue per day** — cross-posting everywhere at
+once looks like spam and gets link-domain-banned.
+
+## Positioning (one line per audience)
+- **Owners:** "Photograph your paper logbooks; get a searchable maintenance tracker that
+  emails you before your annual/oil/ADs come due. Free."
+- **Hacker News / devs:** "Open-source Next.js + Supabase + vision-LLM app that digitizes
+  handwritten aircraft maintenance logbooks — bring your own Anthropic key."
+- **A&Ps / shops:** "Your customer scans your AD compliance report and W&B sheet; the app
+  applies them automatically. Less 'when was my last annual?' phone calls."
+
+## KPIs (check /admin → New (7d), plus GitHub stars + Firebase App Hosting request metrics)
+| Metric | Baseline (Jul 4) | 7-day target |
+|---|---|---|
+| Signups | ~5 (test users) | +30–80 |
+| Users with ≥1 aircraft + pages | ~2 | +5–15 |
+| GitHub stars | 0 | 25–100 (HN-dependent) |
+| Landing requests | ~0 organic | 500–1,500 |
+
+## Day-by-day calendar
+| Day | Venue | Action |
+|---|---|---|
+| Sat (today) | — | Infra done (OG card, SEO, repo topics). Optional: soft-post in one small type-club FB group as a test run; fix anything confusing before the big venues. |
+| Sun | Facebook | Post in ONE large owners group (e.g. "Cessna 172/182 Owners & Pilots"). FB engagement peaks Sun morning. |
+| Mon | Pilots of America | Maintenance Bay forum. Read the vendor/self-promo rule first; if unsure, message a mod — "free + open source, built for my own plane" usually clears it. |
+| Tue | Reddit r/flying | 8–10am ET Tuesday = peak. Use the prepared post. Stay in the thread all day answering. |
+| Wed | Hacker News | "Show HN" at 8–9am ET. This is the open-source/stars/contributors play. Stay close for 3–4 hours. |
+| Thu | BeechTalk or Mooneyspace | Type-club forum #2 (whichever matches your plane's community first). |
+| Fri | Outreach | Send the 3 outreach emails (below): Savvy/Mike Busch, AVweb, Airplane Geeks. These pay off in weeks 2–4, not day 7. |
+| Sat+1 | Recap | Check /admin New(7d), GH stars, thread comments → prioritize week-2 fixes from real feedback. |
+
+## Ready-to-paste posts
+
+### Reddit r/flying (title + body)
+Title: `Made a free, open-source tool that turns paper aircraft logbooks into a searchable maintenance tracker`
+(Use the version already drafted — in the session of Jul 3/4; also saved below.)
+
+> Piston single owner here. Got tired of paper logbooks I could lose and manually tracking
+> annuals/ADs/oil changes, so I built something — and made it free + open source.
+>
+> **MyTailLog:** photograph or upload your logbook pages, AI reads them into structured
+> entries you review. Then you get:
+>
+> - Search + plain-English Q&A ("when was the last annual?") — every answer cites the source entry
+> - AD/SB compliance tracking with FAA reference lookup
+> - Maintenance forecast (annual, 100-hr, oil, transponder…) color-coded by what's due
+> - MyFlightBook sync to pull hobbs/tach, so it emails you reminders *before* things come due
+> - W&B history, equipment tracking, records-gap audit
+> - One-click full backup/export of your records + scans — no lock-in
+>
+> Straight up: it's an index/decision-support tool, **not** the legal record. Paper stays
+> the system of record (91.417), everything's AI-derived — verify before you rely on it.
+>
+> Free, open source: mytaillog.com · code: github.com/iiamit/MyTailLog
+>
+> Built it for my own plane — would love feedback, especially from anyone with a messy
+> decades-old logbook stack.
+
+### Hacker News — Show HN
+Title: `Show HN: MyTailLog – open-source AI digitizer for paper aircraft logbooks`
+URL: `https://github.com/iiamit/MyTailLog`  (repo, not the site — HN prefers source)
+First comment (post immediately after submitting):
+
+> Aircraft owner + software person. GA maintenance logbooks are still paper — they're the
+> legal record (14 CFR 91.417), they burn/get lost, and asking "when was the vacuum pump
+> replaced?" means an evening with a magnifying glass.
+>
+> MyTailLog: photograph the pages; a vision LLM (Opus for handwriting, Haiku for text-only
+> passes) extracts structured entries with per-field confidence you review against the page
+> image. On top of that: AD/SB compliance with FAA Federal Register lookup, Part-91
+> maintenance forecasting, W&B history, equipment reconstruction from the logs, an
+> ask-your-logbook Q&A that cites its source entries, and a daily job that syncs tach/hobbs
+> from MyFlightBook and emails you before things come due.
+>
+> Stack: Next.js 15 + Supabase (RLS is the entire authz model — one security-definer choke
+> point), Firebase App Hosting, all image processing client-side so hosting is ~free;
+> bring-your-own Anthropic key is the only cost. Fun bugs along the way: INSERT…RETURNING
+> tripping a self-referential RLS policy, and OpenCV.js pinned to a CDN version that never
+> existed. MIT licensed — contributions welcome.
+
+### Pilots of America (Maintenance Bay)
+Title: `Free, open-source tool to digitize your maintenance logbooks (built it for my own plane)`
+Body: r/flying post, minus the bullets-heavy formatting (POA likes prose), plus:
+"Not selling anything — it's MIT-licensed and free. Happy to answer anything about how the
+AI extraction handles 50-year-old handwriting."
+
+### Facebook owners groups (Cessna/Piper/Mooney/Beech type groups)
+Use the FB version already drafted (emoji, short). Post in ONE group per day max.
+
+### X/Twitter
+> Built a free, open-source tool for GA owners: photograph your paper logbooks, AI turns
+> them into a searchable maintenance tracker — AD/SB tracking, forecasting, MyFlightBook
+> hours sync, email reminders before annual/oil/ADs come due. It's an index, not the legal
+> record. mytaillog.com
+
+## Outreach emails (send Fri; from iamit@ personal, short & personal)
+
+### 1. Savvy Aviation / Mike Busch (their blog + webinars reach exactly this audience)
+Subj: `Free open-source logbook digitizer — useful for your audience?`
+> Hi — long-time reader/listener. I built a free, open-source tool (mytaillog.com) that
+> digitizes paper maintenance logbooks with AI and tracks AD compliance + maintenance
+> due-dates from the extracted entries. It deliberately stays "an index, not the legal
+> record" (91.417). If it's useful to your clients or worth a mention in a webinar/article,
+> I'd love your take — and your criticism. No commercial angle: MIT-licensed, bring-your-own
+> AI key. — Ian (owner, [your type])
+
+### 2. AVweb / Flying / AOPA Pilot "new products" tip line
+Subj: `Free, open-source aircraft logbook digitizer + maintenance tracker (launched this week)`
+> MyTailLog (mytaillog.com) is a free, open-source web app for GA owners: photograph paper
+> airframe/engine/prop logbooks, AI extracts entries into a searchable index, and the app
+> tracks AD/SB compliance, forecasts maintenance, syncs hours from MyFlightBook, and emails
+> reminders before items come due. Unlike PlaneLogix (human transcription) or Bluetail
+> (fleet pricing), it's free and self-hostable; the only cost is the owner's own AI API key.
+> Happy to provide a demo account or screenshots. — Ian Amit, developer & aircraft owner
+
+### 3. Airplane Geeks / AvTalk podcasts
+Same as #2, plus: "Happy to come on and talk about what an AI can and can't read in a
+1970s mechanic's handwriting."
+
+## Response playbook (objections you WILL get)
+- **"Is my tail number / data private?"** Yes — every record is isolated per-user with
+  database-enforced row-level security; tail numbers are treated as sensitive; nothing is
+  public. And you can export everything (records + scans) as a zip anytime.
+- **"AI misreads things."** Correct — that's why every field has a confidence score, the
+  review screen shows the original page image, and the app never claims to be the legal
+  record. It's an index; the paper remains authoritative.
+- **"Why free? What's the catch?"** Built it for my own plane. Hosting is ~zero-cost by
+  design; the AI calls are bring-your-own-key. MIT-licensed so it outlives me.
+- **"My logbooks are 60 years old / terrible handwriting."** That's the test case it was
+  built on. Worst case a page needs manual review — you'll see exactly what it read next
+  to the photo.
+- **"Legal record?"** 14 CFR 91.417 — paper stays the record. The app says this on every
+  relevant screen.
+
+## Week-2+ options (post-launch, prioritized by feedback)
+1. Screenshots/GIF in README + landing page (biggest conversion gap right now).
+2. Public demo aircraft (read-only) — "try before signup" (TachTime does this well).
+3. awesome-selfhosted PR + AlternativeTo listing (needs repo maturity/stars from week 1).
+4. Type-club newsletters (CPA, ABS, MAPA) — editorial lead time is weeks.
+5. Short YouTube walkthrough (3 min, phone-scanning a real logbook page).
+
+## Instagram assets (docs/social/ — local, gitignored)
+Generated for the 4th-of-July launch. Navy brand + US-flag tricolor accent.
+
+| File | Size | Use |
+|---|---|---|
+| ig-cover-4th.png | 1080×1350 | Single feed post, or carousel slide 1 |
+| ig-slide2-review.png | 1080×1350 | Carousel slide 2 — "AI reads your handwritten logbooks" |
+| ig-slide3-status.png | 1080×1350 | Carousel slide 3 — "Every AD & inspection, color-coded" |
+| ig-slide4-ask.png | 1080×1350 | Carousel slide 4 — "Ask your logbook anything" |
+| ig-slide5-cta.png | 1080×1350 | Carousel slide 5 — Free / Open source / link in bio |
+| ig-story-4th.png | 1080×1920 | Story or Reel cover / end-card |
+
+**Recommended feed carousel order:** cover → review → status → ask → CTA (5 slides).
+**Reel:** film per the shot-list above; use ig-story-4th.png as the end card.
+**Before posting:** set IG bio link to mytaillog.com (captions aren't clickable). Post evening of the 4th.
+Caption + hashtags: see the section drafted in-session (also fine to reuse the r/flying framing).
+Regenerate any asset: the ImageMagick commands are in the session history; screenshots live in docs/screenshots/.

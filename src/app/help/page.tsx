@@ -305,7 +305,7 @@ const SECTIONS: Section[] = [
           aircraft&apos;s latest recorded <strong>hobbs and tach</strong> into MyTailLog. There is{" "}
           <strong>no app-wide account</strong>: in <L href="/profile">Profile → MyFlightBook</L> you
           register your <em>own</em> OAuth app on MyFlightBook and paste its client ID and secret
-          (the secret is stored server-side and never shown again), then click{" "}
+          (the secret is stored <strong>encrypted</strong> server-side and never shown again), then click{" "}
           <strong>Connect</strong> and approve access. Once connected, <strong>Sync</strong> matches
           your MyFlightBook aircraft to MyTailLog aircraft <strong>by tail number</strong> and
           records the ending hours from the most recent flight.
@@ -327,6 +327,31 @@ const SECTIONS: Section[] = [
           <L href="#maintenance">maintenance forecast</L>, recurring{" "}
           <L href="#compliance">AD next-due</L>, and the <L href="#status">Status</L> grid.
         </Effects>
+      </>
+    ),
+  },
+  {
+    id: "ai-key",
+    icon: <SparklesIcon />,
+    title: "AI & your Anthropic key",
+    body: (
+      <>
+        <p>
+          Extraction and Q&amp;A run on <strong>Claude</strong>. By default they use the app&apos;s
+          shared key, which has a <strong>daily limit</strong> (both per person and an overall daily
+          budget). If the shared budget for the day is used up, AI pauses until tomorrow. To bill AI
+          usage to your own account and get a much higher limit, add your own{" "}
+          <strong>Anthropic API key</strong> in <L href="/profile">Profile → AI &amp; your Anthropic
+          key</L>. Your key is <strong>stored encrypted</strong> and never shown again; only the last
+          four characters are kept for display.
+        </p>
+        <p className="mt-2">
+          With your own key connected, the panel shows your <strong>usage</strong> — calls, input and
+          output tokens, and <strong>estimated cost so far</strong> (from token counts at
+          Anthropic&apos;s list prices; a close guide, not your exact invoice). If your key is
+          rejected (invalid or out of quota) the request fails with a clear message — it is never
+          silently charged to the shared key.
+        </p>
       </>
     ),
   },

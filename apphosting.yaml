@@ -48,6 +48,16 @@ env:
     secret: CRON_SECRET
     availability:
       - RUNTIME
+  # Server-only. Encrypts MyFlightBook secrets/tokens and users' own Anthropic
+  # keys at rest (AES-256-GCM, src/lib/crypto.ts). Any non-empty string works
+  # (SHA-256'd to a 32-byte key); rotating it makes existing ciphertext
+  # undecryptable, so users would re-enter those secrets. Create with:
+  #   firebase apphosting:secrets:set ENCRYPTION_KEY   (paste `openssl rand -base64 32`)
+  # Local dev shares the same Supabase DB, so use the SAME value in .env.local.
+  - variable: ENCRYPTION_KEY
+    secret: ENCRYPTION_KEY
+    availability:
+      - RUNTIME
 
   # Non-sensitive defaults.
   - variable: EXTRACTION_MODEL # vision / handwriting (keep strong)
@@ -58,12 +68,34 @@ env:
     value: claude-haiku-4-5
     availability:
       - RUNTIME
+  # AI usage limits (tune the number + redeploy — no code change). Per-user/day
+  # call caps for the shared vs a user's own key, and the GLOBAL daily $ ceiling
+  # on the shared key across all users (0 disables it). See src/lib/extraction/aiContext.ts.
+  - variable: AI_SHARED_USER_DAILY_CALLS
+    value: "100"
+    availability:
+      - RUNTIME
+  - variable: AI_OWN_USER_DAILY_CALLS
+    value: "1000"
+    availability:
+      - RUNTIME
+  - variable: AI_SHARED_DAILY_USD
+    value: "20"
+    availability:
+      - RUNTIME
   - variable: LOGBOOK_STORAGE_BUCKET
     value: logbook-pages
     availability:
       - RUNTIME
   - variable: NEXT_PUBLIC_LOGBOOK_STORAGE_BUCKET
     value: logbook-pages
+    availability:
+      - BUILD
+      - RUNTIME
+  # Canonical public origin. publicOrigin() pins redirects / OAuth redirect_uri
+  # to this instead of reflecting a client-supplied Host header (anti-poisoning).
+  - variable: NEXT_PUBLIC_SITE_URL
+    value: https://mytaillog.com
     availability:
       - BUILD
       - RUNTIME

@@ -8,6 +8,7 @@
 // ===========================================================================
 
 import Anthropic from "@anthropic-ai/sdk";
+import { currentAiContext } from "./aiContext";
 
 // Vision / handwriting extraction needs a strong model — default to the most
 // capable. Overridable so an operator can trade cost for capability.
@@ -37,15 +38,41 @@ export function reasoningParams(model: string): {
     : {};
 }
 
-let client: Anthropic | null = null;
+// Wrap messages.create so every (non-streaming) call reports token usage to the
+// request's onUsage logger. Only awaited-object calls are made here; streaming
+// isn't used. ponytail: monkey-patch over a subclass — one method, one place.
+function withUsageLogging(c: Anthropic): Anthropic {
+  const orig = c.messages.create.bind(c.messages);
+  c.messages.create = (async (body: Anthropic.MessageCreateParamsNonStreaming, opts?: unknown) => {
+    const res = await orig(body, opts as never);
+    const { onUsage } = currentAiContext();
+    if (onUsage && res && typeof res === "object" && "usage" in res && res.usage) {
+      await onUsage({
+        model: String(body.model),
+        inputTokens: res.usage.input_tokens ?? 0,
+        outputTokens: res.usage.output_tokens ?? 0,
+      });
+    }
+    return res;
+  }) as typeof c.messages.create;
+  return c;
+}
 
-/** Lazily construct the client. Throws a clear error if the key is missing. */
+let serverClient: Anthropic | null = null;
+
+/**
+ * Construct the Anthropic client for the current request. Uses the user's own
+ * key from the request context (BYOK) when present; otherwise the shared
+ * server key. Throws a clear error if neither is available.
+ */
 export function getAnthropic(): Anthropic {
+  const { apiKey } = currentAiContext();
+  if (apiKey) return withUsageLogging(new Anthropic({ apiKey }));
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error(
-      "ANTHROPIC_API_KEY is not set. Add it to .env.local to run extraction (see README Costs).",
+      "No Anthropic key available. Set ANTHROPIC_API_KEY, or add your own key in Settings.",
     );
   }
-  if (!client) client = new Anthropic();
-  return client;
+  if (!serverClient) serverClient = withUsageLogging(new Anthropic());
+  return serverClient;
 }
