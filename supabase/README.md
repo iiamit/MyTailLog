@@ -35,6 +35,13 @@ auth.users ──1:1── profile
 - **component** — part lifecycle (PN/SN, install/removal entry links, life
   limit), distinct from the free-text `log_entry.parts`.
 
+Later migrations add more aircraft-scoped tables on the same RLS pattern —
+`ad_compliance`/`ad_reference`, `maintenance_item`, `weight_balance`,
+`scanned_document`, `equipment_proposal`, `oil_analysis_sample`, `aircraft_share`,
+`mfb_connection`/`hours_reading` — plus user-scoped `ai_usage` (AI cost ledger,
+service-role-written per `0032`) and `user_ai_key` (encrypted BYO Anthropic key).
+Third-party secrets and BYO keys are AES-256-GCM encrypted at rest (`ENCRYPTION_KEY`).
+
 ## Data isolation (RLS)
 
 Single-owner from day one, enforced in Postgres — not just app code:
