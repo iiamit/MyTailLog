@@ -19,21 +19,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, OilAnalysisSample } from "@/lib/database.types";
 import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
 import type { ImageMediaType } from "./extract";
-
-// The standard spectrometric element set (Blackstone + AVLab report the same
-// panel). Stored lowercase in elements_ppm / universal_averages.
-export const OIL_ELEMENTS = [
-  "aluminum", "chromium", "iron", "copper", "lead", "tin", "molybdenum",
-  "nickel", "manganese", "silver", "titanium", "potassium", "boron", "silicon",
-  "sodium", "calcium", "magnesium", "phosphorus", "zinc", "barium",
-] as const;
-
-// Oil physical properties. Values are best-effort numeric (a reported "<0.5"
-// becomes 0.5, ">440" becomes 440 — see the prompt); null when not reported.
-export const OIL_PROPERTIES = [
-  "viscosity_cst_100c", "viscosity_sus_210f", "flashpoint_f", "fuel_pct",
-  "antifreeze_pct", "water_pct", "insolubles_pct", "tbn", "tan",
-] as const;
+import { OIL_PROPERTIES } from "@/lib/oilElements";
 
 export type OilSample = {
   sample_date: string | null;

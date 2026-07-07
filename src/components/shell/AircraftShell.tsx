@@ -26,6 +26,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
       items: [
         { ident: "STS", label: "Status", href: `${a}/status`, badge: ctx.badges.status, tone: "amber" },
         { ident: "FCT", label: "Maint. forecast", href: `${a}/maintenance` },
+        { ident: "OIL", label: "Oil analysis", href: `${a}/oil-analysis` },
         { ident: "ADS", label: "AD / SB", href: `${a}/compliance` },
         { ident: "WBL", label: "Weight & balance", href: `${a}/weight-balance` },
         { ident: "GAP", label: "Records gaps", href: `${a}/audit` },

@@ -295,6 +295,33 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "oil-analysis",
+    icon: <GaugeIcon />,
+    title: "Oil analysis",
+    body: (
+      <>
+        <p>
+          Owners periodically send an oil sample to a lab (Blackstone, AVLab, …) and get back a
+          report of wear-metal concentrations. In{" "}
+          <L href="/aircraft">Aircraft → Oil analysis</L>, click{" "}
+          <strong>Import oil report</strong> and upload the lab&apos;s PDF (or a photo of it). The AI
+          reads every sample in the report — dates, hours on the oil and engine, each element in
+          parts per million, oil properties, and the lab&apos;s written comments.
+        </p>
+        <p className="mt-2">
+          Each wear metal is charted over time against the lab&apos;s <strong>universal average</strong>{" "}
+          for your engine type (the dashed line). Values above it are highlighted amber, and well
+          above (2×) red — a prompt to watch, not a verdict.
+        </p>
+        <p className="mt-2 text-sm text-faint">
+          Like all extraction here, the numbers are read by AI — confirm anything important against
+          the original report, and treat the lab&apos;s own assessment as authoritative. Re-importing
+          the same report updates its samples in place rather than duplicating them.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "myflightbook",
     icon: <PlaneIcon />,
     title: "MyFlightBook (hours sync)",
