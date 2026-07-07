@@ -305,7 +305,7 @@ const SECTIONS: Section[] = [
           aircraft&apos;s latest recorded <strong>hobbs and tach</strong> into MyTailLog. There is{" "}
           <strong>no app-wide account</strong>: in <L href="/profile">Profile → MyFlightBook</L> you
           register your <em>own</em> OAuth app on MyFlightBook and paste its client ID and secret
-          (the secret is stored server-side and never shown again), then click{" "}
+          (the secret is stored <strong>encrypted</strong> server-side and never shown again), then click{" "}
           <strong>Connect</strong> and approve access. Once connected, <strong>Sync</strong> matches
           your MyFlightBook aircraft to MyTailLog aircraft <strong>by tail number</strong> and
           records the ending hours from the most recent flight.

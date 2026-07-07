@@ -52,7 +52,8 @@ env:
   # keys at rest (AES-256-GCM, src/lib/crypto.ts). Any non-empty string works
   # (SHA-256'd to a 32-byte key); rotating it makes existing ciphertext
   # undecryptable, so users would re-enter those secrets. Create with:
-  #   printf '%s' "$(openssl rand -base64 32)" | gcloud secrets create ENCRYPTION_KEY --data-file=-
+  #   firebase apphosting:secrets:set ENCRYPTION_KEY   (paste `openssl rand -base64 32`)
+  # Local dev shares the same Supabase DB, so use the SAME value in .env.local.
   - variable: ENCRYPTION_KEY
     secret: ENCRYPTION_KEY
     availability:
