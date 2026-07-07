@@ -54,7 +54,7 @@ export async function POST(
     const { updated, detected } = await runWithAiContext(
       {
         apiKey: gate.apiKey,
-        onUsage: (u) => logAiUsage(supabase, user.id, "maintenance-scan", u, gate.ownKey),
+        onUsage: (u) => logAiUsage(user.id, "maintenance-scan", u, gate.ownKey),
       },
       () => applyMaintenanceFromEntries(supabase, id, inputs),
     );

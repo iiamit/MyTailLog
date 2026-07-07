@@ -113,7 +113,7 @@ export async function POST(
     const res = await runWithAiContext(
       {
         apiKey: gate.apiKey,
-        onUsage: (u) => logAiUsage(supabase, user.id, "ask", u, gate.ownKey),
+        onUsage: (u) => logAiUsage(user.id, "ask", u, gate.ownKey),
       },
       () =>
         getAnthropic().messages.create({

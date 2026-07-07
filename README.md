@@ -57,12 +57,20 @@ AI reads the page; you review it next to the original, with low-confidence field
   AD/SB refs, signature) with **per-field confidence**; a review screen shows the
   page image beside editable entries and flags low-confidence fields.
 - Five logbook types — airframe, engine, prop, avionics, and **Other**.
+- **Find duplicates** — flags likely-duplicate scans and entries (by date,
+  tach/hobbs, and work text) so re-captures and re-extractions don't pile up.
 
 **"Other" A&P documents (auto-applied)**
 - Scan a **Weight & Balance sheet** → it creates a new W&B revision.
 - Scan an **AD compliance report** → it becomes the ground truth for your AD
   state, corroborates matching tracked ADs (with a "✓ A&P report" badge), and
   adds any it lists that you weren't tracking.
+
+**Engine health**
+- **Oil analysis** — import a lab report (Blackstone, AVLab, …) as a PDF or a
+  photo; AI reads every sample in it (wear metals in ppm, oil properties, the
+  lab's written comments), and each metal is charted over time against the lab's
+  universal average — above it is flagged. Re-importing a report updates in place.
 
 **Understand & forecast**
 - **Ask your logbook** — plain-English questions answered from your entries, with
@@ -79,6 +87,13 @@ AI reads the page; you review it next to the original, with low-confidence field
   the forecast reflects real hours.
 - A **daily job** auto-syncs hours (once/day) and emails **reminders** before due
   items — annual, oil, ADs, and more, each with a configurable lead time.
+
+**AI keys & cost control**
+- Extraction and Q&A run on the app's shared Anthropic key by default, bounded by
+  a **per-user daily call cap** and a **global daily-$ ceiling** (both env-tunable).
+- Owners can **bring their own Anthropic API key** (stored encrypted) to bill AI
+  usage to their own account and get a much higher limit; the Profile page shows
+  their calls, tokens, and estimated cost so far.
 
 **Own your data**
 - Print/PDF and CSV exports, plus a full **`.zip` backup** (records + scans) you
@@ -97,7 +112,20 @@ AI reads the page; you review it next to the original, with low-confidence field
   the users who own or are shared on the aircraft.
 - **Anthropic** — a strong vision model (`claude-opus-4-8`) for handwriting/image
   extraction (`EXTRACTION_MODEL`), and a cheap text model (`claude-haiku-4-5`) for
-  text-only reasoning — Q&A, equipment/maintenance detection (`TEXT_MODEL`).
+  text-only reasoning — Q&A, equipment/maintenance detection (`TEXT_MODEL`). Every
+  AI route funnels through one gate (`prepareAi`) that resolves the caller's key
+  (shared or their own), enforces the caps, and meters usage into a
+  **server-authored** `ai_usage` ledger (written only by the service role, so the
+  budget guard can't be forged). The per-request key is carried via
+  `AsyncLocalStorage`, so no call site needs a key parameter.
+- **Secrets encrypted at rest** — third-party credentials (MyFlightBook OAuth
+  client secret + tokens) and each user's own Anthropic key are AES-256-GCM
+  encrypted (`src/lib/crypto.ts`, `ENCRYPTION_KEY`); RLS isolates them, encryption
+  defends against a backup/replica leak. Decryption is server-only; nothing
+  sensitive is read back to the browser.
+- **Defense-in-depth headers** — global CSP, `X-Frame-Options: DENY`, HSTS,
+  `nosniff`, Referrer/Permissions policies; the public origin is pinned to
+  `NEXT_PUBLIC_SITE_URL` rather than reflected from a request header.
 - **All image processing is browser-side** (thumbnails, PDF rasterization, zip
   build/read) — the server never touches image bytes, keeping hosting at ~zero
   marginal cost.
@@ -118,11 +146,12 @@ AI reads the page; you review it next to the original, with low-confidence field
     block our egress, and it needs a minted session cookie + browser-like UA
     (see the client header comment). It's a best-effort scraper, not an API.
 
-Data model (Postgres, migrations `supabase/migrations/000*`): `aircraft` →
+Data model (Postgres, migrations `supabase/migrations/00*`): `aircraft` →
 `logbook` → `page` → `log_entry`, plus `ad_compliance` / `ad_reference`,
 `component` / `equipment_proposal`, `maintenance_item`, `weight_balance`,
-`scanned_document`, `document`, `aircraft_share`, `mfb_connection` /
-`hours_reading`, `reminder_log`, and `profile`.
+`scanned_document`, `document`, `oil_analysis_sample`, `aircraft_share`,
+`mfb_connection` / `hours_reading`, `reminder_log`, `ai_usage` / `user_ai_key`,
+and `profile`.
 
 ## Costs
 
@@ -130,7 +159,10 @@ Targets **~zero marginal cost**: Firebase App Hosting (scale-to-zero) and Supaba
 free tiers cover a personal deployment, and all image work is client-side. The
 one metered line item is **LLM calls** — bounded (cents per page for the one-time
 backlog, then a trickle) and split so the cheap model does the high-volume text
-work. **Bring your own `ANTHROPIC_API_KEY`.**
+work. The operator sets an `ANTHROPIC_API_KEY`; usage on it is capped **per user
+per day** (`AI_SHARED_USER_DAILY_CALLS`) and by a **global daily-$ ceiling**
+(`AI_SHARED_DAILY_USD`). Any user can also **bring their own key** to bill their
+own account and lift the limit.
 
 ## Getting started (local)
 
@@ -158,11 +190,19 @@ it; metered but ~$0 at personal scale — set a budget alert) and the Firebase C
 firebase apphosting:secrets:set NEXT_PUBLIC_SUPABASE_URL
 firebase apphosting:secrets:set NEXT_PUBLIC_SUPABASE_ANON_KEY
 firebase apphosting:secrets:set ANTHROPIC_API_KEY
+firebase apphosting:secrets:set ENCRYPTION_KEY        # AES key for at-rest secret encryption; `openssl rand -base64 32`
+firebase apphosting:secrets:set SUPABASE_SECRET_KEY   # Supabase → API Keys → "Create secret key" (also writes the ai_usage ledger)
 # For the daily reminder/sync cron (optional but recommended):
-firebase apphosting:secrets:set SUPABASE_SECRET_KEY   # Supabase → API Keys → "Create secret key"
 firebase apphosting:secrets:set RESEND_API_KEY        # for reminder email
 firebase apphosting:secrets:set CRON_SECRET           # random string; gates the cron endpoint
 ```
+
+Non-secret config in [`apphosting.yaml`](./apphosting.yaml): `NEXT_PUBLIC_SITE_URL`
+(pins the public origin), `EXTRACTION_MODEL` / `TEXT_MODEL`, and the AI cost caps
+(`AI_SHARED_USER_DAILY_CALLS`, `AI_OWN_USER_DAILY_CALLS`, `AI_SHARED_DAILY_USD`).
+**`ENCRYPTION_KEY` must match between prod and any local `.env.local` that shares
+the same database** — a value encrypted under one key can't be decrypted under
+another.
 
 **2. Backend** — Firebase console → **App Hosting → Get started** → connect the
 GitHub repo + `main` branch. Every push to `main` builds and rolls out.
@@ -201,10 +241,15 @@ non-commercial); Cloud Run avoids both.
 Every record belongs to the users who own or are shared on its aircraft, enforced
 by Postgres row-level security — not just app code. Aircraft records (tail
 numbers, serials, owner names, home base) are treated as **sensitive personal
-data**. Sharing is by email with viewer/contributor roles; a per-user secret
-(MyFlightBook OAuth tokens) is stored server-side only and never sent to the
-browser. The one elevated code path — the daily cron — uses a Supabase secret API
-key scoped to that endpoint behind a shared-secret gate.
+data**. Sharing is by email with viewer/contributor roles. Per-user secrets
+(MyFlightBook OAuth client secret + tokens, and a user's own Anthropic key) are
+**encrypted at rest** (AES-256-GCM) and only ever decrypted server-side — never
+sent to the browser. Responses carry defense-in-depth security headers (CSP,
+frame/HSTS/nosniff), and redirect origins are pinned to a configured value rather
+than a request header. The elevated (RLS-bypassing) code paths — the daily cron
+and the `ai_usage` ledger write — use a Supabase secret API key: the cron is
+scoped to its endpoint behind a shared-secret gate, and the ledger write exists
+so the shared-key cost guard can't be forged by a client.
 
 ## Explicitly out of scope
 

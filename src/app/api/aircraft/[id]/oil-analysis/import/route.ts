@@ -8,6 +8,9 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const ACCEPTED = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+// Bound memory + cost: the whole file is buffered and base64'd to the model.
+// Anthropic's own PDF ceiling is 32 MB; 20 leaves margin.
+const MAX_BYTES = 20 * 1024 * 1024;
 
 // Import an oil analysis report (PDF or photo). Extracts every sample via Claude
 // and upserts one oil_analysis_sample row per sample (dedup by date). RLS scopes
@@ -32,6 +35,17 @@ export async function POST(
     .single();
   if (!aircraft) return NextResponse.json({ error: "Aircraft not found." }, { status: 404 });
 
+  // Gate the PAID extraction on edit access — a read-only viewer can see the
+  // aircraft but must not be able to spend an AI call (the writes would no-op
+  // under RLS anyway). Check before prepareAi / the model call.
+  const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: id });
+  if (!canEdit) {
+    return NextResponse.json(
+      { error: "You don't have edit access to this aircraft." },
+      { status: 403 },
+    );
+  }
+
   const gate = await prepareAi(supabase, user.id);
   if ("error" in gate) return NextResponse.json({ error: gate.error }, { status: gate.status });
 
@@ -46,6 +60,9 @@ export async function POST(
       { status: 415 },
     );
   }
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json({ error: "File too large (max 20 MB)." }, { status: 413 });
+  }
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   const mediaType = file.type as "application/pdf" | ImageMediaType;
@@ -55,7 +72,7 @@ export async function POST(
     payload = await runWithAiContext(
       {
         apiKey: gate.apiKey,
-        onUsage: (u) => logAiUsage(supabase, user.id, "oil-analysis", u, gate.ownKey),
+        onUsage: (u) => logAiUsage(user.id, "oil-analysis", u, gate.ownKey),
       },
       () => extractOilAnalysis(base64, mediaType),
     );
@@ -84,11 +101,11 @@ export async function POST(
       .eq("sample_date", row.sample_date!)
       .maybeSingle();
     if (existing) {
-      await supabase.from("oil_analysis_sample").update(row).eq("id", existing.id);
-      updated++;
+      const { error } = await supabase.from("oil_analysis_sample").update(row).eq("id", existing.id);
+      if (!error) updated++;
     } else {
-      await supabase.from("oil_analysis_sample").insert(row);
-      inserted++;
+      const { error } = await supabase.from("oil_analysis_sample").insert(row);
+      if (!error) inserted++;
     }
   }
 

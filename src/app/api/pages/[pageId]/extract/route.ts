@@ -45,7 +45,7 @@ export async function POST(
     const result = await runWithAiContext(
       {
         apiKey: gate.apiKey,
-        onUsage: (u) => logAiUsage(supabase, user.id, "extract", u, gate.ownKey),
+        onUsage: (u) => logAiUsage(user.id, "extract", u, gate.ownKey),
       },
       () => extractPage(supabase, page),
     );

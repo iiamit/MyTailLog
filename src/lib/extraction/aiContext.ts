@@ -17,6 +17,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { decryptSecret } from "@/lib/crypto";
+import { createServiceClient } from "@/lib/supabase/service";
 import { estimateCost } from "./pricing";
 
 export type AiUsage = { model: string; inputTokens: number; outputTokens: number };
@@ -103,16 +104,24 @@ export async function prepareAi(supabase: Supabase, userId: string): Promise<AiG
   return { apiKey: userKey ?? undefined, ownKey };
 }
 
+// The ledger is written ONLY by the service-role client (RLS-bypass), never the
+// user's client — direct client inserts are revoked (migration 0032). This is
+// what makes the shared-key $ ceiling (shared_key_cost_today) trustworthy: a
+// signed-in user has no write path to poison it (forge a negative cost to bypass
+// the ceiling, or a huge cost to DoS every shared-key user). Token counts here
+// come from the real Anthropic response in the route, so a service write is safe.
+let ledgerClient: ReturnType<typeof createServiceClient> | null = null;
+const ledger = () => (ledgerClient ??= createServiceClient());
+
 /** Record one model call. Never throws — logging must not fail the AI response. */
 export async function logAiUsage(
-  supabase: Supabase,
   userId: string,
   route: string,
   usage: AiUsage,
   ownKey: boolean,
 ): Promise<void> {
   try {
-    await supabase.from("ai_usage").insert({
+    await ledger().from("ai_usage").insert({
       user_id: userId,
       route,
       model: usage.model,
