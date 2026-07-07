@@ -331,6 +331,30 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "ai-key",
+    icon: <SparklesIcon />,
+    title: "AI & your Anthropic key",
+    body: (
+      <>
+        <p>
+          Extraction and Q&amp;A run on <strong>Claude</strong>. By default they use the app&apos;s
+          shared key with a <strong>daily cap</strong> (100 AI calls/day). To bill AI usage to your
+          own account and raise that limit, add your own{" "}
+          <strong>Anthropic API key</strong> in <L href="/profile">Profile → AI &amp; your Anthropic
+          key</L>. Your key is <strong>stored encrypted</strong> and never shown again; only the last
+          four characters are kept for display.
+        </p>
+        <p className="mt-2">
+          With your own key connected, the panel shows your <strong>usage</strong> — calls, input and
+          output tokens, and <strong>estimated cost so far</strong> (from token counts at
+          Anthropic&apos;s list prices; a close guide, not your exact invoice). If your key is
+          rejected (invalid or out of quota) the request fails with a clear message — it is never
+          silently charged to the shared key.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "notifications",
     icon: <AlertIcon />,
     title: "Notifications (reminder emails)",
