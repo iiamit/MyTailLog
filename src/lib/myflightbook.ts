@@ -15,6 +15,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { encryptSecret, decryptSecret } from "@/lib/crypto";
 
 const MFB_BASE = "https://myflightbook.com/logbook";
 
@@ -246,28 +247,33 @@ export async function getValidAccessToken(
 
   if (!conn?.access_token) return null;
 
+  // Secrets/tokens are encrypted at rest (AES-256-GCM); decrypt for use.
+  const accessToken = decryptSecret(conn.access_token);
+  const refreshToken = decryptSecret(conn.refresh_token);
+  const clientSecret = decryptSecret(conn.client_secret);
+
   // 60s buffer so we don't hand back a token that expires mid-request.
   const expired =
     conn.token_expires_at != null &&
     new Date(conn.token_expires_at).getTime() - 60_000 < Date.now();
 
-  if (!expired) return conn.access_token;
+  if (!expired) return accessToken;
 
-  if (!conn.refresh_token || !conn.client_id || !conn.client_secret) {
-    return conn.access_token; // no way to refresh; try the (maybe stale) token
+  if (!refreshToken || !conn.client_id || !clientSecret) {
+    return accessToken; // no way to refresh; try the (maybe stale) token
   }
 
   try {
     const tokens = await refreshTokens({
       clientId: conn.client_id,
-      clientSecret: conn.client_secret,
-      refreshToken: conn.refresh_token,
+      clientSecret,
+      refreshToken,
     });
     await supabase
       .from("mfb_connection")
       .update({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token ?? conn.refresh_token,
+        access_token: encryptSecret(tokens.access_token),
+        refresh_token: encryptSecret(tokens.refresh_token ?? refreshToken),
         token_expires_at: expiresAtFrom(tokens.expires_in),
         updated_at: new Date().toISOString(),
       })

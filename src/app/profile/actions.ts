@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { encryptSecret } from "@/lib/crypto";
 
 /** Update the signed-in user's profile details. Notification preferences are
  *  owned by updateNotifications so this never clobbers the alerts bag. */
@@ -102,14 +103,61 @@ export async function saveMfbCredentials(
     mfb_username,
     updated_at: new Date().toISOString(),
   };
-  // Only overwrite the secret when a new one is actually typed.
-  if (secretInput) update.client_secret = secretInput;
+  // Only overwrite the secret when a new one is actually typed. Encrypted at
+  // rest (AES-256-GCM) — see src/lib/crypto.ts.
+  if (secretInput) update.client_secret = encryptSecret(secretInput);
 
   const { error } = await supabase
     .from("mfb_connection")
     .upsert(update, { onConflict: "user_id" });
 
   if (error) return { error: error.message };
+  revalidatePath("/profile");
+  return {};
+}
+
+/**
+ * Save the user's OWN Anthropic API key (BYOK). Encrypted at rest; used instead
+ * of the shared key for their AI calls and metered to them (see the usage
+ * panel). Only the last 4 chars are kept in the clear, for display.
+ */
+export async function saveAiKey(formData: FormData): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const raw = (formData.get("anthropic_key") as string)?.trim() || "";
+  if (!raw) return { error: "Paste your Anthropic API key." };
+  if (!raw.startsWith("sk-ant-")) {
+    return { error: "That doesn't look like an Anthropic key (expected sk-ant-…)." };
+  }
+
+  const { error } = await supabase.from("user_ai_key").upsert(
+    {
+      user_id: user.id,
+      key_cipher: encryptSecret(raw),
+      key_last4: raw.slice(-4),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+  if (error) return { error: "Couldn't save the key." };
+  revalidatePath("/profile");
+  return {};
+}
+
+/** Remove the user's own key — their AI calls fall back to the shared key. */
+export async function removeAiKey(): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { error } = await supabase.from("user_ai_key").delete().eq("user_id", user.id);
+  if (error) return { error: "Couldn't remove the key." };
   revalidatePath("/profile");
   return {};
 }

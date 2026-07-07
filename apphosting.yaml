@@ -48,6 +48,15 @@ env:
     secret: CRON_SECRET
     availability:
       - RUNTIME
+  # Server-only. Encrypts MyFlightBook secrets/tokens and users' own Anthropic
+  # keys at rest (AES-256-GCM, src/lib/crypto.ts). Any non-empty string works
+  # (SHA-256'd to a 32-byte key); rotating it makes existing ciphertext
+  # undecryptable, so users would re-enter those secrets. Create with:
+  #   printf '%s' "$(openssl rand -base64 32)" | gcloud secrets create ENCRYPTION_KEY --data-file=-
+  - variable: ENCRYPTION_KEY
+    secret: ENCRYPTION_KEY
+    availability:
+      - RUNTIME
 
   # Non-sensitive defaults.
   - variable: EXTRACTION_MODEL # vision / handwriting (keep strong)
@@ -64,6 +73,13 @@ env:
       - RUNTIME
   - variable: NEXT_PUBLIC_LOGBOOK_STORAGE_BUCKET
     value: logbook-pages
+    availability:
+      - BUILD
+      - RUNTIME
+  # Canonical public origin. publicOrigin() pins redirects / OAuth redirect_uri
+  # to this instead of reflecting a client-supplied Host header (anti-poisoning).
+  - variable: NEXT_PUBLIC_SITE_URL
+    value: https://mytaillog.com
     availability:
       - BUILD
       - RUNTIME

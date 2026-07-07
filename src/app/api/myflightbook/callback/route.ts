@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { exchangeCode, expiresAtFrom } from "@/lib/myflightbook";
 import { publicOrigin } from "@/lib/publicOrigin";
+import { encryptSecret, decryptSecret } from "@/lib/crypto";
 
 /**
  * OAuth callback: verify state, exchange the code for tokens using the user's
@@ -44,15 +45,15 @@ export async function GET(request: NextRequest) {
   try {
     const tokens = await exchangeCode({
       clientId: conn.client_id,
-      clientSecret: conn.client_secret,
+      clientSecret: decryptSecret(conn.client_secret) ?? "",
       code,
       redirectUri: `${origin}/api/myflightbook/callback`,
     });
     const { error } = await supabase
       .from("mfb_connection")
       .update({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        access_token: encryptSecret(tokens.access_token),
+        refresh_token: tokens.refresh_token ? encryptSecret(tokens.refresh_token) : null,
         token_expires_at: expiresAtFrom(tokens.expires_in),
         connected_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

@@ -5,13 +5,29 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MfbSyncButton } from "@/components/MfbSyncButton";
 import type { AlertSettings } from "@/lib/reminders";
-import { updateProfile, updateNotifications, saveMfbCredentials, disconnectMfb } from "./actions";
+import {
+  updateProfile,
+  updateNotifications,
+  saveMfbCredentials,
+  disconnectMfb,
+  saveAiKey,
+  removeAiKey,
+} from "./actions";
 
 type MfbState = {
   clientId: string;
   hasSecret: boolean;
   connected: boolean;
   username: string;
+};
+
+type AiState = {
+  keyLast4: string | null;
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  totalCalls: number;
 };
 
 // Maps the ?mfb=<status> the OAuth callback / authorize routes redirect back with.
@@ -78,6 +94,7 @@ export function ProfileClient({
   notifyDue,
   alerts,
   mfb,
+  ai,
 }: {
   email: string;
   fullName: string;
@@ -85,6 +102,7 @@ export function ProfileClient({
   notifyDue: boolean;
   alerts: AlertSettings;
   mfb: MfbState;
+  ai: AiState;
 }) {
   const router = useRouter();
 
@@ -167,11 +185,35 @@ export function ProfileClient({
     if (!res.error) router.refresh();
   }
 
+  // Bring-your-own Anthropic key
+  const [savingAiKey, setSavingAiKey] = useState(false);
+  const [aiKeyMsg, setAiKeyMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function saveKey(formData: FormData) {
+    setSavingAiKey(true);
+    setAiKeyMsg(null);
+    const res = await saveAiKey(formData);
+    setSavingAiKey(false);
+    setAiKeyMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Key saved." });
+    if (!res.error) router.refresh();
+  }
+
+  async function removeKey() {
+    const res = await removeAiKey();
+    setAiKeyMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Key removed." });
+    if (!res.error) router.refresh();
+  }
+
   async function signOut() {
     await createClient().auth.signOut();
     router.push("/");
     router.refresh();
   }
+
+  const usd = (n: number) =>
+    n < 0.01 && n > 0 ? "<$0.01" : `$${n.toFixed(2)}`;
+  const tokens = (n: number) =>
+    n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 
   return (
     <div className="flex flex-col gap-6">
@@ -407,6 +449,94 @@ export function ProfileClient({
             </button>
           </div>
         )}
+      </div>
+
+      {/* Anthropic API key (BYOK) + usage */}
+      <div className={card}>
+        <h2 className="font-semibold">AI &amp; your Anthropic key</h2>
+        <p className="text-xs text-faint">
+          Extraction and Q&amp;A use Claude. By default they run on the app&apos;s shared key with a
+          daily cap. Add your own{" "}
+          <a
+            href="https://console.anthropic.com/settings/keys"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-line hover:decoration-line2"
+          >
+            Anthropic API key
+          </a>{" "}
+          to bill AI usage to your own account and get a much higher daily limit. Your key is stored
+          encrypted and never shown again.
+        </p>
+
+        <p className="text-sm">
+          Status:{" "}
+          {ai.keyLast4 ? (
+            <span className="font-medium text-annun-green">
+              Using your key (…{ai.keyLast4})
+            </span>
+          ) : (
+            <span className="text-faint">On the shared key</span>
+          )}
+        </p>
+
+        {ai.keyLast4 && (
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-line pt-3 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-xs text-faint">Cost so far</dt>
+              <dd className="font-medium tabular-nums">{usd(ai.costUsd)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-faint">AI calls</dt>
+              <dd className="font-medium tabular-nums">{ai.calls}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-faint">Input tokens</dt>
+              <dd className="font-medium tabular-nums">{tokens(ai.inputTokens)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-faint">Output tokens</dt>
+              <dd className="font-medium tabular-nums">{tokens(ai.outputTokens)}</dd>
+            </div>
+          </dl>
+        )}
+
+        <form action={saveKey} className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Anthropic API key</span>
+            <input
+              type="password"
+              name="anthropic_key"
+              autoComplete="off"
+              className={inputClass}
+              placeholder={ai.keyLast4 ? `•••••••• …${ai.keyLast4} (paste to replace)` : "sk-ant-…"}
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={savingAiKey}
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-60"
+            >
+              {savingAiKey ? "Saving…" : "Save key"}
+            </button>
+            {ai.keyLast4 && (
+              <button
+                type="button"
+                onClick={removeKey}
+                className="rounded-md border border-line px-4 py-2 text-sm text-dim hover:border-line2 hover:text-ink"
+              >
+                Remove key
+              </button>
+            )}
+            <Status msg={aiKeyMsg} />
+          </div>
+        </form>
+
+        <p className="text-[11px] text-faint">
+          Cost is estimated from token counts at Anthropic&apos;s list prices — treat it as a close
+          guide, not your exact invoice.
+        </p>
       </div>
 
       <div>

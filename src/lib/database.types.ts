@@ -325,6 +325,28 @@ export type MfbConnection = {
   updated_at: string;
 }
 
+/** One Anthropic model call — rate-limit source + BYOK usage/cost ledger. */
+export type AiUsage = {
+  id: string;
+  user_id: string;
+  route: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  used_own_key: boolean;
+  created_at: string;
+}
+
+/** A user's own Anthropic API key, encrypted at rest. */
+export type UserAiKey = {
+  user_id: string;
+  key_cipher: string;
+  key_last4: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** One reminder email sent for an item's current due-cycle (dedup key). */
 export type ReminderLog = {
   id: string;
@@ -374,6 +396,8 @@ export type Database = {
       scanned_document: { Row: ScannedDocument; Insert: Partial<ScannedDocument>; Update: Partial<ScannedDocument>; Relationships: [] };
       mfb_connection: { Row: MfbConnection; Insert: Partial<MfbConnection>; Update: Partial<MfbConnection>; Relationships: [] };
       hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
+      ai_usage: { Row: AiUsage; Insert: Partial<AiUsage>; Update: Partial<AiUsage>; Relationships: [] };
+      user_ai_key: { Row: UserAiKey; Insert: Partial<UserAiKey>; Update: Partial<UserAiKey>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
     };
     Views: {
