@@ -8,7 +8,11 @@ export const runtime = "nodejs";
 
 function csv(rows: (string | number | null)[][]): string {
   const cell = (v: string | number | null) => {
-    const s = v == null ? "" : String(v);
+    let s = v == null ? "" : String(v);
+    // Neutralize spreadsheet formula injection: a cell starting with = + - @
+    // (or tab/CR) is executed as a formula by Excel/Sheets. A shared-aircraft
+    // editor could plant =HYPERLINK(...) etc. in a description. Prefix with '.
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return rows.map((r) => r.map(cell).join(",")).join("\r\n");

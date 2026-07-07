@@ -5,6 +5,11 @@
  * for local dev. Mirrors src/app/auth/callback/route.ts.
  */
 export function publicOrigin(request: Request): string {
+  // Pin to the configured site origin when set: a client-supplied Host /
+  // X-Forwarded-Host must not be reflected into redirect targets or the OAuth
+  // redirect_uri (link/redirect poisoning). Set NEXT_PUBLIC_SITE_URL in prod.
+  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configured) return configured.replace(/\/+$/, "");
   const host =
     request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
