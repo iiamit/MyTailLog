@@ -74,7 +74,7 @@ export async function POST(
     const proposed = await runWithAiContext(
       {
         apiKey: gate.apiKey,
-        onUsage: (u) => logAiUsage(supabase, user.id, "equipment-scan", u, gate.ownKey),
+        onUsage: (u) => logAiUsage(user.id, "equipment-scan", u, gate.ownKey),
       },
       () => proposeEquipmentForEntries(supabase, id, inputs, null),
     );
