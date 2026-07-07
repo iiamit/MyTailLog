@@ -325,6 +325,32 @@ export type MfbConnection = {
   updated_at: string;
 }
 
+/** One oil-analysis lab sample (Blackstone/AVLab/etc.), imported from a report. */
+export type OilAnalysisSample = {
+  id: string;
+  aircraft_id: string;
+  component_id: string | null;
+  sample_date: string;
+  analysis_date: string | null;
+  lab: string | null;
+  lab_number: string | null;
+  sample_number: string | null;
+  oil_type: string | null;
+  oil_hours: number | null;
+  engine_hours: number | null;
+  oil_added_quarts: number | null;
+  elements_ppm: Record<string, number>;
+  oil_properties: Record<string, number> | null;
+  universal_averages: Record<string, number> | null;
+  lab_comments: string | null;
+  status: string | null;
+  notes: string | null;
+  excluded_from_averages: boolean;
+  source_page_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** One Anthropic model call — rate-limit source + BYOK usage/cost ledger. */
 export type AiUsage = {
   id: string;
@@ -398,6 +424,7 @@ export type Database = {
       hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
       ai_usage: { Row: AiUsage; Insert: Partial<AiUsage>; Update: Partial<AiUsage>; Relationships: [] };
       user_ai_key: { Row: UserAiKey; Insert: Partial<UserAiKey>; Update: Partial<UserAiKey>; Relationships: [] };
+      oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
     };
     Views: {
