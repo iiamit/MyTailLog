@@ -1,3 +1,5 @@
+import { buildCsp } from "./csp.config.mjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -5,31 +7,13 @@ const nextConfig = {
   // public/manifest.webmanifest and src/app/capture). Headers below let the
   // manifest and service worker be served with the right scope.
   async headers() {
-    // Global security headers. The non-CSP ones can't break the app and are
-    // pure hardening. The CSP is intentionally permissive ('unsafe-inline'/
-    // 'unsafe-eval' — Next needs inline hydration scripts and styles): it still
-    // blocks external script/object/base/form origins and framing.
-    // ponytail: permissive CSP; tighten to nonce-based script-src once verified
-    // against the live app (needs a prod smoke test).
+    // Global security headers. The non-CSP ones can't break the app and are pure
+    // hardening; the CSP itself lives in csp.config.mjs (tested — see test/).
     const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
       ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).host
       : "*.supabase.co";
-    const csp = [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "object-src 'none'",
-      "frame-ancestors 'none'",
-      "img-src 'self' data: blob: https:",
-      "style-src 'self' 'unsafe-inline'",
-      // Scanner CDNs: OpenCV.js (docs.opencv.org, ~9MB wasm — not bundleable) and
-      // jscanify (jsdelivr) for camera auto-crop. The pdf.js worker is self-hosted
-      // (see importFiles.ts), so it needs only worker-src 'self'.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.opencv.org https://cdn.jsdelivr.net",
-      "worker-src 'self' blob:",
-      "font-src 'self' data:",
-      `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}`,
-      "form-action 'self'",
-    ].join("; ");
+    // CSP lives in csp.config.mjs (single source of truth, covered by tests).
+    const csp = buildCsp(supabaseHost);
     const securityHeaders = [
       { key: "Content-Security-Policy", value: csp },
       { key: "X-Frame-Options", value: "DENY" },

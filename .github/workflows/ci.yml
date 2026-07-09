@@ -1,0 +1,28 @@
+name: CI
+
+# The enforcement layer: a test suite only prevents regressions if it runs on
+# every change. Typecheck + lint + tests + build gate every PR and push to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env:
+          # Public build-time values only — dummies so the build resolves; no
+          # secrets needed (nothing calls Supabase/Anthropic at build time).
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
