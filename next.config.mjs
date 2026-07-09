@@ -21,7 +21,11 @@ const nextConfig = {
       "frame-ancestors 'none'",
       "img-src 'self' data: blob: https:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // Scanner CDNs: OpenCV.js (docs.opencv.org, ~9MB wasm — not bundleable) and
+      // jscanify (jsdelivr) for camera auto-crop. The pdf.js worker is self-hosted
+      // (see importFiles.ts), so it needs only worker-src 'self'.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.opencv.org https://cdn.jsdelivr.net",
+      "worker-src 'self' blob:",
       "font-src 'self' data:",
       `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}`,
       "form-action 'self'",

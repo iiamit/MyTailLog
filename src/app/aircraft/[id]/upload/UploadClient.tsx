@@ -135,7 +135,10 @@ export function UploadClient({
             if (online && pages % 5 === 0) drain();
           });
           batchResults.push({ name: file.name, pages, warnings });
-        } catch {
+        } catch (err) {
+          // Surface the real cause (was swallowed): CSP-blocked worker, an
+          // encrypted/corrupt PDF, etc. all otherwise show the same generic line.
+          console.error(`Upload failed for "${file.name}":`, err);
           batchResults.push({
             name: file.name,
             pages,
