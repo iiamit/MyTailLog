@@ -95,7 +95,11 @@ let pdfLib: Promise<typeof import("pdfjs-dist")> | null = null;
 function getPdfLib(): Promise<typeof import("pdfjs-dist")> {
   if (!pdfLib) {
     pdfLib = import("pdfjs-dist").then((lib) => {
-      lib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${lib.version}/build/pdf.worker.min.mjs`;
+      // Self-hosted from public/ (same origin) so the app's CSP (`script-src
+      // 'self'`) allows the worker — a CDN URL is blocked and breaks PDF upload.
+      // public/pdf.worker.min.mjs must match this pdfjs-dist version (6.1.200);
+      // re-copy from node_modules/pdfjs-dist/build/ on upgrade.
+      lib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       return lib;
     });
   }
