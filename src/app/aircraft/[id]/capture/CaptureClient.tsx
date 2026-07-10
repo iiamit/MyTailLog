@@ -40,6 +40,21 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
+// Cap the stored image's long edge. A phone frame can be 3–4000px / several MB;
+// a logbook page needs ~2000px for review/OCR, which cuts storage + egress
+// several-fold with no legibility loss. (The upload path already caps at 2400.)
+const MAX_STORED_EDGE = 2000;
+function downscale(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  const long = Math.max(canvas.width, canvas.height);
+  if (long <= MAX_STORED_EDGE) return canvas;
+  const scale = MAX_STORED_EDGE / long;
+  const out = document.createElement("canvas");
+  out.width = Math.round(canvas.width * scale);
+  out.height = Math.round(canvas.height * scale);
+  out.getContext("2d")!.drawImage(canvas, 0, 0, out.width, out.height);
+  return out;
+}
+
 export function CaptureClient({
   aircraftId,
   logbooks,
@@ -195,8 +210,9 @@ export function CaptureClient({
     frame.height = video.videoHeight;
     frame.getContext("2d")!.drawImage(video, 0, 0);
 
-    // Detect + deskew + crop (no-op if the scanner is unavailable).
-    const processed = extractPage(frame);
+    // Detect + deskew + crop (no-op if the scanner is unavailable), then cap
+    // resolution before storing so egress/storage stay bounded.
+    const processed = downscale(extractPage(frame));
     const report = assessQuality(processed);
     const blob = await toBlob(processed);
 

@@ -4,7 +4,6 @@ import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { ReviewAllClient, type FlatEntry } from "./ReviewAllClient";
 
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export default async function ReviewAllPage({
   params,
@@ -55,20 +54,12 @@ export default async function ReviewAllPage({
   });
   const pageOrder = new Map(orderedPages.map((p, i) => [p.id, i]));
 
-  // Sign thumbnails (fall back to the full image) + the full image, in two batch
-  // calls rather than one per page.
-  const thumbPaths = orderedPages.map((p) => p.thumbnail_path ?? p.storage_path);
-  const fullPaths = orderedPages.map((p) => p.storage_path);
-  const [{ data: thumbSigned }, { data: fullSigned }] = await Promise.all([
-    supabase.storage.from(BUCKET).createSignedUrls(thumbPaths, 3600),
-    supabase.storage.from(BUCKET).createSignedUrls(fullPaths, 3600),
-  ]);
+  // Stable, browser-cacheable image URLs (see /api/page/[pageId]/image) instead
+  // of a fresh signed URL per view. ?thumb=1 serves thumb-or-full.
   const thumbUrl = new Map(
-    orderedPages.map((p, i) => [p.id, thumbSigned?.[i]?.signedUrl ?? null]),
+    orderedPages.map((p) => [p.id, `/api/page/${p.id}/image?thumb=1`]),
   );
-  const fullUrl = new Map(
-    orderedPages.map((p, i) => [p.id, fullSigned?.[i]?.signedUrl ?? null]),
-  );
+  const fullUrl = new Map(orderedPages.map((p) => [p.id, `/api/page/${p.id}/image`]));
 
   const flat: FlatEntry[] = (entries ?? [])
     .filter((e) => e.page_id && pageById.has(e.page_id))
