@@ -46,7 +46,10 @@ export default defineConfig({
           SUPABASE_SECRET_KEY: process.env.TEST_SUPABASE_SECRET_KEY ?? "",
           NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
           ENCRYPTION_KEY: process.env.TEST_ENCRYPTION_KEY ?? "e2e-test-encryption-key",
-          // AI is stubbed in Phase 2 (E2E_STUB_AI); not needed for the smoke test.
+          // A dummy key makes the AI UI render (extractionConfigured); E2E_STUB_AI
+          // makes getAnthropic return canned responses so no real calls are made.
+          ANTHROPIC_API_KEY: "e2e-stub-key",
+          E2E_STUB_AI: "1",
         },
       },
 });

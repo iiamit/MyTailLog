@@ -60,12 +60,48 @@ function withUsageLogging(c: Anthropic): Anthropic {
 
 let serverClient: Anthropic | null = null;
 
+// E2E test double: when E2E_STUB_AI is set (ONLY in the Playwright test env —
+// never in prod/apphosting.yaml), getAnthropic returns this instead of a real
+// client, so AI flows are deterministic and free. Returns canned JSON shaped for
+// the calling context (keyed on the request's output schema; default = the ask
+// {answer,citations} shape). Extend the branches as more AI flows get E2E tests.
+function e2eStubClient(): Anthropic {
+  const create = async (body: Anthropic.MessageCreateParamsNonStreaming) => {
+    const schema = (body as { output_config?: { format?: { json_schema?: { schema?: { properties?: Record<string, unknown> } } } } })
+      .output_config?.format?.json_schema?.schema;
+    const props = schema?.properties ?? {};
+    let text: string;
+    if ("samples" in props) {
+      // oil analysis report
+      text = JSON.stringify({
+        lab: "E2E Lab", lab_number: "E2E-1", tail_number: null, oil_type: "Stub 20W50",
+        report_date: "2026-01-01", lab_comments: "Stub report.",
+        universal_averages: [{ element: "iron", ppm: 20 }], confidence: 1, raw_text: "stub",
+        samples: [{
+          sample_date: "2026-01-01", oil_hours: 25, engine_hours: 500, oil_added_quarts: 1,
+          sample_number: "E2E-1", elements_ppm: [{ element: "iron", ppm: 30 }], oil_properties: [],
+        }],
+      });
+    } else {
+      // ask (no schema) and any not-yet-stubbed flow
+      text = JSON.stringify({ answer: "E2E stubbed answer.", citations: [] });
+    }
+    return {
+      id: "e2e-stub", type: "message", role: "assistant", model: String(body.model),
+      content: [{ type: "text", text }], stop_reason: "end_turn", stop_sequence: null,
+      usage: { input_tokens: 1, output_tokens: 1 },
+    } as unknown as Anthropic.Message;
+  };
+  return { messages: { create } } as unknown as Anthropic;
+}
+
 /**
  * Construct the Anthropic client for the current request. Uses the user's own
  * key from the request context (BYOK) when present; otherwise the shared
  * server key. Throws a clear error if neither is available.
  */
 export function getAnthropic(): Anthropic {
+  if (process.env.E2E_STUB_AI) return withUsageLogging(e2eStubClient());
   const { apiKey } = currentAiContext();
   if (apiKey) return withUsageLogging(new Anthropic({ apiKey }));
   if (!process.env.ANTHROPIC_API_KEY) {
