@@ -120,10 +120,30 @@ env-gated test mode:
 - **Live tier** runs nightly (cron) or on manual dispatch, gated on secrets, with a
   small real-AI budget.
 
-## Open decisions (need your input before Phase 0)
+## Decisions (confirmed)
 
-1. **Dedicated test Supabase project** — OK to create one? (Strongly recommended
-   over testing against prod.)
-2. **Auth** — email + password test account (recommended), or the JWT you offered?
-3. **AI stubbing** — OK to add the small `E2E_STUB_AI` testability hook in the
-   extraction layer (keeps CI free + deterministic), plus the occasional live tier?
+1. **Dedicated test Supabase project** — yes. Write-flow tests run there, never
+   against prod.
+2. **Auth** — email + password test account; Playwright logs in once and reuses
+   `storageState`.
+3. **AI** — add the `E2E_STUB_AI` testability hook for a fast/free/deterministic
+   per-PR tier, plus a scheduled **live** real-AI smoke tier.
+
+## What you need to provision (before the harness can run)
+
+- A **test Supabase project** with all `supabase/migrations/*.sql` applied, and its
+  **Site URL / redirect** configured (or password sign-in enabled) for the test
+  account.
+- A **test account** (email + password) in that project — ideally with the demo
+  aircraft present (auto-created on signup) and, for write flows, permission to
+  create a scratch aircraft.
+- **CI secrets** (GitHub → repo Settings → Secrets): `TEST_SUPABASE_URL`,
+  `TEST_SUPABASE_ANON_KEY`, `TEST_SUPABASE_SECRET_KEY`, `TEST_USER_EMAIL`,
+  `TEST_USER_PASSWORD`, and (for the live tier) a small-budget `TEST_ANTHROPIC_KEY`.
+
+## Next step
+
+Phase 0 scaffolding (Playwright config + auth `global-setup` + cross-cutting
+guards + the `E2E_STUB_AI` hook + a login→dashboard smoke test) can be built now
+against `TEST_BASE_URL`/secrets read from env — it runs the moment the project +
+secrets above exist.
