@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
-import { deletePage } from "./actions";
+import { deletePage, reorderPages } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { useToast } from "@/components/Toast";
@@ -89,6 +89,18 @@ export function PagesPanel({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [queue, setQueue] = useState<"all" | "review" | "processing">("all");
   const [sort, setSort] = useState<"upload" | "date" | "tach">("upload");
+  // Remember the last sort across sessions. Read post-mount (not in the initial
+  // state) so it never mismatches the server-rendered order (default "upload").
+  useEffect(() => {
+    const s = localStorage.getItem("mtl.pagesSort");
+    if (s === "date" || s === "tach") setSort(s);
+  }, []);
+  function changeSort(s: "upload" | "date" | "tach") {
+    setSort(s);
+    localStorage.setItem("mtl.pagesSort", s);
+  }
+  const [reordering, setReordering] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   function patch(id: string, next: Partial<PageRow>) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...next } : r)));
@@ -127,6 +139,30 @@ export function PagesPanel({
     }
     setRows((rs) => rs.filter((r) => r.id !== row.id));
     toast.success("Page deleted.");
+  }
+
+  // Manual reorder (one logbook at a time): swap a page with its same-logbook
+  // neighbour, renumber page_sequence, and persist. Optimistic; resyncs on error.
+  async function movePage(pageId: string, dir: -1 | 1): Promise<void> {
+    const i = rows.findIndex((r) => r.id === pageId);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= rows.length || rows[j].logbookId !== rows[i].logbookId) return;
+    const lbId = rows[i].logbookId;
+    const next = [...rows];
+    [next[i], next[j]] = [next[j], next[i]];
+    let seq = 0;
+    const renum = next.map((r) => (r.logbookId === lbId ? { ...r, pageSequence: (seq += 1) } : r));
+    setRows(renum);
+    setSavingOrder(true);
+    const res = await reorderPages(
+      aircraftId,
+      renum.filter((r) => r.logbookId === lbId).map((r) => r.id),
+    );
+    setSavingOrder(false);
+    if ("error" in res) {
+      toast.error(res.error);
+      router.refresh(); // resync from the DB
+    }
   }
 
   // One-time backfill for pages uploaded before thumbnails existed: resize the
@@ -218,7 +254,10 @@ export function PagesPanel({
           return (
             <button
               key={lb.id}
-              onClick={() => setSelectedLogbookId(active ? null : lb.id)}
+              onClick={() => {
+                setReordering(false);
+                setSelectedLogbookId(active ? null : lb.id);
+              }}
               className={`panel px-4 py-4 text-center transition ${
                 active ? "border-line2 bg-panel2" : "hover:border-line2"
               }`}
@@ -320,7 +359,8 @@ export function PagesPanel({
                 key={key}
                 onClick={() => setQueue(key)}
                 aria-pressed={active}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                disabled={reordering}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-40 ${
                   active
                     ? "border-accent bg-accent text-bg"
                     : "border-line text-dim hover:border-line2"
@@ -336,18 +376,36 @@ export function PagesPanel({
             );
           })}
           </div>
-          <label className="flex items-center gap-1.5 text-xs text-dim">
-            Sort
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as "upload" | "date" | "tach")}
-              className="rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-none focus:border-accent"
-            >
-              <option value="upload">Upload order</option>
-              <option value="date">Entry date</option>
-              <option value="tach">Tach</option>
-            </select>
-          </label>
+          <div className="flex items-center gap-2">
+            {canEdit && selectedLogbookId && sort === "upload" && (
+              <button
+                onClick={() => {
+                  setQueue("all"); // reorder needs the full logbook in view
+                  setReordering((v) => !v);
+                }}
+                className={`rounded-md border px-3 py-1 text-xs font-medium ${
+                  reordering
+                    ? "border-accent text-accent"
+                    : "border-line text-dim hover:border-line2 hover:text-ink"
+                }`}
+              >
+                {reordering ? "Done reordering" : "Reorder"}
+              </button>
+            )}
+            <label className="flex items-center gap-1.5 text-xs text-dim">
+              Sort
+              <select
+                value={sort}
+                onChange={(e) => changeSort(e.target.value as "upload" | "date" | "tach")}
+                disabled={reordering}
+                className="rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-none focus:border-accent disabled:opacity-50"
+              >
+                <option value="upload">Upload order</option>
+                <option value="date">Entry date</option>
+                <option value="tach">Tach</option>
+              </select>
+            </label>
+          </div>
         </div>
       )}
 
@@ -365,7 +423,7 @@ export function PagesPanel({
         </p>
       ) : (
         <ul className="divide-y divide-line rounded-lg border border-line">
-          {sortedRows.map((r) => {
+          {sortedRows.map((r, idx) => {
             const needsReview = pageNeedsReview(r);
             // Disputed (an explicit flag) wins; otherwise unconfirmed entries →
             // needs review, and an extracted page with none left → reviewed.
@@ -439,38 +497,61 @@ export function PagesPanel({
                 >
                   {r.extractionStatus}
                 </span>
-                <Link
-                  href={`/aircraft/${aircraftId}/pages/${r.id}/review${
-                    selectedLogbookId ? `?logbook=${encodeURIComponent(selectedLogbookId)}` : ""
-                  }`}
-                  className={`shrink-0 rounded-md border px-3 py-1.5 text-xs ${
-                    needsReview
-                      ? "border-annun-amber/60 font-medium text-annun-amber hover:border-annun-amber"
-                      : "border-line text-dim hover:border-line2 hover:text-ink"
-                  }`}
-                >
-                  Review
-                </Link>
-                {extractionConfigured && (
-                  <button
-                    onClick={() => extractOne(r.id)}
-                    disabled={busy || deletingId === r.id || r.extractionStatus === "processing"}
-                    className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
-                  >
-                    {r.extractionStatus === "extracted" ? "Re-extract" : "Extract"}
-                  </button>
-                )}
-                {canEdit && (
-                  <ConfirmButton
-                    onConfirm={() => deleteRow(r)}
-                    confirmLabel={
-                      r.entryCount > 0 ? `Delete + ${r.entryCount} ${r.entryCount === 1 ? "entry" : "entries"}` : "Delete"
-                    }
-                    disabled={busy || deletingId === r.id}
-                    className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs text-annun-red hover:border-annun-red/60 disabled:opacity-50"
-                  >
-                    {deletingId === r.id ? "Deleting…" : "Delete"}
-                  </ConfirmButton>
+                {reordering ? (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() => movePage(r.id, -1)}
+                      disabled={savingOrder || idx === 0}
+                      aria-label="Move up"
+                      className="rounded-md border border-line px-2 py-1.5 text-xs text-dim hover:border-line2 hover:text-ink disabled:opacity-30"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => movePage(r.id, 1)}
+                      disabled={savingOrder || idx === sortedRows.length - 1}
+                      aria-label="Move down"
+                      className="rounded-md border border-line px-2 py-1.5 text-xs text-dim hover:border-line2 hover:text-ink disabled:opacity-30"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Link
+                      href={`/aircraft/${aircraftId}/pages/${r.id}/review${
+                        selectedLogbookId ? `?logbook=${encodeURIComponent(selectedLogbookId)}` : ""
+                      }`}
+                      className={`shrink-0 rounded-md border px-3 py-1.5 text-xs ${
+                        needsReview
+                          ? "border-annun-amber/60 font-medium text-annun-amber hover:border-annun-amber"
+                          : "border-line text-dim hover:border-line2 hover:text-ink"
+                      }`}
+                    >
+                      Review
+                    </Link>
+                    {extractionConfigured && (
+                      <button
+                        onClick={() => extractOne(r.id)}
+                        disabled={busy || deletingId === r.id || r.extractionStatus === "processing"}
+                        className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
+                      >
+                        {r.extractionStatus === "extracted" ? "Re-extract" : "Extract"}
+                      </button>
+                    )}
+                    {canEdit && (
+                      <ConfirmButton
+                        onConfirm={() => deleteRow(r)}
+                        confirmLabel={
+                          r.entryCount > 0 ? `Delete + ${r.entryCount} ${r.entryCount === 1 ? "entry" : "entries"}` : "Delete"
+                        }
+                        disabled={busy || deletingId === r.id}
+                        className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs text-annun-red hover:border-annun-red/60 disabled:opacity-50"
+                      >
+                        {deletingId === r.id ? "Deleting…" : "Delete"}
+                      </ConfirmButton>
+                    )}
+                  </>
                 )}
               </li>
             );

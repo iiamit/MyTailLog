@@ -49,3 +49,27 @@ export async function deletePage(
   revalidatePath(`/aircraft/${aircraftId}`);
   return { ok: true };
 }
+
+/**
+ * Persist a manual page order for one logbook: renumber page_sequence to match
+ * `orderedIds` (1..N). page_sequence has no unique constraint, so a straight
+ * renumber is safe. RLS scopes updates to editors of this aircraft; the
+ * aircraft_id filter is a belt-and-suspenders guard. page_sequence drives the
+ * #N label and the review prev/next order, so this reorders those too.
+ */
+export async function reorderPages(
+  aircraftId: string,
+  orderedIds: string[],
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("page")
+      .update({ page_sequence: i + 1 })
+      .eq("id", orderedIds[i])
+      .eq("aircraft_id", aircraftId);
+    if (error) return { error: `Couldn't save order: ${error.message}` };
+  }
+  revalidatePath(`/aircraft/${aircraftId}/pages`);
+  return { ok: true };
+}
