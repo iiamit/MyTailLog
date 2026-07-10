@@ -17,6 +17,25 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Preflight — verify the TEST Supabase env before spending a browser run
+        env:
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: |
+          fail=0
+          for v in TEST_SUPABASE_URL TEST_SUPABASE_ANON_KEY TEST_USER_EMAIL TEST_USER_PASSWORD; do
+            [ -n "${!v}" ] || { echo "::error::Secret $v is missing/empty"; fail=1; }
+          done
+          [ "$fail" = 0 ] || exit 1
+          case "$TEST_SUPABASE_URL" in
+            https://*.supabase.co) ;;
+            *) echo "::error::TEST_SUPABASE_URL must be https://<ref>.supabase.co (got a different shape)"; exit 1;;
+          esac
+          code=$(curl -s -o /tmp/h -w '%{http_code}' -H "apikey: $TEST_SUPABASE_ANON_KEY" "$TEST_SUPABASE_URL/auth/v1/health" || echo 000)
+          echo "auth/v1/health -> HTTP $code"; head -c 200 /tmp/h; echo
+          grep -qi "GoTrue" /tmp/h || { echo "::error::$TEST_SUPABASE_URL/auth/v1/health is not a live Supabase auth API (got HTML/other). Check the URL + anon key point at the TEST project."; exit 1; }
       - run: npm run e2e
         env:
           CI: "true"
