@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
+import { sortPages, movedOrder, type SortKey, type SortDir } from "@/lib/pageSort";
 import { deletePage, reorderPages } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -48,14 +49,6 @@ function pageNeedsReview(r: PageRow): boolean {
   return r.extractionStatus === "extracted" && r.unconfirmedCount > 0;
 }
 
-// Ascending compare with nulls last — a page with no extracted date/tach sorts to
-// the end rather than jumping to the top. Handles strings (dates) and numbers.
-function cmpNullableAsc(a: string | number | null, b: string | number | null): number {
-  if (a == null) return b == null ? 0 : 1;
-  if (b == null) return -1;
-  return typeof a === "string" ? a.localeCompare(b as string) : (a as number) - (b as number);
-}
-
 const STATUS_STYLE: Record<ExtractionStatus, { className: string; style?: CSSProperties }> = {
   pending: { className: "bg-panel2 text-dim" },
   processing: { className: "bg-accent-soft text-accent" },
@@ -88,19 +81,33 @@ export function PagesPanel({
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [queue, setQueue] = useState<"all" | "review" | "processing">("all");
-  const [sort, setSort] = useState<"upload" | "date" | "tach">("upload");
-  // Remember the last sort across sessions. Read post-mount (not in the initial
-  // state) so it never mismatches the server-rendered order (default "upload").
+  const [sort, setSort] = useState<SortKey>("upload");
+  const [dir, setDir] = useState<SortDir>("asc");
+  // Remember sort + direction across sessions. Read post-mount (not in the
+  // initial state) so it never mismatches the server-rendered order.
   useEffect(() => {
     const s = localStorage.getItem("mtl.pagesSort");
     if (s === "date" || s === "tach") setSort(s);
+    if (localStorage.getItem("mtl.pagesDir") === "desc") setDir("desc");
   }, []);
-  function changeSort(s: "upload" | "date" | "tach") {
+  function changeSort(s: SortKey) {
     setSort(s);
     localStorage.setItem("mtl.pagesSort", s);
   }
+  function changeDir(d: SortDir) {
+    setDir(d);
+    localStorage.setItem("mtl.pagesDir", d);
+  }
   const [reordering, setReordering] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
+
+  // Stable logbook group order (from the original server order) so sorting
+  // reorders WITHIN each logbook, never across them.
+  const logbookOrder = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of pages) if (!m.has(p.logbookId)) m.set(p.logbookId, m.size);
+    return m;
+  }, [pages]);
 
   function patch(id: string, next: Partial<PageRow>) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...next } : r)));
@@ -143,21 +150,15 @@ export function PagesPanel({
 
   // Manual reorder (one logbook at a time): swap a page with its same-logbook
   // neighbour, renumber page_sequence, and persist. Optimistic; resyncs on error.
-  async function movePage(pageId: string, dir: -1 | 1): Promise<void> {
-    const i = rows.findIndex((r) => r.id === pageId);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= rows.length || rows[j].logbookId !== rows[i].logbookId) return;
-    const lbId = rows[i].logbookId;
-    const next = [...rows];
-    [next[i], next[j]] = [next[j], next[i]];
-    let seq = 0;
-    const renum = next.map((r) => (r.logbookId === lbId ? { ...r, pageSequence: (seq += 1) } : r));
-    setRows(renum);
-    setSavingOrder(true);
-    const res = await reorderPages(
-      aircraftId,
-      renum.filter((r) => r.logbookId === lbId).map((r) => r.id),
+  async function movePage(pageId: string, delta: 1 | -1): Promise<void> {
+    const orderedIds = movedOrder(rows, pageId, delta);
+    if (!orderedIds) return;
+    const seqById = new Map(orderedIds.map((id, i) => [id, i + 1]));
+    setRows((rs) =>
+      rs.map((r) => (seqById.has(r.id) ? { ...r, pageSequence: seqById.get(r.id)! } : r)),
     );
+    setSavingOrder(true);
+    const res = await reorderPages(aircraftId, orderedIds);
     setSavingOrder(false);
     if ("error" in res) {
       toast.error(res.error);
@@ -233,17 +234,10 @@ export function PagesPanel({
     queue === "review" ? isReview(r) : queue === "processing" ? isProcessing(r) : true,
   );
 
-  // "upload" keeps the server order (logbook, then capture sequence). Date/tach
-  // come from each page's extracted entries — so an early logbook that's been
-  // extracted sorts into chronological place instead of by when it was uploaded.
-  const sortedRows =
-    sort === "upload"
-      ? displayRows
-      : [...displayRows].sort((a, b) =>
-          sort === "date"
-            ? cmpNullableAsc(a.latestDate, b.latestDate)
-            : cmpNullableAsc(a.tach, b.tach),
-        );
+  // Sort WITHIN each logbook (never across). Date/tach come from each page's
+  // extracted entries, so an early logbook that's been extracted sorts into
+  // chronological place inside its own logbook.
+  const sortedRows = sortPages(displayRows, sort, dir, logbookOrder);
 
   return (
     <div className="flex flex-col gap-4">
@@ -381,6 +375,7 @@ export function PagesPanel({
               <button
                 onClick={() => {
                   setQueue("all"); // reorder needs the full logbook in view
+                  setDir("asc"); // and operates on ascending sequence
                   setReordering((v) => !v);
                 }}
                 className={`rounded-md border px-3 py-1 text-xs font-medium ${
@@ -405,6 +400,15 @@ export function PagesPanel({
                 <option value="tach">Tach</option>
               </select>
             </label>
+            <button
+              onClick={() => changeDir(dir === "asc" ? "desc" : "asc")}
+              disabled={reordering}
+              aria-label={`Sort direction: ${dir === "asc" ? "ascending" : "descending"}`}
+              title={dir === "asc" ? "Ascending" : "Descending"}
+              className="rounded-md border border-line bg-panel2 px-2 py-1 text-xs text-dim hover:border-line2 hover:text-ink disabled:opacity-50"
+            >
+              {dir === "asc" ? "↑ Asc" : "↓ Desc"}
+            </button>
           </div>
         </div>
       )}
