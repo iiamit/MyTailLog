@@ -150,7 +150,9 @@ const SECTIONS: Section[] = [
           marks it confirmed. You can <strong>re-extract</strong> a page (e.g. if a multi-page
           entry wasn&apos;t linked) right from the review screen — it replaces that page&apos;s
           entries. The <strong>Logbook pages</strong> view (in the left nav) lists every captured
-          scan grouped by logbook with its <strong>Needs review / Processing</strong> status; the
+          scan grouped by logbook with its <strong>Needs review / Processing</strong> status, and can
+          be <strong>sorted</strong> by upload order, entry date, or tach — so an early logbook you
+          uploaded late still sorts into chronological place once its pages are extracted. The
           aircraft <strong>Overview</strong> summarizes how many pages still need review.
         </p>
         <p>
