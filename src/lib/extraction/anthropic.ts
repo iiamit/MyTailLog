@@ -67,8 +67,8 @@ let serverClient: Anthropic | null = null;
 // {answer,citations} shape). Extend the branches as more AI flows get E2E tests.
 function e2eStubClient(): Anthropic {
   const create = async (body: Anthropic.MessageCreateParamsNonStreaming) => {
-    const schema = (body as { output_config?: { format?: { json_schema?: { schema?: { properties?: Record<string, unknown> } } } } })
-      .output_config?.format?.json_schema?.schema;
+    const schema = (body as { output_config?: { format?: { schema?: { properties?: Record<string, unknown> } } } })
+      .output_config?.format?.schema;
     const props = schema?.properties ?? {};
     let text: string;
     if ("samples" in props) {
