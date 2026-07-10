@@ -46,3 +46,9 @@ yarn-error.log*
 firebase-debug.log*
 .firebaserc
 docs/social/
+
+# playwright e2e
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/e2e/.auth/

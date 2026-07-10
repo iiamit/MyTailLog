@@ -11,6 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
+    "e2e": "playwright test",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push"
   },
@@ -25,6 +26,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
