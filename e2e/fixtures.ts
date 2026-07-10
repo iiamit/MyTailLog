@@ -1,4 +1,8 @@
 import { test as base, expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "node:crypto";
+
+export type ScratchAircraft = { path: string; id: string; tail: string };
 
 // Cross-cutting guard: EVERY test using this `test` fails if the page fires a
 // Content-Security-Policy violation. This generalizes the pdf-worker regression
@@ -10,7 +14,7 @@ import { test as base, expect } from "@playwright/test";
 // we've seen what real flows produce.
 // demoBase: the read-only demo aircraft's path (/aircraft/<id>), read from the
 // dashboard so tests don't hardcode a per-project UUID.
-export const test = base.extend<{ demoBase: string }>({
+export const test = base.extend<{ demoBase: string; scratch: ScratchAircraft }>({
   page: async ({ page }, use, testInfo) => {
     await page.addInitScript(() => {
       const w = window as unknown as { __cspViolations?: string[] };
@@ -48,6 +52,45 @@ export const test = base.extend<{ demoBase: string }>({
       .getAttribute("href");
     if (!href) throw new Error("Demo aircraft link not found on /dashboard");
     await use(href);
+  },
+
+  scratch: async ({}, use) => {
+    const url = process.env.TEST_SUPABASE_URL;
+    const key = process.env.TEST_SUPABASE_SECRET_KEY;
+    const email = process.env.TEST_USER_EMAIL;
+    if (!url || !key || !email) {
+      throw new Error("scratch fixture needs TEST_SUPABASE_URL/_SECRET_KEY + TEST_USER_EMAIL");
+    }
+    const admin = createClient(url, key);
+    const { data: profile, error: pe } = await admin
+      .from("profile")
+      .select("id")
+      .eq("email", email)
+      .single();
+    if (pe || !profile) throw new Error(`scratch: harness profile not found for ${email}: ${pe?.message}`);
+
+    const id = randomUUID();
+    const tail = `NE2E${id.slice(0, 4).toUpperCase()}`;
+    const { error: ae } = await admin.from("aircraft").insert({
+      id,
+      owner_id: profile.id,
+      tail_number: tail,
+      make: "Cessna",
+      model: "172",
+      engine_serials: [],
+      prop_serials: [],
+    });
+    if (ae) throw new Error(`scratch: aircraft insert failed: ${ae.message}`);
+
+    const { error: le } = await admin
+      .from("logbook")
+      .insert(["airframe", "engine", "prop", "avionics", "other"].map((type) => ({ aircraft_id: id, type })));
+    if (le) throw new Error(`scratch: logbook insert failed: ${le.message}`);
+
+    await use({ path: `/aircraft/${id}`, id, tail });
+
+    // Teardown — cascade removes logbooks/pages/etc.
+    await admin.from("aircraft").delete().eq("id", id);
   },
 });
 
