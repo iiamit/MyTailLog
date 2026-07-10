@@ -48,6 +48,14 @@ function pageNeedsReview(r: PageRow): boolean {
   return r.extractionStatus === "extracted" && r.unconfirmedCount > 0;
 }
 
+// Ascending compare with nulls last — a page with no extracted date/tach sorts to
+// the end rather than jumping to the top. Handles strings (dates) and numbers.
+function cmpNullableAsc(a: string | number | null, b: string | number | null): number {
+  if (a == null) return b == null ? 0 : 1;
+  if (b == null) return -1;
+  return typeof a === "string" ? a.localeCompare(b as string) : (a as number) - (b as number);
+}
+
 const STATUS_STYLE: Record<ExtractionStatus, { className: string; style?: CSSProperties }> = {
   pending: { className: "bg-panel2 text-dim" },
   processing: { className: "bg-accent-soft text-accent" },
@@ -80,6 +88,7 @@ export function PagesPanel({
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [queue, setQueue] = useState<"all" | "review" | "processing">("all");
+  const [sort, setSort] = useState<"upload" | "date" | "tach">("upload");
 
   function patch(id: string, next: Partial<PageRow>) {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...next } : r)));
@@ -188,6 +197,18 @@ export function PagesPanel({
     queue === "review" ? isReview(r) : queue === "processing" ? isProcessing(r) : true,
   );
 
+  // "upload" keeps the server order (logbook, then capture sequence). Date/tach
+  // come from each page's extracted entries — so an early logbook that's been
+  // extracted sorts into chronological place instead of by when it was uploaded.
+  const sortedRows =
+    sort === "upload"
+      ? displayRows
+      : [...displayRows].sort((a, b) =>
+          sort === "date"
+            ? cmpNullableAsc(a.latestDate, b.latestDate)
+            : cmpNullableAsc(a.tach, b.tach),
+        );
+
   return (
     <div className="flex flex-col gap-4">
       {/* Logbook tiles double as a filter. */}
@@ -284,7 +305,8 @@ export function PagesPanel({
       </div>
 
       {rows.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
           {(
             [
               ["all", "All", visibleRows.length],
@@ -313,6 +335,19 @@ export function PagesPanel({
               </button>
             );
           })}
+          </div>
+          <label className="flex items-center gap-1.5 text-xs text-dim">
+            Sort
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as "upload" | "date" | "tach")}
+              className="rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-none focus:border-accent"
+            >
+              <option value="upload">Upload order</option>
+              <option value="date">Entry date</option>
+              <option value="tach">Tach</option>
+            </select>
+          </label>
         </div>
       )}
 
@@ -320,7 +355,7 @@ export function PagesPanel({
         <p className="rounded-lg border border-dashed border-line px-5 py-8 text-center text-sm text-dim">
           No pages yet. Capture or upload logbook pages to extract entries.
         </p>
-      ) : displayRows.length === 0 ? (
+      ) : sortedRows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line px-5 py-8 text-center text-sm text-dim">
           {queue === "review"
             ? "Nothing to review here."
@@ -330,7 +365,7 @@ export function PagesPanel({
         </p>
       ) : (
         <ul className="divide-y divide-line rounded-lg border border-line">
-          {displayRows.map((r) => {
+          {sortedRows.map((r) => {
             const needsReview = pageNeedsReview(r);
             // Disputed (an explicit flag) wins; otherwise unconfirmed entries →
             // needs review, and an extracted page with none left → reviewed.
