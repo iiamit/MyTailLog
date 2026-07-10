@@ -6,7 +6,6 @@ import { getAircraftRole, canEditRole } from "@/lib/access";
 import { CameraIcon, UploadIcon } from "@/components/icons";
 import { PagesPanel, type PageRow, type LogbookTile } from "../PagesPanel";
 
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 // The "Logbooks & pages" browser — every captured scan grouped by logbook, with
 // extraction status and a link into each page's review. Lives on its own rail
@@ -47,24 +46,13 @@ export default async function LogbookPagesPage({
     .order("logbook_id", { ascending: true })
     .order("page_sequence", { ascending: true, nullsFirst: false });
 
-  // Short-lived signed URLs for thumbnails (private bucket): prefer the small
-  // thumbnail, fall back to the original; sign the original too for the lightbox.
+  // Stable, browser-cacheable image URLs (see /api/page/[pageId]/image). ?thumb=1
+  // serves the thumbnail, falling back to the full scan for legacy pages.
   const thumbById = new Map<string, string>();
   const fullById = new Map<string, string>();
-  const pathMeta = new Map<string, { id: string; kind: "thumb" | "full" }>();
   for (const p of pages ?? []) {
-    pathMeta.set(p.storage_path, { id: p.id, kind: "full" });
-    if (p.thumbnail_path) pathMeta.set(p.thumbnail_path, { id: p.id, kind: "thumb" });
-  }
-  const paths = [...pathMeta.keys()];
-  if (paths.length > 0) {
-    const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600);
-    for (const s of signed ?? []) {
-      const meta = s.path ? pathMeta.get(s.path) : undefined;
-      if (meta && s.signedUrl) {
-        (meta.kind === "thumb" ? thumbById : fullById).set(meta.id, s.signedUrl);
-      }
-    }
+    fullById.set(p.id, `/api/page/${p.id}/image`);
+    thumbById.set(p.id, `/api/page/${p.id}/image?thumb=1`);
   }
 
   const { data: entries } = await supabase

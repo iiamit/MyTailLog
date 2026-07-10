@@ -7,7 +7,6 @@ import {
   type LogbookMeta,
 } from "./TimelineClient";
 
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export default async function TimelinePage({
   params,
@@ -51,24 +50,12 @@ export default async function TimelinePage({
     .select("id, storage_path, thumbnail_path")
     .eq("aircraft_id", id);
 
+  // Stable, browser-cacheable image URLs (see /api/page/[pageId]/image).
   const thumbnailByPageId: Record<string, string> = {};
   const fullByPageId: Record<string, string> = {};
-  const pathMeta = new Map<string, { id: string; kind: "thumb" | "full" }>();
   for (const p of pages ?? []) {
-    pathMeta.set(p.storage_path, { id: p.id, kind: "full" });
-    if (p.thumbnail_path) pathMeta.set(p.thumbnail_path, { id: p.id, kind: "thumb" });
-  }
-  const paths = [...pathMeta.keys()];
-  if (paths.length > 0) {
-    const { data: signed } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrls(paths, 3600);
-    for (const s of signed ?? []) {
-      const meta = s.path ? pathMeta.get(s.path) : undefined;
-      if (meta && s.signedUrl) {
-        (meta.kind === "thumb" ? thumbnailByPageId : fullByPageId)[meta.id] = s.signedUrl;
-      }
-    }
+    fullByPageId[p.id] = `/api/page/${p.id}/image`;
+    thumbnailByPageId[p.id] = `/api/page/${p.id}/image?thumb=1`;
   }
   // Thumbnail for the list; fall back to the original when no thumbnail exists.
   const listThumbByPageId: Record<string, string> = { ...fullByPageId, ...thumbnailByPageId };

@@ -6,7 +6,6 @@ import { getAircraftRole, canEditRole } from "@/lib/access";
 import { ReviewClient, type ReviewEntry } from "./ReviewClient";
 import { ReextractButton } from "./ReextractButton";
 
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export default async function ReviewPage({
   params,
@@ -66,10 +65,8 @@ export default async function ReviewPage({
     other: "Unrecognized document",
   };
 
-  // Private bucket: hand the browser a short-lived signed URL for the image.
-  const { data: signed } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(page.storage_path, 3600);
+  // Stable, browser-cacheable image URL (see /api/page/[pageId]/image).
+  const signed = { signedUrl: `/api/page/${page.id}/image` };
 
   // Prev/next page within the same logbook, ordered by capture sequence — so a
   // reviewer (especially handling a split entry) can page back and forth. Pages

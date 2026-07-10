@@ -11,7 +11,6 @@ import {
 } from "@/lib/duplicates";
 import { DuplicatesClient, type EntryRow, type PageRow } from "./DuplicatesClient";
 
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 // Find likely-duplicate pages and entries (from re-uploads / re-extracts) and
 // let the owner delete the redundant copies. Detection is O(n^2) per logbook,
@@ -89,19 +88,10 @@ export default async function DuplicatesPage({
     const pid = pageOfEntry.get(eid);
     if (pid) shownPageIds.add(pid);
   }));
-  const pathMeta = new Map<string, string>(); // storage path → page id
-  for (const p of pageRows ?? []) {
-    if (!shownPageIds.has(p.id)) continue;
-    pathMeta.set(p.thumbnail_path ?? p.storage_path, p.id);
-  }
+  // Stable, browser-cacheable thumbnail URLs (see /api/page/[pageId]/image).
   const thumbByPage = new Map<string, string>();
-  const paths = [...pathMeta.keys()];
-  if (paths.length > 0) {
-    const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600);
-    for (const s of signed ?? []) {
-      const pid = s.path ? pathMeta.get(s.path) : undefined;
-      if (pid && s.signedUrl) thumbByPage.set(pid, s.signedUrl);
-    }
+  for (const p of pageRows ?? []) {
+    if (shownPageIds.has(p.id)) thumbByPage.set(p.id, `/api/page/${p.id}/image?thumb=1`);
   }
 
   const pageMeta = new Map(
