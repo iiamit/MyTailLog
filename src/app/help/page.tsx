@@ -152,7 +152,9 @@ const SECTIONS: Section[] = [
           entries. The <strong>Logbook pages</strong> view (in the left nav) lists every captured
           scan grouped by logbook with its <strong>Needs review / Processing</strong> status, and can
           be <strong>sorted</strong> by upload order, entry date, or tach — so an early logbook you
-          uploaded late still sorts into chronological place once its pages are extracted. The
+          uploaded late still sorts into chronological place once its pages are extracted (the sort
+          is remembered). Filter to a single logbook and hit <strong>Reorder</strong> to hand-arrange
+          its pages with the ↑/↓ arrows — handy for scans captured out of order. The
           aircraft <strong>Overview</strong> summarizes how many pages still need review.
         </p>
         <p>
