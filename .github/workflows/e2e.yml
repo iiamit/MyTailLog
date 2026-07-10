@@ -1,9 +1,13 @@
 name: E2E
 
-# Manual-trigger only for now: it needs the TEST_* repo secrets + a reachable
-# test Supabase project. Once it's green here, wire it to pull_request / a nightly
-# schedule (add `on: pull_request` / `schedule`). See docs/e2e-regression-plan.md.
+# Runs on every PR, nightly, and on demand. Needs the TEST_* repo secrets + a
+# reachable test Supabase project (the preflight fails fast if either is off).
+# Fork PRs won't have secrets — this is a single-owner repo, so that's moot.
+# See docs/e2e-regression-plan.md.
 on:
+  pull_request:
+  schedule:
+    - cron: "23 7 * * *" # nightly ~07:23 UTC (off-peak minute)
   workflow_dispatch:
 
 jobs:
