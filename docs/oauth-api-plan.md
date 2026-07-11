@@ -75,8 +75,10 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
   See "P1b mount notes" below.
 - **P1c (done):** consent/interaction screen (per-aircraft selection) +
   "Connected apps" management. See "P1c notes" below.
-- **P2:** Resource Server — `airworthiness:read` first, token+scope+aircraft
-  enforcement, audit log, rate limit, **leak-proofing tests**; then the other scopes.
+- **P2 (started):** Resource Server — `airworthiness:read` first (+ aircraft
+  list), token+scope+aircraft enforcement, audit log, rate limit,
+  **leak-proofing test**. See "P2 notes". Other scopes (equipment/hours/oil/wb)
+  reuse the same choke point.
 - **P3:** self-serve developer portal (register/rotate clients) +
   `/.well-known/oauth-authorization-server` discovery + developer docs.
 - **P4:** onboard MFB (register + joint test), then bidirectional-sync coordination.
@@ -137,6 +139,27 @@ Manager + `.env.local`. `oidc-provider` `cookies.keys` secret for its session co
   needs the stored grantId; deferred.
 - **E2E:** `e2e/oauth-flow.spec.ts` registers a public client + drives
   /auth → consent → code → token exchange, and asserts the grant row.
+
+## P2 notes (as built — first cut)
+- **Choke point:** `src/lib/oauth/resource.ts` — the ONLY place that authorizes
+  `/api/v1`. `authenticate()` validates the Bearer via
+  `provider.AccessToken.find` (opaque tokens); `requireScope()` checks the
+  token's scopes; `requireAircraft()` checks the aircraft is in an active
+  `oauth_aircraft_grant` for `(account, client, scope)` and throws **404 (not
+  403)** so a grant for A can't even confirm B exists. All data reads go through
+  the **service client filtered by aircraft id** (RLS does not apply to OAuth
+  tokens — the N1 lesson). `logAccess()` writes `oauth_access_log`; `rateLimit()`
+  is a per-client in-memory bucket (ponytail: per-instance; move to a shared
+  counter if needed — `API_V1_RATE_PER_MIN`, default 120).
+- **Endpoints:** `GET /api/v1/aircraft` (grant-scoped list; identity always,
+  full details with `aircraft:read`) and `GET /api/v1/aircraft/{id}/airworthiness`
+  (AD + inspection status with urgency, current hours, airworthy summary).
+- **Leak-proofing E2E** (`e2e/oauth-resource.spec.ts`): token granted only
+  aircraft A; asserts B (a real aircraft with an AD) returns 404 and its data
+  never appears, the list excludes B, and no token → 401.
+- **Remaining for P2:** the other read scopes' endpoints (equipment/hours/oil/
+  weightbalance) — same three-line enforcement (`authenticate` → `requireScope`
+  → `requireAircraft`).
 
 ## Open items to verify before P1b
 - Pin `oidc-provider` v9 API: the exact `Adapter` interface (find/upsert/destroy/
