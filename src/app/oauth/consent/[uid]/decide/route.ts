@@ -44,6 +44,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ uid
   const clientId = String(details.params.client_id);
   const requested = String(details.params.scope ?? "").split(" ").filter(Boolean);
 
+  // NEVER trust the submitted aircraft ids: a tampered form could list aircraft
+  // the user doesn't own. Keep only aircraft this user actually OWNS (the consent
+  // page only *displays* owned aircraft — it is not the security boundary). RLS
+  // (0035) enforces the same, but we filter here for a clean deny + defense in depth.
+  const { data: owned } = await supabase
+    .from("aircraft")
+    .select("id")
+    .eq("owner_id", accountId)
+    .in("id", aircraftIds);
+  const ownedIds = (owned ?? []).map((a) => a.id);
+  if (ownedIds.length === 0) {
+    await provider.interactionFinished(
+      req,
+      res,
+      { error: "access_denied", error_description: "No aircraft you own were selected." },
+      { mergeWithLastSubmission: false },
+    );
+    return toFetchResponse(res);
+  }
+
   // The oidc grant carries the requested scopes; the per-aircraft restriction is
   // ours (oauth_aircraft_grant), enforced by the Resource Server (P2).
   const grant = new provider.Grant({ accountId, clientId });
@@ -51,14 +71,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ uid
   const grantId = await grant.save();
 
   const dataScopes = requested.filter((s) => s !== "openid" && s !== "offline_access");
-  const rows = aircraftIds.map((aircraft_id) => ({
+  const rows = ownedIds.map((aircraft_id) => ({
     account_id: accountId,
     client_id: clientId,
     aircraft_id,
     scopes: dataScopes,
     revoked_at: null,
   }));
-  // Authed client → RLS enforces account_id = auth.uid(); onConflict re-consents.
+  // Authed client → RLS enforces account_id = auth.uid() AND ownership; onConflict re-consents.
   const { error } = await supabase
     .from("oauth_aircraft_grant")
     .upsert(rows, { onConflict: "account_id,client_id,aircraft_id" });
