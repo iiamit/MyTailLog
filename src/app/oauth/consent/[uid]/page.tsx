@@ -1,8 +1,29 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getOAuthProvider } from "@/lib/oauth/provider";
+import { toNode } from "@/lib/oauth/bridge";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Load the pending interaction using oidc-provider's own logic (reads the signed
+// _interaction cookie → uid → interaction), rebuilding a Node request from the
+// incoming cookies. Same source of truth as the /decide handler. Returns null
+// when the request is missing/expired.
+async function loadInteraction(uid: string) {
+  const jar = await cookies();
+  const cookieHeader = jar.getAll().map((c) => `${c.name}=${c.value}`).join("; ");
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const request = new Request(`${site}/oauth/consent/${uid}`, { headers: { cookie: cookieHeader } });
+  const { req, res } = toNode(request);
+  try {
+    return await getOAuthProvider().interactionDetails(req, res);
+  } catch {
+    return null;
+  }
+}
 
 // Plain-English labels for the scopes an app can request (see docs/oauth-api-plan).
 const SCOPE_LABELS: Record<string, string> = {
@@ -31,35 +52,57 @@ export default async function ConsentPage({ params }: { params: Promise<{ uid: s
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/oauth/consent/${uid}`);
 
-  // Read the pending interaction server-side. The uid is unguessable and the
-  // real grant is cookie-verified on POST (interactionDetails), so rendering by
-  // uid is safe. oidc_payloads is server-only (service client).
-  const svc = createServiceClient();
-  const { data: rec } = await svc
-    .from("oidc_payloads")
-    .select("payload, expires_at")
-    .eq("type", "Interaction")
-    .eq("id", uid)
-    .maybeSingle();
-
-  const payload = rec?.payload as { params?: { client_id?: string; scope?: string } } | null;
-  const expired = rec?.expires_at ? Date.parse(rec.expires_at) <= Date.now() : false;
-  if (!payload?.params?.client_id || expired) {
+  const details = await loadInteraction(uid);
+  const clientId = details?.params?.client_id ? String(details.params.client_id) : null;
+  if (!clientId) {
+    // ponytail: E2E-gated diagnostic (never rendered in prod) to pin why the
+    // interaction didn't load. Remove once the flow is green.
+    let debug: string | null = null;
+    if (process.env.E2E_STUB_AI) {
+      const svc = createServiceClient();
+      const byId = await svc
+        .from("oidc_payloads")
+        .select("id, uid, type, expires_at, payload")
+        .eq("id", uid)
+        .maybeSingle();
+      const inter = await svc
+        .from("oidc_payloads")
+        .select("id, uid, type, expires_at")
+        .eq("type", "Interaction")
+        .limit(5);
+      debug = JSON.stringify({
+        uid,
+        detailsNull: !details,
+        byIdErr: byId.error?.message ?? null,
+        byIdFound: !!byId.data,
+        byIdType: byId.data?.type ?? null,
+        byIdPayloadKeys: byId.data?.payload ? Object.keys(byId.data.payload) : null,
+        byIdHasParams: !!(byId.data?.payload as { params?: unknown } | null)?.params,
+        interErr: inter.error?.message ?? null,
+        interRows: inter.data,
+      });
+    }
     return (
       <Frame>
         <h1 className="font-display text-lg font-semibold">Request expired</h1>
         <p className="text-sm text-dim">
           This authorization request is no longer valid. Please start again from the app.
         </p>
+        {debug && (
+          <pre data-testid="oauth-debug" style={{ whiteSpace: "pre-wrap", fontSize: 10 }}>
+            {debug}
+          </pre>
+        )}
       </Frame>
     );
   }
 
-  const clientId = payload.params.client_id;
-  const requested = (payload.params.scope ?? "").split(" ").filter(Boolean);
+  const requested = String(details!.params.scope ?? "").split(" ").filter(Boolean);
   const dataScopes = requested.filter((s) => s !== "openid" && s !== "offline_access");
 
-  const { data: client } = await svc
+  // Client display name — service client because oauth_client RLS is owner-scoped
+  // (the developer), not the consenting user.
+  const { data: client } = await createServiceClient()
     .from("oauth_client")
     .select("name")
     .eq("client_id", clientId)
