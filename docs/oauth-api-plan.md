@@ -78,8 +78,9 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
 - **P2 (done):** Resource Server — all read scopes (airworthiness, aircraft,
   equipment, hours, oil, weightbalance), token+scope+aircraft enforcement, audit
   log, rate limit, **leak-proofing test**. See "P2 notes".
-- **P3:** self-serve developer portal (register/rotate clients) +
-  `/.well-known/oauth-authorization-server` discovery + developer docs.
+- **P3 (done):** self-serve developer portal (`/developers` — register/list/
+  delete public+PKCE clients, RLS-scoped), `/.well-known/oauth-authorization-server`
+  (RFC 8414), and `/developers/docs`. See "P3 notes".
 - **P4:** onboard MFB (register + joint test), then bidirectional-sync coordination.
 
 ## New env/secrets (later phases)
@@ -161,6 +162,22 @@ Manager + `.env.local`. `oidc-provider` `cookies.keys` secret for its session co
   aircraft A; asserts B (a real aircraft with an AD) returns 404 across endpoints
   and its data never appears, the list excludes B, an un-requested scope (`oil`)
   → 403, and no token → 401.
+
+## P3 notes (as built)
+- **Portal** `/developers` (+ nav item in AccountShell): register an app (name,
+  redirect URIs, scopes), list, delete — all via server actions on `oauth_client`
+  with **owner-scoped RLS** (no service client). Redirect URIs are validated to an
+  exact allowlist (https, or http on localhost; no fragments/wildcards). Apps are
+  **public + PKCE** (`is_confidential=false`, no secret shown). Scope constants +
+  labels live in `src/lib/oauth/scopes.ts` (shared with the consent screen, no
+  oidc-provider import). Edit-in-place deferred (delete + re-register for now).
+- **Discovery** `/.well-known/oauth-authorization-server` (RFC 8414) at the root,
+  built from `oauthIssuer()` + `OAUTH_SCOPES`; complements oidc-provider's OIDC
+  discovery at `${issuer}/.well-known/openid-configuration`.
+- **Docs** `/developers/docs`: discovery URLs, the auth-code+PKCE steps, the
+  `/api/v1` endpoints, and the scope table.
+- **E2E** `e2e/oauth-portal.spec.ts`: RFC8414 responds; register→see→delete an
+  app; invalid redirect URI rejected. `/help` gains a "Developer API" section.
 
 ## Open items to verify before P1b
 - Pin `oidc-provider` v9 API: the exact `Adapter` interface (find/upsert/destroy/

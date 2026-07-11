@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getOAuthProvider } from "@/lib/oauth/provider";
 import { toNode } from "@/lib/oauth/bridge";
+import { SCOPE_LABELS } from "@/lib/oauth/scopes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,16 +25,6 @@ async function loadInteraction(uid: string) {
     return null;
   }
 }
-
-// Plain-English labels for the scopes an app can request (see docs/oauth-api-plan).
-const SCOPE_LABELS: Record<string, string> = {
-  "airworthiness:read": "Airworthiness — AD/inspection status, due dates, current hours",
-  "aircraft:read": "Aircraft details — tail, make/model, serial numbers, home base",
-  "equipment:read": "Installed equipment & components",
-  "hours:read": "Current hours (hobbs / tach)",
-  "oil:read": "Oil-analysis samples & wear-metal trends",
-  "weightbalance:read": "Weight & balance",
-};
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
