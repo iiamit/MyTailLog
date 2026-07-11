@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SCOPE_LABELS } from "@/lib/oauth/scopes";
-import { createOAuthApp, deleteOAuthApp } from "./actions";
+import { createOAuthApp, deleteOAuthApp, rotateOAuthSecret } from "./actions";
 
 export type OAuthApp = {
   client_id: string;
@@ -24,12 +24,15 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
   // create/delete (no local copy to drift out of sync).
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [newId, setNewId] = useState<string | null>(null);
+  // A freshly issued client secret, shown ONCE (create or rotate).
+  const [secret, setSecret] = useState<{ clientId: string; value: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function register(formData: FormData) {
     setBusy(true);
     setMsg(null);
     setNewId(null);
+    setSecret(null);
     const res = await createOAuthApp(formData);
     setBusy(false);
     if (res.error) {
@@ -37,8 +40,20 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
       return;
     }
     setNewId(res.clientId ?? null);
+    if (res.clientId && res.clientSecret) setSecret({ clientId: res.clientId, value: res.clientSecret });
     setMsg({ ok: true, text: "App registered." });
     (document.getElementById("register-app") as HTMLFormElement | null)?.reset();
+    router.refresh();
+  }
+
+  async function rotate(clientId: string) {
+    setMsg(null);
+    const res = await rotateOAuthSecret(clientId);
+    if (res.error) {
+      setMsg({ ok: false, text: res.error });
+      return;
+    }
+    if (res.secret) setSecret({ clientId, value: res.secret });
     router.refresh();
   }
 
@@ -49,6 +64,7 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
       return;
     }
     if (newId === clientId) setNewId(null);
+    if (secret?.clientId === clientId) setSecret(null);
     router.refresh();
   }
 
@@ -85,6 +101,11 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
             <span className="text-faint">issue a refresh token for long-lived access</span>
           </label>
         </fieldset>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="confidential" />
+          <span className="text-ink">Confidential (server-to-server)</span>
+          <span className="text-faint">issues a client secret (else public + PKCE)</span>
+        </label>
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
@@ -99,12 +120,23 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
         </div>
         {newId && (
           <div className="rounded-md border border-line bg-panel2 p-3 text-sm">
-            <div className="text-faint">Your client_id (public client — use with PKCE, no secret):</div>
+            <div className="text-faint">Your client_id:</div>
             <code className="readout break-all text-ink">{newId}</code>
           </div>
         )}
+        {secret && (
+          <div className="rounded-md border border-annun-amber/40 bg-[var(--amb-bg)] p-3 text-sm">
+            <div className="font-medium text-annun-amber">
+              Client secret — copy it now, it won&apos;t be shown again.
+            </div>
+            <code className="readout mt-1 block break-all text-ink" data-testid="client-secret">
+              {secret.value}
+            </code>
+          </div>
+        )}
         <p className="text-[11px] text-faint">
-          Apps are public OAuth 2.1 clients (Authorization Code + PKCE). See the{" "}
+          OAuth 2.1, Authorization Code + PKCE. Public by default; check{" "}
+          <em>Confidential</em> for a server app with a client secret. See the{" "}
           <a href="/developers/docs" className="underline">
             API docs
           </a>
@@ -122,18 +154,34 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
             {apps.map((app) => (
               <li key={app.client_id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <div className="min-w-0 text-sm">
-                  <div className="font-medium text-ink">{app.name}</div>
+                  <div className="flex items-center gap-2 font-medium text-ink">
+                    {app.name}
+                    <span className="rounded border border-line px-1.5 py-0.5 text-[10px] text-faint">
+                      {app.is_confidential ? "confidential" : "public"}
+                    </span>
+                  </div>
                   <div className="readout break-all text-[12px] text-faint">{app.client_id}</div>
                   <div className="mt-1 text-faint">{app.scopes.join(", ")}</div>
                   <div className="text-faint">{app.redirect_uris.join(", ")}</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => remove(app.client_id)}
-                  className="shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-annun-red"
-                >
-                  Delete
-                </button>
+                <div className="flex shrink-0 gap-2">
+                  {app.is_confidential && (
+                    <button
+                      type="button"
+                      onClick={() => rotate(app.client_id)}
+                      className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
+                    >
+                      Rotate secret
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => remove(app.client_id)}
+                    className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-annun-red"
+                  >
+                    Delete
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

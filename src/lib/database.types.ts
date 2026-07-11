@@ -388,7 +388,7 @@ export type OidcPayload = {
 /** A self-serve registered third-party OAuth client (developer portal). */
 export type OauthClient = {
   client_id: string;
-  client_secret_hash: string | null;
+  client_secret_cipher: string | null; // AES-GCM ciphertext (confidential clients)
   name: string;
   redirect_uris: string[];
   scopes: string[];

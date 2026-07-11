@@ -88,6 +88,25 @@ GET /api/v1/aircraft/{id}/weightbalance`}</Code>
         </section>
 
         <section className="flex flex-col gap-2">
+          <h2 className="font-semibold">Confidential (server-to-server) apps</h2>
+          <p className="text-dim">
+            Check <strong>Confidential</strong> when registering to get a <strong>client secret</strong>{" "}
+            (shown once — rotate it anytime). Server apps authenticate the token request with HTTP Basic
+            (<code>client_id:client_secret</code>) in addition to PKCE:
+          </p>
+          <Code>{`curl -X POST ${issuer}/token \\
+  -u YOUR_CLIENT_ID:YOUR_CLIENT_SECRET \\
+  -d grant_type=authorization_code \\
+  -d code=THE_CODE \\
+  -d redirect_uri=YOUR_REGISTERED_URI \\
+  -d code_verifier=THE_VERIFIER`}</Code>
+          <p className="text-faint text-[12px]">
+            Public apps (default) skip the secret and rely on PKCE. Either way, access is still
+            per-aircraft and read-only.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-2">
           <h2 className="font-semibold">Scopes</h2>
           <ul className="flex flex-col gap-1 text-dim">
             {DATA_SCOPES.map((s) => (

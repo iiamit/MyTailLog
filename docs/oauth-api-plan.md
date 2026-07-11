@@ -81,7 +81,9 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
 - **P3 (done):** self-serve developer portal (`/developers` — register/list/
   delete public+PKCE clients, RLS-scoped), `/.well-known/oauth-authorization-server`
   (RFC 8414), and `/developers/docs`. See "P3 notes".
-- **P4:** onboard MFB (register + joint test), then bidirectional-sync coordination.
+- **P4 (started):** confidential client support (server-to-server apps like MFB) —
+  see "P4 notes". Remaining: register MFB as a client + joint test + bidirectional
+  sync coordination (needs MFB's participation).
 
 ## New env/secrets (later phases)
 `OIDC_JWKS` (signing keys for access tokens/JWKS) — server-only secret in Secret
@@ -178,6 +180,27 @@ Manager + `.env.local`. `oidc-provider` `cookies.keys` secret for its session co
   `/api/v1` endpoints, and the scope table.
 - **E2E** `e2e/oauth-portal.spec.ts`: RFC8414 responds; register→see→delete an
   app; invalid redirect URI rejected. `/help` gains a "Developer API" section.
+
+## P4 notes (as built)
+- **Migration 0034** replaces the never-used `oauth_client.client_secret_hash`
+  with `client_secret_cipher`. Confidential secrets are stored **encrypted**
+  (AES-256-GCM via `src/lib/crypto.ts`, same as MFB/BYOK secrets), NOT hashed —
+  oidc-provider must reproduce the secret to authenticate the client, so it's
+  reversible; the `ENCRYPTION_KEY` lives in Secret Manager (DB-only leak safe).
+  **Apply 0034 to prod + test before deploy/CI** (the adapter selects the column).
+- **Portal:** a "Confidential (server-to-server)" checkbox issues a `client_secret`
+  (`randomBytes(32)` base64url), shown **once** at creation; "Rotate secret" on
+  the app re-issues it. Public apps are unchanged (PKCE only).
+- **Adapter:** confidential clients map to `token_endpoint_auth_method:
+  'client_secret_basic'` with the decrypted secret; a confidential client with no
+  secret fails closed. Public clients stay `'none'`.
+- **Docs:** `/developers/docs` gains a confidential-app section (Basic auth token
+  request). **E2E** `e2e/oauth-confidential.spec.ts`: register confidential via
+  portal → capture secret → full flow → token with the secret (200) → wrong
+  secret (401).
+- **MFB bidirectional:** we already push hobbs/tach to MFB as a *client*; MFB
+  pulling airworthiness *from us* is now possible via a confidential client + the
+  P2 `/api/v1` API. Actual onboarding + two-way sync needs MFB's side (external).
 
 ## Open items to verify before P1b
 - Pin `oidc-provider` v9 API: the exact `Adapter` interface (find/upsert/destroy/
