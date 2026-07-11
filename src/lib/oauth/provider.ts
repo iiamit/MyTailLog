@@ -1,19 +1,8 @@
 import Provider, { type Configuration } from "oidc-provider";
 import { SupabaseAdapter } from "./adapter";
+import { OAUTH_SCOPES } from "./scopes";
 
-// The read-only, per-aircraft scopes third-party apps may request (see
-// docs/oauth-api-plan.md). `openid`/`offline_access` are standard; the rest map
-// to Resource Server endpoints (P2). Entries are intentionally absent.
-export const OAUTH_SCOPES = [
-  "openid",
-  "offline_access",
-  "airworthiness:read",
-  "aircraft:read",
-  "equipment:read",
-  "hours:read",
-  "oil:read",
-  "weightbalance:read",
-] as const;
+export { OAUTH_SCOPES };
 
 // Where third-party apps discover us. oidc-provider mounts every route under the
 // issuer's pathname, so this MUST match the Pages API mount (/api/oidc/*).

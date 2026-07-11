@@ -563,6 +563,21 @@ const SECTIONS: Section[] = [
       </p>
     ),
   },
+  {
+    id: "developer-api",
+    icon: <UserIcon />,
+    title: "Developer API (OAuth)",
+    body: (
+      <p>
+        Other apps (like MyFlightBook) can read your aircraft&apos;s airworthiness, equipment, hours,
+        oil, and weight-and-balance data — <strong>only with your per-aircraft consent</strong>, and{" "}
+        <strong>read-only</strong>. When an app asks, you pick which aircraft to share on a consent
+        screen; you can revoke any app anytime under <L href="/profile">Profile → Connected apps</L>.
+        Building an integration? Register an app and read the guide under{" "}
+        <L href="/developers">Developer API</L>. Your transcribed log entries are never shared.
+      </p>
+    ),
+  },
 ];
 
 export default function HelpPage() {

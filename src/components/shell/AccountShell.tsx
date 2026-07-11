@@ -22,6 +22,7 @@ const NAV: Group[] = [
     label: "Account",
     items: [
       { ident: "PRO", label: "Profile", href: "/profile" },
+      { ident: "API", label: "Developer API", href: "/developers" },
       { ident: "HLP", label: "Help & docs", href: "/help" },
     ],
   },
