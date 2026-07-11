@@ -23,7 +23,7 @@ test("OIDC discovery advertises endpoints under the mount, code+PKCE only", asyn
     "revocation_endpoint",
     "introspection_endpoint",
   ]) {
-    expect(meta[key], key).toMatch(new RegExp(`^${issuer}/`));
+    expect(typeof meta[key] === "string" && meta[key].startsWith(`${issuer}/`), `${key}=${meta[key]}`).toBe(true);
   }
 
   // OAuth 2.1 posture: authorization code + PKCE(S256), no implicit.

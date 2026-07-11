@@ -138,7 +138,8 @@ export function UploadClient({
         } catch (err) {
           // Surface the real cause (was swallowed): CSP-blocked worker, an
           // encrypted/corrupt PDF, etc. all otherwise show the same generic line.
-          console.error(`Upload failed for "${file.name}":`, err);
+          // Constant format string; the filename is a value arg (no format-specifier injection).
+          console.error("Upload failed for file:", file.name, err);
           batchResults.push({
             name: file.name,
             pages,
