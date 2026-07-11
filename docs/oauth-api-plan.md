@@ -69,10 +69,10 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
 - Plain-English consent = informed consent.
 
 ## Phased build
-- **P1a (this PR):** data-model migration + DB types + the plan.
-- **P1b:** Panva `oidc-provider` wired to Next route handlers + a Supabase
-  adapter over `oidc_payloads`; `findAccount` → Supabase Auth; JWKS signing keys
-  (a new `OIDC_JWKS` secret); scopes config.
+- **P1a (done, PR #21):** data-model migration + DB types + the plan.
+- **P1b (done):** Panva `oidc-provider` v9 wired to Next; Supabase adapter over
+  `oidc_payloads`; `findAccount` → `sub`; JWKS via `OIDC_JWKS`; scopes config.
+  See "P1b mount notes" below.
 - **P1c:** the consent/interaction screen (per-aircraft selection) + "Connected
   apps" management UI in Profile.
 - **P2:** Resource Server — `airworthiness:read` first, token+scope+aircraft
@@ -84,6 +84,35 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
 ## New env/secrets (later phases)
 `OIDC_JWKS` (signing keys for access tokens/JWKS) — server-only secret in Secret
 Manager + `.env.local`. `oidc-provider` `cookies.keys` secret for its session cookies.
+
+## P1b mount notes (as built)
+- **oidc-provider v9** is a Koa/Node-http framework; App Router hands us a Web
+  `Request`. We mount it as an App Router catch-all `src/app/api/oidc/[...path]`
+  and bridge with **`fetch-to-node`** (`toReqRes`/`toFetchResponse`) — chosen
+  over a Pages API route, which would have flipped Next into hybrid
+  navigation-compat types (nullable `useSearchParams`/`useRouter`/`usePathname`
+  app-wide). Runtime is `nodejs`; oidc-provider must never hit the edge.
+- **Issuer = `${NEXT_PUBLIC_SITE_URL}/api/oidc`.** oidc-provider's routes are
+  root-relative, so the route strips the `/api/oidc` prefix into `req.url` and
+  sets `req.originalUrl` to the full path — that pair is how `urlFor` derives the
+  mount prefix, so advertised endpoints come back under `/api/oidc/*`. Verified
+  against `/.well-known/openid-configuration` + `/jwks` (unit-tested via E2E
+  `e2e/oauth.spec.ts`).
+- `fetch-to-node` leaves `req.socket` null; we `defineProperty` a stub
+  (`{encrypted:false, remoteAddress}`) since Koa reads `socket.encrypted`/
+  `remoteAddress`. `provider.proxy = true`: TLS terminates upstream, so the real
+  scheme/host come from `x-forwarded-proto`/`-host` (prod) and default to
+  http/localhost in dev.
+- Posture: `responseTypes: ['code']`, PKCE required, `devInteractions` off,
+  revocation + introspection on, registration off (the portal owns clients).
+- **Secrets:** `OIDC_JWKS` (RS256 JWKS — `node scripts/gen-oidc-jwks.mjs`).
+  Cookie signing reuses `ENCRYPTION_KEY` unless `OIDC_COOKIE_SECRET` is set.
+  Missing `OIDC_JWKS` → `/api/oidc/*` returns 503, rest of app unaffected.
+- **Deferred to later phases (not yet wired):** clients are still `clients: []`
+  — the `oauth_client`→oidc-client mapping (and confidential-secret handling)
+  lands with the **P3** portal; the `interactions.url` points at
+  `/oauth/consent/:uid`, built in **P1c**. So the authorize flow is not yet
+  end-to-end; discovery/JWKS/token infra is.
 
 ## Open items to verify before P1b
 - Pin `oidc-provider` v9 API: the exact `Adapter` interface (find/upsert/destroy/

@@ -19,8 +19,10 @@
     "@anthropic-ai/sdk": "^0.109.1",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.45.4",
+    "fetch-to-node": "^2.1.0",
     "fflate": "^0.8.3",
     "next": "^15.1.6",
+    "oidc-provider": "^9.9.1",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -28,6 +30,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@types/node": "^22.10.7",
+    "@types/oidc-provider": "^9.5.0",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
     "autoprefixer": "^10.4.20",
