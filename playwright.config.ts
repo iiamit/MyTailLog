@@ -1,4 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
+import { generateKeyPairSync, randomUUID } from "node:crypto";
+
+// A throwaway RS256 signing key for the OAuth provider (OIDC_JWKS) — ephemeral
+// per test run, so no key material is committed.
+function testJwks(): string {
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const jwk = privateKey.export({ format: "jwk" });
+  return JSON.stringify({ keys: [{ ...jwk, use: "sig", alg: "RS256", kid: randomUUID() }] });
+}
 
 // E2E harness (Phase 0). Runs the real app in Chromium against the dedicated
 // TEST Supabase project — see docs/e2e-regression-plan.md.
@@ -50,6 +59,8 @@ export default defineConfig({
           // makes getAnthropic return canned responses so no real calls are made.
           ANTHROPIC_API_KEY: "e2e-stub-key",
           E2E_STUB_AI: "1",
+          // OAuth provider signing keys (see e2e/oauth.spec.ts).
+          OIDC_JWKS: process.env.TEST_OIDC_JWKS ?? testJwks(),
         },
       },
 });

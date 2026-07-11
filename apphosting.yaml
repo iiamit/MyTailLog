@@ -58,6 +58,16 @@ env:
     secret: ENCRYPTION_KEY
     availability:
       - RUNTIME
+  # Server-only. RS256 signing keys (a JWKS JSON) for the OAuth Authorization
+  # Server — signs access/ID tokens and is published at /api/oidc/jwks. Generate
+  # once and keep stable (rotating invalidates issued tokens):
+  #   node scripts/gen-oidc-jwks.mjs | firebase apphosting:secrets:set OIDC_JWKS --data-file -
+  # Without it, /api/oidc/* returns 503 but the rest of the app is unaffected.
+  # (OAuth session cookies are signed with ENCRYPTION_KEY unless OIDC_COOKIE_SECRET is set.)
+  - variable: OIDC_JWKS
+    secret: OIDC_JWKS
+    availability:
+      - RUNTIME
 
   # Non-sensitive defaults.
   - variable: EXTRACTION_MODEL # vision / handwriting (keep strong)

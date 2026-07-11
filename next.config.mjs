@@ -3,6 +3,11 @@ import { buildCsp } from "./csp.config.mjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // oidc-provider resolves token formats via `this.constructor.name`, which Next's
+  // server-bundle minification mangles (breaks token issuance with a cryptic
+  // "dynamic[...] is not a function"). Keep it external so it's required from
+  // node_modules unminified at runtime.
+  serverExternalPackages: ["oidc-provider"],
   // The capture PWA and service worker are registered client-side (see
   // public/manifest.webmanifest and src/app/capture). Headers below let the
   // manifest and service worker be served with the right scope.
