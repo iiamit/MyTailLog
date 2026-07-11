@@ -55,44 +55,12 @@ export default async function ConsentPage({ params }: { params: Promise<{ uid: s
   const details = await loadInteraction(uid);
   const clientId = details?.params?.client_id ? String(details.params.client_id) : null;
   if (!clientId) {
-    // ponytail: E2E-gated diagnostic (never rendered in prod) to pin why the
-    // interaction didn't load. Remove once the flow is green.
-    let debug: string | null = null;
-    if (process.env.E2E_STUB_AI) {
-      const svc = createServiceClient();
-      const byId = await svc
-        .from("oidc_payloads")
-        .select("id, uid, type, expires_at, payload")
-        .eq("id", uid)
-        .maybeSingle();
-      const inter = await svc
-        .from("oidc_payloads")
-        .select("id, uid, type, expires_at")
-        .eq("type", "Interaction")
-        .limit(5);
-      debug = JSON.stringify({
-        uid,
-        detailsNull: !details,
-        byIdErr: byId.error?.message ?? null,
-        byIdFound: !!byId.data,
-        byIdType: byId.data?.type ?? null,
-        byIdPayloadKeys: byId.data?.payload ? Object.keys(byId.data.payload) : null,
-        byIdHasParams: !!(byId.data?.payload as { params?: unknown } | null)?.params,
-        interErr: inter.error?.message ?? null,
-        interRows: inter.data,
-      });
-    }
     return (
       <Frame>
         <h1 className="font-display text-lg font-semibold">Request expired</h1>
         <p className="text-sm text-dim">
           This authorization request is no longer valid. Please start again from the app.
         </p>
-        {debug && (
-          <pre data-testid="oauth-debug" style={{ whiteSpace: "pre-wrap", fontSize: 10 }}>
-            {debug}
-          </pre>
-        )}
       </Frame>
     );
   }
