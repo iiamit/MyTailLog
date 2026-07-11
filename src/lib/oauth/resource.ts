@@ -40,13 +40,25 @@ export function requireScope(caller: ApiCaller, scope: string): void {
 
 /** Aircraft ids this (account, client) may read for `scope` (active grants only). */
 export async function grantedAircraftIds(caller: ApiCaller, scope: string): Promise<string[]> {
-  const { data } = await createServiceClient()
+  const svc = createServiceClient();
+  const { data } = await svc
     .from("oauth_aircraft_grant")
     .select("aircraft_id, scopes")
     .eq("account_id", caller.accountId)
     .eq("client_id", caller.clientId)
     .is("revoked_at", null);
-  return (data ?? []).filter((g) => (g.scopes ?? []).includes(scope)).map((g) => g.aircraft_id);
+  const granted = (data ?? []).filter((g) => (g.scopes ?? []).includes(scope)).map((g) => g.aircraft_id);
+  if (granted.length === 0) return [];
+  // Re-verify LIVE ownership: the token's account must STILL own each granted
+  // aircraft. This closes the grant-outlives-ownership gap (e.g. after an
+  // ownership transfer) and is defense-in-depth against any bad grant row —
+  // the RS reads with a service client, so this is the last ownership check.
+  const { data: owned } = await svc
+    .from("aircraft")
+    .select("id")
+    .eq("owner_id", caller.accountId)
+    .in("id", granted);
+  return (owned ?? []).map((a) => a.id);
 }
 
 /**

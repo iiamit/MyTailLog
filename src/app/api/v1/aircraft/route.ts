@@ -25,7 +25,14 @@ export async function GET(request: Request): Promise<Response> {
     const cols = detailed
       ? "id, tail_number, make, model, year, serial_number, home_base"
       : "id, tail_number";
-    const { data: aircraft, error } = await svc.from("aircraft").select(cols).in("id", ids);
+    // Re-verify LIVE ownership (same rule as resource.ts grantedAircraftIds): only
+    // return granted aircraft the account STILL owns — a grant can't outlive the
+    // ownership that justified it, and the RS reads via a service client (no RLS).
+    const { data: aircraft, error } = await svc
+      .from("aircraft")
+      .select(cols)
+      .in("id", ids)
+      .eq("owner_id", caller.accountId);
     if (error) throw new ApiError(500, "server_error", error.message);
 
     await logAccess(caller, null, detailed ? "aircraft:read" : "aircraft:list", "/api/v1/aircraft");
