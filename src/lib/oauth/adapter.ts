@@ -58,6 +58,27 @@ export class SupabaseAdapter implements Adapter {
   }
 
   async find(id: string): Promise<AdapterPayload | undefined> {
+    // Clients live in oauth_client (the self-serve portal's table), not
+    // oidc_payloads. Map a row to oidc-provider client metadata. v1 clients are
+    // public + PKCE-required (token_endpoint_auth_method 'none'); confidential
+    // secret verification is deferred to the MFB onboarding phase (P4).
+    if (this.type === "Client") {
+      const { data, error } = await this.db()
+        .from("oauth_client")
+        .select("client_id, redirect_uris, scopes")
+        .eq("client_id", id)
+        .maybeSingle();
+      if (error) throw new Error(`oidc adapter find Client: ${error.message}`);
+      if (!data) return undefined;
+      return {
+        client_id: data.client_id,
+        redirect_uris: data.redirect_uris,
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none",
+        scope: (data.scopes ?? []).join(" "),
+      } as unknown as AdapterPayload;
+    }
     return this.findBy("id", id);
   }
 

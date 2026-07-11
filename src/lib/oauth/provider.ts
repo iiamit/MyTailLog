@@ -45,8 +45,8 @@ export function getOAuthProvider(): Provider {
   const config: Configuration = {
     adapter: (name) => new SupabaseAdapter(name),
     jwks,
-    // Clients come from the self-serve portal (oauth_client table) in P3; none
-    // are statically configured yet. The provider still boots (discovery/JWKS).
+    // No static clients — they're loaded dynamically from oauth_client via the
+    // adapter's Client.find (the self-serve portal's table).
     clients: [],
     scopes: [...OAUTH_SCOPES],
     claims: { openid: ["sub"] },

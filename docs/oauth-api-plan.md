@@ -73,8 +73,8 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
 - **P1b (done):** Panva `oidc-provider` v9 wired to Next; Supabase adapter over
   `oidc_payloads`; `findAccount` → `sub`; JWKS via `OIDC_JWKS`; scopes config.
   See "P1b mount notes" below.
-- **P1c:** the consent/interaction screen (per-aircraft selection) + "Connected
-  apps" management UI in Profile.
+- **P1c (done):** consent/interaction screen (per-aircraft selection) +
+  "Connected apps" management. See "P1c notes" below.
 - **P2:** Resource Server — `airworthiness:read` first, token+scope+aircraft
   enforcement, audit log, rate limit, **leak-proofing tests**; then the other scopes.
 - **P3:** self-serve developer portal (register/rotate clients) +
@@ -113,6 +113,30 @@ Manager + `.env.local`. `oidc-provider` `cookies.keys` secret for its session co
   lands with the **P3** portal; the `interactions.url` points at
   `/oauth/consent/:uid`, built in **P1c**. So the authorize flow is not yet
   end-to-end; discovery/JWKS/token infra is.
+
+## P1c notes (as built)
+- **Client store:** `oidc_payloads` adapter special-cases the `Client` model to
+  read `oauth_client` and map it to oidc client metadata. v1 clients are
+  **public + PKCE** (`token_endpoint_auth_method: 'none'`) — we store only a
+  secret *hash*, so confidential (`client_secret`) auth for server apps like MFB
+  is deferred to **P4**. PKCE already binds the code to the exchanger.
+- **Consent:** `interactions.url` → `/oauth/consent/[uid]`. The page (RSC) reads
+  the pending Interaction via the service client (server-only) to render the app
+  name + requested scopes + the user's **owned** aircraft as checkboxes. Submit
+  posts to `/oauth/consent/[uid]/decide` (route handler — oidc's
+  `interactionDetails`/`interactionFinished` need Node req/res via the bridge).
+  The user is already authed via Supabase, so we resolve login **and** consent in
+  one `interactionFinished({ login, consent })`. The oidc `Grant` carries the
+  requested scopes; the per-aircraft restriction is recorded separately in
+  `oauth_aircraft_grant` (the RS authz boundary) with the authed client (RLS).
+- **Connected apps:** Profile lists active grants grouped by app (client display
+  names resolved via the service client, since `oauth_client` RLS is owner-scoped
+  to the developer, not the grantee). Revoke = delete the caller's
+  `oauth_aircraft_grant` rows for that client — access stops immediately because
+  the RS gates on those rows. Token-layer revocation (killing the refresh token)
+  needs the stored grantId; deferred.
+- **E2E:** `e2e/oauth-flow.spec.ts` registers a public client + drives
+  /auth → consent → code → token exchange, and asserts the grant row.
 
 ## Open items to verify before P1b
 - Pin `oidc-provider` v9 API: the exact `Adapter` interface (find/upsert/destroy/

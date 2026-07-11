@@ -148,6 +148,23 @@ export async function saveAiKey(formData: FormData): Promise<{ error?: string }>
   return {};
 }
 
+/** Revoke a connected OAuth app: delete the caller's per-aircraft grants for it.
+ *  This is the Resource Server's authz boundary, so access stops immediately.
+ *  ponytail: token-layer revocation (killing the oidc refresh token) needs the
+ *  stored grantId — add if access tokens outliving this becomes a concern. */
+export async function revokeOAuthClient(clientId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+  // RLS restricts the delete to the caller's own rows (account_id = auth.uid()).
+  const { error } = await supabase.from("oauth_aircraft_grant").delete().eq("client_id", clientId);
+  if (error) return { error: error.message };
+  revalidatePath("/profile");
+  return {};
+}
+
 /** Remove the user's own key — their AI calls fall back to the shared key. */
 export async function removeAiKey(): Promise<{ error?: string }> {
   const supabase = await createClient();

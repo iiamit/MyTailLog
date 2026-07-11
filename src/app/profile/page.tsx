@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { resolveAlerts } from "@/lib/reminders";
 import { AccountShell } from "@/components/shell/AccountShell";
 import { ProfileClient } from "./ProfileClient";
@@ -45,6 +46,54 @@ export default async function ProfilePage() {
     totalCalls: (usage ?? []).length,
   };
 
+  // Connected apps (OAuth): the user's active per-aircraft grants, grouped by
+  // app. Client display names come from the service client — RLS on oauth_client
+  // is owner-scoped (the developer), so a grantee can't read it directly.
+  const { data: grants } = await supabase
+    .from("oauth_aircraft_grant")
+    .select("client_id, aircraft_id, scopes, created_at")
+    .is("revoked_at", null);
+  const grantRows = grants ?? [];
+  const clientIds = [...new Set(grantRows.map((g) => g.client_id))];
+  const aircraftIds = [...new Set(grantRows.map((g) => g.aircraft_id))];
+  const [names, tails] = await Promise.all([
+    clientIds.length
+      ? createServiceClient()
+          .from("oauth_client")
+          .select("client_id, name")
+          .in("client_id", clientIds)
+          .then(({ data }) => new Map((data ?? []).map((c) => [c.client_id, c.name])))
+      : Promise.resolve(new Map<string, string>()),
+    aircraftIds.length
+      ? supabase
+          .from("aircraft")
+          .select("id, tail_number")
+          .in("id", aircraftIds)
+          .then(({ data }) => new Map((data ?? []).map((a) => [a.id, a.tail_number])))
+      : Promise.resolve(new Map<string, string>()),
+  ]);
+  const appsByClient = new Map<
+    string,
+    { clientId: string; name: string; aircraft: Set<string>; scopes: Set<string>; since: string }
+  >();
+  for (const g of grantRows) {
+    const e =
+      appsByClient.get(g.client_id) ??
+      { clientId: g.client_id, name: names.get(g.client_id) ?? "An app", aircraft: new Set<string>(), scopes: new Set<string>(), since: g.created_at };
+    const tail = tails.get(g.aircraft_id);
+    if (tail) e.aircraft.add(tail);
+    for (const s of g.scopes ?? []) e.scopes.add(s);
+    if (g.created_at < e.since) e.since = g.created_at;
+    appsByClient.set(g.client_id, e);
+  }
+  const connectedApps = [...appsByClient.values()].map((e) => ({
+    clientId: e.clientId,
+    name: e.name,
+    aircraft: [...e.aircraft],
+    scopes: [...e.scopes],
+    since: e.since,
+  }));
+
   return (
     <AccountShell>
       <main className="mx-auto max-w-2xl px-6 py-8">
@@ -77,6 +126,7 @@ export default async function ProfilePage() {
             username: mfb?.mfb_username ?? "",
           }}
           ai={ai}
+          connectedApps={connectedApps}
         />
       </main>
     </AccountShell>

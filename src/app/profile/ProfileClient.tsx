@@ -12,7 +12,16 @@ import {
   disconnectMfb,
   saveAiKey,
   removeAiKey,
+  revokeOAuthClient,
 } from "./actions";
+
+export type ConnectedApp = {
+  clientId: string;
+  name: string;
+  aircraft: string[];
+  scopes: string[];
+  since: string;
+};
 
 type MfbState = {
   clientId: string;
@@ -95,6 +104,7 @@ export function ProfileClient({
   alerts,
   mfb,
   ai,
+  connectedApps,
 }: {
   email: string;
   fullName: string;
@@ -103,8 +113,19 @@ export function ProfileClient({
   alerts: AlertSettings;
   mfb: MfbState;
   ai: AiState;
+  connectedApps: ConnectedApp[];
 }) {
   const router = useRouter();
+
+  // Connected OAuth apps (view + revoke)
+  const [apps, setApps] = useState<ConnectedApp[]>(connectedApps);
+  const [revoking, setRevoking] = useState<string | null>(null);
+  async function revokeApp(clientId: string) {
+    setRevoking(clientId);
+    const res = await revokeOAuthClient(clientId);
+    setRevoking(null);
+    if (!res.error) setApps((a) => a.filter((x) => x.clientId !== clientId));
+  }
 
   // Details (server action → DB)
   const [detailsMsg, setDetailsMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -542,6 +563,36 @@ export function ProfileClient({
           guide, not your exact invoice.
         </p>
       </div>
+
+      {/* Connected apps (OAuth) — read-only access other apps hold to aircraft. */}
+      {apps.length > 0 && (
+        <div className={card}>
+          <h2 className="font-semibold">Connected apps</h2>
+          <p className="text-[13px] text-dim">
+            Apps you&apos;ve allowed to read your aircraft data. Revoking cuts off access immediately.
+          </p>
+          <ul className="flex flex-col divide-y divide-line">
+            {apps.map((app) => (
+              <li key={app.clientId} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <div className="text-sm">
+                  <div className="font-medium text-ink">{app.name}</div>
+                  <div className="text-faint">
+                    {app.aircraft.join(", ") || "no aircraft"} · {app.scopes.join(", ")}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => revokeApp(app.clientId)}
+                  disabled={revoking === app.clientId}
+                  className="shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-annun-red disabled:opacity-60"
+                >
+                  {revoking === app.clientId ? "Revoking…" : "Revoke"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div>
         <button
