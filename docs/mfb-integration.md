@@ -172,6 +172,14 @@ under the consent screen (Direction B); the two are independent grants.
 
 ---
 
+## Brand assets
+
+For a "Connect MyTailLog" button, a connected-apps listing, or a partner page,
+logos live at `https://mytaillog.com/brand/` (SVG + transparent PNG; mark-only and
+full lockup, light- and dark-background variants). Use the **light-background**
+lockup on MyFlightBook's site. See `public/brand/README.md` for colors, type, and
+clearspace.
+
 ## MTL-side status
 
 Everything for Direction B is shipped and CI-tested (authorize → consent → token
