@@ -1,11 +1,4 @@
-import {
-  authenticate,
-  requireScope,
-  requireAircraft,
-  rateLimit,
-  logAccess,
-  apiError,
-} from "@/lib/oauth/resource";
+import { guard, logAccess, apiError } from "@/lib/oauth/resource";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCurrentHours } from "@/lib/aircraftHours";
 import { urgencyOf } from "@/lib/compliance";
@@ -23,10 +16,7 @@ export async function GET(
 ): Promise<Response> {
   try {
     const { id } = await params;
-    const caller = await authenticate(request);
-    rateLimit(caller.clientId, Date.now());
-    requireScope(caller, SCOPE);
-    await requireAircraft(caller, id, SCOPE); // 404 if not in this token's grant
+    const caller = await guard(request, id, SCOPE); // 401/403/404 as appropriate
 
     const svc = createServiceClient();
     const { data: ac } = await svc
