@@ -5,6 +5,10 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    # Wait 7 days before proposing a newly published version (a just-published
+    # release can be malicious/unstable).
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: ci
 
@@ -15,6 +19,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: deps
     groups:
