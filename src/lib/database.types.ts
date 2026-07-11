@@ -373,6 +373,53 @@ export type UserAiKey = {
   updated_at: string;
 }
 
+/** Panva oidc-provider adapter storage (server-only). */
+export type OidcPayload = {
+  id: string;
+  type: string;
+  payload: Record<string, unknown> | null;
+  grant_id: string | null;
+  user_code: string | null;
+  uid: string | null;
+  expires_at: string | null;
+  consumed_at: string | null;
+}
+
+/** A self-serve registered third-party OAuth client (developer portal). */
+export type OauthClient = {
+  client_id: string;
+  client_secret_hash: string | null;
+  name: string;
+  redirect_uris: string[];
+  scopes: string[];
+  is_confidential: boolean;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A user's per-aircraft consent for a client (the Resource Server authorizes here). */
+export type OauthAircraftGrant = {
+  id: string;
+  account_id: string;
+  client_id: string;
+  aircraft_id: string;
+  scopes: string[];
+  created_at: string;
+  revoked_at: string | null;
+}
+
+/** Audit row: which client read which aircraft/scope. */
+export type OauthAccessLog = {
+  id: string;
+  client_id: string | null;
+  account_id: string | null;
+  aircraft_id: string | null;
+  scope: string | null;
+  path: string | null;
+  created_at: string;
+}
+
 /** One reminder email sent for an item's current due-cycle (dedup key). */
 export type ReminderLog = {
   id: string;
@@ -425,6 +472,10 @@ export type Database = {
       ai_usage: { Row: AiUsage; Insert: Partial<AiUsage>; Update: Partial<AiUsage>; Relationships: [] };
       user_ai_key: { Row: UserAiKey; Insert: Partial<UserAiKey>; Update: Partial<UserAiKey>; Relationships: [] };
       oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
+      oidc_payloads: { Row: OidcPayload; Insert: Partial<OidcPayload>; Update: Partial<OidcPayload>; Relationships: [] };
+      oauth_client: { Row: OauthClient; Insert: Partial<OauthClient>; Update: Partial<OauthClient>; Relationships: [] };
+      oauth_aircraft_grant: { Row: OauthAircraftGrant; Insert: Partial<OauthAircraftGrant>; Update: Partial<OauthAircraftGrant>; Relationships: [] };
+      oauth_access_log: { Row: OauthAccessLog; Insert: Partial<OauthAccessLog>; Update: Partial<OauthAccessLog>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
     };
     Views: {
