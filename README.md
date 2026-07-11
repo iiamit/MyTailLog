@@ -84,9 +84,23 @@ AI reads the page; you review it next to the original, with low-confidence field
 
 **Flight hours & reminders**
 - **MyFlightBook integration** (per-user OAuth) pulls your latest hobbs/tach so
-  the forecast reflects real hours.
+  the forecast reflects real hours — one half of the two-way MFB link (see below).
 - A **daily job** auto-syncs hours (once/day) and emails **reminders** before due
   items — annual, oil, ADs, and more, each with a configurable lead time.
+
+**Open API & integrations (OAuth 2.1)**
+- **MyTailLog is its own OAuth 2.1 Authorization + Resource Server**: other apps
+  can read an aircraft's **airworthiness / AD / inspection status, equipment,
+  hours, oil, and weight & balance** — **only with the owner's per-aircraft
+  consent**, and **read-only** (log entries and scans are never shared). Owners
+  approve which aircraft on a consent screen and revoke any app anytime
+  (**Profile → Connected apps**).
+- **Self-serve developer portal** (`/developers`) — register public (PKCE) or
+  confidential (server-to-server, client-secret) apps, with **RFC 8414 discovery**
+  and API docs at `/developers/docs`.
+- **Bidirectional MyFlightBook** — MTL pulls your hobbs/tach *from* MFB, and MFB
+  (or any consented app) can pull airworthiness *from* MTL. See
+  [`docs/mfb-integration.md`](docs/mfb-integration.md).
 
 **AI keys & cost control**
 - Extraction and Q&A run on the app's shared Anthropic key by default, bounded by
@@ -123,6 +137,16 @@ AI reads the page; you review it next to the original, with low-confidence field
   encrypted (`src/lib/crypto.ts`, `ENCRYPTION_KEY`); RLS isolates them, encryption
   defends against a backup/replica leak. Decryption is server-only; nothing
   sensitive is read back to the browser.
+- **OAuth 2.1 provider** — MyTailLog is its own Authorization Server + Resource
+  Server (Panva `oidc-provider`, Authorization Code + PKCE), mounted in App Router
+  via a Web↔Node bridge. Third-party access to `/api/v1` is **not** protected by
+  RLS (an OAuth token isn't a Supabase JWT), so every endpoint authorizes
+  explicitly at one choke point (`src/lib/oauth/resource.ts`): token valid → scope
+  covers it → aircraft ∈ the owner's grant, then reads via the service client
+  **filtered to that aircraft** (a grant for aircraft A can never return B).
+  Per-aircraft consent, an audit log, and a per-client rate limit. Confidential
+  client secrets are encrypted at rest. Design of record:
+  [`docs/oauth-api-plan.md`](docs/oauth-api-plan.md).
 - **Defense-in-depth headers** — global CSP, `X-Frame-Options: DENY`, HSTS,
   `nosniff`, Referrer/Permissions policies; the public origin is pinned to
   `NEXT_PUBLIC_SITE_URL` rather than reflected from a request header.
@@ -151,7 +175,8 @@ Data model (Postgres, migrations `supabase/migrations/00*`): `aircraft` →
 `component` / `equipment_proposal`, `maintenance_item`, `weight_balance`,
 `scanned_document`, `document`, `oil_analysis_sample`, `aircraft_share`,
 `mfb_connection` / `hours_reading`, `reminder_log`, `ai_usage` / `user_ai_key`,
-and `profile`.
+`profile`, and the OAuth-provider tables `oidc_payloads`, `oauth_client`,
+`oauth_aircraft_grant`, `oauth_access_log`.
 
 ## Costs
 
