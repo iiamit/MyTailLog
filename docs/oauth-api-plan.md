@@ -75,10 +75,9 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
   See "P1b mount notes" below.
 - **P1c (done):** consent/interaction screen (per-aircraft selection) +
   "Connected apps" management. See "P1c notes" below.
-- **P2 (started):** Resource Server — `airworthiness:read` first (+ aircraft
-  list), token+scope+aircraft enforcement, audit log, rate limit,
-  **leak-proofing test**. See "P2 notes". Other scopes (equipment/hours/oil/wb)
-  reuse the same choke point.
+- **P2 (done):** Resource Server — all read scopes (airworthiness, aircraft,
+  equipment, hours, oil, weightbalance), token+scope+aircraft enforcement, audit
+  log, rate limit, **leak-proofing test**. See "P2 notes".
 - **P3:** self-serve developer portal (register/rotate clients) +
   `/.well-known/oauth-authorization-server` discovery + developer docs.
 - **P4:** onboard MFB (register + joint test), then bidirectional-sync coordination.
@@ -152,14 +151,16 @@ Manager + `.env.local`. `oidc-provider` `cookies.keys` secret for its session co
   is a per-client in-memory bucket (ponytail: per-instance; move to a shared
   counter if needed — `API_V1_RATE_PER_MIN`, default 120).
 - **Endpoints:** `GET /api/v1/aircraft` (grant-scoped list; identity always,
-  full details with `aircraft:read`) and `GET /api/v1/aircraft/{id}/airworthiness`
-  (AD + inspection status with urgency, current hours, airworthy summary).
+  full details with `aircraft:read`) + per-aircraft
+  `/airworthiness` (AD + inspection status, urgency, current hours, summary),
+  `/equipment` (components), `/hours` (current + recent readings), `/oil`
+  (samples, oldest→newest, for trending), `/weightbalance` (current + revisions).
+  Each is `guard(request, id, scope)` (= authenticate → requireScope →
+  requireAircraft) + a service-client query filtered to the aircraft + audit.
 - **Leak-proofing E2E** (`e2e/oauth-resource.spec.ts`): token granted only
-  aircraft A; asserts B (a real aircraft with an AD) returns 404 and its data
-  never appears, the list excludes B, and no token → 401.
-- **Remaining for P2:** the other read scopes' endpoints (equipment/hours/oil/
-  weightbalance) — same three-line enforcement (`authenticate` → `requireScope`
-  → `requireAircraft`).
+  aircraft A; asserts B (a real aircraft with an AD) returns 404 across endpoints
+  and its data never appears, the list excludes B, an un-requested scope (`oil`)
+  → 403, and no token → 401.
 
 ## Open items to verify before P1b
 - Pin `oidc-provider` v9 API: the exact `Adapter` interface (find/upsert/destroy/

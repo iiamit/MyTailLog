@@ -32,7 +32,8 @@ test("resource server enforces token + per-aircraft grant boundary", async ({ pa
   const redirectUri = `${baseURL}/oauth-e2e-callback`;
   await admin.from("oauth_client").insert({
     client_id: clientId, name: "RS Test App", redirect_uris: [redirectUri],
-    scopes: ["openid", "airworthiness:read", "aircraft:read"], is_confidential: false, owner_id: profile.id,
+    scopes: ["openid", "airworthiness:read", "aircraft:read", "equipment:read", "hours:read", "oil:read", "weightbalance:read"],
+    is_confidential: false, owner_id: profile.id,
   });
 
   try {
@@ -43,7 +44,8 @@ test("resource server enforces token + per-aircraft grant boundary", async ({ pa
       "/api/oidc/auth?" +
       new URLSearchParams({
         client_id: clientId, response_type: "code", redirect_uri: redirectUri,
-        scope: "openid airworthiness:read aircraft:read",
+        // Request every scope EXCEPT oil:read — so /oil proves scope enforcement.
+        scope: "openid airworthiness:read aircraft:read equipment:read hours:read weightbalance:read",
         code_challenge: challenge, code_challenge_method: "S256",
       }).toString();
 
@@ -80,6 +82,19 @@ test("resource server enforces token + per-aircraft grant boundary", async ({ pa
     const bRes = await page.request.get(`${baseURL}/api/v1/aircraft/${bId}/airworthiness`, authz);
     expect(bRes.status()).toBe(404);
     expect(await bRes.text()).not.toContain("AD-B-SECRET");
+
+    // The other granted scopes' endpoints → 200 for A.
+    for (const path of ["equipment", "hours", "weightbalance"]) {
+      const r = await page.request.get(`${baseURL}/api/v1/aircraft/${scratch.id}/${path}`, authz);
+      expect(r.status(), `${path} should be 200`).toBe(200);
+    }
+    // …and 404 for B (grant boundary holds across every endpoint).
+    const bEquip = await page.request.get(`${baseURL}/api/v1/aircraft/${bId}/equipment`, authz);
+    expect(bEquip.status()).toBe(404);
+
+    // oil:read was NOT requested → scope enforcement → 403.
+    const oil = await page.request.get(`${baseURL}/api/v1/aircraft/${scratch.id}/oil`, authz);
+    expect(oil.status()).toBe(403);
 
     // no token → 401
     const noTok = await page.request.get(`${baseURL}/api/v1/aircraft/${scratch.id}/airworthiness`);

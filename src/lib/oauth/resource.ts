@@ -77,6 +77,19 @@ export function rateLimit(clientId: string, now: number): void {
   b.count += 1;
 }
 
+/**
+ * The full per-aircraft gate for a scoped endpoint: valid token → not rate
+ * limited → has the scope → aircraft in an active grant. Returns the caller.
+ * (404 from requireAircraft when the aircraft isn't granted.)
+ */
+export async function guard(request: Request, aircraftId: string, scope: string): Promise<ApiCaller> {
+  const caller = await authenticate(request);
+  rateLimit(caller.clientId, Date.now());
+  requireScope(caller, scope);
+  await requireAircraft(caller, aircraftId, scope);
+  return caller;
+}
+
 /** Audit one read into oauth_access_log (service-role write; owner can read it). */
 export async function logAccess(
   caller: ApiCaller,
