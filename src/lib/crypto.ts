@@ -16,6 +16,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 const PREFIX = "v1:";
+const IV_LEN = 12;
+const TAG_LEN = 16; // pin GCM auth tag to 16 bytes — reject truncated tags (forgery hardening)
 
 function key(): Buffer {
   const secret = process.env.ENCRYPTION_KEY;
@@ -30,7 +32,7 @@ function key(): Buffer {
 /** Encrypt a UTF-8 string. Returns "v1:base64(iv|tag|ciphertext)". */
 export function encryptSecret(plaintext: string): string {
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key(), iv);
+  const cipher = createCipheriv("aes-256-gcm", key(), iv, { authTagLength: TAG_LEN });
   const ct = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return PREFIX + Buffer.concat([iv, tag, ct]).toString("base64");
@@ -44,10 +46,13 @@ export function decryptSecret(stored: string | null): string | null {
   if (stored == null) return null;
   if (!stored.startsWith(PREFIX)) return stored;
   const raw = Buffer.from(stored.slice(PREFIX.length), "base64");
-  const iv = raw.subarray(0, 12);
-  const tag = raw.subarray(12, 28);
-  const ct = raw.subarray(28);
-  const decipher = createDecipheriv("aes-256-gcm", key(), iv);
+  // Reject anything too short to hold iv|tag|ct — otherwise a crafted value could
+  // hand setAuthTag a truncated (weaker) GCM tag.
+  if (raw.length < IV_LEN + TAG_LEN) throw new Error("ciphertext too short");
+  const iv = raw.subarray(0, IV_LEN);
+  const tag = raw.subarray(IV_LEN, IV_LEN + TAG_LEN);
+  const ct = raw.subarray(IV_LEN + TAG_LEN);
+  const decipher = createDecipheriv("aes-256-gcm", key(), iv, { authTagLength: TAG_LEN });
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
 }
