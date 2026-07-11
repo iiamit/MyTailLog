@@ -20,7 +20,8 @@ const inputClass =
 
 export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataScopes: string[] }) {
   const router = useRouter();
-  const [list, setList] = useState<OAuthApp[]>(apps);
+  // Render the server-provided `apps` directly; router.refresh() re-fetches after
+  // create/delete (no local copy to drift out of sync).
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [newId, setNewId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -37,9 +38,8 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
     }
     setNewId(res.clientId ?? null);
     setMsg({ ok: true, text: "App registered." });
-    router.refresh();
-    // Optimistically reflect it (refresh will reconcile).
     (document.getElementById("register-app") as HTMLFormElement | null)?.reset();
+    router.refresh();
   }
 
   async function remove(clientId: string) {
@@ -48,8 +48,8 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
       setMsg({ ok: false, text: res.error });
       return;
     }
-    setList((l) => l.filter((a) => a.client_id !== clientId));
     if (newId === clientId) setNewId(null);
+    router.refresh();
   }
 
   return (
@@ -115,11 +115,11 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
       {/* List */}
       <div className={card}>
         <h2 className="font-semibold">Your apps</h2>
-        {list.length === 0 ? (
+        {apps.length === 0 ? (
           <p className="text-sm text-dim">No apps yet.</p>
         ) : (
           <ul className="flex flex-col divide-y divide-line">
-            {list.map((app) => (
+            {apps.map((app) => (
               <li key={app.client_id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <div className="min-w-0 text-sm">
                   <div className="font-medium text-ink">{app.name}</div>
