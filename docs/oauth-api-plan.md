@@ -81,9 +81,9 @@ aircraft not in the grant. **No writes** in v1 (least privilege).
 - **P3 (done):** self-serve developer portal (`/developers` — register/list/
   delete public+PKCE clients, RLS-scoped), `/.well-known/oauth-authorization-server`
   (RFC 8414), and `/developers/docs`. See "P3 notes".
-- **P4 (started):** confidential client support (server-to-server apps like MFB) —
-  see "P4 notes". Remaining: register MFB as a client + joint test + bidirectional
-  sync coordination (needs MFB's participation).
+- **P4 (done):** confidential client support (server-to-server apps like MFB) —
+  see "P4 notes". Remaining is coordination, not code: **`docs/mfb-integration.md`**
+  is the doc to share with the MyFlightBook team (register a client + joint test).
 
 ## New env/secrets (later phases)
 `OIDC_JWKS` (signing keys for access tokens/JWKS) — server-only secret in Secret
