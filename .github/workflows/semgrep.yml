@@ -1,0 +1,21 @@
+name: Semgrep
+
+# Static analysis on every PR + push to main, plus weekly (catches newly
+# published rules against unchanged code). Mirrors the local
+# `semgrep scan --config auto` and blocks the PR on any finding (--error).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "27 7 * * 1" # Mondays ~07:27 UTC
+  workflow_dispatch:
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - run: semgrep scan --config auto --error --disable-version-check
