@@ -1,5 +1,6 @@
 import type { Adapter, AdapterPayload } from "oidc-provider";
 import { createServiceClient } from "@/lib/supabase/service";
+import { decryptSecret } from "@/lib/crypto";
 
 // Supabase-backed storage for oidc-provider, mirroring Panva's reference
 // Postgres adapter (github.com/panva/node-oidc-provider discussions #1310) over
@@ -59,23 +60,27 @@ export class SupabaseAdapter implements Adapter {
 
   async find(id: string): Promise<AdapterPayload | undefined> {
     // Clients live in oauth_client (the self-serve portal's table), not
-    // oidc_payloads. Map a row to oidc-provider client metadata. v1 clients are
-    // public + PKCE-required (token_endpoint_auth_method 'none'); confidential
-    // secret verification is deferred to the MFB onboarding phase (P4).
+    // oidc_payloads. Map a row to oidc-provider client metadata. Public clients
+    // use PKCE only (auth method 'none'); confidential clients (server apps like
+    // MFB) authenticate with client_secret_basic — we decrypt the stored secret
+    // so oidc can verify it. A confidential client without a secret fails closed.
     if (this.type === "Client") {
       const { data, error } = await this.db()
         .from("oauth_client")
-        .select("client_id, redirect_uris, scopes")
+        .select("client_id, redirect_uris, scopes, is_confidential, client_secret_cipher")
         .eq("client_id", id)
         .maybeSingle();
       if (error) throw new Error(`oidc adapter find Client: ${error.message}`);
       if (!data) return undefined;
+      const confidential = !!data.is_confidential;
+      const secret = confidential ? decryptSecret(data.client_secret_cipher) : null;
       return {
         client_id: data.client_id,
         redirect_uris: data.redirect_uris,
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
-        token_endpoint_auth_method: "none",
+        token_endpoint_auth_method: confidential ? "client_secret_basic" : "none",
+        ...(secret ? { client_secret: secret } : {}),
         scope: (data.scopes ?? []).join(" "),
       } as unknown as AdapterPayload;
     }

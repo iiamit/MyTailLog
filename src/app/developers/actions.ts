@@ -1,8 +1,15 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { encryptSecret } from "@/lib/crypto";
 import { DATA_SCOPES } from "@/lib/oauth/scopes";
+
+// Opaque client secret for confidential (server-to-server) clients.
+function generateSecret(): string {
+  return randomBytes(32).toString("base64url");
+}
 
 // Redirect URIs are an EXACT-match allowlist (anti open-redirect). Only https,
 // or http on localhost for development. No fragments, no wildcards.
@@ -35,7 +42,9 @@ function parseForm(formData: FormData): { name: string; uris: string[]; scopes: 
   return { name, uris, scopes };
 }
 
-export async function createOAuthApp(formData: FormData): Promise<{ error?: string; clientId?: string }> {
+export async function createOAuthApp(
+  formData: FormData,
+): Promise<{ error?: string; clientId?: string; clientSecret?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,7 +54,10 @@ export async function createOAuthApp(formData: FormData): Promise<{ error?: stri
   const parsed = parseForm(formData);
   if (parsed.error) return { error: parsed.error };
 
-  // Public + PKCE clients only for now (no secret). RLS check: owner_id = auth.uid().
+  // Confidential (server-to-server) apps get a secret, stored encrypted; public
+  // apps use PKCE only. RLS check: owner_id = auth.uid().
+  const confidential = formData.get("confidential") === "on";
+  const secret = confidential ? generateSecret() : null;
   const { data, error } = await supabase
     .from("oauth_client")
     .insert({
@@ -53,13 +65,33 @@ export async function createOAuthApp(formData: FormData): Promise<{ error?: stri
       name: parsed.name,
       redirect_uris: parsed.uris,
       scopes: parsed.scopes,
-      is_confidential: false,
+      is_confidential: confidential,
+      client_secret_cipher: secret ? encryptSecret(secret) : null,
     })
     .select("client_id")
     .single();
   if (error) return { error: error.message };
   revalidatePath("/developers");
-  return { clientId: data.client_id };
+  return { clientId: data.client_id, clientSecret: secret ?? undefined };
+}
+
+/** Rotate (or first-issue) a confidential client's secret; shown once. */
+export async function rotateOAuthSecret(clientId: string): Promise<{ error?: string; secret?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const secret = generateSecret();
+  // RLS-scoped to the caller's own apps. Rotating implies a confidential client.
+  const { error } = await supabase
+    .from("oauth_client")
+    .update({ client_secret_cipher: encryptSecret(secret), is_confidential: true, updated_at: new Date().toISOString() })
+    .eq("client_id", clientId);
+  if (error) return { error: error.message };
+  revalidatePath("/developers");
+  return { secret };
 }
 
 export async function deleteOAuthApp(clientId: string): Promise<{ error?: string }> {
