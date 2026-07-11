@@ -42,6 +42,12 @@ Later migrations add more aircraft-scoped tables on the same RLS pattern —
 service-role-written per `0032`) and `user_ai_key` (encrypted BYO Anthropic key).
 Third-party secrets and BYO keys are AES-256-GCM encrypted at rest (`ENCRYPTION_KEY`).
 
+The **OAuth provider** (`0033`/`0034`) adds `oidc_payloads` (Panva `oidc-provider`
+storage — server-only, RLS-denied to clients), `oauth_client` (self-serve apps,
+owner-scoped; confidential secrets encrypted in `client_secret_cipher`),
+`oauth_aircraft_grant` (per-aircraft consent — the Resource Server's authz
+boundary), and `oauth_access_log` (audit).
+
 ## Data isolation (RLS)
 
 Single-owner from day one, enforced in Postgres — not just app code:
@@ -52,6 +58,12 @@ Single-owner from day one, enforced in Postgres — not just app code:
   `aircraft_share` model (read/contribute grants) and ownership transfer plug in
   by editing one function — no policy rewrite.
 - Storage objects are keyed `<aircraft_id>/...` and authorized the same way.
+- **Exception — the OAuth Resource Server does NOT rely on RLS.** An OAuth access
+  token is not a Supabase JWT, so `/api/v1` authorizes explicitly in app code
+  (token → scope → aircraft ∈ `oauth_aircraft_grant`) and reads via the service
+  client filtered to that aircraft. `oidc_payloads` is server-only; `oauth_client`
+  / `oauth_aircraft_grant` / `oauth_access_log` keep owner-scoped RLS for the
+  in-app portal + Connected-apps views.
 
 ## Applying migrations
 
