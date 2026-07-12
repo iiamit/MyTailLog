@@ -117,7 +117,7 @@ AI reads the page; you review it next to the original, with low-confidence field
 
 ## Architecture
 
-- **Next.js 15 (App Router) + TypeScript + Tailwind** — server components, server
+- **Next.js 16 (App Router) + TypeScript + Tailwind** — server components, server
   actions, and route handlers in one deployable unit; a capture PWA (service
   worker + IndexedDB queue) for offline capture.
 - **Supabase** — Postgres + Auth + object Storage. **Row-level security is the
