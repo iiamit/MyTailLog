@@ -36,7 +36,6 @@ export default async function OilAnalysisPage({
 
       <OilAnalysisClient
         aircraftId={id}
-        aircraftTail={ctx.reg}
         canEdit={ctx.canEdit}
         samples={samples ?? []}
       />

@@ -83,12 +83,16 @@ export function PagesPanel({
   const [queue, setQueue] = useState<"all" | "review" | "processing">("all");
   const [sort, setSort] = useState<SortKey>("upload");
   const [dir, setDir] = useState<SortDir>("asc");
-  // Remember sort + direction across sessions. Read post-mount (not in the
-  // initial state) so it never mismatches the server-rendered order.
+  // Remember sort + direction across sessions. Read post-mount (not in the initial
+  // state) so SSR renders the default order — no hydration mismatch. (localStorage
+  // is a persistence layer, not a live store; reorder also sets dir transiently,
+  // so useSyncExternalStore doesn't fit — the mount read is deliberate.)
   useEffect(() => {
     const s = localStorage.getItem("mtl.pagesSort");
+    /* eslint-disable react-hooks/set-state-in-effect -- deliberate mount read of persisted prefs (see comment above) */
     if (s === "date" || s === "tach") setSort(s);
     if (localStorage.getItem("mtl.pagesDir") === "desc") setDir("desc");
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
   function changeSort(s: SortKey) {
     setSort(s);
