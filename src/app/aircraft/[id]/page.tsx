@@ -106,7 +106,6 @@ export default async function AircraftPage({
   for (const p of pages ?? []) {
     pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);
   }
-  const entryCount = entryRows?.length ?? 0;
   // Pages needing review = extracted pages with an unconfirmed entry (matches
   // the nav badge + Logbooks & pages), not merely review_status='unreviewed' —
   // entry-less/fully-confirmed pages have nothing to review.

@@ -3,7 +3,6 @@ import { AccountShell } from "@/components/shell/AccountShell";
 import {
   SparklesIcon,
   ClockIcon,
-  SearchIcon,
   GaugeIcon,
   WrenchIcon,
   ShieldIcon,

@@ -61,6 +61,7 @@ export function UploadClient({
   }, [refreshCount]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate SSR-safe init: render `true`, correct to navigator.onLine on mount (avoids a hydration mismatch on the offline-sync path)
     setOnline(navigator.onLine);
     refreshCount();
     drain();

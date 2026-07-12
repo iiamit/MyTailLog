@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image, { type StaticImageData } from "next/image";
+import { usePrefersReducedMotion } from "@/lib/browserState";
 
 export type Slide = { src: StaticImageData; alt: string; caption: string };
 
@@ -19,11 +20,7 @@ export function ScreenshotCarousel({
 }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  }, []);
+  const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
     if (paused || reduced || slides.length < 2) return;

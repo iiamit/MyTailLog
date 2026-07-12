@@ -29,12 +29,10 @@ const toneClass = (t: "" | "amber" | "red") =>
 
 export function OilAnalysisClient({
   aircraftId,
-  aircraftTail,
   canEdit,
   samples,
 }: {
   aircraftId: string;
-  aircraftTail: string;
   canEdit: boolean;
   samples: OilAnalysisSample[];
 }) {

@@ -44,6 +44,7 @@ export default async function AdminPage() {
   const active = rows.filter((r) => r.aircraft > 0).length;
   // Signup velocity — the number to watch during launch pushes.
   const joinedWithin = (days: number) => {
+    // eslint-disable-next-line react-hooks/purity -- server component: renders once per request, so Date.now() is deterministic here
     const cutoff = Date.now() - days * 86_400_000;
     return rows.filter((r) => r.joined && Date.parse(r.joined) >= cutoff).length;
   };

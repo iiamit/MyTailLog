@@ -15,8 +15,7 @@
 // ===========================================================================
 
 import type Anthropic from "@anthropic-ai/sdk";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, OilAnalysisSample } from "@/lib/database.types";
+import type { OilAnalysisSample } from "@/lib/database.types";
 import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
 import type { ImageMediaType } from "./extract";
 import { OIL_PROPERTIES } from "@/lib/oilElements";

@@ -177,6 +177,7 @@ export function TimelineClient({
   useEffect(() => {
     const q = query.trim();
     if (q === "") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced search effect: reflect the (empty) query state synchronously
       setResults(null);
       setError(null);
       return;
