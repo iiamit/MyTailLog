@@ -7,3 +7,8 @@
 // also present locally.
 /// <reference types="next" />
 /// <reference types="next/image-types/global" />
+
+// TypeScript 6 requires a declaration for side-effect CSS imports
+// (`import "./globals.css"` in src/app/layout.tsx); Next 15's ambient types
+// don't provide the side-effect form. Harmless under TS 5.
+declare module "*.css";
