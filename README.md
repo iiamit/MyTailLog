@@ -282,6 +282,12 @@ eSignatures (keeps us in "index of the physical record" territory, avoiding
 AC 120-78A), parts procurement/inventory, work orders, flight scheduling, and MRO
 multi-fleet management.
 
+## Changelog
+
+Notable changes are in [`CHANGELOG.md`](./CHANGELOG.md); the OAuth API design of
+record is [`docs/oauth-api-plan.md`](./docs/oauth-api-plan.md) and the MyFlightBook
+integration guide is [`docs/mfb-integration.md`](./docs/mfb-integration.md).
+
 ## License
 
 [MIT](./LICENSE)
