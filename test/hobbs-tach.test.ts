@@ -12,6 +12,7 @@ import {
   meterValueAtDate,
   normalizeReadings,
   detectAnomalies,
+  detectDuplicateMeters,
 } from "../src/lib/hobbsTach";
 
 // Reading builder. Note hobbs/tach have DIFFERENT absolute origins across tests
@@ -196,6 +197,21 @@ test("normalizeReadings: a genuine differing hobbs/tach pair is untouched", () =
 test("currentHobbs: a duplicated hobbs===tach reading never becomes current (after normalize)", () => {
   const rs = normalizeReadings([R("dup", "2025-07-17", 4057.9, 4057.9), R("mfb", "2026-07-12", 947.7, null)]);
   assert.equal(currentHobbs(rs).hobbs, 947.7); // not 4057.9
+});
+
+// --- detectDuplicateMeters -------------------------------------------------
+test("detectDuplicateMeters: flags hobbs===tach with a CLEAR fix (suggested null)", () => {
+  const a = detectDuplicateMeters([R("dup", "2025-07-17", 4057.9, 4057.9), R("ok", "2026-07-05", 946.1, 4141.6)]);
+  assert.equal(a.length, 1);
+  assert.equal(a[0].readingId, "dup");
+  assert.equal(a[0].field, "hobbs");
+  assert.equal(a[0].reason, "duplicate");
+  assert.equal(a[0].suggested, null);
+});
+
+test("detectDuplicateMeters: a reviewed duplicate is skipped", () => {
+  const rs = [R("dup", "2025-07-17", 4057.9, 4057.9, "2026-01-01T00:00:00Z")];
+  assert.equal(detectDuplicateMeters(rs).length, 0);
 });
 
 // --- meterValueAtDate ------------------------------------------------------

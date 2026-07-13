@@ -199,7 +199,9 @@ const SECTIONS: Section[] = [
           <em>33,303</em>) — and suggests the corrected number. <strong>Accept</strong>{" "}
           it, edit the value first, or <strong>Keep mine</strong> if it&apos;s
           right; either way it won&apos;t re-flag. This covers both log entries and
-          MyFlightBook-synced readings.
+          MyFlightBook-synced readings. It also catches a <strong>Hobbs value that&apos;s
+          just the Tach duplicated</strong> into both fields (they should differ) — offering
+          to <strong>Clear</strong> the bogus Hobbs while keeping the Tach.
         </p>
         <Effects>
           Deleting duplicate entries or pages updates your{" "}

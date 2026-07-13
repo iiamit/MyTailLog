@@ -6,6 +6,7 @@ import {
   meterValueAtDate,
   normalizeReadings,
   detectAnomalies,
+  detectDuplicateMeters,
   type Anomaly,
   type CurrentTach,
   type CurrentHobbs,
@@ -36,7 +37,7 @@ async function fetchReadings(
     out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: r.hours_reviewed_at });
   if (enrollment && (enrollment.hobbs != null || enrollment.tach != null))
     out.push({ id: "enrollment", source: "enrollment", date: null, hobbs: enrollment.hobbs, tach: enrollment.tach, reviewedAt: null });
-  return normalizeReadings(out);
+  return out; // RAW — forecast consumers normalize; anomaly detection needs the raw hobbs==tach.
 }
 
 /**
@@ -51,7 +52,7 @@ export async function getCurrentTach(
   aircraftId: string,
   enrollment?: { hobbs: number | null; tach: number | null } | null,
 ): Promise<CurrentTach> {
-  return currentTach(await fetchReadings(supabase, aircraftId, enrollment));
+  return currentTach(normalizeReadings(await fetchReadings(supabase, aircraftId, enrollment)));
 }
 
 /**
@@ -71,7 +72,7 @@ export async function getCurrentMeters(
   // its countdown anchors to (so oil advances on hobbs even if recorded in tach).
   baselineFor: (date: string | null, meter: Meter) => number | null;
 }> {
-  const readings = await fetchReadings(supabase, aircraftId, enrollment);
+  const readings = normalizeReadings(await fetchReadings(supabase, aircraftId, enrollment));
   return {
     tach: currentTach(readings),
     hobbs: currentHobbs(readings),
@@ -91,20 +92,22 @@ export async function getCurrentHours(
 export type HoursAnomaly = Anomaly & { date: string | null };
 
 /**
- * Likely-mis-keyed hobbs/tach readings (dropped/extra digit, fat-finger) with a
- * suggested fix, for owner review. Enrollment readings are excluded — they're a
- * single baseline, not editable from the review surface.
+ * Readings that need owner review: hobbs===tach duplicates (fix = clear hobbs)
+ * plus likely mis-keyed values (dropped/extra digit, fat-finger; fix = a
+ * suggested number). Duplicates run on RAW readings; mis-keyed on normalized so a
+ * duplicate doesn't create a false monotonicity flag. Enrollment is excluded —
+ * a single baseline, not editable from the review surface.
  */
 export async function getHoursAnomalies(
   supabase: SupabaseClient<Database>,
   aircraftId: string,
   enrollment?: { hobbs: number | null; tach: number | null } | null,
 ): Promise<HoursAnomaly[]> {
-  const readings = await fetchReadings(supabase, aircraftId, enrollment);
-  const byId = new Map(readings.map((r) => [r.id, r]));
-  return detectAnomalies(readings)
-    .filter((a) => a.source !== "enrollment")
-    .map((a) => ({ ...a, date: byId.get(a.readingId)?.date ?? null }));
+  const raw = await fetchReadings(supabase, aircraftId, enrollment);
+  const byId = new Map(raw.map((r) => [r.id, r]));
+  const withDate = (a: Anomaly): HoursAnomaly => ({ ...a, date: byId.get(a.readingId)?.date ?? null });
+  const anomalies = [...detectDuplicateMeters(raw), ...detectAnomalies(normalizeReadings(raw))];
+  return anomalies.filter((a) => a.source !== "enrollment").map(withDate);
 }
 
 /**

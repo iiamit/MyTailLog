@@ -28,7 +28,7 @@ export type Reading = {
 export type RatioConfidence = "measured" | "estimated" | "default";
 export type RatioResult = { ratio: number; confidence: RatioConfidence; pairs: number };
 export type CurrentTach = { tach: number | null; estimated: boolean; asOf: string | null; rough: boolean };
-export type AnomalyReason = "non_monotonic" | "magnitude";
+export type AnomalyReason = "non_monotonic" | "magnitude" | "duplicate";
 export type Anomaly = {
   readingId: string;
   source: ReadingSource;
@@ -69,6 +69,26 @@ export function normalizeReadings(readings: Reading[]): Reading[] {
   return readings.map((r) =>
     r.hobbs != null && r.tach != null && r.hobbs === r.tach ? { ...r, hobbs: null } : r,
   );
+}
+
+/**
+ * Readings whose hobbs === tach — the tach value keyed into both fields. Flagged
+ * so the owner can clear the bogus hobbs at the source (the forecast already
+ * ignores it via normalizeReadings). The fix is to CLEAR hobbs, so `suggested`
+ * is null. Run on RAW readings, before normalization. Skips reviewed readings.
+ */
+export function detectDuplicateMeters(readings: Reading[]): Anomaly[] {
+  return readings
+    .filter((r) => r.reviewedAt == null && r.hobbs != null && r.tach != null && r.hobbs === r.tach)
+    .map((r) => ({
+      readingId: r.id,
+      source: r.source,
+      field: "hobbs" as Meter,
+      value: r.hobbs as number,
+      suggested: null,
+      reason: "duplicate" as AnomalyReason,
+      confidence: 0.9,
+    }));
 }
 
 export type Pair = { hobbs: number; tach: number; date: string | null; weight: number };

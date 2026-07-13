@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { useToast } from "@/components/Toast";
-import { deletePage, acceptHoursFix, dismissHoursFlag } from "../actions";
+import { deletePage, acceptHoursFix, clearHoursField, dismissHoursFlag } from "../actions";
 import { deleteEntry } from "../pages/[pageId]/review/actions";
 
 export type PageRow = {
@@ -38,7 +38,7 @@ export type AnomalyRow = {
   field: "hobbs" | "tach";
   value: number;
   suggested: number | null;
-  reason: "non_monotonic" | "magnitude";
+  reason: "non_monotonic" | "magnitude" | "duplicate";
   date: string | null;
   pageId: string | null;
 };
@@ -80,6 +80,16 @@ export function DuplicatesClient({
     if ("error" in res) return toast.error(res.error);
     setAnomalies((xs) => xs.filter((x) => x.readingId !== a.readingId));
     toast.success(`${a.field} set to ${value.toLocaleString()}.`);
+    router.refresh();
+  }
+
+  async function clearAnomaly(a: AnomalyRow) {
+    setBusyId(a.readingId);
+    const res = await clearHoursField(aircraftId, a.source, a.readingId, a.field);
+    setBusyId(null);
+    if ("error" in res) return toast.error(res.error);
+    setAnomalies((xs) => xs.filter((x) => x.readingId !== a.readingId));
+    toast.success(`Cleared the duplicated ${a.field}.`);
     router.refresh();
   }
 
@@ -140,9 +150,9 @@ export function DuplicatesClient({
           </h2>
           <div className="rounded-xl border border-line bg-panel p-4">
             <div className="mb-3 text-xs text-dim">
-              These hobbs/tach values look like a typo (a dropped or extra digit, or a
-              value below an earlier reading). Accept the suggestion, edit it, or keep
-              yours.
+              These hobbs/tach values look off — a typo (dropped/extra digit, or below an
+              earlier reading), or a hobbs that&apos;s just the tach value duplicated into
+              both fields. Accept the suggested fix, clear the duplicate, or keep yours.
             </div>
             <ul className="flex flex-col gap-2">
               {anomalies.map((a) => (
@@ -158,7 +168,11 @@ export function DuplicatesClient({
                       </span>
                       <span>
                         {a.field} <span className="readout text-annun-amber">{a.value.toLocaleString()}</span>
-                        {a.reason === "non_monotonic" ? " · below an earlier reading" : " · unusually large jump"}
+                        {a.reason === "non_monotonic"
+                          ? " · below an earlier reading"
+                          : a.reason === "magnitude"
+                            ? " · unusually large jump"
+                            : " · same value as tach (duplicated into hobbs)"}
                       </span>
                     </div>
                   </div>
@@ -170,23 +184,35 @@ export function DuplicatesClient({
                       Open
                     </Link>
                   )}
-                  <label className="flex items-center gap-1.5 text-xs text-dim">
-                    fix to
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={edits[a.readingId] ?? (a.suggested != null ? String(a.suggested) : "")}
-                      onChange={(e) => setEdits((m) => ({ ...m, [a.readingId]: e.target.value }))}
-                      className="w-24 rounded-md border border-line bg-panel2 px-2 py-1 text-right text-ink"
-                    />
-                  </label>
-                  <button
-                    onClick={() => acceptAnomaly(a)}
-                    disabled={busyId === a.readingId}
-                    className="shrink-0 rounded-md border border-annun-green/50 px-3 py-1.5 text-xs text-annun-green hover:border-annun-green disabled:opacity-50"
-                  >
-                    {busyId === a.readingId ? "Saving…" : "Accept"}
-                  </button>
+                  {a.reason === "duplicate" ? (
+                    <button
+                      onClick={() => clearAnomaly(a)}
+                      disabled={busyId === a.readingId}
+                      className="shrink-0 rounded-md border border-annun-green/50 px-3 py-1.5 text-xs text-annun-green hover:border-annun-green disabled:opacity-50"
+                    >
+                      {busyId === a.readingId ? "Clearing…" : `Clear ${a.field}`}
+                    </button>
+                  ) : (
+                    <>
+                      <label className="flex items-center gap-1.5 text-xs text-dim">
+                        fix to
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={edits[a.readingId] ?? (a.suggested != null ? String(a.suggested) : "")}
+                          onChange={(e) => setEdits((m) => ({ ...m, [a.readingId]: e.target.value }))}
+                          className="w-24 rounded-md border border-line bg-panel2 px-2 py-1 text-right text-ink"
+                        />
+                      </label>
+                      <button
+                        onClick={() => acceptAnomaly(a)}
+                        disabled={busyId === a.readingId}
+                        className="shrink-0 rounded-md border border-annun-green/50 px-3 py-1.5 text-xs text-annun-green hover:border-annun-green disabled:opacity-50"
+                      >
+                        {busyId === a.readingId ? "Saving…" : "Accept"}
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => dismissAnomaly(a)}
                     disabled={busyId === a.readingId}
