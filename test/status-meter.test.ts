@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildStatusItems } from "../src/lib/status";
+import { buildStatusItems, type MeterCurrents } from "../src/lib/status";
 import type { MaintenanceItem } from "../src/lib/database.types";
 
 // Minimal oil-change item (non-regulatory usage → hobbs by policy).
-const oil = (lastDone: number, nextDue: number): MaintenanceItem =>
+const oil = (lastDone: number, lastDate: string | null): MaintenanceItem =>
   ({
     id: "oil",
     kind: "oil_change",
@@ -12,33 +12,65 @@ const oil = (lastDone: number, nextDue: number): MaintenanceItem =>
     regulatory: false,
     interval_months: null,
     interval_hours: 50,
-    last_done_date: "2025-01-01",
+    last_done_date: lastDate,
     last_done_hours: lastDone,
     next_due_date: null,
-    next_due_hours: nextDue,
+    next_due_hours: lastDone + 50,
     notes: null,
   }) as MaintenanceItem;
 
-test("healthy hobbs oil: stays on hobbs and advances (32 hrs left)", () => {
-  const [s] = buildStatusItems([oil(1200, 1250)], [], { tach: 1150, hobbs: 1218 });
+test("the real case: oil done at tach 4141.6 / hobbs 946.1, now hobbs 947.7 → 48.4 hrs left on hobbs", () => {
+  const currents: MeterCurrents = {
+    tach: 4141.6,
+    hobbs: 947.7,
+    // last-done stored as the tach value 4141.6; the hobbs at that date is 946.1
+    baselineFor: (date, meter) =>
+      date === "2026-07-05" ? (meter === "hobbs" ? 946.1 : 4141.6) : null,
+  };
+  const [s] = buildStatusItems([oil(4141.6, "2026-07-05")], [], currents);
   assert.equal(s.meter, "hobbs");
-  assert.equal(s.currentForItem, 1218);
+  assert.equal(s.hoursUnreliable, false);
+  assert.equal(s.lastDoneForItem, 946.1);
+  assert.equal(s.nextDueForItem, 996.1);
+  assert.equal(s.currentForItem, 947.7);
+  const remaining = Math.round((s.nextDueForItem! - s.currentForItem!) * 10) / 10;
+  assert.equal(remaining, 48.4);
+});
+
+test("oil recorded directly in hobbs still works (no re-anchor needed)", () => {
+  const [s] = buildStatusItems([oil(946.1, "2026-07-05")], [], { tach: 1150, hobbs: 947.7 });
+  assert.equal(s.meter, "hobbs");
+  assert.equal(s.lastDoneForItem, 946.1);
+  assert.equal(s.nextDueForItem, 996.1);
   assert.equal(s.hoursUnreliable, false);
 });
 
-test("last-done above current hobbs but valid on tach → falls back to tach (never > interval)", () => {
-  // last-done 1500 sits above hobbs 1200 (impossible flown) but below tach 1520.
-  const [s] = buildStatusItems([oil(1500, 1550)], [], { tach: 1520, hobbs: 1200 });
-  assert.equal(s.meter, "tach");
-  assert.equal(s.currentForItem, 1520);
-  assert.equal(s.hoursUnreliable, false);
-  const remaining = s.nextDueHours! - s.currentForItem!; // 1550 - 1520 = 30 ≤ interval 50
-  assert.ok(remaining <= 50 && remaining >= 0, `remaining=${remaining}`);
-});
-
-test("last-done above BOTH meters → flagged unreliable, not a bogus countdown", () => {
-  const [s] = buildStatusItems([oil(3302, 3352)], [], { tach: 1520, hobbs: 1200 });
+test("no same-meter baseline and last-done above both meters → flagged unreliable", () => {
+  const [s] = buildStatusItems([oil(4141.6, "2026-07-05")], [], {
+    tach: 1150,
+    hobbs: 947.7,
+    baselineFor: () => null,
+  });
   assert.equal(s.hoursUnreliable, true);
-  // urgency must not be driven by the impossible hours delta.
   assert.notEqual(s.urgency, "overdue");
+});
+
+test("regulatory tach item keeps its stored tach next-due (no re-anchor)", () => {
+  const item = {
+    id: "100hr",
+    kind: "hundred_hour",
+    label: "100-hour",
+    regulatory: true,
+    interval_months: null,
+    interval_hours: 100,
+    last_done_date: "2026-01-01",
+    last_done_hours: 4100,
+    next_due_date: null,
+    next_due_hours: 4200,
+    notes: null,
+  } as MaintenanceItem;
+  const [s] = buildStatusItems([item], [], { tach: 4141.6, hobbs: 947.7 });
+  assert.equal(s.meter, "tach");
+  assert.equal(s.nextDueForItem, 4200);
+  assert.equal(s.currentForItem, 4141.6);
 });

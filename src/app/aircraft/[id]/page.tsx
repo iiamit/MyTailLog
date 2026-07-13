@@ -27,7 +27,7 @@ function shortRemain(item: StatusItem): string {
   const d = daysUntil(item.nextDueDate);
   if (d != null) return d < 0 ? `${-d}d over` : `${d}d`;
   if (item.hoursUnreliable) return "check";
-  const h = hoursRemaining(item.nextDueHours, item.currentForItem);
+  const h = hoursRemaining(item.nextDueForItem, item.currentForItem);
   if (h != null) return h < 0 ? `${-h}h over` : `${h}h`;
   return "—";
 }
@@ -75,7 +75,7 @@ export default async function AircraftPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
@@ -86,6 +86,7 @@ export default async function AircraftPage({
     hobbs: ch.hobbs,
     tachEstimated: ct.estimated,
     hobbsEstimated: ch.estimated,
+    baselineFor,
   });
   const sorted = sortStatusItems(status);
   const annun = {
@@ -235,7 +236,7 @@ export default async function AircraftPage({
                 <div className="readout mt-0.5 text-[11.5px] text-annun-red">
                   {mostUrgent.hoursUnreliable
                     ? dueText(mostUrgent.nextDueDate, null, null) || "check last-done"
-                    : dueText(mostUrgent.nextDueDate, mostUrgent.nextDueHours, mostUrgent.currentForItem) ?? "due"}
+                    : dueText(mostUrgent.nextDueDate, mostUrgent.nextDueForItem, mostUrgent.currentForItem) ?? "due"}
                 </div>
               </div>
               <span className="text-lg text-annun-red">→</span>
@@ -265,7 +266,7 @@ export default async function AircraftPage({
                     <div className="readout mt-0.5 text-[11px] text-faint">
                       {f.hoursUnreliable
                         ? dueText(f.nextDueDate, null, null) || "check last-done"
-                        : dueText(f.nextDueDate, f.nextDueHours, f.currentForItem) ?? "not scheduled"}
+                        : dueText(f.nextDueDate, f.nextDueForItem, f.currentForItem) ?? "not scheduled"}
                     </div>
                   </div>
                   <span className="readout shrink-0 text-xs" style={{ color: U_COLOR[f.urgency] }}>

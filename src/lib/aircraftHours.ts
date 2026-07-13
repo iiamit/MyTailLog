@@ -3,10 +3,12 @@ import type { Database } from "@/lib/database.types";
 import {
   currentTach,
   currentHobbs,
+  meterValueAtDate,
   detectAnomalies,
   type Anomaly,
   type CurrentTach,
   type CurrentHobbs,
+  type Meter,
   type Reading,
 } from "@/lib/hobbsTach";
 
@@ -61,9 +63,19 @@ export async function getCurrentMeters(
   supabase: SupabaseClient<Database>,
   aircraftId: string,
   enrollment?: { hobbs: number | null; tach: number | null } | null,
-): Promise<{ tach: CurrentTach; hobbs: CurrentHobbs }> {
+): Promise<{
+  tach: CurrentTach;
+  hobbs: CurrentHobbs;
+  // Meter value at a maintenance item's last-done date — the same-meter baseline
+  // its countdown anchors to (so oil advances on hobbs even if recorded in tach).
+  baselineFor: (date: string | null, meter: Meter) => number | null;
+}> {
   const readings = await fetchReadings(supabase, aircraftId, enrollment);
-  return { tach: currentTach(readings), hobbs: currentHobbs(readings) };
+  return {
+    tach: currentTach(readings),
+    hobbs: currentHobbs(readings),
+    baselineFor: (date, meter) => meterValueAtDate(readings, date, meter),
+  };
 }
 
 /** Current hours (= current tach) for callers that only need the number. */

@@ -9,6 +9,7 @@ import {
   deriveRatio,
   currentTach,
   currentHobbs,
+  meterValueAtDate,
   detectAnomalies,
 } from "../src/lib/hobbsTach";
 
@@ -154,6 +155,32 @@ test("currentHobbs: all-tach logbook → bridged from tach via ratio, flagged es
 
 test("currentHobbs: no data → null", () => {
   assert.equal(currentHobbs([]).hobbs, null);
+});
+
+// --- meterValueAtDate ------------------------------------------------------
+test("meterValueAtDate: the real oil-change case — hobbs at the last-done date is the baseline", () => {
+  // Oil change co-recorded tach 4141.6 + hobbs 946.1 on 2026-07-05; later flights → 947.7 hobbs.
+  const rs = [
+    R("oil", "2026-07-05", 946.1, 4141.6),
+    R("f1", "2026-07-09", 947.7, null),
+  ];
+  assert.equal(meterValueAtDate(rs, "2026-07-05", "hobbs"), 946.1); // → remaining = 50 - (947.7-946.1) = 48.4
+  assert.equal(meterValueAtDate(rs, "2026-07-05", "tach"), 4141.6);
+});
+
+test("meterValueAtDate: picks the latest reading on-or-before the date", () => {
+  const rs = [R("a", "2025-01-01", 100, null), R("b", "2025-02-01", 110, null), R("c", "2025-03-01", 120, null)];
+  assert.equal(meterValueAtDate(rs, "2025-02-15", "hobbs"), 110);
+});
+
+test("meterValueAtDate: reads each meter at the date (co-recorded maintenance)", () => {
+  const rs = [R("p1", "2025-01-01", 100, 1000), R("p2", "2025-02-01", 200, 1090), R("m", "2025-03-01", null, 1180)];
+  assert.equal(meterValueAtDate(rs, "2025-03-01", "tach"), 1180); // tach recorded that day
+  assert.equal(meterValueAtDate(rs, "2025-03-01", "hobbs"), 200); // no hobbs then → last known hobbs
+});
+
+test("meterValueAtDate: no date → null", () => {
+  assert.equal(meterValueAtDate([R("a", "2025-01-01", 100, null)], null, "hobbs"), null);
 });
 
 // --- digitEditCandidates ---------------------------------------------------

@@ -40,7 +40,7 @@ function remainingText(item: StatusItem): string {
   if (item.hoursUnreliable) {
     parts.push("check last-done reading");
   } else {
-    const hrs = hoursRemaining(item.nextDueHours, item.currentForItem);
+    const hrs = hoursRemaining(item.nextDueForItem, item.currentForItem);
     if (hrs != null) {
       const est = item.currentEstimated ? " est." : "";
       parts.push(hrs < 0 ? `${Math.abs(hrs)} hrs overdue${est}` : `${hrs} hrs left${est}`);
@@ -55,8 +55,8 @@ function remainingText(item: StatusItem): string {
 // the calendar span between last-done and next-due. Null when we don't have
 // enough of either dimension to derive one — the bar is simply omitted then.
 function progressFraction(item: StatusItem): number | null {
-  if (item.intervalHours && item.lastDoneHours != null && item.currentForItem != null) {
-    return (item.currentForItem - item.lastDoneHours) / item.intervalHours;
+  if (item.intervalHours && item.lastDoneForItem != null && item.currentForItem != null) {
+    return (item.currentForItem - item.lastDoneForItem) / item.intervalHours;
   }
   if (item.lastDoneDate && item.nextDueDate) {
     const total = Date.parse(item.nextDueDate) - Date.parse(item.lastDoneDate);
@@ -119,7 +119,7 @@ function StatusCard({
       <div className="readout mt-0.5 text-[10.5px] text-faint">
         {[
           item.nextDueDate ? `due ${item.nextDueDate}` : null,
-          item.nextDueHours != null ? `at ${item.nextDueHours} hrs` : null,
+          item.nextDueForItem != null ? `at ${item.nextDueForItem} ${item.meter}` : null,
           item.lastDoneDate ? `last ${item.lastDoneDate}` : null,
         ]
           .filter(Boolean)
@@ -195,7 +195,7 @@ export default async function StatusPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
@@ -206,6 +206,7 @@ export default async function StatusPage({
       hobbs: ch.hobbs,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
+      baselineFor,
     }),
   );
 

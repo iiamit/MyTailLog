@@ -178,6 +178,38 @@ export function currentHobbs(readings: Reading[]): CurrentHobbs {
   return { hobbs: round1(anchor.hobbs + (ct.tach - anchor.tach) / ratio), estimated: true, asOf: ct.asOf, rough: ct.rough };
 }
 
+/**
+ * The value of `meter` at (or nearest before) a date — the reading a maintenance
+ * item was actually done at, on the meter it counts down on. This is why the oil
+ * change advances on hobbs even though its last-done was recorded in tach: we
+ * anchor to the co-recorded hobbs at that date, not the stored tach scalar.
+ * Prefers the latest reading on-or-before the date; else the earliest after;
+ * bridges from the other meter via the ratio when this meter has no reading.
+ */
+export function meterValueAtDate(readings: Reading[], date: string | null, meter: Meter): number | null {
+  if (!date) return null;
+  const withVal = readings.filter((r) => r[meter] != null) as (Reading & Record<Meter, number>)[];
+  if (withVal.length) {
+    const onOrBefore = withVal.filter((r) => (r.date ?? "") <= date);
+    const pick = onOrBefore.length
+      ? onOrBefore.reduce((b, r) => ((r.date ?? "") > (b.date ?? "") ? r : b))
+      : withVal.reduce((b, r) => ((r.date ?? "9999") < (b.date ?? "9999") ? r : b));
+    return round1(pick[meter]);
+  }
+  // No reading in this meter at all — bridge from the other meter at that date.
+  const other: Meter = meter === "hobbs" ? "tach" : "hobbs";
+  const otherVal = meterValueAtDate(readings, date, other);
+  if (otherVal == null) return null;
+  const pairs = buildPairs(readings);
+  if (pairs.length === 0) return null;
+  const { ratio } = deriveRatio(readings);
+  const anchor = latestPair(pairs);
+  // Δ on this meter ≈ ratio·Δhobbs; invert when converting tach→hobbs.
+  return meter === "tach"
+    ? round1(anchor.tach + ratio * (otherVal - anchor.hobbs))
+    : round1(anchor.hobbs + (otherVal - anchor.tach) / ratio);
+}
+
 /** Plausible typo-corrections of a reading: digit insert/delete/transpose + decimal shift. */
 export function digitEditCandidates(value: number): number[] {
   const out = new Set<number>();

@@ -141,7 +141,7 @@ async function remindUser(
         .not("status", "in", "(not_applicable,superseded)"),
     ]);
 
-    const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, ac.id, {
+    const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, ac.id, {
       hobbs: ac.enrollment_hobbs,
       tach: ac.enrollment_tach,
     });
@@ -152,6 +152,7 @@ async function remindUser(
       hobbs: ch.hobbs,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
+      baselineFor,
     })) {
       // Don't remind off an untrustworthy hours countdown (last-done meter mismatch).
       if (s.hoursUnreliable) continue;
