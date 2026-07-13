@@ -113,20 +113,23 @@ export function deriveRatio(readings: Reading[]): RatioResult {
   return { ratio, confidence: coRecorded >= 2 ? "measured" : "estimated", pairs: pairs.length };
 }
 
+// Highest reading in a meter (monotonic meter); tie → latest date.
+const highest = <K extends "hobbs" | "tach">(rows: (Reading & Record<K, number>)[], k: K) =>
+  rows.length
+    ? rows.reduce((best, r) =>
+        r[k] > best[k] || (r[k] === best[k] && (r.date ?? "") > (best.date ?? "")) ? r : best,
+      )
+    : null;
+
+// The most recent (hobbs, tach) pair — the anchor forecasts walk forward from.
+const latestPair = (pairs: Pair[]): Pair =>
+  [...pairs].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.hobbs - b.hobbs)[pairs.length - 1];
+
 /** Current tach — actual when a recent tach anchors it, else estimated from hobbs. */
 export function currentTach(readings: Reading[]): CurrentTach {
   const pairs = buildPairs(readings);
-  const hobbsReadings = readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[];
-  const tachReadings = readings.filter((r) => r.tach != null) as (Reading & { tach: number })[];
-  // Current meter value = the highest reading (monotonic meter); tie → latest date.
-  const highest = <K extends "hobbs" | "tach">(rows: (Reading & Record<K, number>)[], k: K) =>
-    rows.length
-      ? rows.reduce((best, r) =>
-          r[k] > best[k] || (r[k] === best[k] && (r.date ?? "") > (best.date ?? "")) ? r : best,
-        )
-      : null;
-  const latestHobbs = highest(hobbsReadings, "hobbs");
-  const latestTach = highest(tachReadings, "tach");
+  const latestHobbs = highest(readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[], "hobbs");
+  const latestTach = highest(readings.filter((r) => r.tach != null) as (Reading & { tach: number })[], "tach");
 
   if (pairs.length === 0) {
     // Can't relate the meters (no shared point). Prefer an actual tach reading —
@@ -139,9 +142,7 @@ export function currentTach(readings: Reading[]): CurrentTach {
   }
 
   const { ratio, confidence } = deriveRatio(readings);
-  const anchor = [...pairs].sort(
-    (a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.hobbs - b.hobbs,
-  )[pairs.length - 1]; // most recent pair
+  const anchor = latestPair(pairs);
 
   if (latestHobbs && latestHobbs.hobbs > anchor.hobbs) {
     return {
@@ -152,6 +153,29 @@ export function currentTach(readings: Reading[]): CurrentTach {
     };
   }
   return { tach: round1(anchor.tach), estimated: false, asOf: anchor.date, rough: false };
+}
+
+export type CurrentHobbs = { hobbs: number | null; estimated: boolean; asOf: string | null; rough: boolean };
+
+/**
+ * Current hobbs — the meter usage items (oil, etc.) count down on. Hobbs is the
+ * abundant, frequently-recorded meter, so the latest hobbs reading is normally
+ * the actual value; only an all-tach logbook needs it bridged from tach via the
+ * ratio (flagged estimated).
+ */
+export function currentHobbs(readings: Reading[]): CurrentHobbs {
+  const latestHobbs = highest(readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[], "hobbs");
+  if (latestHobbs) return { hobbs: round1(latestHobbs.hobbs), estimated: false, asOf: latestHobbs.date, rough: false };
+
+  // No hobbs ever recorded — bridge from the current tach.
+  const ct = currentTach(readings);
+  if (ct.tach == null) return { hobbs: null, estimated: false, asOf: null, rough: false };
+  const pairs = buildPairs(readings);
+  if (pairs.length === 0)
+    return { hobbs: round1(ct.tach / DEFAULT_RATIO), estimated: true, asOf: ct.asOf, rough: true };
+  const { ratio } = deriveRatio(readings);
+  const anchor = latestPair(pairs);
+  return { hobbs: round1(anchor.hobbs + (ct.tach - anchor.tach) / ratio), estimated: true, asOf: ct.asOf, rough: ct.rough };
 }
 
 /** Plausible typo-corrections of a reading: digit insert/delete/transpose + decimal shift. */

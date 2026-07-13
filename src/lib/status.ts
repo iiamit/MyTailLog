@@ -22,10 +22,29 @@ export type StatusItem = {
   nextDueHours: number | null;
   notes: string | null;
   urgency: Urgency;
+  // Which meter this item's hour-countdown uses, and the current value in it.
+  // Regulatory items (100-hr, annual) run on tach; usage items (oil, advisory)
+  // run on hobbs — the meter they're recorded and flown against.
+  meter: "hobbs" | "tach";
+  currentForItem: number | null;
+  currentEstimated: boolean;
   // True for an AD corroborated by a scanned A&P compliance report.
   verifiedReport: boolean;
   verifiedReportAt: string | null;
 };
+
+/** Current value of each meter, with whether it's an estimate (hobbs↔tach bridged). */
+export type MeterCurrents = {
+  tach: number | null;
+  hobbs: number | null;
+  tachEstimated?: boolean;
+  hobbsEstimated?: boolean;
+};
+
+/** The meter an item counts down on: regulatory → tach, usage → hobbs. */
+export function meterForItem(regulatory: boolean): "hobbs" | "tach" {
+  return regulatory ? "tach" : "hobbs";
+}
 
 export type AdLite = {
   id: string;
@@ -43,11 +62,19 @@ export type AdLite = {
 export function buildStatusItems(
   items: MaintenanceItem[],
   ads: AdLite[],
-  currentHours: number | null,
+  currents: MeterCurrents,
 ): StatusItem[] {
+  // The current hours to judge an item against, in the item's own meter.
+  const currentFor = (meter: "hobbs" | "tach") =>
+    meter === "tach"
+      ? { value: currents.tach, estimated: Boolean(currents.tachEstimated) }
+      : { value: currents.hobbs, estimated: Boolean(currents.hobbsEstimated) };
+
   const out: StatusItem[] = [];
   for (const m of items) {
     const due = effectiveNextDue(m, items);
+    const meter = meterForItem(m.regulatory);
+    const cur = currentFor(meter);
     out.push({
       id: m.id,
       source: "maintenance",
@@ -61,12 +88,17 @@ export function buildStatusItems(
       nextDueDate: due.next_due_date,
       nextDueHours: due.next_due_hours,
       notes: m.notes,
-      urgency: urgencyOf(due, currentHours),
+      urgency: urgencyOf(due, cur.value),
+      meter,
+      currentForItem: cur.value,
+      currentEstimated: cur.estimated,
       verifiedReport: false,
       verifiedReportAt: null,
     });
   }
   for (const a of ads) {
+    // ADs are airworthiness/regulatory → tach.
+    const cur = currentFor("tach");
     out.push({
       id: a.id,
       source: "ad",
@@ -82,8 +114,11 @@ export function buildStatusItems(
       notes: null,
       urgency: urgencyOf(
         { next_due_date: a.next_due_date, next_due_hours: a.next_due_hours },
-        currentHours,
+        cur.value,
       ),
+      meter: "tach",
+      currentForItem: cur.value,
+      currentEstimated: cur.estimated,
       verifiedReport: Boolean(a.verified_report_page_id),
       verifiedReportAt: a.verified_at,
     });

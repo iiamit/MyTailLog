@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { dueText, type Urgency } from "@/lib/compliance";
-import { getCurrentHours } from "@/lib/aircraftHours";
+import { getCurrentMeters } from "@/lib/aircraftHours";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import {
   buildStatusItems,
@@ -23,10 +23,10 @@ const U_COLOR: Record<Urgency, string> = {
 };
 
 // Compact "time/hours left" token for the forecast preview rows.
-function shortRemain(item: StatusItem, cur: number | null): string {
+function shortRemain(item: StatusItem): string {
   const d = daysUntil(item.nextDueDate);
   if (d != null) return d < 0 ? `${-d}d over` : `${d}d`;
-  const h = hoursRemaining(item.nextDueHours, cur);
+  const h = hoursRemaining(item.nextDueHours, item.currentForItem);
   if (h != null) return h < 0 ? `${-h}h over` : `${h}h`;
   return "—";
 }
@@ -74,13 +74,18 @@ export default async function AircraftPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const currentHours = await getCurrentHours(supabase, id, {
+  const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
 
   // Unified airworthiness list → annunciator counts + most-urgent + forecast.
-  const status = buildStatusItems(mxItems ?? [], (ads ?? []) as AdLite[], currentHours);
+  const status = buildStatusItems(mxItems ?? [], (ads ?? []) as AdLite[], {
+    tach: ct.tach,
+    hobbs: ch.hobbs,
+    tachEstimated: ct.estimated,
+    hobbsEstimated: ch.estimated,
+  });
   const sorted = sortStatusItems(status);
   const annun = {
     overdue: status.filter((s) => s.urgency === "overdue").length,
@@ -167,7 +172,7 @@ export default async function AircraftPage({
           <div className="mb-4 flex items-center justify-between">
             <div className="eyebrow">Airworthiness status</div>
             <span className="readout text-[11px] text-dim">
-              current ≈ {currentHours != null ? currentHours.toFixed(1) : "—"} hrs
+              tach ≈ {ct.tach != null ? ct.tach.toFixed(1) : "—"} · hobbs {ch.hobbs != null ? ch.hobbs.toFixed(1) : "—"}
             </span>
           </div>
           <div className="flex items-center gap-6">
@@ -227,7 +232,7 @@ export default async function AircraftPage({
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14.5px] font-semibold">{mostUrgent.label}</div>
                 <div className="readout mt-0.5 text-[11.5px] text-annun-red">
-                  {dueText(mostUrgent.nextDueDate, mostUrgent.nextDueHours, currentHours) ?? "due"}
+                  {dueText(mostUrgent.nextDueDate, mostUrgent.nextDueHours, mostUrgent.currentForItem) ?? "due"}
                 </div>
               </div>
               <span className="text-lg text-annun-red">→</span>
@@ -255,11 +260,11 @@ export default async function AircraftPage({
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13.5px]">{f.label}</div>
                     <div className="readout mt-0.5 text-[11px] text-faint">
-                      {dueText(f.nextDueDate, f.nextDueHours, currentHours) ?? "not scheduled"}
+                      {dueText(f.nextDueDate, f.nextDueHours, f.currentForItem) ?? "not scheduled"}
                     </div>
                   </div>
                   <span className="readout shrink-0 text-xs" style={{ color: U_COLOR[f.urgency] }}>
-                    {shortRemain(f, currentHours)}
+                    {shortRemain(f)}
                   </span>
                 </Link>
               ))}

@@ -1,7 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { syncUserHours } from "@/lib/mfbSync";
 import { sendEmail } from "@/lib/email";
-import { getCurrentHours } from "@/lib/aircraftHours";
+import { getCurrentMeters } from "@/lib/aircraftHours";
 import { buildStatusItems, type StatusItem } from "@/lib/status";
 import { dueText } from "@/lib/compliance";
 import {
@@ -141,18 +141,24 @@ async function remindUser(
         .not("status", "in", "(not_applicable,superseded)"),
     ]);
 
-    const currentHours = await getCurrentHours(supabase, ac.id, {
+    const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, ac.id, {
       hobbs: ac.enrollment_hobbs,
       tach: ac.enrollment_tach,
     });
 
     const rows: DueRow[] = [];
-    for (const s of buildStatusItems(items ?? [], ads ?? [], currentHours)) {
-      if (!isDueForReminder(s, currentHours, alerts, today)) continue;
+    for (const s of buildStatusItems(items ?? [], ads ?? [], {
+      tach: ct.tach,
+      hobbs: ch.hobbs,
+      tachEstimated: ct.estimated,
+      hobbsEstimated: ch.estimated,
+    })) {
+      // Each item is judged on its own meter (oil on hobbs, 100-hr on tach).
+      if (!isDueForReminder(s, s.currentForItem, alerts, today)) continue;
       const key = itemKey(s);
       const sig = dueSignature(s);
       if (alreadySent.has(`${key}|${sig}`)) continue;
-      rows.push({ item: s, currentHours });
+      rows.push({ item: s, currentHours: s.currentForItem });
       toLog.push({ item_key: key, due_signature: sig, aircraft_id: ac.id });
     }
     if (rows.length) groups.push({ tail: ac.tail_number, aircraftId: ac.id, rows });

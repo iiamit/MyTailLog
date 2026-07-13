@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentTach, getLatestMfbReading } from "@/lib/aircraftHours";
+import { getCurrentMeters, getLatestMfbReading } from "@/lib/aircraftHours";
 import { buildStatusItems, sortStatusItems } from "@/lib/status";
 import { MaintenanceClient } from "./MaintenanceClient";
 
@@ -32,19 +32,24 @@ export default async function MaintenancePage({
     .eq("recurring", true)
     .not("status", "in", "(not_applicable,superseded)");
 
-  // Current tach — the maintenance meter — reconciled from hobbs/tach readings.
-  const ct = await getCurrentTach(supabase, id, {
+  // Both meters, reconciled from hobbs/tach readings. Regulatory items count
+  // down on tach; usage items (oil) on hobbs.
+  const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
-  const currentHours = ct.tach;
 
   // Latest reading synced from MyFlightBook, for an honest "as of <date>" note.
   const mfbReading = await getLatestMfbReading(supabase, id);
 
   // Unified due list (maintenance items + recurring ADs), sorted by urgency.
   const dueItems = sortStatusItems(
-    buildStatusItems(items ?? [], ads ?? [], currentHours),
+    buildStatusItems(items ?? [], ads ?? [], {
+      tach: ct.tach,
+      hobbs: ch.hobbs,
+      tachEstimated: ct.estimated,
+      hobbsEstimated: ch.estimated,
+    }),
   );
 
   return (
@@ -68,9 +73,11 @@ export default async function MaintenancePage({
         aircraftId={id}
         items={items ?? []}
         dueItems={dueItems}
-        currentHours={currentHours}
+        currentTach={ct.tach}
+        currentHobbs={ch.hobbs}
         currentTachEstimated={ct.estimated}
         currentTachRough={ct.rough}
+        currentHobbsEstimated={ch.estimated}
         mfbReading={mfbReading}
         extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
       />

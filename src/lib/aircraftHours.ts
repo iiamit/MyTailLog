@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { currentTach, detectAnomalies, type Anomaly, type CurrentTach, type Reading } from "@/lib/hobbsTach";
+import {
+  currentTach,
+  currentHobbs,
+  detectAnomalies,
+  type Anomaly,
+  type CurrentTach,
+  type CurrentHobbs,
+  type Reading,
+} from "@/lib/hobbsTach";
 
 /**
  * All hobbs/tach readings for an aircraft, normalized for hobbsTach — log
@@ -41,6 +49,21 @@ export async function getCurrentTach(
   enrollment?: { hobbs: number | null; tach: number | null } | null,
 ): Promise<CurrentTach> {
   return currentTach(await fetchReadings(supabase, aircraftId, enrollment));
+}
+
+/**
+ * Both current meters from a single readings fetch. Maintenance items count down
+ * on the meter matching their kind — regulatory (100-hr, annual) on tach, usage
+ * (oil, advisory) on hobbs — so the forecast needs both. Hobbs is the abundant
+ * meter (MFB syncs it every flight); tach is the authoritative maintenance meter.
+ */
+export async function getCurrentMeters(
+  supabase: SupabaseClient<Database>,
+  aircraftId: string,
+  enrollment?: { hobbs: number | null; tach: number | null } | null,
+): Promise<{ tach: CurrentTach; hobbs: CurrentHobbs }> {
+  const readings = await fetchReadings(supabase, aircraftId, enrollment);
+  return { tach: currentTach(readings), hobbs: currentHobbs(readings) };
 }
 
 /** Current hours (= current tach) for callers that only need the number. */
