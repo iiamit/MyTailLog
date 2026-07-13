@@ -290,8 +290,11 @@ const SECTIONS: Section[] = [
           your own. Regulatory items are distinguished from advisory ones (TBO/overhaul).
         </p>
         <Effects>
-          Due dates depend on <strong>current hours</strong> (the highest of hobbs and tach — total
-          time is often on the tach) and on <strong>last-done</strong> data. Extraction and{" "}
+          Due dates depend on <strong>current tach</strong> (the meter maintenance and ADs are
+          tracked against) and on <strong>last-done</strong> data. When only hobbs has been recorded
+          recently, tach is <em>estimated</em> from this aircraft&apos;s own hobbs↔tach ratio and
+          labelled <em>&ldquo;est. from hobbs&rdquo;</em> — the actual tach may differ slightly.
+          Extraction and{" "}
           &ldquo;Update from logs&rdquo; advance last-done automatically. The 100-hour resets off the
           later of the last 100-hour <em>or</em> the last annual. Everything here also feeds{" "}
           <L href="#status">Status</L>.
@@ -354,8 +357,8 @@ const SECTIONS: Section[] = [
           treat it as the last known reading, not a live gauge, and confirm against the aircraft.
         </p>
         <Effects>
-          A synced reading feeds <strong>current hours</strong> (the max across logs, enrollment,
-          and synced readings), so it flows straight into the{" "}
+          A synced reading feeds <strong>current tach</strong> (reconciled across logs, enrollment,
+          and synced readings — hobbs converted to tach when needed), so it flows straight into the{" "}
           <L href="#maintenance">maintenance forecast</L>, recurring{" "}
           <L href="#compliance">AD next-due</L>, and the <L href="#status">Status</L> grid.
         </Effects>
@@ -441,8 +444,9 @@ const SECTIONS: Section[] = [
         </p>
         <Effects>
           What counts as &ldquo;due&rdquo; comes straight from the{" "}
-          <L href="#status">Status</L> grid — <strong>current hours</strong> (logs, enrollment, and{" "}
-          <L href="#myflightbook">MyFlightBook</L> syncs) and last-done dates drive it. The same
+          <L href="#status">Status</L> grid — <strong>current tach</strong> (logs, enrollment, and{" "}
+          <L href="#myflightbook">MyFlightBook</L> syncs, hobbs converted to tach when needed) and
+          last-done dates drive it. The same
           daily job also auto-syncs connected MyFlightBook accounts once a day, so a reminder can
           reflect hours flown since you last opened the app.
         </Effects>

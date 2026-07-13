@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentHours, getLatestMfbReading } from "@/lib/aircraftHours";
+import { getCurrentTach, getLatestMfbReading } from "@/lib/aircraftHours";
 import { buildStatusItems, sortStatusItems } from "@/lib/status";
 import { MaintenanceClient } from "./MaintenanceClient";
 
@@ -32,12 +32,12 @@ export default async function MaintenancePage({
     .eq("recurring", true)
     .not("status", "in", "(not_applicable,superseded)");
 
-  // Current hours = highest reading across hobbs AND tach (total time is often
-  // recorded in tach), else the enrollment readings.
-  const currentHours = await getCurrentHours(supabase, id, {
+  // Current tach — the maintenance meter — reconciled from hobbs/tach readings.
+  const ct = await getCurrentTach(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
+  const currentHours = ct.tach;
 
   // Latest reading synced from MyFlightBook, for an honest "as of <date>" note.
   const mfbReading = await getLatestMfbReading(supabase, id);
@@ -69,6 +69,8 @@ export default async function MaintenancePage({
         items={items ?? []}
         dueItems={dueItems}
         currentHours={currentHours}
+        currentTachEstimated={ct.estimated}
+        currentTachRough={ct.rough}
         mfbReading={mfbReading}
         extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
       />

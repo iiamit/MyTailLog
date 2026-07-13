@@ -117,14 +117,22 @@ export function deriveRatio(readings: Reading[]): RatioResult {
 export function currentTach(readings: Reading[]): CurrentTach {
   const pairs = buildPairs(readings);
   const hobbsReadings = readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[];
-  // Current hobbs = the highest reading (monotonic meter); tie → latest date.
-  const latestHobbs = hobbsReadings.length
-    ? hobbsReadings.reduce((best, r) =>
-        r.hobbs > best.hobbs || (r.hobbs === best.hobbs && (r.date ?? "") > (best.date ?? "")) ? r : best,
-      )
-    : null;
+  const tachReadings = readings.filter((r) => r.tach != null) as (Reading & { tach: number })[];
+  // Current meter value = the highest reading (monotonic meter); tie → latest date.
+  const highest = <K extends "hobbs" | "tach">(rows: (Reading & Record<K, number>)[], k: K) =>
+    rows.length
+      ? rows.reduce((best, r) =>
+          r[k] > best[k] || (r[k] === best[k] && (r.date ?? "") > (best.date ?? "")) ? r : best,
+        )
+      : null;
+  const latestHobbs = highest(hobbsReadings, "hobbs");
+  const latestTach = highest(tachReadings, "tach");
 
   if (pairs.length === 0) {
+    // Can't relate the meters (no shared point). Prefer an actual tach reading —
+    // it's the authoritative maintenance meter (covers the all-tach logbook).
+    // ponytail: a tach-then-only-hobbs history falls back to the tach here too.
+    if (latestTach) return { tach: round1(latestTach.tach), estimated: false, asOf: latestTach.date, rough: false };
     return latestHobbs
       ? { tach: round1(latestHobbs.hobbs * DEFAULT_RATIO), estimated: true, asOf: latestHobbs.date, rough: true }
       : { tach: null, estimated: false, asOf: null, rough: false };

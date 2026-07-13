@@ -97,6 +97,8 @@ export function MaintenanceClient({
   items,
   dueItems,
   currentHours,
+  currentTachEstimated = false,
+  currentTachRough = false,
   mfbReading,
   extractionConfigured,
 }: {
@@ -104,6 +106,8 @@ export function MaintenanceClient({
   items: MaintenanceItem[];
   dueItems: DueItem[];
   currentHours: number | null;
+  currentTachEstimated?: boolean;
+  currentTachRough?: boolean;
   mfbReading: { date: string | null; hobbs: number | null; tach: number | null } | null;
   extractionConfigured: boolean;
 }) {
@@ -215,8 +219,22 @@ export function MaintenanceClient({
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <span className="readout text-xs text-faint">
-            {currentHours != null ? `Current hours ≈ ${currentHours}` : "Current hours unknown"}
+          <span
+            className="readout text-xs text-faint"
+            title={
+              currentTachEstimated
+                ? currentTachRough
+                  ? "Rough estimate — no tach recorded; derived from hobbs at the default ratio"
+                  : "Estimated from the latest hobbs via this aircraft's hobbs↔tach ratio; actual tach may differ slightly"
+                : undefined
+            }
+          >
+            {currentHours != null ? `Current tach ≈ ${currentHours}` : "Current hours unknown"}
+            {currentHours != null && currentTachEstimated
+              ? currentTachRough
+                ? " (rough est.)"
+                : " (est. from hobbs)"
+              : ""}
           </span>
           {mfbReading && (
             <span className="text-[11px] text-faint">
