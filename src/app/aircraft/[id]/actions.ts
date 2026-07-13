@@ -78,7 +78,7 @@ export async function reorderPages(
 // ("mfb"); both carry hobbs/tach + hours_reviewed_at and are RLS-scoped to
 // aircraft editors. Branch on source so each .from() stays a concrete table.
 type HoursSource = "entry" | "mfb";
-type HoursPatch = { hobbs?: number; tach?: number; hours_reviewed_at: string };
+type HoursPatch = { hobbs?: number | null; tach?: number | null; hours_reviewed_at: string };
 
 async function updateReading(
   aircraftId: string,
@@ -115,6 +115,25 @@ export async function acceptHoursFix(
     field === "hobbs" ? { hobbs: value, hours_reviewed_at: stamp } : { tach: value, hours_reviewed_at: stamp };
   const err = await updateReading(aircraftId, source, readingId, patch);
   if (err) return { error: `Couldn't save: ${err.error}` };
+  revalidatePath(`/aircraft/${aircraftId}/duplicates`);
+  return { ok: true };
+}
+
+/**
+ * Clear a duplicated meter field (hobbs===tach → the hobbs is a copy of the
+ * tach): null it out and stamp reviewed. Keeps the real tach reading intact.
+ */
+export async function clearHoursField(
+  aircraftId: string,
+  source: HoursSource,
+  readingId: string,
+  field: "hobbs" | "tach",
+): Promise<{ ok: true } | { error: string }> {
+  const stamp = new Date().toISOString();
+  const patch: HoursPatch =
+    field === "hobbs" ? { hobbs: null, hours_reviewed_at: stamp } : { tach: null, hours_reviewed_at: stamp };
+  const err = await updateReading(aircraftId, source, readingId, patch);
+  if (err) return { error: `Couldn't clear: ${err.error}` };
   revalidatePath(`/aircraft/${aircraftId}/duplicates`);
   return { ok: true };
 }
