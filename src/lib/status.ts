@@ -28,6 +28,9 @@ export type StatusItem = {
   meter: "hobbs" | "tach";
   currentForItem: number | null;
   currentEstimated: boolean;
+  // True when last-done sits above every current reading (a meter/origin
+  // mismatch) → the hours countdown can't be trusted; show "check last-done".
+  hoursUnreliable: boolean;
   // True for an AD corroborated by a scanned A&P compliance report.
   verifiedReport: boolean;
   verifiedReportAt: string | null;
@@ -73,8 +76,31 @@ export function buildStatusItems(
   const out: StatusItem[] = [];
   for (const m of items) {
     const due = effectiveNextDue(m, items);
-    const meter = meterForItem(m.regulatory);
-    const cur = currentFor(meter);
+    // Pick the meter whose current reading is CONSISTENT with this item's
+    // last-done: you can't have flown negative hours since it was done, so a
+    // valid current must be >= last-done on the same meter+origin. Prefer the
+    // policy meter (regulatory → tach, usage → hobbs); fall back to the other;
+    // if neither is consistent, the stored last-done is on a different
+    // meter/origin than any current reading — flag it so we never show a
+    // remaining > interval (an impossible countdown).
+    let meter = meterForItem(m.regulatory);
+    let cur = currentFor(meter);
+    let hoursUnreliable = false;
+    if (m.last_done_hours != null && m.interval_hours != null) {
+      const consistent = (c: { value: number | null }) => c.value != null && c.value >= m.last_done_hours!;
+      if (!consistent(cur)) {
+        const otherMeter = meter === "tach" ? "hobbs" : "tach";
+        const other = currentFor(otherMeter);
+        if (consistent(other)) {
+          meter = otherMeter;
+          cur = other;
+        } else if (cur.value != null || other.value != null) {
+          hoursUnreliable = true; // last-done sits above every current reading
+        }
+      }
+    }
+    // When unreliable, don't let a bogus hours delta drive urgency — judge on date only.
+    const urgencyDue = hoursUnreliable ? { next_due_date: due.next_due_date, next_due_hours: null } : due;
     out.push({
       id: m.id,
       source: "maintenance",
@@ -88,10 +114,11 @@ export function buildStatusItems(
       nextDueDate: due.next_due_date,
       nextDueHours: due.next_due_hours,
       notes: m.notes,
-      urgency: urgencyOf(due, cur.value),
+      urgency: urgencyOf(urgencyDue, cur.value),
       meter,
       currentForItem: cur.value,
       currentEstimated: cur.estimated,
+      hoursUnreliable,
       verifiedReport: false,
       verifiedReportAt: null,
     });
@@ -119,6 +146,7 @@ export function buildStatusItems(
       meter: "tach",
       currentForItem: cur.value,
       currentEstimated: cur.estimated,
+      hoursUnreliable: false,
       verifiedReport: Boolean(a.verified_report_page_id),
       verifiedReportAt: a.verified_at,
     });

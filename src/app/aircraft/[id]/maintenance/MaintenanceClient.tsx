@@ -362,8 +362,14 @@ export function MaintenanceClient({
           {dueItems.map((d) => {
             const m = d.source === "maintenance" ? itemById.get(d.id) : null;
             const color = URGENCY_COLOR[d.urgency];
-            let remaining = dueText(d.nextDueDate, d.nextDueHours, d.currentForItem);
-            if (d.currentEstimated && d.nextDueHours != null && d.currentForItem != null) remaining += " est.";
+            let remaining: string;
+            if (d.hoursUnreliable) {
+              const dateOnly = dueText(d.nextDueDate, null, null);
+              remaining = dateOnly ? `${dateOnly} · check last-done` : "check last-done reading";
+            } else {
+              remaining = dueText(d.nextDueDate, d.nextDueHours, d.currentForItem) ?? "";
+              if (d.currentEstimated && d.nextDueHours != null && d.currentForItem != null) remaining += " est.";
+            }
             const marking = m && markId === m.id;
             return (
               <div key={`${d.source}-${d.id}`} className="border-b border-line last:border-b-0">

@@ -26,6 +26,7 @@ const U_COLOR: Record<Urgency, string> = {
 function shortRemain(item: StatusItem): string {
   const d = daysUntil(item.nextDueDate);
   if (d != null) return d < 0 ? `${-d}d over` : `${d}d`;
+  if (item.hoursUnreliable) return "check";
   const h = hoursRemaining(item.nextDueHours, item.currentForItem);
   if (h != null) return h < 0 ? `${-h}h over` : `${h}h`;
   return "—";
@@ -232,7 +233,9 @@ export default async function AircraftPage({
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14.5px] font-semibold">{mostUrgent.label}</div>
                 <div className="readout mt-0.5 text-[11.5px] text-annun-red">
-                  {dueText(mostUrgent.nextDueDate, mostUrgent.nextDueHours, mostUrgent.currentForItem) ?? "due"}
+                  {mostUrgent.hoursUnreliable
+                    ? dueText(mostUrgent.nextDueDate, null, null) || "check last-done"
+                    : dueText(mostUrgent.nextDueDate, mostUrgent.nextDueHours, mostUrgent.currentForItem) ?? "due"}
                 </div>
               </div>
               <span className="text-lg text-annun-red">→</span>
@@ -260,7 +263,9 @@ export default async function AircraftPage({
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13.5px]">{f.label}</div>
                     <div className="readout mt-0.5 text-[11px] text-faint">
-                      {dueText(f.nextDueDate, f.nextDueHours, f.currentForItem) ?? "not scheduled"}
+                      {f.hoursUnreliable
+                        ? dueText(f.nextDueDate, null, null) || "check last-done"
+                        : dueText(f.nextDueDate, f.nextDueHours, f.currentForItem) ?? "not scheduled"}
                     </div>
                   </div>
                   <span className="readout shrink-0 text-xs" style={{ color: U_COLOR[f.urgency] }}>
