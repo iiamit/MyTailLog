@@ -113,12 +113,18 @@ export function deriveRatio(readings: Reading[]): RatioResult {
   return { ratio, confidence: coRecorded >= 2 ? "measured" : "estimated", pairs: pairs.length };
 }
 
-// Highest reading in a meter (monotonic meter); tie → latest date.
-const highest = <K extends "hobbs" | "tach">(rows: (Reading & Record<K, number>)[], k: K) =>
+// The CURRENT value of a meter = the most recent reading by DATE, not the max.
+// A meter can be replaced/reset (so an old reading may read higher than now), and
+// a stray/mis-keyed value (a tach number in a hobbs field, or a total-time
+// enrollment) must not become "current" — the max would grab it forever. Tie on
+// date → the higher value (a flight's ending reading over a mid-day note).
+const currentReading = <K extends "hobbs" | "tach">(rows: (Reading & Record<K, number>)[], k: K) =>
   rows.length
-    ? rows.reduce((best, r) =>
-        r[k] > best[k] || (r[k] === best[k] && (r.date ?? "") > (best.date ?? "")) ? r : best,
-      )
+    ? rows.reduce((best, r) => {
+        const rd = r.date ?? "";
+        const bd = best.date ?? "";
+        return rd > bd || (rd === bd && r[k] > best[k]) ? r : best;
+      })
     : null;
 
 // The most recent (hobbs, tach) pair — the anchor forecasts walk forward from.
@@ -128,8 +134,8 @@ const latestPair = (pairs: Pair[]): Pair =>
 /** Current tach — actual when a recent tach anchors it, else estimated from hobbs. */
 export function currentTach(readings: Reading[]): CurrentTach {
   const pairs = buildPairs(readings);
-  const latestHobbs = highest(readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[], "hobbs");
-  const latestTach = highest(readings.filter((r) => r.tach != null) as (Reading & { tach: number })[], "tach");
+  const latestHobbs = currentReading(readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[], "hobbs");
+  const latestTach = currentReading(readings.filter((r) => r.tach != null) as (Reading & { tach: number })[], "tach");
 
   if (pairs.length === 0) {
     // Can't relate the meters (no shared point). Prefer an actual tach reading —
@@ -164,7 +170,7 @@ export type CurrentHobbs = { hobbs: number | null; estimated: boolean; asOf: str
  * ratio (flagged estimated).
  */
 export function currentHobbs(readings: Reading[]): CurrentHobbs {
-  const latestHobbs = highest(readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[], "hobbs");
+  const latestHobbs = currentReading(readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[], "hobbs");
   if (latestHobbs) return { hobbs: round1(latestHobbs.hobbs), estimated: false, asOf: latestHobbs.date, rough: false };
 
   // No hobbs ever recorded — bridge from the current tach.

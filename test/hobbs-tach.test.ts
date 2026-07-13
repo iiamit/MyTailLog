@@ -153,6 +153,16 @@ test("currentHobbs: all-tach logbook → bridged from tach via ratio, flagged es
   assert.ok(ch.hobbs != null && ch.hobbs > 990, `hobbs=${ch.hobbs}`); // tach/0.9 > tach
 });
 
+test("currentHobbs: a stray/old high reading does NOT become current (latest by date, not max)", () => {
+  // e.g. a tach value mis-keyed into hobbs, or a pre-replacement hobbs meter.
+  const rs = [
+    R("stray", "2024-01-01", 4057.9, null), // old, high (wrong-origin) hobbs
+    R("oil", "2026-07-05", 946.1, 4141.6),
+    R("flight", "2026-07-09", 947.7, null), // the actual latest hobbs
+  ];
+  assert.equal(currentHobbs(rs).hobbs, 947.7);
+});
+
 test("currentHobbs: no data → null", () => {
   assert.equal(currentHobbs([]).hobbs, null);
 });
