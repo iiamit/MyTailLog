@@ -40,7 +40,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
         { ident: "CAP", label: "Capture pages", href: `${a}/capture` },
         { ident: "PGS", label: "Logbook pages", href: `${a}/pages` },
         { ident: "RVW", label: "Review", href: `${a}/review`, badge: ctx.badges.review, tone: "amber" },
-        { ident: "DUP", label: "Find duplicates", href: `${a}/duplicates` },
+        { ident: "DUP", label: "Duplicates & fixes", href: `${a}/duplicates` },
       ],
     });
   }

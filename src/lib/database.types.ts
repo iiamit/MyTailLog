@@ -94,6 +94,7 @@ export type LogEntry = {
   extraction_schema_version: number;
   extraction_model: string | null;
   owner_confirmed: boolean;
+  hours_reviewed_at: string | null;
   entry_index: number | null;
   continues_next: boolean;
   is_continuation: boolean;
@@ -440,6 +441,7 @@ export type HoursReading = {
   source: string;
   synced_by: string | null;
   external_ref: string | null;
+  hours_reviewed_at: string | null;
   created_at: string;
   updated_at: string;
 }
