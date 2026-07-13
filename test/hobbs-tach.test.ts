@@ -163,6 +163,17 @@ test("currentHobbs: a stray/old high reading does NOT become current (latest by 
   assert.equal(currentHobbs(rs).hobbs, 947.7);
 });
 
+test("currentHobbs: an enrollment baseline holding a total-time/tach value is NOT current", () => {
+  // The real case: entries are correct (oil hobbs 946.1, flight 947.7); the
+  // 4057.9 is enrollment_hobbs (date null → oldest), NOT a log entry.
+  const rs: Reading[] = [
+    { id: "enroll", source: "enrollment", date: null, hobbs: 4057.9, tach: 4057.9, reviewedAt: null },
+    R("oil", "2026-07-05", 946.1, 4141.6),
+    R("flight", "2026-07-09", 947.7, null),
+  ];
+  assert.equal(currentHobbs(rs).hobbs, 947.7); // not 4057.9 → oil remaining = 996.1-947.7 = 48.4
+});
+
 test("currentHobbs: no data → null", () => {
   assert.equal(currentHobbs([]).hobbs, null);
 });
