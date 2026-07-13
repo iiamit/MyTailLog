@@ -58,6 +58,19 @@ const chrono = (a: Reading, b: Reading) =>
   (a.hobbs ?? Infinity) - (b.hobbs ?? Infinity) ||
   (a.tach ?? Infinity) - (b.tach ?? Infinity);
 
+/**
+ * Drop the hobbs on any reading where hobbs === tach. Real hobbs and tach are
+ * different meters and effectively never read exactly equal, so an equal pair is
+ * a duplicated-value extraction artifact (the tach value keyed into both fields,
+ * e.g. an engine-log entry). Treating it as hobbs would fabricate a ratio-1.0
+ * co-recorded pair and could masquerade as "current hobbs". Keep the tach.
+ */
+export function normalizeReadings(readings: Reading[]): Reading[] {
+  return readings.map((r) =>
+    r.hobbs != null && r.tach != null && r.hobbs === r.tach ? { ...r, hobbs: null } : r,
+  );
+}
+
 export type Pair = { hobbs: number; tach: number; date: string | null; weight: number };
 
 /** Pairs of (hobbs, tach) at the same engine-time point. */

@@ -4,6 +4,7 @@ import {
   currentTach,
   currentHobbs,
   meterValueAtDate,
+  normalizeReadings,
   detectAnomalies,
   type Anomaly,
   type CurrentTach,
@@ -35,7 +36,7 @@ async function fetchReadings(
     out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: r.hours_reviewed_at });
   if (enrollment && (enrollment.hobbs != null || enrollment.tach != null))
     out.push({ id: "enrollment", source: "enrollment", date: null, hobbs: enrollment.hobbs, tach: enrollment.tach, reviewedAt: null });
-  return out;
+  return normalizeReadings(out);
 }
 
 /**
