@@ -1,0 +1,162 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  type Reading,
+  DEFAULT_RATIO,
+  buildPairs,
+  weightedMedian,
+  digitEditCandidates,
+  deriveRatio,
+  currentTach,
+  detectAnomalies,
+} from "../src/lib/hobbsTach";
+
+// Reading builder. Note hobbs/tach have DIFFERENT absolute origins across tests
+// on purpose — only their deltas should matter.
+const R = (
+  id: string,
+  date: string | null,
+  hobbs: number | null,
+  tach: number | null,
+  reviewedAt: string | null = null,
+): Reading => ({ id, source: "entry", date, hobbs, tach, reviewedAt });
+
+// --- buildPairs ------------------------------------------------------------
+test("buildPairs: a co-recorded reading is one pair at full weight", () => {
+  const pairs = buildPairs([R("a", "2025-01-01", 100, 1000)]);
+  assert.equal(pairs.length, 1);
+  assert.deepEqual({ h: pairs[0].hobbs, t: pairs[0].tach, w: pairs[0].weight }, { h: 100, t: 1000, w: 1 });
+});
+
+test("buildPairs: a tach-only maintenance pairs with the last flight's hobbs (inferred, half weight)", () => {
+  const pairs = buildPairs([
+    R("flight1", "2025-01-01", 100, null), // flight, ending hobbs 100
+    R("flight2", "2025-01-05", 110, null), // flight, ending hobbs 110
+    R("annual", "2025-01-08", null, 1180), // maintenance, tach only
+  ]);
+  // one inferred pair: (max hobbs before maintenance = 110, tach 1180), weight 0.5
+  assert.equal(pairs.length, 1);
+  assert.deepEqual({ h: pairs[0].hobbs, t: pairs[0].tach, w: pairs[0].weight }, { h: 110, t: 1180, w: 0.5 });
+});
+
+test("buildPairs: a tach-only reading with no prior hobbs yields no pair", () => {
+  assert.equal(buildPairs([R("m", "2025-01-08", null, 1180)]).length, 0);
+});
+
+// --- weightedMedian --------------------------------------------------------
+test("weightedMedian: weight shifts the median toward the heavier value", () => {
+  assert.equal(weightedMedian([{ value: 1, w: 1 }, { value: 9, w: 1 }, { value: 9, w: 1 }]), 9);
+  assert.equal(weightedMedian([{ value: 0.9, w: 10 }, { value: -5, w: 1 }]), 0.9);
+});
+
+// --- deriveRatio -----------------------------------------------------------
+test("deriveRatio: from clean co-recorded pairs, ratio = Δtach/Δhobbs (origins differ)", () => {
+  const rs = [
+    R("a", "2025-01-01", 100, 1000),
+    R("b", "2025-02-01", 200, 1090),
+    R("c", "2025-03-01", 300, 1180),
+  ];
+  const { ratio, confidence } = deriveRatio(rs);
+  assert.ok(Math.abs(ratio - 0.9) < 1e-9, `ratio=${ratio}`);
+  assert.equal(confidence, "measured");
+});
+
+test("deriveRatio: fewer than two pairs falls back to the default", () => {
+  const { ratio, confidence } = deriveRatio([R("a", "2025-01-01", 100, 1000)]);
+  assert.equal(ratio, DEFAULT_RATIO);
+  assert.equal(confidence, "default");
+});
+
+test("deriveRatio: only inferred pairs → confidence 'estimated'", () => {
+  const rs = [
+    R("f1", "2025-01-01", 100, null),
+    R("m1", "2025-01-02", null, 1000),
+    R("f2", "2025-02-01", 200, null),
+    R("m2", "2025-02-02", null, 1090),
+  ];
+  const { ratio, confidence } = deriveRatio(rs);
+  assert.ok(Math.abs(ratio - 0.9) < 1e-9, `ratio=${ratio}`);
+  assert.equal(confidence, "estimated");
+});
+
+test("deriveRatio: robust to a single bad pair (weighted median, clamped)", () => {
+  const rs = [
+    R("a", "2025-01-01", 100, 1000),
+    R("b", "2025-02-01", 200, 1090),
+    R("c", "2025-03-01", 300, 1180),
+    R("d", "2025-04-01", 400, 999999), // typo pair
+  ];
+  const { ratio } = deriveRatio(rs);
+  assert.ok(ratio >= 0.5 && ratio <= 1.2, `ratio=${ratio}`);
+});
+
+// --- currentTach -----------------------------------------------------------
+test("currentTach: newer hobbs than the anchor → estimated forward via ratio", () => {
+  const rs = [
+    R("a", "2025-01-01", 100, 1000),
+    R("b", "2025-02-01", 200, 1090), // anchor (latest pair), ratio 0.9
+    R("f", "2025-03-01", 250, null), // later flight, hobbs 250
+  ];
+  const ct = currentTach(rs);
+  assert.equal(ct.estimated, true);
+  assert.equal(ct.tach, 1135); // 1090 + 0.9*(250-200)
+});
+
+test("currentTach: latest reading is a tach → actual, not estimated", () => {
+  const rs = [
+    R("a", "2025-01-01", 100, 1000),
+    R("b", "2025-02-01", 200, 1090),
+    R("m", "2025-03-01", null, 1120), // fresh maintenance tach, no flights since
+  ];
+  const ct = currentTach(rs);
+  assert.equal(ct.estimated, false);
+  assert.equal(ct.tach, 1120);
+});
+
+test("currentTach: no tach ever recorded → rough estimate from hobbs × default ratio", () => {
+  const ct = currentTach([R("f", "2025-01-01", 1000, null)]);
+  assert.equal(ct.estimated, true);
+  assert.equal(ct.rough, true);
+  assert.equal(ct.tach, 900); // 1000 * 0.9
+});
+
+test("currentTach: no data → null", () => {
+  assert.equal(currentTach([]).tach, null);
+});
+
+// --- digitEditCandidates ---------------------------------------------------
+test("digitEditCandidates: dropped and extra digit both reach the true value", () => {
+  assert.ok(digitEditCandidates(303).includes(3303), "insert digit");
+  assert.ok(digitEditCandidates(33303).includes(3303), "delete digit");
+});
+
+// --- detectAnomalies -------------------------------------------------------
+test("detectAnomalies: a value below the previous reading (dropped digit) is flagged with a fix", () => {
+  const rs = [R("a", "2025-01-01", 3300, null), R("b", "2025-01-02", 303, null), R("c", "2025-01-03", 3305, null)];
+  const a = detectAnomalies(rs).find((x) => x.readingId === "b");
+  assert.ok(a, "flagged");
+  assert.equal(a!.reason, "non_monotonic");
+  assert.equal(a!.suggested, 3303);
+});
+
+test("detectAnomalies: a fat-fingered high value as the latest reading is flagged with a fix", () => {
+  const rs = [R("a", "2025-01-01", 3302, null), R("b", "2025-01-02", 33303, null)];
+  const a = detectAnomalies(rs).find((x) => x.readingId === "b");
+  assert.ok(a, "flagged");
+  assert.equal(a!.reason, "magnitude");
+  assert.equal(a!.suggested, 3303);
+});
+
+test("detectAnomalies: a normal monotonic series is NOT flagged", () => {
+  const rs = [R("a", "2025-01-01", 3300, null), R("b", "2025-01-02", 3302, null), R("c", "2025-01-03", 3305, null)];
+  assert.equal(detectAnomalies(rs).length, 0);
+});
+
+test("detectAnomalies: a reviewed reading is skipped", () => {
+  const rs = [
+    R("a", "2025-01-01", 3300, null),
+    R("b", "2025-01-02", 303, null, "2025-01-02T00:00:00Z"), // reviewed
+    R("c", "2025-01-03", 3305, null),
+  ];
+  assert.equal(detectAnomalies(rs).find((x) => x.readingId === "b"), undefined);
+});

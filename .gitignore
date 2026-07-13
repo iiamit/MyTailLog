@@ -46,6 +46,7 @@ yarn-error.log*
 firebase-debug.log*
 .firebaserc
 docs/social/
+docs/superpowers/
 
 # playwright e2e
 /test-results/
