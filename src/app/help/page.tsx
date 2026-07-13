@@ -178,12 +178,12 @@ const SECTIONS: Section[] = [
   {
     id: "duplicates",
     icon: <AlertIcon />,
-    title: "Find duplicates",
+    title: "Duplicates & fixes",
     body: (
       <>
         <p>
           Re-uploading, re-capturing, or re-extracting the same page can leave
-          duplicate scans and entries behind. <strong>Find duplicates</strong>{" "}
+          duplicate scans and entries behind. <strong>Duplicates &amp; fixes</strong>{" "}
           (in the left nav, editor-only) flags likely duplicates by matching on
           date, tach/hobbs, and work text — grouping pages that look like the
           same scan and entries that look like the same logged event. One copy in
@@ -191,6 +191,15 @@ const SECTIONS: Section[] = [
           others. Deleting a page also removes its entries. Matches are
           heuristic, so review each group against the source scan (each row has an{" "}
           <strong>Open</strong> link) before deleting.
+        </p>
+        <p>
+          It also flags <strong>mis-keyed hobbs/tach readings</strong> — a value
+          below an earlier reading (a dropped digit, e.g. <em>303</em> for{" "}
+          <em>3,302</em>) or an unusually large jump (a fat-finger, e.g.{" "}
+          <em>33,303</em>) — and suggests the corrected number. <strong>Accept</strong>{" "}
+          it, edit the value first, or <strong>Keep mine</strong> if it&apos;s
+          right; either way it won&apos;t re-flag. This covers both log entries and
+          MyFlightBook-synced readings.
         </p>
         <Effects>
           Deleting duplicate entries or pages updates your{" "}

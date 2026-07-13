@@ -9,7 +9,8 @@ import {
   type DupEntry,
   type DupPage,
 } from "@/lib/duplicates";
-import { DuplicatesClient, type EntryRow, type PageRow } from "./DuplicatesClient";
+import { getHoursAnomalies } from "@/lib/aircraftHours";
+import { DuplicatesClient, type AnomalyRow, type EntryRow, type PageRow } from "./DuplicatesClient";
 
 
 // Find likely-duplicate pages and entries (from re-uploads / re-extracts) and
@@ -25,7 +26,7 @@ export default async function DuplicatesPage({
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, owner_id, tail_number")
+    .select("id, owner_id, tail_number, enrollment_hobbs, enrollment_tach")
     .eq("id", id)
     .single();
   if (!aircraft) notFound();
@@ -136,16 +137,35 @@ export default async function DuplicatesPage({
     }),
   );
 
+  // Likely mis-keyed hobbs/tach readings (dropped/extra digit, fat-finger).
+  const anomalyRows: AnomalyRow[] = (
+    await getHoursAnomalies(supabase, id, {
+      hobbs: aircraft.enrollment_hobbs,
+      tach: aircraft.enrollment_tach,
+    })
+  )
+    .filter((a): a is typeof a & { source: "entry" | "mfb" } => a.source === "entry" || a.source === "mfb")
+    .map((a) => ({
+      readingId: a.readingId,
+      source: a.source,
+      field: a.field,
+      value: a.value,
+      suggested: a.suggested,
+      reason: a.reason,
+      date: a.date,
+      pageId: a.source === "entry" ? entryById.get(a.readingId)?.page_id ?? null : null,
+    }));
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       <header className="mb-6">
         <div className="eyebrow mb-2">Capture</div>
-        <h1 className="font-display text-[27px] font-semibold leading-none">Find duplicates</h1>
+        <h1 className="font-display text-[27px] font-semibold leading-none">Duplicates &amp; fixes</h1>
         <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-dim">
-          Re-uploading or re-extracting the same page can leave duplicate scans
-          and entries. These are heuristic matches on date, tach/hobbs, and work
-          text — review each before deleting. Deleting a page removes its entries
-          too. One copy in each group is suggested to keep.
+          Duplicate scans and entries from re-uploads, plus hobbs/tach readings
+          that look mis-keyed (a dropped or extra digit). All heuristic matches —
+          review each before acting. Deleting a page removes its entries too; one
+          copy in each duplicate group is suggested to keep.
         </p>
       </header>
 
@@ -153,6 +173,7 @@ export default async function DuplicatesPage({
         aircraftId={id}
         pageClusters={pageClusterRows}
         entryClusters={entryClusterRows}
+        anomalies={anomalyRows}
       />
     </main>
   );

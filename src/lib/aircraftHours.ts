@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { currentTach, type CurrentTach, type Reading } from "@/lib/hobbsTach";
+import { currentTach, detectAnomalies, type Anomaly, type CurrentTach, type Reading } from "@/lib/hobbsTach";
 
 /**
  * All hobbs/tach readings for an aircraft, normalized for hobbsTach — log
@@ -14,15 +14,15 @@ async function fetchReadings(
   enrollment?: { hobbs: number | null; tach: number | null } | null,
 ): Promise<Reading[]> {
   const [{ data: entries }, { data: readings }] = await Promise.all([
-    supabase.from("log_entry").select("id, entry_date, hobbs, tach").eq("aircraft_id", aircraftId),
-    supabase.from("hours_reading").select("id, reading_date, hobbs, tach").eq("aircraft_id", aircraftId),
+    supabase.from("log_entry").select("id, entry_date, hobbs, tach, hours_reviewed_at").eq("aircraft_id", aircraftId),
+    supabase.from("hours_reading").select("id, reading_date, hobbs, tach, hours_reviewed_at").eq("aircraft_id", aircraftId),
   ]);
 
   const out: Reading[] = [];
   for (const r of entries ?? [])
-    out.push({ id: r.id, source: "entry", date: r.entry_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: null });
+    out.push({ id: r.id, source: "entry", date: r.entry_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: r.hours_reviewed_at });
   for (const r of readings ?? [])
-    out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: null });
+    out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: r.hours_reviewed_at });
   if (enrollment && (enrollment.hobbs != null || enrollment.tach != null))
     out.push({ id: "enrollment", source: "enrollment", date: null, hobbs: enrollment.hobbs, tach: enrollment.tach, reviewedAt: null });
   return out;
@@ -50,6 +50,25 @@ export async function getCurrentHours(
   enrollment?: { hobbs: number | null; tach: number | null } | null,
 ): Promise<number | null> {
   return (await getCurrentTach(supabase, aircraftId, enrollment)).tach;
+}
+
+export type HoursAnomaly = Anomaly & { date: string | null };
+
+/**
+ * Likely-mis-keyed hobbs/tach readings (dropped/extra digit, fat-finger) with a
+ * suggested fix, for owner review. Enrollment readings are excluded — they're a
+ * single baseline, not editable from the review surface.
+ */
+export async function getHoursAnomalies(
+  supabase: SupabaseClient<Database>,
+  aircraftId: string,
+  enrollment?: { hobbs: number | null; tach: number | null } | null,
+): Promise<HoursAnomaly[]> {
+  const readings = await fetchReadings(supabase, aircraftId, enrollment);
+  const byId = new Map(readings.map((r) => [r.id, r]));
+  return detectAnomalies(readings)
+    .filter((a) => a.source !== "enrollment")
+    .map((a) => ({ ...a, date: byId.get(a.readingId)?.date ?? null }));
 }
 
 /**
