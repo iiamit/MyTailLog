@@ -8,7 +8,7 @@ import { ConfirmButton } from "@/components/ConfirmButton";
 import { MfbSyncButton } from "@/components/MfbSyncButton";
 import type { MaintenanceItem } from "@/lib/database.types";
 import { dueText } from "@/lib/compliance";
-import type { StatusItem } from "@/lib/status";
+import { meterForItem, type StatusItem } from "@/lib/status";
 import { STANDARD_ITEMS } from "@/lib/maintenance";
 import {
   upsertMaintenanceItem,
@@ -193,10 +193,9 @@ export function MaintenanceClient({
   function openMark(m: MaintenanceItem) {
     setMarkId(m.id);
     setMarkDate(new Date().toISOString().slice(0, 10));
-    // Pre-fill with the current reading on THIS item's meter — regulatory items
-    // (100-hr, annual) on tach, usage items (oil) on hobbs — so last-done stays
-    // consistent with the meter its countdown uses.
-    const cur = m.regulatory ? currentTach : currentHobbs;
+    // Pre-fill with the current reading on THIS item's meter (oil → hobbs,
+    // everything else → tach) so last-done stays consistent with its countdown.
+    const cur = meterForItem(m.kind) === "tach" ? currentTach : currentHobbs;
     setMarkHours(m.interval_hours != null ? cur?.toString() ?? "" : "");
   }
 

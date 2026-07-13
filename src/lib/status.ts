@@ -53,9 +53,16 @@ export type MeterCurrents = {
   baselineFor?: (date: string | null, meter: "hobbs" | "tach") => number | null;
 };
 
-/** The meter an item counts down on: regulatory → tach, usage → hobbs. */
-export function meterForItem(regulatory: boolean): "hobbs" | "tach" {
-  return regulatory ? "tach" : "hobbs";
+// Items tracked on the HOBBS meter (operating/clock time). Everything else
+// hour-based counts on TACH — the engine/airframe meter maintenance uses,
+// including Engine TBO, 100-hour, and prop overhaul. Oil is the notable
+// owner-tracked-on-hobbs exception. Keyed by kind, NOT the regulatory flag
+// (advisory ≠ hobbs — Engine TBO is advisory but tach-based).
+const HOBBS_METER_KINDS = new Set<string>(["oil_change"]);
+
+/** The meter an item's hour-countdown uses: oil → hobbs, everything else → tach. */
+export function meterForItem(kind: string): "hobbs" | "tach" {
+  return HOBBS_METER_KINDS.has(kind) ? "hobbs" : "tach";
 }
 
 export type AdLite = {
@@ -88,7 +95,7 @@ export function buildStatusItems(
     const due = effectiveNextDue(m, items);
     // The countdown must compare last-done and current ON THE SAME meter.
     // Policy meter: regulatory → tach, usage (oil) → hobbs.
-    let meter = meterForItem(m.regulatory);
+    let meter = meterForItem(m.kind);
     let cur = currentFor(meter);
     // Default: the stored scalars (correct when last-done was recorded on the
     // item's meter — always true for regulatory/tach items).

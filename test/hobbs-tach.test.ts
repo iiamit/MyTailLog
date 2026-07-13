@@ -10,6 +10,7 @@ import {
   currentTach,
   currentHobbs,
   meterValueAtDate,
+  normalizeReadings,
   detectAnomalies,
 } from "../src/lib/hobbsTach";
 
@@ -176,6 +177,25 @@ test("currentHobbs: an enrollment baseline holding a total-time/tach value is NO
 
 test("currentHobbs: no data → null", () => {
   assert.equal(currentHobbs([]).hobbs, null);
+});
+
+// --- normalizeReadings -----------------------------------------------------
+test("normalizeReadings: hobbs === tach is a duplicated-value artifact → hobbs dropped", () => {
+  // The real N9363V case: an engine-log tach 4057.9 keyed into both fields.
+  const rs = normalizeReadings([R("dup", "2025-07-17", 4057.9, 4057.9), R("mfb", "2026-07-12", 947.7, null)]);
+  assert.equal(rs[0].hobbs, null);
+  assert.equal(rs[0].tach, 4057.9);
+  assert.equal(rs[1].hobbs, 947.7);
+});
+
+test("normalizeReadings: a genuine differing hobbs/tach pair is untouched", () => {
+  const rs = normalizeReadings([R("oil", "2026-07-05", 946.1, 4141.6)]);
+  assert.deepEqual({ h: rs[0].hobbs, t: rs[0].tach }, { h: 946.1, t: 4141.6 });
+});
+
+test("currentHobbs: a duplicated hobbs===tach reading never becomes current (after normalize)", () => {
+  const rs = normalizeReadings([R("dup", "2025-07-17", 4057.9, 4057.9), R("mfb", "2026-07-12", 947.7, null)]);
+  assert.equal(currentHobbs(rs).hobbs, 947.7); // not 4057.9
 });
 
 // --- meterValueAtDate ------------------------------------------------------

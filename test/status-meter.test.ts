@@ -55,6 +55,25 @@ test("no same-meter baseline and last-done above both meters → flagged unrelia
   assert.notEqual(s.urgency, "overdue");
 });
 
+test("Engine TBO counts down on tach, not hobbs (advisory but engine-time)", () => {
+  const tbo = {
+    id: "tbo",
+    kind: "engine_tbo",
+    label: "Engine TBO",
+    regulatory: false, // advisory — but must NOT go on hobbs
+    interval_months: null,
+    interval_hours: 2000,
+    last_done_date: "2020-01-01",
+    last_done_hours: 2100, // tach at last overhaul
+    next_due_date: null,
+    next_due_hours: 4100,
+    notes: null,
+  } as MaintenanceItem;
+  const [s] = buildStatusItems([tbo], [], { tach: 4141.6, hobbs: 947.7 });
+  assert.equal(s.meter, "tach");
+  assert.equal(s.currentForItem, 4141.6);
+});
+
 test("regulatory tach item keeps its stored tach next-due (no re-anchor)", () => {
   const item = {
     id: "100hr",

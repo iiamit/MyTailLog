@@ -299,13 +299,13 @@ const SECTIONS: Section[] = [
           your own. Regulatory items are distinguished from advisory ones (TBO/overhaul).
         </p>
         <Effects>
-          Each item counts down on the meter it&apos;s tracked against:{" "}
-          <strong>regulatory items</strong> (100-hour, annual-linked, ADs) on <strong>tach</strong>,
-          and <strong>usage items</strong> (oil change, advisory) on <strong>Hobbs</strong> — the
-          meter you record and fly them on. So a fresh Hobbs reading (e.g. a MyFlightBook sync)
-          advances the oil-change countdown directly, while tach drives the inspections. When the
-          needed meter has no recent reading, the other is converted via this aircraft&apos;s own
-          hobbs↔tach ratio and marked <em>&ldquo;est.&rdquo;</em>. Extraction and{" "}
+          Each item counts down on the meter it&apos;s tracked against: the{" "}
+          <strong>oil change</strong> on <strong>Hobbs</strong> (the meter you fly and record it
+          on — so a fresh Hobbs reading from a MyFlightBook sync advances it directly), and
+          everything else engine/airframe — <strong>100-hour, Engine TBO, prop, ADs</strong> — on{" "}
+          <strong>tach</strong>. When the needed meter has no recent reading, the other is converted
+          via this aircraft&apos;s own hobbs↔tach ratio and marked <em>&ldquo;est.&rdquo;</em>.
+          Extraction and{" "}
           &ldquo;Update from logs&rdquo; advance last-done automatically. The 100-hour resets off the
           later of the last 100-hour <em>or</em> the last annual. Everything here also feeds{" "}
           <L href="#status">Status</L>.
