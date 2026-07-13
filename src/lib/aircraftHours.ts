@@ -1,49 +1,55 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { currentTach, type CurrentTach, type Reading } from "@/lib/hobbsTach";
 
 /**
- * Best estimate of the aircraft's current hours (total time), for
- * forecasting/urgency. Entries record the reading in whichever of hobbs / tach
- * the logbook uses (and total time is often written as tach), so we take the
- * highest value seen across BOTH fields, falling back to the enrollment
- * readings and to any synced hours_reading rows (e.g. MyFlightBook). Since a
- * shared aircraft can collect readings from multiple connected co-owners, the
- * max naturally spans all of them. Highest-known reading ≈ current time.
+ * All hobbs/tach readings for an aircraft, normalized for hobbsTach — log
+ * entries, synced hours_reading rows (MyFlightBook, etc.), and the enrollment
+ * readings as an oldest-origin anchor. A shared aircraft collects readings from
+ * every connected co-owner, so this naturally spans all of them.
  */
+async function fetchReadings(
+  supabase: SupabaseClient<Database>,
+  aircraftId: string,
+  enrollment?: { hobbs: number | null; tach: number | null } | null,
+): Promise<Reading[]> {
+  const [{ data: entries }, { data: readings }] = await Promise.all([
+    supabase.from("log_entry").select("id, entry_date, hobbs, tach").eq("aircraft_id", aircraftId),
+    supabase.from("hours_reading").select("id, reading_date, hobbs, tach").eq("aircraft_id", aircraftId),
+  ]);
+
+  const out: Reading[] = [];
+  for (const r of entries ?? [])
+    out.push({ id: r.id, source: "entry", date: r.entry_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: null });
+  for (const r of readings ?? [])
+    out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, reviewedAt: null });
+  if (enrollment && (enrollment.hobbs != null || enrollment.tach != null))
+    out.push({ id: "enrollment", source: "enrollment", date: null, hobbs: enrollment.hobbs, tach: enrollment.tach, reviewedAt: null });
+  return out;
+}
+
+/**
+ * Current TACH time — the meter maintenance/ADs are tracked against. Derived
+ * from all readings via hobbsTach: anchored to a real hobbs↔tach pair and
+ * walked forward on the latest hobbs when no recent tach exists (flagged
+ * `estimated`). Replaces the old max(hobbs,tach) conflation, which inflated the
+ * "now" with faster-accruing hobbs and made tach-based items look overdue.
+ */
+export async function getCurrentTach(
+  supabase: SupabaseClient<Database>,
+  aircraftId: string,
+  enrollment?: { hobbs: number | null; tach: number | null } | null,
+): Promise<CurrentTach> {
+  return currentTach(await fetchReadings(supabase, aircraftId, enrollment));
+}
+
+/** Current hours (= current tach) for callers that only need the number. */
 export async function getCurrentHours(
   supabase: SupabaseClient<Database>,
   aircraftId: string,
   enrollment?: { hobbs: number | null; tach: number | null } | null,
 ): Promise<number | null> {
-  let max: number | null = null;
-  const consider = (v: number | null | undefined) => {
-    if (v != null && Number.isFinite(v) && (max == null || v > max)) max = v;
-  };
-
-  const { data: rows } = await supabase
-    .from("log_entry")
-    .select("hobbs, tach")
-    .eq("aircraft_id", aircraftId);
-  for (const r of rows ?? []) {
-    consider(r.hobbs);
-    consider(r.tach);
-  }
-
-  // Synced readings (MyFlightBook and any future source) count too.
-  const { data: readings } = await supabase
-    .from("hours_reading")
-    .select("hobbs, tach")
-    .eq("aircraft_id", aircraftId);
-  for (const r of readings ?? []) {
-    consider(r.hobbs);
-    consider(r.tach);
-  }
-
-  if (enrollment) {
-    consider(enrollment.hobbs);
-    consider(enrollment.tach);
-  }
-  return max;
+  return (await getCurrentTach(supabase, aircraftId, enrollment)).tach;
 }
 
 /**

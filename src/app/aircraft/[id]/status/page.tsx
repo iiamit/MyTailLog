@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentHours } from "@/lib/aircraftHours";
+import { getCurrentTach } from "@/lib/aircraftHours";
 import { urgencyLabel, type Urgency } from "@/lib/compliance";
 import {
   buildStatusItems,
@@ -194,10 +194,11 @@ export default async function StatusPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const currentHours = await getCurrentHours(supabase, id, {
+  const ct = await getCurrentTach(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
+  const currentHours = ct.tach;
 
   const statusItems = sortStatusItems(
     buildStatusItems(items ?? [], ads ?? [], currentHours),
@@ -219,8 +220,19 @@ export default async function StatusPage({
             verify against the physical logbooks.
           </p>
         </div>
-        <span className="readout text-xs text-dim">
-          {currentHours != null ? `current ≈ ${currentHours} hrs` : "hours unknown"}
+        <span
+          className="readout text-xs text-dim"
+          title={
+            ct.estimated
+              ? ct.rough
+                ? "Rough estimate — no tach recorded; derived from hobbs at the default ratio"
+                : "Estimated from the latest hobbs via this aircraft's hobbs↔tach ratio; actual tach may differ slightly"
+              : undefined
+          }
+        >
+          {currentHours != null
+            ? `current tach ≈ ${currentHours} hrs${ct.estimated ? (ct.rough ? " (rough est.)" : " (est. from hobbs)") : ""}`
+            : "hours unknown"}
         </span>
       </header>
 

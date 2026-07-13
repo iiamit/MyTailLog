@@ -120,6 +120,12 @@ test("currentTach: no tach ever recorded → rough estimate from hobbs × defaul
   assert.equal(ct.tach, 900); // 1000 * 0.9
 });
 
+test("currentTach: all-tach logbook (no hobbs ever) → latest tach, actual", () => {
+  const ct = currentTach([R("a", "2025-01-01", null, 1200), R("b", "2025-02-01", null, 1250)]);
+  assert.equal(ct.estimated, false);
+  assert.equal(ct.tach, 1250);
+});
+
 test("currentTach: no data → null", () => {
   assert.equal(currentTach([]).tach, null);
 });
