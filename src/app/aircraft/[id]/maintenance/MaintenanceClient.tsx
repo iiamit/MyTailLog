@@ -367,8 +367,8 @@ export function MaintenanceClient({
               const dateOnly = dueText(d.nextDueDate, null, null);
               remaining = dateOnly ? `${dateOnly} · check last-done` : "check last-done reading";
             } else {
-              remaining = dueText(d.nextDueDate, d.nextDueHours, d.currentForItem) ?? "";
-              if (d.currentEstimated && d.nextDueHours != null && d.currentForItem != null) remaining += " est.";
+              remaining = dueText(d.nextDueDate, d.nextDueForItem, d.currentForItem) ?? "";
+              if (d.currentEstimated && d.nextDueForItem != null && d.currentForItem != null) remaining += " est.";
             }
             const marking = m && markId === m.id;
             return (
@@ -401,7 +401,7 @@ export function MaintenanceClient({
                   </span>
                   <span className="readout text-[11.5px] text-faint">{d.lastDoneDate ?? "—"}</span>
                   <span className="readout text-[11.5px] text-dim">
-                    {d.nextDueDate ?? (d.nextDueHours != null ? `${d.nextDueHours} hrs` : "—")}
+                    {d.nextDueDate ?? (d.nextDueForItem != null ? `${d.nextDueForItem} ${d.meter}` : "—")}
                   </span>
                   <span className="readout text-[11.5px]" style={{ color }}>
                     {remaining ?? "—"}

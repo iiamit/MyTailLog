@@ -34,7 +34,7 @@ export default async function MaintenancePage({
 
   // Both meters, reconciled from hobbs/tach readings. Regulatory items count
   // down on tach; usage items (oil) on hobbs.
-  const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
@@ -49,6 +49,7 @@ export default async function MaintenancePage({
       hobbs: ch.hobbs,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
+      baselineFor,
     }),
   );
 

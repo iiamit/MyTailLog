@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { buildStatusItems } from "@/lib/status";
-import { currentTach, currentHobbs, type Reading as HTReading } from "@/lib/hobbsTach";
+import { currentTach, currentHobbs, meterValueAtDate, type Reading as HTReading } from "@/lib/hobbsTach";
 
 /**
  * Everything the persistent aircraft shell (top bar + nav rail) needs, loaded
@@ -120,6 +120,7 @@ export async function getAircraftShellContext(
     hobbs: chHobbs.hobbs,
     tachEstimated: ctTach.estimated,
     hobbsEstimated: chHobbs.estimated,
+    baselineFor: (date, meter) => meterValueAtDate(htReadings, date, meter),
   });
   const annun = {
     overdue: status.filter((s) => s.urgency === "overdue").length,

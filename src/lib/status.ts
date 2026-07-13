@@ -28,6 +28,12 @@ export type StatusItem = {
   meter: "hobbs" | "tach";
   currentForItem: number | null;
   currentEstimated: boolean;
+  // Last-done and next-due expressed on the item's countdown METER — anchored to
+  // the reading at the last-done date, so oil advances on hobbs even when its
+  // last-done was recorded in tach. Use these (not lastDoneHours/nextDueHours,
+  // which are the raw stored scalars) for the hours countdown + display.
+  lastDoneForItem: number | null;
+  nextDueForItem: number | null;
   // True when last-done sits above every current reading (a meter/origin
   // mismatch) → the hours countdown can't be trusted; show "check last-done".
   hoursUnreliable: boolean;
@@ -42,6 +48,9 @@ export type MeterCurrents = {
   hobbs: number | null;
   tachEstimated?: boolean;
   hobbsEstimated?: boolean;
+  // The meter's value at a maintenance item's last-done date — the same-meter
+  // baseline its countdown anchors to. From getCurrentMeters (reading history).
+  baselineFor?: (date: string | null, meter: "hobbs" | "tach") => number | null;
 };
 
 /** The meter an item counts down on: regulatory → tach, usage → hobbs. */
@@ -73,34 +82,48 @@ export function buildStatusItems(
       ? { value: currents.tach, estimated: Boolean(currents.tachEstimated) }
       : { value: currents.hobbs, estimated: Boolean(currents.hobbsEstimated) };
 
+  const round1 = (x: number) => Math.round(x * 10) / 10;
   const out: StatusItem[] = [];
   for (const m of items) {
     const due = effectiveNextDue(m, items);
-    // Pick the meter whose current reading is CONSISTENT with this item's
-    // last-done: you can't have flown negative hours since it was done, so a
-    // valid current must be >= last-done on the same meter+origin. Prefer the
-    // policy meter (regulatory → tach, usage → hobbs); fall back to the other;
-    // if neither is consistent, the stored last-done is on a different
-    // meter/origin than any current reading — flag it so we never show a
-    // remaining > interval (an impossible countdown).
+    // The countdown must compare last-done and current ON THE SAME meter.
+    // Policy meter: regulatory → tach, usage (oil) → hobbs.
     let meter = meterForItem(m.regulatory);
     let cur = currentFor(meter);
+    // Default: the stored scalars (correct when last-done was recorded on the
+    // item's meter — always true for regulatory/tach items).
+    let lastDoneForItem = m.last_done_hours;
+    let nextDueForItem = due.next_due_hours;
     let hoursUnreliable = false;
+
     if (m.last_done_hours != null && m.interval_hours != null) {
-      const consistent = (c: { value: number | null }) => c.value != null && c.value >= m.last_done_hours!;
-      if (!consistent(cur)) {
-        const otherMeter = meter === "tach" ? "hobbs" : "tach";
-        const other = currentFor(otherMeter);
-        if (consistent(other)) {
-          meter = otherMeter;
-          cur = other;
-        } else if (cur.value != null || other.value != null) {
-          hoursUnreliable = true; // last-done sits above every current reading
+      const stillOwed = cur.value != null && cur.value >= m.last_done_hours;
+      if (!stillOwed) {
+        // current < stored last-done on this meter — impossible (can't fly
+        // negative hours). The last-done was recorded on the OTHER meter. Re-anchor
+        // to THIS meter's reading at the last-done date (e.g. the co-recorded hobbs
+        // for a tach-recorded oil change) so the countdown advances correctly.
+        const baseline = currents.baselineFor?.(m.last_done_date, meter) ?? null;
+        if (baseline != null && cur.value != null && cur.value >= baseline) {
+          lastDoneForItem = baseline;
+          nextDueForItem = round1(baseline + m.interval_hours);
+        } else {
+          // Fall back to the other meter with the stored scalar (Phase-52 guard).
+          const otherMeter = meter === "tach" ? "hobbs" : "tach";
+          const other = currentFor(otherMeter);
+          if (other.value != null && other.value >= m.last_done_hours) {
+            meter = otherMeter;
+            cur = other;
+          } else if (cur.value != null || other.value != null) {
+            hoursUnreliable = true; // last-done sits above every current reading
+          }
         }
       }
     }
-    // When unreliable, don't let a bogus hours delta drive urgency — judge on date only.
-    const urgencyDue = hoursUnreliable ? { next_due_date: due.next_due_date, next_due_hours: null } : due;
+    // Judge urgency on the meter-consistent next-due; date-only when unreliable.
+    const urgencyDue = hoursUnreliable
+      ? { next_due_date: due.next_due_date, next_due_hours: null }
+      : { next_due_date: due.next_due_date, next_due_hours: nextDueForItem };
     out.push({
       id: m.id,
       source: "maintenance",
@@ -118,6 +141,8 @@ export function buildStatusItems(
       meter,
       currentForItem: cur.value,
       currentEstimated: cur.estimated,
+      lastDoneForItem,
+      nextDueForItem,
       hoursUnreliable,
       verifiedReport: false,
       verifiedReportAt: null,
@@ -146,6 +171,8 @@ export function buildStatusItems(
       meter: "tach",
       currentForItem: cur.value,
       currentEstimated: cur.estimated,
+      lastDoneForItem: null,
+      nextDueForItem: a.next_due_hours,
       hoursUnreliable: false,
       verifiedReport: Boolean(a.verified_report_page_id),
       verifiedReportAt: a.verified_at,
