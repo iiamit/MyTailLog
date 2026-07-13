@@ -37,10 +37,14 @@ function remainingText(item: StatusItem): string {
   if (days != null) {
     parts.push(days < 0 ? `${Math.abs(days)} days overdue` : `${days} days left`);
   }
-  const hrs = hoursRemaining(item.nextDueHours, item.currentForItem);
-  if (hrs != null) {
-    const est = item.currentEstimated ? " est." : "";
-    parts.push(hrs < 0 ? `${Math.abs(hrs)} hrs overdue${est}` : `${hrs} hrs left${est}`);
+  if (item.hoursUnreliable) {
+    parts.push("check last-done reading");
+  } else {
+    const hrs = hoursRemaining(item.nextDueHours, item.currentForItem);
+    if (hrs != null) {
+      const est = item.currentEstimated ? " est." : "";
+      parts.push(hrs < 0 ? `${Math.abs(hrs)} hrs overdue${est}` : `${hrs} hrs left${est}`);
+    }
   }
   if (parts.length === 0) return item.nextDueDate || item.nextDueHours != null ? "" : "not set";
   return parts.join(" · ");

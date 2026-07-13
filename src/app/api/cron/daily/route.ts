@@ -153,6 +153,8 @@ async function remindUser(
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
     })) {
+      // Don't remind off an untrustworthy hours countdown (last-done meter mismatch).
+      if (s.hoursUnreliable) continue;
       // Each item is judged on its own meter (oil on hobbs, 100-hr on tach).
       if (!isDueForReminder(s, s.currentForItem, alerts, today)) continue;
       const key = itemKey(s);
