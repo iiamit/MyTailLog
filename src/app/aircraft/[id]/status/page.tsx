@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentTach } from "@/lib/aircraftHours";
+import { getCurrentMeters } from "@/lib/aircraftHours";
 import { urgencyLabel, type Urgency } from "@/lib/compliance";
 import {
   buildStatusItems,
@@ -31,15 +31,16 @@ const REMAIN_COLOR: Record<Urgency, string> = {
   none: "text-faint",
 };
 
-function remainingText(item: StatusItem, currentHours: number | null): string {
+function remainingText(item: StatusItem): string {
   const parts: string[] = [];
   const days = daysUntil(item.nextDueDate);
   if (days != null) {
     parts.push(days < 0 ? `${Math.abs(days)} days overdue` : `${days} days left`);
   }
-  const hrs = hoursRemaining(item.nextDueHours, currentHours);
+  const hrs = hoursRemaining(item.nextDueHours, item.currentForItem);
   if (hrs != null) {
-    parts.push(hrs < 0 ? `${Math.abs(hrs)} hrs overdue` : `${hrs} hrs left`);
+    const est = item.currentEstimated ? " est." : "";
+    parts.push(hrs < 0 ? `${Math.abs(hrs)} hrs overdue${est}` : `${hrs} hrs left${est}`);
   }
   if (parts.length === 0) return item.nextDueDate || item.nextDueHours != null ? "" : "not set";
   return parts.join(" · ");
@@ -49,9 +50,9 @@ function remainingText(item: StatusItem, currentHours: number | null): string {
 // bar. Prefers hours (more precise for engine/airframe items); falls back to
 // the calendar span between last-done and next-due. Null when we don't have
 // enough of either dimension to derive one — the bar is simply omitted then.
-function progressFraction(item: StatusItem, currentHours: number | null): number | null {
-  if (item.intervalHours && item.lastDoneHours != null && currentHours != null) {
-    return (currentHours - item.lastDoneHours) / item.intervalHours;
+function progressFraction(item: StatusItem): number | null {
+  if (item.intervalHours && item.lastDoneHours != null && item.currentForItem != null) {
+    return (item.currentForItem - item.lastDoneHours) / item.intervalHours;
   }
   if (item.lastDoneDate && item.nextDueDate) {
     const total = Date.parse(item.nextDueDate) - Date.parse(item.lastDoneDate);
@@ -64,16 +65,14 @@ function progressFraction(item: StatusItem, currentHours: number | null): number
 function StatusCard({
   item,
   aircraftId,
-  currentHours,
 }: {
   item: StatusItem;
   aircraftId: string;
-  currentHours: number | null;
 }) {
   const href =
     item.source === "ad" ? `/aircraft/${aircraftId}/compliance` : `/aircraft/${aircraftId}/maintenance`;
-  const rem = remainingText(item, currentHours);
-  const frac = progressFraction(item, currentHours);
+  const rem = remainingText(item);
+  const frac = progressFraction(item);
   const pct = frac != null ? Math.max(0, Math.min(100, frac * 100)) : null;
 
   return (
@@ -140,13 +139,11 @@ function UrgencySection({
   color,
   items,
   aircraftId,
-  currentHours,
 }: {
   title: string;
   color: string;
   items: StatusItem[];
   aircraftId: string;
-  currentHours: number | null;
 }) {
   if (items.length === 0) return null;
   return (
@@ -162,7 +159,7 @@ function UrgencySection({
       </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,210px),1fr))] gap-3">
         {items.map((s) => (
-          <StatusCard key={`${s.source}-${s.id}`} item={s} aircraftId={aircraftId} currentHours={currentHours} />
+          <StatusCard key={`${s.source}-${s.id}`} item={s} aircraftId={aircraftId} />
         ))}
       </div>
     </div>
@@ -194,14 +191,18 @@ export default async function StatusPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const ct = await getCurrentTach(supabase, id, {
+  const { tach: ct, hobbs: ch } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
   });
-  const currentHours = ct.tach;
 
   const statusItems = sortStatusItems(
-    buildStatusItems(items ?? [], ads ?? [], currentHours),
+    buildStatusItems(items ?? [], ads ?? [], {
+      tach: ct.tach,
+      hobbs: ch.hobbs,
+      tachEstimated: ct.estimated,
+      hobbsEstimated: ch.estimated,
+    }),
   );
 
   const overdueItems = statusItems.filter((s) => s.urgency === "overdue");
@@ -220,19 +221,34 @@ export default async function StatusPage({
             verify against the physical logbooks.
           </p>
         </div>
-        <span
-          className="readout text-xs text-dim"
-          title={
-            ct.estimated
-              ? ct.rough
-                ? "Rough estimate — no tach recorded; derived from hobbs at the default ratio"
-                : "Estimated from the latest hobbs via this aircraft's hobbs↔tach ratio; actual tach may differ slightly"
-              : undefined
-          }
-        >
-          {currentHours != null
-            ? `current tach ≈ ${currentHours} hrs${ct.estimated ? (ct.rough ? " (rough est.)" : " (est. from hobbs)") : ""}`
-            : "hours unknown"}
+        <span className="readout text-right text-xs text-dim">
+          {ct.tach != null || ch.hobbs != null ? (
+            <>
+              {ct.tach != null && (
+                <span
+                  title={
+                    ct.estimated
+                      ? ct.rough
+                        ? "Rough estimate — no tach recorded; derived from hobbs at the default ratio"
+                        : "Estimated from the latest hobbs via this aircraft's hobbs↔tach ratio; actual tach may differ slightly"
+                      : undefined
+                  }
+                >
+                  tach ≈ {ct.tach}
+                  {ct.estimated ? (ct.rough ? " (rough est.)" : " (est.)") : ""}
+                </span>
+              )}
+              {ct.tach != null && ch.hobbs != null && <span className="text-faint"> · </span>}
+              {ch.hobbs != null && (
+                <span title={ch.estimated ? "Estimated from tach — no hobbs recorded" : undefined}>
+                  hobbs {ch.hobbs}
+                  {ch.estimated ? " (est.)" : ""}
+                </span>
+              )}
+            </>
+          ) : (
+            "hours unknown"
+          )}
         </span>
       </header>
 
@@ -270,27 +286,9 @@ export default async function StatusPage({
             </div>
           </div>
 
-          <UrgencySection
-            title="Overdue"
-            color="var(--red)"
-            items={overdueItems}
-            aircraftId={id}
-            currentHours={currentHours}
-          />
-          <UrgencySection
-            title="Due soon"
-            color="var(--amb)"
-            items={dueItems}
-            aircraftId={id}
-            currentHours={currentHours}
-          />
-          <UrgencySection
-            title="Current"
-            color="var(--grn)"
-            items={currentItems}
-            aircraftId={id}
-            currentHours={currentHours}
-          />
+          <UrgencySection title="Overdue" color="var(--red)" items={overdueItems} aircraftId={id} />
+          <UrgencySection title="Due soon" color="var(--amb)" items={dueItems} aircraftId={id} />
+          <UrgencySection title="Current" color="var(--grn)" items={currentItems} aircraftId={id} />
         </>
       )}
     </main>

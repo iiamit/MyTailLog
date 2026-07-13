@@ -96,18 +96,22 @@ export function MaintenanceClient({
   aircraftId,
   items,
   dueItems,
-  currentHours,
+  currentTach,
+  currentHobbs,
   currentTachEstimated = false,
   currentTachRough = false,
+  currentHobbsEstimated = false,
   mfbReading,
   extractionConfigured,
 }: {
   aircraftId: string;
   items: MaintenanceItem[];
   dueItems: DueItem[];
-  currentHours: number | null;
+  currentTach: number | null;
+  currentHobbs: number | null;
   currentTachEstimated?: boolean;
   currentTachRough?: boolean;
+  currentHobbsEstimated?: boolean;
   mfbReading: { date: string | null; hobbs: number | null; tach: number | null } | null;
   extractionConfigured: boolean;
 }) {
@@ -189,7 +193,11 @@ export function MaintenanceClient({
   function openMark(m: MaintenanceItem) {
     setMarkId(m.id);
     setMarkDate(new Date().toISOString().slice(0, 10));
-    setMarkHours(m.interval_hours != null ? currentHours?.toString() ?? "" : "");
+    // Pre-fill with the current reading on THIS item's meter — regulatory items
+    // (100-hr, annual) on tach, usage items (oil) on hobbs — so last-done stays
+    // consistent with the meter its countdown uses.
+    const cur = m.regulatory ? currentTach : currentHobbs;
+    setMarkHours(m.interval_hours != null ? cur?.toString() ?? "" : "");
   }
 
   async function saveMark(m: MaintenanceItem) {
@@ -219,22 +227,30 @@ export function MaintenanceClient({
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <span
-            className="readout text-xs text-faint"
-            title={
-              currentTachEstimated
-                ? currentTachRough
-                  ? "Rough estimate — no tach recorded; derived from hobbs at the default ratio"
-                  : "Estimated from the latest hobbs via this aircraft's hobbs↔tach ratio; actual tach may differ slightly"
-                : undefined
-            }
-          >
-            {currentHours != null ? `Current tach ≈ ${currentHours}` : "Current hours unknown"}
-            {currentHours != null && currentTachEstimated
-              ? currentTachRough
-                ? " (rough est.)"
-                : " (est. from hobbs)"
-              : ""}
+          <span className="readout text-xs text-faint">
+            {currentTach == null && currentHobbs == null ? (
+              "Current hours unknown"
+            ) : (
+              <>
+                <span
+                  title={
+                    currentTachEstimated
+                      ? currentTachRough
+                        ? "Rough estimate — no tach recorded; derived from hobbs at the default ratio"
+                        : "Estimated from the latest hobbs via this aircraft's hobbs↔tach ratio; actual tach may differ slightly"
+                      : "Tach drives regulatory items (100-hr, annual)"
+                  }
+                >
+                  Current tach ≈ {currentTach ?? "—"}
+                  {currentTach != null && currentTachEstimated ? (currentTachRough ? " (rough est.)" : " (est.)") : ""}
+                </span>
+                <span className="text-faint">{"  ·  "}</span>
+                <span title="Hobbs drives usage items (oil change)">
+                  hobbs {currentHobbs ?? "—"}
+                  {currentHobbs != null && currentHobbsEstimated ? " (est.)" : ""}
+                </span>
+              </>
+            )}
           </span>
           {mfbReading && (
             <span className="text-[11px] text-faint">
@@ -346,7 +362,8 @@ export function MaintenanceClient({
           {dueItems.map((d) => {
             const m = d.source === "maintenance" ? itemById.get(d.id) : null;
             const color = URGENCY_COLOR[d.urgency];
-            const remaining = dueText(d.nextDueDate, d.nextDueHours, currentHours);
+            let remaining = dueText(d.nextDueDate, d.nextDueHours, d.currentForItem);
+            if (d.currentEstimated && d.nextDueHours != null && d.currentForItem != null) remaining += " est.";
             const marking = m && markId === m.id;
             return (
               <div key={`${d.source}-${d.id}`} className="border-b border-line last:border-b-0">

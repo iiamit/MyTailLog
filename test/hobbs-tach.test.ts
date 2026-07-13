@@ -8,6 +8,7 @@ import {
   digitEditCandidates,
   deriveRatio,
   currentTach,
+  currentHobbs,
   detectAnomalies,
 } from "../src/lib/hobbsTach";
 
@@ -128,6 +129,31 @@ test("currentTach: all-tach logbook (no hobbs ever) → latest tach, actual", ()
 
 test("currentTach: no data → null", () => {
   assert.equal(currentTach([]).tach, null);
+});
+
+// --- currentHobbs ----------------------------------------------------------
+test("currentHobbs: latest hobbs reading is the actual current hobbs", () => {
+  const rs = [R("a", "2025-01-01", 1200, 1080), R("b", "2025-03-01", 1218, null)];
+  const ch = currentHobbs(rs);
+  assert.equal(ch.estimated, false);
+  assert.equal(ch.hobbs, 1218);
+});
+
+test("currentHobbs: advances with a newer hobbs-only reading (the oil-change case)", () => {
+  // last oil change at hobbs 1200; two more flights → 1218. 'hours since' = 18.
+  const rs = [R("oil", "2025-01-01", 1200, null), R("f1", "2025-02-01", 1210, null), R("f2", "2025-03-01", 1218, null)];
+  assert.equal(currentHobbs(rs).hobbs, 1218);
+});
+
+test("currentHobbs: all-tach logbook → bridged from tach via ratio, flagged estimated", () => {
+  const rs = [R("a", "2025-01-01", null, 900), R("b", "2025-02-01", null, 990)];
+  const ch = currentHobbs(rs);
+  assert.equal(ch.estimated, true);
+  assert.ok(ch.hobbs != null && ch.hobbs > 990, `hobbs=${ch.hobbs}`); // tach/0.9 > tach
+});
+
+test("currentHobbs: no data → null", () => {
+  assert.equal(currentHobbs([]).hobbs, null);
 });
 
 // --- digitEditCandidates ---------------------------------------------------

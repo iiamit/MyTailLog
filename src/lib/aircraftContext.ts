@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { buildStatusItems } from "@/lib/status";
+import { currentTach, currentHobbs, type Reading as HTReading } from "@/lib/hobbsTach";
 
 /**
  * Everything the persistent aircraft shell (top bar + nav rail) needs, loaded
@@ -103,7 +104,23 @@ export async function getAircraftShellContext(
   for (const r of all) currentHours = bump(bump(currentHours, r.hobbs), r.tach);
   currentHours = bump(bump(currentHours, aircraft.enrollment_hobbs), aircraft.enrollment_tach);
 
-  const status = buildStatusItems(items ?? [], ads ?? [], currentHours);
+  // Airworthiness urgency runs on the reconciled per-meter currents: regulatory
+  // items on tach, usage items (oil) on hobbs. (currentHours above stays the
+  // total-time figure the AI narration uses.)
+  const htReadings: HTReading[] = [
+    ...all.map((r, i) => ({ id: `r${i}`, source: "entry" as const, date: r.date, hobbs: r.hobbs, tach: r.tach, reviewedAt: null })),
+    ...(aircraft.enrollment_hobbs != null || aircraft.enrollment_tach != null
+      ? [{ id: "enroll", source: "enrollment" as const, date: null, hobbs: aircraft.enrollment_hobbs, tach: aircraft.enrollment_tach, reviewedAt: null }]
+      : []),
+  ];
+  const ctTach = currentTach(htReadings);
+  const chHobbs = currentHobbs(htReadings);
+  const status = buildStatusItems(items ?? [], ads ?? [], {
+    tach: ctTach.tach,
+    hobbs: chHobbs.hobbs,
+    tachEstimated: ctTach.estimated,
+    hobbsEstimated: chHobbs.estimated,
+  });
   const annun = {
     overdue: status.filter((s) => s.urgency === "overdue").length,
     due: status.filter((s) => s.urgency === "due_soon").length,
