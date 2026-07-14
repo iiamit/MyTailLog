@@ -68,6 +68,8 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
     );
 
     // 3) Consent screen → share ONLY the scratch aircraft → Allow access.
+    await page.waitForLoadState("domcontentloaded");
+    expect(page.url(), `authorize landed at: ${page.url()}`).toContain("/oauth/consent/");
     await expect(page.getByRole("heading", { name: /wants to read your aircraft data/i })).toBeVisible();
     const boxes = page.locator('input[name="aircraft"]');
     for (let i = 0; i < (await boxes.count()); i++) await boxes.nth(i).uncheck();
