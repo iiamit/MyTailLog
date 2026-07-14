@@ -86,12 +86,13 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
     let loc: string | undefined = decideRes.headers()["location"];
     let code: string | null = null;
     for (let i = 0; i < 6 && loc; i++) {
-      const abs = loc.startsWith("http") ? loc : new URL(loc, baseURL!).toString();
+      const abs: string = loc.startsWith("http") ? loc : new URL(loc, baseURL!).toString();
       if (abs.includes("developer.myflightbook.com")) {
         code = new URL(abs).searchParams.get("code");
         break;
       }
-      loc = (await page.request.get(abs, { maxRedirects: 0 })).headers()["location"];
+      const hop = await page.request.get(abs, { maxRedirects: 0 });
+      loc = hop.headers()["location"];
     }
     expect(code, "consent → resume must redirect to the MFB URI with a code").toBeTruthy();
 
