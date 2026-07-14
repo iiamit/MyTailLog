@@ -11,6 +11,20 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, { params }: { params: Promise<{ uid: string }> }): Promise<Response> {
   const { uid } = await params;
+  try {
+    return await decide(request, uid);
+  } catch (err) {
+    // A one-time consent interaction that's already been completed or has expired
+    // (e.g. a Back-button re-submit) makes interactionDetails/interactionFinished
+    // throw. Send them to the consent page's friendly "expired" state instead of
+    // a raw 500 — and log the real error so a genuine server-side failure in the
+    // authorize→consent→redirect chain is diagnosable (not swallowed).
+    console.error("[oidc] consent decide failed:", err);
+    return Response.redirect(new URL(`/oauth/consent/${uid}`, request.url), 303);
+  }
+}
+
+async function decide(request: Request, uid: string): Promise<Response> {
   const form = await request.clone().formData();
   const approve = form.get("decision") === "approve";
   const aircraftIds = form.getAll("aircraft").map(String).filter(Boolean);
