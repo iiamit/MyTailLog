@@ -57,10 +57,16 @@ export function getOAuthProvider(): Provider {
       registration: { enabled: false }, // portal owns client creation, not DCR
       rpInitiatedLogout: { enabled: false },
     },
-    // Consent/login UI (P1c). Until then the authorize flow redirects here.
+    // Consent/login UI (P1c). ABSOLUTE, anchored to the canonical issuer origin —
+    // NOT relative. oidc-provider resolves a relative interaction URL against the
+    // request Host, which on a container/preview (bound to 0.0.0.0:8080, with
+    // x-forwarded-host not carrying the public name) leaks
+    // `https://0.0.0.0:8080/oauth/consent/...` into the redirect and breaks
+    // session/cookie continuity → the consent screen loops. The issuer origin is
+    // the canonical public URL (from NEXT_PUBLIC_SITE_URL), so use it directly.
     interactions: {
       url(_ctx, interaction) {
-        return `/oauth/consent/${interaction.uid}`;
+        return `${new URL(oauthIssuer()).origin}/oauth/consent/${interaction.uid}`;
       },
     },
     // Access tokens carry the Supabase user id as `sub`; the Resource Server (P2)
