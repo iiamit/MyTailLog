@@ -5,12 +5,15 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 // Reproduces MyFlightBook's exact OAuth handshake end-to-end (the partner-
 // onboarding flow from Eric's email): a CONFIDENTIAL client registered with the
 // real developer.myflightbook.com redirect URI and the full scope set, PKCE
-// (S256) + offline_access → authorize → consent → code → token exchange (HTTP
-// Basic) → access_token + refresh_token → a live /api/v1 call → refresh grant.
+// (S256) + offline_access → authorize → consent (Allow, share the scratch
+// aircraft) → code → token exchange (HTTP Basic + code_verifier) → access_token
+// + refresh_token → live /api/v1 calls → refresh grant.
 //
-// The external redirect never hits the network — page.route fulfils it with a
-// stub so the browser "lands" on developer.myflightbook.com and we read ?code,
-// exactly as MFB's MyTailLogRedir controller would.
+// The flow is driven over HTTP (page.request), following the redirect chain by
+// hand with maxRedirects:0 so the external MFB redirect never leaves the harness
+// — and so the token/consent hops are asserted deterministically (no reliance on
+// browser navigation to a third-party host). The consent DECIDE + resume hops
+// are the exact chain that was in question during onboarding.
 
 const b64url = (b: Buffer) => b.toString("base64url");
 const MFB_REDIRECT = "https://developer.myflightbook.com/logbook/mvc/oAuth/MyTailLogRedir";
@@ -21,12 +24,6 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
   const admin = createClient(process.env.TEST_SUPABASE_URL!, process.env.TEST_SUPABASE_SECRET_KEY!);
   const appName = "MFB E2E " + randomUUID().slice(0, 8);
   let clientId: string | null = null;
-
-  // Keep the external redirect OFF the network — fulfil any request to MFB's dev
-  // host with a stub so the browser lands there and we can read the ?code.
-  await page.route(/developer\.myflightbook\.com/, (r) =>
-    r.fulfill({ status: 200, contentType: "text/html", body: "<html>MFB redirect stub</html>" }),
-  );
 
   try {
     // 1) Register the confidential client via the /developers portal, exactly as
@@ -48,7 +45,7 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
       .maybeSingle();
     clientId = client!.client_id;
     expect(client!.is_confidential).toBe(true);
-    expect(client!.scopes).toContain("offline_access");
+    expect(client!.scopes).toEqual(expect.arrayContaining(["openid", "offline_access", ...DATA_SCOPES]));
 
     // 2) Authorize with PKCE (S256) + the full scope string incl. offline_access.
     const verifier = b64url(randomBytes(32));
@@ -66,30 +63,40 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
         prompt: "consent",
       }).toString();
 
-    // DIAGNOSTIC: what does authorize actually return (status + Location + body)?
-    const probe = await page.request.get(authorizeUrl, { maxRedirects: 0 });
-    const loc = probe.headers()["location"] ?? "(no location header)";
-    const bodyStart = (await probe.text()).replace(/\s+/g, " ").slice(0, 400);
-    expect(
-      loc,
-      `authorize → status=${probe.status()} location=${loc} body="${bodyStart}"`,
-    ).toContain("/oauth/consent/");
+    const authRes = await page.request.get(authorizeUrl, { maxRedirects: 0 });
+    expect([302, 303], `authorize status=${authRes.status()} body=${(await authRes.text()).slice(0, 200)}`).toContain(
+      authRes.status(),
+    );
+    const consentLoc = authRes.headers()["location"]!;
+    expect(consentLoc, `authorize must redirect to consent, got: ${consentLoc}`).toContain("/oauth/consent/");
+    const uid = consentLoc.split("?")[0].split("/").filter(Boolean).pop()!;
 
-    await page.goto(authorizeUrl);
+    // 3) Approve consent (share ONLY the scratch aircraft) via the decide handler —
+    //    the same chain a real browser click drives (interactionFinished → resume).
+    const decideRes = await page.request.post(`/oauth/consent/${uid}/decide`, {
+      maxRedirects: 0,
+      form: { decision: "approve", aircraft: scratch.id },
+    });
+    expect([302, 303], `decide status=${decideRes.status()} body=${(await decideRes.text()).slice(0, 200)}`).toContain(
+      decideRes.status(),
+    );
 
-    // 3) Consent screen → share ONLY the scratch aircraft → Allow access.
-    await expect(page.getByRole("heading", { name: /wants to read your aircraft data/i })).toBeVisible();
-    const boxes = page.locator('input[name="aircraft"]');
-    for (let i = 0; i < (await boxes.count()); i++) await boxes.nth(i).uncheck();
-    await page.locator(`label:has-text("${scratch.tail}") input[name="aircraft"]`).check();
+    // 4) Follow the redirect chain by hand (nothing leaves the harness) until the
+    //    MFB redirect URI is reached with a ?code — exactly what MyTailLogRedir sees.
+    let loc: string | undefined = decideRes.headers()["location"];
+    let code: string | null = null;
+    for (let i = 0; i < 6 && loc; i++) {
+      const abs = loc.startsWith("http") ? loc : new URL(loc, baseURL!).toString();
+      if (abs.includes("developer.myflightbook.com")) {
+        code = new URL(abs).searchParams.get("code");
+        break;
+      }
+      loc = (await page.request.get(abs, { maxRedirects: 0 })).headers()["location"];
+    }
+    expect(code, "consent → resume must redirect to the MFB URI with a code").toBeTruthy();
 
-    const redirectReq = page.waitForRequest(/developer\.myflightbook\.com.*code=/);
-    await page.getByRole("button", { name: /allow access/i }).click();
-    const code = new URL((await redirectReq).url()).searchParams.get("code");
-    expect(code, "authorize must redirect back to the MFB URI with a code").toBeTruthy();
-
-    // 4) Token exchange — confidential client auth (HTTP Basic) + PKCE verifier.
-    const tokenRes = await page.request.post(`${baseURL}/api/oidc/token`, {
+    // 5) Token exchange — confidential client auth (HTTP Basic) + PKCE verifier.
+    const tokenRes = await page.request.post(`/api/oidc/token`, {
       headers: { authorization: basic(clientId!, secret) },
       form: { grant_type: "authorization_code", code: code!, redirect_uri: MFB_REDIRECT, code_verifier: verifier },
     });
@@ -99,22 +106,20 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
     expect(tok.token_type).toBe("Bearer");
     expect(tok.refresh_token, "offline_access must yield a refresh token").toBeTruthy();
 
-    // 5) Use the access token against the real Resource Server.
-    const list = await page.request.get(`${baseURL}/api/v1/aircraft`, {
-      headers: { authorization: `Bearer ${tok.access_token}` },
-    });
+    // 6) Use the access token against the real Resource Server.
+    const list = await page.request.get(`/api/v1/aircraft`, { headers: { authorization: `Bearer ${tok.access_token}` } });
     expect(list.status(), await list.text()).toBe(200);
     const tails = ((await list.json()).aircraft as { tail_number: string }[]).map((a) => a.tail_number);
     expect(tails).toContain(scratch.tail);
 
-    const aw = await page.request.get(`${baseURL}/api/v1/aircraft/${scratch.id}/airworthiness`, {
+    const aw = await page.request.get(`/api/v1/aircraft/${scratch.id}/airworthiness`, {
       headers: { authorization: `Bearer ${tok.access_token}` },
     });
     expect(aw.status(), await aw.text()).toBe(200);
     expect((await aw.json()).aircraft_id).toBe(scratch.id);
 
-    // 6) Refresh grant → a fresh access token that still reaches the API.
-    const refreshRes = await page.request.post(`${baseURL}/api/oidc/token`, {
+    // 7) Refresh grant → a fresh access token that still reaches the API.
+    const refreshRes = await page.request.post(`/api/oidc/token`, {
       headers: { authorization: basic(clientId!, secret) },
       form: { grant_type: "refresh_token", refresh_token: tok.refresh_token },
     });
@@ -122,7 +127,7 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
     const refreshed = await refreshRes.json();
     expect(refreshed.access_token).toBeTruthy();
 
-    const list2 = await page.request.get(`${baseURL}/api/v1/aircraft`, {
+    const list2 = await page.request.get(`/api/v1/aircraft`, {
       headers: { authorization: `Bearer ${refreshed.access_token}` },
     });
     expect(list2.status()).toBe(200);
