@@ -54,22 +54,30 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
     const verifier = b64url(randomBytes(32));
     const challenge = b64url(createHash("sha256").update(verifier).digest());
     const scope = ["openid", ...DATA_SCOPES, "offline_access"].join(" ");
-    await page.goto(
+    const authorizeUrl =
       "/api/oidc/auth?" +
-        new URLSearchParams({
-          client_id: clientId!,
-          response_type: "code",
-          redirect_uri: MFB_REDIRECT,
-          scope,
-          code_challenge: challenge,
-          code_challenge_method: "S256",
-          prompt: "consent",
-        }).toString(),
-    );
+      new URLSearchParams({
+        client_id: clientId!,
+        response_type: "code",
+        redirect_uri: MFB_REDIRECT,
+        scope,
+        code_challenge: challenge,
+        code_challenge_method: "S256",
+        prompt: "consent",
+      }).toString();
+
+    // DIAGNOSTIC: what does authorize actually return (status + Location + body)?
+    const probe = await page.request.get(authorizeUrl, { maxRedirects: 0 });
+    const loc = probe.headers()["location"] ?? "(no location header)";
+    const bodyStart = (await probe.text()).replace(/\s+/g, " ").slice(0, 400);
+    expect(
+      loc,
+      `authorize → status=${probe.status()} location=${loc} body="${bodyStart}"`,
+    ).toContain("/oauth/consent/");
+
+    await page.goto(authorizeUrl);
 
     // 3) Consent screen → share ONLY the scratch aircraft → Allow access.
-    await page.waitForLoadState("domcontentloaded");
-    expect(page.url(), `authorize landed at: ${page.url()}`).toContain("/oauth/consent/");
     await expect(page.getByRole("heading", { name: /wants to read your aircraft data/i })).toBeVisible();
     const boxes = page.locator('input[name="aircraft"]');
     for (let i = 0; i < (await boxes.count()); i++) await boxes.nth(i).uncheck();
