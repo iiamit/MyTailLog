@@ -141,3 +141,77 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
     }
   }
 });
+
+// REGRESSION for the CSP form-action bug Eric hit: the previous test drives the
+// flow over page.request, which does NOT enforce browser CSP — so it passed even
+// while a REAL browser blocked the consent form ("form-action 'self'"). This one
+// clicks Allow in the browser and asserts the submission is NOT CSP-blocked and
+// reaches the external redirect with a ?code.
+test("consent form submission is not blocked by CSP (reaches the external redirect)", async ({ page, scratch }) => {
+  const admin = createClient(process.env.TEST_SUPABASE_URL!, process.env.TEST_SUPABASE_SECRET_KEY!);
+  const appName = "MFB CSP E2E " + randomUUID().slice(0, 8);
+  let clientId: string | null = null;
+
+  const cspViolations: string[] = [];
+  page.on("console", (m) => {
+    const t = m.text();
+    if (/content security policy/i.test(t) && /form-action/i.test(t)) cspViolations.push(t);
+  });
+  await page.route(/developer\.myflightbook\.com/, (r) =>
+    r.fulfill({ status: 200, contentType: "text/html", body: "<html>MFB stub</html>" }),
+  );
+
+  try {
+    await page.goto("/developers");
+    await page.fill('input[name="name"]', appName);
+    await page.fill('textarea[name="redirect_uris"]', MFB_REDIRECT);
+    await page.check('input[name="scopes"][value="airworthiness:read"]');
+    await page.check('input[name="offline_access"]');
+    await page.check('input[name="confidential"]');
+    await page.getByRole("button", { name: /register app/i }).click();
+    await page.getByTestId("client-secret").innerText();
+    const { data: client } = await admin.from("oauth_client").select("client_id").eq("name", appName).maybeSingle();
+    clientId = client!.client_id;
+
+    // Authorize over HTTP to mint the interaction (+ cookies in the shared jar),
+    // then render the consent page directly — avoids the flaky authorize nav.
+    const verifier = b64url(randomBytes(32));
+    const challenge = b64url(createHash("sha256").update(verifier).digest());
+    const authRes = await page.request.get(
+      "/api/oidc/auth?" +
+        new URLSearchParams({
+          client_id: clientId!,
+          response_type: "code",
+          redirect_uri: MFB_REDIRECT,
+          scope: "openid airworthiness:read offline_access",
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+          prompt: "consent",
+        }).toString(),
+      { maxRedirects: 0 },
+    );
+    const uid = authRes.headers()["location"]!.split("?")[0].split("/").filter(Boolean).pop()!;
+
+    await page.goto(`/oauth/consent/${uid}`);
+    await expect(page.getByRole("heading", { name: /wants to read your aircraft data/i })).toBeVisible();
+    const boxes = page.locator('input[name="aircraft"]');
+    for (let i = 0; i < (await boxes.count()); i++) await boxes.nth(i).uncheck();
+    await page.locator(`label:has-text("${scratch.tail}") input[name="aircraft"]`).check();
+
+    // The REAL browser form submission → /decide → resume → external redirect.
+    // CSP form-action is enforced here; if it blocks, this never fires.
+    const redirect = page.waitForRequest(/developer\.myflightbook\.com.*code=/, { timeout: 15_000 });
+    await page.getByRole("button", { name: /allow access/i }).click();
+    const code = new URL((await redirect).url()).searchParams.get("code");
+
+    expect(cspViolations, `CSP blocked the consent form:\n${cspViolations.join("\n")}`).toHaveLength(0);
+    expect(code, "consent form must redirect to the external URI with a code").toBeTruthy();
+  } finally {
+    if (clientId) {
+      await admin.from("oauth_aircraft_grant").delete().eq("client_id", clientId);
+      await admin.from("oauth_client").delete().eq("client_id", clientId);
+    } else {
+      await admin.from("oauth_client").delete().eq("name", appName);
+    }
+  }
+});

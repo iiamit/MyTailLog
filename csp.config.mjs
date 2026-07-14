@@ -36,6 +36,13 @@ export function buildCsp(supabaseHost) {
     "worker-src 'self' blob:",
     "font-src 'self' data:",
     `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}`,
-    "form-action 'self'",
+    // 'self' https: (not just 'self'): the OAuth consent form (/oauth/consent/*)
+    // POSTs to /decide, which redirects through /api/oidc/auth/* and finally to
+    // the OAuth *client's* registered redirect URI (a different https origin,
+    // e.g. MyFlightBook). Browsers enforce form-action across the whole redirect
+    // chain, so 'self' alone blocks every external client at consent. The actual
+    // authorization boundary is oidc-provider validating redirect_uri against the
+    // client's allowlist server-side — this only unblocks the browser navigation.
+    "form-action 'self' https:",
   ].join("; ");
 }
