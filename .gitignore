@@ -53,3 +53,6 @@ docs/superpowers/
 /playwright-report/
 /playwright/.cache/
 /e2e/.auth/
+
+# local OAuth client test harness (not part of the app)
+/oauth-test-client/
