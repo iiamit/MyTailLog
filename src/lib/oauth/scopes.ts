@@ -9,6 +9,7 @@ export const OAUTH_SCOPES = [
   "aircraft:read",
   "equipment:read",
   "hours:read",
+  "hours:write",
   "oil:read",
   "weightbalance:read",
 ] as const;
@@ -22,6 +23,7 @@ export const SCOPE_LABELS: Record<string, string> = {
   "aircraft:read": "Aircraft details — tail, make/model, serial numbers, home base",
   "equipment:read": "Installed equipment & components",
   "hours:read": "Current hours (hobbs / tach)",
+  "hours:write": "Add hobbs / tach readings to your aircraft (e.g. synced flight hours)",
   "oil:read": "Oil-analysis samples & wear-metal trends",
   "weightbalance:read": "Weight & balance",
 };

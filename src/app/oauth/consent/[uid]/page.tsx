@@ -58,6 +58,7 @@ export default async function ConsentPage({ params }: { params: Promise<{ uid: s
 
   const requested = String(details!.params.scope ?? "").split(" ").filter(Boolean);
   const dataScopes = requested.filter((s) => s !== "openid" && s !== "offline_access");
+  const hasWrite = dataScopes.some((s) => s.endsWith(":write"));
 
   // Client display name — service client because oauth_client RLS is owner-scoped
   // (the developer), not the consenting user.
@@ -80,18 +81,25 @@ export default async function ConsentPage({ params }: { params: Promise<{ uid: s
       <div>
         <div className="eyebrow mb-1">Authorize access</div>
         <h1 className="font-display text-xl font-semibold leading-tight">
-          {appName} wants to read your aircraft data
+          {appName} wants to {hasWrite ? "read and update" : "read"} your aircraft data
         </h1>
-        <p className="mt-1 text-sm text-dim">Signed in as {user.email}. Read-only — no changes are ever made.</p>
+        <p className="mt-1 text-sm text-dim">
+          Signed in as {user.email}.{hasWrite ? "" : " Read-only — no changes are ever made."}
+        </p>
       </div>
 
       <form action={`/oauth/consent/${uid}/decide`} method="post" className="flex flex-col gap-4">
         <section>
-          <div className="text-xs font-medium uppercase tracking-wide text-faint">It will be able to read</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-faint">It will be able to</div>
           <ul className="mt-2 flex flex-col gap-1 text-sm">
             {dataScopes.map((s) => (
-              <li key={s} className="text-ink">
-                • {SCOPE_LABELS[s] ?? s}
+              <li key={s} className="flex items-center gap-2 text-ink">
+                <span>• {SCOPE_LABELS[s] ?? s}</span>
+                {s.endsWith(":write") && (
+                  <span className="rounded-full bg-annun-amber/15 px-2 py-0.5 text-[10px] font-medium text-annun-amber">
+                    writes
+                  </span>
+                )}
               </li>
             ))}
           </ul>
