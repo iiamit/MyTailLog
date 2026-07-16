@@ -15,11 +15,11 @@ MFB is a **pilot logbook**. They describe the same aircraft from two angles
 
 | Direction | Data | Who is the OAuth client | Status |
 |---|---|---|---|
-| **A. MFB → MTL** | Latest recorded **hobbs / tach** per aircraft | **MTL** (client of MFB) | ✅ live |
-| **B. MTL → MFB** | **Airworthiness** (AD/inspection status, due dates), equipment, hours, oil, W&B | **MFB** (client of MTL) | 🟡 ready on MTL side; needs MFB to build the client |
+| **A. MFB → MTL** | **hobbs / tach** high-watermark push | **MFB** (client of MTL, `hours:write`) | 🟢 MTL endpoint live; MFB builds the push (sketch below). Old per-user pull still live, being retired |
+| **B. MTL → MFB** | **Airworthiness** (AD/inspection status, due dates), equipment, hours, oil, W&B | **MFB** (client of MTL) | ✅ live (MFB pulls via `Update from MyTailLog`) |
 
-"Bidirectional" = A + B. This doc assumes A stays as-is and specifies B — what
-MFB needs to consume MTL's new OAuth 2.1 API.
+"Bidirectional" = A + B. Both now run over the **same MTL grant** (MFB is the
+OAuth client of MTL in both directions); A just adds the `hours:write` scope.
 
 ---
 
@@ -44,6 +44,78 @@ forecast). `{id}` is the MTL aircraft id from `GET /api/v1/aircraft`.
 Profile → MyFlightBook and MTL pulled recent flights (`src/lib/myflightbook.ts` +
 `src/lib/mfbSync.ts`, manual button + daily cron). The push removes that
 per-user-app friction; the pull can be retired once the push is adopted.
+
+### MFB-side push sketch (suggested)
+
+Two prerequisites on MFB's side: (1) add **`hours:write`** to the authorize scope
+string (users re-consent once — the MTL consent screen shows "read and update");
+(2) a small **`MTLWatermark`** table `(username, idaircraft, hobbs, tach,
+latestFlightID, latestFlightDate)` for "only push what's new" — same shape as the
+existing `externalmaintenance`/TachTime state.
+
+```csharp
+// Nightly: push new hobbs/tach high-water marks to MyTailLog for every user who
+// authorized MTL with hours:write. Idempotent on MTL's side (upsert on
+// external_ref), so re-runs and multi-user overlaps are safe.
+public static async Task PushHoursToMyTailLog(string host)
+{
+    foreach (string username in UsersWithMyTailLogToken())          // pref MyTailLogClient.TokenPrefKey exists
+    {
+        Profile pf = MyFlightbook.Profile.GetUser(username);
+        var client = new MyTailLogClient(pf.GetPreferenceForKey<AuthorizationState>(MyTailLogClient.TokenPrefKey), host);
+
+        // The aircraft this user shares with MTL, once → cache the id↔tail map.
+        // GET /api/v1/aircraft  → [{ id, tail_number }]
+        IEnumerable<MTLAircraft> shared = await client.GetMyTailLogAircraft();
+
+        UserAircraft ua = new UserAircraft(username);
+        foreach (Aircraft ac in ua.GetAircraftForUser().Where(a => a.IsRealAircraft))
+        {
+            // Match MFB aircraft → MTL aircraft by normalized N-number (same as TachTime).
+            MTLAircraft mtl = shared.FirstOrDefault(m =>
+                Aircraft.NormalizeTail(m.TailNumber).CompareCurrentCultureIgnoreCase(ac.NormalizedTail) == 0);
+            if (mtl == null) continue;                                 // not tracked in MTL
+
+            // Current high-water marks for THIS user in THIS aircraft (existing helpers).
+            decimal hobbs = AircraftUtility.HighWaterMarkHobbsForUserInAircraft(ac.AircraftID, username);
+            decimal tach  = AircraftUtility.HighWaterMarkTachForUserInAircraft(ac.AircraftID, username);
+
+            MTLWatermark seen = MTLWatermark.ForUserAircraft(username, ac.AircraftID);  // new MFB table
+            bool newHobbs = hobbs > seen.Hobbs, newTach = tach > seen.Tach;
+            if (!newHobbs && !newTach) continue;                       // nothing new since last run
+
+            // POST /api/v1/aircraft/{id}/hours — send only meters that advanced;
+            // reuse the ending flight's id as external_ref → idempotent.
+            await client.PushHours(mtl.Id, new
+            {
+                hobbs        = newHobbs ? (decimal?)hobbs : null,
+                tach         = newTach  ? (decimal?)tach  : null,
+                reading_date = seen.LatestFlightDate.ToString("yyyy-MM-dd"),
+                external_ref = seen.LatestFlightID.ToString(),
+            });
+
+            seen.Update(hobbs, tach); seen.Commit();                   // advance last-seen
+        }
+    }
+}
+
+// In MyTailLogClient — mirrors the other authenticated calls.
+public async Task PushHours(string mtlAircraftId, object body)
+{
+    await RefreshAsNeeded(/* username */);                            // offline_access refresh + persist
+    string json = JsonConvert.SerializeObject(body,
+        new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+    var content = new StringContent(json, Encoding.UTF8, "application/json");
+    await SharedHttpClient.GetResponseForAuthenticatedUri(
+        new Uri($"{dataEndpointBase}aircraft/{mtlAircraftId}/hours"),
+        AuthState.AccessToken, HttpMethod.Post, content,
+        resp => {
+            if (!resp.IsSuccessStatusCode)
+                throw new InvalidOperationException($"MTL push {(int)resp.StatusCode}: {resp.Content.ReadAsStringAsync().Result}");
+            return true;
+        });
+}
+```
 
 ---
 
@@ -178,8 +250,10 @@ under the consent screen (Direction B); the two are independent grants.
   tokens for unattended pulls? Is 120 req/min/client enough?
 - **B5. Tail normalization:** confirm MFB can match on `[A-Z0-9]`-normalized
   tails; flag any registries where that's ambiguous.
-- **B6. Reciprocity (Direction A):** keep MTL's current per-user pull of
-  hobbs/tach, or would MFB prefer a cleaner shared-app credential / a push?
+- **B6. Reciprocity (Direction A): RESOLVED → MFB push.** MFB pushes hobbs/tach
+  via `hours:write` on the same MTL grant (sketch above); the per-user MFB-pull is
+  being retired. Remaining: MFB adds `hours:write` to its authorize scope + builds
+  the nightly push + watermark table.
 - **B7. Environments:** need a staging/sandbox MTL for MFB's integration testing,
   or is a throwaway confidential client on prod sufficient?
 
