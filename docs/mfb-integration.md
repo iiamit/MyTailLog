@@ -23,17 +23,27 @@ MFB needs to consume MTL's new OAuth 2.1 API.
 
 ---
 
-## Direction A — hours (MFB → MTL), already live
+## Direction A — hours (MFB → MTL)
 
-Per **MyTailLog help → MyFlightBook**. Each MTL user registers **their own** MFB
-OAuth app (client id + secret, stored encrypted) under Profile → MyFlightBook,
-connects, and MTL pulls their MFB aircraft + recent flights, matching **by tail
-number** and recording the latest hobbs/tach as an `hours_reading`. Endpoints and
-parsing live in `src/lib/myflightbook.ts`; the sync in `src/lib/mfbSync.ts`
-(manual button + daily cron).
+**Now: MFB pushes** (2026-07). MFB is already an MTL OAuth client (Direction B);
+adding the **`hours:write`** scope lets it POST hobbs/tach to MTL with the same
+grant. MFB's nightly job finds any aircraft whose latest ending hobbs/tach beat
+its last-seen value and, for each MTL-tracking user, pushes to:
 
-No change requested here — included for the full picture. Open question for MFB
-below (A1) on whether a cleaner per-app credential is preferable to per-user apps.
+```
+POST /api/v1/aircraft/{id}/hours          Authorization: Bearer <access_token>
+{ "hobbs": 947.7, "tach": 1180.4, "reading_date": "2026-07-14", "external_ref": "<flight id>" }
+```
+
+Idempotent on `(aircraft, source="myflightbook", external_ref)` — reuse the ending
+flight id as `external_ref` and repeat/multi-user pushes collapse to one row. The
+reading flows straight into the reconciler (current hobbs/tach + the maintenance
+forecast). `{id}` is the MTL aircraft id from `GET /api/v1/aircraft`.
+
+**Was: MTL pulls.** Each MTL user registered their **own** MFB OAuth app under
+Profile → MyFlightBook and MTL pulled recent flights (`src/lib/myflightbook.ts` +
+`src/lib/mfbSync.ts`, manual button + daily cron). The push removes that
+per-user-app friction; the pull can be retired once the push is adopted.
 
 ---
 
@@ -109,11 +119,14 @@ Full developer guide: `https://mytaillog.com/developers/docs`.
 | `aircraft:read` | Tail, make/model, serials, home base |
 | `equipment:read` | Installed components (PN/SN, install/removal, life limits) |
 | `hours:read` | Current hobbs/tach + recent readings |
+| `hours:write` | Append a hobbs/tach reading (`POST /api/v1/aircraft/{id}/hours`) — the MFB→MTL push |
 | `oil:read` | Oil-analysis samples + wear-metal trend |
 | `weightbalance:read` | Empty weight/arm/moment, max gross |
 
 **Never shared:** transcribed log entries, scanned images, user PII beyond the
-grant, or any aircraft not consented. **No writes.**
+grant, or any aircraft not consented. The **only** write is appending hobbs/tach
+readings via `hours:write` (POST above) — scoped to the granted aircraft, opt-in
+per consent; nothing else is writable.
 
 ---
 
