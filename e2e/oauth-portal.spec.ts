@@ -41,6 +41,17 @@ test("RFC8414 discovery + self-serve register/delete an OAuth app", async ({ pag
     expect(data!.scopes).toEqual(expect.arrayContaining(["openid", "airworthiness:read"]));
     expect(data!.is_confidential).toBe(false);
 
+    // Edit scopes: add hours:write to the existing client (the fix for clients
+    // registered before a scope existed — no re-registration needed).
+    const row = page.locator("li", { hasText: appName });
+    await row.getByRole("button", { name: "Edit scopes" }).click();
+    await row.locator('input[name="scopes"][value="hours:write"]').check();
+    await row.getByRole("button", { name: "Save scopes" }).click();
+    await expect.poll(async () => {
+      const { data: after } = await admin.from("oauth_client").select("scopes").eq("client_id", clientId!).single();
+      return after?.scopes ?? [];
+    }).toEqual(expect.arrayContaining(["airworthiness:read", "hours:write"]));
+
     // Delete via the UI removes it.
     await page.locator("li", { hasText: appName }).getByRole("button", { name: "Delete" }).click();
     await expect(page.getByText(appName)).toHaveCount(0);

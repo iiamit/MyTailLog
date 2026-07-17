@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SCOPE_LABELS } from "@/lib/oauth/scopes";
-import { createOAuthApp, deleteOAuthApp, rotateOAuthSecret } from "./actions";
+import { createOAuthApp, deleteOAuthApp, rotateOAuthSecret, updateOAuthAppScopes } from "./actions";
 
 export type OAuthApp = {
   client_id: string;
@@ -27,6 +27,8 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
   // A freshly issued client secret, shown ONCE (create or rotate).
   const [secret, setSecret] = useState<{ clientId: string; value: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // client_id of the app whose scopes are being edited inline (null = none).
+  const [editing, setEditing] = useState<string | null>(null);
 
   async function register(formData: FormData) {
     setBusy(true);
@@ -54,6 +56,18 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
       return;
     }
     if (res.secret) setSecret({ clientId, value: res.secret });
+    router.refresh();
+  }
+
+  async function saveScopes(clientId: string, formData: FormData) {
+    setMsg(null);
+    const res = await updateOAuthAppScopes(clientId, formData);
+    if (res.error) {
+      setMsg({ ok: false, text: res.error });
+      return;
+    }
+    setEditing(null);
+    setMsg({ ok: true, text: "Scopes updated. The client can request them on its next authorization." });
     router.refresh();
   }
 
@@ -152,36 +166,72 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
         ) : (
           <ul className="flex flex-col divide-y divide-line">
             {apps.map((app) => (
-              <li key={app.client_id} className="flex flex-wrap items-start justify-between gap-3 py-3">
-                <div className="min-w-0 text-sm">
-                  <div className="flex items-center gap-2 font-medium text-ink">
-                    {app.name}
-                    <span className="rounded border border-line px-1.5 py-0.5 text-[10px] text-faint">
-                      {app.is_confidential ? "confidential" : "public"}
-                    </span>
+              <li key={app.client_id} className="flex flex-col gap-3 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-ink">
+                      {app.name}
+                      <span className="rounded border border-line px-1.5 py-0.5 text-[10px] text-faint">
+                        {app.is_confidential ? "confidential" : "public"}
+                      </span>
+                    </div>
+                    <div className="readout break-all text-[12px] text-faint">{app.client_id}</div>
+                    <div className="mt-1 text-faint">{app.scopes.join(", ")}</div>
+                    <div className="text-faint">{app.redirect_uris.join(", ")}</div>
                   </div>
-                  <div className="readout break-all text-[12px] text-faint">{app.client_id}</div>
-                  <div className="mt-1 text-faint">{app.scopes.join(", ")}</div>
-                  <div className="text-faint">{app.redirect_uris.join(", ")}</div>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  {app.is_confidential && (
+                  <div className="flex shrink-0 gap-2">
                     <button
                       type="button"
-                      onClick={() => rotate(app.client_id)}
+                      onClick={() => setEditing(editing === app.client_id ? null : app.client_id)}
                       className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
                     >
-                      Rotate secret
+                      {editing === app.client_id ? "Cancel" : "Edit scopes"}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => remove(app.client_id)}
-                    className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-annun-red"
-                  >
-                    Delete
-                  </button>
+                    {app.is_confidential && (
+                      <button
+                        type="button"
+                        onClick={() => rotate(app.client_id)}
+                        className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
+                      >
+                        Rotate secret
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => remove(app.client_id)}
+                      className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-annun-red"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
+                {editing === app.client_id && (
+                  <form
+                    action={(fd) => saveScopes(app.client_id, fd)}
+                    className="flex flex-col gap-2 rounded-md border border-line bg-panel2 p-4 text-sm"
+                  >
+                    <span className="font-medium">Scopes</span>
+                    {dataScopes.map((s) => (
+                      <label key={s} className="flex items-start gap-2">
+                        <input type="checkbox" name="scopes" value={s} defaultChecked={app.scopes.includes(s)} />
+                        <span>{SCOPE_LABELS[s] ?? s}</span>
+                      </label>
+                    ))}
+                    <label className="mt-1 flex items-center gap-2">
+                      <input type="checkbox" name="offline_access" defaultChecked={app.scopes.includes("offline_access")} />
+                      <span>Offline access (refresh tokens)</span>
+                    </label>
+                    <button
+                      type="submit"
+                      className="mt-1 self-start rounded-md border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent hover:text-panel"
+                    >
+                      Save scopes
+                    </button>
+                    <span className="text-faint">
+                      Existing connections keep their old scopes until the user re-authorizes.
+                    </span>
+                  </form>
+                )}
               </li>
             ))}
           </ul>
