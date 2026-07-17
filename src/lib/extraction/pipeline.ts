@@ -12,6 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { extractFromImage } from "./extract";
+import { safeIsoDate } from "./date";
 import {
   ENTRY_FIELDS,
   EXTRACTION_SCHEMA_VERSION,
@@ -119,6 +120,10 @@ export async function extractPage(
     }
 
     const result = await extractFromImage(base64, "image/jpeg");
+
+    // The model can emit calendar-invalid dates (e.g. "1987-11-31"); coerce each
+    // to a Postgres-safe date up front so one bad date can't fail the whole page.
+    for (const e of result.entries) e.entry_date = safeIsoDate(e.entry_date);
 
     // Re-extraction is idempotent for machine output: clear prior UNCONFIRMED
     // entries for this page, but never discard entries a person has confirmed.

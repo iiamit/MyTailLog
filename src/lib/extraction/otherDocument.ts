@@ -16,6 +16,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, AdStatus, AdCompliance } from "@/lib/database.types";
 import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
+import { safeIsoDate } from "./date";
 import type { ImageMediaType } from "./extract";
 import { completeWB } from "@/lib/weightBalance";
 import { cleanAdNumber, adNumbersMatch } from "@/lib/faa/adNumber";
@@ -176,11 +177,19 @@ export async function classifyOtherDocument(
 
   return {
     doc_type: isDocType(parsed.doc_type) ? parsed.doc_type : "other",
-    document_date: typeof parsed.document_date === "string" ? parsed.document_date : null,
+    // Sanitize every date at the parse boundary — the model can emit impossible
+    // dates ("1987-11-31") that throw on insert into a `date` column downstream.
+    document_date: safeIsoDate(typeof parsed.document_date === "string" ? parsed.document_date : null),
     confidence: Number.isFinite(parsed.confidence) ? (parsed.confidence as number) : 0,
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
     weight_balance: normalizeWB(parsed.weight_balance),
-    ads: Array.isArray(parsed.ads) ? parsed.ads.filter(isAdLine) : [],
+    ads: Array.isArray(parsed.ads)
+      ? parsed.ads.filter(isAdLine).map((a) => ({
+          ...a,
+          complied_date: safeIsoDate(a.complied_date),
+          next_due_date: safeIsoDate(a.next_due_date),
+        }))
+      : [],
   };
 }
 

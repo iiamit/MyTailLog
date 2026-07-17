@@ -17,6 +17,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { OilAnalysisSample } from "@/lib/database.types";
 import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
+import { safeIsoDate } from "./date";
 import type { ImageMediaType } from "./extract";
 import { OIL_PROPERTIES } from "@/lib/oilElements";
 
@@ -225,11 +226,11 @@ export function oilReportToRows(
 ): Partial<OilAnalysisSample>[] {
   const universal = Object.keys(payload.universal_averages).length ? payload.universal_averages : null;
   return payload.samples
-    .filter((s) => s.sample_date) // a sample without a date can't be placed on a trend
+    .filter((s) => safeIsoDate(s.sample_date)) // a sample without a valid, placeable date is dropped
     .map((s) => ({
       aircraft_id: aircraftId,
-      sample_date: s.sample_date!,
-      analysis_date: payload.report_date,
+      sample_date: safeIsoDate(s.sample_date)!,
+      analysis_date: safeIsoDate(payload.report_date),
       lab: payload.lab,
       lab_number: payload.lab_number,
       sample_number: s.sample_number ?? payload.lab_number,
