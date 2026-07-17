@@ -1,7 +1,17 @@
 import { guard, logAccess, apiError } from "@/lib/oauth/resource";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getCurrentHours } from "@/lib/aircraftHours";
+import { getCurrentMeters } from "@/lib/aircraftHours";
 import { urgencyOf } from "@/lib/compliance";
+import type { CurrentTach, CurrentHobbs } from "@/lib/hobbsTach";
+
+// A reconciled meter for the API: `estimated` = projected from the other meter
+// via this aircraft's hobbs↔tach ratio; `rough` = default-ratio fallback.
+const meterOut = (m: CurrentTach | CurrentHobbs) => ({
+  value: "tach" in m ? m.tach : m.hobbs,
+  estimated: m.estimated,
+  rough: m.rough,
+  as_of: m.asOf,
+});
 
 // GET /api/v1/aircraft/{id}/airworthiness — AD/inspection status, next-due, and
 // current hours for ONE granted aircraft. Requires airworthiness:read + a grant.
@@ -24,10 +34,13 @@ export async function GET(
       .select("id, tail_number, enrollment_hobbs, enrollment_tach")
       .eq("id", id)
       .single();
-    const currentHours = await getCurrentHours(svc, id, {
+    const { tach, hobbs } = await getCurrentMeters(svc, id, {
       hobbs: ac?.enrollment_hobbs ?? null,
       tach: ac?.enrollment_tach ?? null,
     });
+    // Tach is the meter maintenance/ADs are measured against; may be estimated
+    // from hobbs (see current_tach.estimated). Urgency below is judged on it.
+    const currentHours = tach.tach;
 
     const [{ data: ads }, { data: items }] = await Promise.all([
       svc
@@ -74,7 +87,9 @@ export async function GET(
     return Response.json({
       aircraft_id: id,
       tail_number: ac?.tail_number ?? null,
-      current_hours: currentHours,
+      current_hours: currentHours, // = current_tach.value; kept for back-compat
+      current_tach: meterOut(tach),
+      current_hobbs: meterOut(hobbs),
       summary: { airworthy: overdue === 0, overdue, due_soon: dueSoon },
       airworthiness_directives: directives,
       inspections,

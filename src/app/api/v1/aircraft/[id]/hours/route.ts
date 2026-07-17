@@ -1,14 +1,26 @@
 import { guard, logAccess, apiError, ApiError } from "@/lib/oauth/resource";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getCurrentHours } from "@/lib/aircraftHours";
+import { getCurrentMeters } from "@/lib/aircraftHours";
+import type { CurrentTach, CurrentHobbs } from "@/lib/hobbsTach";
 
-// GET  /api/v1/aircraft/{id}/hours — current hours + recent recorded readings.
-// POST /api/v1/aircraft/{id}/hours — append a hobbs/tach reading (hours:write).
+// GET  /api/v1/aircraft/{id}/hours — current tach/hobbs (reconciled) + readings.
+// POST /api/v1/aircraft/{id}/hours — append hobbs/tach reading(s) (hours:write).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SCOPE = "hours:read";
 const WRITE_SCOPE = "hours:write";
+const MAX_BATCH = 200;
+
+// Shape a reconciled meter for the API. `estimated` = derived from the other
+// meter via this aircraft's hobbs↔tach ratio (tach is rarely logged; we project
+// it from hobbs); `rough` = fell back to the default ratio.
+const meterOut = (m: CurrentTach | CurrentHobbs) => ({
+  value: "tach" in m ? m.tach : m.hobbs,
+  estimated: m.estimated,
+  rough: m.rough,
+  as_of: m.asOf,
+});
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
@@ -21,8 +33,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .select("enrollment_hobbs, enrollment_tach")
       .eq("id", id)
       .single();
-    const [currentHours, { data: readings }] = await Promise.all([
-      getCurrentHours(svc, id, { hobbs: ac?.enrollment_hobbs ?? null, tach: ac?.enrollment_tach ?? null }),
+    const [{ tach, hobbs }, { data: readings }] = await Promise.all([
+      getCurrentMeters(svc, id, { hobbs: ac?.enrollment_hobbs ?? null, tach: ac?.enrollment_tach ?? null }),
       svc
         .from("hours_reading")
         .select("reading_date, hobbs, tach, source")
@@ -32,7 +44,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     ]);
 
     await logAccess(caller, id, SCOPE, `/api/v1/aircraft/${id}/hours`);
-    return Response.json({ aircraft_id: id, current_hours: currentHours, readings: readings ?? [] });
+    return Response.json({
+      aircraft_id: id,
+      current_hours: tach.tach, // = current_tach.value; kept for back-compat
+      current_tach: meterOut(tach),
+      current_hobbs: meterOut(hobbs),
+      readings: readings ?? [],
+    });
   } catch (e) {
     return apiError(e);
   }
@@ -46,11 +64,40 @@ function meter(v: unknown): number | null {
   return Math.round(v * 10) / 10;
 }
 
-// POST — append a hobbs/tach reading for a client the owner granted hours:write.
-// Idempotent on (aircraft_id, source, external_ref): re-pushing the same flight's
-// reading is a no-op. Feeds straight into the reconciler (current hobbs/tach +
-// the maintenance forecast); a wild value surfaces in Duplicates & fixes rather
-// than being rejected. Body: { hobbs?, tach?, reading_date?, external_ref? }.
+// Validate one reading input → an upsert row. hobbs and tach are independent
+// timelines, so a caller pushes them as SEPARATE readings (each with its own
+// date + external_ref) when they came from different flights.
+function toRow(raw: unknown, aircraftId: string, accountId: string) {
+  if (!raw || typeof raw !== "object") throw new ApiError(400, "invalid_request", "Each reading must be an object.");
+  const r = raw as Record<string, unknown>;
+  const hobbs = meter(r.hobbs);
+  const tach = meter(r.tach);
+  if (hobbs == null && tach == null) throw new ApiError(400, "invalid_request", "Each reading needs hobbs and/or tach.");
+  const reading_date =
+    typeof r.reading_date === "string" && /^\d{4}-\d{2}-\d{2}/.test(r.reading_date)
+      ? r.reading_date.slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+  const external_ref =
+    typeof r.external_ref === "string" && r.external_ref.trim()
+      ? r.external_ref.trim().slice(0, 200)
+      : `${reading_date}:${hobbs ?? ""}:${tach ?? ""}`; // deterministic → repeat pushes dedupe
+  return {
+    aircraft_id: aircraftId,
+    hobbs,
+    tach,
+    reading_date,
+    source: "myflightbook",
+    synced_by: accountId,
+    external_ref,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+// POST — append reading(s) for a client the owner granted hours:write. Accepts a
+// single reading `{hobbs?,tach?,reading_date?,external_ref?}` OR a batch
+// `{readings:[...]}`. Idempotent on (aircraft_id, source, external_ref) — reuse a
+// flight id as external_ref and re-pushes are no-ops. Feeds the reconciler; a
+// wild value surfaces in Duplicates & fixes rather than being rejected.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
     const { id } = await params;
@@ -58,41 +105,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     if (!body || typeof body !== "object") throw new ApiError(400, "invalid_request", "A JSON body is required.");
-    const hobbs = meter(body.hobbs);
-    const tach = meter(body.tach);
-    if (hobbs == null && tach == null) throw new ApiError(400, "invalid_request", "Provide hobbs and/or tach.");
+    const inputs = Array.isArray(body.readings) ? body.readings : [body];
+    if (inputs.length === 0) throw new ApiError(400, "invalid_request", "No readings.");
+    if (inputs.length > MAX_BATCH) throw new ApiError(400, "invalid_request", `At most ${MAX_BATCH} readings per request.`);
 
-    const reading_date =
-      typeof body.reading_date === "string" && /^\d{4}-\d{2}-\d{2}/.test(body.reading_date)
-        ? body.reading_date.slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-    const external_ref =
-      typeof body.external_ref === "string" && body.external_ref.trim()
-        ? body.external_ref.trim().slice(0, 200)
-        : `${reading_date}:${hobbs ?? ""}:${tach ?? ""}`; // deterministic → repeat pushes dedupe
+    // Dedupe by external_ref within the batch (Postgres upsert can't touch the
+    // same conflict target twice in one statement); last write wins.
+    const byRef = new Map<string, ReturnType<typeof toRow>>();
+    for (const raw of inputs) {
+      const row = toRow(raw, id, caller.accountId);
+      byRef.set(row.external_ref, row);
+    }
+    const rows = [...byRef.values()];
 
     const svc = createServiceClient();
     const { data, error } = await svc
       .from("hours_reading")
-      .upsert(
-        {
-          aircraft_id: id,
-          hobbs,
-          tach,
-          reading_date,
-          source: "myflightbook",
-          synced_by: caller.accountId,
-          external_ref,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "aircraft_id,source,external_ref" },
-      )
-      .select("reading_date, hobbs, tach, source, external_ref")
-      .maybeSingle();
+      .upsert(rows, { onConflict: "aircraft_id,source,external_ref" })
+      .select("reading_date, hobbs, tach, source, external_ref");
     if (error) throw new ApiError(500, "server_error", error.message);
 
     await logAccess(caller, id, WRITE_SCOPE, `POST /api/v1/aircraft/${id}/hours`);
-    return Response.json({ ok: true, aircraft_id: id, reading: data }, { status: 201 });
+    return Response.json({ ok: true, aircraft_id: id, readings: data ?? [] }, { status: 201 });
   } catch (e) {
     return apiError(e);
   }

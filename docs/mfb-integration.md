@@ -32,13 +32,42 @@ its last-seen value and, for each MTL-tracking user, pushes to:
 
 ```
 POST /api/v1/aircraft/{id}/hours          Authorization: Bearer <access_token>
-{ "hobbs": 947.7, "tach": 1180.4, "reading_date": "2026-07-14", "external_ref": "<flight id>" }
+{ "hobbs": 947.7, "reading_date": "2026-07-14", "external_ref": "<flight id>" }
 ```
 
-Idempotent on `(aircraft, source="myflightbook", external_ref)` — reuse the ending
-flight id as `external_ref` and repeat/multi-user pushes collapse to one row. The
-reading flows straight into the reconciler (current hobbs/tach + the maintenance
-forecast). `{id}` is the MTL aircraft id from `GET /api/v1/aircraft`.
+**hobbs and tach are independent timelines.** They can advance on different
+flights (log hobbs on one, tach on another; or different club pilots), so push
+each meter as its **own** reading with that meter's date + flight id — not merged.
+Send them in one call with the batch form:
+
+```
+{ "readings": [
+  { "hobbs": 947.7, "reading_date": "2026-07-16", "external_ref": "<hobbs flight id>" },
+  { "tach":  1180.4, "reading_date": "2026-07-12", "external_ref": "<tach flight id>" }
+] }
+```
+
+Idempotent on `(aircraft, source="myflightbook", external_ref)` — reuse the flight
+id as `external_ref` and repeat/multi-user pushes collapse to one row. `{id}` is
+the MTL aircraft id from `GET /api/v1/aircraft`. MTL tracks a single hobbs + single
+tach (the maintenance meters), so twin-engine second meters have no home today.
+
+**Read-back — the reconciliation.** Tach is the maintenance meter but is logged
+rarely; hobbs shows up on nearly every flight. MTL derives the aircraft's own
+hobbs↔tach ratio and **projects an estimated current tach from the latest hobbs**,
+so hobbs-only pushes still keep a usable current-tach. Both are exposed:
+
+```
+GET /api/v1/aircraft/{id}/hours  →  {
+  current_hours,                              // = current_tach.value (back-compat)
+  current_tach:  { value, estimated, rough, as_of },   // estimated=projected from hobbs
+  current_hobbs: { value, estimated, rough, as_of },
+  readings: [ … ]
+}
+```
+
+`/airworthiness` carries the same `current_tach` / `current_hobbs`; its inspection/
+AD urgency is judged on the (possibly estimated) tach.
 
 **Was: MTL pulls.** Each MTL user registered their **own** MFB OAuth app under
 Profile → MyFlightBook and MTL pulled recent flights (`src/lib/myflightbook.ts` +
