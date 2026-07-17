@@ -19,6 +19,7 @@ import {
   type MaintenanceEntryInput,
 } from "./maintenance";
 import { STANDARD_ITEMS, maintenanceNextDue } from "@/lib/maintenance";
+import { safeIsoDate } from "./date";
 
 type Client = SupabaseClient<Database>;
 
@@ -36,9 +37,10 @@ export async function applyMaintenanceFromEntries(
   const latestByKind = new Map<string, { date: string | null; hours: number | null }>();
   for (const e of events) {
     if (!e.kind || e.confidence < 0.4) continue;
+    const date = safeIsoDate(e.date); // model may emit an impossible date → Postgres-safe
     const cur = latestByKind.get(e.kind);
-    if (!cur || (e.date ?? "") > (cur.date ?? "")) {
-      latestByKind.set(e.kind, { date: e.date, hours: e.hours });
+    if (!cur || (date ?? "") > (cur.date ?? "")) {
+      latestByKind.set(e.kind, { date, hours: e.hours });
     }
   }
   if (latestByKind.size === 0) return { updated: 0, detected: events.length };

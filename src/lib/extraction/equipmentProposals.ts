@@ -15,6 +15,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { safeIsoDate } from "./date";
 import {
   extractEquipmentFromEntries,
   type EquipmentEntryInput,
@@ -76,8 +77,8 @@ export async function proposeEquipmentForEntries(
       category: p.category,
       part_number: p.part_number,
       serial_number: p.serial_number,
-      install_date: p.install_date,
-      removal_date: p.removal_date,
+      install_date: safeIsoDate(p.install_date),
+      removal_date: safeIsoDate(p.removal_date),
       is_installed: p.is_installed,
       action: p.action,
       confidence: p.confidence,
