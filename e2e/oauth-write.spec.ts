@@ -114,6 +114,31 @@ test("hours:write — push a reading; it lands, is idempotent, and drives curren
     expect(body.current_tach.value).not.toBeNull();
     expect(body.current_hobbs.value).toBe(950.0);
     expect(body.current_hobbs).toHaveProperty("estimated");
+
+    // Same external_ref for both meters (same flight) → merged into ONE row with
+    // BOTH values, not last-write-wins that drops the earlier meter (Eric's bug).
+    const merged = await push(page.request, accessToken, scratch.id, {
+      readings: [
+        { hobbs: 955.5, reading_date: "2026-07-17", external_ref: "mfb-flt-merge" },
+        { tach: 4150.0, reading_date: "2026-07-17", external_ref: "mfb-flt-merge" },
+      ],
+    });
+    expect(merged.status(), await merged.text()).toBe(201);
+    const mergedRows = (await merged.json()).readings as { hobbs: number | null; tach: number | null }[];
+    expect(mergedRows.length, "one merged row").toBe(1);
+    expect(mergedRows[0].hobbs).toBe(955.5);
+    expect(mergedRows[0].tach).toBe(4150.0);
+
+    // A later hobbs-only push on the same ref must NOT null the stored tach.
+    const hobbsOnly = await push(page.request, accessToken, scratch.id, {
+      hobbs: 956.0,
+      reading_date: "2026-07-17",
+      external_ref: "mfb-flt-merge",
+    });
+    expect(hobbsOnly.status(), await hobbsOnly.text()).toBe(201);
+    const kept = (await hobbsOnly.json()).readings[0] as { hobbs: number | null; tach: number | null };
+    expect(kept.hobbs).toBe(956.0);
+    expect(kept.tach, "tach preserved across a hobbs-only update").toBe(4150.0);
   } finally {
     // hours_reading rows cascade when the scratch fixture deletes the aircraft.
     for (const id of clientIds) {

@@ -110,15 +110,38 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (inputs.length > MAX_BATCH) throw new ApiError(400, "invalid_request", `At most ${MAX_BATCH} readings per request.`);
 
     // Dedupe by external_ref within the batch (Postgres upsert can't touch the
-    // same conflict target twice in one statement); last write wins.
+    // same conflict target twice in one statement). Same external_ref = same
+    // flight pushed as separate hobbs & tach readings → MERGE the meters into
+    // one row (per-field last-non-null), not last-write-wins — else whichever
+    // meter came first was silently dropped.
     const byRef = new Map<string, ReturnType<typeof toRow>>();
     for (const raw of inputs) {
       const row = toRow(raw, id, caller.accountId);
-      byRef.set(row.external_ref, row);
+      const prev = byRef.get(row.external_ref);
+      byRef.set(row.external_ref, prev ? { ...prev, hobbs: row.hobbs ?? prev.hobbs, tach: row.tach ?? prev.tach } : row);
     }
     const rows = [...byRef.values()];
 
     const svc = createServiceClient();
+
+    // Upsert replaces the whole row, so a meter-only push (e.g. correcting hobbs
+    // on a flight we already stored the tach for) would null the other meter.
+    // Coalesce each incoming row's absent meter from the stored row first.
+    const { data: existing } = await svc
+      .from("hours_reading")
+      .select("external_ref, hobbs, tach")
+      .eq("aircraft_id", id)
+      .eq("source", "myflightbook")
+      .in("external_ref", rows.map((r) => r.external_ref));
+    const prior = new Map((existing ?? []).map((e) => [e.external_ref, e]));
+    for (const row of rows) {
+      const e = prior.get(row.external_ref);
+      if (e) {
+        row.hobbs = row.hobbs ?? e.hobbs;
+        row.tach = row.tach ?? e.tach;
+      }
+    }
+
     const { data, error } = await svc
       .from("hours_reading")
       .upsert(rows, { onConflict: "aircraft_id,source,external_ref" })
