@@ -94,6 +94,32 @@ export async function rotateOAuthSecret(clientId: string): Promise<{ error?: str
   return { secret };
 }
 
+/**
+ * Update an existing app's scopes (owner, via RLS). Needed as the API grows —
+ * e.g. adding hours:write to a client registered before it existed. Existing
+ * per-aircraft grants keep their old scopes until the owner re-consents; the
+ * client can only REQUEST what's listed here.
+ */
+export async function updateOAuthAppScopes(clientId: string, formData: FormData): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const picked = formData.getAll("scopes").map(String).filter((s) => (DATA_SCOPES as readonly string[]).includes(s));
+  if (picked.length === 0) return { error: "Select at least one scope." };
+  const scopes = ["openid", ...(formData.get("offline_access") === "on" ? ["offline_access"] : []), ...picked];
+
+  const { error } = await supabase
+    .from("oauth_client")
+    .update({ scopes, updated_at: new Date().toISOString() })
+    .eq("client_id", clientId);
+  if (error) return { error: error.message };
+  revalidatePath("/developers");
+  return {};
+}
+
 export async function deleteOAuthApp(clientId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
