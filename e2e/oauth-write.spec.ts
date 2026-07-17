@@ -88,19 +88,32 @@ test("hours:write — push a reading; it lands, is idempotent, and drives curren
     const reading = { hobbs: 947.7, tach: 4141.6, reading_date: "2026-07-14", external_ref: "mfb-flt-1" };
     const w1 = await push(page.request, accessToken, scratch.id, reading);
     expect(w1.status(), await w1.text()).toBe(201);
-    expect((await w1.json()).reading.tach).toBe(4141.6);
+    expect((await w1.json()).readings[0].tach).toBe(4141.6);
 
     // Idempotent: same external_ref → one row, not two.
-    const w2 = await push(page.request, accessToken, scratch.id, reading);
-    expect(w2.status()).toBe(201);
+    expect((await push(page.request, accessToken, scratch.id, reading)).status()).toBe(201);
 
-    const get = await page.request.get(`/api/v1/aircraft/${scratch.id}/hours`, {
-      headers: { authorization: `Bearer ${accessToken}` },
+    // Batch: hobbs and tach from DIFFERENT flights (own date + ref) in one call.
+    const batch = await push(page.request, accessToken, scratch.id, {
+      readings: [
+        { hobbs: 950.0, reading_date: "2026-07-16", external_ref: "mfb-flt-2" },
+        { tach: 4145.0, reading_date: "2026-07-13", external_ref: "mfb-flt-3" },
+      ],
     });
-    const body = await get.json();
-    const mine = (body.readings as { hobbs: number; tach: number }[]).filter((r) => r.tach === 4141.6);
-    expect(mine.length, "re-push must not duplicate").toBe(1);
-    expect(body.current_hours).not.toBeNull(); // the pushed reading feeds the reconciler
+    expect(batch.status(), await batch.text()).toBe(201);
+    expect((await batch.json()).readings.length).toBe(2);
+
+    const body = await (
+      await page.request.get(`/api/v1/aircraft/${scratch.id}/hours`, {
+        headers: { authorization: `Bearer ${accessToken}` },
+      })
+    ).json();
+    const tachRows = (body.readings as { tach: number | null }[]).filter((r) => r.tach === 4141.6);
+    expect(tachRows.length, "re-push must not duplicate").toBe(1);
+    // Reconciliation fields exposed; current hobbs = latest by date (950.0 @ 07-16).
+    expect(body.current_tach.value).not.toBeNull();
+    expect(body.current_hobbs.value).toBe(950.0);
+    expect(body.current_hobbs).toHaveProperty("estimated");
   } finally {
     // hours_reading rows cascade when the scratch fixture deletes the aircraft.
     for (const id of clientIds) {
