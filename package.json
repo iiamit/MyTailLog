@@ -17,9 +17,9 @@
     "lint:fix": "eslint src --fix"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.110.0",
+    "@anthropic-ai/sdk": "^0.111.0",
     "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.45.4",
+    "@supabase/supabase-js": "^2.110.2",
     "fetch-to-node": "^2.1.0",
     "fflate": "^0.8.3",
     "next": "^16.2.10",
@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@types/oidc-provider": "^9.5.0",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
