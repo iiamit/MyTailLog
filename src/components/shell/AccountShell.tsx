@@ -37,7 +37,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto flex max-w-6xl">
       {/* Persistent rail (desktop) — sticky under the 60px top bar. */}
-      <nav className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[236px] shrink-0 flex-col gap-0.5 overflow-auto border-r border-line bg-gradient-to-b from-panel to-bg px-3.5 pb-6 pt-5 md:flex">
+      <nav className="sticky top-[60px] hidden h-[calc(100vh-60px)] w-[236px] shrink-0 flex-col gap-0.5 overflow-auto border-r border-line bg-linear-to-b from-panel to-bg px-3.5 pb-6 pt-5 md:flex">
         {NAV.map((grp) => (
           <div key={grp.label} className="mt-1.5 first:mt-0">
             <div className="px-2 pb-1.5 text-[9.5px] uppercase tracking-[0.16em] text-faint">{grp.label}</div>
@@ -54,7 +54,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
                       : "border border-transparent text-dim hover:bg-panel/70 hover:text-ink"
                   }`}
                 >
-                  <span className={`ident ${active ? "!text-accent" : ""}`}>{it.ident}</span>
+                  <span className={`ident ${active ? "text-accent!" : ""}`}>{it.ident}</span>
                   <span className="text-[13px]">{it.label}</span>
                 </Link>
               );

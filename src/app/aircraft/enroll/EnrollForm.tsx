@@ -32,7 +32,7 @@ function Field({
         step={step}
         required={required}
         placeholder={placeholder}
-        className="rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent"
+        className="rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent"
       />
       {hint && (
         <span className="text-xs text-faint">{hint}</span>

@@ -306,7 +306,7 @@ export default async function AircraftPage({
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2">
                       <span
-                        className="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                        className="rounded-sm px-1.5 py-0.5 text-[10px] font-medium"
                         style={{ background: "var(--panel2)", color: `var(--book-${typeFor(e.logbook_id)})` }}
                       >
                         {labelFor(e.logbook_id)}

@@ -75,7 +75,7 @@ function toInput(f: FormState): MaintenanceInput {
 }
 
 const inputClass =
-  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
+  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-hidden focus:border-accent";
 
 const secondaryBtn =
   "rounded-md border border-line2 bg-panel2 px-4 py-2 text-sm font-medium text-ink hover:border-accent disabled:opacity-50";

@@ -106,7 +106,7 @@ function toFields(f: FormState): EntryFields {
 }
 
 const inputClass =
-  "w-full rounded-md border bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
+  "w-full rounded-md border bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-hidden focus:border-accent";
 function fieldBorder(flagged: boolean) {
   return flagged ? "border-annun-amber/70" : "border-line";
 }
@@ -151,7 +151,7 @@ function CropStrip({ imageUrl, box }: { imageUrl: string; box: FieldBox }) {
   return (
     <div
       aria-hidden
-      className="mb-1 h-9 w-full overflow-hidden rounded border border-line bg-bg"
+      className="mb-1 h-9 w-full overflow-hidden rounded-sm border border-line bg-bg"
       style={{
         backgroundImage: `url(${imageUrl})`,
         backgroundRepeat: "no-repeat",

@@ -83,7 +83,7 @@ export default function LoginPage() {
   }
 
   const inputClass =
-    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
+    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6">

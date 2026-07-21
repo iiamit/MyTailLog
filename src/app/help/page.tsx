@@ -616,7 +616,7 @@ export default function HelpPage() {
           <a
             key={s.id}
             href={`#${s.id}`}
-            className="flex items-center gap-2 rounded px-2 py-1 text-dim hover:bg-panel2"
+            className="flex items-center gap-2 rounded-sm px-2 py-1 text-dim hover:bg-panel2"
           >
             <span className="text-faint">{s.icon}</span>
             {s.title}

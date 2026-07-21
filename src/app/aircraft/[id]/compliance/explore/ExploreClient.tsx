@@ -96,7 +96,7 @@ export function ExploreClient({
             value={extra}
             onChange={(e) => setExtra(e.target.value)}
             placeholder="Lycoming, Hartzell, Garmin…"
-            className="mt-1 w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent"
+            className="mt-1 w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-hidden focus:border-accent"
           />
         </label>
         <button
@@ -124,7 +124,7 @@ export function ExploreClient({
             className="panel p-4"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded bg-panel2 px-1.5 py-0.5 text-[11px] font-medium text-ink">
+              <span className="rounded-sm bg-panel2 px-1.5 py-0.5 text-[11px] font-medium text-ink">
                 AD
               </span>
               <span className="font-semibold">{ad.adNumber}</span>

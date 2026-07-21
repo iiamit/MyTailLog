@@ -279,7 +279,7 @@ export function CaptureClient({
   ]);
 
   const inputClass =
-    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
+    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent";
 
   const scannerLine =
     scanner === "loading"
@@ -314,7 +314,7 @@ export function CaptureClient({
           </div>
 
           {/* Camera / preview */}
-          <div className="relative aspect-[3/4] bg-black">
+          <div className="relative aspect-3/4 bg-black">
             <video
               ref={videoRef}
               playsInline
@@ -334,7 +334,7 @@ export function CaptureClient({
                 <div className="pointer-events-none absolute bottom-4 left-4 h-6 w-6 border-b-2 border-l-2 border-accent" />
                 <div className="pointer-events-none absolute bottom-4 right-4 h-6 w-6 border-b-2 border-r-2 border-accent" />
                 <span
-                  className="readout pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-[9.5px] tracking-[0.1em] text-accent"
+                  className="readout pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-[9.5px] tracking-widest text-accent"
                   style={{ background: "rgba(4,18,31,.7)" }}
                 >
                   {viewfinderBadge}

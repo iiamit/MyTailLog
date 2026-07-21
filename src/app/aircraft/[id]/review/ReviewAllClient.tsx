@@ -155,10 +155,10 @@ export function ReviewAllClient({
                     src={head.thumbnailUrl}
                     fullSrc={head.fullUrl}
                     alt={head.pageLabel}
-                    className="h-12 w-12 shrink-0 rounded border border-line object-cover"
+                    className="h-12 w-12 shrink-0 rounded-sm border border-line object-cover"
                   />
                 ) : (
-                  <div className="h-12 w-12 shrink-0 rounded bg-panel2" />
+                  <div className="h-12 w-12 shrink-0 rounded-sm bg-panel2" />
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-ink">{head.pageLabel}</div>

@@ -34,7 +34,7 @@ export function ScreenshotCarousel({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative aspect-[16/10] overflow-hidden rounded-lg border border-line bg-panel2">
+      <div className="relative aspect-16/10 overflow-hidden rounded-lg border border-line bg-panel2">
         {slides.map((s, idx) => (
           <Image
             key={idx}

@@ -49,7 +49,7 @@ const MFB_STATUS: Record<string, { ok: boolean; text: string }> = {
 };
 
 const inputClass =
-  "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
+  "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent";
 const card =
   "flex flex-col gap-3 rounded-lg border border-line p-5";
 
@@ -76,7 +76,7 @@ function AlertRow({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-      <label className="flex min-w-[13rem] items-center gap-2">
+      <label className="flex min-w-52 items-center gap-2">
         <input type="checkbox" name={enableName} defaultChecked={enableDefault} />
         <span>{label}</span>
       </label>
@@ -87,7 +87,7 @@ function AlertRow({
             min={0}
             name={f.name}
             defaultValue={f.value}
-            className="w-20 rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-none focus:border-accent"
+            className="w-20 rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-hidden focus:border-accent"
           />
           {f.unit}
         </label>

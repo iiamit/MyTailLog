@@ -101,7 +101,7 @@ export function AskClient({
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="e.g. When was the last annual?"
               aria-label="Ask a question about this aircraft's logbook"
-              className="flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+              className="flex-1 bg-transparent text-sm text-ink outline-hidden placeholder:text-faint"
             />
           </div>
           <button

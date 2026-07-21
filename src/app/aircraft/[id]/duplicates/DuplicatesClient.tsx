@@ -133,7 +133,7 @@ export function DuplicatesClient({
   const nothing = pageClusters.length === 0 && entryClusters.length === 0 && anomalies.length === 0;
   if (nothing) {
     return (
-      <div className="rounded-lg border border-annun-green/40 bg-[var(--grn-bg)] px-5 py-8 text-center text-sm text-annun-green">
+      <div className="rounded-lg border border-annun-green/40 bg-(--grn-bg) px-5 py-8 text-center text-sm text-annun-green">
         Nothing to review. (Duplicate matching and mis-keyed-reading checks are
         heuristic — they can&apos;t catch everything; give pages a quick scan too.)
       </div>
@@ -241,9 +241,9 @@ export function DuplicatesClient({
                 {cluster.map((p) => (
                   <li key={p.id} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2">
                     {p.thumb ? (
-                      <ZoomableImage src={p.thumb} alt="Page" className="h-12 w-12 shrink-0 rounded border border-line object-cover" />
+                      <ZoomableImage src={p.thumb} alt="Page" className="h-12 w-12 shrink-0 rounded-sm border border-line object-cover" />
                     ) : (
-                      <div className="h-12 w-12 shrink-0 rounded bg-panel2" />
+                      <div className="h-12 w-12 shrink-0 rounded-sm bg-panel2" />
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="font-medium">
@@ -289,9 +289,9 @@ export function DuplicatesClient({
                 {cluster.map((e) => (
                   <li key={e.id} className="flex items-start gap-3 rounded-lg border border-line px-3 py-2">
                     {e.thumb ? (
-                      <ZoomableImage src={e.thumb} alt="Source page" className="h-12 w-12 shrink-0 rounded border border-line object-cover" />
+                      <ZoomableImage src={e.thumb} alt="Source page" className="h-12 w-12 shrink-0 rounded-sm border border-line object-cover" />
                     ) : (
-                      <div className="h-12 w-12 shrink-0 rounded bg-panel2" />
+                      <div className="h-12 w-12 shrink-0 rounded-sm bg-panel2" />
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-dim">

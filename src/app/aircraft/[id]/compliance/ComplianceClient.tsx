@@ -150,7 +150,7 @@ function urgencyRank(r: AdCompliance, currentHours: number | null): number {
 }
 
 const inputClass =
-  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
+  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-hidden focus:border-accent";
 const rowBtn =
   "rounded-md border border-line2 bg-panel2 px-3 py-1 text-xs text-ink hover:border-accent disabled:opacity-50";
 

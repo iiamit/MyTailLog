@@ -397,7 +397,7 @@ export function PagesPanel({
                 value={sort}
                 onChange={(e) => changeSort(e.target.value as "upload" | "date" | "tach")}
                 disabled={reordering}
-                className="rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-none focus:border-accent disabled:opacity-50"
+                className="rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-hidden focus:border-accent disabled:opacity-50"
               >
                 <option value="upload">Upload order</option>
                 <option value="date">Entry date</option>
@@ -455,10 +455,10 @@ export function PagesPanel({
                     src={r.thumbnailUrl}
                     fullSrc={r.fullUrl}
                     alt={`${r.logbookLabel} page ${r.pageSequence ?? ""}`}
-                    className="h-12 w-12 shrink-0 rounded border border-line object-cover"
+                    className="h-12 w-12 shrink-0 rounded-sm border border-line object-cover"
                   />
                 ) : (
-                  <div className="h-12 w-12 shrink-0 rounded bg-panel2" />
+                  <div className="h-12 w-12 shrink-0 rounded-sm bg-panel2" />
                 )}
                 <div className="w-10 shrink-0 text-dim">
                   {r.pageSequence != null ? `#${r.pageSequence}` : "—"}

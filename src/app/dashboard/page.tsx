@@ -162,11 +162,11 @@ export default async function Dashboard() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="readout text-[19px] font-semibold tracking-[0.5px]">{a.tail_number}</span>
                     {a.is_demo ? (
-                      <span className="rounded border border-accent-soft bg-accent-soft px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.06em] text-accent">
+                      <span className="rounded-sm border border-accent-soft bg-accent-soft px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.06em] text-accent">
                         DEMO · VIEW ONLY
                       </span>
                     ) : shared ? (
-                      <span className="rounded bg-panel2 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.06em] text-dim">
+                      <span className="rounded-sm bg-panel2 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.06em] text-dim">
                         SHARED · {role === "editor" ? "CONTRIBUTE" : "VIEW"}
                       </span>
                     ) : null}
