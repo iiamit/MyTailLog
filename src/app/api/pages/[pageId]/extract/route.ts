@@ -25,11 +25,6 @@ export async function POST(
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  const gate = await prepareAi(supabase, user.id);
-  if ("error" in gate) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
-  }
-
   // RLS scopes this to the owner; a page on someone else's aircraft returns no row.
   const { data: page } = await supabase
     .from("page")
@@ -39,6 +34,19 @@ export async function POST(
 
   if (!page) {
     return NextResponse.json({ error: "Page not found." }, { status: 404 });
+  }
+
+  // Gate the PAID extraction on edit access — a read-only viewer can see the page
+  // but must not be able to spend an AI call (the extracted rows would no-op under
+  // RLS anyway). Check before prepareAi / the model call.
+  const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: page.aircraft_id });
+  if (!canEdit) {
+    return NextResponse.json({ error: "You don't have edit access to this aircraft." }, { status: 403 });
+  }
+
+  const gate = await prepareAi(supabase, user.id);
+  if ("error" in gate) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
   try {
