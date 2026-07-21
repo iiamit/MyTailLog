@@ -40,6 +40,15 @@ jobs:
           code=$(curl -s -o /tmp/h -w '%{http_code}' -H "apikey: $TEST_SUPABASE_ANON_KEY" "$TEST_SUPABASE_URL/auth/v1/health" || echo 000)
           echo "auth/v1/health -> HTTP $code"; head -c 200 /tmp/h; echo
           grep -qi "GoTrue" /tmp/h || { echo "::error::$TEST_SUPABASE_URL/auth/v1/health is not a live Supabase auth API (got HTML/other). Check the URL + anon key point at the TEST project."; exit 1; }
+          # Actually log the TEST user in — the browser suite can't authenticate if
+          # this fails, and "Invalid login credentials" here means the URL, anon key,
+          # and user aren't all the same project. jq builds the body so a special
+          # char in the password can't mangle the JSON. Only the error body (never
+          # the token) is printed.
+          body=$(jq -n --arg e "$TEST_USER_EMAIL" --arg p "$TEST_USER_PASSWORD" '{email:$e,password:$p}')
+          lcode=$(curl -s -o /tmp/login -w '%{http_code}' -X POST "$TEST_SUPABASE_URL/auth/v1/token?grant_type=password" -H "apikey: $TEST_SUPABASE_ANON_KEY" -H "Content-Type: application/json" --data "$body" || echo 000)
+          grep -q access_token /tmp/login || { echo "::error::TEST user login failed (HTTP $lcode) against $TEST_SUPABASE_URL — TEST_USER_EMAIL/TEST_USER_PASSWORD don't match a confirmed account in THIS project. The URL, anon key, and user must all be the same Supabase project. Response: $(head -c 200 /tmp/login)"; exit 1; }
+          echo "login preflight -> HTTP $lcode, TEST user authenticates"
       - run: npm run e2e
         env:
           CI: "true"
