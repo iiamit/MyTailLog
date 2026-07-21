@@ -72,7 +72,7 @@ function toInput(f: FormState): ComponentInput {
 }
 
 const inputClass =
-  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
+  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-hidden focus:border-accent";
 
 export function EquipmentClient({
   aircraftId,

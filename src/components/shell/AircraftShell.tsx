@@ -133,7 +133,7 @@ export function AircraftShell({
             }}
           />
           <span className="font-display text-[17px] font-bold tracking-[0.2px]">MyTailLog</span>
-          <span className="readout hidden rounded border border-line px-1.5 py-0.5 text-[10px] text-faint sm:inline">
+          <span className="readout hidden rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint sm:inline">
             v{APP_VERSION}
           </span>
         </Link>
@@ -141,7 +141,7 @@ export function AircraftShell({
         <div className="flex min-w-0 items-center gap-3">
           <span className="readout text-base font-semibold tracking-[0.5px]">{context.reg}</span>
           {context.demo && (
-            <span className="rounded border border-accent-soft bg-accent-soft px-1.5 py-0.5 text-[9px] text-accent">
+            <span className="rounded-sm border border-accent-soft bg-accent-soft px-1.5 py-0.5 text-[9px] text-accent">
               DEMO
             </span>
           )}
@@ -192,7 +192,7 @@ export function AircraftShell({
 
       <div className="flex min-h-0 flex-1">
         {/* Persistent nav rail (desktop). */}
-        <nav className="hidden w-[236px] shrink-0 flex-col gap-0.5 overflow-auto border-r border-line bg-gradient-to-b from-panel to-bg px-3.5 pb-6 pt-4 md:flex">
+        <nav className="hidden w-[236px] shrink-0 flex-col gap-0.5 overflow-auto border-r border-line bg-linear-to-b from-panel to-bg px-3.5 pb-6 pt-4 md:flex">
           <Link
             href="/dashboard"
             className="mb-1 flex items-center gap-2 rounded-[10px] border border-line bg-panel2 p-2 text-left hover:border-line2"
@@ -220,7 +220,7 @@ export function AircraftShell({
                         : "border border-transparent text-dim hover:bg-panel/70 hover:text-ink"
                     }`}
                   >
-                    <span className={`ident ${active ? "!text-accent" : ""}`}>{it.ident}</span>
+                    <span className={`ident ${active ? "text-accent!" : ""}`}>{it.ident}</span>
                     <span className="text-[13px]">{it.label}</span>
                     {it.badge != null && it.tone && <Badge n={it.badge} tone={it.tone} />}
                   </Link>

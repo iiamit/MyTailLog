@@ -1,142 +1,226 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-/* ============================================================
+@theme {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel2);
+  --color-raise: var(--raise);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-ink: var(--ink);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-annun-green: var(--grn);
+  --color-annun-amber: var(--amb);
+  --color-annun-red: var(--red);
+
+  --color-book-airframe: var(--book-airframe);
+  --color-book-engine: var(--book-engine);
+  --color-book-prop: var(--book-prop);
+  --color-book-avionics: var(--book-avionics);
+  --color-book-other: var(--book-other);
+
+  --color-due-overdue: #dc2626;
+  --color-due-soon: #d97706;
+  --color-due-upcoming: #16a34a;
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-ui), system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+
+  --animate-pin: pin 2s infinite;
+  --animate-up: up 0.3s ease;
+
+  @keyframes pin {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(90, 169, 255, 0.55);
+    }
+    50% {
+      box-shadow: 0 0 0 7px rgba(90, 169, 255, 0);
+    }
+  }
+  @keyframes up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility panel {
+  /* A glass panel — the base surface for cards across the app. */
+  @apply rounded-xl border border-line bg-panel;
+}
+
+@utility panel-raised {
+  @apply rounded-xl border border-line bg-linear-to-b from-panel2 to-panel;
+}
+
+@utility readout {
+  /* Instrument readout: monospaced numerics (tach, hours, percentages). */
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1;
+}
+
+@utility eyebrow {
+  /* Uppercase micro-label used above stats and section headers. */
+  @apply text-[10px] uppercase tracking-[0.16em] text-faint;
+}
+
+@utility ident {
+  /* Waypoint-style 3-letter nav ident chip. */
+  font-family: var(--font-mono);
+  @apply text-[10px] tracking-[0.08em] text-faint;
+}
+
+@layer utilities {
+  /* ============================================================
    MyTailLog "glass cockpit" design system — dark only.
    Tokens are consumed both as CSS vars (var(--x)) and, for the
    common ones, as Tailwind colors (bg-panel, text-dim, …) mapped
-   in tailwind.config.ts.
+   in the @theme block above.
    ============================================================ */
-:root {
-  color-scheme: dark;
+  :root {
+    color-scheme: dark;
 
-  --bg: #0a0d13;
-  --panel: #111823;
-  --panel2: #161f2b;
-  --raise: #1c2836;
-  --line: #232f3e;
-  --line2: #33475a;
+    --bg: #0a0d13;
+    --panel: #111823;
+    --panel2: #161f2b;
+    --raise: #1c2836;
+    --line: #232f3e;
+    --line2: #33475a;
 
-  --ink: #e9eef5;
-  --dim: #94a3b6;
-  --faint: #5d6b7d;
+    --ink: #e9eef5;
+    --dim: #94a3b6;
+    --faint: #5d6b7d;
 
-  --accent: #5aa9ff;
-  --accent-soft: #16324e;
+    --accent: #5aa9ff;
+    --accent-soft: #16324e;
 
-  --grn: #43d38a;
-  --amb: #f4b13c;
-  --red: #ff6156;
+    --grn: #43d38a;
+    --amb: #f4b13c;
+    --red: #ff6156;
 
-  --grn-bg: rgba(67, 211, 138, 0.12);
-  --amb-bg: rgba(244, 177, 60, 0.12);
-  --red-bg: rgba(255, 97, 86, 0.12);
+    --grn-bg: rgba(67, 211, 138, 0.12);
+    --amb-bg: rgba(244, 177, 60, 0.12);
+    --red-bg: rgba(255, 97, 86, 0.12);
 
-  /* Logbook-type accents (airframe/engine/prop/avionics/other). */
-  --book-airframe: #5aa9ff;
-  --book-engine: #f4b13c;
-  --book-prop: #43d38a;
-  --book-avionics: #b98cff;
-  --book-other: #94a3b6;
+    /* Logbook-type accents (airframe/engine/prop/avionics/other). */
+    --book-airframe: #5aa9ff;
+    --book-engine: #f4b13c;
+    --book-prop: #43d38a;
+    --book-avionics: #b98cff;
+    --book-other: #94a3b6;
 
-  /* Font-family CSS vars are set by next/font on <html> (see layout.tsx). */
-  --font-display: "Space Grotesk", sans-serif;
-  --font-ui: "Instrument Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  letter-spacing: 0.1px;
-  -webkit-font-smoothing: antialiased;
-  /* Faint instrument-grid backdrop with an accent glow top-right. */
-  background-image: radial-gradient(1200px 600px at 78% -8%, rgba(90, 169, 255, 0.06), transparent 60%),
-    linear-gradient(rgba(255, 255, 255, 0.014) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
-  background-size: auto, 44px 44px, 44px 44px;
-  background-attachment: fixed;
-}
-
-::selection {
-  background: rgba(90, 169, 255, 0.28);
-}
-::-webkit-scrollbar {
-  width: 11px;
-  height: 11px;
-}
-::-webkit-scrollbar-thumb {
-  background: #2a3746;
-  border-radius: 8px;
-  border: 3px solid var(--bg);
-}
-
-@keyframes pin {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(90, 169, 255, 0.55);
+    /* Font-family CSS vars are set by next/font on <html> (see layout.tsx). */
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-ui: 'Instrument Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   }
-  50% {
-    box-shadow: 0 0 0 7px rgba(90, 169, 255, 0);
-  }
-}
-@keyframes up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes sweep {
-  from {
-    transform: rotate(0);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+  html,
+  body {
+    margin: 0;
+    padding: 0;
   }
-}
 
-@layer components {
-  /* A glass panel — the base surface for cards across the app. */
-  .panel {
-    @apply rounded-xl border border-line bg-panel;
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    letter-spacing: 0.1px;
+    -webkit-font-smoothing: antialiased;
+    /* Faint instrument-grid backdrop with an accent glow top-right. */
+    background-image:
+      radial-gradient(
+        1200px 600px at 78% -8%,
+        rgba(90, 169, 255, 0.06),
+        transparent 60%
+      ),
+      linear-gradient(rgba(255, 255, 255, 0.014) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+    background-size:
+      auto,
+      44px 44px,
+      44px 44px;
+    background-attachment: fixed;
   }
-  .panel-raised {
-    @apply rounded-xl border border-line bg-gradient-to-b from-panel2 to-panel;
+
+  ::selection {
+    background: rgba(90, 169, 255, 0.28);
   }
-  /* Instrument readout: monospaced numerics (tach, hours, percentages). */
-  .readout {
-    font-family: var(--font-mono);
-    font-feature-settings: "tnum" 1;
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
   }
-  /* Uppercase micro-label used above stats and section headers. */
-  .eyebrow {
-    @apply text-[10px] uppercase tracking-[0.16em] text-faint;
+  ::-webkit-scrollbar-thumb {
+    background: #2a3746;
+    border-radius: 8px;
+    border: 3px solid var(--bg);
   }
-  /* Waypoint-style 3-letter nav ident chip. */
-  .ident {
-    font-family: var(--font-mono);
-    @apply text-[10px] tracking-[0.08em] text-faint;
+
+  @keyframes pin {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(90, 169, 255, 0.55);
+    }
+    50% {
+      box-shadow: 0 0 0 7px rgba(90, 169, 255, 0);
+    }
+  }
+  @keyframes up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes sweep {
+    from {
+      transform: rotate(0);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
   }
 }

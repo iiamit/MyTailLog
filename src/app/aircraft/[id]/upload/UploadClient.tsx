@@ -162,7 +162,7 @@ export function UploadClient({
   );
 
   const inputClass =
-    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-none focus:border-accent";
+    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent";
 
   const totalPages = results.reduce((n, r) => n + r.pages, 0);
 

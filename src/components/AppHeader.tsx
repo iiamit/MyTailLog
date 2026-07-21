@@ -46,7 +46,7 @@ export function AppHeader({ email }: { email: string | null }) {
             }}
           />
           <span className="font-display text-[17px] font-bold tracking-[0.2px]">MyTailLog</span>
-          <span className="readout ml-1 rounded border border-line px-1.5 py-0.5 text-[10px] text-faint">
+          <span className="readout ml-1 rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint">
             v{APP_VERSION}
           </span>
         </Link>

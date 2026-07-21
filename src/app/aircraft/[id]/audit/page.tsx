@@ -89,7 +89,7 @@ export default async function AuditPage({
           audit.
         </p>
       ) : findings.length === 0 ? (
-        <div className="rounded-lg border border-annun-green/40 bg-[var(--grn-bg)] px-5 py-8 text-center text-sm text-annun-green">
+        <div className="rounded-lg border border-annun-green/40 bg-(--grn-bg) px-5 py-8 text-center text-sm text-annun-green">
           No suspected gaps found across {entries.length} entries. (This checks
           annual continuity, record timeline, and AD compliance — it can&apos;t
           catch everything.)
@@ -119,7 +119,7 @@ export default async function AuditPage({
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       f.severity === "warning"
-                        ? "bg-[var(--amb-bg)] text-annun-amber"
+                        ? "bg-(--amb-bg) text-annun-amber"
                         : "bg-panel2 text-dim"
                     }`}
                   >

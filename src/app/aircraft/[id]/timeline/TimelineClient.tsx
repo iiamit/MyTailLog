@@ -73,10 +73,10 @@ function EntryRow({
           src={e.thumbnailUrl}
           fullSrc={e.fullUrl}
           alt={`${e.logbookLabel} page`}
-          className="h-12 w-12 shrink-0 rounded border border-line object-cover"
+          className="h-12 w-12 shrink-0 rounded-sm border border-line object-cover"
         />
       ) : (
-        <div className="h-12 w-12 shrink-0 rounded bg-panel2" />
+        <div className="h-12 w-12 shrink-0 rounded-sm bg-panel2" />
       )}
       <div className="w-[76px] shrink-0 text-right">
         <div className="readout text-xs text-dim">{e.entryDate ?? "undated"}</div>
@@ -117,7 +117,7 @@ function EntryRow({
             {refs.map((r) => (
               <span
                 key={r}
-                className="rounded bg-panel2 px-1.5 py-0.5 text-[11px] text-dim"
+                className="rounded-sm bg-panel2 px-1.5 py-0.5 text-[11px] text-dim"
               >
                 {r}
               </span>
@@ -129,7 +129,7 @@ function EntryRow({
             {partChips.map((p, i) => (
               <span
                 key={`${p}-${i}`}
-                className="rounded bg-accent-soft px-1.5 py-0.5 text-[11px] text-accent"
+                className="rounded-sm bg-accent-soft px-1.5 py-0.5 text-[11px] text-accent"
                 title="Part"
               >
                 {p}
@@ -301,7 +301,7 @@ export function TimelineClient({
               return (
                 <section key={g.year}>
                   <div
-                    className="sticky top-0 z-[5] mb-1 flex items-center gap-2.5 py-2"
+                    className="sticky top-0 z-5 mb-1 flex items-center gap-2.5 py-2"
                     style={{ background: "linear-gradient(180deg, var(--bg) 70%, transparent)" }}
                   >
                     <button
@@ -340,7 +340,7 @@ export function TimelineClient({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search all entries…"
-              className="w-full flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-faint"
+              className="w-full flex-1 bg-transparent text-[13px] text-ink outline-hidden placeholder:text-faint"
             />
           </div>
           <p className="mb-3 text-[11px] text-faint">

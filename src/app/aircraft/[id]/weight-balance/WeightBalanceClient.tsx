@@ -70,7 +70,7 @@ function toInput(f: FormState): WBInput {
 }
 
 const inputClass =
-  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent";
+  "w-full rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-hidden focus:border-accent";
 
 const fmt = (n: number | null, unit: string) => (n != null ? `${n} ${unit}` : "—");
 
@@ -125,7 +125,7 @@ export function WeightBalanceClient({
     <div className="grid items-start gap-5 lg:grid-cols-[1fr_300px]">
       <div className="flex flex-col gap-5">
         {/* Current W&B */}
-        <section className="rounded-xl border border-line bg-gradient-to-b from-panel2 to-panel p-5">
+        <section className="rounded-xl border border-line bg-linear-to-b from-panel2 to-panel p-5">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-sm font-semibold text-ink">Current weight &amp; balance</span>
             {current && (

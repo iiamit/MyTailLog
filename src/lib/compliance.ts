@@ -88,8 +88,8 @@ export function urgencyOf(
 
 // Shared urgency badge presentation.
 export const URGENCY_STYLE: Record<Exclude<Urgency, "none">, string> = {
-  overdue: "border border-annun-red/40 bg-[var(--red-bg)] text-annun-red",
-  due_soon: "border border-annun-amber/40 bg-[var(--amb-bg)] text-annun-amber",
+  overdue: "border border-annun-red/40 bg-(--red-bg) text-annun-red",
+  due_soon: "border border-annun-amber/40 bg-(--amb-bg) text-annun-amber",
   upcoming: "border border-line bg-panel2 text-dim",
 };
 export function urgencyLabel(u: Exclude<Urgency, "none">): string {
