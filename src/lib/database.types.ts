@@ -504,6 +504,16 @@ export type Database = {
         Args: Record<string, never>;
         Returns: number;
       };
+      reserve_ai_call: {
+        Args: {
+          p_user_id: string;
+          p_cap: number;
+          p_usd_cap: number;
+          p_own_key: boolean;
+          p_estimate: number;
+        };
+        Returns: string | null;
+      };
     };
     Enums: {
       logbook_type: LogbookType;

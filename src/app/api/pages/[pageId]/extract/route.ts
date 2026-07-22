@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { extractPage } from "@/lib/extraction/pipeline";
-import { prepareAi, runWithAiContext, logAiUsage } from "@/lib/extraction/aiContext";
+import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 
 // The vision call plus adaptive thinking can take a while; give it headroom.
 // Node runtime is required (Buffer, the Anthropic SDK) — not Edge.
@@ -49,6 +49,13 @@ export async function POST(
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  // Atomically claim a budget slot right before the paid call (closes the
+  // check-then-act race in prepareAi). Released in the finally below.
+  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  if (!reservationId) {
+    return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
+  }
+
   try {
     const result = await runWithAiContext(
       {
@@ -61,5 +68,7 @@ export async function POST(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction failed.";
     return NextResponse.json({ error: message }, { status: 500 });
+  } finally {
+    await releaseAiReservation(reservationId);
   }
 }

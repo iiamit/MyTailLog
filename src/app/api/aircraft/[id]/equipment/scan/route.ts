@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { EquipmentEntryInput } from "@/lib/extraction/equipment";
 import { proposeEquipmentForEntries } from "@/lib/extraction/equipmentProposals";
-import { prepareAi, runWithAiContext, logAiUsage } from "@/lib/extraction/aiContext";
+import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 import { entryText } from "@/lib/extraction/entryText";
 import { logbookLabel } from "@/lib/logbooks";
 
@@ -76,6 +76,12 @@ export async function POST(
     return NextResponse.json({ ok: true, proposed: 0, entryCount: 0 });
   }
 
+  // Atomically claim a budget slot right before the paid call. Released below.
+  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  if (!reservationId) {
+    return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
+  }
+
   try {
     // Full-history scan (pageId null): stores new pending proposals, de-duped
     // against existing components and any already-pending proposals.
@@ -90,5 +96,7 @@ export async function POST(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Equipment scan failed.";
     return NextResponse.json({ error: message }, { status: 500 });
+  } finally {
+    await releaseAiReservation(reservationId);
   }
 }
