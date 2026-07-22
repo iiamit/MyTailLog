@@ -51,6 +51,10 @@ export async function POST(
   if (!question || !question.trim()) {
     return NextResponse.json({ error: "Ask a question." }, { status: 400 });
   }
+  // Bound the prompt: a huge question inflates input-token cost with no benefit.
+  if (question.length > 2000) {
+    return NextResponse.json({ error: "Question is too long (max 2000 characters)." }, { status: 400 });
+  }
 
   const supabase = await createClient();
   const {

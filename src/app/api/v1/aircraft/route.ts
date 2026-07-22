@@ -14,11 +14,17 @@ export async function GET(request: Request): Promise<Response> {
     const svc = createServiceClient();
     const { data: grants } = await svc
       .from("oauth_aircraft_grant")
-      .select("aircraft_id")
+      .select("aircraft_id, scopes")
       .eq("account_id", caller.accountId)
       .eq("client_id", caller.clientId)
       .is("revoked_at", null);
-    const ids = [...new Set((grants ?? []).map((g) => g.aircraft_id))];
+    // Only list aircraft whose grant carries at least one data scope — a
+    // scope-less token (e.g. openid-only) must not enumerate tail numbers.
+    const ids = [
+      ...new Set(
+        (grants ?? []).filter((g) => (g.scopes?.length ?? 0) > 0).map((g) => g.aircraft_id),
+      ),
+    ];
     if (ids.length === 0) return Response.json({ aircraft: [] });
 
     const detailed = caller.scopes.has("aircraft:read");

@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual as cryptoTimingSafeEqual } from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/service";
 import { syncUserHours } from "@/lib/mfbSync";
 import { sendEmail } from "@/lib/email";
@@ -286,12 +287,12 @@ function reminderHtml(groups: AircraftGroup[]): string {
 
 // --- Utilities -------------------------------------------------------------
 
-/** Length-safe constant-time-ish string compare (avoids early-exit leak). */
+/** Constant-time string compare. SHA-256 both sides first so the buffers are
+ *  always equal length (no length leak) and crypto.timingSafeEqual can't throw. */
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+  const ha = createHash("sha256").update(a).digest();
+  const hb = createHash("sha256").update(b).digest();
+  return cryptoTimingSafeEqual(ha, hb);
 }
 
 function json(body: unknown, status = 200): Response {
