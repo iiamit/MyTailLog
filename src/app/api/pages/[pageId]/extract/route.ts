@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { extractPage } from "@/lib/extraction/pipeline";
-import { prepareAi, runWithAiContext, logAiUsage } from "@/lib/extraction/aiContext";
+import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 
 // The vision call plus adaptive thinking can take a while; give it headroom.
 // Node runtime is required (Buffer, the Anthropic SDK) — not Edge.
@@ -25,11 +25,6 @@ export async function POST(
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  const gate = await prepareAi(supabase, user.id);
-  if ("error" in gate) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
-  }
-
   // RLS scopes this to the owner; a page on someone else's aircraft returns no row.
   const { data: page } = await supabase
     .from("page")
@@ -39,6 +34,26 @@ export async function POST(
 
   if (!page) {
     return NextResponse.json({ error: "Page not found." }, { status: 404 });
+  }
+
+  // Gate the PAID extraction on edit access — a read-only viewer can see the page
+  // but must not be able to spend an AI call (the extracted rows would no-op under
+  // RLS anyway). Check before prepareAi / the model call.
+  const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: page.aircraft_id });
+  if (!canEdit) {
+    return NextResponse.json({ error: "You don't have edit access to this aircraft." }, { status: 403 });
+  }
+
+  const gate = await prepareAi(supabase, user.id);
+  if ("error" in gate) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
+  // Atomically claim a budget slot right before the paid call (closes the
+  // check-then-act race in prepareAi). Released in the finally below.
+  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  if (!reservationId) {
+    return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
   }
 
   try {
@@ -53,5 +68,7 @@ export async function POST(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction failed.";
     return NextResponse.json({ error: message }, { status: 500 });
+  } finally {
+    await releaseAiReservation(reservationId);
   }
 }

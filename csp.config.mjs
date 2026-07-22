@@ -20,8 +20,22 @@ export const SCRIPT_CDN_ORIGINS = [
   "https://cdn.jsdelivr.net", // jscanify
 ];
 
-/** Build the CSP header value for the given Supabase host. */
-export function buildCsp(supabaseHost) {
+/**
+ * Build the CSP header value for the given Supabase host.
+ *
+ * `broadFormAction` widens form-action to any https target (plus loopback for
+ * local dev clients). This is required ONLY on the OAuth consent flow, whose
+ * form POSTs redirect all the way out to the OAuth *client's* registered
+ * redirect URI — browsers enforce form-action across the whole redirect chain.
+ * Everywhere else form-action stays 'self' so an injected <form action="https://
+ * evil"> can't exfiltrate autofilled fields (email, secrets, pasted API keys).
+ * The real redirect_uri authorization boundary is oidc-provider's server-side
+ * allowlist check; this only unblocks the browser navigation on /oauth/consent.
+ */
+export function buildCsp(supabaseHost, { broadFormAction = false } = {}) {
+  const formAction = broadFormAction
+    ? "form-action 'self' https: http://localhost:* http://127.0.0.1:*"
+    : "form-action 'self'";
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -36,14 +50,6 @@ export function buildCsp(supabaseHost) {
     "worker-src 'self' blob:",
     "font-src 'self' data:",
     `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}`,
-    // The OAuth consent form (/oauth/consent/*) POSTs to /decide, which redirects
-    // through /api/oidc/auth/* and finally to the OAuth *client's* registered
-    // redirect URI. Browsers enforce form-action across the WHOLE redirect chain,
-    // so 'self' alone blocks every client at consent. Allow the exact redirect-URI
-    // shapes the AS permits (developers/actions.ts): https anywhere, plus http on
-    // localhost / 127.0.0.1 for local dev clients (loopback OAuth). The real
-    // authorization boundary is oidc-provider validating redirect_uri against the
-    // client's allowlist server-side — this only unblocks the browser navigation.
-    "form-action 'self' https: http://localhost:* http://127.0.0.1:*",
+    formAction,
   ].join("; ");
 }

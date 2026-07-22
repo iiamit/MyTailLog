@@ -48,6 +48,11 @@ const num = (v: string | undefined, d: number) => {
 const SHARED_DAILY_CAP = num(process.env.AI_SHARED_USER_DAILY_CALLS, 100);
 const OWN_KEY_DAILY_CAP = num(process.env.AI_OWN_USER_DAILY_CALLS, 1000);
 const SHARED_DAILY_USD = num(process.env.AI_SHARED_DAILY_USD, 20);
+// Estimated $/request charged against the shared-key ceiling while a call is
+// in flight (reserve_ai_call), reconciled to the real cost when the request
+// finishes. Keep it near a typical extraction so the ceiling isn't overshot by
+// concurrent calls. ponytail: flat estimate; make it per-model if it drifts.
+const CALL_ESTIMATE_USD = num(process.env.AI_CALL_ESTIMATE_USD, 1);
 
 type Supabase = SupabaseClient<Database>;
 
@@ -112,6 +117,50 @@ export async function prepareAi(supabase: Supabase, userId: string): Promise<AiG
 // come from the real Anthropic response in the route, so a service write is safe.
 let ledgerClient: ReturnType<typeof createServiceClient> | null = null;
 const ledger = () => (ledgerClient ??= createServiceClient());
+
+// Atomically reserve one AI call against the caps BEFORE the model runs (fixes
+// the check-then-act race in prepareAi). Returns a reservation id to release
+// when the request finishes, or null if a cap/ceiling is already reached. Called
+// via the service-role client because reserve_ai_call writes ai_usage (client
+// insert revoked, 0032) and must run with server-trusted args. Fails CLOSED:
+// any error → no reservation → the route denies the call.
+export async function reserveAiCall(userId: string, ownKey: boolean): Promise<string | null> {
+  const cap = ownKey ? OWN_KEY_DAILY_CAP : SHARED_DAILY_CAP;
+  try {
+    const { data, error } = await ledger().rpc("reserve_ai_call", {
+      p_user_id: userId,
+      p_cap: cap,
+      p_usd_cap: ownKey ? 0 : SHARED_DAILY_USD,
+      p_own_key: ownKey,
+      p_estimate: ownKey ? 0 : CALL_ESTIMATE_USD,
+    });
+    if (error) {
+      console.error("reserve_ai_call failed", error);
+      return null;
+    }
+    return data ?? null;
+  } catch (err) {
+    console.error("reserve_ai_call threw", err);
+    return null;
+  }
+}
+
+/** The 429 message when reserveAiCall returns null (a cap/ceiling was reached). */
+export function aiBudgetMessage(ownKey: boolean): string {
+  return ownKey
+    ? "Daily AI limit reached. Try again tomorrow."
+    : "Daily AI limit reached. Add your own Anthropic API key in Settings to raise it.";
+}
+
+/** Release a reservation (delete the placeholder row). Never throws. */
+export async function releaseAiReservation(id: string | null): Promise<void> {
+  if (!id) return;
+  try {
+    await ledger().from("ai_usage").delete().eq("id", id);
+  } catch (err) {
+    console.error("release ai reservation failed", err);
+  }
+}
 
 /** Record one model call. Never throws — logging must not fail the AI response. */
 export async function logAiUsage(

@@ -18,8 +18,9 @@ const nextConfig = {
       ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).host
       : "*.supabase.co";
     // CSP lives in csp.config.mjs (single source of truth, covered by tests).
-    const csp = buildCsp(supabaseHost);
-    const securityHeaders = [
+    // form-action stays 'self' everywhere EXCEPT the OAuth consent flow, which
+    // must POST out to a client's registered redirect URI (see buildCsp docs).
+    const securityHeaders = (csp) => [
       { key: "Content-Security-Policy", value: csp },
       { key: "X-Frame-Options", value: "DENY" },
       { key: "X-Content-Type-Options", value: "nosniff" },
@@ -31,7 +32,11 @@ const nextConfig = {
       },
     ];
     return [
-      { source: "/:path*", headers: securityHeaders },
+      // Consent flow gets the broad form-action; matched first and excluded from
+      // the catch-all below so only ONE CSP header is ever emitted per path
+      // (duplicate CSP headers intersect → 'self' would win and break consent).
+      { source: "/oauth/consent/:path*", headers: securityHeaders(buildCsp(supabaseHost, { broadFormAction: true })) },
+      { source: "/((?!oauth/consent).*)", headers: securityHeaders(buildCsp(supabaseHost)) },
       {
         source: "/sw.js",
         headers: [

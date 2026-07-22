@@ -96,6 +96,19 @@ async function decide(request: Request, uid: string): Promise<Response> {
   const { error } = await supabase
     .from("oauth_aircraft_grant")
     .upsert(rows, { onConflict: "account_id,client_id,aircraft_id" });
+  if (!error) {
+    // Re-consent must be able to NARROW sharing: revoke this client's grants for
+    // any aircraft the owner did NOT re-select. The consent UI promises exactly
+    // this ("only the aircraft you check will be shared"); without it, un-checking
+    // an aircraft silently left the old grant live. ownedIds are DB-sourced UUIDs.
+    await supabase
+      .from("oauth_aircraft_grant")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("account_id", accountId)
+      .eq("client_id", clientId)
+      .is("revoked_at", null)
+      .not("aircraft_id", "in", `(${ownedIds.join(",")})`);
+  }
   if (error) {
     await provider.interactionFinished(
       req,

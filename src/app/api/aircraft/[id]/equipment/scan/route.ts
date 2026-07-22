@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { EquipmentEntryInput } from "@/lib/extraction/equipment";
 import { proposeEquipmentForEntries } from "@/lib/extraction/equipmentProposals";
-import { prepareAi, runWithAiContext, logAiUsage } from "@/lib/extraction/aiContext";
+import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 import { entryText } from "@/lib/extraction/entryText";
 import { logbookLabel } from "@/lib/logbooks";
 
@@ -27,17 +27,25 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const gate = await prepareAi(supabase, user.id);
-  if ("error" in gate) {
-    return NextResponse.json({ error: gate.error }, { status: gate.status });
-  }
-
   const { data: aircraft } = await supabase
     .from("aircraft")
     .select("id")
     .eq("id", id)
     .single();
   if (!aircraft) return NextResponse.json({ error: "Aircraft not found." }, { status: 404 });
+
+  // Gate the PAID scan on edit access — a read-only viewer can see the aircraft
+  // but must not be able to spend an AI call (proposals would no-op under RLS
+  // anyway). Check before prepareAi / the model call.
+  const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: id });
+  if (!canEdit) {
+    return NextResponse.json({ error: "You don't have edit access to this aircraft." }, { status: 403 });
+  }
+
+  const gate = await prepareAi(supabase, user.id);
+  if ("error" in gate) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
 
   const { data: logbooks } = await supabase
     .from("logbook")
@@ -68,6 +76,12 @@ export async function POST(
     return NextResponse.json({ ok: true, proposed: 0, entryCount: 0 });
   }
 
+  // Atomically claim a budget slot right before the paid call. Released below.
+  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  if (!reservationId) {
+    return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
+  }
+
   try {
     // Full-history scan (pageId null): stores new pending proposals, de-duped
     // against existing components and any already-pending proposals.
@@ -82,5 +96,7 @@ export async function POST(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Equipment scan failed.";
     return NextResponse.json({ error: message }, { status: 500 });
+  } finally {
+    await releaseAiReservation(reservationId);
   }
 }

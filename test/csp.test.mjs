@@ -51,6 +51,15 @@ test("CSP locks down the dangerous defaults", () => {
   assert.deepEqual(d["base-uri"], ["'self'"]);
 });
 
+test("form-action is 'self' by default, broadened only for the consent flow", () => {
+  // Default (every page but /oauth/consent): no external form target, so an
+  // injected <form action="https://evil"> can't exfiltrate autofilled fields.
+  assert.deepEqual(d["form-action"], ["'self'"]);
+  // Consent flow must POST out to a client's registered redirect URI.
+  const broad = directivesOf(buildCsp("db.example.supabase.co", { broadFormAction: true }));
+  assert.ok(broad["form-action"].includes("https:"), "consent CSP must allow https form targets");
+});
+
 // The core guard: every external script/worker URL the client loaders reference
 // must be permitted by the CSP. Add a new CDN dependency without allowlisting it
 // and this fails — which is exactly what shipped broken before.

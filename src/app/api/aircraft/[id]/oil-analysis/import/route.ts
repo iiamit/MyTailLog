@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { prepareAi, runWithAiContext, logAiUsage } from "@/lib/extraction/aiContext";
+import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 import { extractOilAnalysis, oilReportToRows } from "@/lib/extraction/oilAnalysis";
 import type { ImageMediaType } from "@/lib/extraction/extract";
 
@@ -67,6 +67,12 @@ export async function POST(
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   const mediaType = file.type as "application/pdf" | ImageMediaType;
 
+  // Atomically claim a budget slot right before the paid call. Released below.
+  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  if (!reservationId) {
+    return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
+  }
+
   let payload;
   try {
     payload = await runWithAiContext(
@@ -79,6 +85,8 @@ export async function POST(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Oil report extraction failed.";
     return NextResponse.json({ error: message }, { status: 500 });
+  } finally {
+    await releaseAiReservation(reservationId);
   }
 
   const rows = oilReportToRows(payload, id);
