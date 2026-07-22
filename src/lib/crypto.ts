@@ -19,11 +19,24 @@ const PREFIX = "v1:";
 const IV_LEN = 12;
 const TAG_LEN = 16; // pin GCM auth tag to 16 bytes — reject truncated tags (forgery hardening)
 
+let warnedWeakKey = false;
+
 function key(): Buffer {
   const secret = process.env.ENCRYPTION_KEY;
   if (!secret) {
     throw new Error(
       "ENCRYPTION_KEY is not set — required to store MyFlightBook/Anthropic secrets encrypted.",
+    );
+  }
+  // A short, human-chosen passphrase is cheaply brute-forceable if ciphertext
+  // leaks (single unsalted SHA-256, no work factor). Warn once rather than throw
+  // — a hard failure here would break decryption of existing secrets, and
+  // rotating ENCRYPTION_KEY makes stored ciphertext undecryptable. Use
+  // `openssl rand -base64 32` (44 chars).
+  if (secret.length < 32 && !warnedWeakKey) {
+    warnedWeakKey = true;
+    console.warn(
+      "[crypto] ENCRYPTION_KEY is under 32 chars — low entropy is brute-forceable if ciphertext leaks. Rotate to `openssl rand -base64 32` when convenient.",
     );
   }
   return createHash("sha256").update(secret).digest();

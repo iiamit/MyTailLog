@@ -22,8 +22,6 @@ import {
 import { EXTRACTION_MODEL } from "./anthropic";
 import { proposeEquipmentForEntries } from "./equipmentProposals";
 import type { EquipmentEntryInput } from "./equipment";
-import { applyMaintenanceFromEntries } from "./maintenanceUpdates";
-import type { MaintenanceEntryInput } from "./maintenance";
 import { entryText } from "./entryText";
 import { classifyOtherDocument, applyScannedDocument } from "./otherDocument";
 
@@ -199,20 +197,13 @@ export async function extractPage(
       // ignore — equipment proposals are a convenience, not part of extraction
     }
 
-    // Keep the maintenance forecast current: advance last-done from this page's
-    // completions (annual, transponder, ELT, oil, …). Best-effort.
-    try {
-      const mxEntries: MaintenanceEntryInput[] = result.entries
-        .map((e) => ({
-          entry_id: page.id,
-          date: e.entry_date,
-          text: entryText(e),
-        }))
-        .filter((e) => e.text.length > 0);
-      await applyMaintenanceFromEntries(supabase, page.aircraft_id, mxEntries);
-    } catch {
-      // ignore — forecast updates are a convenience, not part of extraction
-    }
+    // NOTE: the maintenance forecast is deliberately NOT advanced here. These
+    // entries are freshly extracted and owner_confirmed = false; advancing
+    // last_done/next_due from unreviewed OCR let injected/hallucinated "completed"
+    // text move a compliance signal without review (M3). The forecast now only
+    // advances from owner-confirmed entries via the explicit maintenance scan
+    // (src/app/api/aircraft/[id]/maintenance/scan). Equipment above is safe to
+    // run here because it writes PENDING proposals, not confirmed data.
 
     return {
       entryCount: result.entries.length,
