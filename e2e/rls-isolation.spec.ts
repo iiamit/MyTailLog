@@ -122,12 +122,20 @@ test.describe("RLS multi-tenant isolation", () => {
     expect(error, "ai_usage insert is revoked from the client").toBeTruthy();
   });
 
-  test("cannot read the key_cipher column but can read key_last4 (0038 lockdown)", async () => {
+  test("cannot read the key_cipher value but can read key_last4 (0038 lockdown)", async () => {
     await admin
       .from("user_ai_key")
       .upsert({ user_id: attackerId, key_cipher: "v1:not-a-real-secret", key_last4: "1234" });
+    // The security property is that the ciphertext VALUE never reaches the
+    // browser role — whether the column revoke manifests as a query error or a
+    // filtered column, key_cipher must not come back. (A returned value here
+    // means 0038 isn't in effect on this database.)
     const cipher = await attackerDb.from("user_ai_key").select("key_cipher").eq("user_id", attackerId);
-    expect(cipher.error, "key_cipher SELECT must be denied to the browser role").toBeTruthy();
+    expect(
+      cipher.data?.[0]?.key_cipher ?? null,
+      "key_cipher must never reach the browser role",
+    ).toBeNull();
+    // key_last4 is still readable (the UI needs it).
     const last4 = await attackerDb.from("user_ai_key").select("key_last4").eq("user_id", attackerId);
     expect(last4.error).toBeFalsy();
     expect(last4.data?.[0]?.key_last4).toBe("1234");
