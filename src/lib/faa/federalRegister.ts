@@ -129,6 +129,7 @@ export async function searchADs(
       accept: "application/json",
       ...(typeof window === "undefined" ? { "user-agent": UA } : {}),
     },
+    signal: AbortSignal.timeout(12000),
   });
   if (!res.ok) {
     // Include a snippet of the body — a Cloudflare block reads very differently

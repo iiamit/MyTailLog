@@ -47,11 +47,15 @@ function jwtExpiryMs(jwt: string): number {
 
 async function mintSession(): Promise<Session> {
   const jar = new Map<string, string>();
-  const home = await fetch(ORIGIN + "/", { headers: { "user-agent": UA } });
+  const home = await fetch(ORIGIN + "/", {
+    headers: { "user-agent": UA },
+    signal: AbortSignal.timeout(8000),
+  });
   cookiesFrom(home.headers, jar);
   const login = await fetch(ORIGIN + "/guest/login?targetUrl=/search", {
     headers: { "user-agent": UA, cookie: cookieStr(jar), referer: ORIGIN + "/search" },
     redirect: "manual",
+    signal: AbortSignal.timeout(8000),
   });
   cookiesFrom(login.headers, jar);
   const jwt = jar.get("jwt");
@@ -110,6 +114,7 @@ async function simpleSearch(text: string): Promise<DrsDoc[]> {
         user: "G",
       },
       body,
+      signal: AbortSignal.timeout(10000),
     });
   }
 

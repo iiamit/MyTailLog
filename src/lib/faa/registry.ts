@@ -55,8 +55,13 @@ export async function lookupRegistration(
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15",
         accept: "text/html",
       },
+      // Bound a slow/oversized upstream: a single record page is tiny. Timeout
+      // caps the wait; the content-length check rejects an unexpectedly huge body
+      // before it's buffered into memory.
+      signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) return null;
+    if (Number(res.headers.get("content-length") ?? 0) > 2_000_000) return null;
     body = await res.text();
   } catch {
     return null;

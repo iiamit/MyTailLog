@@ -56,9 +56,15 @@ const CALL_ESTIMATE_USD = num(process.env.AI_CALL_ESTIMATE_USD, 1);
 
 type Supabase = SupabaseClient<Database>;
 
-/** The user's own Anthropic key (decrypted), or null if they haven't set one. */
-export async function getUserAiKey(supabase: Supabase, userId: string): Promise<string | null> {
-  const { data } = await supabase
+/**
+ * The user's own Anthropic key (decrypted), or null if they haven't set one.
+ * Reads via the service-role client with an explicit user_id filter: the
+ * key_cipher column's SELECT is revoked from the browser/anon client (0038) so
+ * an XSS can't exfiltrate the ciphertext for offline attack. userId is the
+ * authenticated route's trusted user.id, so the explicit filter is the authz.
+ */
+export async function getUserAiKey(userId: string): Promise<string | null> {
+  const { data } = await ledger()
     .from("user_ai_key")
     .select("key_cipher")
     .eq("user_id", userId)
@@ -70,7 +76,7 @@ export type AiGate = { apiKey?: string; ownKey: boolean } | { error: string; sta
 
 /** Resolve the key, check configuration, and enforce the daily cap. */
 export async function prepareAi(supabase: Supabase, userId: string): Promise<AiGate> {
-  const userKey = await getUserAiKey(supabase, userId);
+  const userKey = await getUserAiKey(userId);
   const ownKey = Boolean(userKey);
 
   if (!userKey && !process.env.ANTHROPIC_API_KEY) {

@@ -41,10 +41,13 @@ export async function POST(
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
 
+  // Only advance the forecast from OWNER-CONFIRMED entries — unreviewed OCR must
+  // not move a compliance signal (M3). The owner reviews entries, then scans.
   const { data: entries } = await supabase
     .from("log_entry")
     .select("id, entry_date, description, work_performed, parts")
     .eq("aircraft_id", id)
+    .eq("owner_confirmed", true)
     .order("entry_date", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: true });
 
