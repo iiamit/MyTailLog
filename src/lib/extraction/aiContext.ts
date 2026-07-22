@@ -58,18 +58,13 @@ type Supabase = SupabaseClient<Database>;
 
 /**
  * The user's own Anthropic key (decrypted), or null if they haven't set one.
- * Reads via the service-role client with an explicit user_id filter: the
- * key_cipher column's SELECT is revoked from the browser/anon client (0038) so
- * an XSS can't exfiltrate the ciphertext for offline attack. userId is the
- * authenticated route's trusted user.id, so the explicit filter is the authz.
+ * The ciphertext lives in a private schema PostgREST doesn't expose (0039); it's
+ * reachable only via the ai_key_cipher() SECURITY DEFINER function, granted to
+ * the service role. userId is the authenticated route's trusted user.id.
  */
 export async function getUserAiKey(userId: string): Promise<string | null> {
-  const { data } = await ledger()
-    .from("user_ai_key")
-    .select("key_cipher")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return data?.key_cipher ? decryptSecret(data.key_cipher) : null;
+  const { data } = await ledger().rpc("ai_key_cipher", { p_user_id: userId });
+  return data ? decryptSecret(data) : null;
 }
 
 export type AiGate = { apiKey?: string; ownKey: boolean } | { error: string; status: number };
