@@ -57,14 +57,14 @@ export function ShareClient({
     setEmail("");
   }
 
-  async function remove(id: string) {
+  async function remove(email: string) {
     setError(null);
-    const res = await removeShare(aircraftId, id);
+    const res = await removeShare(aircraftId, email);
     if (res.error) {
       setError(res.error);
       return;
     }
-    setRows((rs) => rs.filter((r) => r.id !== id));
+    setRows((rs) => rs.filter((r) => r.email.toLowerCase() !== email.toLowerCase()));
   }
 
   // Delete
@@ -138,7 +138,7 @@ export function ShareClient({
               <div className="truncate text-[11px] text-faint">{ROLE_LABEL[r.role]}</div>
             </div>
             <button
-              onClick={() => remove(r.id)}
+              onClick={() => remove(r.email)}
               className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs text-annun-red hover:border-annun-red/60"
             >
               Remove

@@ -42,11 +42,20 @@ export async function addShare(
 
 export async function removeShare(
   aircraftId: string,
-  shareId: string,
+  email: string,
 ): Promise<{ error?: string }> {
+  // Key on (aircraft_id, invited_email), the natural unique — NOT a row id. A
+  // just-added share is shown with a client-fabricated id before the real row
+  // loads, so deleting by id would silently no-op and leave the grantee with
+  // access the owner believes they revoked.
+  const clean = email.trim().toLowerCase();
   const { supabase, error } = await assertOwner(aircraftId);
   if (error) return { error };
-  const { error: delErr } = await supabase.from("aircraft_share").delete().eq("id", shareId);
+  const { error: delErr } = await supabase
+    .from("aircraft_share")
+    .delete()
+    .eq("aircraft_id", aircraftId)
+    .eq("invited_email", clean);
   if (delErr) return { error: delErr.message };
   revalidatePath(`/aircraft/${aircraftId}/share`);
   return {};
