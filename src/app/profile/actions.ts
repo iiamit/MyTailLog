@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { encryptSecret } from "@/lib/crypto";
 
 /** Update the signed-in user's profile details. Notification preferences are
@@ -134,15 +135,13 @@ export async function saveAiKey(formData: FormData): Promise<{ error?: string }>
     return { error: "That doesn't look like an Anthropic key (expected sk-ant-…)." };
   }
 
-  const { error } = await supabase.from("user_ai_key").upsert(
-    {
-      user_id: user.id,
-      key_cipher: encryptSecret(raw),
-      key_last4: raw.slice(-4),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
+  // The ciphertext lives in a private schema (0039); write it via the
+  // service-role RPC. user.id is the authenticated caller, so it's trusted.
+  const { error } = await createServiceClient().rpc("upsert_ai_key", {
+    p_user_id: user.id,
+    p_cipher: encryptSecret(raw),
+    p_last4: raw.slice(-4),
+  });
   if (error) return { error: "Couldn't save the key." };
   revalidatePath("/profile");
   return {};
@@ -173,7 +172,7 @@ export async function removeAiKey(): Promise<{ error?: string }> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const { error } = await supabase.from("user_ai_key").delete().eq("user_id", user.id);
+  const { error } = await createServiceClient().rpc("delete_ai_key", { p_user_id: user.id });
   if (error) return { error: "Couldn't remove the key." };
   revalidatePath("/profile");
   return {};

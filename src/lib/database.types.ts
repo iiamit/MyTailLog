@@ -472,7 +472,8 @@ export type Database = {
       mfb_connection: { Row: MfbConnection; Insert: Partial<MfbConnection>; Update: Partial<MfbConnection>; Relationships: [] };
       hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
       ai_usage: { Row: AiUsage; Insert: Partial<AiUsage>; Update: Partial<AiUsage>; Relationships: [] };
-      user_ai_key: { Row: UserAiKey; Insert: Partial<UserAiKey>; Update: Partial<UserAiKey>; Relationships: [] };
+      // user_ai_key lives in a private schema (0039) — not exposed to PostgREST;
+      // reached only via the ai-key SECURITY DEFINER functions below.
       oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
       oidc_payloads: { Row: OidcPayload; Insert: Partial<OidcPayload>; Update: Partial<OidcPayload>; Relationships: [] };
       oauth_client: { Row: OauthClient; Insert: Partial<OauthClient>; Update: Partial<OauthClient>; Relationships: [] };
@@ -513,6 +514,22 @@ export type Database = {
           p_estimate: number;
         };
         Returns: string | null;
+      };
+      my_ai_key_last4: {
+        Args: Record<string, never>;
+        Returns: string | null;
+      };
+      ai_key_cipher: {
+        Args: { p_user_id: string };
+        Returns: string | null;
+      };
+      upsert_ai_key: {
+        Args: { p_user_id: string; p_cipher: string; p_last4: string };
+        Returns: undefined;
+      };
+      delete_ai_key: {
+        Args: { p_user_id: string };
+        Returns: undefined;
       };
     };
     Enums: {

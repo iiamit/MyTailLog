@@ -73,7 +73,7 @@ test.describe("RLS multi-tenant isolation", () => {
   test.afterAll(async () => {
     if (admin && victimAc) await admin.from("aircraft").delete().eq("id", victimAc); // cascades children
     if (admin && victimId) await admin.auth.admin.deleteUser(victimId);
-    if (admin && attackerId) await admin.from("user_ai_key").delete().eq("user_id", attackerId);
+    if (admin && attackerId) await admin.rpc("delete_ai_key", { p_user_id: attackerId });
   });
 
   test("cannot read another user's aircraft", async () => {
@@ -122,23 +122,29 @@ test.describe("RLS multi-tenant isolation", () => {
     expect(error, "ai_usage insert is revoked from the client").toBeTruthy();
   });
 
-  test("cannot read the key_cipher value but can read key_last4 (0038 lockdown)", async () => {
-    await admin
-      .from("user_ai_key")
-      .upsert({ user_id: attackerId, key_cipher: "v1:not-a-real-secret", key_last4: "1234" });
-    // The security property is that the ciphertext VALUE never reaches the
-    // browser role — whether the column revoke manifests as a query error or a
-    // filtered column, key_cipher must not come back. (A returned value here
-    // means 0038 isn't in effect on this database.)
-    const cipher = await attackerDb.from("user_ai_key").select("key_cipher").eq("user_id", attackerId);
+  test("BYOK ciphertext is unreachable by the browser role; only key_last4 is exposed (0039)", async () => {
+    // Seed via the service-role RPC (the table is in a private schema now).
+    await admin.rpc("upsert_ai_key", {
+      p_user_id: attackerId,
+      p_cipher: "v1:not-a-real-secret",
+      p_last4: "1234",
+    });
+
+    // The base table is not exposed to PostgREST at all → a direct read fails.
+    const direct = await attackerDb.from("user_ai_key").select("key_cipher").eq("user_id", attackerId);
     expect(
-      cipher.data?.[0]?.key_cipher ?? null,
-      "key_cipher must never reach the browser role",
-    ).toBeNull();
-    // key_last4 is still readable (the UI needs it).
-    const last4 = await attackerDb.from("user_ai_key").select("key_last4").eq("user_id", attackerId);
+      direct.error || (direct.data?.[0] as { key_cipher?: string } | undefined)?.key_cipher == null,
+      "the private user_ai_key table must not be REST-readable",
+    ).toBeTruthy();
+
+    // The service-only cipher accessor is not granted to the browser role.
+    const viaRpc = await attackerDb.rpc("ai_key_cipher", { p_user_id: attackerId });
+    expect(viaRpc.data ?? null, "ai_key_cipher must not return the ciphertext to the browser").toBeNull();
+
+    // But the browser CAN read its own key_last4 via the definer function.
+    const last4 = await attackerDb.rpc("my_ai_key_last4");
     expect(last4.error).toBeFalsy();
-    expect(last4.data?.[0]?.key_last4).toBe("1234");
+    expect(last4.data).toBe("1234");
   });
 
   test("cannot self-promote to admin (profile column lockdown 0028)", async () => {

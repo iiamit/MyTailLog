@@ -30,15 +30,16 @@ export default async function ProfilePage() {
   // BYOK: whether the user has their own Anthropic key, and their usage/cost
   // ledger. Rows are summed here (a personal account's volume is small); move
   // to a SUM RPC only if the ledger ever grows large.
-  const [{ data: aiKey }, { data: usage }] = await Promise.all([
-    supabase.from("user_ai_key").select("key_last4").eq("user_id", user.id).maybeSingle(),
+  const [{ data: keyLast4 }, { data: usage }] = await Promise.all([
+    // key_last4 only — the ciphertext lives in a private schema (0039).
+    supabase.rpc("my_ai_key_last4"),
     supabase.from("ai_usage").select("input_tokens, output_tokens, cost_usd, used_own_key"),
   ]);
   const own = (usage ?? []).filter((r) => r.used_own_key);
   const sum = (rows: typeof own, k: "input_tokens" | "output_tokens" | "cost_usd") =>
     rows.reduce((t, r) => t + (Number(r[k]) || 0), 0);
   const ai = {
-    keyLast4: aiKey?.key_last4 ?? null,
+    keyLast4: keyLast4 ?? null,
     calls: own.length,
     inputTokens: sum(own, "input_tokens"),
     outputTokens: sum(own, "output_tokens"),
