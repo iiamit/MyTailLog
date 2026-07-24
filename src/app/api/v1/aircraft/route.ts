@@ -12,33 +12,44 @@ export async function GET(request: Request): Promise<Response> {
     rateLimit(caller.clientId, Date.now());
 
     const svc = createServiceClient();
-    const { data: grants } = await svc
-      .from("oauth_aircraft_grant")
-      .select("aircraft_id, scopes")
-      .eq("account_id", caller.accountId)
-      .eq("client_id", caller.clientId)
-      .is("revoked_at", null);
-    // Only list aircraft whose grant carries at least one data scope — a
-    // scope-less token (e.g. openid-only) must not enumerate tail numbers.
-    const ids = [
-      ...new Set(
-        (grants ?? []).filter((g) => (g.scopes?.length ?? 0) > 0).map((g) => g.aircraft_id),
-      ),
-    ];
-    if (ids.length === 0) return Response.json({ aircraft: [] });
-
     const detailed = caller.scopes.has("aircraft:read");
     const cols = detailed
       ? "id, tail_number, make, model, year, serial_number, home_base"
       : "id, tail_number";
-    // Re-verify LIVE ownership (same rule as resource.ts grantedAircraftIds): only
-    // return granted aircraft the account STILL owns — a grant can't outlive the
-    // ownership that justified it, and the RS reads via a service client (no RLS).
-    const { data: aircraft, error } = await svc
-      .from("aircraft")
-      .select(cols)
-      .in("id", ids)
-      .eq("owner_id", caller.accountId);
+
+    // Base: every aircraft the account STILL owns (live-ownership boundary, same
+    // rule as resource.ts). An account-wide grant returns all of them (incl. ones
+    // added after consent); otherwise restrict to the per-aircraft grants.
+    let query = svc.from("aircraft").select(cols).eq("owner_id", caller.accountId);
+
+    // Account-wide grant? (error-tolerant so a pre-0040 database still works.)
+    const { data: acct, error: acctErr } = await svc
+      .from("oauth_account_grant")
+      .select("scopes")
+      .eq("account_id", caller.accountId)
+      .eq("client_id", caller.clientId)
+      .is("revoked_at", null)
+      .maybeSingle();
+
+    if (acctErr || !acct || (acct.scopes ?? []).length === 0) {
+      const { data: grants } = await svc
+        .from("oauth_aircraft_grant")
+        .select("aircraft_id, scopes")
+        .eq("account_id", caller.accountId)
+        .eq("client_id", caller.clientId)
+        .is("revoked_at", null);
+      // Only list aircraft whose grant carries at least one data scope — a
+      // scope-less token (e.g. openid-only) must not enumerate tail numbers.
+      const ids = [
+        ...new Set(
+          (grants ?? []).filter((g) => (g.scopes?.length ?? 0) > 0).map((g) => g.aircraft_id),
+        ),
+      ];
+      if (ids.length === 0) return Response.json({ aircraft: [] });
+      query = query.in("id", ids);
+    }
+
+    const { data: aircraft, error } = await query;
     if (error) throw new ApiError(500, "server_error", error.message);
 
     await logAccess(caller, null, detailed ? "aircraft:read" : "aircraft:list", "/api/v1/aircraft");

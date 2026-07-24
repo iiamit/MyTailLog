@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getOAuthProvider } from "@/lib/oauth/provider";
 import { toNode } from "@/lib/oauth/bridge";
 import { SCOPE_LABELS } from "@/lib/oauth/scopes";
+import { AircraftPicker } from "./AircraftPicker";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -105,27 +106,7 @@ export default async function ConsentPage({ params }: { params: Promise<{ uid: s
           </ul>
         </section>
 
-        <section>
-          <div className="text-xs font-medium uppercase tracking-wide text-faint">For these aircraft</div>
-          {aircraft && aircraft.length > 0 ? (
-            <ul className="mt-2 flex flex-col gap-1.5 text-sm">
-              {aircraft.map((a) => (
-                <li key={a.id}>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" name="aircraft" value={a.id} defaultChecked />
-                    <span className="text-ink">{a.tail_number}</span>
-                    <span className="text-faint">
-                      {[a.make, a.model].filter(Boolean).join(" ")}
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2 text-sm text-dim">You have no aircraft to share.</p>
-          )}
-          <p className="mt-2 text-xs text-faint">Only the aircraft you check will be shared. You can revoke anytime in your profile.</p>
-        </section>
+        <AircraftPicker aircraft={aircraft ?? []} />
 
         <div className="flex gap-2">
           <button

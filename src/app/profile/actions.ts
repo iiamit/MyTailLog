@@ -157,8 +157,13 @@ export async function revokeOAuthClient(clientId: string): Promise<{ error?: str
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
-  // RLS restricts the delete to the caller's own rows (account_id = auth.uid()).
-  const { error } = await supabase.from("oauth_aircraft_grant").delete().eq("client_id", clientId);
+  // RLS restricts both deletes to the caller's own rows (account_id = auth.uid()).
+  // Revoke the per-aircraft grants AND any account-wide grant (0040) for this client.
+  const [perAircraft, account] = await Promise.all([
+    supabase.from("oauth_aircraft_grant").delete().eq("client_id", clientId),
+    supabase.from("oauth_account_grant").delete().eq("client_id", clientId),
+  ]);
+  const error = perAircraft.error ?? account.error;
   if (error) return { error: error.message };
   revalidatePath("/profile");
   return {};

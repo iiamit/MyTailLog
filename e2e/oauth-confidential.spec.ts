@@ -49,6 +49,7 @@ test("confidential client: portal secret authenticates the token endpoint", asyn
 
     const verifier = await authorize();
     await expect(page.getByRole("heading", { name: /wants to read your aircraft data/i })).toBeVisible();
+    await page.getByRole("radio", { name: /only the aircraft i choose/i }).check();
     const boxes = page.locator('input[name="aircraft"]');
     for (let i = 0; i < (await boxes.count()); i++) await boxes.nth(i).uncheck();
     await page.locator(`label:has-text("${scratch.tail}") input[name="aircraft"]`).check();
