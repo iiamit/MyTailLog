@@ -59,8 +59,8 @@ test("OAuth consent completes for an account with no aircraft (empty API results
         }).toString(),
     );
 
-    // The consent screen shows there's nothing to share — allow anyway.
-    await expect(page.getByText("You have no aircraft to share.")).toBeVisible();
+    // The consent screen loads with the (default account-wide) picker — allow.
+    await expect(page.getByText(/All my aircraft/)).toBeVisible();
     await page.getByRole("button", { name: "Allow access" }).click();
 
     // It COMPLETES with an auth code (previously: error=access_denied).
