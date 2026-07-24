@@ -51,7 +51,9 @@ test("resource server enforces token + per-aircraft grant boundary", async ({ pa
 
     await page.goto(authUrl);
     await expect(page.getByRole("heading", { name: /wants to read your aircraft data/i })).toBeVisible();
-    // Grant only A: uncheck everything, then check the scratch aircraft's row.
+    // Grant only A: switch to per-aircraft mode (default is now account-wide),
+    // uncheck everything, then check the scratch aircraft's row.
+    await page.getByRole("radio", { name: /only the aircraft i choose/i }).check();
     const boxes = page.locator('input[name="aircraft"]');
     for (let i = 0; i < (await boxes.count()); i++) await boxes.nth(i).uncheck();
     await page.locator(`label:has-text("${scratch.tail}") input[name="aircraft"]`).check();

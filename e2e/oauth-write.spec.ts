@@ -51,7 +51,7 @@ async function connect(
   const uid = authRes.headers()["location"]!.split("?")[0].split("/").filter(Boolean).pop()!;
   const decideRes = await page.request.post(`/oauth/consent/${uid}/decide`, {
     maxRedirects: 0,
-    form: { decision: "approve", aircraft: scratchId },
+    form: { decision: "approve", share_scope: "selected", aircraft: scratchId },
   });
   let loc: string | undefined = decideRes.headers()["location"];
   let code: string | null = null;

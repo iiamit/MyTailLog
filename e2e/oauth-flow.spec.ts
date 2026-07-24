@@ -46,9 +46,10 @@ test("authorize → consent → token: full authorization-code + PKCE flow", asy
     // /auth (no oidc session) → our consent screen.
     await page.goto(authUrl);
     await expect(page.getByRole("heading", { name: /wants to read your aircraft data/i })).toBeVisible();
-    // The scratch aircraft (owned by the test user) is offered and checked.
+    // Choose per-aircraft sharing (the default is now account-wide) and grant
+    // the scratch aircraft specifically.
+    await page.getByRole("radio", { name: /only the aircraft i choose/i }).check();
     await expect(page.getByText(scratch.tail)).toBeVisible();
-
     await page.getByRole("button", { name: /allow access/i }).click();
 
     // Redirected back to the client's redirect_uri with an authorization code.

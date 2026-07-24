@@ -18,6 +18,7 @@ import {
 export type ConnectedApp = {
   clientId: string;
   name: string;
+  allAircraft: boolean;
   aircraft: string[];
   scopes: string[];
   since: string;
@@ -577,7 +578,8 @@ export function ProfileClient({
                 <div className="text-sm">
                   <div className="font-medium text-ink">{app.name}</div>
                   <div className="text-faint">
-                    {app.aircraft.join(", ") || "no aircraft"} · {app.scopes.join(", ")}
+                    {app.allAircraft ? "All aircraft (incl. new)" : app.aircraft.join(", ") || "no aircraft"} ·{" "}
+                    {app.scopes.join(", ")}
                   </div>
                 </div>
                 <button

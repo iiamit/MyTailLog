@@ -41,6 +41,26 @@ export function requireScope(caller: ApiCaller, scope: string): void {
 /** Aircraft ids this (account, client) may read for `scope` (active grants only). */
 export async function grantedAircraftIds(caller: ApiCaller, scope: string): Promise<string[]> {
   const svc = createServiceClient();
+
+  // Account-wide grant ("all my aircraft, now and future"): if present with this
+  // scope, every currently-OWNED aircraft is covered — including ones added after
+  // consent. (error-tolerant: a pre-0040 database just falls through to the
+  // per-aircraft grants below.) Ownership is still the boundary, re-checked live.
+  const { data: acct, error: acctErr } = await svc
+    .from("oauth_account_grant")
+    .select("scopes")
+    .eq("account_id", caller.accountId)
+    .eq("client_id", caller.clientId)
+    .is("revoked_at", null)
+    .maybeSingle();
+  if (!acctErr && acct && (acct.scopes ?? []).includes(scope)) {
+    const { data: owned } = await svc
+      .from("aircraft")
+      .select("id")
+      .eq("owner_id", caller.accountId);
+    return (owned ?? []).map((a) => a.id);
+  }
+
   const { data } = await svc
     .from("oauth_aircraft_grant")
     .select("aircraft_id, scopes")

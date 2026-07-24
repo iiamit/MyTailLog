@@ -50,12 +50,18 @@ export default async function ProfilePage() {
   // Connected apps (OAuth): the user's active per-aircraft grants, grouped by
   // app. Client display names come from the service client — RLS on oauth_client
   // is owner-scoped (the developer), so a grantee can't read it directly.
-  const { data: grants } = await supabase
-    .from("oauth_aircraft_grant")
-    .select("client_id, aircraft_id, scopes, created_at")
-    .is("revoked_at", null);
+  const [{ data: grants }, { data: acctGrants }] = await Promise.all([
+    supabase
+      .from("oauth_aircraft_grant")
+      .select("client_id, aircraft_id, scopes, created_at")
+      .is("revoked_at", null),
+    supabase.from("oauth_account_grant").select("client_id, scopes, created_at").is("revoked_at", null),
+  ]);
   const grantRows = grants ?? [];
-  const clientIds = [...new Set(grantRows.map((g) => g.client_id))];
+  const acctRows = acctGrants ?? [];
+  const clientIds = [
+    ...new Set([...grantRows.map((g) => g.client_id), ...acctRows.map((g) => g.client_id)]),
+  ];
   const aircraftIds = [...new Set(grantRows.map((g) => g.aircraft_id))];
   const [names, tails] = await Promise.all([
     clientIds.length
@@ -75,14 +81,22 @@ export default async function ProfilePage() {
   ]);
   const appsByClient = new Map<
     string,
-    { clientId: string; name: string; aircraft: Set<string>; scopes: Set<string>; since: string }
+    { clientId: string; name: string; allAircraft: boolean; aircraft: Set<string>; scopes: Set<string>; since: string }
   >();
+  const entryFor = (clientId: string, since: string) =>
+    appsByClient.get(clientId) ??
+    { clientId, name: names.get(clientId) ?? "An app", allAircraft: false, aircraft: new Set<string>(), scopes: new Set<string>(), since };
   for (const g of grantRows) {
-    const e =
-      appsByClient.get(g.client_id) ??
-      { clientId: g.client_id, name: names.get(g.client_id) ?? "An app", aircraft: new Set<string>(), scopes: new Set<string>(), since: g.created_at };
+    const e = entryFor(g.client_id, g.created_at);
     const tail = tails.get(g.aircraft_id);
     if (tail) e.aircraft.add(tail);
+    for (const s of g.scopes ?? []) e.scopes.add(s);
+    if (g.created_at < e.since) e.since = g.created_at;
+    appsByClient.set(g.client_id, e);
+  }
+  for (const g of acctRows) {
+    const e = entryFor(g.client_id, g.created_at);
+    e.allAircraft = true; // account-wide grant covers every owned aircraft (incl. future)
     for (const s of g.scopes ?? []) e.scopes.add(s);
     if (g.created_at < e.since) e.since = g.created_at;
     appsByClient.set(g.client_id, e);
@@ -90,6 +104,7 @@ export default async function ProfilePage() {
   const connectedApps = [...appsByClient.values()].map((e) => ({
     clientId: e.clientId,
     name: e.name,
+    allAircraft: e.allAircraft,
     aircraft: [...e.aircraft],
     scopes: [...e.scopes],
     since: e.since,

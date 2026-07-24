@@ -410,6 +410,16 @@ export type OauthAircraftGrant = {
   revoked_at: string | null;
 }
 
+/** Account-wide grant: a client may access ALL aircraft the account owns (0040). */
+export type OauthAccountGrant = {
+  id: string;
+  account_id: string;
+  client_id: string;
+  scopes: string[];
+  created_at: string;
+  revoked_at: string | null;
+}
+
 /** Audit row: which client read which aircraft/scope. */
 export type OauthAccessLog = {
   id: string;
@@ -478,6 +488,7 @@ export type Database = {
       oidc_payloads: { Row: OidcPayload; Insert: Partial<OidcPayload>; Update: Partial<OidcPayload>; Relationships: [] };
       oauth_client: { Row: OauthClient; Insert: Partial<OauthClient>; Update: Partial<OauthClient>; Relationships: [] };
       oauth_aircraft_grant: { Row: OauthAircraftGrant; Insert: Partial<OauthAircraftGrant>; Update: Partial<OauthAircraftGrant>; Relationships: [] };
+      oauth_account_grant: { Row: OauthAccountGrant; Insert: Partial<OauthAccountGrant>; Update: Partial<OauthAccountGrant>; Relationships: [] };
       oauth_access_log: { Row: OauthAccessLog; Insert: Partial<OauthAccessLog>; Update: Partial<OauthAccessLog>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
     };
