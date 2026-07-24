@@ -43,8 +43,11 @@ async function decide(request: Request, uid: string): Promise<Response> {
     return Response.redirect(new URL(`/login?next=/oauth/consent/${uid}`, request.url), 303);
   }
 
-  // Deny, or approve with no aircraft selected → nothing to share → treat as denied.
-  if (!approve || aircraftIds.length === 0) {
+  // Only an explicit Deny refuses. Approving with no aircraft is allowed — a new
+  // account may not have added one yet; the client is still authorized and the
+  // API just returns empty results until an aircraft is shared (re-consent adds
+  // it). Blocking here stranded first-time users mid-signup (reported by MFB).
+  if (!approve) {
     await provider.interactionFinished(
       req,
       res,
@@ -59,23 +62,17 @@ async function decide(request: Request, uid: string): Promise<Response> {
   const requested = String(details.params.scope ?? "").split(" ").filter(Boolean);
 
   // NEVER trust the submitted aircraft ids: a tampered form could list aircraft
-  // the user doesn't own. Keep only aircraft this user actually OWNS (the consent
-  // page only *displays* owned aircraft — it is not the security boundary). RLS
-  // (0035) enforces the same, but we filter here for a clean deny + defense in depth.
-  const { data: owned } = await supabase
-    .from("aircraft")
-    .select("id")
-    .eq("owner_id", accountId)
-    .in("id", aircraftIds);
-  const ownedIds = (owned ?? []).map((a) => a.id);
-  if (ownedIds.length === 0) {
-    await provider.interactionFinished(
-      req,
-      res,
-      { error: "access_denied", error_description: "No aircraft you own were selected." },
-      { mergeWithLastSubmission: false },
-    );
-    return toFetchResponse(res);
+  // the user doesn't own. Keep only aircraft this user actually OWNS — possibly
+  // none, which is fine: a brand-new account can still authorize the client. RLS
+  // (0035) enforces the same on write; this is a clean filter + defense in depth.
+  let ownedIds: string[] = [];
+  if (aircraftIds.length > 0) {
+    const { data: owned } = await supabase
+      .from("aircraft")
+      .select("id")
+      .eq("owner_id", accountId)
+      .in("id", aircraftIds);
+    ownedIds = (owned ?? []).map((a) => a.id);
   }
 
   // The oidc grant carries the requested scopes; the per-aircraft restriction is
@@ -85,39 +82,44 @@ async function decide(request: Request, uid: string): Promise<Response> {
   const grantId = await grant.save();
 
   const dataScopes = requested.filter((s) => s !== "openid" && s !== "offline_access");
-  const rows = ownedIds.map((aircraft_id) => ({
-    account_id: accountId,
-    client_id: clientId,
-    aircraft_id,
-    scopes: dataScopes,
-    revoked_at: null,
-  }));
-  // Authed client → RLS enforces account_id = auth.uid() AND ownership; onConflict re-consents.
-  const { error } = await supabase
-    .from("oauth_aircraft_grant")
-    .upsert(rows, { onConflict: "account_id,client_id,aircraft_id" });
-  if (!error) {
-    // Re-consent must be able to NARROW sharing: revoke this client's grants for
-    // any aircraft the owner did NOT re-select. The consent UI promises exactly
-    // this ("only the aircraft you check will be shared"); without it, un-checking
-    // an aircraft silently left the old grant live. ownedIds are DB-sourced UUIDs.
-    await supabase
+
+  // Upsert grants for the selected owned aircraft (if any).
+  if (ownedIds.length > 0) {
+    const rows = ownedIds.map((aircraft_id) => ({
+      account_id: accountId,
+      client_id: clientId,
+      aircraft_id,
+      scopes: dataScopes,
+      revoked_at: null,
+    }));
+    // Authed client → RLS enforces account_id = auth.uid() AND ownership; onConflict re-consents.
+    const { error } = await supabase
       .from("oauth_aircraft_grant")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("account_id", accountId)
-      .eq("client_id", clientId)
-      .is("revoked_at", null)
-      .not("aircraft_id", "in", `(${ownedIds.join(",")})`);
+      .upsert(rows, { onConflict: "account_id,client_id,aircraft_id" });
+    if (error) {
+      await provider.interactionFinished(
+        req,
+        res,
+        { error: "server_error", error_description: "Could not save consent." },
+        { mergeWithLastSubmission: false },
+      );
+      return toFetchResponse(res);
+    }
   }
-  if (error) {
-    await provider.interactionFinished(
-      req,
-      res,
-      { error: "server_error", error_description: "Could not save consent." },
-      { mergeWithLastSubmission: false },
-    );
-    return toFetchResponse(res);
+
+  // Re-consent must be able to NARROW sharing: revoke this client's active grants
+  // for any aircraft the owner did NOT re-select — ALL of them when none was
+  // selected. The consent UI promises "only the aircraft you check will be shared".
+  let revoke = supabase
+    .from("oauth_aircraft_grant")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("account_id", accountId)
+    .eq("client_id", clientId)
+    .is("revoked_at", null);
+  if (ownedIds.length > 0) {
+    revoke = revoke.not("aircraft_id", "in", `(${ownedIds.join(",")})`);
   }
+  await revoke;
 
   await provider.interactionFinished(
     req,
