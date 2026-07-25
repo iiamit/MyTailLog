@@ -31,9 +31,14 @@ create index if not exists document_entry_idx on document(log_entry_id);
 
 alter table log_entry add column if not exists reference_links jsonb not null default '[]'::jsonb;
 
--- Read = anyone with access; write = editors only (was a single permissive
--- `for all` policy that let viewers write).
+-- Read = anyone with access; write = editors only. 0001 shipped a single
+-- permissive `for all` policy (document_access) that let viewers write. Some
+-- databases were already hand-split into document_read/document_write (drift not
+-- captured in a migration); this converges either state to the canonical split
+-- and records it in migration history so a fresh DB is correct too. Idempotent.
 drop policy if exists document_access on document;
+drop policy if exists document_read on document;
+drop policy if exists document_write on document;
 create policy document_read on document for select
   using (has_aircraft_access(aircraft_id));
 create policy document_write on document for all
