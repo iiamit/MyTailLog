@@ -100,7 +100,22 @@ export default async function ReviewPage({
     field_boxes: e.field_boxes,
     owner_confirmed: e.owner_confirmed,
     is_continuation: e.is_continuation,
+    reference_links: e.reference_links ?? [],
   }));
+
+  // Documents attached to this page's entries (Vault items linked to an entry).
+  const entryIds = reviewEntries.map((e) => e.id);
+  const attachmentsByEntry: Record<string, { id: string; title: string | null; file_name: string | null }[]> = {};
+  if (entryIds.length) {
+    const { data: docs } = await supabase
+      .from("document")
+      .select("id, title, file_name, log_entry_id")
+      .in("log_entry_id", entryIds);
+    for (const d of docs ?? []) {
+      if (!d.log_entry_id) continue;
+      (attachmentsByEntry[d.log_entry_id] ??= []).push({ id: d.id, title: d.title, file_name: d.file_name });
+    }
+  }
 
   const logbookLabel = logbook
     ? logbook.title ?? LOGBOOK_LABEL[logbook.type] ?? logbook.type
@@ -187,6 +202,8 @@ export default async function ReviewPage({
         detectedPageCount={page.detected_page_count}
         entries={reviewEntries}
         returnLogbookId={returnLogbookId ?? null}
+        canEdit={canEdit}
+        attachmentsByEntry={attachmentsByEntry}
       />
     </main>
   );

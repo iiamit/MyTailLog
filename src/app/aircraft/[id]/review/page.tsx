@@ -83,6 +83,7 @@ export default async function ReviewAllPage({
         field_boxes: e.field_boxes,
         owner_confirmed: e.owner_confirmed,
         is_continuation: e.is_continuation,
+        reference_links: e.reference_links ?? [],
         pageId: page.id,
         logbookId: page.logbook_id,
         pageLabel: `${label}${page.page_sequence != null ? ` · page #${page.page_sequence}` : ""}`,
@@ -91,6 +92,20 @@ export default async function ReviewAllPage({
       };
     })
     .sort((a, b) => (pageOrder.get(a.pageId) ?? 0) - (pageOrder.get(b.pageId) ?? 0));
+
+  // Documents attached to any of these entries (Vault items linked to an entry).
+  const attachmentsByEntry: Record<string, { id: string; title: string | null; file_name: string | null }[]> = {};
+  const flatIds = flat.map((e) => e.id);
+  if (flatIds.length) {
+    const { data: docs } = await supabase
+      .from("document")
+      .select("id, title, file_name, log_entry_id")
+      .in("log_entry_id", flatIds);
+    for (const d of docs ?? []) {
+      if (!d.log_entry_id) continue;
+      (attachmentsByEntry[d.log_entry_id] ??= []).push({ id: d.id, title: d.title, file_name: d.file_name });
+    }
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -106,7 +121,7 @@ export default async function ReviewAllPage({
         </p>
       </header>
 
-      <ReviewAllClient aircraftId={id} entries={flat} />
+      <ReviewAllClient aircraftId={id} entries={flat} attachmentsByEntry={attachmentsByEntry} />
     </main>
   );
 }
