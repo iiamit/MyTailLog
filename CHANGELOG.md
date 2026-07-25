@@ -6,13 +6,30 @@ the git log.
 
 ## 2026.07
 
+### Added — Records, squawks & engine health
+- **Records Vault** — a categorized home for the aircraft's permanent records
+  (airworthiness certificate, registration, radio station authorization, POH/AFM,
+  weight & balance, **STCs**, 337s, 8130-3s, ICAs, manuals), stored alongside the
+  logbook scans. Upload PDFs or photos up to 25 MB; a document can also be
+  attached to a specific maintenance entry.
+- **Squawks** — pilot-reported discrepancy tracking. Anyone with access can report
+  an issue with a severity (including a shared pilot); editors resolve, reopen, or
+  delete. Open until a mechanic clears it.
+- **Oil consumption** — log each oil top-off ("added 1.5 qt") with the tach/hobbs
+  and see your **burn-rate trend** (hours per quart) between top-offs — separate
+  from the lab wear-metal analysis.
+
 ### Added — Open API & integrations
 - **OAuth 2.1 API.** MyTailLog is now its own **Authorization Server + Resource
   Server** (Panva `oidc-provider`, Authorization Code + PKCE). Third-party apps can
   read an aircraft's **airworthiness / AD / inspection status, equipment, hours,
-  oil, and weight & balance** — read-only, and **only with the owner's per-aircraft
-  consent**. Endpoints under `/api/v1`; RFC 8414 discovery at
+  oil, and weight & balance** — read-only, and **only with the owner's consent**.
+  Endpoints under `/api/v1`; RFC 8414 discovery at
   `/.well-known/oauth-authorization-server`.
+- **Account-wide sharing.** Consent defaults to sharing **all your aircraft**
+  (including any you add later, so an app keeps working as your fleet grows), with
+  "only the ones I pick" still available. A brand-new account can authorize an app
+  before adding any aircraft (it just sees an empty list until you add one).
 - **Self-serve developer portal** (`/developers`) — register public (PKCE) or
   confidential (client-secret) apps, with docs at `/developers/docs`.
 - **Connected apps** in Profile — see and revoke any app's access at any time.
@@ -35,6 +52,14 @@ the git log.
   MyFlightBook credentials and users' own Anthropic keys; pinned the GCM auth-tag
   length.
 - Added **Semgrep** and **Dependabot** to CI; **SHA-pinned** all GitHub Actions.
+- **Full-app security audit hardening.** Closed an AI-budget race (atomic
+  reservation replacing a check-then-act), moved BYOK Anthropic-key ciphertext
+  into a private schema reachable only via `SECURITY DEFINER` functions (a
+  browser-role read was possible before), scoped `form-action` to the consent
+  flow, patched sharp/libvips CVEs, gated the maintenance forecast to
+  owner-confirmed entries, split the document table's write policy to editors-only
+  (a read-only viewer could previously write documents), and added an executable
+  RLS-isolation regression suite plus broad unit coverage.
 
 ### Earlier in 2026.07
 - **Oil analysis** — import a Blackstone/AVLab lab report (PDF or photo); AI reads
