@@ -6,7 +6,7 @@ import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import type { DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS, documentTypeLabel } from "@/lib/documents";
-import { uploadDocument, deleteDocument } from "./actions";
+import { deleteDocument } from "./actions";
 
 type Doc = {
   id: string;
@@ -48,13 +48,20 @@ export function DocumentsClient({
 
   async function upload(formData: FormData) {
     setBusy(true);
-    const res = await uploadDocument(aircraftId, formData);
-    setBusy(false);
-    if (res.error) return toast.error(res.error);
-    toast.success("Document added.");
-    setOpen(false);
-    (document.getElementById("upload-doc") as HTMLFormElement | null)?.reset();
-    router.refresh();
+    try {
+      // POST to the upload route (server actions cap the body at ~1 MB).
+      const res = await fetch(`/api/aircraft/${aircraftId}/documents`, { method: "POST", body: formData });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) return toast.error(body.error || "Upload failed.");
+      toast.success("Document added.");
+      setOpen(false);
+      (document.getElementById("upload-doc") as HTMLFormElement | null)?.reset();
+      router.refresh();
+    } catch {
+      toast.error("Upload failed — check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function remove(id: string) {
