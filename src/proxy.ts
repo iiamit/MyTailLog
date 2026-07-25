@@ -8,8 +8,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except static assets and the service worker.
+  // Run on page navigations only — refresh the auth cookie + redirect
+  // unauthenticated users. Excludes static assets, the service worker, AND
+  // `/api/*`: route handlers do their own auth, and routing them through the
+  // proxy caps their request body at Next's proxy limit (~10 MB), which
+  // truncated large uploads (a 20 MB manual → the Records Vault / oil-report
+  // import). Skipping the proxy lets those routes receive the full body.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
