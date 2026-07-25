@@ -252,6 +252,27 @@ export type WeightBalance = {
   updated_at: string;
 }
 
+export type SquawkSeverity = "low" | "medium" | "high";
+export type SquawkStatus = "open" | "resolved";
+
+/** A pilot-reported discrepancy, tracked open → resolved (0043). */
+export type Squawk = {
+  id: string;
+  aircraft_id: string;
+  description: string;
+  severity: SquawkSeverity;
+  status: SquawkStatus;
+  reported_by: string | null;
+  reporter_name: string | null;
+  reported_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolved_log_entry_id: string | null;
+  resolution_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type ScannedDocumentType = "weight_balance" | "ad_report" | "other";
 
 export type ScannedDocument = {
@@ -512,6 +533,7 @@ export type Database = {
       // reached only via the ai-key SECURITY DEFINER functions below.
       oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
       oil_addition: { Row: OilAddition; Insert: Partial<OilAddition>; Update: Partial<OilAddition>; Relationships: [] };
+      squawk: { Row: Squawk; Insert: Partial<Squawk>; Update: Partial<Squawk>; Relationships: [] };
       oidc_payloads: { Row: OidcPayload; Insert: Partial<OidcPayload>; Update: Partial<OidcPayload>; Relationships: [] };
       oauth_client: { Row: OauthClient; Insert: Partial<OauthClient>; Update: Partial<OauthClient>; Relationships: [] };
       oauth_aircraft_grant: { Row: OauthAircraftGrant; Insert: Partial<OauthAircraftGrant>; Update: Partial<OauthAircraftGrant>; Relationships: [] };

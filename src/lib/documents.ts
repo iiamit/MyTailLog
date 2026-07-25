@@ -20,7 +20,7 @@ export const DOCUMENT_TYPES: DocumentType[] = [
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   airworthiness_cert: "Airworthiness certificate",
   registration: "Registration",
-  radio_license: "Radio operator license",
+  radio_license: "Radio station authorization",
   poh_afm: "POH / AFM",
   weight_balance: "Weight & balance",
   stc: "STCs",
