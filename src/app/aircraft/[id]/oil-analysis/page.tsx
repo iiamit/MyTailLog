@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAircraftShellContext } from "@/lib/aircraftContext";
 import { OilAnalysisClient } from "./OilAnalysisClient";
+import { OilConsumptionClient } from "./OilConsumptionClient";
 
 export default async function OilAnalysisPage({
   params,
@@ -16,11 +17,10 @@ export default async function OilAnalysisPage({
 
   // Oldest → newest so trend charts read left-to-right; the client shows the
   // latest first in the table.
-  const { data: samples } = await supabase
-    .from("oil_analysis_sample")
-    .select("*")
-    .eq("aircraft_id", id)
-    .order("sample_date", { ascending: true });
+  const [{ data: samples }, { data: additions }] = await Promise.all([
+    supabase.from("oil_analysis_sample").select("*").eq("aircraft_id", id).order("sample_date", { ascending: true }),
+    supabase.from("oil_addition").select("*").eq("aircraft_id", id).order("added_date", { ascending: true }),
+  ]);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
@@ -38,6 +38,14 @@ export default async function OilAnalysisPage({
         aircraftId={id}
         canEdit={ctx.canEdit}
         samples={samples ?? []}
+      />
+
+      <OilConsumptionClient
+        aircraftId={id}
+        canEdit={ctx.canEdit}
+        additions={additions ?? []}
+        currentTach={ctx.tach}
+        currentHobbs={ctx.hobbs}
       />
     </main>
   );
