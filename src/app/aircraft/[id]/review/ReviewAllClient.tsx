@@ -6,6 +6,7 @@ import { ZoomableImage } from "@/components/ZoomableImage";
 import { useToast } from "@/components/Toast";
 import { isEntryClean } from "@/lib/extraction/schema";
 import { EntryCard, type ReviewEntry } from "../pages/[pageId]/review/ReviewClient";
+import type { EntryAttachment } from "../pages/[pageId]/review/EntryExtras";
 import { mergeContinuation, type EntryFields } from "../pages/[pageId]/review/actions";
 import { confirmClean } from "./actions";
 
@@ -22,9 +23,11 @@ type Filter = "review" | "all";
 export function ReviewAllClient({
   aircraftId,
   entries: initial,
+  attachmentsByEntry,
 }: {
   aircraftId: string;
   entries: FlatEntry[];
+  attachmentsByEntry: Record<string, EntryAttachment[]>;
 }) {
   const toast = useToast();
   const [entries, setEntries] = useState<FlatEntry[]>(initial);
@@ -189,6 +192,8 @@ export function ReviewAllClient({
                   onCancelNew={() => {}}
                   onMerge={onMerge}
                   merging={mergingId === e.id}
+                  canEdit
+                  attachments={attachmentsByEntry[e.id] ?? []}
                 />
               ))}
             </div>

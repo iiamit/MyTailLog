@@ -29,6 +29,28 @@ function reviewPath(aircraftId: string, pageId: string) {
   return `/aircraft/${aircraftId}/pages/${pageId}/review`;
 }
 
+/**
+ * Replace an entry's external reference links. Only http(s) URLs are stored
+ * (these render as an <a href>, so a javascript: link would be XSS); labels and
+ * count are bounded. RLS scopes the write to editors of this aircraft.
+ */
+export async function setEntryLinks(
+  aircraftId: string,
+  pageId: string,
+  entryId: string,
+  links: ReferenceLink[],
+): Promise<Result> {
+  const clean = (links ?? [])
+    .map((l) => ({ label: String(l?.label ?? "").trim().slice(0, 120), url: String(l?.url ?? "").trim() }))
+    .filter((l) => /^https?:\/\//i.test(l.url))
+    .slice(0, 20);
+  const supabase = await createClient();
+  const { error } = await supabase.from("log_entry").update({ reference_links: clean }).eq("id", entryId);
+  if (error) return { error: error.message };
+  revalidatePath(reviewPath(aircraftId, pageId));
+  return { ok: true };
+}
+
 const joinText = (a: string | null, b: string | null): string | null =>
   [a, b].map((x) => x?.trim()).filter(Boolean).join(" ") || null;
 const unionRefs = (a: string[] | null, b: string[] | null): string[] => [

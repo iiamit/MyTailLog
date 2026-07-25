@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { CONFIDENCE_THRESHOLD, type FieldBox } from "@/lib/extraction/schema";
-import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
+import type { ExtractionStatus, ReviewStatus, ReferenceLink } from "@/lib/database.types";
+import { EntryExtras, type EntryAttachment } from "./EntryExtras";
 import {
   saveEntry,
   addEntry,
@@ -33,6 +34,7 @@ export type ReviewEntry = {
   field_boxes: Record<string, FieldBox | null> | null;
   owner_confirmed: boolean;
   is_continuation: boolean;
+  reference_links: ReferenceLink[];
 };
 
 const blankEntry = (): ReviewEntry => ({
@@ -52,6 +54,7 @@ const blankEntry = (): ReviewEntry => ({
   field_boxes: null,
   owner_confirmed: false,
   is_continuation: false,
+  reference_links: [],
 });
 
 // Local editable form state — everything as strings for controlled inputs.
@@ -227,6 +230,8 @@ export function EntryCard({
   onCancelNew,
   onMerge,
   merging,
+  canEdit,
+  attachments,
 }: {
   entry: ReviewEntry;
   isNew: boolean;
@@ -234,6 +239,8 @@ export function EntryCard({
   aircraftId: string;
   pageId: string;
   imageUrl: string | null;
+  canEdit: boolean;
+  attachments: EntryAttachment[];
   // Spotlight mode (single-page reviewer): highlight a field's box on the
   // shared sticky scan. Absent in the flat view, which falls back to crops.
   onLocate?: (box: FieldBox | null, key: string) => void;
@@ -463,6 +470,17 @@ export function EntryCard({
           {isNew ? "Cancel" : "Delete"}
         </button>
       </div>
+
+      {!isNew && (
+        <EntryExtras
+          entryId={entry.id}
+          aircraftId={aircraftId}
+          pageId={pageId}
+          canEdit={canEdit}
+          attachments={attachments}
+          links={entry.reference_links ?? []}
+        />
+      )}
     </div>
   );
 }
@@ -478,6 +496,8 @@ export function ReviewClient({
   detectedPageCount,
   entries: initialEntries,
   returnLogbookId,
+  canEdit,
+  attachmentsByEntry,
 }: {
   aircraftId: string;
   pageId: string;
@@ -489,6 +509,8 @@ export function ReviewClient({
   detectedPageCount: number | null;
   entries: ReviewEntry[];
   returnLogbookId: string | null;
+  canEdit: boolean;
+  attachmentsByEntry: Record<string, EntryAttachment[]>;
 }) {
   const router = useRouter();
   // Reviewing exits back to the Logbooks & pages list (not the overview) so you
@@ -677,6 +699,8 @@ export function ReviewClient({
             onCancelNew={() => {}}
             onMerge={mergeTail}
             merging={mergingId === e.id}
+            canEdit={canEdit}
+            attachments={attachmentsByEntry[e.id] ?? []}
           />
         ))}
 
@@ -697,6 +721,8 @@ export function ReviewClient({
             }
             onMerge={() => {}}
             merging={false}
+            canEdit={canEdit}
+            attachments={[]}
           />
         ))}
 
