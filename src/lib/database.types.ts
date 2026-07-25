@@ -340,6 +340,19 @@ export type MfbConnection = {
 }
 
 /** One oil-analysis lab sample (Blackstone/AVLab/etc.), imported from a report. */
+/** An owner's "added N quarts" top-off between oil changes (0042). */
+export type OilAddition = {
+  id: string;
+  aircraft_id: string;
+  component_id: string | null;
+  added_date: string;
+  quarts: number;
+  hobbs: number | null;
+  tach: number | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export type OilAnalysisSample = {
   id: string;
   aircraft_id: string;
@@ -498,6 +511,7 @@ export type Database = {
       // user_ai_key lives in a private schema (0039) — not exposed to PostgREST;
       // reached only via the ai-key SECURITY DEFINER functions below.
       oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
+      oil_addition: { Row: OilAddition; Insert: Partial<OilAddition>; Update: Partial<OilAddition>; Relationships: [] };
       oidc_payloads: { Row: OidcPayload; Insert: Partial<OidcPayload>; Update: Partial<OidcPayload>; Relationships: [] };
       oauth_client: { Row: OauthClient; Insert: Partial<OauthClient>; Update: Partial<OauthClient>; Relationships: [] };
       oauth_aircraft_grant: { Row: OauthAircraftGrant; Insert: Partial<OauthAircraftGrant>; Update: Partial<OauthAircraftGrant>; Relationships: [] };
