@@ -22,7 +22,7 @@
     "sharp": "^0.35.3"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
+    "@anthropic-ai/sdk": "^0.112.3",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.45.4",
     "fetch-to-node": "^2.1.0",
