@@ -71,6 +71,9 @@ AI reads the page; you review it next to the original, with low-confidence field
   photo; AI reads every sample in it (wear metals in ppm, oil properties, the
   lab's written comments), and each metal is charted over time against the lab's
   universal average — above it is flagged. Re-importing a report updates in place.
+- **Oil consumption** — log each top-off ("added 1.5 qt") with the tach/hobbs and
+  MyTailLog charts your **burn rate** (hours per quart) between top-offs — a
+  leading engine-health signal, distinct from the lab wear-metal trend.
 
 **Understand & forecast**
 - **Ask your logbook** — plain-English questions answered from your entries, with
@@ -81,6 +84,9 @@ AI reads the page; you review it next to the original, with low-confidence field
   Register + DRS fallback); **Installed equipment** reconstructed from the logs;
   **Weight & Balance** history with a stale-since-last-equipment-change flag;
   **Records gap audit**.
+- **Squawks** — pilots report in-flight discrepancies (severity + who reported),
+  tracked **open** until a mechanic **resolves** them. Anyone with access can
+  report (including a shared pilot); editors resolve.
 
 **Flight hours & reminders**
 - **MyFlightBook integration** (per-user OAuth) pulls your latest hobbs/tach so
@@ -91,10 +97,11 @@ AI reads the page; you review it next to the original, with low-confidence field
 **Open API & integrations (OAuth 2.1)**
 - **MyTailLog is its own OAuth 2.1 Authorization + Resource Server**: other apps
   can read an aircraft's **airworthiness / AD / inspection status, equipment,
-  hours, oil, and weight & balance** — **only with the owner's per-aircraft
-  consent**, and **read-only** (log entries and scans are never shared). Owners
-  approve which aircraft on a consent screen and revoke any app anytime
-  (**Profile → Connected apps**).
+  hours, oil, and weight & balance** — **only with the owner's consent**, and
+  **read-only** (log entries and scans are never shared). On the consent screen
+  owners choose **all their aircraft** (the default — including any added later,
+  so an app keeps working as the fleet grows) or **only the ones they pick**, and
+  revoke any app anytime (**Profile → Connected apps**).
 - **Self-serve developer portal** (`/developers`) — register public (PKCE) or
   confidential (server-to-server, client-secret) apps, with **RFC 8414 discovery**
   and API docs at `/developers/docs`.
@@ -110,6 +117,9 @@ AI reads the page; you review it next to the original, with low-confidence field
   their calls, tokens, and estimated cost so far.
 
 **Own your data**
+- **Records Vault** — keep the aircraft's permanent records (airworthiness
+  certificate, registration, radio station authorization, POH/AFM, W&B, **STCs**,
+  337s, 8130-3s, manuals) in one place, alongside the logbook scans.
 - Print/PDF and CSV exports, plus a full **`.zip` backup** (records + scans) you
   can **re-import**.
 - **Sharing** (viewer / contributor), **ownership transfer**, and delete.

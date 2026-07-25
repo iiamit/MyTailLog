@@ -316,6 +316,25 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "squawks",
+    icon: <AlertIcon />,
+    title: "Squawks",
+    body: (
+      <>
+        <p>
+          Track discrepancies noticed in flight — a rough mag, a sticky switch, a small leak. In{" "}
+          <L href="/aircraft">Aircraft → Squawks</L>, anyone with access to the aircraft (including a
+          shared pilot) can report one with a severity; it stays <strong>open</strong> until an editor
+          marks it <strong>resolved</strong>.
+        </p>
+        <Effects>
+          Reporting is open to viewers and pilots, but only editors and the owner can resolve, reopen,
+          or delete a squawk. Resolved squawks stay on file for history.
+        </Effects>
+      </>
+    ),
+  },
+  {
     id: "oil-analysis",
     icon: <GaugeIcon />,
     title: "Oil analysis",
@@ -333,6 +352,12 @@ const SECTIONS: Section[] = [
           Each wear metal is charted over time against the lab&apos;s <strong>universal average</strong>{" "}
           for your engine type (the dashed line). Values above it are highlighted amber, and well
           above (2×) red — a prompt to watch, not a verdict.
+        </p>
+        <p className="mt-2">
+          Separately, log each <strong>oil top-off</strong> (&ldquo;added 1.5 qt&rdquo;) with the
+          tach/hobbs at the time — the meters prefill from the aircraft&apos;s current reading. From
+          those, MyTailLog charts your <strong>burn rate</strong> (hours per quart) between top-offs —
+          a leading indicator of engine health, distinct from the lab wear-metal trend above.
         </p>
         <p className="mt-2 text-sm text-faint">
           Like all extraction here, the numbers are read by AI — confirm anything important against
@@ -528,6 +553,27 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "records-vault",
+    icon: <ArchiveIcon />,
+    title: "Records Vault",
+    body: (
+      <>
+        <p>
+          A home for the aircraft&apos;s <strong>permanent records</strong> — airworthiness
+          certificate, registration, radio station authorization, POH/AFM, weight &amp; balance,{" "}
+          <strong>STCs</strong>, 337s, 8130-3s, ICAs, and manuals. In{" "}
+          <L href="/aircraft">Aircraft → Records Vault</L>, upload a PDF or photo (up to 25 MB), tag it
+          with a category and reference number, and it&apos;s a click away instead of buried in a
+          binder. These sit alongside your logbook scans.
+        </p>
+        <p className="mt-2 text-sm text-faint">
+          Editors can add and remove documents; anyone with access can view and download them. A
+          document can also be attached to a specific maintenance entry.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "audit",
     icon: <AlertIcon />,
     title: "Records gap audit",
@@ -586,11 +632,14 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         Other apps (like MyFlightBook) can read your aircraft&apos;s airworthiness, equipment, hours,
-        oil, and weight-and-balance data — <strong>only with your per-aircraft consent</strong>, and{" "}
-        <strong>read-only</strong>. When an app asks, you pick which aircraft to share on a consent
-        screen; you can revoke any app anytime under <L href="/profile">Profile → Connected apps</L>.
-        Building an integration? Register an app and read the guide under{" "}
-        <L href="/developers">Developer API</L>. Your transcribed log entries are never shared.
+        oil, and weight-and-balance data — <strong>only with your consent</strong>, and{" "}
+        <strong>read-only</strong>. On the consent screen you choose the scope: <strong>all your
+        aircraft</strong> (the default — including any you add later, so an app keeps working as your
+        fleet grows) or <strong>only the ones you pick</strong>. A brand-new account can authorize an
+        app before adding any aircraft — the app just sees an empty list until you add one. Revoke any
+        app anytime under <L href="/profile">Profile → Connected apps</L>. Building an integration?
+        Register an app and read the guide under <L href="/developers">Developer API</L>. Your
+        transcribed log entries are never shared.
       </p>
     ),
   },
