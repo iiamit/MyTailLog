@@ -132,6 +132,40 @@ test.describe("RLS multi-tenant isolation", () => {
     }
   });
 
+  test("a viewer can REPORT a squawk but cannot RESOLVE it (0043 policy)", async () => {
+    await admin.from("aircraft_share").insert({
+      aircraft_id: victimAc,
+      invited_email: attackerEmail,
+      role: "viewer",
+      invited_by: victimId,
+    });
+    let squawkId: string | undefined;
+    try {
+      // A viewer (pilot) may report — as themselves.
+      const report = await attackerDb
+        .from("squawk")
+        .insert({ aircraft_id: victimAc, description: "viewer report", severity: "low", reported_by: attackerId })
+        .select("id")
+        .single();
+      expect(report.error, "a viewer should be able to report a squawk").toBeFalsy();
+      squawkId = report.data!.id;
+
+      // …but cannot resolve it (update requires can_edit) — 0 rows, stays open.
+      const resolve = await attackerDb
+        .from("squawk")
+        .update({ status: "resolved" })
+        .eq("id", squawkId)
+        .select("id");
+      expect(resolve.error).toBeFalsy();
+      expect(resolve.data, "a viewer must not be able to resolve a squawk").toEqual([]);
+      const { data: after } = await admin.from("squawk").select("status").eq("id", squawkId).single();
+      expect(after!.status).toBe("open");
+    } finally {
+      if (squawkId) await admin.from("squawk").delete().eq("id", squawkId);
+      await admin.from("aircraft_share").delete().eq("aircraft_id", victimAc).eq("invited_email", attackerEmail);
+    }
+  });
+
   test("cannot share another user's aircraft to themselves (share self-escalation)", async () => {
     const { error } = await attackerDb.from("aircraft_share").insert({
       aircraft_id: victimAc,
