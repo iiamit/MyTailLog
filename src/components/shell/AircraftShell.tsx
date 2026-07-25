@@ -19,6 +19,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
         { ident: "TML", label: "Timeline & search", href: `${a}/timeline` },
         { ident: "ASK", label: "Ask your logbook", href: `${a}/ask` },
         { ident: "EQP", label: "Equipment", href: `${a}/equipment`, badge: ctx.badges.equipment, tone: "accent" },
+        { ident: "DOC", label: "Records Vault", href: `${a}/documents` },
       ],
     },
     {

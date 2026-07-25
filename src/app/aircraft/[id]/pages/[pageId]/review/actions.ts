@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { ReviewStatus } from "@/lib/database.types";
+import type { ReviewStatus, ReferenceLink } from "@/lib/database.types";
 
 // The editable fields of a log entry. Arrays arrive already split from the
 // client's comma-separated inputs. All mutations run under the caller's session
@@ -18,6 +18,9 @@ export type EntryFields = {
   mechanic_cert_number: string | null;
   ad_refs: string[];
   sb_refs: string[];
+  // Optional: only present when the entry's attachment/links editor changes it,
+  // so a normal field save via .update({...fields}) leaves existing links intact.
+  reference_links?: ReferenceLink[];
 };
 
 type Result = { ok: true } | { error: string };

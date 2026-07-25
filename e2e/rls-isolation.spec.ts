@@ -105,6 +105,33 @@ test.describe("RLS multi-tenant isolation", () => {
     expect(error, "WITH CHECK must reject a write onto a non-owned aircraft").toBeTruthy();
   });
 
+  test("a read-only viewer can read but cannot write documents (0041 write policy)", async () => {
+    // Grant the harness user viewer access to the victim's aircraft.
+    await admin.from("aircraft_share").insert({
+      aircraft_id: victimAc,
+      invited_email: attackerEmail,
+      role: "viewer",
+      invited_by: victimId,
+    });
+    try {
+      // The share now grants READ access to the victim aircraft…
+      const read = await attackerDb.from("aircraft").select("id").eq("id", victimAc);
+      expect(read.data?.length, "viewer share should grant read access").toBe(1);
+      // …but the document write policy is can_edit_aircraft, so a viewer can't write
+      // (0041 split it from the old `for all` policy that let any viewer write).
+      const write = await attackerDb
+        .from("document")
+        .insert({ aircraft_id: victimAc, type: "other", title: "injected" });
+      expect(write.error, "a read-only viewer must not be able to write documents").toBeTruthy();
+    } finally {
+      await admin
+        .from("aircraft_share")
+        .delete()
+        .eq("aircraft_id", victimAc)
+        .eq("invited_email", attackerEmail);
+    }
+  });
+
   test("cannot share another user's aircraft to themselves (share self-escalation)", async () => {
     const { error } = await attackerDb.from("aircraft_share").insert({
       aircraft_id: victimAc,

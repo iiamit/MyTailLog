@@ -21,6 +21,11 @@ export type DocumentType =
   | "stc"
   | "ica"
   | "weight_balance"
+  | "airworthiness_cert"
+  | "registration"
+  | "radio_license"
+  | "poh_afm"
+  | "maintenance_manual"
   | "other";
 
 export type Aircraft = {
@@ -98,6 +103,7 @@ export type LogEntry = {
   entry_index: number | null;
   continues_next: boolean;
   is_continuation: boolean;
+  reference_links: ReferenceLink[]; // external references (STC/AC/AD pages) — 0041
   created_at: string;
   updated_at: string;
 }
@@ -111,9 +117,16 @@ export type DocumentRecord = {
   document_date: string | null;
   reference: string | null;
   notes: string | null;
+  log_entry_id: string | null; // set → attached to a maintenance entry (0041)
+  file_name: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
   created_at: string;
   updated_at: string;
 }
+
+/** A free-text external reference on a log entry (STC/AC/AD page, etc). */
+export type ReferenceLink = { label: string; url: string };
 
 export type Component = {
   id: string;
