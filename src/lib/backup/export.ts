@@ -10,14 +10,12 @@ import {
   type Row,
 } from "./format";
 
-const BUCKET = process.env.NEXT_PUBLIC_LOGBOOK_STORAGE_BUCKET || "logbook-pages";
-
 type Progress = (msg: string) => void;
 
 /**
  * Build a portable .zip of one aircraft's entire dataset (records + original
- * scans). Runs entirely in the browser — scans stream straight from signed
- * storage URLs into the archive, so nothing is processed server-side.
+ * scans). Runs entirely in the browser — scans stream through the app's own
+ * RLS-scoped serving routes (backend-agnostic) into the archive.
  *
  * ponytail: whole archive is assembled in memory. Fine at personal scale
  * (dozens–hundreds of pages); switch to fflate's streaming Zip if a library
@@ -72,25 +70,20 @@ export async function exportBackup(
     if (sp) items.push({ id: d.id as string, storagePath: sp, prefix: "docs" });
   }
 
-  // Batch-sign, then fetch each into the archive. JPEGs are already compressed,
-  // so store them (level 0) and only compress the JSON.
-  const signed = new Map<string, string>();
-  for (let i = 0; i < items.length; i += 100) {
-    const batch = items.slice(i, i + 100).map((it) => it.storagePath);
-    const { data: urls } = await supabase.storage.from(BUCKET).createSignedUrls(batch, 3600);
-    for (const u of urls ?? []) if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl);
-  }
-
+  // Fetch each blob through the app's RLS-scoped serving routes (works on any
+  // storage backend). JPEGs are already compressed, so store them (level 0) and
+  // only compress the JSON.
   let done = 0;
   for (const it of items) {
-    const url = signed.get(it.storagePath);
-    if (url) {
-      try {
-        const buf = new Uint8Array(await (await fetch(url)).arrayBuffer());
+    const url = it.prefix === "docs" ? `/api/document/${it.id}` : `/api/page/${it.id}/image`;
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const buf = new Uint8Array(await res.arrayBuffer());
         files[`${it.prefix}/${it.id}.${extOf(it.storagePath)}`] = [buf, { level: 0 }];
-      } catch {
-        // Skip a scan that can't be fetched; the rest of the backup still saves.
       }
+    } catch {
+      // Skip a scan that can't be fetched; the rest of the backup still saves.
     }
     onProgress?.(`Packing scans… ${++done}/${items.length}`);
   }

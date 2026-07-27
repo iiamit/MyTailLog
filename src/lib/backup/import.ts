@@ -11,10 +11,29 @@ import {
   type Row,
 } from "./format";
 
-const BUCKET = process.env.NEXT_PUBLIC_LOGBOOK_STORAGE_BUCKET || "logbook-pages";
-
 type Progress = (msg: string) => void;
 type TableName = keyof Database["public"]["Tables"];
+
+/**
+ * Upload one blob to a storage key under the new aircraft, via the editor-gated
+ * server route (the browser can't write GCS directly). Best-effort, like the old
+ * direct upload — a failed scan just leaves that page image missing.
+ */
+async function uploadBlob(
+  aircraftId: string,
+  path: string,
+  blob: Blob,
+  contentType: string,
+): Promise<void> {
+  const fd = new FormData();
+  fd.set("path", path);
+  fd.set("file", new File([blob], path.split("/").pop() || "blob", { type: contentType }));
+  try {
+    await fetch(`/api/aircraft/${aircraftId}/blob`, { method: "POST", body: fd });
+  } catch {
+    // Best-effort; the record still restores without its scan.
+  }
+}
 
 /** Drop server-managed fields before re-inserting a backed-up row. */
 function clean(row: Row): Row {
@@ -101,17 +120,12 @@ export async function importBackup(
     let thumbnailPath: string | null = null;
     if (scan) {
       const blob = new Blob([scan as BlobPart], { type: mimeOf(ext) });
-      await supabase.storage.from(BUCKET).upload(newPath, blob, {
-        contentType: mimeOf(ext),
-        upsert: true,
-      });
+      await uploadBlob(aircraftId, newPath, blob, mimeOf(ext));
       try {
         const thumb = await makeThumbnail(blob);
         const tp = thumbnailKey(newPath);
-        const { error } = await supabase.storage
-          .from(BUCKET)
-          .upload(tp, thumb, { contentType: "image/jpeg", upsert: true });
-        if (!error) thumbnailPath = tp;
+        await uploadBlob(aircraftId, tp, thumb, "image/jpeg");
+        thumbnailPath = tp;
       } catch {
         // Thumbnail is best-effort; the list view falls back to the original.
       }
@@ -191,10 +205,7 @@ export async function importBackup(
       const file = files[`docs/${d.id}.${ext}`];
       if (file) {
         const newPath = `${aircraftId}/documents/${nid}.${ext}`;
-        await supabase.storage.from(BUCKET).upload(newPath, new Blob([file as BlobPart]), {
-          contentType: mimeOf(ext),
-          upsert: true,
-        });
+        await uploadBlob(aircraftId, newPath, new Blob([file as BlobPart]), mimeOf(ext));
         o.storage_path = newPath;
       } else {
         o.storage_path = null;
