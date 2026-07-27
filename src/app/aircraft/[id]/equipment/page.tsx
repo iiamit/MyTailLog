@@ -48,7 +48,7 @@ export default async function EquipmentPage({
     <main className="mx-auto max-w-6xl px-6 py-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="eyebrow mb-2">Records</div>
+          <div className="eyebrow mb-2">Aircraft</div>
           <h1 className="font-display text-[27px] font-semibold leading-none">
             Installed equipment
           </h1>

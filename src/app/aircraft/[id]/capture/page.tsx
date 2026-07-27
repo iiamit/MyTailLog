@@ -48,7 +48,7 @@ export default async function CapturePage({
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
       <header className="mb-6">
-        <div className="eyebrow mb-2">Capture</div>
+        <div className="eyebrow mb-2">Add records</div>
         <h1 className="font-display text-[27px] font-semibold leading-none">
           Capture pages
         </h1>

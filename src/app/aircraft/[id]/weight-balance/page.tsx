@@ -52,7 +52,7 @@ export default async function WeightBalancePage({
     <main className="mx-auto max-w-6xl px-6 py-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="eyebrow mb-2">Airworthiness</div>
+          <div className="eyebrow mb-2">Aircraft</div>
           <h1 className="font-display text-[27px] font-semibold leading-none">
             Weight &amp; balance
           </h1>

@@ -110,6 +110,7 @@ export default async function ReviewAllPage({
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
       <header className="mt-2 mb-6">
+        <div className="eyebrow mb-2">Add records</div>
         <h1 className="text-2xl font-bold">
           Review all entries{aircraft.tail_number ? ` · ${aircraft.tail_number}` : ""}
         </h1>
