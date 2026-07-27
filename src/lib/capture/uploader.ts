@@ -13,11 +13,7 @@
 // The page row id equals <page_id>, so the image and its record always agree.
 // ===========================================================================
 
-import { createClient } from "@/lib/supabase/client";
 import { listQueued, removeQueued, type QueuedPage } from "./queue";
-import { thumbnailKey } from "./thumbnail";
-
-const BUCKET = "logbook-pages";
 
 export type DrainResult = { uploaded: number; failed: number };
 
@@ -39,45 +35,28 @@ export async function registerBackgroundDrain(): Promise<void> {
   }
 }
 
-async function uploadOne(
-  supabase: ReturnType<typeof createClient>,
-  page: QueuedPage,
-): Promise<boolean> {
-  const path = `${page.aircraftId}/${page.logbookId}/${page.id}.jpg`;
-  const thumbPath = thumbnailKey(path);
+async function uploadOne(page: QueuedPage): Promise<boolean> {
+  // The server route writes the blobs (service creds) and inserts the row (RLS),
+  // so this works whatever the storage backend is. The drain runs in the page
+  // context, so the request carries the signed-in session cookie.
+  const fd = new FormData();
+  fd.set("image", page.blob, `${page.id}.jpg`);
+  fd.set("thumbnail", page.thumbnailBlob, `${page.id}_thumb.jpg`);
+  fd.set("pageId", page.id);
+  fd.set("logbookId", page.logbookId);
+  if (page.pageSequence != null) fd.set("pageSequence", String(page.pageSequence));
+  fd.set("capturedAt", page.capturedAt);
+  fd.set("isHandwritten", String(page.isHandwritten));
 
-  const { error: uploadError } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, page.blob, {
-      contentType: "image/jpeg",
-      upsert: true, // idempotent: a retried drain overwrites the same key
+  try {
+    const res = await fetch(`/api/aircraft/${page.aircraftId}/capture`, {
+      method: "POST",
+      body: fd,
     });
-  if (uploadError) return false;
-
-  // Thumbnail: derived in the browser, uploaded alongside. Non-fatal if it
-  // fails — the page still works via a fallback to the original.
-  const { error: thumbError } = await supabase.storage
-    .from(BUCKET)
-    .upload(thumbPath, page.thumbnailBlob, { contentType: "image/jpeg", upsert: true });
-
-  const { error: rowError } = await supabase.from("page").insert({
-    id: page.id,
-    logbook_id: page.logbookId,
-    aircraft_id: page.aircraftId,
-    storage_path: path,
-    thumbnail_path: thumbError ? null : thumbPath,
-    page_sequence: page.pageSequence,
-    captured_at: page.capturedAt,
-    is_handwritten: page.isHandwritten,
-    // review_status defaults to 'unreviewed'; OCR/extraction fill the rest later.
-  });
-
-  // 23505 = unique_violation: the row already exists from a prior partial
-  // drain. Treat as success so the queue entry is cleared.
-  if (rowError && rowError.code !== "23505") {
+    return res.ok;
+  } catch {
     return false;
   }
-  return true;
 }
 
 /**
@@ -93,10 +72,9 @@ export async function drainQueue(): Promise<DrainResult> {
   draining = true;
   const result: DrainResult = { uploaded: 0, failed: 0 };
   try {
-    const supabase = createClient();
     const pending = await listQueued();
     for (const page of pending) {
-      const ok = await uploadOne(supabase, page);
+      const ok = await uploadOne(page);
       if (ok) {
         await removeQueued(page.id);
         result.uploaded++;

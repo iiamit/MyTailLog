@@ -12,9 +12,6 @@ import { useToast } from "@/components/Toast";
 import { createClient } from "@/lib/supabase/client";
 import { makeThumbnail, thumbnailKey } from "@/lib/capture/thumbnail";
 
-const BUCKET =
-  process.env.NEXT_PUBLIC_LOGBOOK_STORAGE_BUCKET || "logbook-pages";
-
 export type PageRow = {
   id: string;
   logbookId: string;
@@ -184,10 +181,14 @@ export function PagesPanel({
         const orig = await fetch(r.thumbnailUrl!).then((res) => res.blob());
         const thumb = await makeThumbnail(orig);
         const thumbPath = thumbnailKey(r.storagePath);
-        const { error: upErr } = await supabase.storage
-          .from(BUCKET)
-          .upload(thumbPath, thumb, { contentType: "image/jpeg", upsert: true });
-        if (upErr) continue;
+        // Upload via the editor-gated route (browser can't write GCS directly);
+        // the aircraft id is the first segment of the storage key.
+        const aircraftId = r.storagePath.split("/")[0];
+        const fd = new FormData();
+        fd.set("path", thumbPath);
+        fd.set("file", new File([thumb], "thumb.jpg", { type: "image/jpeg" }));
+        const res = await fetch(`/api/aircraft/${aircraftId}/blob`, { method: "POST", body: fd });
+        if (!res.ok) continue;
         await supabase.from("page").update({ thumbnail_path: thumbPath }).eq("id", r.id);
         patch(r.id, { needsThumbnail: false });
         made += 1;
