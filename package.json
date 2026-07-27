@@ -22,14 +22,14 @@
     "sharp": "^0.35.3"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
+    "@anthropic-ai/sdk": "^0.112.3",
     "@google-cloud/storage": "^7.21.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.45.4",
     "fetch-to-node": "^2.1.0",
     "fflate": "^0.8.3",
     "next": "^16.2.10",
-    "oidc-provider": "^9.9.1",
+    "oidc-provider": "^9.10.0",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
@@ -43,7 +43,7 @@
     "@types/react-dom": "^19.0.3",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.10",
-    "postcss": "^8.5.19",
+    "postcss": "^8.5.20",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.1",
     "typescript": "^6.0.3"
