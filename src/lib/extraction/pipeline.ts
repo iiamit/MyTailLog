@@ -24,8 +24,8 @@ import { proposeEquipmentForEntries } from "./equipmentProposals";
 import type { EquipmentEntryInput } from "./equipment";
 import { entryText } from "./entryText";
 import { classifyOtherDocument, applyScannedDocument } from "./otherDocument";
+import { getBlob } from "@/lib/storage";
 
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 export type PageForExtraction = {
   id: string;
@@ -95,14 +95,12 @@ export async function extractPage(
     .eq("id", page.id);
 
   try {
-    const { data: blob, error: dlError } = await supabase.storage
-      .from(BUCKET)
-      .download(page.storage_path);
-    if (dlError || !blob) {
-      throw new Error(`Couldn't download page image: ${dlError?.message ?? "not found"}`);
+    const blob = await getBlob(page.storage_path);
+    if (!blob) {
+      throw new Error(`Couldn't download page image: not found`);
     }
 
-    const base64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+    const base64 = blob.data.toString("base64");
 
     // Pages captured into the 'other' logbook are A&P documents (W&B sheets /
     // AD compliance reports), not running log pages — classify + apply instead

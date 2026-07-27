@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
+import { putBlob, removeBlobs } from "@/lib/storage";
 import type { DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES } from "@/lib/documents";
 
@@ -10,7 +11,6 @@ import { DOCUMENT_TYPES } from "@/lib/documents";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 const ACCEPTED = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 25 * 1024 * 1024;
 
@@ -49,10 +49,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
   const path = `${id}/docs/${randomUUID()}.${ext}`;
-  const { error: upErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  const { error: upErr } = await putBlob(path, file, { contentType: file.type, upsert: false });
+  if (upErr) return NextResponse.json({ error: upErr }, { status: 500 });
 
   const { error } = await supabase.from("document").insert({
     aircraft_id: id,
@@ -69,7 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
   if (error) {
     // Don't leave an orphaned blob if the row insert failed.
-    await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
+    await removeBlobs([path]);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

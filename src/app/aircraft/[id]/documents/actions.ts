@@ -2,13 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { removeBlobs } from "@/lib/storage";
 import type { DocumentType } from "@/lib/database.types";
 
 // Uploads live in the sibling route handler (/api/aircraft/[id]/documents) —
 // server actions cap the body at ~1 MB, too small for a scan. These small
 // metadata mutations stay as actions.
-
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 async function assertEditor(aircraftId: string) {
   const supabase = await createClient();
@@ -39,7 +38,7 @@ export async function deleteDocument(aircraftId: string, id: string): Promise<{ 
   const { supabase, error } = await assertEditor(aircraftId);
   if (error) return { error };
   const { data: doc } = await supabase.from("document").select("storage_path").eq("id", id).single();
-  if (doc?.storage_path) await supabase.storage.from(BUCKET).remove([doc.storage_path]).catch(() => {});
+  if (doc?.storage_path) await removeBlobs([doc.storage_path]);
   const { error: delErr } = await supabase.from("document").delete().eq("id", id);
   if (delErr) return { error: delErr.message };
   revalidatePath(`/aircraft/${aircraftId}/documents`);
