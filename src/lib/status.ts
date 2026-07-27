@@ -104,25 +104,27 @@ export function buildStatusItems(
     let hoursUnreliable = false;
 
     if (m.last_done_hours != null && m.interval_hours != null) {
+      const otherMeter = meter === "tach" ? "hobbs" : "tach";
       const baseline = currents.baselineFor?.(m.last_done_date, meter) ?? null;
-      // `last_done_hours` is a meter-LESS scalar. If it disagrees with THIS meter's
-      // reading at the last-done date by more than an interval, it was recorded on
-      // the OTHER meter — re-anchor to the reading so the countdown stays same-meter.
-      // This catches BOTH directions: current < last-done (a tach item recorded in
-      // hobbs) AND last-done < baseline (an oil change recorded in tach when tach <
-      // hobbs numerically — the case the old `current < last-done` guard silently
-      // missed, showing thousands falsely overdue).
-      const misMetered =
-        baseline != null && Math.abs(m.last_done_hours - baseline) > m.interval_hours;
-      if (misMetered && cur.value != null && cur.value >= baseline) {
+      const otherBaseline = currents.baselineFor?.(m.last_done_date, otherMeter) ?? null;
+      // `last_done_hours` is a meter-LESS scalar. It was recorded on the OTHER
+      // meter only when it sits CLOSER to that meter's reading at the last-done
+      // date than to this meter's (e.g. a tach value keyed into a hobbs oil
+      // change) — then re-anchor to this meter's reading so the countdown stays
+      // same-meter. A mere date-gap (hours flown between the maintenance event
+      // and the nearest reading) is NOT a mismatch: the stored value stays
+      // closest to its own meter, so we leave it and keep any annual-reset due.
+      const recordedOnOther =
+        baseline != null &&
+        otherBaseline != null &&
+        Math.abs(m.last_done_hours - otherBaseline) < Math.abs(m.last_done_hours - baseline);
+      if (recordedOnOther && cur.value != null && cur.value >= baseline) {
         lastDoneForItem = baseline;
         nextDueForItem = round1(baseline + m.interval_hours);
       } else if (cur.value == null || cur.value < m.last_done_hours) {
         // Current sits below the stored last-done on this meter (can't fly negative
-        // hours) and there's no clean same-meter baseline → try the other meter with
-        // the stored scalar (Phase-52 guard); else last-done sits above every
-        // reading → flag unreliable.
-        const otherMeter = meter === "tach" ? "hobbs" : "tach";
+        // hours) → try the other meter with the stored scalar (Phase-52 guard);
+        // else last-done sits above every reading → flag unreliable.
         const other = currentFor(otherMeter);
         if (other.value != null && other.value >= m.last_done_hours) {
           meter = otherMeter;
