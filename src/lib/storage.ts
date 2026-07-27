@@ -115,3 +115,31 @@ export async function removeBlobs(paths: string[]): Promise<void> {
       .remove(keys.slice(i, i + 100));
   }
 }
+
+/**
+ * Exercise the GCS path end-to-end (write → read → delete a temp object) using
+ * the RUNTIME credentials, regardless of the active STORAGE_BACKEND. Lets an
+ * admin confirm the deployed service account can actually reach the bucket
+ * BEFORE flipping the cutover — a blind flip would 403 every image otherwise.
+ */
+export async function gcsHealthcheck(): Promise<{
+  configured: boolean;
+  ok: boolean;
+  steps: string[];
+  error?: string;
+}> {
+  const steps: string[] = [];
+  if (!process.env.GCS_BUCKET) return { configured: false, ok: false, steps, error: "GCS_BUCKET is not set" };
+  try {
+    const file = (await bucket()).file(`_healthcheck/${new Date().toISOString()}-${process.pid}.txt`);
+    await file.save(Buffer.from("ok"), { contentType: "text/plain", resumable: false });
+    steps.push("write");
+    const [buf] = await file.download();
+    steps.push(`read:${buf.toString()}`);
+    await file.delete({ ignoreNotFound: true });
+    steps.push("delete");
+    return { configured: true, ok: true, steps };
+  } catch (e) {
+    return { configured: true, ok: false, steps, error: e instanceof Error ? e.message : String(e) };
+  }
+}
