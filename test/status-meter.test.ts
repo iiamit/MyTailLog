@@ -45,6 +45,23 @@ test("oil recorded directly in hobbs still works (no re-anchor needed)", () => {
   assert.equal(s.hoursUnreliable, false);
 });
 
+test("oil recorded in tach when tach < hobbs re-anchors to hobbs (asymmetric-guard bug)", () => {
+  // Low-time engine: oil logged at tach 284 (a SMALL number), but oil counts down
+  // on hobbs (current 957.6). The old guard only re-anchored when current < stored,
+  // so 957.6 ≥ 284 skipped it → used 284 as a hobbs baseline → falsely overdue.
+  const currents: MeterCurrents = {
+    tach: 300,
+    hobbs: 957.6,
+    baselineFor: (date, meter) =>
+      date === "2026-07-05" ? (meter === "hobbs" ? 946.1 : 284) : null,
+  };
+  const [s] = buildStatusItems([oil(284, "2026-07-05")], [], currents);
+  assert.equal(s.meter, "hobbs");
+  assert.equal(s.lastDoneForItem, 946.1); // re-anchored, not 284
+  assert.equal(s.nextDueForItem, 996.1);
+  assert.notEqual(s.urgency, "overdue"); // remaining ≈ 38.5, not thousands
+});
+
 test("no same-meter baseline and last-done above both meters → flagged unreliable", () => {
   const [s] = buildStatusItems([oil(4141.6, "2026-07-05")], [], {
     tach: 1150,

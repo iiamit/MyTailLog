@@ -149,16 +149,30 @@ export function deriveRatio(readings: Reading[]): RatioResult {
 // The CURRENT value of a meter = the most recent reading by DATE, not the max.
 // A meter can be replaced/reset (so an old reading may read higher than now), and
 // a stray/mis-keyed value (a tach number in a hobbs field, or a total-time
-// enrollment) must not become "current" — the max would grab it forever. Tie on
-// date → the higher value (a flight's ending reading over a mid-day note).
-const currentReading = <K extends "hobbs" | "tach">(rows: (Reading & Record<K, number>)[], k: K) =>
-  rows.length
-    ? rows.reduce((best, r) => {
-        const rd = r.date ?? "";
-        const bd = best.date ?? "";
-        return rd > bd || (rd === bd && r[k] > best[k]) ? r : best;
-      })
-    : null;
+// enrollment) must not become "current" — the max would grab it forever.
+//
+// On a same-date tie we pick the value CLOSEST to the prior (earlier-date)
+// reading, NOT the max — otherwise a stray reading sharing the latest date (e.g. a
+// bad MFB hobbs of 6267.9 landing next to the real 957.6) hijacks "current" purely
+// by being largest. Ties among equally-close → the higher (a flight's ending
+// reading over a mid-day note); no earlier reading to anchor against → the higher.
+function currentReading<K extends "hobbs" | "tach">(
+  rows: (Reading & Record<K, number>)[],
+  k: K,
+): (Reading & Record<K, number>) | null {
+  if (!rows.length) return null;
+  const latestDate = rows.reduce((d, r) => ((r.date ?? "") > d ? r.date ?? "" : d), "");
+  const onLatest = rows.filter((r) => (r.date ?? "") === latestDate);
+  if (onLatest.length === 1) return onLatest[0];
+  const earlier = rows.filter((r) => (r.date ?? "") < latestDate);
+  if (!earlier.length) return onLatest.reduce((b, r) => (r[k] > b[k] ? r : b));
+  const anchor = earlier.reduce((b, r) => ((r.date ?? "") > (b.date ?? "") ? r : b));
+  return onLatest.reduce((best, r) => {
+    const dr = Math.abs(r[k] - anchor[k]);
+    const db = Math.abs(best[k] - anchor[k]);
+    return dr < db || (dr === db && r[k] > best[k]) ? r : best;
+  });
+}
 
 // The most recent (hobbs, tach) pair — the anchor forecasts walk forward from.
 const latestPair = (pairs: Pair[]): Pair =>
@@ -309,8 +323,14 @@ export function detectAnomalies(readings: Reading[]): Anomaly[] {
         best != null &&
         Math.abs(value - expected) > ANOMALY_MIN_OFF &&
         Math.abs(best - expected) < ANOMALY_CLOSER * Math.abs(value - expected);
+      // A gross magnitude spike no digit-edit explains and that monotonicity can't
+      // catch — notably the MOST-RECENT reading (next==null, so aboveNext never
+      // fires). This is what let a bad MFB hobbs of 6267.9 sit unflagged next to the
+      // real 957.6. Conservative gate (>2× and >500 hrs over) to avoid nagging on a
+      // legitimately large gap between sparse readings.
+      const grossSpike = expected != null && value > 2 * expected && value - expected > 500;
 
-      if (!belowPrev && !aboveNext && !farOff) continue;
+      if (!belowPrev && !aboveNext && !farOff && !grossSpike) continue;
       anomalies.push({
         readingId: cur.id,
         source: cur.source,

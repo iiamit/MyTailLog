@@ -176,8 +176,42 @@ test("currentHobbs: an enrollment baseline holding a total-time/tach value is NO
   assert.equal(currentHobbs(rs).hobbs, 947.7); // not 4057.9 → oil remaining = 996.1-947.7 = 48.4
 });
 
+test("currentHobbs: a same-date outlier does NOT hijack current (2026-07-27 incident)", () => {
+  // Two MFB readings share the latest date: the real 957.6 and a bogus 6267.9. The
+  // old same-date tie→max picked 6267.9 → oil "thousands overdue". Anchor to the
+  // prior reading (954.0) → the close one (957.6) wins.
+  const rs = [
+    R("j06-26", "2026-06-26", 946.1, null),
+    R("j07-12", "2026-07-12", 947.7, null),
+    R("j07-23", "2026-07-23", 954.0, null),
+    R("good", "2026-07-26", 957.6, null),
+    R("bad", "2026-07-26", 6267.9, 4153.5), // stray MFB hobbs on the same date
+  ];
+  assert.equal(currentHobbs(rs).hobbs, 957.6); // not 6267.9
+});
+
 test("currentHobbs: no data → null", () => {
   assert.equal(currentHobbs([]).hobbs, null);
+});
+
+test("detectAnomalies: a gross most-recent outlier is flagged for review (6267.9)", () => {
+  // The bad reading is newest (no later reading to be 'above') and isn't a digit
+  // typo, so only the grossSpike gate catches it — otherwise it sits unflagged.
+  const rs = [
+    R("a", "2026-07-12", 947.7, null),
+    R("b", "2026-07-23", 954.0, null),
+    R("c", "2026-07-26", 957.6, null),
+    R("bad", "2026-07-27", 6267.9, null),
+  ];
+  const flagged = detectAnomalies(rs).find((a) => a.readingId === "bad");
+  assert.ok(flagged, "expected the 6267.9 reading to be flagged");
+  assert.equal(flagged!.field, "hobbs");
+  assert.equal(flagged!.reason, "magnitude");
+});
+
+test("detectAnomalies: a legitimately rising series is NOT flagged (no false spike)", () => {
+  const rs = [R("a", "2026-01-01", 100, null), R("b", "2026-03-01", 150, null), R("c", "2026-06-01", 205, null)];
+  assert.equal(detectAnomalies(rs).length, 0);
 });
 
 // --- normalizeReadings -----------------------------------------------------
