@@ -72,6 +72,51 @@ test("no same-meter baseline and last-done above both meters → flagged unrelia
   assert.notEqual(s.urgency, "overdue");
 });
 
+test("100-hour: a date-gap to the nearest reading is NOT a meter mismatch (N9363V regression)", () => {
+  // 100-hr done at tach 4057.9 on 2024-09-20; the nearest tach reading is 3917.3
+  // (2 months earlier — ~140 hrs flown since). The annual (tach 4110.4) resets the
+  // clock to 4210.4; current tach 4153.5 → ~57 hrs LEFT. The #93 misMetered guard
+  // wrongly re-anchored to 3917.3+100=4017.3 → 136.2 falsely overdue.
+  const hundred = {
+    id: "100hr",
+    kind: "hundred_hour",
+    label: "100-hour",
+    regulatory: true,
+    interval_months: null,
+    interval_hours: 100,
+    last_done_date: "2024-09-20",
+    last_done_hours: 4057.9,
+    next_due_date: null,
+    next_due_hours: 4157.9,
+    notes: null,
+  } as MaintenanceItem;
+  const annual = {
+    id: "annual",
+    kind: "annual",
+    label: "Annual",
+    regulatory: true,
+    interval_months: 12,
+    interval_hours: null,
+    last_done_date: "2026-03-18",
+    last_done_hours: 4110.4,
+    next_due_date: "2027-03-18",
+    next_due_hours: null,
+  } as MaintenanceItem;
+  const currents: MeterCurrents = {
+    tach: 4153.5,
+    hobbs: 957.6,
+    // The tach value stored (4057.9) is far closer to the tach reading (3917.3)
+    // than to any hobbs — so it was NOT recorded on hobbs; don't re-anchor.
+    baselineFor: (date, meter) =>
+      date === "2024-09-20" ? (meter === "tach" ? 3917.3 : 705.0) : null,
+  };
+  const items = [hundred, annual];
+  const s = buildStatusItems(items, [], currents).find((x) => x.id === "100hr")!;
+  assert.equal(s.meter, "tach");
+  assert.equal(s.nextDueForItem, 4210.4); // annual reset preserved, NOT 4017.3
+  assert.notEqual(s.urgency, "overdue"); // ~57 hrs remaining
+});
+
 test("Engine TBO counts down on tach, not hobbs (advisory but engine-time)", () => {
   const tbo = {
     id: "tbo",
