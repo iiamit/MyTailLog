@@ -28,7 +28,11 @@ export async function exportBackup(
 ): Promise<{ blob: Blob; tail: string }> {
   onProgress?.("Reading records…");
 
-  const [aircraft, logbooks, pages, entries, components, compliance, maintenance, documents] =
+  // Order matters: the destructured names MUST line up with the query order
+  // (aircraft, logbook, log_entry, page, …). Getting entries/pages crossed here
+  // writes log entries into the backup's `pages` and vice-versa, and a restore
+  // then fails inserting log-entry rows (with ad_refs) into the `page` table.
+  const [aircraft, logbooks, entries, pages, components, compliance, maintenance, documents] =
     await Promise.all([
       supabase.from("aircraft").select("*").eq("id", aircraftId).single(),
       supabase.from("logbook").select("*").eq("aircraft_id", aircraftId),
@@ -44,8 +48,6 @@ export async function exportBackup(
     throw new Error(aircraft.error?.message ?? "Aircraft not found.");
   }
 
-  // Note: the destructured order above is aircraft, logbooks, log_entry, page…
-  // so name them explicitly to avoid confusion.
   const data: BackupData = {
     aircraft: aircraft.data as Row,
     logbooks: (logbooks.data ?? []) as Row[],
