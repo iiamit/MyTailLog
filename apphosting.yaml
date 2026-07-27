@@ -102,6 +102,20 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  # GCS bucket for blob storage. Only read when STORAGE_BACKEND=gcs; harmless to
+  # set ahead of the cutover. No key file — the App Hosting service account
+  # authenticates to GCS via Application Default Credentials (grant it
+  # roles/storage.objectAdmin on the bucket).
+  - variable: GCS_BUCKET
+    value: mytaillog-blobs
+    availability:
+      - RUNTIME
+  # Storage backend switch: "supabase" (default) or "gcs". Flip to gcs ONLY after
+  # existing objects are migrated (Phase 3) — see src/lib/storage.ts.
+  - variable: STORAGE_BACKEND
+    value: supabase
+    availability:
+      - RUNTIME
   # Canonical public origin. publicOrigin() pins redirects / OAuth redirect_uri
   # to this instead of reflecting a client-supplied Host header (anti-poisoning).
   - variable: NEXT_PUBLIC_SITE_URL
