@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
+import { removeBlobs } from "@/lib/storage";
 
 /**
  * Delete a captured page along with any entries extracted from it and its
@@ -43,7 +42,7 @@ export async function deletePage(
   // Best-effort image cleanup — an orphaned storage object is harmless if this
   // fails, and the records (the important part) are already gone.
   if (page.storage_path) {
-    await supabase.storage.from(BUCKET).remove([page.storage_path]);
+    await removeBlobs([page.storage_path]);
   }
 
   revalidatePath(`/aircraft/${aircraftId}`);

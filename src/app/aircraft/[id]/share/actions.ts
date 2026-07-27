@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { removeBlobs } from "@/lib/storage";
 import type { ShareRole } from "@/lib/database.types";
-
-const BUCKET = process.env.LOGBOOK_STORAGE_BUCKET || "logbook-pages";
 
 async function assertOwner(aircraftId: string) {
   const supabase = await createClient();
@@ -104,9 +103,7 @@ export async function deleteAircraft(
   for (const d of docs ?? []) if (d.storage_path) paths.push(d.storage_path);
 
   // Best-effort storage cleanup before the DB rows (which gate storage access) go.
-  for (let i = 0; i < paths.length; i += 100) {
-    await supabase.storage.from(BUCKET).remove(paths.slice(i, i + 100));
-  }
+  await removeBlobs(paths);
 
   const { error: delErr } = await supabase.from("aircraft").delete().eq("id", aircraftId);
   if (delErr) return { error: delErr.message };
