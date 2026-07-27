@@ -110,10 +110,12 @@ env:
     value: mytaillog-blobs
     availability:
       - RUNTIME
-  # Storage backend switch: "supabase" (default) or "gcs". Flip to gcs ONLY after
-  # existing objects are migrated (Phase 3) — see src/lib/storage.ts.
+  # Storage backend switch: "supabase" (default) or "gcs". Now on GCS — all 2071
+  # existing objects were copied over (migrate-storage-to-gcs.mjs) and the runtime
+  # SA passed /api/admin/storage-check. Rollback = set back to "supabase" (the DB
+  # points at the same keys on both). See src/lib/storage.ts.
   - variable: STORAGE_BACKEND
-    value: supabase
+    value: gcs
     availability:
       - RUNTIME
   # Canonical public origin. publicOrigin() pins redirects / OAuth redirect_uri
