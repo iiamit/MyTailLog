@@ -6,43 +6,73 @@ import { createClient } from "@/lib/supabase/client";
 import { APP_VERSION } from "@/lib/version";
 import type { AircraftShellContext } from "@/lib/aircraftContext";
 
-type NavItem = { ident: string; label: string; href: string; badge?: number; tone?: "accent" | "amber" };
-type NavGroup = { label: string; items: NavItem[] };
+type NavTab = { label: string; href: string };
+// `match` lists every route the item owns (a hub owns several); `tabs`, when
+// present, makes this a hub — the shell renders them as a sub-tab strip.
+type NavItem = {
+  ident: string;
+  label: string;
+  href: string;
+  badge?: number;
+  tone?: "accent" | "amber";
+  match?: string[];
+  tabs?: NavTab[];
+};
+type NavGroup = { label?: string; items: NavItem[] };
 
 function buildNav(ctx: AircraftShellContext): NavGroup[] {
   const a = `/aircraft/${ctx.id}`;
   const groups: NavGroup[] = [
     {
-      label: "Records",
+      // Top section (no header): the three surfaces you check most, with the two
+      // overlap-heavy clusters collapsed into hubs.
       items: [
-        { ident: "OVW", label: "Overview", href: a },
-        { ident: "TML", label: "Timeline & search", href: `${a}/timeline` },
-        { ident: "ASK", label: "Ask your logbook", href: `${a}/ask` },
-        { ident: "EQP", label: "Equipment", href: `${a}/equipment`, badge: ctx.badges.equipment, tone: "accent" },
-        { ident: "DOC", label: "Records Vault", href: `${a}/documents` },
-        { ident: "SQK", label: "Squawks", href: `${a}/squawks` },
+        { ident: "OVW", label: "Overview", href: a, match: [a] },
+        {
+          ident: "AWX",
+          label: "Airworthiness",
+          href: `${a}/status`,
+          badge: ctx.badges.status,
+          tone: "amber",
+          match: [`${a}/status`, `${a}/maintenance`, `${a}/compliance`, `${a}/audit`],
+          tabs: [
+            { label: "Status", href: `${a}/status` },
+            { label: "Forecast", href: `${a}/maintenance` },
+            { label: "AD / SB", href: `${a}/compliance` },
+            { label: "Records gaps", href: `${a}/audit` },
+          ],
+        },
+        {
+          ident: "LOG",
+          label: "Logbook",
+          href: `${a}/timeline`,
+          match: [`${a}/timeline`, `${a}/ask`],
+          tabs: [
+            { label: "Timeline & search", href: `${a}/timeline` },
+            { label: "Ask your logbook", href: `${a}/ask` },
+          ],
+        },
       ],
     },
     {
-      label: "Airworthiness",
+      label: "Aircraft",
       items: [
-        { ident: "STS", label: "Status", href: `${a}/status`, badge: ctx.badges.status, tone: "amber" },
-        { ident: "FCT", label: "Maint. forecast", href: `${a}/maintenance` },
+        { ident: "EQP", label: "Equipment", href: `${a}/equipment`, badge: ctx.badges.equipment, tone: "accent" },
         { ident: "OIL", label: "Oil analysis", href: `${a}/oil-analysis` },
-        { ident: "ADS", label: "AD / SB", href: `${a}/compliance` },
         { ident: "WBL", label: "Weight & balance", href: `${a}/weight-balance` },
-        { ident: "GAP", label: "Records gaps", href: `${a}/audit` },
+        { ident: "SQK", label: "Squawks", href: `${a}/squawks` },
+        { ident: "DOC", label: "Records Vault", href: `${a}/documents` },
       ],
     },
   ];
   if (ctx.canEdit) {
     groups.push({
-      label: "Capture",
+      label: "Add records",
       items: [
         { ident: "CAP", label: "Capture pages", href: `${a}/capture` },
         { ident: "PGS", label: "Logbook pages", href: `${a}/pages` },
         { ident: "RVW", label: "Review", href: `${a}/review`, badge: ctx.badges.review, tone: "amber" },
-        { ident: "DUP", label: "Duplicates & fixes", href: `${a}/duplicates` },
+        { ident: "DUP", label: "Fix duplicates", href: `${a}/duplicates` },
       ],
     });
   }
@@ -107,9 +137,17 @@ export function AircraftShell({
   const pathname = usePathname();
   const router = useRouter();
   const nav = buildNav(context);
+  const home = `/aircraft/${context.id}`;
 
-  const isActive = (href: string) =>
-    href === `/aircraft/${context.id}` ? pathname === href : pathname.startsWith(href);
+  // A route "owns" the current path if it matches exactly, or (for everything but
+  // the Overview home) the path sits beneath it — so a hub stays lit across all
+  // its sub-routes and /pages lights on /pages/[id]/review.
+  const ownsPath = (href: string) =>
+    href === home ? pathname === href : pathname === href || pathname.startsWith(href + "/");
+  const itemActive = (it: NavItem) => (it.match ?? [it.href]).some(ownsPath);
+
+  // The hub (if any) the current path lives in — drives the sub-tab strip.
+  const activeHub = nav.flatMap((g) => g.items).find((it) => it.tabs && itemActive(it));
 
   async function signOut() {
     await createClient().auth.signOut();
@@ -176,7 +214,7 @@ export function AircraftShell({
       {/* Mobile nav strip — full width above the content row. */}
       <nav className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-line bg-panel px-3 py-2 md:hidden">
         {allItems.map((it) => {
-          const active = isActive(it.href);
+          const active = itemActive(it);
           return (
             <Link
               key={it.href}
@@ -206,11 +244,13 @@ export function AircraftShell({
             <span className="ml-auto whitespace-nowrap text-[10px] text-faint">Hangar →</span>
           </Link>
 
-          {nav.map((grp) => (
-            <div key={grp.label} className="mt-3.5">
-              <div className="px-2 pb-1.5 text-[9.5px] uppercase tracking-[0.16em] text-faint">{grp.label}</div>
+          {nav.map((grp, gi) => (
+            <div key={grp.label ?? `top-${gi}`} className={grp.label ? "mt-3.5" : "mt-1"}>
+              {grp.label && (
+                <div className="px-2 pb-1.5 text-[9.5px] uppercase tracking-[0.16em] text-faint">{grp.label}</div>
+              )}
               {grp.items.map((it) => {
-                const active = isActive(it.href);
+                const active = itemActive(it);
                 return (
                   <Link
                     key={it.href}
@@ -236,6 +276,30 @@ export function AircraftShell({
             during the reskin, un-migrated pages keep their own <main>, so this is
             a <div> to avoid nesting landmarks. */}
         <div className="min-w-0 flex-1 overflow-auto">
+          {/* Hub sub-tabs — the consolidated views of Airworthiness / Logbook.
+              Rendered by the shell so the underlying pages need no changes, and
+              works on every viewport (it's the mobile sub-nav too). */}
+          {activeHub?.tabs && (
+            <div className="sticky top-0 z-30 flex gap-1 overflow-x-auto border-b border-line bg-bg/85 px-4 py-2 backdrop-blur-md md:px-6">
+              {activeHub.tabs.map((t) => {
+                const active = ownsPath(t.href);
+                return (
+                  <Link
+                    key={t.href}
+                    href={t.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`shrink-0 rounded-full border px-3 py-1 text-[12.5px] transition ${
+                      active
+                        ? "border-line2 bg-panel2 text-ink"
+                        : "border-transparent text-dim hover:bg-panel/70 hover:text-ink"
+                    }`}
+                  >
+                    {t.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
           <div className="animate-up">{children}</div>
         </div>
       </div>
