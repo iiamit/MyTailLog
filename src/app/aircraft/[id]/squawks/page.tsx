@@ -19,7 +19,7 @@ export default async function SquawksPage({ params }: { params: Promise<{ id: st
   return (
     <main className="mx-auto max-w-3xl px-6 py-8">
       <header className="mb-6">
-        <div className="eyebrow mb-2">Records</div>
+        <div className="eyebrow mb-2">Aircraft</div>
         <h1 className="font-display text-[27px] font-semibold leading-none">Squawks</h1>
         <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-dim">
           Track discrepancies noticed in flight — a rough mag, a sticky switch, a small leak.

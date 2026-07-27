@@ -159,7 +159,7 @@ export default async function DuplicatesPage({
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       <header className="mb-6">
-        <div className="eyebrow mb-2">Capture</div>
+        <div className="eyebrow mb-2">Add records</div>
         <h1 className="font-display text-[27px] font-semibold leading-none">Duplicates &amp; fixes</h1>
         <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-dim">
           Duplicate scans and entries from re-uploads, plus hobbs/tach readings
