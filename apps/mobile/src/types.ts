@@ -17,6 +17,13 @@ export type Page = {
   thumbnail_path: string | null;
 };
 
+export type Logbook = {
+  id: string;
+  aircraft_id: string;
+  type: string;
+  title: string | null;
+};
+
 export type LogEntry = {
   id: string;
   aircraft_id: string;

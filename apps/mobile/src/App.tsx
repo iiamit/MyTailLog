@@ -6,6 +6,7 @@ import { pullAll } from "./sync";
 import { initDb, applyChanges, getCursor, setCursor } from "./db";
 import { prefetchAll } from "./blobs";
 import { Hangar, Entries, EntryDetail, Pages, PageViewer } from "./screens";
+import { CaptureScreen } from "./capture-screen";
 import { Lightbox } from "./lightbox";
 import type { Aircraft, LogEntry, Page } from "./types";
 import { Screen, Brand, ghost, input, primary, dim, amber, faint, accent, line, panel } from "./ui";
@@ -64,7 +65,8 @@ type Nav =
   | { screen: "entries"; aircraft: Aircraft }
   | { screen: "entry"; aircraft: Aircraft; entry: LogEntry }
   | { screen: "pages"; aircraft: Aircraft }
-  | { screen: "page"; aircraft: Aircraft; pages: Page[]; index: number };
+  | { screen: "page"; aircraft: Aircraft; pages: Page[]; index: number }
+  | { screen: "capture" };
 
 function Shell({ session }: { session: Session }) {
   const [cursor, setCur] = useState(0);
@@ -97,6 +99,8 @@ function Shell({ session }: { session: Session }) {
           return { screen: "entries", aircraft: n.aircraft };
         case "page":
           return { screen: "pages", aircraft: n.aircraft };
+        case "capture":
+          return { screen: "hangar" };
         default:
           return n; // hangar has nowhere to go
       }
@@ -177,6 +181,12 @@ function Shell({ session }: { session: Session }) {
             <button style={{ ...ghost, marginLeft: "auto" }} onClick={() => supabase.auth.signOut()}>Sign out</button>
           </div>
           <p style={{ color: dim, fontSize: 12.5, marginTop: 6 }}>{session.user.email}</p>
+          <button
+            onClick={() => setNav({ screen: "capture" })}
+            style={{ width: "100%", marginTop: 14, background: accent, color: "#071018", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700 }}
+          >
+            📷  Capture a page
+          </button>
           <Hangar
             onOpen={(a) => setNav({ screen: "entries", aircraft: a })}
             sync={sync}
@@ -229,6 +239,8 @@ function Shell({ session }: { session: Session }) {
       {nav.screen === "page" && (
         <PageViewer pages={nav.pages} index={nav.index} onBack={back} onZoom={setZoom} />
       )}
+
+      {nav.screen === "capture" && <CaptureScreen onBack={back} onSynced={sync} />}
 
       {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
     </Screen>
