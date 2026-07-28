@@ -100,7 +100,7 @@ export function Entries({
 }
 
 // ---- Entry detail -------------------------------------------------------------
-export function EntryDetail({ entry, tail, onBack }: { entry: LogEntry; tail: string; onBack: () => void }) {
+export function EntryDetail({ entry, tail, onBack, onZoom }: { entry: LogEntry; tail: string; onBack: () => void; onZoom: (src: string) => void }) {
   const ads = [...(entry.ad_refs ?? []), ...(entry.sb_refs ?? [])];
   return (
     <>
@@ -109,7 +109,7 @@ export function EntryDetail({ entry, tail, onBack }: { entry: LogEntry; tail: st
         <div style={{ ...mono, color: accent, fontSize: 13 }}>{entry.entry_date ?? "—"}</div>
         <div style={{ fontSize: 17, fontWeight: 700, marginTop: 4 }}>{entry.description || "(no description)"}</div>
       </div>
-      {entry.page_id && <Scan pageId={entry.page_id} />}
+      {entry.page_id && <Scan pageId={entry.page_id} onZoom={onZoom} />}
       {entry.work_performed && <Block label="Work performed" text={entry.work_performed} />}
       {entry.parts && <Block label="Parts" text={entry.parts} />}
       <div style={{ marginTop: 14 }}>
@@ -124,8 +124,8 @@ export function EntryDetail({ entry, tail, onBack }: { entry: LogEntry; tail: st
 }
 
 // The entry's original scanned page. Downloads once (Bearer route), then cached
-// on device — views offline after the first load.
-function Scan({ pageId }: { pageId: string }) {
+// on device — views offline after the first load. Tap to open full-screen.
+function Scan({ pageId, onZoom }: { pageId: string; onZoom: (src: string) => void }) {
   const [src, setSrc] = useState<string | null | "loading">("loading");
   useEffect(() => {
     let live = true;
@@ -142,8 +142,9 @@ function Scan({ pageId }: { pageId: string }) {
   if (src === "loading") return <div style={{ ...box, padding: 20, textAlign: "center", color: faint, fontSize: 13 }}>Loading scan…</div>;
   if (!src) return <div style={{ ...box, padding: 20, textAlign: "center", color: faint, fontSize: 13 }}>Scan not on device — connect once to download it.</div>;
   return (
-    <div style={box}>
+    <div style={{ ...box, position: "relative" }} onClick={() => onZoom(src)}>
       <img src={src} alt="Scanned logbook page" style={{ display: "block", width: "100%", height: "auto" }} />
+      <span style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,.5)", color: "#fff", fontSize: 11, padding: "3px 8px", borderRadius: 6 }}>⤢ Tap to zoom</span>
     </div>
   );
 }
@@ -205,7 +206,7 @@ function Thumb({ pageId, onClick }: { pageId: string; onClick: () => void }) {
 }
 
 // ---- Full page viewer with prev/next through the ordered scans ----------------
-export function PageViewer({ pages, index, onBack }: { pages: Page[]; index: number; onBack: () => void }) {
+export function PageViewer({ pages, index, onBack, onZoom }: { pages: Page[]; index: number; onBack: () => void; onZoom: (src: string) => void }) {
   const [i, setI] = useState(index);
   const [src, setSrc] = useState<string | null | "loading">("loading");
   const page = pages[i];
@@ -222,10 +223,18 @@ export function PageViewer({ pages, index, onBack }: { pages: Page[]; index: num
   return (
     <>
       <TopBar title={`Page ${i + 1} of ${pages.length}`} onBack={onBack} />
-      <div style={{ marginTop: 12, borderRadius: 10, border: `1px solid ${line}`, overflow: "hidden", background: panel, minHeight: 200 }}>
+      <div
+        style={{ marginTop: 12, borderRadius: 10, border: `1px solid ${line}`, overflow: "hidden", background: panel, minHeight: 200, position: "relative" }}
+        onClick={() => typeof src === "string" && onZoom(src)}
+      >
         {src === "loading" && <div style={{ padding: 30, textAlign: "center", color: faint, fontSize: 13 }}>Loading…</div>}
         {src === null && <div style={{ padding: 30, textAlign: "center", color: faint, fontSize: 13 }}>Not on device — connect once, or use “Download all”.</div>}
-        {typeof src === "string" && <img src={src} alt="Scanned page" style={{ display: "block", width: "100%", height: "auto" }} />}
+        {typeof src === "string" && (
+          <>
+            <img src={src} alt="Scanned page" style={{ display: "block", width: "100%", height: "auto" }} />
+            <span style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,.5)", color: "#fff", fontSize: 11, padding: "3px 8px", borderRadius: 6 }}>⤢ Tap to zoom</span>
+          </>
+        )}
       </div>
       <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
         <button onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0} style={navBtn(i === 0)}>‹ Prev</button>

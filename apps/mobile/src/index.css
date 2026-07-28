@@ -1,0 +1,33 @@
+/* Global reset — the app is edge-to-edge dark; without this the default white
+   body shows as a frame around the content and behind the safe areas / overscroll. */
+:root {
+  color-scheme: dark;
+}
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  background: #090c12;
+}
+#root {
+  min-height: 100vh;
+}
+body {
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none; /* no white rubber-band on overscroll */
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Native-feel: no text selection or long-press callouts on chrome, but keep it in inputs. */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
