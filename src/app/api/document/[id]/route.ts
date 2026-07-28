@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { getBlob } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createSyncClient(req);
   const { data: doc } = await supabase
     .from("document")
     .select("storage_path, file_name, mime_type")

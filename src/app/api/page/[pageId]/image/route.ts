@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { getBlob } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ export async function GET(
   const { pageId } = await params;
   const wantThumb = new URL(req.url).searchParams.get("thumb") != null;
 
-  const supabase = await createClient();
+  const supabase = await createSyncClient(req);
   const { data: page } = await supabase
     .from("page")
     .select("storage_path, thumbnail_path")

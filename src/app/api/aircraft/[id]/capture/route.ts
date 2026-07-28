@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { putBlob } from "@/lib/storage";
 import { thumbnailKey } from "@/lib/capture/thumbnail";
 
@@ -16,7 +16,7 @@ const MAX_BYTES = 15 * 1024 * 1024; // a processed page JPEG is ~1–3 MB
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  const supabase = await createSyncClient(req);
   const {
     data: { user },
   } = await supabase.auth.getUser();
