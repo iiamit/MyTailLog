@@ -21,6 +21,7 @@ export type ReviewEntry = {
   id: string;
   entry_date: string | null;
   hobbs: number | null;
+  airframe: number | null;
   tach: number | null;
   description: string | null;
   work_performed: string | null;
@@ -41,6 +42,7 @@ const blankEntry = (): ReviewEntry => ({
   id: "",
   entry_date: null,
   hobbs: null,
+  airframe: null,
   tach: null,
   description: null,
   work_performed: null,
@@ -61,6 +63,7 @@ const blankEntry = (): ReviewEntry => ({
 type FormState = {
   entry_date: string;
   hobbs: string;
+  airframe: string;
   tach: string;
   description: string;
   work_performed: string;
@@ -75,6 +78,7 @@ function toForm(e: ReviewEntry): FormState {
   return {
     entry_date: e.entry_date ?? "",
     hobbs: e.hobbs?.toString() ?? "",
+    airframe: e.airframe?.toString() ?? "",
     tach: e.tach?.toString() ?? "",
     description: e.description ?? "",
     work_performed: e.work_performed ?? "",
@@ -97,6 +101,7 @@ function toFields(f: FormState): EntryFields {
   return {
     entry_date: str(f.entry_date),
     hobbs: num(f.hobbs),
+    airframe: num(f.airframe),
     tach: num(f.tach),
     description: str(f.description),
     work_performed: str(f.work_performed),
@@ -376,6 +381,17 @@ export function EntryCard({
             placeholder={flagged("tach") ? "needs your input" : ""}
             onChange={(e) => set("tach", e.target.value)}
             className={`${inputClass} ${fieldBorder(flagged("tach"))}`}
+          />
+        </Field>
+        {/* Not extracted (no conf/box) — airframe time is rare enough on a
+            powered logbook page that it's owner-entered when it appears. */}
+        <Field label="Airframe" conf={undefined} box={undefined} imageUrl={imageUrl}>
+          <input
+            type="number"
+            step="0.1"
+            value={form.airframe}
+            onChange={(e) => set("airframe", e.target.value)}
+            className={inputClass}
           />
         </Field>
         <Field label="Description" conf={conf("description")} box={box("description")} imageUrl={imageUrl} {...locate("description")} className="col-span-2">

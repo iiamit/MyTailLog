@@ -37,6 +37,9 @@ export type BackupData = {
   ad_compliance: Row[];
   maintenance_items: Row[];
   documents: Row[];
+  // Optional: absent from archives written before 0046. A restore without these
+  // silently re-breaks every hour countdown on an aircraft whose meter was swapped.
+  meter_resets?: Row[];
 };
 
 /** File extension from a storage path, defaulting to jpg. */

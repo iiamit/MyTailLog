@@ -10,6 +10,7 @@ import type { ReviewStatus, ReferenceLink } from "@/lib/database.types";
 export type EntryFields = {
   entry_date: string | null;
   hobbs: number | null;
+  airframe: number | null;
   tach: number | null;
   description: string | null;
   work_performed: string | null;
@@ -118,6 +119,7 @@ export async function mergeContinuation(
     .update({
       entry_date: head.entry_date ?? tail.entry_date,
       hobbs: head.hobbs ?? tail.hobbs,
+      airframe: head.airframe ?? tail.airframe,
       tach: head.tach ?? tail.tach,
       description: joinText(head.description, tail.description),
       work_performed: joinText(head.work_performed, tail.work_performed),

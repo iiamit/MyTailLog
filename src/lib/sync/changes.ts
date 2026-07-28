@@ -23,6 +23,7 @@ export const SYNCED_TABLES = [
   "oil_addition",
   "oil_analysis_sample",
   "hours_reading",
+  "meter_reset",
   "scanned_document",
   "weight_balance",
 ] as const;

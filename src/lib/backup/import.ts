@@ -193,6 +193,14 @@ export async function importBackup(
   });
   await insertRows(supabase, "maintenance_item", mxRows);
 
+  // 7b. Meter replacements (absent in pre-0046 archives).
+  const resetRows = (data.meter_resets ?? []).map((r) => {
+    const o = clean(r);
+    o.aircraft_id = aircraftId;
+    return o;
+  });
+  await insertRows(supabase, "meter_reset", resetRows);
+
   // 8. Documents (upload any scanned file to a fresh path).
   const docRows: Row[] = [];
   for (const d of data.documents) {

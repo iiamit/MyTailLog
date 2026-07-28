@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { maintenanceNextDue } from "@/lib/maintenance";
 import { STANDARD_ITEMS, DEFAULT_SEED_KINDS } from "@/lib/maintenance";
+import { METERS, type Meter } from "@/lib/hobbsTach";
 
 export type MaintenanceInput = {
   id?: string;
@@ -15,6 +16,8 @@ export type MaintenanceInput = {
   last_done_date: string | null;
   last_done_hours: number | null;
   notes: string | null;
+  /** null = app default (oil → hobbs, everything else → tach). */
+  meter: Meter | null;
 };
 
 type Result = { ok: true } | { error: string };
@@ -28,6 +31,7 @@ export async function upsertMaintenanceItem(
   input: MaintenanceInput,
 ): Promise<Result> {
   if (!input.label.trim()) return { error: "Label is required." };
+  if (input.meter != null && !METERS.includes(input.meter)) return { error: "Unknown meter." };
   const supabase = await createClient();
   const due = maintenanceNextDue(input);
   const row = {
@@ -42,6 +46,7 @@ export async function upsertMaintenanceItem(
     next_due_date: due.next_due_date,
     next_due_hours: due.next_due_hours,
     notes: input.notes,
+    meter: input.meter,
   };
   const { error } = input.id
     ? await supabase.from("maintenance_item").update(row).eq("id", input.id)

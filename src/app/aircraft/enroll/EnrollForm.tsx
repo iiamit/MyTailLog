@@ -146,7 +146,7 @@ export function EnrollForm() {
         placeholder="KXYZ"
         hint="Sensitive — stored private to your account."
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Field
           label="Hobbs at enrollment"
           name="enrollment_hobbs"
@@ -160,6 +160,14 @@ export function EnrollForm() {
           type="number"
           step="0.1"
           placeholder="1890.5"
+        />
+        <Field
+          label="Airframe at enrollment"
+          name="enrollment_airframe"
+          type="number"
+          step="0.1"
+          placeholder="3120.0"
+          hint="Gliders and motorgliders — leave blank if you don't track it."
         />
       </div>
 

@@ -14,7 +14,7 @@ export default async function MaintenancePage({
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, tail_number, enrollment_hobbs, enrollment_tach")
+    .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
     .eq("id", id)
     .single();
   if (!aircraft) notFound();
@@ -34,9 +34,11 @@ export default async function MaintenancePage({
 
   // Both meters, reconciled from hobbs/tach readings. Regulatory items count
   // down on tach; usage items (oil) on hobbs.
-  const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
+    airframe: aircraft.enrollment_airframe,
+    date: aircraft.enrollment_date,
   });
 
   // Latest reading synced from MyFlightBook, for an honest "as of <date>" note.
@@ -47,9 +49,11 @@ export default async function MaintenancePage({
     buildStatusItems(items ?? [], ads ?? [], {
       tach: ct.tach,
       hobbs: ch.hobbs,
+      airframe: ca.airframe,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
       baselineFor,
+      toTotalHours,
     }),
   );
 
@@ -76,6 +80,7 @@ export default async function MaintenancePage({
         dueItems={dueItems}
         currentTach={ct.tach}
         currentHobbs={ch.hobbs}
+        currentAirframe={ca.airframe}
         currentTachEstimated={ct.estimated}
         currentTachRough={ct.rough}
         currentHobbsEstimated={ch.estimated}

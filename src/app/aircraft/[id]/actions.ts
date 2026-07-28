@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { removeBlobs } from "@/lib/storage";
+import { METERS, type Meter } from "@/lib/hobbsTach";
 
 /**
  * Delete a captured page along with any entries extracted from it and its
@@ -77,7 +78,7 @@ export async function reorderPages(
 // ("mfb"); both carry hobbs/tach + hours_reviewed_at and are RLS-scoped to
 // aircraft editors. Branch on source so each .from() stays a concrete table.
 type HoursSource = "entry" | "mfb";
-type HoursPatch = { hobbs?: number | null; tach?: number | null; hours_reviewed_at: string };
+type HoursPatch = { hobbs?: number | null; tach?: number | null; airframe?: number | null; hours_reviewed_at: string };
 
 async function updateReading(
   aircraftId: string,
@@ -105,13 +106,13 @@ export async function acceptHoursFix(
   aircraftId: string,
   source: HoursSource,
   readingId: string,
-  field: "hobbs" | "tach",
+  field: Meter,
   value: number,
 ): Promise<{ ok: true } | { error: string }> {
   if (!Number.isFinite(value) || value <= 0) return { error: "Enter a positive number." };
+  if (!METERS.includes(field)) return { error: "Unknown meter." };
   const stamp = new Date().toISOString();
-  const patch: HoursPatch =
-    field === "hobbs" ? { hobbs: value, hours_reviewed_at: stamp } : { tach: value, hours_reviewed_at: stamp };
+  const patch: HoursPatch = { [field]: value, hours_reviewed_at: stamp };
   const err = await updateReading(aircraftId, source, readingId, patch);
   if (err) return { error: `Couldn't save: ${err.error}` };
   revalidatePath(`/aircraft/${aircraftId}/duplicates`);
@@ -126,11 +127,11 @@ export async function clearHoursField(
   aircraftId: string,
   source: HoursSource,
   readingId: string,
-  field: "hobbs" | "tach",
+  field: Meter,
 ): Promise<{ ok: true } | { error: string }> {
+  if (!METERS.includes(field)) return { error: "Unknown meter." };
   const stamp = new Date().toISOString();
-  const patch: HoursPatch =
-    field === "hobbs" ? { hobbs: null, hours_reviewed_at: stamp } : { tach: null, hours_reviewed_at: stamp };
+  const patch: HoursPatch = { [field]: null, hours_reviewed_at: stamp };
   const err = await updateReading(aircraftId, source, readingId, patch);
   if (err) return { error: `Couldn't clear: ${err.error}` };
   revalidatePath(`/aircraft/${aircraftId}/duplicates`);

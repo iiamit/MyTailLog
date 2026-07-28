@@ -2,12 +2,13 @@ import { guard, logAccess, apiError } from "@/lib/oauth/resource";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCurrentMeters } from "@/lib/aircraftHours";
 import { urgencyOf } from "@/lib/compliance";
-import type { CurrentTach, CurrentHobbs } from "@/lib/hobbsTach";
+import { meterForItem } from "@/lib/status";
+import type { CurrentTach, CurrentHobbs, CurrentAirframe } from "@/lib/hobbsTach";
 
 // A reconciled meter for the API: `estimated` = projected from the other meter
 // via this aircraft's hobbs↔tach ratio; `rough` = default-ratio fallback.
-const meterOut = (m: CurrentTach | CurrentHobbs) => ({
-  value: "tach" in m ? m.tach : m.hobbs,
+const meterOut = (m: CurrentTach | CurrentHobbs | CurrentAirframe) => ({
+  value: "tach" in m ? m.tach : "hobbs" in m ? m.hobbs : m.airframe,
   estimated: m.estimated,
   rough: m.rough,
   as_of: m.asOf,
@@ -31,7 +32,7 @@ export async function GET(
     const svc = createServiceClient();
     const { data: ac } = await svc
       .from("aircraft")
-      .select("id, tail_number, enrollment_hobbs, enrollment_tach")
+      .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
       .eq("id", id)
       .single();
     const { tach, hobbs } = await getCurrentMeters(svc, id, {
@@ -49,7 +50,7 @@ export async function GET(
         .eq("aircraft_id", id),
       svc
         .from("maintenance_item")
-        .select("kind, label, regulatory, interval_months, interval_hours, last_done_date, last_done_hours, next_due_date, next_due_hours")
+        .select("kind, label, regulatory, interval_months, interval_hours, last_done_date, last_done_hours, next_due_date, next_due_hours, meter")
         .eq("aircraft_id", id),
     ]);
 
@@ -73,6 +74,7 @@ export async function GET(
       last_done_hours: m.last_done_hours,
       next_due_date: m.next_due_date,
       next_due_hours: m.next_due_hours,
+      meter: meterForItem(m.kind, m.meter),
       urgency: urgencyOf(m, currentHours),
     }));
 

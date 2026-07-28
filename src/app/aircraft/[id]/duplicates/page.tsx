@@ -26,7 +26,7 @@ export default async function DuplicatesPage({
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, owner_id, tail_number, enrollment_hobbs, enrollment_tach")
+    .select("id, owner_id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
     .eq("id", id)
     .single();
   if (!aircraft) notFound();
@@ -142,6 +142,8 @@ export default async function DuplicatesPage({
     await getHoursAnomalies(supabase, id, {
       hobbs: aircraft.enrollment_hobbs,
       tach: aircraft.enrollment_tach,
+      airframe: aircraft.enrollment_airframe,
+      date: aircraft.enrollment_date,
     })
   )
     .filter((a): a is typeof a & { source: "entry" | "mfb" } => a.source === "entry" || a.source === "mfb")

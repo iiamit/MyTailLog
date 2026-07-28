@@ -23,6 +23,8 @@ type Aircraft = {
   tail_number: string;
   enrollment_hobbs: number | null;
   enrollment_tach: number | null;
+  enrollment_airframe: number | null;
+  enrollment_date: string | null;
 };
 
 // Re-sync a connection when it's never synced or older than ~23h (leaves slack
@@ -142,18 +144,22 @@ async function remindUser(
         .not("status", "in", "(not_applicable,superseded)"),
     ]);
 
-    const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, ac.id, {
+    const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, ac.id, {
       hobbs: ac.enrollment_hobbs,
       tach: ac.enrollment_tach,
+      airframe: ac.enrollment_airframe,
+      date: ac.enrollment_date,
     });
 
     const rows: DueRow[] = [];
     for (const s of buildStatusItems(items ?? [], ads ?? [], {
       tach: ct.tach,
       hobbs: ch.hobbs,
+      airframe: ca.airframe,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
       baselineFor,
+      toTotalHours,
     })) {
       // Don't remind off an untrustworthy hours countdown (last-done meter mismatch).
       if (s.hoursUnreliable) continue;
@@ -204,7 +210,7 @@ async function accessibleAircraft(
 
   const { data: owned } = await supabase
     .from("aircraft")
-    .select("id, tail_number, enrollment_hobbs, enrollment_tach")
+    .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
     .eq("owner_id", userId);
   for (const a of owned ?? []) byId.set(a.id, a);
 
@@ -217,7 +223,7 @@ async function accessibleAircraft(
     if (ids.length) {
       const { data: shared } = await supabase
         .from("aircraft")
-        .select("id, tail_number, enrollment_hobbs, enrollment_tach")
+        .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
         .in("id", ids);
       for (const a of shared ?? []) byId.set(a.id, a);
     }

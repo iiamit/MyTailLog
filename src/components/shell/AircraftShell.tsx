@@ -60,6 +60,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
         { ident: "EQP", label: "Equipment", href: `${a}/equipment`, badge: ctx.badges.equipment, tone: "accent" },
         { ident: "OIL", label: "Oil analysis", href: `${a}/oil-analysis` },
         { ident: "WBL", label: "Weight & balance", href: `${a}/weight-balance` },
+        { ident: "MTR", label: "Meters & resets", href: `${a}/meters` },
         { ident: "SQK", label: "Squawks", href: `${a}/squawks` },
         { ident: "DOC", label: "Records Vault", href: `${a}/documents` },
       ],
@@ -189,6 +190,9 @@ export function AircraftShell({
           <div className="hidden gap-3.5 border-l border-line pl-4 sm:flex">
             <Readout value={context.tach != null ? String(context.tach) : "—"} label="tach hrs" />
             <Readout value={context.hobbs != null ? String(context.hobbs) : "—"} label="hobbs" dim />
+            {context.airframe != null && (
+              <Readout value={String(context.airframe)} label="airframe" dim />
+            )}
           </div>
         </div>
 

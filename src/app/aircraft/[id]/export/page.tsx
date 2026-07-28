@@ -60,6 +60,8 @@ export default async function ExportPage({
   const currentHours = await getCurrentHours(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
+    airframe: aircraft.enrollment_airframe,
+    date: aircraft.enrollment_date,
   });
 
   const mxList = mxItems ?? [];

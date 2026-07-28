@@ -301,16 +301,56 @@ const SECTIONS: Section[] = [
           your own. Regulatory items are distinguished from advisory ones (TBO/overhaul).
         </p>
         <Effects>
-          Each item counts down on the meter it&apos;s tracked against: the{" "}
+          Each item counts down on the meter it&apos;s tracked against. By default that&apos;s the{" "}
           <strong>oil change</strong> on <strong>Hobbs</strong> (the meter you fly and record it
           on — so a fresh Hobbs reading from a MyFlightBook sync advances it directly), and
           everything else engine/airframe — <strong>100-hour, Engine TBO, prop, ADs</strong> — on{" "}
-          <strong>tach</strong>. When the needed meter has no recent reading, the other is converted
-          via this aircraft&apos;s own hobbs↔tach ratio and marked <em>&ldquo;est.&rdquo;</em>.
+          <strong>tach</strong>. Those are only defaults: every item has a{" "}
+          <strong>&ldquo;Hours counted on&rdquo;</strong> setting, so if you track oil on the tach —
+          or fly an aircraft with no Hobbs meter at all — set it there and the countdown follows.
+          Aircraft with no Hobbs reading on record fall back to tach on their own rather than
+          counting against a converted figure. When the needed meter has no recent reading, the
+          other is converted via this aircraft&apos;s own hobbs↔tach ratio and marked{" "}
+          <em>&ldquo;est.&rdquo;</em> — except <strong>airframe</strong>, which is never estimated.
+          See <L href="#meters">Meters</L>.
           Extraction and{" "}
           &ldquo;Update from logs&rdquo; advance last-done automatically. The 100-hour resets off the
           later of the last 100-hour <em>or</em> the last annual. Everything here also feeds{" "}
           <L href="#status">Status</L>.
+        </Effects>
+      </>
+    ),
+  },
+  {
+    id: "meters",
+    icon: <GaugeIcon />,
+    title: "Meters, replacements & airframe time",
+    body: (
+      <>
+        <p>
+          <L href="/aircraft">Aircraft → Meters &amp; resets</L> shows what each instrument reads and
+          lets you record two things the logbook alone can&apos;t express: a meter that was{" "}
+          <strong>replaced</strong>, and <strong>airframe time</strong>.
+        </p>
+        <p>
+          A hobbs or tach that gets swapped restarts near zero. Record the replacement — the date,
+          the old meter&apos;s final reading, and what the new one started at — and MyTailLog stitches
+          the two together into one continuous total. Without it, importing older logbook pages makes
+          time appear to run backwards: the boundary reading gets flagged as a typo, and any item
+          last done before the swap counts down against a number it can never reach. Both meters are
+          handled the same way, and an aircraft can have more than one replacement on file.
+        </p>
+        <p>
+          <strong>Airframe</strong> is a third, independent meter for sailplanes and motorgliders. A
+          glider has no engine to drive a tach, and a motorglider accrues far more airframe time than
+          engine time, so airframe is never derived from the other two — it shows only what has
+          actually been recorded. Enter it on a logbook entry, at enrollment, or by hand on this page.
+        </p>
+        <Effects>
+          A recorded replacement changes every hours figure in the app: current meters, last-done
+          baselines, countdowns, and reminders all move onto the stitched total. The top bar keeps
+          showing what the instrument physically reads. Editors and owners can record and remove
+          these; viewers see them read-only.
         </Effects>
       </>
     ),

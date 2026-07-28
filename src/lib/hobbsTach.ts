@@ -13,7 +13,12 @@
 // pair. See docs/superpowers/specs/2026-07-12-hobbs-tach-reconciliation-design.md.
 // ===========================================================================
 
-export type Meter = "hobbs" | "tach";
+// AIRFRAME is a third, independent meter: a sailplane has no engine (so no tach
+// and usually no hobbs), and a motorglider's airframe time runs far ahead of its
+// engine time. There is no fixed ratio between airframe and engine time, so
+// airframe is RECORDED ONLY — never derived from, or bridged to, hobbs/tach.
+export type Meter = "hobbs" | "tach" | "airframe";
+export const METERS: Meter[] = ["hobbs", "tach", "airframe"];
 export type ReadingSource = "entry" | "mfb" | "enrollment";
 
 export type Reading = {
@@ -22,6 +27,7 @@ export type Reading = {
   date: string | null; // ISO; null sorts oldest (e.g. enrollment)
   hobbs: number | null;
   tach: number | null;
+  airframe?: number | null;
   reviewedAt: string | null; // hours_reviewed_at — suppresses anomaly re-flagging
 };
 
@@ -57,6 +63,108 @@ const chrono = (a: Reading, b: Reading) =>
   (a.date ?? "").localeCompare(b.date ?? "") ||
   (a.hobbs ?? Infinity) - (b.hobbs ?? Infinity) ||
   (a.tach ?? Infinity) - (b.tach ?? Infinity);
+
+// ---------------------------------------------------------------------------
+// Meter resets — a hobbs or tach that was REPLACED and restarted near zero.
+//
+// Every consumer below (ratio, currents, baselines, anomalies) assumes a meter
+// only ever counts up. A replacement violates that, and the damage is silent:
+// the last-done baseline for a pre-replacement annual sits on the old scale
+// while "current" sits on the new one, so the countdown is nonsense and the
+// boundary reading gets flagged as a typo forever.
+//
+// Fix: shift every reading onto one continuous TOTAL-TIME scale (old readings
+// keep their value; post-reset readings gain the span of the retired meter), and
+// do it once at the edge — in aircraftHours — so nothing downstream has to know.
+// ---------------------------------------------------------------------------
+
+export type MeterReset = {
+  meter: Meter;
+  date: string; // first date on the NEW meter
+  prior: number | null; // last reading on the OLD meter (null → inferred)
+  next: number; // what the new meter started at
+};
+
+/**
+ * Fill in `prior` where the owner didn't record it, from the highest reading
+ * this meter reached in the era that reset ended. Each reset's era starts at the
+ * previous reset for the same meter, so this stays correct across two swaps.
+ */
+function resolvePriors(readings: Reading[], resets: MeterReset[]): MeterReset[] {
+  const byMeter = new Map<Meter, MeterReset[]>();
+  for (const r of resets) byMeter.set(r.meter, [...(byMeter.get(r.meter) ?? []), r]);
+  const out: MeterReset[] = [];
+  for (const [meter, list] of byMeter) {
+    const sorted = [...list].sort((a, b) => a.date.localeCompare(b.date));
+    sorted.forEach((reset, i) => {
+      if (reset.prior != null) return out.push(reset);
+      const eraStart = i > 0 ? sorted[i - 1].date : null;
+      const inEra = readings
+        .filter((r) => r[meter] != null && (r.date ?? "") < reset.date)
+        .filter((r) => eraStart == null || (r.date ?? "") >= eraStart)
+        .map((r) => r[meter] as number);
+      // No reading in the retired era → nothing to carry forward; 0 keeps the
+      // new meter's own values intact rather than inventing history.
+      out.push({ ...reset, prior: inEra.length ? Math.max(...inEra) : 0 });
+    });
+  }
+  return out;
+}
+
+/**
+ * Hours to ADD to a `meter` reading dated `date` to put it on the total scale.
+ * Each retired meter contributes the span it covered (prior − next); a reading
+ * is offset by every reset at or before its date. Undated readings (an
+ * enrollment with no date) are treated as oldest, i.e. offset 0.
+ */
+export function resetOffset(resets: MeterReset[], meter: Meter, date: string | null): number {
+  return resets
+    .filter((r) => r.meter === meter && (date ?? "") >= r.date)
+    .reduce((sum, r) => sum + ((r.prior ?? 0) - r.next), 0);
+}
+
+/** Every reading on one continuous total-time scale. No resets → unchanged. */
+export function applyResets(readings: Reading[], resets: MeterReset[]): Reading[] {
+  if (!resets.length) return readings;
+  const resolved = resolvePriors(readings, resets);
+  return readings.map((r) => {
+    const out = { ...r };
+    for (const m of METERS) {
+      const v = r[m];
+      if (v != null) out[m] = round1(v + resetOffset(resolved, m, r.date));
+    }
+    return out;
+  });
+}
+
+/**
+ * A stored meter scalar (maintenance_item.last_done_hours, an AD's next_due) on
+ * the total scale. Those were typed against whatever the meter read at the time,
+ * so they need the same shift as a reading of the same date before being
+ * compared with one.
+ */
+export function toTotal(
+  value: number | null,
+  date: string | null,
+  meter: Meter,
+  resets: MeterReset[],
+): number | null {
+  if (value == null) return null;
+  if (!resets.length) return value;
+  return round1(value + resetOffset(resets, meter, date));
+}
+
+/** Total-scale value back to what the physical meter reads today. */
+export function toFace(
+  value: number | null,
+  date: string | null,
+  meter: Meter,
+  resets: MeterReset[],
+): number | null {
+  if (value == null) return null;
+  if (!resets.length) return value;
+  return round1(value - resetOffset(resets, meter, date));
+}
 
 /**
  * Drop the hobbs on any reading where hobbs === tach. Real hobbs and tach are
@@ -156,7 +264,7 @@ export function deriveRatio(readings: Reading[]): RatioResult {
 // bad MFB hobbs of 6267.9 landing next to the real 957.6) hijacks "current" purely
 // by being largest. Ties among equally-close → the higher (a flight's ending
 // reading over a mid-day note); no earlier reading to anchor against → the higher.
-function currentReading<K extends "hobbs" | "tach">(
+function currentReading<K extends Meter>(
   rows: (Reading & Record<K, number>)[],
   k: K,
 ): (Reading & Record<K, number>) | null {
@@ -231,6 +339,25 @@ export function currentHobbs(readings: Reading[]): CurrentHobbs {
   return { hobbs: round1(anchor.hobbs + (ct.tach - anchor.tach) / ratio), estimated: true, asOf: ct.asOf, rough: ct.rough };
 }
 
+export type CurrentAirframe = { airframe: number | null; estimated: boolean; asOf: string | null; rough: boolean };
+
+/**
+ * Current AIRFRAME time — simply the latest recorded reading. Deliberately never
+ * estimated: airframe time has no fixed relationship to hobbs or tach (a glider
+ * accrues airframe hours with the engine off, or with no engine at all), so
+ * bridging from them would invent a number. No reading → null, and any item
+ * counting on airframe shows no hours countdown rather than a fabricated one.
+ */
+export function currentAirframe(readings: Reading[]): CurrentAirframe {
+  const latest = currentReading(
+    readings.filter((r) => r.airframe != null) as (Reading & { airframe: number })[],
+    "airframe",
+  );
+  return latest
+    ? { airframe: round1(latest.airframe), estimated: false, asOf: latest.date, rough: false }
+    : { airframe: null, estimated: false, asOf: null, rough: false };
+}
+
 /**
  * The value of `meter` at (or nearest before) a date — the reading a maintenance
  * item was actually done at, on the meter it counts down on. This is why the oil
@@ -250,6 +377,8 @@ export function meterValueAtDate(readings: Reading[], date: string | null, meter
     return round1(pick[meter]);
   }
   // No reading in this meter at all — bridge from the other meter at that date.
+  // Airframe has no ratio to bridge across (see currentAirframe), so it stops here.
+  if (meter === "airframe") return null;
   const other: Meter = meter === "hobbs" ? "tach" : "hobbs";
   const otherVal = meterValueAtDate(readings, date, other);
   if (otherVal == null) return null;
@@ -294,7 +423,7 @@ export function digitEditCandidates(value: number): number[] {
 /** Flag hobbs/tach values that read like typos, with a suggested correction. */
 export function detectAnomalies(readings: Reading[]): Anomaly[] {
   const anomalies: Anomaly[] = [];
-  for (const field of ["hobbs", "tach"] as Meter[]) {
+  for (const field of METERS) {
     const series = readings
       .filter((r) => r[field] != null)
       .sort(chrono)

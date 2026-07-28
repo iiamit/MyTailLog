@@ -32,7 +32,7 @@ export async function exportBackup(
   // (aircraft, logbook, log_entry, page, …). Getting entries/pages crossed here
   // writes log entries into the backup's `pages` and vice-versa, and a restore
   // then fails inserting log-entry rows (with ad_refs) into the `page` table.
-  const [aircraft, logbooks, entries, pages, components, compliance, maintenance, documents] =
+  const [aircraft, logbooks, entries, pages, components, compliance, maintenance, documents, resets] =
     await Promise.all([
       supabase.from("aircraft").select("*").eq("id", aircraftId).single(),
       supabase.from("logbook").select("*").eq("aircraft_id", aircraftId),
@@ -42,6 +42,7 @@ export async function exportBackup(
       supabase.from("ad_compliance").select("*").eq("aircraft_id", aircraftId),
       supabase.from("maintenance_item").select("*").eq("aircraft_id", aircraftId),
       supabase.from("document").select("*").eq("aircraft_id", aircraftId),
+      supabase.from("meter_reset").select("*").eq("aircraft_id", aircraftId),
     ]);
 
   if (aircraft.error || !aircraft.data) {
@@ -57,6 +58,7 @@ export async function exportBackup(
     ad_compliance: (compliance.data ?? []) as Row[],
     maintenance_items: (maintenance.data ?? []) as Row[],
     documents: (documents.data ?? []) as Row[],
+    meter_resets: (resets.data ?? []) as Row[],
   };
 
   const files: AsyncZippable = {};
@@ -105,6 +107,7 @@ export async function exportBackup(
       ad_compliance: data.ad_compliance.length,
       maintenance_items: data.maintenance_items.length,
       documents: data.documents.length,
+      meter_resets: data.meter_resets?.length ?? 0,
       scans: items.length,
     },
   };
