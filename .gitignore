@@ -56,3 +56,6 @@ docs/superpowers/
 
 # local OAuth client test harness (not part of the app)
 /oauth-test-client/
+
+# Claude Code local worktrees/plugins
+.claude/

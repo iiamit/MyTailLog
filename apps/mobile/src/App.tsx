@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
@@ -6,6 +6,7 @@ import { pullAll } from "./sync";
 import { initDb, applyChanges, getCursor, setCursor } from "./db";
 import { prefetchAll } from "./blobs";
 import { Hangar, Entries, EntryDetail, Pages, PageViewer } from "./screens";
+import { Lightbox } from "./lightbox";
 import type { Aircraft, LogEntry, Page } from "./types";
 import { Screen, Brand, ghost, input, primary, dim, amber, faint, accent, line, panel } from "./ui";
 
@@ -71,6 +72,9 @@ function Shell({ session }: { session: Session }) {
   const [error, setError] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>({ screen: "hangar" });
   const [dl, setDl] = useState<{ done: number; total: number } | null>(null);
+  const [zoom, setZoom] = useState<string | null>(null);
+  const zoomRef = useRef<string | null>(null);
+  zoomRef.current = zoom;
 
   useEffect(() => {
     if (!NATIVE) return;
@@ -78,6 +82,51 @@ function Shell({ session }: { session: Session }) {
       await initDb();
       setCur(await getCursor());
     })().catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
+
+  // One place computes the previous screen — used by the back button AND the
+  // left-edge swipe below.
+  function back() {
+    setNav((n) => {
+      switch (n.screen) {
+        case "entries":
+          return { screen: "hangar" };
+        case "entry":
+          return { screen: "entries", aircraft: n.aircraft };
+        case "pages":
+          return { screen: "entries", aircraft: n.aircraft };
+        case "page":
+          return { screen: "pages", aircraft: n.aircraft };
+        default:
+          return n; // hangar has nowhere to go
+      }
+    });
+  }
+
+  // Native-style swipe: start within 24px of the left edge, drag right → back.
+  // Skipped while the lightbox is open (it owns its own touches).
+  useEffect(() => {
+    let sx = 0, sy = 0, active = false;
+    function start(e: TouchEvent) {
+      const t = e.touches[0];
+      active = !zoomRef.current && !!t && t.clientX <= 24;
+      if (active && t) {
+        sx = t.clientX;
+        sy = t.clientY;
+      }
+    }
+    function end(e: TouchEvent) {
+      if (!active) return;
+      active = false;
+      const t = e.changedTouches[0];
+      if (t && t.clientX - sx > 64 && Math.abs(t.clientY - sy) < 55) back();
+    }
+    document.addEventListener("touchstart", start, { passive: true });
+    document.addEventListener("touchend", end, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", start);
+      document.removeEventListener("touchend", end);
+    };
   }, []);
 
   async function downloadAll() {
@@ -159,27 +208,29 @@ function Shell({ session }: { session: Session }) {
       {nav.screen === "entries" && (
         <Entries
           aircraft={nav.aircraft}
-          onBack={() => setNav({ screen: "hangar" })}
+          onBack={back}
           onOpen={(e) => setNav({ screen: "entry", aircraft: nav.aircraft, entry: e })}
           onScans={() => setNav({ screen: "pages", aircraft: nav.aircraft })}
         />
       )}
 
       {nav.screen === "entry" && (
-        <EntryDetail entry={nav.entry} tail={nav.aircraft.tail_number} onBack={() => setNav({ screen: "entries", aircraft: nav.aircraft })} />
+        <EntryDetail entry={nav.entry} tail={nav.aircraft.tail_number} onBack={back} onZoom={setZoom} />
       )}
 
       {nav.screen === "pages" && (
         <Pages
           aircraft={nav.aircraft}
-          onBack={() => setNav({ screen: "entries", aircraft: nav.aircraft })}
+          onBack={back}
           onOpen={(pages, index) => setNav({ screen: "page", aircraft: nav.aircraft, pages, index })}
         />
       )}
 
       {nav.screen === "page" && (
-        <PageViewer pages={nav.pages} index={nav.index} onBack={() => setNav({ screen: "pages", aircraft: nav.aircraft })} />
+        <PageViewer pages={nav.pages} index={nav.index} onBack={back} onZoom={setZoom} />
       )}
+
+      {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
     </Screen>
   );
 }
