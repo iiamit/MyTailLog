@@ -9,6 +9,7 @@ import { MfbSyncButton } from "@/components/MfbSyncButton";
 import type { MaintenanceItem } from "@/lib/database.types";
 import { dueText } from "@/lib/compliance";
 import { meterForItem, type StatusItem } from "@/lib/status";
+import type { Meter } from "@/lib/hobbsTach";
 import { STANDARD_ITEMS } from "@/lib/maintenance";
 import {
   upsertMaintenanceItem,
@@ -31,11 +32,12 @@ type FormState = {
   last_done_date: string;
   last_done_hours: string;
   notes: string;
+  meter: string; // "" = app default
 };
 
 const blank = (): FormState => ({
   kind: "other", label: "", regulatory: true,
-  interval_months: "", interval_hours: "", last_done_date: "", last_done_hours: "", notes: "",
+  interval_months: "", interval_hours: "", last_done_date: "", last_done_hours: "", notes: "", meter: "",
 });
 
 function fromItem(m: MaintenanceItem): FormState {
@@ -49,6 +51,7 @@ function fromItem(m: MaintenanceItem): FormState {
     last_done_date: m.last_done_date ?? "",
     last_done_hours: m.last_done_hours?.toString() ?? "",
     notes: m.notes ?? "",
+    meter: m.meter ?? "",
   };
 }
 
@@ -71,6 +74,7 @@ function toInput(f: FormState): MaintenanceInput {
     last_done_date: f.last_done_date || null,
     last_done_hours: num(f.last_done_hours),
     notes: f.notes.trim() || null,
+    meter: (f.meter || null) as Meter | null,
   };
 }
 
@@ -98,6 +102,7 @@ export function MaintenanceClient({
   dueItems,
   currentTach,
   currentHobbs,
+  currentAirframe = null,
   currentTachEstimated = false,
   currentTachRough = false,
   currentHobbsEstimated = false,
@@ -109,6 +114,7 @@ export function MaintenanceClient({
   dueItems: DueItem[];
   currentTach: number | null;
   currentHobbs: number | null;
+  currentAirframe?: number | null;
   currentTachEstimated?: boolean;
   currentTachRough?: boolean;
   currentHobbsEstimated?: boolean;
@@ -193,9 +199,10 @@ export function MaintenanceClient({
   function openMark(m: MaintenanceItem) {
     setMarkId(m.id);
     setMarkDate(new Date().toISOString().slice(0, 10));
-    // Pre-fill with the current reading on THIS item's meter (oil → hobbs,
-    // everything else → tach) so last-done stays consistent with its countdown.
-    const cur = meterForItem(m.kind) === "tach" ? currentTach : currentHobbs;
+    // Pre-fill with the current reading on THIS item's meter (its override, else
+    // oil → hobbs and everything else → tach) so last-done matches its countdown.
+    const mtr = meterForItem(m.kind, m.meter);
+    const cur = mtr === "tach" ? currentTach : mtr === "airframe" ? currentAirframe : currentHobbs;
     setMarkHours(m.interval_hours != null ? cur?.toString() ?? "" : "");
   }
 
@@ -315,6 +322,19 @@ export function MaintenanceClient({
             <label className="text-xs font-medium text-dim">
               Interval (hours)
               <input type="number" step="0.1" value={form.interval_hours} onChange={(e) => set("interval_hours", e.target.value)} className={inputClass} />
+            </label>
+            <label className="text-xs font-medium text-dim">
+              Hours counted on
+              <select value={form.meter} onChange={(e) => set("meter", e.target.value)} className={inputClass}>
+                <option value="">Default ({meterForItem(form.kind)})</option>
+                <option value="tach">Tach</option>
+                <option value="hobbs">Hobbs</option>
+                <option value="airframe">Airframe</option>
+              </select>
+              <span className="mt-1 block font-normal text-[10.5px] text-faint">
+                Oil defaults to hobbs; most owners who track it on the tach — or fly an aircraft
+                with no hobbs meter — should pick tach here.
+              </span>
             </label>
             <label className="text-xs font-medium text-dim">
               Last done date

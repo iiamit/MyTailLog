@@ -180,7 +180,7 @@ export default async function StatusPage({
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, tail_number, enrollment_hobbs, enrollment_tach")
+    .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
     .eq("id", id)
     .single();
   if (!aircraft) notFound();
@@ -195,18 +195,22 @@ export default async function StatusPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
+    airframe: aircraft.enrollment_airframe,
+    date: aircraft.enrollment_date,
   });
 
   const statusItems = sortStatusItems(
     buildStatusItems(items ?? [], ads ?? [], {
       tach: ct.tach,
       hobbs: ch.hobbs,
+      airframe: ca.airframe,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
       baselineFor,
+      toTotalHours,
     }),
   );
 
@@ -227,7 +231,7 @@ export default async function StatusPage({
           </p>
         </div>
         <span className="readout text-right text-xs text-dim">
-          {ct.tach != null || ch.hobbs != null ? (
+          {ct.tach != null || ch.hobbs != null || ca.airframe != null ? (
             <>
               {ct.tach != null && (
                 <span
@@ -250,6 +254,10 @@ export default async function StatusPage({
                   {ch.estimated ? " (est.)" : ""}
                 </span>
               )}
+              {ca.airframe != null && (ct.tach != null || ch.hobbs != null) && (
+                <span className="text-faint"> · </span>
+              )}
+              {ca.airframe != null && <span>airframe {ca.airframe}</span>}
             </>
           ) : (
             "hours unknown"

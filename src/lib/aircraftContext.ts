@@ -2,7 +2,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { buildStatusItems } from "@/lib/status";
-import { currentTach, currentHobbs, meterValueAtDate, normalizeReadings, type Reading as HTReading } from "@/lib/hobbsTach";
+import {
+  currentTach,
+  currentHobbs,
+  currentAirframe,
+  meterValueAtDate,
+  normalizeReadings,
+  applyResets,
+  toTotal,
+  type Meter,
+  type MeterReset,
+  type Reading as HTReading,
+} from "@/lib/hobbsTach";
 
 /**
  * Everything the persistent aircraft shell (top bar + nav rail) needs, loaded
@@ -20,6 +31,7 @@ export type AircraftShellContext = {
   canEdit: boolean;
   tach: number | null;
   hobbs: number | null;
+  airframe: number | null;
   currentHours: number | null;
   annun: { overdue: number; due: number; current: number };
   badges: { equipment: number; status: number; review: number };
@@ -32,7 +44,7 @@ export async function getAircraftShellContext(
   const { data: aircraft } = await supabase
     .from("aircraft")
     .select(
-      "id, tail_number, year, make, model, serial_number, is_demo, owner_id, enrollment_hobbs, enrollment_tach",
+      "id, tail_number, year, make, model, serial_number, is_demo, owner_id, enrollment_date, enrollment_hobbs, enrollment_tach, enrollment_airframe",
     )
     .eq("id", id)
     .single();
@@ -44,12 +56,13 @@ export async function getAircraftShellContext(
     { data: readings },
     { data: items },
     { data: ads },
+    { data: resetRows },
     { count: equipment },
     { data: unconfirmed },
   ] = await Promise.all([
     getAircraftRole(supabase, id, aircraft.owner_id),
-    supabase.from("log_entry").select("hobbs, tach, entry_date").eq("aircraft_id", id),
-    supabase.from("hours_reading").select("hobbs, tach, reading_date").eq("aircraft_id", id),
+    supabase.from("log_entry").select("hobbs, tach, airframe, entry_date").eq("aircraft_id", id),
+    supabase.from("hours_reading").select("hobbs, tach, airframe, reading_date").eq("aircraft_id", id),
     supabase.from("maintenance_item").select("*").eq("aircraft_id", id),
     supabase
       .from("ad_compliance")
@@ -59,6 +72,11 @@ export async function getAircraftShellContext(
       .eq("aircraft_id", id)
       .eq("recurring", true)
       .not("status", "in", "(not_applicable,superseded)"),
+    supabase
+      .from("meter_reset")
+      .select("meter, reset_date, prior_value, new_value")
+      .eq("aircraft_id", id)
+      .order("reset_date", { ascending: true }),
     supabase
       .from("equipment_proposal")
       .select("id", { count: "exact", head: true })
@@ -81,19 +99,23 @@ export async function getAircraftShellContext(
   // enrollment value. Not the max: a single mis-read high value shouldn't inflate
   // the displayed hours forever. Each meter is resolved independently, since an
   // entry may record tach but not hobbs (or vice versa).
-  type Reading = { date: string | null; hobbs: number | null; tach: number | null };
+  type Reading = { date: string | null; hobbs: number | null; tach: number | null; airframe: number | null };
   const all: Reading[] = [
-    ...(entryHours ?? []).map((r) => ({ date: r.entry_date, hobbs: r.hobbs, tach: r.tach })),
-    ...(readings ?? []).map((r) => ({ date: r.reading_date, hobbs: r.hobbs, tach: r.tach })),
+    ...(entryHours ?? []).map((r) => ({ date: r.entry_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe })),
+    ...(readings ?? []).map((r) => ({ date: r.reading_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe })),
   ];
-  const latest = (key: "hobbs" | "tach"): number | null => {
+  const latest = (key: Meter): number | null => {
     const withVal = all.filter((r) => r[key] != null && Number.isFinite(r[key] as number));
     if (!withVal.length) return null;
     withVal.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
     return withVal[0][key] as number;
   };
+  // Face values — what the instruments in the panel actually read today. The
+  // maintenance math below runs on the reset-stitched total scale instead, which
+  // is a different (larger) number once a meter has been replaced.
   const tach = latest("tach") ?? aircraft.enrollment_tach;
   const hobbs = latest("hobbs") ?? aircraft.enrollment_hobbs;
+  const airframe = latest("airframe") ?? aircraft.enrollment_airframe;
 
   // currentHours stays the best estimate of TOTAL time (highest known across all
   // readings + enrollment) — that drives airworthiness urgency below and must not
@@ -101,26 +123,53 @@ export async function getAircraftShellContext(
   const bump = (cur: number | null, v: number | null | undefined) =>
     v != null && Number.isFinite(v) && (cur == null || v > cur) ? v : cur;
   let currentHours: number | null = null;
-  for (const r of all) currentHours = bump(bump(currentHours, r.hobbs), r.tach);
-  currentHours = bump(bump(currentHours, aircraft.enrollment_hobbs), aircraft.enrollment_tach);
+  for (const r of all) currentHours = bump(bump(bump(currentHours, r.hobbs), r.tach), r.airframe);
+  currentHours = bump(
+    bump(bump(currentHours, aircraft.enrollment_hobbs), aircraft.enrollment_tach),
+    aircraft.enrollment_airframe,
+  );
 
   // Airworthiness urgency runs on the reconciled per-meter currents: regulatory
   // items on tach, usage items (oil) on hobbs. (currentHours above stays the
   // total-time figure the AI narration uses.)
-  const htReadings: HTReading[] = normalizeReadings([
-    ...all.map((r, i) => ({ id: `r${i}`, source: "entry" as const, date: r.date, hobbs: r.hobbs, tach: r.tach, reviewedAt: null })),
-    ...(aircraft.enrollment_hobbs != null || aircraft.enrollment_tach != null
-      ? [{ id: "enroll", source: "enrollment" as const, date: null, hobbs: aircraft.enrollment_hobbs, tach: aircraft.enrollment_tach, reviewedAt: null }]
-      : []),
-  ]);
+  // A replaced meter restarts near zero, so readings are stitched onto one
+  // continuous total-time scale before any of this is compared (0046).
+  const resets: MeterReset[] = (resetRows ?? []).map((r) => ({
+    meter: r.meter as Meter,
+    date: r.reset_date,
+    prior: r.prior_value,
+    next: r.new_value,
+  }));
+  const htReadings: HTReading[] = normalizeReadings(
+    applyResets(
+      [
+        ...all.map((r, i) => ({ id: `r${i}`, source: "entry" as const, date: r.date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: null })),
+        ...(aircraft.enrollment_hobbs != null || aircraft.enrollment_tach != null || aircraft.enrollment_airframe != null
+          ? [{
+              id: "enroll",
+              source: "enrollment" as const,
+              date: aircraft.enrollment_date ?? null,
+              hobbs: aircraft.enrollment_hobbs,
+              tach: aircraft.enrollment_tach,
+              airframe: aircraft.enrollment_airframe,
+              reviewedAt: null,
+            }]
+          : []),
+      ],
+      resets,
+    ),
+  );
   const ctTach = currentTach(htReadings);
   const chHobbs = currentHobbs(htReadings);
+  const caAirframe = currentAirframe(htReadings);
   const status = buildStatusItems(items ?? [], ads ?? [], {
     tach: ctTach.tach,
     hobbs: chHobbs.hobbs,
+    airframe: caAirframe.airframe,
     tachEstimated: ctTach.estimated,
     hobbsEstimated: chHobbs.estimated,
     baselineFor: (date, meter) => meterValueAtDate(htReadings, date, meter),
+    toTotalHours: (value, date, meter) => toTotal(value, date, meter, resets),
   });
   const annun = {
     overdue: status.filter((s) => s.urgency === "overdue").length,
@@ -138,6 +187,7 @@ export async function getAircraftShellContext(
     canEdit: canEditRole(role),
     tach,
     hobbs,
+    airframe,
     currentHours,
     annun,
     badges: {

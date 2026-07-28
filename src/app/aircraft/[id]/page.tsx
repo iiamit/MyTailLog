@@ -75,18 +75,22 @@ export default async function AircraftPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const { tach: ct, hobbs: ch, baselineFor } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
+    airframe: aircraft.enrollment_airframe,
+    date: aircraft.enrollment_date,
   });
 
   // Unified airworthiness list → annunciator counts + most-urgent + forecast.
   const status = buildStatusItems(mxItems ?? [], (ads ?? []) as AdLite[], {
     tach: ct.tach,
     hobbs: ch.hobbs,
+    airframe: ca.airframe,
     tachEstimated: ct.estimated,
     hobbsEstimated: ch.estimated,
     baselineFor,
+    toTotalHours,
   });
   const sorted = sortStatusItems(status);
   const annun = {

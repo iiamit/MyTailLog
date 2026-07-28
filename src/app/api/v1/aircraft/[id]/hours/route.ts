@@ -1,7 +1,7 @@
 import { guard, logAccess, apiError, ApiError } from "@/lib/oauth/resource";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getCurrentMeters } from "@/lib/aircraftHours";
-import type { CurrentTach, CurrentHobbs } from "@/lib/hobbsTach";
+import type { CurrentTach, CurrentHobbs, CurrentAirframe } from "@/lib/hobbsTach";
 
 // GET  /api/v1/aircraft/{id}/hours — current tach/hobbs (reconciled) + readings.
 // POST /api/v1/aircraft/{id}/hours — append hobbs/tach reading(s) (hours:write).
@@ -15,8 +15,8 @@ const MAX_BATCH = 200;
 // Shape a reconciled meter for the API. `estimated` = derived from the other
 // meter via this aircraft's hobbs↔tach ratio (tach is rarely logged; we project
 // it from hobbs); `rough` = fell back to the default ratio.
-const meterOut = (m: CurrentTach | CurrentHobbs) => ({
-  value: "tach" in m ? m.tach : m.hobbs,
+const meterOut = (m: CurrentTach | CurrentHobbs | CurrentAirframe) => ({
+  value: "tach" in m ? m.tach : "hobbs" in m ? m.hobbs : m.airframe,
   estimated: m.estimated,
   rough: m.rough,
   as_of: m.asOf,
@@ -30,14 +30,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const svc = createServiceClient();
     const { data: ac } = await svc
       .from("aircraft")
-      .select("enrollment_hobbs, enrollment_tach")
+      .select("enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
       .eq("id", id)
       .single();
-    const [{ tach, hobbs }, { data: readings }] = await Promise.all([
-      getCurrentMeters(svc, id, { hobbs: ac?.enrollment_hobbs ?? null, tach: ac?.enrollment_tach ?? null }),
+    const [{ tach, hobbs, airframe }, { data: readings }] = await Promise.all([
+      getCurrentMeters(svc, id, { hobbs: ac?.enrollment_hobbs ?? null, tach: ac?.enrollment_tach ?? null, airframe: ac?.enrollment_airframe ?? null, date: ac?.enrollment_date ?? null }),
       svc
         .from("hours_reading")
-        .select("reading_date, hobbs, tach, source")
+        .select("reading_date, hobbs, tach, airframe, source")
         .eq("aircraft_id", id)
         .order("reading_date", { ascending: false })
         .limit(50),
@@ -49,6 +49,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       current_hours: tach.tach, // = current_tach.value; kept for back-compat
       current_tach: meterOut(tach),
       current_hobbs: meterOut(hobbs),
+      current_airframe: meterOut(airframe),
       readings: readings ?? [],
     });
   } catch (e) {

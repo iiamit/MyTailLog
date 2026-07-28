@@ -87,6 +87,7 @@ export default async function ReviewPage({
     id: e.id,
     entry_date: e.entry_date,
     hobbs: e.hobbs,
+    airframe: e.airframe,
     tach: e.tach,
     description: e.description,
     work_performed: e.work_performed,

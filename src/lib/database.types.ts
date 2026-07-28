@@ -5,6 +5,8 @@
  * Until then this keeps the app type-safe against the schema.
  */
 
+import type { Meter } from "./hobbsTach";
+
 export type LogbookType = "airframe" | "engine" | "prop" | "avionics" | "other";
 export type ReviewStatus = "unreviewed" | "confirmed" | "disputed";
 export type ExtractionStatus = "pending" | "processing" | "extracted" | "failed";
@@ -42,6 +44,7 @@ export type Aircraft = {
   enrollment_date: string;
   enrollment_hobbs: number | null;
   enrollment_tach: number | null;
+  enrollment_airframe: number | null;
   notes: string | null;
   is_demo: boolean;
   created_at: string;
@@ -86,6 +89,7 @@ export type LogEntry = {
   entry_date: string | null;
   hobbs: number | null;
   tach: number | null;
+  airframe: number | null;
   description: string | null;
   work_performed: string | null;
   parts: string | null;
@@ -229,6 +233,25 @@ export type MaintenanceItem = {
   last_done_hours: number | null;
   next_due_date: string | null;
   next_due_hours: number | null;
+  notes: string | null;
+  /** Meter this item's hours count down on. null = default (oil → hobbs, else tach). */
+  meter: Meter | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * A meter that was replaced and restarted (0046). Hobbs and tach both get swapped
+ * over an aircraft's life; without this the app can't tell a replacement from a
+ * mis-keyed reading, and pre-replacement history breaks every hour countdown.
+ */
+export type MeterResetRow = {
+  id: string;
+  aircraft_id: string;
+  meter: Meter;
+  reset_date: string;
+  prior_value: number | null;
+  new_value: number;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -505,6 +528,7 @@ export type HoursReading = {
   reading_date: string | null;
   hobbs: number | null;
   tach: number | null;
+  airframe: number | null;
   source: string;
   synced_by: string | null;
   external_ref: string | null;
@@ -533,6 +557,7 @@ export type Database = {
       ad_reference: { Row: AdReference; Insert: Partial<AdReference>; Update: Partial<AdReference>; Relationships: [] };
       equipment_proposal: { Row: EquipmentProposal; Insert: Partial<EquipmentProposal>; Update: Partial<EquipmentProposal>; Relationships: [] };
       maintenance_item: { Row: MaintenanceItem; Insert: Partial<MaintenanceItem>; Update: Partial<MaintenanceItem>; Relationships: [] };
+      meter_reset: { Row: MeterResetRow; Insert: Partial<MeterResetRow>; Update: Partial<MeterResetRow>; Relationships: [] };
       aircraft_share: { Row: AircraftShare; Insert: Partial<AircraftShare>; Update: Partial<AircraftShare>; Relationships: [] };
       weight_balance: { Row: WeightBalance; Insert: Partial<WeightBalance>; Update: Partial<WeightBalance>; Relationships: [] };
       scanned_document: { Row: ScannedDocument; Insert: Partial<ScannedDocument>; Update: Partial<ScannedDocument>; Relationships: [] };

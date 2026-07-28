@@ -51,6 +51,7 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
       (String(formData.get("home_base") ?? "").trim() || null) as string | null,
     enrollment_hobbs: parseNum(formData.get("enrollment_hobbs")),
     enrollment_tach: parseNum(formData.get("enrollment_tach")),
+    enrollment_airframe: parseNum(formData.get("enrollment_airframe")),
   };
 
   // Generate the id client-side and insert WITHOUT .select(): a returning insert

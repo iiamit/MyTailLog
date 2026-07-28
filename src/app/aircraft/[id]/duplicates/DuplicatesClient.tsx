@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { useToast } from "@/components/Toast";
+import type { Meter } from "@/lib/hobbsTach";
 import { deletePage, acceptHoursFix, clearHoursField, dismissHoursFlag } from "../actions";
 import { deleteEntry } from "../pages/[pageId]/review/actions";
 
@@ -35,7 +36,7 @@ export type EntryRow = {
 export type AnomalyRow = {
   readingId: string;
   source: "entry" | "mfb";
-  field: "hobbs" | "tach";
+  field: Meter;
   value: number;
   suggested: number | null;
   reason: "non_monotonic" | "magnitude" | "duplicate";

@@ -6,6 +6,7 @@
 
 import { effectiveNextDue } from "./maintenance";
 import { urgencyOf, type Urgency } from "./compliance";
+import type { Meter } from "./hobbsTach";
 import type { MaintenanceItem } from "./database.types";
 
 export type StatusItem = {
@@ -25,7 +26,7 @@ export type StatusItem = {
   // Which meter this item's hour-countdown uses, and the current value in it.
   // Regulatory items (100-hr, annual) run on tach; usage items (oil, advisory)
   // run on hobbs — the meter they're recorded and flown against.
-  meter: "hobbs" | "tach";
+  meter: Meter;
   currentForItem: number | null;
   currentEstimated: boolean;
   // Last-done and next-due expressed on the item's countdown METER — anchored to
@@ -46,11 +47,17 @@ export type StatusItem = {
 export type MeterCurrents = {
   tach: number | null;
   hobbs: number | null;
+  airframe?: number | null;
   tachEstimated?: boolean;
   hobbsEstimated?: boolean;
   // The meter's value at a maintenance item's last-done date — the same-meter
   // baseline its countdown anchors to. From getCurrentMeters (reading history).
-  baselineFor?: (date: string | null, meter: "hobbs" | "tach") => number | null;
+  baselineFor?: (date: string | null, meter: Meter) => number | null;
+  // Stored meter scalars (last_done_hours, next_due_hours) were typed against
+  // whatever the meter physically read that day. When a meter has been replaced,
+  // readings are on a continuous total-time scale and those scalars are not —
+  // this lifts them onto it so the comparison stays apples-to-apples.
+  toTotalHours?: (value: number | null, date: string | null, meter: Meter) => number | null;
 };
 
 // Items tracked on the HOBBS meter (operating/clock time). Everything else
@@ -58,10 +65,17 @@ export type MeterCurrents = {
 // including Engine TBO, 100-hour, and prop overhaul. Oil is the notable
 // owner-tracked-on-hobbs exception. Keyed by kind, NOT the regulatory flag
 // (advisory ≠ hobbs — Engine TBO is advisory but tach-based).
+//
+// This is only the DEFAULT. Plenty of owners run oil on tach, and some aircraft
+// have no hobbs meter at all, so maintenance_item.meter overrides it per item.
 const HOBBS_METER_KINDS = new Set<string>(["oil_change"]);
 
-/** The meter an item's hour-countdown uses: oil → hobbs, everything else → tach. */
-export function meterForItem(kind: string): "hobbs" | "tach" {
+/**
+ * The meter an item's hour-countdown uses. An explicit per-item `meter` wins;
+ * otherwise oil → hobbs and everything else → tach.
+ */
+export function meterForItem(kind: string, override?: Meter | null): Meter {
+  if (override) return override;
   return HOBBS_METER_KINDS.has(kind) ? "hobbs" : "tach";
 }
 
@@ -84,29 +98,46 @@ export function buildStatusItems(
   currents: MeterCurrents,
 ): StatusItem[] {
   // The current hours to judge an item against, in the item's own meter.
-  const currentFor = (meter: "hobbs" | "tach") =>
+  const currentFor = (meter: Meter) =>
     meter === "tach"
       ? { value: currents.tach, estimated: Boolean(currents.tachEstimated) }
-      : { value: currents.hobbs, estimated: Boolean(currents.hobbsEstimated) };
+      : meter === "airframe"
+        ? { value: currents.airframe ?? null, estimated: false }
+        : { value: currents.hobbs, estimated: Boolean(currents.hobbsEstimated) };
 
   const round1 = (x: number) => Math.round(x * 10) / 10;
   const out: StatusItem[] = [];
   for (const m of items) {
     const due = effectiveNextDue(m, items);
     // The countdown must compare last-done and current ON THE SAME meter.
-    // Policy meter: regulatory → tach, usage (oil) → hobbs.
-    let meter = meterForItem(m.kind);
+    // Explicit per-item meter wins; else oil → hobbs, everything else → tach.
+    let meter = meterForItem(m.kind, m.meter);
+    // No hobbs meter on this aircraft (its "current hobbs" was bridged from tach
+    // by a default ratio) → count on tach, the meter actually read, instead of a
+    // number we invented. Only when the owner hasn't chosen a meter themselves.
+    if (!m.meter && meter === "hobbs" && currents.hobbsEstimated && currents.tach != null)
+      meter = "tach";
     let cur = currentFor(meter);
+    // Stored scalars lifted onto the readings' scale (a no-op unless the meter
+    // has been replaced) — the countdown compares them against readings.
+    const onScale = (v: number | null, mtr: Meter) =>
+      currents.toTotalHours?.(v, m.last_done_date, mtr) ?? v;
+    let lastDone = onScale(m.last_done_hours, meter);
     // Default: the stored scalars (correct when last-done was recorded on the
     // item's meter — always true for regulatory/tach items).
-    let lastDoneForItem = m.last_done_hours;
-    let nextDueForItem = due.next_due_hours;
+    let lastDoneForItem = lastDone;
+    let nextDueForItem = onScale(due.next_due_hours, meter);
     let hoursUnreliable = false;
 
-    if (m.last_done_hours != null && m.interval_hours != null) {
-      const otherMeter = meter === "tach" ? "hobbs" : "tach";
+    if (lastDone != null && m.interval_hours != null) {
+      // Airframe stands alone — there is no ratio to re-anchor it against, so it
+      // never re-homes to another meter (see currentAirframe in hobbsTach).
+      const otherMeter: Meter | null =
+        meter === "airframe" ? null : meter === "tach" ? "hobbs" : "tach";
       const baseline = currents.baselineFor?.(m.last_done_date, meter) ?? null;
-      const otherBaseline = currents.baselineFor?.(m.last_done_date, otherMeter) ?? null;
+      const otherBaseline = otherMeter
+        ? currents.baselineFor?.(m.last_done_date, otherMeter) ?? null
+        : null;
       // `last_done_hours` is a meter-LESS scalar. It was recorded on the OTHER
       // meter only when it sits CLOSER to that meter's reading at the last-done
       // date than to this meter's (e.g. a tach value keyed into a hobbs oil
@@ -117,18 +148,22 @@ export function buildStatusItems(
       const recordedOnOther =
         baseline != null &&
         otherBaseline != null &&
-        Math.abs(m.last_done_hours - otherBaseline) < Math.abs(m.last_done_hours - baseline);
+        Math.abs(lastDone - otherBaseline) < Math.abs(lastDone - baseline);
       if (recordedOnOther && cur.value != null && cur.value >= baseline) {
         lastDoneForItem = baseline;
         nextDueForItem = round1(baseline + m.interval_hours);
-      } else if (cur.value == null || cur.value < m.last_done_hours) {
+      } else if (cur.value == null || cur.value < lastDone) {
         // Current sits below the stored last-done on this meter (can't fly negative
         // hours) → try the other meter with the stored scalar (Phase-52 guard);
         // else last-done sits above every reading → flag unreliable.
-        const other = currentFor(otherMeter);
-        if (other.value != null && other.value >= m.last_done_hours) {
+        const other = otherMeter ? currentFor(otherMeter) : { value: null, estimated: false };
+        const lastDoneOther = otherMeter ? onScale(m.last_done_hours, otherMeter) : null;
+        if (otherMeter && other.value != null && lastDoneOther != null && other.value >= lastDoneOther) {
           meter = otherMeter;
           cur = other;
+          lastDone = lastDoneOther;
+          lastDoneForItem = lastDoneOther;
+          nextDueForItem = onScale(due.next_due_hours, otherMeter);
         } else if (cur.value != null || other.value != null) {
           hoursUnreliable = true;
         }
@@ -165,6 +200,10 @@ export function buildStatusItems(
   for (const a of ads) {
     // ADs are airworthiness/regulatory → tach.
     const cur = currentFor("tach");
+    // Same scale lift as maintenance items — an AD due-at recorded before a tach
+    // replacement is on the retired meter's numbering.
+    const adNextDue =
+      currents.toTotalHours?.(a.next_due_hours, a.next_due_date, "tach") ?? a.next_due_hours;
     out.push({
       id: a.id,
       source: "ad",
@@ -179,14 +218,14 @@ export function buildStatusItems(
       nextDueHours: a.next_due_hours,
       notes: null,
       urgency: urgencyOf(
-        { next_due_date: a.next_due_date, next_due_hours: a.next_due_hours },
+        { next_due_date: a.next_due_date, next_due_hours: adNextDue },
         cur.value,
       ),
       meter: "tach",
       currentForItem: cur.value,
       currentEstimated: cur.estimated,
       lastDoneForItem: null,
-      nextDueForItem: a.next_due_hours,
+      nextDueForItem: adNextDue,
       hoursUnreliable: false,
       verifiedReport: Boolean(a.verified_report_page_id),
       verifiedReportAt: a.verified_at,

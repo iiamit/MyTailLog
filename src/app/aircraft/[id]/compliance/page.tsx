@@ -15,7 +15,7 @@ export default async function CompliancePage({
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, tail_number, enrollment_hobbs, enrollment_tach")
+    .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
     .eq("id", id)
     .single();
   if (!aircraft) notFound();
@@ -50,6 +50,8 @@ export default async function CompliancePage({
   const currentHours = await getCurrentHours(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
+    airframe: aircraft.enrollment_airframe,
+    date: aircraft.enrollment_date,
   });
 
   const tracked = new Set((records ?? []).map((r) => `${r.kind}:${r.reference}`));

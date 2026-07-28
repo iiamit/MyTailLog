@@ -92,7 +92,7 @@ export async function GET(
   } else if (type === "maintenance") {
     const { data } = await supabase
       .from("maintenance_item")
-      .select("label, kind, regulatory, interval_months, interval_hours, last_done_date, last_done_hours, next_due_date, next_due_hours, notes")
+      .select("label, kind, regulatory, interval_months, interval_hours, last_done_date, last_done_hours, next_due_date, next_due_hours, notes, meter")
       .eq("aircraft_id", id)
       .order("label", { ascending: true });
     rows = [
