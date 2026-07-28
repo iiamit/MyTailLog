@@ -1,7 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- App icon source. iOS masks the corners, so this is a full-bleed square with
-       no transparency. Run `npx capacitor-assets generate --ios` to produce the
-       AppIcon set, then `npx cap sync ios`. -->
+  <title>MyTailLog app icon</title>
   <rect width="1024" height="1024" fill="#0b0f16"/>
   <defs>
     <linearGradient id="mark" x1="238" y1="296" x2="786" y2="724" gradientUnits="userSpaceOnUse">
