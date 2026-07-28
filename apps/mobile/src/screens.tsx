@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getRows, getByAircraft } from "./db";
 import { localImageSrc } from "./blobs";
-import type { Aircraft, LogEntry } from "./types";
+import type { Aircraft, LogEntry, Page } from "./types";
 import { Card, Row, TopBar, dim, faint, ink, mono, panel, panel2, line, accent } from "./ui";
 
 // ---- Hangar: the aircraft you have on device ----------------------------------
@@ -56,7 +56,17 @@ export function Hangar({
 }
 
 // ---- Entries: one aircraft's log, newest first --------------------------------
-export function Entries({ aircraft, onBack, onOpen }: { aircraft: Aircraft; onBack: () => void; onOpen: (e: LogEntry) => void }) {
+export function Entries({
+  aircraft,
+  onBack,
+  onOpen,
+  onScans,
+}: {
+  aircraft: Aircraft;
+  onBack: () => void;
+  onOpen: (e: LogEntry) => void;
+  onScans: () => void;
+}) {
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
 
   useEffect(() => {
@@ -67,7 +77,7 @@ export function Entries({ aircraft, onBack, onOpen }: { aircraft: Aircraft; onBa
 
   return (
     <>
-      <TopBar title={aircraft.tail_number} onBack={onBack} right={<span style={{ color: faint, fontSize: 12 }}>{entries?.length ?? ""} entries</span>} />
+      <TopBar title={aircraft.tail_number} onBack={onBack} right={<button onClick={onScans} style={{ background: "transparent", color: accent, border: `1px solid ${line}`, borderRadius: 8, padding: "6px 11px", fontSize: 12.5, cursor: "pointer" }}>Scans ›</button>} />
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
         {entries?.length === 0 && <p style={{ color: faint, fontSize: 13 }}>No entries.</p>}
         {entries?.map((e) => (
@@ -145,4 +155,86 @@ function Block({ label, text }: { label: string; text: string }) {
       <div style={{ color: ink, fontSize: 13.5, marginTop: 5, whiteSpace: "pre-wrap" }}>{text}</div>
     </div>
   );
+}
+
+// Order pages by logbook then capture sequence — the reading order, so multi-page
+// events sit next to each other.
+function orderPages(pages: Page[]): Page[] {
+  return [...pages].sort(
+    (a, b) => (a.logbook_id || "").localeCompare(b.logbook_id || "") || (a.page_sequence ?? 1e9) - (b.page_sequence ?? 1e9),
+  );
+}
+
+// ---- Scans browser: every page for an aircraft, tap to view full --------------
+export function Pages({ aircraft, onBack, onOpen }: { aircraft: Aircraft; onBack: () => void; onOpen: (pages: Page[], i: number) => void }) {
+  const [pages, setPages] = useState<Page[] | null>(null);
+  useEffect(() => {
+    getByAircraft<Page>("page", aircraft.id).then((rows) => setPages(orderPages(rows)));
+  }, [aircraft.id]);
+
+  return (
+    <>
+      <TopBar title={`${aircraft.tail_number} · scans`} onBack={onBack} right={<span style={{ color: faint, fontSize: 12 }}>{pages?.length ?? ""} pages</span>} />
+      {pages?.length === 0 && <p style={{ color: faint, fontSize: 13, marginTop: 14 }}>No scans.</p>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
+        {pages?.map((p, i) => <Thumb key={p.id} pageId={p.id} onClick={() => onOpen(pages, i)} />)}
+      </div>
+      {!pages && <p style={{ color: faint, fontSize: 13, marginTop: 14 }}>Loading…</p>}
+    </>
+  );
+}
+
+function Thumb({ pageId, onClick }: { pageId: string; onClick: () => void }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    localImageSrc("page", pageId, { thumb: true }).then((s) => live && setSrc(s));
+    return () => {
+      live = false;
+    };
+  }, [pageId]);
+  return (
+    <div onClick={onClick} style={{ aspectRatio: "3 / 4", background: panel, border: `1px solid ${line}`, borderRadius: 8, overflow: "hidden", cursor: "pointer" }}>
+      {src ? (
+        <img src={src} alt="page thumbnail" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: faint, fontSize: 10 }}>—</div>
+      )}
+    </div>
+  );
+}
+
+// ---- Full page viewer with prev/next through the ordered scans ----------------
+export function PageViewer({ pages, index, onBack }: { pages: Page[]; index: number; onBack: () => void }) {
+  const [i, setI] = useState(index);
+  const [src, setSrc] = useState<string | null | "loading">("loading");
+  const page = pages[i];
+
+  useEffect(() => {
+    let live = true;
+    setSrc("loading");
+    localImageSrc("page", page.id).then((s) => live && setSrc(s)).catch(() => live && setSrc(null));
+    return () => {
+      live = false;
+    };
+  }, [page.id]);
+
+  return (
+    <>
+      <TopBar title={`Page ${i + 1} of ${pages.length}`} onBack={onBack} />
+      <div style={{ marginTop: 12, borderRadius: 10, border: `1px solid ${line}`, overflow: "hidden", background: panel, minHeight: 200 }}>
+        {src === "loading" && <div style={{ padding: 30, textAlign: "center", color: faint, fontSize: 13 }}>Loading…</div>}
+        {src === null && <div style={{ padding: 30, textAlign: "center", color: faint, fontSize: 13 }}>Not on device — connect once, or use “Download all”.</div>}
+        {typeof src === "string" && <img src={src} alt="Scanned page" style={{ display: "block", width: "100%", height: "auto" }} />}
+      </div>
+      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+        <button onClick={() => setI((n) => Math.max(0, n - 1))} disabled={i === 0} style={navBtn(i === 0)}>‹ Prev</button>
+        <button onClick={() => setI((n) => Math.min(pages.length - 1, n + 1))} disabled={i >= pages.length - 1} style={navBtn(i >= pages.length - 1)}>Next ›</button>
+      </div>
+    </>
+  );
+}
+
+function navBtn(disabled: boolean): React.CSSProperties {
+  return { flex: 1, background: disabled ? "transparent" : panel, color: disabled ? faint : ink, border: `1px solid ${line}`, borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 600, cursor: disabled ? "default" : "pointer" };
 }
