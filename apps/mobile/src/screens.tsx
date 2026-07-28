@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { getRows, getByAircraft } from "./db";
+import { localImageSrc } from "./blobs";
 import type { Aircraft, LogEntry } from "./types";
-import { Card, Row, TopBar, dim, faint, ink, mono, panel2, line, accent } from "./ui";
+import { Card, Row, TopBar, dim, faint, ink, mono, panel, panel2, line, accent } from "./ui";
 
 // ---- Hangar: the aircraft you have on device ----------------------------------
 export function Hangar({
@@ -98,6 +99,7 @@ export function EntryDetail({ entry, tail, onBack }: { entry: LogEntry; tail: st
         <div style={{ ...mono, color: accent, fontSize: 13 }}>{entry.entry_date ?? "—"}</div>
         <div style={{ fontSize: 17, fontWeight: 700, marginTop: 4 }}>{entry.description || "(no description)"}</div>
       </div>
+      {entry.page_id && <Scan pageId={entry.page_id} />}
       {entry.work_performed && <Block label="Work performed" text={entry.work_performed} />}
       {entry.parts && <Block label="Parts" text={entry.parts} />}
       <div style={{ marginTop: 14 }}>
@@ -108,6 +110,31 @@ export function EntryDetail({ entry, tail, onBack }: { entry: LogEntry; tail: st
         {ads.length > 0 && <Row label="AD / SB" value={ads.join(", ")} />}
       </div>
     </>
+  );
+}
+
+// The entry's original scanned page. Downloads once (Bearer route), then cached
+// on device — views offline after the first load.
+function Scan({ pageId }: { pageId: string }) {
+  const [src, setSrc] = useState<string | null | "loading">("loading");
+  useEffect(() => {
+    let live = true;
+    setSrc("loading");
+    localImageSrc("page", pageId)
+      .then((s) => live && setSrc(s))
+      .catch(() => live && setSrc(null));
+    return () => {
+      live = false;
+    };
+  }, [pageId]);
+
+  const box: React.CSSProperties = { marginTop: 14, borderRadius: 10, border: `1px solid ${line}`, overflow: "hidden", background: panel };
+  if (src === "loading") return <div style={{ ...box, padding: 20, textAlign: "center", color: faint, fontSize: 13 }}>Loading scan…</div>;
+  if (!src) return <div style={{ ...box, padding: 20, textAlign: "center", color: faint, fontSize: 13 }}>Scan not on device — connect once to download it.</div>;
+  return (
+    <div style={box}>
+      <img src={src} alt="Scanned logbook page" style={{ display: "block", width: "100%", height: "auto" }} />
+    </div>
   );
 }
 
