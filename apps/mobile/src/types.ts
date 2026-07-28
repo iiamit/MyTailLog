@@ -11,6 +11,7 @@ export type Aircraft = {
 export type LogEntry = {
   id: string;
   aircraft_id: string;
+  page_id: string | null;
   entry_date: string | null;
   hobbs: number | null;
   tach: number | null;
