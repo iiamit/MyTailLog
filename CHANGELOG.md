@@ -6,6 +6,32 @@ the git log.
 
 ## 2026.07
 
+### Added — Native iOS app (offline-first, beta)
+- **Offline logbook in your pocket.** A native iPhone/iPad app (Capacitor) that
+  syncs an aircraft once, then works **fully offline** — browse every log entry,
+  document, and original scanned page with no signal — and **captures** new
+  logbook pages offline that upload when you're back online. Currently in
+  TestFlight beta. Built on a **self-hosted** sync engine (a Postgres change feed
+  → `/api/sync/pull` → on-device SQLite + a filesystem scan cache), no third-party
+  vendor. See [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md).
+
+### Fixed — meter & status accuracy
+- **Oil change no longer shows falsely overdue** when its last-done was recorded
+  in tach but it counts down on hobbs, and a stray/mis-keyed hours reading (e.g. a
+  duplicate MyFlightBook value) can no longer hijack "current hours."
+- **100-hour inspection no longer shows falsely overdue** — a normal gap between
+  the maintenance date and the nearest hours reading is no longer mistaken for a
+  meter mismatch, and the annual reset is preserved.
+- **Backup export/import fixed** — exports no longer swap pages and log entries
+  (a restore of an old backup could fail); re-export to get a clean archive.
+
+### Changed — infrastructure
+- **Blob storage moved to Google Cloud Storage** (off Supabase Storage's free-tier
+  egress cap; consolidated onto GCP). Access still gated by RLS through the app's
+  serving routes.
+- **Monorepo.** The repo is now `apps/web` (this app) + `apps/mobile` (the iOS app)
+  + `packages/`. No user-facing change.
+
 ### Added — Records, squawks & engine health
 - **Records Vault** — a categorized home for the aircraft's permanent records
   (airworthiness certificate, registration, radio station authorization, POH/AFM,

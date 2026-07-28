@@ -100,6 +100,25 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "mobile",
+    icon: <SparklesIcon />,
+    title: "Mobile app (beta)",
+    body: (
+      <>
+        <p>
+          A native <strong>iPhone / iPad app</strong> is in TestFlight beta. It syncs your aircraft once,
+          then works <strong>fully offline</strong> — browse every log entry, document, and original
+          scanned page with no signal — and lets you <strong>capture new logbook pages offline</strong>{" "}
+          that upload when you&apos;re back online. It stays in sync with everything you do on the web.
+        </p>
+        <Effects>
+          Today the app is view-everything-offline plus offline capture; editing existing entries is still
+          done on the web. It&apos;s rolling out through TestFlight — more soon.
+        </Effects>
+      </>
+    ),
+  },
+  {
     id: "capture",
     icon: <CameraIcon />,
     title: "Capture & Upload",
