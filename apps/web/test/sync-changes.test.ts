@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { reduceChanges, type ChangeRow } from "@mytaillog/shared";
+import { reduceChanges, type ChangeRow } from "../src/lib/sync/changes";
 
 const R = (seq: number, table: string, id: string, op: "I" | "U" | "D"): ChangeRow => ({
   seq,

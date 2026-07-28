@@ -1,16 +1,12 @@
 {
   "name": "mytaillog-monorepo",
   "private": true,
-  "workspaces": [
-    "apps/web",
-    "packages/*"
-  ],
   "scripts": {
-    "build": "npm run build -w apps/web",
-    "dev": "npm run dev -w apps/web",
-    "lint": "npm run lint -w apps/web",
-    "typecheck": "npm run typecheck -w apps/web",
-    "test": "npm run test -w apps/web",
-    "e2e": "npm run e2e -w apps/web"
+    "build": "npm --prefix apps/web run build",
+    "dev": "npm --prefix apps/web run dev",
+    "lint": "npm --prefix apps/web run lint",
+    "typecheck": "npm --prefix apps/web run typecheck",
+    "test": "npm --prefix apps/web run test",
+    "e2e": "npm --prefix apps/web run e2e"
   }
 }

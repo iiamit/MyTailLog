@@ -24,7 +24,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
     "@google-cloud/storage": "^7.21.0",
-    "@mytaillog/shared": "*",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.45.4",
     "fetch-to-node": "^2.1.0",
