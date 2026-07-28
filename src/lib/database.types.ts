@@ -273,6 +273,16 @@ export type Squawk = {
   updated_at: string;
 }
 
+// Append-only change feed for the offline sync engine (migration 0044).
+export type ChangeLog = {
+  seq: number;
+  table_name: string;
+  row_id: string;
+  op: "I" | "U" | "D";
+  aircraft_id: string;
+  changed_at: string;
+};
+
 export type ScannedDocumentType = "weight_balance" | "ad_report" | "other";
 
 export type ScannedDocument = {
@@ -534,6 +544,7 @@ export type Database = {
       oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
       oil_addition: { Row: OilAddition; Insert: Partial<OilAddition>; Update: Partial<OilAddition>; Relationships: [] };
       squawk: { Row: Squawk; Insert: Partial<Squawk>; Update: Partial<Squawk>; Relationships: [] };
+      change_log: { Row: ChangeLog; Insert: Partial<ChangeLog>; Update: Partial<ChangeLog>; Relationships: [] };
       oidc_payloads: { Row: OidcPayload; Insert: Partial<OidcPayload>; Update: Partial<OidcPayload>; Relationships: [] };
       oauth_client: { Row: OauthClient; Insert: Partial<OauthClient>; Update: Partial<OauthClient>; Relationships: [] };
       oauth_aircraft_grant: { Row: OauthAircraftGrant; Insert: Partial<OauthAircraftGrant>; Update: Partial<OauthAircraftGrant>; Relationships: [] };
