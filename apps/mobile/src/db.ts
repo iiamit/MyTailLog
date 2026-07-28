@@ -71,3 +71,13 @@ export async function getRows<T = Record<string, unknown>>(table: string): Promi
   const res = await db.query("SELECT data FROM records WHERE table_name=? ORDER BY seq", [table]);
   return (res.values ?? []).map((r) => JSON.parse((r as { data: string }).data) as T);
 }
+
+/** Rows of a table scoped to one aircraft (via json_extract on aircraft_id). */
+export async function getByAircraft<T = Record<string, unknown>>(table: string, aircraftId: string): Promise<T[]> {
+  if (!db) return [];
+  const res = await db.query(
+    "SELECT data FROM records WHERE table_name=? AND json_extract(data,'$.aircraft_id')=?",
+    [table, aircraftId],
+  );
+  return (res.values ?? []).map((r) => JSON.parse((r as { data: string }).data) as T);
+}
