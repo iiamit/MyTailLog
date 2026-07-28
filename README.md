@@ -23,7 +23,7 @@ hours — then reminds you before things come due.
 AI reads the page; you review it next to the original, with low-confidence fields flagged
 *(all shots are the demo aircraft — a fictional 1978 C172N every new account gets):*
 
-![Review — a handwritten 1979 logbook page beside the AI-extracted entry](docs/screenshots/review.png)
+![Review — a handwritten 1979 logbook page beside the AI-extracted entry](apps/web/src/screenshots/review.png)
 
 <details>
 <summary><b>More screenshots</b> — aircraft overview · Status grid · Ask your logbook · Timeline · Weight &amp; Balance</summary>
@@ -31,19 +31,19 @@ AI reads the page; you review it next to the original, with low-confidence field
 <br>
 
 **Aircraft overview** — everything at a glance, color-coded by what needs attention
-![Aircraft overview](docs/screenshots/hub.png)
+![Aircraft overview](apps/web/src/screenshots/hub.png)
 
 **Status** — every inspection, item, and AD by urgency (with email reminders before they come due)
-![Status grid](docs/screenshots/status.png)
+![Status grid](apps/web/src/screenshots/status.png)
 
 **Ask your logbook** — plain-English answers that cite their source entries
-![Ask your logbook](docs/screenshots/ask.png)
+![Ask your logbook](apps/web/src/screenshots/ask.png)
 
 **Timeline & search** across all logbooks
-![Timeline](docs/screenshots/timeline.png)
+![Timeline](apps/web/src/screenshots/timeline.png)
 
 **Weight & Balance** — revision history + current empty weight/CG
-![Weight & Balance](docs/screenshots/wb.png)
+![Weight & Balance](apps/web/src/screenshots/wb.png)
 
 </details>
 

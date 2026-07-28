@@ -2,10 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
 import { ScreenshotCarousel, type Slide } from "@/components/ScreenshotCarousel";
-import shotReview from "../../docs/screenshots/review.png";
-import shotStatus from "../../docs/screenshots/status.png";
-import shotAsk from "../../docs/screenshots/ask.png";
-import shotTimeline from "../../docs/screenshots/timeline.png";
+import shotReview from "../screenshots/review.png";
+import shotStatus from "../screenshots/status.png";
+import shotAsk from "../screenshots/ask.png";
+import shotTimeline from "../screenshots/timeline.png";
 
 const SLIDES: Slide[] = [
   {

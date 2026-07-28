@@ -1,0 +1,51 @@
+{
+  "name": "mytaillog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aircraft logbook digitization & maintenance tracker — an index and decision-support layer for GA maintenance records, not the legal record.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.mjs test/*.test.ts",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage test/*.test.mjs test/*.test.ts",
+    "e2e": "playwright test",
+    "db:reset": "supabase db reset",
+    "db:push": "supabase db push",
+    "lint:fix": "eslint src --fix"
+  },
+  "comment:overrides": "Force patched sharp/libvips (CVE-2026-33327/33328/35590/35591). Next pins ^0.34.5 (vulnerable); user-uploaded logbook images reach sharp via image optimization. sharp is not imported by app code, so a minor bump is safe.",
+  "overrides": {
+    "sharp": "^0.35.3"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
+    "@google-cloud/storage": "^7.21.0",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.45.4",
+    "fetch-to-node": "^2.1.0",
+    "fflate": "^0.8.3",
+    "next": "^16.2.10",
+    "oidc-provider": "^9.9.1",
+    "pdfjs-dist": "^6.1.200",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.1.1",
+    "@types/oidc-provider": "^9.5.0",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.10",
+    "postcss": "^8.5.19",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.1",
+    "typescript": "^6.0.3"
+  }
+}

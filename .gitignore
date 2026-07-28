@@ -2,13 +2,13 @@ logbook-app-plan.md
 marketing-kit.*
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 next-env.d.ts
 
 # typescript build info
@@ -49,10 +49,10 @@ docs/social/
 docs/superpowers/
 
 # playwright e2e
-/test-results/
-/playwright-report/
-/playwright/.cache/
-/e2e/.auth/
+test-results/
+playwright-report/
+playwright/.cache/
+e2e/.auth/
 
 # local OAuth client test harness (not part of the app)
 /oauth-test-client/
