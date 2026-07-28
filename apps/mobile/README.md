@@ -1,12 +1,17 @@
 # MyTailLog — iOS app (Capacitor + Vite + React)
 
-Offline-first native app. This is the **first slice**: sign in → pull the whole
-change feed from the self-hosted sync API → show a summary. It proves auth + sync
-+ the toolchain end-to-end. On-device SQLite, blob caching, and capture come next.
+Offline-first native app for iPhone/iPad. Sync an aircraft once, then browse every
+log entry, document, and original scanned page **fully offline**, and **capture**
+new logbook pages offline that upload when back online.
 
-Standalone npm project for now (its own `node_modules`) — additive, it doesn't
-touch the web app or its deploy. It folds into the `apps/web` + `packages/shared`
-monorepo later.
+Standalone npm project (its own `node_modules` + `package-lock.json`) — it doesn't
+touch the web app or its deploy.
+
+**How it works** (architecture + the self-hosted sync engine):
+[`../../docs/mobile-and-sync.md`](../../docs/mobile-and-sync.md). Module map, in
+short: `sync.ts` (pull), `db.ts` (SQLite mirror + capture queue), `blobs.ts` (scan
+cache + download-all), `capture.ts` (camera → queue → upload), `screens.tsx` /
+`capture-screen.tsx` / `lightbox.tsx` (UI), `App.tsx` (auth + nav + swipe-back).
 
 ## Prerequisites
 - Node 20+, a Mac with **Xcode** installed (+ an iOS simulator).

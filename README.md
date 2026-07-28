@@ -125,15 +125,43 @@ AI reads the page; you review it next to the original, with low-confidence field
 - **Sharing** (viewer / contributor), **ownership transfer**, and delete.
 - In-app **Help** documenting every feature and how the pieces affect each other.
 
+## Repository layout
+
+A lightweight monorepo:
+
+- **`apps/web`** — the Next.js app (this is what deploys). **Standalone**: its own
+  `package.json`, `package-lock.json`, and `apphosting.yaml`. Firebase App Hosting
+  builds it with the backend **root directory set to `apps/web`**.
+- **`apps/mobile`** — the native **iOS app** (Capacitor + Vite + React), a
+  standalone npm project — see [`apps/mobile/README.md`](apps/mobile/README.md).
+- **`packages/`** — reserved for cross-app shared code (a placeholder today; see
+  the README there and [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md) for why).
+- **`supabase/migrations`** — the Postgres schema (applied manually, in order).
+- **`docs/`** — design docs, incl. the [offline sync engine & iOS app](docs/mobile-and-sync.md).
+
+Root `package.json` is a thin runner (`npm --prefix apps/web run <script>`); most
+work happens in `apps/web`.
+
 ## Architecture
 
 - **Next.js 16 (App Router) + TypeScript + Tailwind** — server components, server
   actions, and route handlers in one deployable unit; a capture PWA (service
   worker + IndexedDB queue) for offline capture.
-- **Supabase** — Postgres + Auth + object Storage. **Row-level security is the
-  enforcement boundary**, funneled through a single `has_aircraft_access()` /
-  `can_edit_aircraft()` choke point; every table and storage object is scoped to
-  the users who own or are shared on the aircraft.
+- **Supabase** — Postgres + Auth. **Row-level security is the enforcement
+  boundary**, funneled through a single `has_aircraft_access()` /
+  `can_edit_aircraft()` choke point; every table is scoped to the users who own or
+  are shared on the aircraft.
+- **Blob storage on Google Cloud Storage.** Scanned pages, thumbnails, and
+  documents live in a GCS bucket (consolidated onto GCP, off Supabase Storage's
+  free-tier egress cap). One abstraction (`apps/web/src/lib/storage.ts`) fronts it;
+  bytes serve through RLS-gated app routes (`/api/page/[id]/image`,
+  `/api/document/[id]`), never a public CDN. Cutover is a single env flag
+  (`STORAGE_BACKEND`), with an admin health-check (`/api/admin/storage-check`).
+- **Offline-first sync + native iOS app.** A self-hosted change feed
+  (`change_log`) streams deltas to the app via `GET /api/sync/pull`; the device
+  mirrors everything into on-device SQLite and caches every scan to the filesystem,
+  so the full logbook browses with no signal, and captures queue offline and upload
+  later. No sync vendor — see [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md).
 - **Anthropic** — a strong vision model (`claude-opus-4-8`) for handwriting/image
   extraction (`EXTRACTION_MODEL`), and a cheap text model (`claude-haiku-4-5`) for
   text-only reasoning — Q&A, equipment/maintenance detection (`TEXT_MODEL`). Every
@@ -202,20 +230,25 @@ own account and lift the limit.
 ## Getting started (local)
 
 ```bash
+cd apps/web
 npm install
 cp .env.example .env.local     # fill in Supabase URL + anon key, ANTHROPIC_API_KEY, etc.
-# Apply supabase/migrations/*.sql in order via the Supabase dashboard SQL editor
+# Apply supabase/migrations/*.sql (from the repo root) in order via the Supabase SQL editor
 npm run dev                    # http://localhost:3000
 ```
 
-See [`.env.example`](./.env.example) for all config (required vs optional) and
-[`supabase/README.md`](./supabase/README.md) for the schema + RLS model.
+(Or from the repo root: `npm --prefix apps/web run dev`.) See
+[`apps/web/.env.example`](apps/web/.env.example) for all config (required vs
+optional) and [`supabase/README.md`](supabase/README.md) for the schema + RLS
+model. For the iOS app, see [`apps/mobile/README.md`](apps/mobile/README.md).
 
 ## Deploy (Firebase App Hosting + Supabase)
 
 MyTailLog runs as a Next.js server on **Firebase App Hosting** (Cloud Run, builds
-on every GitHub push, global CDN) over a **Supabase** project. Config is in
-[`apphosting.yaml`](./apphosting.yaml).
+on every GitHub push, global CDN) over a **Supabase** project, with blobs on
+**Google Cloud Storage**. Config is in
+[`apps/web/apphosting.yaml`](apps/web/apphosting.yaml); the App Hosting backend's
+**root directory is `apps/web`** (it's a monorepo).
 
 **Prerequisites:** a Firebase project on the **Blaze** plan (App Hosting requires
 it; metered but ~$0 at personal scale — set a budget alert) and the Firebase CLI.
@@ -240,8 +273,22 @@ the same database** — a value encrypted under one key can't be decrypted under
 another.
 
 **2. Backend** — Firebase console → **App Hosting → Get started** → connect the
-GitHub repo + `main` branch. Every push to `main` builds and rolls out.
-(`apphosting.yaml` sets scale-to-zero, `maxInstances: 2`, 1 vCPU / 1 GiB.)
+GitHub repo + `main` branch, and set the **Root directory** to **`apps/web`**.
+Every push to `main` builds and rolls out. (`apphosting.yaml` sets scale-to-zero,
+`maxInstances: 2`, 1 vCPU / 1 GiB.)
+
+**2b. Blob storage (GCS)** — create a bucket in the same project/region and grant
+the App Hosting runtime service account object access (no key file — it uses
+Application Default Credentials):
+```bash
+gcloud storage buckets create gs://<bucket> --location=<region> --uniform-bucket-level-access
+gcloud storage buckets add-iam-policy-binding gs://<bucket> \
+  --member="serviceAccount:<app-hosting-runtime-SA>" --role="roles/storage.objectAdmin"
+```
+Set `GCS_BUCKET` + `STORAGE_BACKEND: gcs` in `apphosting.yaml` (both non-secret).
+Verify from the deployed app as an admin: `GET /api/admin/storage-check` → `ok:true`.
+To migrate existing objects off Supabase Storage, run
+`node apps/web/scripts/migrate-storage-to-gcs.mjs` (walks the DB; idempotent).
 
 **3. Supabase auth URLs** (fixes magic links landing on `localhost`):
 Supabase → **Authentication → URL Configuration** → **Site URL**
