@@ -1,11 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
-import { pullAll, type SyncChange } from "./sync";
+import { pullAll } from "./sync";
+import { initDb, applyChanges, getCursor, setCursor, countByTable, getRows } from "./db";
 
-// First vertical slice: sign in → pull the whole change feed → show a summary.
-// Proves auth + the self-hosted sync API + the Capacitor toolchain end-to-end.
-// SQLite persistence, blob caching, and capture come next.
+// Slice 2: the pulled feed is applied into on-device SQLite and the cursor is
+// persisted. So data survives a relaunch, syncs are incremental, and the counts
+// below are read from the LOCAL db — i.e. they show with the network off.
+
+const NATIVE = Capacitor.isNativePlatform();
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -54,12 +58,29 @@ function Login() {
   );
 }
 
+type LocalState = { cursor: number; counts: { table_name: string; n: number }[]; tails: string[] };
+
 function Home({ session }: { session: Session }) {
+  const [dbReady, setDbReady] = useState(false);
+  const [local, setLocal] = useState<LocalState | null>(null);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [changes, setChanges] = useState<SyncChange[] | null>(null);
-  const [cursor, setCursor] = useState(0);
+
+  async function reloadLocal() {
+    const [cursor, counts, aircraft] = await Promise.all([getCursor(), countByTable(), getRows("aircraft")]);
+    const tails = aircraft.map((a) => a.tail_number).filter((t): t is string => typeof t === "string");
+    setLocal({ cursor, counts, tails });
+  }
+
+  useEffect(() => {
+    if (!NATIVE) return;
+    (async () => {
+      await initDb();
+      setDbReady(true);
+      await reloadLocal();
+    })().catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
 
   async function sync() {
     setBusy(true);
@@ -69,17 +90,17 @@ function Home({ session }: { session: Session }) {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("No session token.");
-      const res = await pullAll(token, 0, setProgress);
-      setChanges(res.changes);
-      setCursor(res.cursor);
+      const from = await getCursor(); // incremental — resume where we left off
+      const res = await pullAll(token, from, setProgress);
+      await applyChanges(res.changes);
+      await setCursor(res.cursor);
+      await reloadLocal();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
-
-  const summary = useMemo(() => summarize(changes ?? []), [changes]);
 
   return (
     <Screen>
@@ -89,46 +110,46 @@ function Home({ session }: { session: Session }) {
       </div>
       <p style={{ color: dim, fontSize: 13, marginTop: 8 }}>Signed in as {session.user.email}</p>
 
-      <button style={{ ...primary, marginTop: 18 }} onClick={sync} disabled={busy}>
-        {busy ? `Syncing… ${progress}` : changes ? "Sync again" : "Sync now"}
-      </button>
-      {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginTop: 10 }}>{error}</p>}
+      {!NATIVE && (
+        <p style={{ color: "#ffb020", fontSize: 13, marginTop: 16 }}>
+          On-device storage needs the iOS simulator — run via Xcode, not the desktop browser.
+        </p>
+      )}
 
-      {changes && (
-        <div style={{ marginTop: 20 }}>
-          <Row label="Changes pulled" value={String(changes.length)} />
-          <Row label="Cursor (tip)" value={String(cursor)} />
-          {summary.aircraft.length > 0 && (
-            <Row label="Aircraft" value={summary.aircraft.join(", ")} />
-          )}
-          <div style={{ marginTop: 14, color: faint, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>By table</div>
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-            {summary.byTable.map(([t, n]) => (
-              <div key={t} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: ink }}>
-                <span style={{ color: dim }}>{t}</span>
-                <span style={{ fontVariantNumeric: "tabular-nums" }}>{n}</span>
+      {NATIVE && (
+        <>
+          <button style={{ ...primary, marginTop: 18 }} onClick={sync} disabled={busy || !dbReady}>
+            {busy ? `Syncing… ${progress}` : local && local.cursor > 0 ? "Sync again" : "Sync now"}
+          </button>
+          {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginTop: 10 }}>{error}</p>}
+
+          {local && (
+            <div style={{ marginTop: 20 }}>
+              <Row label="Stored on device" value={`${local.counts.reduce((s, c) => s + c.n, 0)} records`} />
+              <Row label="Sync cursor" value={String(local.cursor)} />
+              {local.tails.length > 0 && <Row label="Aircraft" value={local.tails.join(", ")} />}
+              <div style={{ marginTop: 14, color: faint, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>By table (local)</div>
+              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                {local.counts.map((c) => (
+                  <div key={c.table_name} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                    <span style={{ color: dim }}>{c.table_name}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{c.n}</span>
+                  </div>
+                ))}
+                {local.counts.length === 0 && <p style={{ color: faint, fontSize: 13 }}>Nothing stored yet — tap Sync now.</p>}
               </div>
-            ))}
-          </div>
-        </div>
+              <p style={{ color: faint, fontSize: 11, marginTop: 16 }}>
+                These counts are read from on-device SQLite — quit &amp; reopen the app (or go offline) and they persist.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </Screen>
   );
 }
 
-function summarize(changes: SyncChange[]) {
-  const counts = new Map<string, number>();
-  const aircraft: string[] = [];
-  for (const c of changes) {
-    counts.set(c.table, (counts.get(c.table) ?? 0) + 1);
-    if (c.table === "aircraft" && c.op === "upsert" && typeof c.row.tail_number === "string") {
-      aircraft.push(c.row.tail_number);
-    }
-  }
-  return { byTable: [...counts.entries()].sort((a, b) => b[1] - a[1]), aircraft };
-}
-
-// --- bits of chrome (inline styles; the real design system arrives with the shell) ---
+// --- chrome (inline styles; real design system arrives with the shell) ---
 const bg = "#090c12", panel = "#131a26", line = "#26303f";
 const ink = "#e8eef7", dim = "#9fb0c6", faint = "#647890", accent = "#5aa0ff";
 
