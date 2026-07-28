@@ -30,7 +30,53 @@ export async function initDb(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS records_table_idx ON records (table_name);
     CREATE TABLE IF NOT EXISTS sync_state (key TEXT PRIMARY KEY, value TEXT);
+    CREATE TABLE IF NOT EXISTS capture_queue (
+      id             TEXT PRIMARY KEY,
+      aircraft_id    TEXT NOT NULL,
+      logbook_id     TEXT NOT NULL,
+      page_sequence  INTEGER,
+      captured_at    TEXT,
+      is_handwritten INTEGER NOT NULL DEFAULT 1,
+      image          TEXT NOT NULL,
+      thumbnail      TEXT
+    );
   `);
+}
+
+export type QueuedCapture = {
+  id: string;
+  aircraft_id: string;
+  logbook_id: string;
+  page_sequence: number | null;
+  captured_at: string | null;
+  is_handwritten: number;
+  image: string; // base64 jpeg
+  thumbnail: string | null; // base64 jpeg
+};
+
+export async function enqueueCapture(c: QueuedCapture): Promise<void> {
+  if (!db) return;
+  await db.run(
+    "INSERT OR REPLACE INTO capture_queue (id,aircraft_id,logbook_id,page_sequence,captured_at,is_handwritten,image,thumbnail) VALUES (?,?,?,?,?,?,?,?)",
+    [c.id, c.aircraft_id, c.logbook_id, c.page_sequence, c.captured_at, c.is_handwritten, c.image, c.thumbnail],
+  );
+}
+
+export async function listCaptures(): Promise<QueuedCapture[]> {
+  if (!db) return [];
+  const res = await db.query("SELECT * FROM capture_queue ORDER BY captured_at");
+  return (res.values ?? []) as QueuedCapture[];
+}
+
+export async function removeCapture(id: string): Promise<void> {
+  if (!db) return;
+  await db.run("DELETE FROM capture_queue WHERE id=?", [id]);
+}
+
+export async function captureCount(): Promise<number> {
+  if (!db) return 0;
+  const res = await db.query("SELECT COUNT(*) AS n FROM capture_queue");
+  return Number((res.values?.[0] as { n: number } | undefined)?.n ?? 0);
 }
 
 /** Apply a batch of pulled changes: upserts replace, deletes remove. */
