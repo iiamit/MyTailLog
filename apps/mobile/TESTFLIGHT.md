@@ -32,8 +32,14 @@ npx cap sync ios
 - **Info** (Info.plist) → add these rows:
   - **`ITSAppUsesNonExemptEncryption`** = **NO** (standard HTTPS/OS crypto only —
     skips the export-compliance prompt on every upload).
-  - **`NSCameraUsageDescription`** = e.g. *"MyTailLog uses the camera to photograph
-    your logbook pages."* (**required** — the app crashes on capture without it).
+  - **Camera/photo usage strings — all THREE required** (the `@capacitor/camera`
+    plugin throws at runtime if any is missing, even for camera-only capture):
+    - **`NSCameraUsageDescription`** — *"MyTailLog uses the camera to photograph your logbook pages."*
+    - **`NSPhotoLibraryAddUsageDescription`** — *"MyTailLog can save captured logbook pages to your photos."*
+    - **`NSPhotoLibraryUsageDescription`** — *"MyTailLog accesses your photos to add existing logbook scans."*
+    After adding them, **clean build** (Xcode → Product → Clean Build Folder) so the
+    running binary picks them up — App Store Connect validates the *uploaded* plist,
+    not the build already on your device/simulator.
 
 ## 3. App Store Connect — https://appstoreconnect.apple.com
 - **Apps → +→ New App**: iOS · Name **MyTailLog** · Primary language · Bundle ID
