@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
-import { reduceChanges, SYNCED_TABLES, type ChangeRow } from "@/lib/sync/changes";
+import { reduceChanges, SYNCED_TABLES, type ChangeRow } from "@mytaillog/shared";
 
 // GET /api/sync/pull?cursor=<seq>&limit=<n>
 //

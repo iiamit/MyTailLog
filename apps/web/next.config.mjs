@@ -3,6 +3,8 @@ import { buildCsp } from "./csp.config.mjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Compile the workspace TS package (it ships raw .ts, not built).
+  transpilePackages: ["@mytaillog/shared"],
   // oidc-provider resolves token formats via `this.constructor.name`, which Next's
   // server-bundle minification mangles (breaks token issuance with a cryptic
   // "dynamic[...] is not a function"). Keep it external so it's required from
