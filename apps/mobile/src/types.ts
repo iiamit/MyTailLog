@@ -8,6 +8,15 @@ export type Aircraft = {
   model: string | null;
 };
 
+export type Page = {
+  id: string;
+  aircraft_id: string;
+  logbook_id: string;
+  page_sequence: number | null;
+  storage_path: string | null;
+  thumbnail_path: string | null;
+};
+
 export type LogEntry = {
   id: string;
   aircraft_id: string;

@@ -4,9 +4,10 @@ import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
 import { initDb, applyChanges, getCursor, setCursor } from "./db";
-import { Hangar, Entries, EntryDetail } from "./screens";
-import type { Aircraft, LogEntry } from "./types";
-import { Screen, Brand, ghost, input, primary, dim, amber } from "./ui";
+import { prefetchAll } from "./blobs";
+import { Hangar, Entries, EntryDetail, Pages, PageViewer } from "./screens";
+import type { Aircraft, LogEntry, Page } from "./types";
+import { Screen, Brand, ghost, input, primary, dim, amber, faint, accent, line, panel } from "./ui";
 
 const NATIVE = Capacitor.isNativePlatform();
 
@@ -57,23 +58,36 @@ function Login() {
   );
 }
 
-type Nav = { screen: "hangar" } | { screen: "entries"; aircraft: Aircraft } | { screen: "entry"; aircraft: Aircraft; entry: LogEntry };
+type Nav =
+  | { screen: "hangar" }
+  | { screen: "entries"; aircraft: Aircraft }
+  | { screen: "entry"; aircraft: Aircraft; entry: LogEntry }
+  | { screen: "pages"; aircraft: Aircraft }
+  | { screen: "page"; aircraft: Aircraft; pages: Page[]; index: number };
 
 function Shell({ session }: { session: Session }) {
-  const [dbReady, setDbReady] = useState(false);
   const [cursor, setCur] = useState(0);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>({ screen: "hangar" });
+  const [dl, setDl] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     if (!NATIVE) return;
     (async () => {
       await initDb();
       setCur(await getCursor());
-      setDbReady(true);
     })().catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
+
+  async function downloadAll() {
+    setDl({ done: 0, total: 0 });
+    try {
+      await prefetchAll((done, total) => setDl({ done, total }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
 
   async function sync() {
     setSyncing("Syncing…");
@@ -121,6 +135,24 @@ function Shell({ session }: { session: Session }) {
             cursor={cursor}
             error={error}
           />
+          <div style={{ marginTop: 22, borderTop: `1px solid ${line}`, paddingTop: 16 }}>
+            {!dl || (dl.total > 0 && dl.done >= dl.total) ? (
+              <button
+                onClick={downloadAll}
+                style={{ width: "100%", background: panel, color: accent, border: `1px solid ${line}`, borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 600 }}
+              >
+                {dl && dl.done >= dl.total ? "✓ All scans downloaded — tap to refresh" : "⤓ Download all scans for offline"}
+              </button>
+            ) : (
+              <>
+                <div style={{ color: dim, fontSize: 13 }}>Downloading scans… {dl.done}{dl.total ? ` / ${dl.total}` : ""}</div>
+                <div style={{ height: 6, background: line, borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: dl.total ? `${(dl.done / dl.total) * 100}%` : "0%", background: accent }} />
+                </div>
+              </>
+            )}
+            <p style={{ color: faint, fontSize: 11, marginTop: 8 }}>Fetches every page &amp; document once so the full record browses with no signal. Safe to leave running.</p>
+          </div>
         </>
       )}
 
@@ -129,11 +161,24 @@ function Shell({ session }: { session: Session }) {
           aircraft={nav.aircraft}
           onBack={() => setNav({ screen: "hangar" })}
           onOpen={(e) => setNav({ screen: "entry", aircraft: nav.aircraft, entry: e })}
+          onScans={() => setNav({ screen: "pages", aircraft: nav.aircraft })}
         />
       )}
 
       {nav.screen === "entry" && (
         <EntryDetail entry={nav.entry} tail={nav.aircraft.tail_number} onBack={() => setNav({ screen: "entries", aircraft: nav.aircraft })} />
+      )}
+
+      {nav.screen === "pages" && (
+        <Pages
+          aircraft={nav.aircraft}
+          onBack={() => setNav({ screen: "entries", aircraft: nav.aircraft })}
+          onOpen={(pages, index) => setNav({ screen: "page", aircraft: nav.aircraft, pages, index })}
+        />
+      )}
+
+      {nav.screen === "page" && (
+        <PageViewer pages={nav.pages} index={nav.index} onBack={() => setNav({ screen: "pages", aircraft: nav.aircraft })} />
       )}
     </Screen>
   );
