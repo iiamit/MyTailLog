@@ -12,6 +12,7 @@
     "ios": "vite build && cap sync ios && cap open ios"
   },
   "dependencies": {
+    "@capacitor-community/sqlite": "^6.0.2",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",
     "@supabase/supabase-js": "^2.45.0",
