@@ -74,6 +74,19 @@ test.describe("RLS multi-tenant isolation", () => {
     if (admin && victimAc) await admin.from("aircraft").delete().eq("id", victimAc); // cascades children
     if (admin && victimId) await admin.auth.admin.deleteUser(victimId);
     if (admin && attackerId) await admin.rpc("delete_ai_key", { p_user_id: attackerId });
+    // Fully reset the seeded MFB connection — the harness account is reused
+    // across runs, so a leftover fake connection would skew later tests. Three
+    // calls because upsert deliberately KEEPS the secret when passed null.
+    if (admin && attackerId) {
+      await admin.rpc("disconnect_mfb", { p_user_id: attackerId });
+      await admin.rpc("set_mfb_client_secret", { p_user_id: attackerId, p_cipher: null });
+      await admin.rpc("upsert_mfb_credentials", {
+        p_user_id: attackerId,
+        p_client_id: null,
+        p_mfb_username: null,
+        p_client_secret_cipher: null,
+      });
+    }
   });
 
   test("cannot read another user's aircraft", async () => {
@@ -206,6 +219,56 @@ test.describe("RLS multi-tenant isolation", () => {
     const last4 = await attackerDb.rpc("my_ai_key_last4");
     expect(last4.error).toBeFalsy();
     expect(last4.data).toBe("1234");
+  });
+
+  test("MFB credentials are unreachable by the browser role; only non-secret state is exposed (0047)", async () => {
+    // Seed a connection via the service-role RPC (the table is private now).
+    await admin.rpc("upsert_mfb_credentials", {
+      p_user_id: attackerId,
+      p_client_id: "e2e-client-id",
+      p_mfb_username: "e2e-pilot",
+      p_client_secret_cipher: "v1:not-a-real-mfb-secret",
+    });
+    await admin.rpc("set_mfb_tokens", {
+      p_user_id: attackerId,
+      p_access: "v1:not-a-real-access-token",
+      p_refresh: "v1:not-a-real-refresh-token",
+      p_expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      p_mark_connected: true,
+    });
+
+    // RLS scopes rows, not columns — this is the leak 0047 closed. The base
+    // table must not be reachable through PostgREST at all.
+    const direct = await attackerDb
+      .from("mfb_connection")
+      .select("client_secret, access_token, refresh_token")
+      .eq("user_id", attackerId);
+    const leaked = direct.data?.[0] as
+      | { client_secret?: string; access_token?: string; refresh_token?: string }
+      | undefined;
+    expect(
+      direct.error || (leaked?.client_secret == null && leaked?.access_token == null),
+      "the private mfb_connection table must not be REST-readable",
+    ).toBeTruthy();
+
+    // The service-only secret accessor is not granted to the browser role.
+    const viaRpc = await attackerDb.rpc("mfb_conn_secrets", { p_user_id: attackerId });
+    const rows = (viaRpc.data ?? []) as { client_secret?: string }[];
+    expect(
+      viaRpc.error || rows.length === 0,
+      "mfb_conn_secrets must not return credentials to the browser",
+    ).toBeTruthy();
+
+    // But the browser CAN read its own non-secret connection state.
+    const status = await attackerDb.rpc("my_mfb_status");
+    expect(status.error).toBeFalsy();
+    const s = (status.data as { client_id: string; mfb_username: string; connected: boolean; has_secret: boolean }[])[0];
+    expect(s.client_id).toBe("e2e-client-id");
+    expect(s.mfb_username).toBe("e2e-pilot");
+    expect(s.connected, "holds a token → connected").toBe(true);
+    expect(s.has_secret, "a client secret is configured").toBe(true);
+    // …and that payload carries no ciphertext of any kind.
+    expect(JSON.stringify(s)).not.toContain("v1:");
   });
 
   test("cannot self-promote to admin (profile column lockdown 0028)", async () => {

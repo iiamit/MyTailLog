@@ -24,10 +24,11 @@ exists: unit/contract tests (`test/`, Node `node:test`) and CI
 - **@playwright/test** — Chromium, plus a mobile-viewport project for the capture
   PWA.
 - **`playwright.config.ts`** — `webServer` builds+starts the app against the test
-  env (or `TEST_BASE_URL` points at a deployed preview); `global-setup` handles
+  env (or `E2E_BASE_URL` points at a deployed preview); `e2e/auth.setup.ts` handles
   auth; trace + screenshot + video on failure.
-- **`tests/e2e/`** organized by feature area; shared fixtures for an authenticated
-  page, demo-aircraft navigation, and the AI-stub toggle.
+- **`apps/web/e2e/`** organized by feature area; shared fixtures (`e2e/fixtures.ts`)
+  for the CSP guard, `demoBase` (read-only demo aircraft) and `scratch` (a
+  throwaway owned aircraft, cascade-deleted on teardown).
 
 ## Authentication (using your offer)
 
@@ -105,13 +106,29 @@ env-gated test mode:
 
 ## Phasing
 
-- **Phase 0** — Playwright + config + auth `global-setup` + cross-cutting guards +
-  one smoke test (login → dashboard). Wire the fast tier into CI.
-- **Phase 1** — Tier A (read-only) on the demo aircraft.
-- **Phase 2** — the `E2E_STUB_AI` testability hook + Tier B write flows (including
-  the real PDF-upload guard).
-- **Phase 3** — Tier C account/integration flows.
-- **Phase 4** — the scheduled "live" real-AI smoke tier.
+- **Phase 0 — DONE.** Playwright + config + auth setup + cross-cutting guards +
+  a smoke test (login → dashboard). Fast tier wired into CI (`.github/workflows/e2e.yml`).
+- **Phase 1 — DONE.** Tier A (read-only) on the demo aircraft (`read-only.spec.ts`).
+- **Phase 2 — PARTIAL.** The `E2E_STUB_AI` hook exists (ask + oil-analysis shapes)
+  with the real PDF-upload guard. Still open: extract → review → confirm, find
+  duplicates, equipment/maintenance scan — all need new stub branches (the stub
+  keys off the request's output schema, so each flow needs its own).
+- **Phase 3 — PARTIAL.** Done: BYOK, sharing, export/import round trip. Still
+  open: MyFlightBook credential-save UI, notification settings round-trip.
+- **Phase 4** — the scheduled "live" real-AI smoke tier. Not started.
+
+### Beyond the original plan
+
+Features shipped after this plan was written, now covered: the **self-hosted sync
+engine** (`sync-pull.spec.ts` — cursor convergence, delete propagation, RLS
+scoping, Bearer auth), **Records Vault + blob serving** (`documents.spec.ts` —
+also the end-to-end proof that the storage abstraction serves what it stored,
+which is what the Supabase→GCS cutover changed), **squawks** (`squawks.spec.ts`),
+and the **secret-ciphertext lockdowns** (0039 + 0047, in `rls-isolation.spec.ts`).
+
+Still uncovered: meters / hobbs↔tach reconciliation UI (the logic is
+unit-tested), enroll (FAA lookup), the capture route's JSON-base64 path, and the
+oil-consumption panel.
 
 ## CI integration
 
