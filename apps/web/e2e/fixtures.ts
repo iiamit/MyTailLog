@@ -44,8 +44,9 @@ export const test = base.extend<{ demoBase: string; scratch: ScratchAircraft }>(
   demoBase: async ({ page }, use) => {
     await page.goto("/dashboard");
     await expect(page.getByText("N734DM").first()).toBeVisible();
-    // The sole non-enroll aircraft link on the demo account is the demo aircraft.
-    // ponytail: refine to scope-by-tail once write tests add scratch aircraft.
+    // The demo aircraft is the FIRST aircraft link: /dashboard orders by
+    // created_at ASC and the demo is seeded at signup, so scratch aircraft
+    // (created later, and only while a write test runs) always sort after it.
     const href = await page
       .locator('a[href^="/aircraft/"]:not([href="/aircraft/enroll"])')
       .first()

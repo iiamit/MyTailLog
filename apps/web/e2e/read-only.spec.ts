@@ -29,6 +29,5 @@ test("read-only aircraft overview shows the demo tail", async ({ page, demoBase 
   await expect(page.getByText("N734DM").first()).toBeVisible();
 });
 
-// (The Ask question input only renders when ANTHROPIC_API_KEY is configured;
-// the test app has none. Cover the Ask input + a stubbed answer in Phase 2 with
-// E2E_STUB_AI.)
+// (The Ask input + a stubbed answer are covered in ask.spec.ts — the test env
+// sets a dummy ANTHROPIC_API_KEY so the UI renders, plus E2E_STUB_AI.)
