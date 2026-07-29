@@ -561,7 +561,8 @@ export type Database = {
       aircraft_share: { Row: AircraftShare; Insert: Partial<AircraftShare>; Update: Partial<AircraftShare>; Relationships: [] };
       weight_balance: { Row: WeightBalance; Insert: Partial<WeightBalance>; Update: Partial<WeightBalance>; Relationships: [] };
       scanned_document: { Row: ScannedDocument; Insert: Partial<ScannedDocument>; Update: Partial<ScannedDocument>; Relationships: [] };
-      mfb_connection: { Row: MfbConnection; Insert: Partial<MfbConnection>; Update: Partial<MfbConnection>; Relationships: [] };
+      // mfb_connection lives in a private schema (0047) — not exposed to PostgREST;
+      // reached only via the mfb SECURITY DEFINER functions below.
       hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
       ai_usage: { Row: AiUsage; Insert: Partial<AiUsage>; Update: Partial<AiUsage>; Relationships: [] };
       // user_ai_key lives in a private schema (0039) — not exposed to PostgREST;
@@ -625,6 +626,51 @@ export type Database = {
       };
       delete_ai_key: {
         Args: { p_user_id: string };
+        Returns: undefined;
+      };
+      // MyFlightBook credentials live in a private schema (0047); reached via these.
+      my_mfb_status: {
+        Args: Record<string, never>;
+        Returns: { client_id: string | null; mfb_username: string | null; connected: boolean; has_secret: boolean }[];
+      };
+      mfb_conn_secrets: {
+        Args: { p_user_id: string };
+        Returns: {
+          client_id: string | null;
+          client_secret: string | null;
+          access_token: string | null;
+          refresh_token: string | null;
+          token_expires_at: string | null;
+        }[];
+      };
+      upsert_mfb_credentials: {
+        Args: { p_user_id: string; p_client_id: string; p_mfb_username: string | null; p_client_secret_cipher: string | null };
+        Returns: undefined;
+      };
+      set_mfb_tokens: {
+        Args: {
+          p_user_id: string;
+          p_access: string | null;
+          p_refresh: string | null;
+          p_expires_at: string | null;
+          p_mark_connected: boolean;
+        };
+        Returns: undefined;
+      };
+      disconnect_mfb: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
+      mfb_conns_to_sync: {
+        Args: Record<string, never>;
+        Returns: { user_id: string; last_synced_at: string | null }[];
+      };
+      stamp_mfb_synced: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
+      set_mfb_client_secret: {
+        Args: { p_user_id: string; p_cipher: string };
         Returns: undefined;
       };
     };

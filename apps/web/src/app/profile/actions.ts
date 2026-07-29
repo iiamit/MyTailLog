@@ -98,21 +98,17 @@ export async function saveMfbCredentials(
 
   if (!client_id) return { error: "Client ID is required." };
 
-  const update: Record<string, unknown> = {
-    user_id: user.id,
-    client_id,
-    mfb_username,
-    updated_at: new Date().toISOString(),
-  };
-  // Only overwrite the secret when a new one is actually typed. Encrypted at
-  // rest (AES-256-GCM) — see src/lib/crypto.ts.
-  if (secretInput) update.client_secret = encryptSecret(secretInput);
+  // The ciphertext lives in a private schema (0047); write via the service-role
+  // RPC. Only overwrite the secret when a new one is typed (null = keep existing).
+  // Encrypted at rest (AES-256-GCM) — see src/lib/crypto.ts. user.id is trusted.
+  const { error } = await createServiceClient().rpc("upsert_mfb_credentials", {
+    p_user_id: user.id,
+    p_client_id: client_id,
+    p_mfb_username: mfb_username,
+    p_client_secret_cipher: secretInput ? encryptSecret(secretInput) : null,
+  });
 
-  const { error } = await supabase
-    .from("mfb_connection")
-    .upsert(update, { onConflict: "user_id" });
-
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't save your MyFlightBook credentials." };
   revalidatePath("/profile");
   return {};
 }
@@ -191,18 +187,10 @@ export async function disconnectMfb(): Promise<{ error?: string }> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const { error } = await supabase
-    .from("mfb_connection")
-    .update({
-      access_token: null,
-      refresh_token: null,
-      token_expires_at: null,
-      connected_at: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", user.id);
+  // Tokens live in a private schema (0047); clear them via the service-role RPC.
+  const { error } = await createServiceClient().rpc("disconnect_mfb", { p_user_id: user.id });
 
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't disconnect MyFlightBook." };
   revalidatePath("/profile");
   return {};
 }
