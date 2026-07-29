@@ -43,8 +43,13 @@ async function drainToTip(api: APIRequestContext, from = 0): Promise<number> {
   throw new Error("feed never reached its tip in 100 pages");
 }
 
+// An API context inherits the project's signed-in `storageState`, so anonymity
+// has to be stated explicitly — otherwise these requests silently carry the
+// harness session and assert nothing.
+const ANONYMOUS = { cookies: [], origins: [] };
+
 test("sync/pull: an unauthenticated device is rejected", async ({ baseURL }) => {
-  const anon = await playwrightRequest.newContext({ baseURL });
+  const anon = await playwrightRequest.newContext({ baseURL, storageState: ANONYMOUS });
   const res = await anon.get("/api/sync/pull?cursor=0");
   expect(res.status()).toBe(401);
   expect((await res.json()).error).toMatch(/not signed in/i);
@@ -128,6 +133,10 @@ test("sync/pull: the feed is RLS-scoped — another tenant's device pulls nothin
     // also the mobile auth path (a WKWebView carries no cookies).
     const outsider = await playwrightRequest.newContext({
       baseURL,
+      // Empty jar is essential: with the harness cookies present, a broken
+      // Bearer path would fall back to OUR session and the test would pass
+      // while proving nothing.
+      storageState: ANONYMOUS,
       extraHTTPHeaders: { Authorization: `Bearer ${session.session!.access_token}` },
     });
     const res = await outsider.get("/api/sync/pull?cursor=0&limit=1000");

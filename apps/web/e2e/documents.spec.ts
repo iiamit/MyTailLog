@@ -68,7 +68,12 @@ test("documents: upload a PDF to the vault, then serve it back through the blob 
   expect(dl.headers()["content-disposition"]).toContain("attachment");
 
   // --- Access control: a stranger gets nothing (404, not a leak) -----------
-  const anon = await playwrightRequest.newContext({ baseURL });
+  // The empty jar is explicit: an API context otherwise inherits the project's
+  // signed-in storageState and this would assert nothing.
+  const anon = await playwrightRequest.newContext({
+    baseURL,
+    storageState: { cookies: [], origins: [] },
+  });
   const denied = await anon.get(`/api/document/${row.id}`);
   expect(denied.status(), "an unauthenticated fetch must not serve the blob").toBe(404);
   await anon.dispose();
