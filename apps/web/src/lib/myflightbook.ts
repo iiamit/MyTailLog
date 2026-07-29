@@ -13,9 +13,8 @@
  * and should be confirmed against a live token.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/database.types";
-import { encryptSecret, decryptSecret } from "@/lib/crypto";
+import { createServiceClient } from "@/lib/supabase/service";
+import { encryptSecret, decryptSecret, isLegacyPlaintext } from "@/lib/crypto";
 
 const MFB_BASE = "https://myflightbook.com/logbook";
 
@@ -235,15 +234,11 @@ export async function listRecentFlightReadings(
  * tokens) if the stored one is expired. Returns null when the user isn't
  * connected or the refresh fails — callers must degrade gracefully.
  */
-export async function getValidAccessToken(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-): Promise<string | null> {
-  const { data: conn } = await supabase
-    .from("mfb_connection")
-    .select("client_id, client_secret, access_token, refresh_token, token_expires_at")
-    .eq("user_id", userId)
-    .maybeSingle();
+export async function getValidAccessToken(userId: string): Promise<string | null> {
+  // Credentials live in a private schema (0047); read/write via service-role RPCs.
+  const svc = createServiceClient();
+  const { data: rows } = await svc.rpc("mfb_conn_secrets", { p_user_id: userId });
+  const conn = rows?.[0];
 
   if (!conn?.access_token) return null;
 
@@ -251,6 +246,15 @@ export async function getValidAccessToken(
   const accessToken = decryptSecret(conn.access_token);
   const refreshToken = decryptSecret(conn.refresh_token);
   const clientSecret = decryptSecret(conn.client_secret);
+
+  // L9 sweep: a client_secret stored before at-rest encryption existed
+  // (2026-07-03..07-07) is still plaintext. Re-encrypt it in place, once.
+  if (isLegacyPlaintext(conn.client_secret) && clientSecret) {
+    await svc.rpc("set_mfb_client_secret", {
+      p_user_id: userId,
+      p_cipher: encryptSecret(clientSecret),
+    });
+  }
 
   // 60s buffer so we don't hand back a token that expires mid-request.
   const expired =
@@ -269,15 +273,13 @@ export async function getValidAccessToken(
       clientSecret,
       refreshToken,
     });
-    await supabase
-      .from("mfb_connection")
-      .update({
-        access_token: encryptSecret(tokens.access_token),
-        refresh_token: encryptSecret(tokens.refresh_token ?? refreshToken),
-        token_expires_at: expiresAtFrom(tokens.expires_in),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    await svc.rpc("set_mfb_tokens", {
+      p_user_id: userId,
+      p_access: encryptSecret(tokens.access_token),
+      p_refresh: encryptSecret(tokens.refresh_token ?? refreshToken),
+      p_expires_at: expiresAtFrom(tokens.expires_in),
+      p_mark_connected: false,
+    });
     return tokens.access_token;
   } catch {
     return null; // refresh failed — treat as disconnected for this run

@@ -20,6 +20,7 @@ const IV_LEN = 12;
 const TAG_LEN = 16; // pin GCM auth tag to 16 bytes — reject truncated tags (forgery hardening)
 
 let warnedWeakKey = false;
+let warnedPlaintext = false;
 
 function key(): Buffer {
   const secret = process.env.ENCRYPTION_KEY;
@@ -52,12 +53,28 @@ export function encryptSecret(plaintext: string): string {
 }
 
 /**
+ * True if a stored secret predates at-rest encryption — no "v1:" prefix, so
+ * decryptSecret would pass it through in the clear. Callers use this to
+ * re-encrypt legacy rows in place (L9 sweep); see getValidAccessToken.
+ */
+export function isLegacyPlaintext(stored: string | null): boolean {
+  return stored != null && stored.length > 0 && !stored.startsWith(PREFIX);
+}
+
+/**
  * Decrypt a value produced by encryptSecret. A value WITHOUT the "v1:" prefix
- * is assumed to be legacy plaintext and returned as-is (migration tolerance).
+ * is assumed to be legacy plaintext and returned as-is (migration tolerance) —
+ * logged once so any straggler is visible while the sweep re-encrypts it.
  */
 export function decryptSecret(stored: string | null): string | null {
   if (stored == null) return null;
-  if (!stored.startsWith(PREFIX)) return stored;
+  if (!stored.startsWith(PREFIX)) {
+    if (!warnedPlaintext) {
+      warnedPlaintext = true;
+      console.warn("[crypto] read a legacy plaintext secret — should be re-encrypted on next write.");
+    }
+    return stored;
+  }
   const raw = Buffer.from(stored.slice(PREFIX.length), "base64");
   // Reject anything too short to hold iv|tag|ct — otherwise a crafted value could
   // hand setAuthTag a truncated (weaker) GCM tag.

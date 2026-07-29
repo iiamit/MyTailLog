@@ -64,25 +64,20 @@ export async function POST(req: Request) {
 // --- Sync pass -------------------------------------------------------------
 
 async function runSync(supabase: Service, emailById: Map<string, string>): Promise<number> {
-  const { data: conns } = await supabase
-    .from("mfb_connection")
-    .select("user_id, access_token, last_synced_at")
-    .not("access_token", "is", null);
+  // Credentials live in a private schema (0047); this RPC returns the users who
+  // hold a live token (already filtered to access_token not null).
+  const { data: conns } = await supabase.rpc("mfb_conns_to_sync");
 
   const cutoff = Date.now() - SYNC_STALE_MS;
   let usersSynced = 0;
   for (const c of conns ?? []) {
-    if (!c.access_token) continue;
     if (c.last_synced_at && new Date(c.last_synced_at).getTime() > cutoff) continue;
     try {
       const aircraft = await accessibleAircraft(supabase, c.user_id, emailById.get(c.user_id));
       const result = await syncUserHours(supabase, c.user_id, aircraft);
       if (result) usersSynced += 1;
       // Stamp only on a clean run so an MFB outage is retried next day.
-      await supabase
-        .from("mfb_connection")
-        .update({ last_synced_at: new Date().toISOString() })
-        .eq("user_id", c.user_id);
+      await supabase.rpc("stamp_mfb_synced", { p_user_id: c.user_id });
     } catch (e) {
       console.error(`[cron] sync failed for user ${c.user_id}: ${(e as Error).message}`);
     }

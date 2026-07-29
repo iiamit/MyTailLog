@@ -69,6 +69,15 @@ the git log.
   (`eslint.config.mjs`).
 
 ### Security
+- **MyFlightBook credentials moved out of browser reach.** The per-user MFB
+  OAuth `client_secret` and access/refresh tokens (already encrypted at rest)
+  were readable as ciphertext by the browser role through row-level security,
+  which scopes rows but not columns. They now live in a private schema Postgres
+  doesn't expose, reachable only through `SECURITY DEFINER` functions — the same
+  lockdown applied earlier to users' Anthropic keys. No re-entry or key rotation:
+  the ciphertext and encryption key are unchanged. Any credential still stored as
+  legacy plaintext (from before at-rest encryption existed) is now re-encrypted
+  automatically on first use.
 - **Fixed a critical cross-tenant authorization gap** in the OAuth grant path: the
   per-aircraft grant now verifies **aircraft ownership** at both write and read
   time (RLS + app-layer + a read-time recheck), so a token can only ever read

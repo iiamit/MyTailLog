@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { exchangeCode, expiresAtFrom } from "@/lib/myflightbook";
 import { publicOrigin } from "@/lib/publicOrigin";
 import { encryptSecret, decryptSecret } from "@/lib/crypto";
@@ -35,11 +36,11 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(`${origin}/login?next=/profile`);
 
-  const { data: conn } = await supabase
-    .from("mfb_connection")
-    .select("client_id, client_secret")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // Credentials/tokens live in a private schema (0047), reached only via the
+  // service-role RPCs. The user was verified above via their own session.
+  const svc = createServiceClient();
+  const { data: secretRows } = await svc.rpc("mfb_conn_secrets", { p_user_id: user.id });
+  const conn = secretRows?.[0];
   if (!conn?.client_id || !conn?.client_secret) return back("noclient");
 
   try {
@@ -49,16 +50,13 @@ export async function GET(request: NextRequest) {
       code,
       redirectUri: `${origin}/api/myflightbook/callback`,
     });
-    const { error } = await supabase
-      .from("mfb_connection")
-      .update({
-        access_token: encryptSecret(tokens.access_token),
-        refresh_token: tokens.refresh_token ? encryptSecret(tokens.refresh_token) : null,
-        token_expires_at: expiresAtFrom(tokens.expires_in),
-        connected_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id);
+    const { error } = await svc.rpc("set_mfb_tokens", {
+      p_user_id: user.id,
+      p_access: encryptSecret(tokens.access_token),
+      p_refresh: tokens.refresh_token ? encryptSecret(tokens.refresh_token) : null,
+      p_expires_at: expiresAtFrom(tokens.expires_in),
+      p_mark_connected: true,
+    });
     if (error) return back("error");
     return back("connected");
   } catch {

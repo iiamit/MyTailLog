@@ -40,7 +40,7 @@ export async function syncUserHours(
   userId: string,
   aircraft: { id: string; tail_number: string }[],
 ): Promise<SyncResult | null> {
-  const accessToken = await getValidAccessToken(supabase, userId);
+  const accessToken = await getValidAccessToken(userId);
   if (!accessToken) return null;
 
   const [mfbAircraft, flights] = await Promise.all([

@@ -19,13 +19,10 @@ export default async function ProfilePage() {
     .eq("id", user.id)
     .single();
 
-  // MyFlightBook: only non-sensitive state reaches the browser — never the
-  // client secret or tokens. `connected` = we hold a live access token.
-  const { data: mfb } = await supabase
-    .from("mfb_connection")
-    .select("client_id, client_secret, access_token, mfb_username")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // MyFlightBook: the credentials live in a private schema (0047); this RPC
+  // returns only non-sensitive state — never the client secret or tokens.
+  const { data: mfbRows } = await supabase.rpc("my_mfb_status");
+  const mfb = mfbRows?.[0];
 
   // BYOK: whether the user has their own Anthropic key, and their usage/cost
   // ledger. Rows are summed here (a personal account's volume is small); move
@@ -137,8 +134,8 @@ export default async function ProfilePage() {
           alerts={resolveAlerts(profile?.preferences)}
           mfb={{
             clientId: mfb?.client_id ?? "",
-            hasSecret: Boolean(mfb?.client_secret),
-            connected: Boolean(mfb?.access_token),
+            hasSecret: Boolean(mfb?.has_secret),
+            connected: Boolean(mfb?.connected),
             username: mfb?.mfb_username ?? "",
           }}
           ai={ai}
