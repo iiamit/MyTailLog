@@ -333,6 +333,9 @@ and the `ai_usage` ledger write — use a Supabase secret API key: the cron is
 scoped to its endpoint behind a shared-secret gate, and the ledger write exists
 so the shared-key cost guard can't be forged by a client.
 
+Found a security problem? Please report it privately — see
+[`SECURITY.md`](SECURITY.md). Don't open a public issue.
+
 ## Explicitly out of scope
 
 eSignatures (keeps us in "index of the physical record" territory, avoiding
