@@ -55,17 +55,33 @@ test("backup: export archive keeps pages and entries distinct, and re-imports cl
   });
   expect(pErr, `seed page: ${pErr?.message}`).toBeFalsy();
 
-  const { error: eErr } = await admin.from("log_entry").insert(
-    Array.from({ length: ENTRY_COUNT }, (_, i) => ({
-      aircraft_id: scratch.id,
-      logbook_id: airframe,
-      page_id: pageId,
-      entry_date: `2026-0${i + 1}-15`,
-      description: `E2E entry ${i + 1}`,
-      ad_refs: [`AD-E2E-${i + 1}`],
-    })),
-  );
+  const { data: seededEntries, error: eErr } = await admin
+    .from("log_entry")
+    .insert(
+      Array.from({ length: ENTRY_COUNT }, (_, i) => ({
+        aircraft_id: scratch.id,
+        logbook_id: airframe,
+        page_id: pageId,
+        entry_date: `2026-0${i + 1}-15`,
+        description: `E2E entry ${i + 1}`,
+        ad_refs: [`AD-E2E-${i + 1}`],
+      })),
+    )
+    .select("id, description");
   expect(eErr, `seed entries: ${eErr?.message}`).toBeFalsy();
+
+  // A Vault document ATTACHED to one of those entries (0041 log_entry_id). The
+  // ids are regenerated on import, so this fails hard unless importBackup remaps
+  // the FK — without the remap the insert hits a foreign-key violation and the
+  // whole restore dies. Also proves the attachment isn't silently dropped.
+  const attachedTo = seededEntries!.find((e) => e.description === "E2E entry 2")!.id;
+  const { error: dErr } = await admin.from("document").insert({
+    aircraft_id: scratch.id,
+    type: "form_8130_3",
+    title: "E2E attached tag",
+    log_entry_id: attachedTo,
+  });
+  expect(dErr, `seed document: ${dErr?.message}`).toBeFalsy();
 
   // --- Export: click the real button, capture the real download -------------
   await page.goto(`${scratch.path}/export`);
@@ -120,6 +136,19 @@ test("backup: export archive keeps pages and entries distinct, and re-imports cl
     expect(restoredPages.data).toHaveLength(PAGE_COUNT);
     expect(restoredEntries.data).toHaveLength(ENTRY_COUNT);
     expect(restoredEntries.data![0].ad_refs, "entry payload survived the round trip").toBeTruthy();
+
+    // The attachment points at the RESTORED entry, not the source one.
+    const { data: restoredDocs } = await admin
+      .from("document")
+      .select("title, log_entry_id")
+      .eq("aircraft_id", importedId);
+    expect(restoredDocs, "the attached document restored").toHaveLength(1);
+    const newEntryIds = new Set(restoredEntries.data!.map((e) => e.id));
+    expect(restoredDocs![0].log_entry_id, "attachment must survive the round trip").toBeTruthy();
+    expect(
+      newEntryIds.has(restoredDocs![0].log_entry_id!),
+      "the attachment must be remapped to the restored entry, not the source's id",
+    ).toBe(true);
   } finally {
     // The imported aircraft gets a fresh id, so the scratch fixture's teardown
     // doesn't cover it.

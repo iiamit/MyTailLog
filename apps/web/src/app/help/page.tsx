@@ -625,9 +625,19 @@ const SECTIONS: Section[] = [
           with a category and reference number, and it&apos;s a click away instead of buried in a
           binder. These sit alongside your logbook scans.
         </p>
+        <p className="mt-2">
+          Any Vault document can be <strong>attached to a specific maintenance entry</strong> — the
+          8130-3 for the part that entry installed, the 337 for the alteration it records. On an
+          entry in <L href="/aircraft">Review</L>, use <strong>+ Link from Vault</strong> to pick an
+          existing document (or <strong>+ Add file</strong> to upload and attach in one step);{" "}
+          <strong>unlink</strong> detaches it without deleting — the document stays in the Vault. The
+          Vault shows the same link from the other side, as the{" "}
+          <strong>linked record</strong> under each document, and attachments appear on their entry
+          in the <L href="/aircraft">Logbook timeline</L>. A document attaches to one entry at a time.
+        </p>
         <p className="mt-2 text-sm text-faint">
-          Editors can add and remove documents; anyone with access can view and download them. A
-          document can also be attached to a specific maintenance entry.
+          Editors can add, attach, detach, and remove documents; viewers can view and download them
+          but cannot change any of it. Attachments travel in the .zip backup and survive a re-import.
         </p>
       </>
     ),
