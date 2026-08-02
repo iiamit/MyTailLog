@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getProvider } from "@/lib/backup/providers";
-import { dayOfMonthFor, nextRunAt } from "@/lib/backup/schedule";
+import { dayOfMonthFor, nextRunAt, redactSecrets } from "@/lib/backup/schedule";
 import { publicOrigin } from "@/lib/publicOrigin";
 import { encryptSecret } from "@/lib/crypto";
 
@@ -54,7 +54,12 @@ export async function GET(request: NextRequest) {
         ? new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
         : null,
     });
-    if (error) return back("error");
+    if (error) {
+      // Never the token — just why the write failed (a missing 0049 looks
+      // identical to a broken Dropbox from the redirect alone).
+      console.error(`[backup] storing the Dropbox destination failed: ${error.message}`);
+      return back("error");
+    }
 
     // Connecting IS the consent, so arm the cadence now — a destination that
     // never backs anything up is the failure mode this feature exists to fix.
@@ -67,7 +72,8 @@ export async function GET(request: NextRequest) {
       p_next_run_at: nextRunAt("monthly", day),
     });
     return back("connected");
-  } catch {
+  } catch (e) {
+    console.error(`[backup] Dropbox connect failed: ${redactSecrets((e as Error).message)}`);
     return back("error");
   }
 }
