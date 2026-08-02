@@ -5,6 +5,7 @@ import {
   TimelineClient,
   type TimelineEntry,
   type LogbookMeta,
+  type EntryAttachment,
 } from "./TimelineClient";
 
 
@@ -60,6 +61,23 @@ export default async function TimelinePage({
   // Thumbnail for the list; fall back to the original when no thumbnail exists.
   const listThumbByPageId: Record<string, string> = { ...fullByPageId, ...thumbnailByPageId };
 
+  // Vault documents attached to an entry (0041 `document.log_entry_id`), keyed
+  // by entry so both the rendered list and live search results can show them.
+  const { data: attached } = await supabase
+    .from("document")
+    .select("id, title, file_name, log_entry_id")
+    .eq("aircraft_id", id)
+    .not("log_entry_id", "is", null);
+  const attachmentsByEntry: Record<string, EntryAttachment[]> = {};
+  for (const d of attached ?? []) {
+    if (!d.log_entry_id) continue;
+    (attachmentsByEntry[d.log_entry_id] ??= []).push({
+      id: d.id,
+      title: d.title,
+      file_name: d.file_name,
+    });
+  }
+
   const timeline: TimelineEntry[] = (entries ?? []).map((e) => ({
     id: e.id,
     pageId: e.page_id,
@@ -101,6 +119,7 @@ export default async function TimelinePage({
         logbookMap={logbookMap}
         thumbnailByPageId={listThumbByPageId}
         fullByPageId={fullByPageId}
+        attachmentsByEntry={attachmentsByEntry}
       />
     </main>
   );

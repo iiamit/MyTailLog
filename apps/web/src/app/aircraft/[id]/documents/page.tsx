@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAircraftShellContext } from "@/lib/aircraftContext";
-import { DocumentsClient } from "./DocumentsClient";
+import { DocumentsClient, type LinkedEntry } from "./DocumentsClient";
 
 export default async function DocumentsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,6 +18,26 @@ export default async function DocumentsPage({ params }: { params: Promise<{ id: 
     .eq("aircraft_id", id)
     .order("created_at", { ascending: false });
 
+  // Reverse view: which log entry each attached document belongs to, so the
+  // Vault shows the link from its own side. RLS scopes the read to this aircraft.
+  const linkedIds = [...new Set((docs ?? []).map((d) => d.log_entry_id).filter((x): x is string => !!x))];
+  const linkedEntries: Record<string, LinkedEntry> = {};
+  if (linkedIds.length) {
+    const { data: entries } = await supabase
+      .from("log_entry")
+      .select("id, entry_date, description, work_performed, page_id")
+      .in("id", linkedIds);
+    for (const e of entries ?? []) {
+      const text = (e.description || e.work_performed || "").trim();
+      linkedEntries[e.id] = {
+        id: e.id,
+        entryDate: e.entry_date,
+        summary: text.length > 70 ? `${text.slice(0, 70)}…` : text,
+        href: e.page_id ? `/aircraft/${id}/pages/${e.page_id}/review` : `/aircraft/${id}/timeline`,
+      };
+    }
+  }
+
   return (
     <main className="mx-auto max-w-4xl px-6 py-8">
       <header className="mb-6">
@@ -30,7 +50,12 @@ export default async function DocumentsPage({ params }: { params: Promise<{ id: 
         </p>
       </header>
 
-      <DocumentsClient aircraftId={id} canEdit={ctx.canEdit} docs={docs ?? []} />
+      <DocumentsClient
+        aircraftId={id}
+        canEdit={ctx.canEdit}
+        docs={docs ?? []}
+        linkedEntries={linkedEntries}
+      />
     </main>
   );
 }
