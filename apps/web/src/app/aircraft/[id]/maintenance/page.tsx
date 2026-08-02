@@ -34,7 +34,7 @@ export default async function MaintenancePage({
 
   // Both meters, reconciled from hobbs/tach readings. Regulatory items count
   // down on tach; usage items (oil) on hobbs.
-  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours, utilization } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
     airframe: aircraft.enrollment_airframe,
@@ -71,6 +71,14 @@ export default async function MaintenancePage({
             dates are only as accurate as the last-done data you enter — verify
             against the physical logbooks.
           </p>
+          {utilization.confidence !== "none" && (
+            <p className="mt-2 max-w-xl text-[12.5px] leading-relaxed text-faint">
+              Hours-based items also show <strong>≈ a calendar date</strong>, projected from
+              how much this aircraft has actually flown over the past year. It is a{" "}
+              <strong>planning estimate, not a determination</strong> — the hours figure is
+              what comes due. Hover a projection to see the readings it came from.
+            </p>
+          )}
         </div>
       </header>
 
@@ -84,6 +92,7 @@ export default async function MaintenancePage({
         currentTachEstimated={ct.estimated}
         currentTachRough={ct.rough}
         currentHobbsEstimated={ch.estimated}
+        utilization={utilization}
         mfbReading={mfbReading}
         extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
       />

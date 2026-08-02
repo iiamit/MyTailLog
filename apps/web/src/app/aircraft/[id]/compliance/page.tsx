@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { AdKind, AdReference } from "@/lib/database.types";
-import { getCurrentHours } from "@/lib/aircraftHours";
+import { getCurrentMeters } from "@/lib/aircraftHours";
 import { ComplianceClient, type UntrackedRef } from "./ComplianceClient";
 
 export default async function CompliancePage({
@@ -46,13 +46,15 @@ export default async function CompliancePage({
     for (const r of e.ad_refs ?? []) refs.set(`ad:${r}`, { kind: "ad" as AdKind, reference: r });
     for (const r of e.sb_refs ?? []) refs.set(`sb:${r}`, { kind: "sb" as AdKind, reference: r });
   }
-  // Current hours = highest reading across hobbs and tach, else enrollment.
-  const currentHours = await getCurrentHours(supabase, id, {
+  // ADs run on TACH (the airworthiness meter), plus the utilization rate that
+  // turns an hours-remaining figure into an approximate calendar date.
+  const { tach, utilization } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
     airframe: aircraft.enrollment_airframe,
     date: aircraft.enrollment_date,
   });
+  const currentHours = tach.tach;
 
   const tracked = new Set((records ?? []).map((r) => `${r.kind}:${r.reference}`));
   const untracked = [...refs.entries()]
@@ -100,6 +102,7 @@ export default async function CompliancePage({
         records={records ?? []}
         untracked={untracked}
         currentHours={currentHours}
+        utilization={utilization}
         adReferences={adReferences}
         components={components ?? []}
       />

@@ -10,6 +10,12 @@ import {
   hoursRemaining,
   type StatusItem,
 } from "@/lib/status";
+import {
+  projectDueDate,
+  projectionLabel,
+  projectionTitle,
+  type Utilization,
+} from "@/lib/utilization";
 
 // Card left-border + dot color per urgency — the at-a-glance color code.
 const BORDER: Record<Urgency, string> = {
@@ -50,6 +56,19 @@ function remainingText(item: StatusItem): string {
   return parts.join(" · ");
 }
 
+/**
+ * The projected calendar date for this item's HOURS limit, or null.
+ *
+ * Only ever the hours axis: a calendar limit (an annual) already has a real due
+ * date and must never be replaced or softened by our arithmetic. Null whenever
+ * the countdown is untrustworthy or the rate can't support a date — the card
+ * then reads exactly as it did before this feature existed.
+ */
+function hoursProjection(item: StatusItem, u: Utilization) {
+  if (item.hoursUnreliable) return null;
+  return projectDueDate(hoursRemaining(item.nextDueForItem, item.currentForItem), u);
+}
+
 // Fraction of the recurring interval elapsed, for the annunciator progress
 // bar. Prefers hours (more precise for engine/airframe items); falls back to
 // the calendar span between last-done and next-due. Null when we don't have
@@ -69,13 +88,16 @@ function progressFraction(item: StatusItem): number | null {
 function StatusCard({
   item,
   aircraftId,
+  utilization,
 }: {
   item: StatusItem;
   aircraftId: string;
+  utilization: Utilization;
 }) {
   const href =
     item.source === "ad" ? `/aircraft/${aircraftId}/compliance` : `/aircraft/${aircraftId}/maintenance`;
   const rem = remainingText(item);
+  const proj = hoursProjection(item, utilization);
   const frac = progressFraction(item);
   const pct = frac != null ? Math.max(0, Math.min(100, frac * 100)) : null;
 
@@ -116,6 +138,12 @@ function StatusCard({
         {rem && <span className="text-faint"> · {rem}</span>}
       </div>
 
+      {proj && (
+        <div className="text-[11.5px] text-dim" title={projectionTitle(utilization)}>
+          at recent use, hours run out {projectionLabel(proj)}
+        </div>
+      )}
+
       <div className="readout mt-0.5 text-[10.5px] text-faint">
         {[
           item.nextDueDate ? `due ${item.nextDueDate}` : null,
@@ -143,11 +171,13 @@ function UrgencySection({
   color,
   items,
   aircraftId,
+  utilization,
 }: {
   title: string;
   color: string;
   items: StatusItem[];
   aircraftId: string;
+  utilization: Utilization;
 }) {
   if (items.length === 0) return null;
   return (
@@ -163,7 +193,12 @@ function UrgencySection({
       </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,210px),1fr))] gap-3">
         {items.map((s) => (
-          <StatusCard key={`${s.source}-${s.id}`} item={s} aircraftId={aircraftId} />
+          <StatusCard
+            key={`${s.source}-${s.id}`}
+            item={s}
+            aircraftId={aircraftId}
+            utilization={utilization}
+          />
         ))}
       </div>
     </div>
@@ -195,7 +230,7 @@ export default async function StatusPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, id, {
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours, utilization } = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
     airframe: aircraft.enrollment_airframe,
@@ -299,9 +334,9 @@ export default async function StatusPage({
             </div>
           </div>
 
-          <UrgencySection title="Overdue" color="var(--red)" items={overdueItems} aircraftId={id} />
-          <UrgencySection title="Due soon" color="var(--amb)" items={dueItems} aircraftId={id} />
-          <UrgencySection title="Current" color="var(--grn)" items={currentItems} aircraftId={id} />
+          <UrgencySection title="Overdue" color="var(--red)" items={overdueItems} aircraftId={id} utilization={utilization} />
+          <UrgencySection title="Due soon" color="var(--amb)" items={dueItems} aircraftId={id} utilization={utilization} />
+          <UrgencySection title="Current" color="var(--grn)" items={currentItems} aircraftId={id} utilization={utilization} />
         </>
       )}
     </main>
