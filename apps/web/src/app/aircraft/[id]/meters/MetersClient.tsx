@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { METERS, type Meter } from "@/lib/hobbsTach";
+import type { AdsbSuggestion } from "@/lib/adsb/reconcile";
 import {
   addMeterReset,
   deleteMeterReset,
   addMeterReading,
   deleteMeterReading,
+  setAdsbEnabled,
+  dismissAdsbFlights,
+  acceptAdsbEstimate,
 } from "./actions";
 
 type ResetRow = {
@@ -46,6 +50,207 @@ const num = (s: string): number | null => {
 };
 const show = (n: number | null) => (n != null ? n.toFixed(1) : "—");
 
+// The honest limits, stated here and not buried in /help. Every one of these is
+// a reason the number below is an ESTIMATE that prompts a real reading.
+function AdsbLimits() {
+  return (
+    <ul className="mt-2 list-disc space-y-0.5 pl-4 text-[11.5px] leading-relaxed text-faint">
+      <li>
+        Airborne wall-clock is <strong>neither tach nor hobbs</strong> — it excludes taxi and runup,
+        and it drifts from tach with RPM.
+      </li>
+      <li>Ground-station coverage has gaps, especially low and away from busy airspace.</li>
+      <li>Not every GA aircraft broadcasts ADS-B Out, and not every flight is seen.</li>
+      <li>
+        Nothing is ever written for you, and an accepted estimate never counts as compliance
+        evidence — confirm the real meter.
+      </li>
+    </ul>
+  );
+}
+
+/**
+ * ADS-B passive hours: opt-in, off by default, and never authoritative. It has
+ * exactly one job — notice that the aircraft flew when the recorded hours don't
+ * show it — so when MyFlightBook (or any reading you entered) already covers the
+ * dates, this stays silent.
+ */
+function AdsbSection({
+  aircraftId,
+  canEdit,
+  adsb,
+}: {
+  aircraftId: string;
+  canEdit: boolean;
+  adsb: { enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
+}) {
+  const router = useRouter();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [hex, setHex] = useState("");
+  const s = adsb.suggestion;
+  const [accept, setAccept] = useState<string | null>(null);
+
+  async function toggle(enabled: boolean) {
+    setBusy(true);
+    const res = await setAdsbEnabled(aircraftId, enabled, hex || null);
+    setBusy(false);
+    if ("error" in res) return toast.error(res.error);
+    setHex("");
+    toast.success(enabled ? `Watching ${res.icao24?.toUpperCase()}.` : "ADS-B checks off.");
+    router.refresh();
+  }
+
+  async function dismiss() {
+    setBusy(true);
+    const res = await dismissAdsbFlights(aircraftId);
+    setBusy(false);
+    if ("error" in res) return toast.error(res.error);
+    router.refresh();
+  }
+
+  async function save() {
+    if (!s?.meter) return;
+    const value = num(accept ?? "");
+    setBusy(true);
+    const res = await acceptAdsbEstimate(aircraftId, {
+      reading_date: new Date().toISOString().slice(0, 10),
+      tach: s.meter === "tach" ? value : null,
+      hobbs: s.meter === "hobbs" ? value : null,
+    });
+    setBusy(false);
+    if ("error" in res) return toast.error(res.error);
+    toast.success("Reading recorded.");
+    setAccept(null);
+    router.refresh();
+  }
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-ink">ADS-B passive hours</h2>
+        {canEdit && adsb.enabled && (
+          <button onClick={() => toggle(false)} disabled={busy} className={secondaryBtn}>
+            Turn off
+          </button>
+        )}
+      </div>
+
+      {!adsb.enabled ? (
+        <div className="rounded-lg border border-line bg-panel p-4">
+          <p className="max-w-2xl text-[12.5px] leading-relaxed text-dim">
+            If you don&apos;t log every flight, the recorded hours drift below the real ones and
+            every countdown on the status page reads optimistic. Turn this on and MyTailLog asks the{" "}
+            <strong>OpenSky Network</strong> once a day whether this aircraft flew — sending only its{" "}
+            <strong>ICAO 24-bit Mode S address</strong>, which is public FAA registry data. Nothing
+            about you or your records leaves the app, and no track or position data is stored: just
+            the start, end and duration of each flight seen.
+          </p>
+          <p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-dim">
+            It only ever speaks up when your <strong>own</strong> records don&apos;t already account
+            for the flying. A MyFlightBook sync, a logbook entry or a reading you typed always wins.
+          </p>
+          <AdsbLimits />
+          {canEdit && (
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <label className="text-xs font-medium text-dim">
+                Mode S address (optional)
+                <input
+                  value={hex}
+                  onChange={(e) => setHex(e.target.value)}
+                  placeholder="looked up automatically"
+                  className={`${inputClass} readout w-48`}
+                />
+              </label>
+              <button onClick={() => toggle(true)} disabled={busy} className={primaryBtn}>
+                Turn on ADS-B checks
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-line bg-panel p-4">
+          <div className="readout text-[12.5px] text-dim">
+            Watching <span className="text-ink">{adsb.icao24?.toUpperCase() ?? "—"}</span> via
+            OpenSky, once a day.
+          </div>
+
+          {!s ? (
+            <p className="mt-2 text-[12.5px] text-faint">
+              Nothing unaccounted for — your recorded readings cover every flight seen.
+            </p>
+          ) : (
+            <div className="mt-3 rounded-md border border-annun-amber/40 px-3 py-2" style={{ background: "var(--amb-bg)" }}>
+              <p className="text-[13px] leading-relaxed text-annun-amber">
+                ADS-B detected <strong>{s.flights} flight{s.flights === 1 ? "" : "s"} totalling ≈{s.hours.toFixed(1)} h</strong>
+                {s.since ? (
+                  <>
+                    {" "}since your last recorded reading
+                    {s.from != null && ` (${s.from.toFixed(1)} on ${s.since.date})`}
+                  </>
+                ) : (
+                  " with no recorded reading at all"
+                )}
+                . Hour-based items may be <strong>≈{s.hours.toFixed(1)} h closer</strong> than shown.
+              </p>
+              {s.meter && s.to != null && (
+                <p className="readout mt-1 text-[12.5px] text-annun-amber">
+                  Suggested {s.meter}: {s.from?.toFixed(1)} → {s.to.toFixed(1)}
+                </p>
+              )}
+              {canEdit && (
+                <div className="mt-2 flex flex-wrap items-end gap-2">
+                  {accept == null ? (
+                    <>
+                      {s.meter && s.to != null && (
+                        <button
+                          onClick={() => setAccept(s.to!.toFixed(1))}
+                          disabled={busy}
+                          className={primaryBtn}
+                        >
+                          Record a reading
+                        </button>
+                      )}
+                      <button onClick={dismiss} disabled={busy} className={secondaryBtn}>
+                        Dismiss
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <label className="text-xs font-medium text-dim">
+                        {s.meter === "hobbs" ? "Hobbs" : "Tach"} today
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={accept}
+                          onChange={(e) => setAccept(e.target.value)}
+                          className={`${inputClass} w-32`}
+                        />
+                      </label>
+                      <button onClick={save} disabled={busy} className={primaryBtn}>
+                        Save
+                      </button>
+                      <button onClick={() => setAccept(null)} disabled={busy} className={secondaryBtn}>
+                        Cancel
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              <p className="mt-2 text-[11px] leading-relaxed text-faint">
+                Pre-filled from the estimate and fully editable — read the real meter and correct it.
+                Saved as an <span className="readout">adsb_estimate</span>, which never counts as
+                compliance evidence.
+              </p>
+            </div>
+          )}
+          <AdsbLimits />
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function MetersClient({
   aircraftId,
   canEdit,
@@ -54,6 +259,7 @@ export function MetersClient({
   estimated,
   resets,
   readings,
+  adsb,
 }: {
   aircraftId: string;
   canEdit: boolean;
@@ -62,6 +268,7 @@ export function MetersClient({
   estimated: Record<Meter, boolean>;
   resets: ResetRow[];
   readings: ReadingRow[];
+  adsb: { enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -135,6 +342,8 @@ export function MetersClient({
 
   return (
     <div className="space-y-8">
+      <AdsbSection aircraftId={aircraftId} canEdit={canEdit} adsb={adsb} />
+
       <section>
         <h2 className="mb-3 text-sm font-semibold text-ink">Current readings</h2>
         <div className="grid gap-3 sm:grid-cols-3">

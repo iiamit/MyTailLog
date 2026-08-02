@@ -20,6 +20,7 @@ export const SYNCED_TABLES = [
   "maintenance_item",
   "document",
   "squawk",
+  "adsb_flight",
   "oil_addition",
   "oil_analysis_sample",
   "hours_reading",

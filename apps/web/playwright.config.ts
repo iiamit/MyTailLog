@@ -59,6 +59,12 @@ export default defineConfig({
           // makes getAnthropic return canned responses so no real calls are made.
           ANTHROPIC_API_KEY: "e2e-stub-key",
           E2E_STUB_AI: "1",
+          // Same pattern for ADS-B: E2E_STUB_ADSB makes openSkyClient() return
+          // canned flights so the daily sweep never touches the live OpenSky API
+          // (which needs real OAuth credentials and burns a shared credit
+          // bucket). Set here ONLY — never in prod/apphosting.yaml.
+          E2E_STUB_ADSB: "1",
+          CRON_SECRET: "e2e-cron-secret",
           // OAuth provider signing keys (see e2e/oauth.spec.ts).
           OIDC_JWKS: process.env.TEST_OIDC_JWKS ?? testJwks(),
         },

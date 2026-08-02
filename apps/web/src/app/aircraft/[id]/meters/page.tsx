@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAircraftShellContext } from "@/lib/aircraftContext";
-import { getCurrentMeters } from "@/lib/aircraftHours";
+import { getCurrentMeters, getLatestRecordedReading, getMeterResets } from "@/lib/aircraftHours";
+import { reconcileAdsb } from "@/lib/adsb/reconcile";
 import { MetersClient } from "./MetersClient";
 
 export default async function MetersPage({ params }: { params: Promise<{ id: string }> }) {
@@ -13,9 +14,16 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
+    .select("enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date, icao24, adsb_enabled")
     .eq("id", id)
     .single();
+
+  const enrollment = {
+    hobbs: aircraft?.enrollment_hobbs ?? null,
+    tach: aircraft?.enrollment_tach ?? null,
+    airframe: aircraft?.enrollment_airframe ?? null,
+    date: aircraft?.enrollment_date ?? null,
+  };
 
   const [{ data: resets }, { data: readings }, meters] = await Promise.all([
     supabase
@@ -30,13 +38,27 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
       .eq("source", "manual")
       .order("reading_date", { ascending: false })
       .limit(50),
-    getCurrentMeters(supabase, id, {
-      hobbs: aircraft?.enrollment_hobbs ?? null,
-      tach: aircraft?.enrollment_tach ?? null,
-      airframe: aircraft?.enrollment_airframe ?? null,
-      date: aircraft?.enrollment_date ?? null,
-    }),
+    getCurrentMeters(supabase, id, enrollment),
   ]);
+
+  // ADS-B is the fallback observer: it only ever speaks up when the recorded
+  // hours don't already account for the flying. Skipped entirely when off.
+  let adsbSuggestion = null;
+  if (aircraft?.adsb_enabled) {
+    const [{ data: flights }, latestReading, meterResets] = await Promise.all([
+      supabase
+        .from("adsb_flight")
+        .select("first_seen, airborne_minutes, dismissed_at")
+        .eq("aircraft_id", id),
+      getLatestRecordedReading(supabase, id, enrollment),
+      getMeterResets(supabase, id),
+    ]);
+    adsbSuggestion = reconcileAdsb({
+      flights: flights ?? [],
+      latestReading,
+      resetDates: meterResets.map((r) => r.date).filter((d): d is string => !!d),
+    });
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-8">
@@ -58,6 +80,11 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
         estimated={{ tach: meters.tach.estimated, hobbs: meters.hobbs.estimated, airframe: false }}
         resets={resets ?? []}
         readings={readings ?? []}
+        adsb={{
+          enabled: aircraft?.adsb_enabled ?? false,
+          icao24: aircraft?.icao24 ?? null,
+          suggestion: adsbSuggestion,
+        }}
       />
     </main>
   );

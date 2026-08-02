@@ -47,8 +47,28 @@ export type Aircraft = {
   enrollment_airframe: number | null;
   notes: string | null;
   is_demo: boolean;
+  // ADS-B (0048). icao24 is the cached Mode S hex; adsb_enabled is the per-
+  // aircraft opt-in, off by default.
+  icao24: string | null;
+  adsb_enabled: boolean;
   created_at: string;
   updated_at: string;
+}
+
+/** One observed flight (0048). Deliberately no track data — this exists only to
+ *  notice that the aircraft flew. */
+export type AdsbFlight = {
+  id: string;
+  aircraft_id: string;
+  icao24: string;
+  first_seen: string;
+  last_seen: string;
+  est_departure_airport: string | null;
+  est_arrival_airport: string | null;
+  callsign: string | null;
+  airborne_minutes: number;
+  dismissed_at: string | null;
+  created_at: string;
 }
 
 export type Logbook = {
@@ -570,6 +590,7 @@ export type Database = {
       oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
       oil_addition: { Row: OilAddition; Insert: Partial<OilAddition>; Update: Partial<OilAddition>; Relationships: [] };
       squawk: { Row: Squawk; Insert: Partial<Squawk>; Update: Partial<Squawk>; Relationships: [] };
+      adsb_flight: { Row: AdsbFlight; Insert: Partial<AdsbFlight>; Update: Partial<AdsbFlight>; Relationships: [] };
       change_log: { Row: ChangeLog; Insert: Partial<ChangeLog>; Update: Partial<ChangeLog>; Relationships: [] };
       oidc_payloads: { Row: OidcPayload; Insert: Partial<OidcPayload>; Update: Partial<OidcPayload>; Relationships: [] };
       oauth_client: { Row: OauthClient; Insert: Partial<OauthClient>; Update: Partial<OauthClient>; Relationships: [] };

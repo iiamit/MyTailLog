@@ -437,6 +437,59 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "adsb",
+    icon: <PlaneIcon />,
+    title: "ADS-B passive hours",
+    body: (
+      <>
+        <p>
+          If you don&apos;t log every flight, the recorded hours drift below the real ones and every
+          countdown reads optimistic. <L href="/aircraft">Aircraft → Meters</L> can turn on a daily
+          check against the <strong>OpenSky Network</strong>, a free community ADS-B feed, to notice
+          that the aircraft flew when your records don&apos;t show it.
+        </p>
+        <p>
+          It is <strong>off by default and opt-in per aircraft</strong>. The only thing that ever
+          leaves the app is the aircraft&apos;s <strong>ICAO 24-bit Mode S address</strong> — public
+          FAA registry data. Nothing about you or your records is sent, and no track or position
+          data is stored: only the start, end and duration of each flight seen. Turn it off and the
+          checks stop.
+        </p>
+        <p>
+          The address is looked up from the FAA registry (or adsbdb as a fallback) and cached. It is
+          never <em>computed</em> from your N-number — that encoding has edge cases that would
+          silently pull another aircraft&apos;s flights. You can always enter it by hand.
+        </p>
+        <p>
+          <strong>Your own records always win.</strong> Hobbs and tach are cumulative, so a reading
+          from a <L href="#myflightbook">MyFlightBook</L> sync, a logbook entry, or one you typed
+          already accounts for everything flown up to its date. ADS-B only speaks up about flights
+          <em> after</em> your most recent reading — and it stays quiet entirely if a meter was
+          replaced since then.
+        </p>
+        <p>
+          When it does speak up you get one line — &ldquo;3 flights totalling ≈4.2 h since your last
+          reading&rdquo; — a suggested meter value, and two buttons: record a reading, or dismiss.{" "}
+          <strong>Nothing is ever written for you.</strong> The suggested number is pre-filled and
+          fully editable; read the real meter and correct it before saving.
+        </p>
+        <p>
+          <strong>Honest limits.</strong> Airborne wall-clock is neither tach nor hobbs — it excludes
+          taxi and runup and drifts from tach with RPM. Ground coverage has gaps. Not every GA
+          aircraft broadcasts ADS-B Out. Treat it as an estimate that prompts a real reading.
+        </p>
+        <Effects>
+          An accepted reading is saved as an <span className="readout">adsb_estimate</span>, which
+          feeds the current-hours figure and the countdowns like any other reading — but is{" "}
+          <strong>never</strong> compliance evidence, and never feeds a utilization-rate estimate
+          (that would be circular). It may widen a forecast&apos;s warning band, which is the safe
+          direction to be wrong in. Editors and owners can opt in and accept; viewers see it
+          read-only.
+        </Effects>
+      </>
+    ),
+  },
+  {
     id: "squawks",
     icon: <AlertIcon />,
     title: "Squawks",

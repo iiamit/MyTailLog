@@ -12,6 +12,7 @@ import {
   dueSignature,
   itemKey,
 } from "@/lib/reminders";
+import { openSkyClient, startOfUtcDay, RateLimited } from "@/lib/adsb/opensky";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Preferences } from "@/lib/database.types";
 
@@ -33,12 +34,28 @@ type Aircraft = {
 const SYNC_STALE_MS = 23 * 60 * 60 * 1000;
 const SITE = "https://mytaillog.com";
 
+// ADS-B lookback, in whole UTC DAYS — never hours. OpenSky partitions by UTC
+// calendar day and allows at most 2 partitions per query, so an hours-based
+// window silently spills into a third day and 400s (see lib/adsb/opensky.ts).
+//
+// Going back to the start of the UTC day 2 days ago covers 3 calendar days,
+// which windowChunks splits into two legal requests (8 credits/aircraft/day,
+// ceiling ~500 opted-in aircraft/day against the 4,000/day bucket). Worth double
+// the credits: reconciliation only ever counts what's in adsb_flight, so with a
+// 1-day window a single missed cron run would lose those hours permanently. This
+// way the sweep heals itself.
+const ADSB_LOOKBACK_DAYS = 2;
+// maxDuration is 300s. The ADS-B sweep runs LAST and stops here, so a large
+// opted-in fleet can never starve the MFB sync or the reminder emails.
+const ADSB_DEADLINE_MS = 240_000;
+
 /**
- * Daily scheduled job (Cloud Scheduler → Bearer CRON_SECRET). Two best-effort
+ * Daily scheduled job (Cloud Scheduler → Bearer CRON_SECRET). Three best-effort
  * passes over all users via the service-role client:
  *   1. Sync MyFlightBook hours for each connected user, at most once/day.
  *   2. Email due-maintenance/AD reminders, deduped per due-cycle via reminder_log.
- * One user's failure never aborts the run.
+ *   3. Pull ADS-B flights for opted-in aircraft (last, and time-boxed).
+ * One user's — or one aircraft's — failure never aborts the run.
  */
 export async function POST(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -56,10 +73,75 @@ export async function POST(req: Request) {
 
   const emailById = await loadUserEmails(supabase);
 
+  const started = Date.now();
   const usersSynced = await runSync(supabase, emailById);
   const emailsSent = await runReminders(supabase, emailById);
+  const adsbFlights = await runAdsb(supabase, started);
 
-  return json({ usersSynced, emailsSent });
+  return json({ usersSynced, emailsSent, adsbFlights });
+}
+
+// --- ADS-B pass ------------------------------------------------------------
+
+/**
+ * Pull the last ~48h of observed flights for every OPTED-IN aircraft that has a
+ * resolved Mode S hex, and upsert them. Idempotent on (aircraft_id, first_seen).
+ *
+ * The only thing sent outbound is the hex, which is public registry data — no
+ * user data leaves. Degrades to a no-op when OpenSky credentials are absent.
+ * On a 429 we stop the sweep outright rather than hammering a bucket we've
+ * already exhausted; the next daily run picks it up.
+ */
+async function runAdsb(supabase: Service, started: number): Promise<number> {
+  const client = openSkyClient();
+  if (!client) {
+    console.log("[adsb] OPENSKY_CLIENT_ID/SECRET not configured — skipping sweep");
+    return 0;
+  }
+
+  const { data: fleet } = await supabase
+    .from("aircraft")
+    .select("id, icao24")
+    .eq("adsb_enabled", true)
+    .not("icao24", "is", null);
+  if (!fleet?.length) return 0;
+
+  const end = Math.floor(Date.now() / 1000);
+  const begin = startOfUtcDay(end - ADSB_LOOKBACK_DAYS * 86_400);
+  let ingested = 0;
+
+  for (const ac of fleet) {
+    if (Date.now() - started > ADSB_DEADLINE_MS) {
+      console.warn(`[adsb] deadline reached — ${fleet.length} aircraft in the sweep, stopping early`);
+      break;
+    }
+    try {
+      const flights = await client(ac.icao24!, begin, end);
+      if (flights.length === 0) continue;
+      const { error } = await supabase.from("adsb_flight").upsert(
+        flights.map((f) => ({
+          aircraft_id: ac.id,
+          icao24: f.icao24,
+          first_seen: new Date(f.firstSeen * 1000).toISOString(),
+          last_seen: new Date(f.lastSeen * 1000).toISOString(),
+          est_departure_airport: f.estDepartureAirport,
+          est_arrival_airport: f.estArrivalAirport,
+          callsign: f.callsign,
+          airborne_minutes: Math.max(0, Math.round((f.lastSeen - f.firstSeen) / 60)),
+        })),
+        { onConflict: "aircraft_id,first_seen", ignoreDuplicates: true },
+      );
+      if (error) throw new Error(error.message);
+      ingested += flights.length;
+    } catch (e) {
+      if (e instanceof RateLimited) {
+        console.error(`[adsb] ${e.message} — stopping the sweep`);
+        break;
+      }
+      console.error(`[adsb] failed for aircraft ${ac.id}: ${(e as Error).message}`);
+    }
+  }
+  return ingested;
 }
 
 // --- Sync pass -------------------------------------------------------------

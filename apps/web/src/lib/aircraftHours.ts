@@ -166,6 +166,31 @@ export async function getCurrentHours(
   return (await getCurrentTach(supabase, aircraftId, enrollment)).tach;
 }
 
+/**
+ * The most recent RECORDED reading from ANY source — logbook entry, synced
+ * hours_reading (MFB / manual / adsb_estimate) or the enrollment baseline —
+ * carrying at least one meter value.
+ *
+ * Hobbs and tach are CUMULATIVE, so this one row already accounts for every hour
+ * flown up to its date, however many flights that was. That's what makes it the
+ * ADS-B reconciliation cutoff (@/lib/adsb/reconcile): anything the aircraft flew
+ * at or before this date is already in the meter.
+ */
+export async function getLatestRecordedReading(
+  supabase: SupabaseClient<Database>,
+  aircraftId: string,
+  enrollment?: Enrollment,
+): Promise<{ date: string; tach: number | null; hobbs: number | null; source: string } | null> {
+  const readings = await fetchReadings(supabase, aircraftId, enrollment);
+  let best: Reading | null = null;
+  for (const r of readings) {
+    if (!r.date) continue;
+    if (r.hobbs == null && r.tach == null && r.airframe == null) continue;
+    if (!best || r.date > best.date!) best = r;
+  }
+  return best ? { date: best.date!, tach: best.tach, hobbs: best.hobbs, source: best.source } : null;
+}
+
 export type HoursAnomaly = Anomaly & { date: string | null };
 
 /**

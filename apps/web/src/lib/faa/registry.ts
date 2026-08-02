@@ -21,6 +21,10 @@ export type RegistryRecord = {
   engineModel: string | null;
   registrantName: string | null;
   status: string | null;
+  /** ICAO 24-bit Mode S address in hex. The authoritative source for it — never
+   *  compute this from the N-number; the encoding has edge cases that silently
+   *  produce ANOTHER aircraft's address. */
+  modeSCodeHex: string | null;
 };
 
 // Normalize a tail to the FAA's N-number form: no leading "N", uppercase.
@@ -91,5 +95,13 @@ export async function lookupRegistration(
     engineModel: fields["Engine Model"] ?? null,
     registrantName: fields["Name"] ?? null,
     status: fields["Status"] ?? null,
+    // The FAA labels this cell differently across record types; take whichever
+    // is present and keep it only if it looks like a 24-bit hex address.
+    modeSCodeHex: hex(fields["Mode S Code Hex"] ?? fields["Mode S Code (base 16 / hex)"]),
   };
+}
+
+function hex(v: string | undefined): string | null {
+  const s = v?.trim().toLowerCase().replace(/^0x/, "");
+  return s && /^[0-9a-f]{6}$/.test(s) ? s : null;
 }
