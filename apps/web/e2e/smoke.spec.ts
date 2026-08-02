@@ -18,7 +18,9 @@ test("help page renders every documented section without a CSP violation", async
 // empty in production while still working in dev — so assert real content.
 test("whats-new renders the changelog grouped by version", async ({ page }) => {
   await page.goto("/whats-new");
-  await expect(page.getByRole("heading", { name: "2026.07" })).toBeVisible();
+  // level 2 = the version heading; the changelog also has an "Earlier in
+  // 2026.07" group heading, so an unscoped name match hits both.
+  await expect(page.getByRole("heading", { name: "2026.07", level: 2 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Open API & integrations" })).toBeVisible();
   await expect(page.getByText("Security", { exact: true }).first()).toBeVisible();
 });
