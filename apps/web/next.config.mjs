@@ -1,8 +1,18 @@
+import { readFileSync } from "node:fs";
 import { buildCsp } from "./csp.config.mjs";
+
+// CHANGELOG.md lives at the repo root, OUTSIDE apps/web, so Next's output file
+// tracing never ships it — reading it at request time would work in dev and 500
+// in production. Inlining it through `env` substitutes it as a string literal at
+// build time instead, which needs no dependency and no tracing config. Parsed by
+// src/lib/changelog.ts and rendered at /whats-new.
+// Note: editing CHANGELOG.md requires a dev-server restart to take effect.
+const changelog = readFileSync(new URL("../../CHANGELOG.md", import.meta.url), "utf8");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  env: { CHANGELOG_MD: changelog },
   // oidc-provider resolves token formats via `this.constructor.name`, which Next's
   // server-bundle minification mangles (breaks token issuance with a cryptic
   // "dynamic[...] is not a function"). Keep it external so it's required from

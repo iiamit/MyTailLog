@@ -107,6 +107,13 @@ export default async function Home() {
           className="underline underline-offset-2 hover:text-ink"
         >
           see everything it does →
+        </Link>{" "}
+        ·{" "}
+        <Link
+          href="/whats-new"
+          className="underline underline-offset-2 hover:text-ink"
+        >
+          what&apos;s new
         </Link>
       </p>
 

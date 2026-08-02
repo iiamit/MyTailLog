@@ -24,6 +24,7 @@ const NAV: Group[] = [
       { ident: "PRO", label: "Profile", href: "/profile" },
       { ident: "API", label: "Developer API", href: "/developers" },
       { ident: "HLP", label: "Help & docs", href: "/help" },
+      { ident: "CHG", label: "What's new", href: "/whats-new" },
     ],
   },
 ];
