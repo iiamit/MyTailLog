@@ -716,6 +716,11 @@ export default function HelpPage() {
           other. The amber <span className="font-medium text-annun-amber">Ripple effects</span>{" "}
           notes call out where one action changes something elsewhere.
         </p>
+        <p className="mt-2 text-sm text-faint">
+          Looking for cost, privacy, accuracy, or how to get your data back out? Those live in the{" "}
+          <L href="/faq">FAQ</L>, alongside <L href="/compare">how this compares</L> to the other
+          ways of keeping records.
+        </p>
       </header>
 
       {/* Table of contents */}
