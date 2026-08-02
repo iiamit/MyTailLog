@@ -12,6 +12,12 @@ import {
 } from "@/lib/compliance";
 import { getADByNumber } from "@/lib/faa/federalRegister";
 import {
+  projectDueDate,
+  projectionLabel,
+  projectionTitle,
+  type Utilization,
+} from "@/lib/utilization";
+import {
   upsertAdRecord,
   deleteAdRecord,
   trackRef,
@@ -168,6 +174,7 @@ export function ComplianceClient({
   records,
   untracked,
   currentHours,
+  utilization,
   adReferences,
   components,
 }: {
@@ -175,6 +182,7 @@ export function ComplianceClient({
   records: AdCompliance[];
   untracked: UntrackedRef[];
   currentHours: number | null;
+  utilization: Utilization;
   adReferences: Record<string, AdReference>;
   components: ComponentLite[];
 }) {
@@ -478,6 +486,15 @@ export function ComplianceClient({
           {sorted.map((r) => {
             const urgency = urgencyOf(r, currentHours);
             const due = dueText(r.next_due_date, r.next_due_hours, currentHours);
+            // ADs are the one place both axes routinely coexist. The projection
+            // is strictly the HOURS axis — a calendar next-due stands on its own.
+            const proj =
+              r.next_due_hours != null && currentHours != null
+                ? projectDueDate(
+                    Math.round((r.next_due_hours - currentHours) * 10) / 10,
+                    utilization,
+                  )
+                : null;
             const accent = accentColor(urgency, r.status);
             const hasStatusNote =
               (r.status === "not_applicable" || r.status === "superseded") &&
@@ -513,6 +530,14 @@ export function ComplianceClient({
                     <div className="readout mt-0.5 text-[11px] text-faint">
                       {due ? `next ${due}` : "no due date"}
                     </div>
+                    {proj && (
+                      <div
+                        className="readout mt-0.5 text-[11px] text-dim"
+                        title={projectionTitle(utilization)}
+                      >
+                        {projectionLabel(proj)}
+                      </div>
+                    )}
                   </div>
                 </div>
 

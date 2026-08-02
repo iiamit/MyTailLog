@@ -301,8 +301,9 @@ const SECTIONS: Section[] = [
         color-coded card — <span className="text-annun-red">red = overdue</span>,{" "}
         <span className="text-annun-amber">amber = due soon</span>,{" "}
         <span className="text-annun-green">green = current</span> — with days
-        and hours remaining. It&apos;s a read-only rollup of your{" "}
-        <L href="#maintenance">maintenance forecast</L> and recurring{" "}
+        and hours remaining — plus, where there&apos;s enough flying history,{" "}
+        <L href="#projection">an approximate calendar date</L> for the hours to run out. It&apos;s
+        a read-only rollup of your <L href="#maintenance">maintenance forecast</L> and recurring{" "}
         <L href="#compliance">ADs</L>; each card links to where you manage it.
       </p>
     ),
@@ -334,8 +335,69 @@ const SECTIONS: Section[] = [
           See <L href="#meters">Meters</L>.
           Extraction and{" "}
           &ldquo;Update from logs&rdquo; advance last-done automatically. The 100-hour resets off the
-          later of the last 100-hour <em>or</em> the last annual. Everything here also feeds{" "}
-          <L href="#status">Status</L>.
+          later of the last 100-hour <em>or</em> the last annual. Hours-based items also show a{" "}
+          <L href="#projection">projected ≈ date</L> when your reading history supports one.
+          Everything here also feeds <L href="#status">Status</L>.
+        </Effects>
+      </>
+    ),
+  },
+  {
+    id: "projection",
+    icon: <ClockIcon />,
+    title: "Projected due dates (≈)",
+    body: (
+      <>
+        <p>
+          &ldquo;Due in 38.4 hours&rdquo; is accurate but hard to plan around. Wherever an item
+          counts down on <em>hours</em>, MyTailLog also shows an approximate calendar date —{" "}
+          <strong>≈ 14 Mar 2027</strong> — worked out from how much this aircraft has actually
+          been flown, using your own logged meter readings from the past <strong>365 days</strong>.
+        </p>
+        <p>
+          It is a <strong>planning estimate, not a determination</strong>. The hours figure is the
+          thing that comes due; the date is only our arithmetic on a rate that can change the
+          moment your flying does. Every projection carries the <strong>≈</strong> sign and a
+          confidence level, and hovering it shows the rate and the exact readings it came from, so
+          you can judge it yourself.
+        </p>
+        <p>
+          <strong>Confidence</strong> reflects how much evidence sits behind the rate — both how
+          many readings and how long a stretch they cover:
+        </p>
+        <ul className="ml-4 list-disc space-y-1">
+          <li>
+            <strong>High</strong> — 6+ readings spanning 180 days or more.
+          </li>
+          <li>
+            <strong>Medium</strong> — 4+ readings over 90 days.
+          </li>
+          <li>
+            <strong>Low</strong> — 2+ readings over 30 days. Treat as a rough sketch.
+          </li>
+          <li>
+            <strong>None</strong> — anything thinner. No date is shown at all; you simply see the
+            hours, exactly as before. MyTailLog will not guess a date from a single data point.
+          </li>
+        </ul>
+        <p>
+          The rate is measured on the <strong>tach</strong> wherever possible, because hour-based
+          limits — the 100-hour, TBO, hour-interval ADs — are written against engine time. If your
+          logs carry no usable tach history it falls back to <strong>hobbs</strong> and says so in
+          the hover text. Hobbs runs a little faster than tach, so a hobbs-based projection tends
+          to land slightly early — the safe direction to be wrong in.
+        </p>
+        <Effects>
+          A projection <strong>never</strong> overrides a <strong>calendar</strong> limit. An annual
+          is a date in its own right; the ≈ date only ever appears next to an <em>hours</em>{" "}
+          countdown, and never replaces or softens a real due date. Intervals that span a recorded{" "}
+          <L href="#meters">meter replacement</L> are dropped from the rate entirely — a swapped
+          tach makes the raw difference meaningless, and that is the most likely source of a badly
+          wrong date. Projections appear on <L href="#status">Status</L>, the{" "}
+          <L href="#maintenance">maintenance forecast</L>, your <L href="#compliance">AD</L> rows,
+          and in <L href="#notifications">reminder emails</L>. They are never used to decide{" "}
+          <em>whether</em> something is due or when to email you — that stays on the real hours and
+          dates.
         </Effects>
       </>
     ),
