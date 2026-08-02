@@ -161,19 +161,40 @@ export default function ComparePage() {
         </>
       }
     >
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[60rem] border-collapse text-[13px]">
+      {/*
+        Seven columns of prose never fit the shell's max-w-3xl measure — the old
+        version set min-w-[60rem] inside a 45rem box, so it scrolled sideways at
+        every viewport size and our own column (the point of the page) sat
+        off-screen until you dragged it into view.
+
+        Two presentations over the same COLS/ROWS data instead, so no content is
+        duplicated: a grid wide enough to scan at xl, and one block per axis
+        below that. Neither ever scrolls horizontally.
+      */}
+
+      {/* xl and up: break out of the prose measure to 68rem (45rem content box
+          + 11.5rem of negative margin each side). Deliberately not vw-based —
+          100vw includes the scrollbar and would reintroduce the overflow. */}
+      <div className="hidden xl:-mx-[11.5rem] xl:block">
+        <table className="w-full table-fixed border-collapse text-[13px]">
           <caption className="sr-only">
-            Comparison of six approaches to keeping general aviation maintenance records
+            Comparison of six approaches to keeping general aviation maintenance records. The final
+            column is MyTailLog.
           </caption>
+          <colgroup>
+            <col className="w-[13%]" />
+            {COLS.map((c) => (
+              <col key={c} className="w-[14.5%]" />
+            ))}
+          </colgroup>
           <thead>
             <tr className="border-b border-line text-left align-bottom">
-              <th className="w-40 py-2 pr-3 font-semibold text-ink">Axis</th>
+              <th className="py-2 pr-3 font-semibold text-ink">Axis</th>
               {COLS.map((c, i) => (
                 <th
                   key={c}
-                  className={`py-2 pr-3 font-semibold ${
-                    i === last ? "bg-panel2 px-3 text-ink" : "text-dim"
+                  className={`py-2 font-semibold ${
+                    i === last ? "rounded-t bg-panel2 px-3 text-ink" : "pr-3 text-dim"
                   }`}
                 >
                   {c}
@@ -190,7 +211,7 @@ export default function ComparePage() {
                 {r.cells.map((cell, i) => (
                   <td
                     key={COLS[i]}
-                    className={`py-2.5 pr-3 text-dim ${i === last ? "bg-panel2 px-3" : ""}`}
+                    className={`py-2.5 ${i === last ? "bg-panel2 px-3 text-ink" : "pr-3 text-dim"}`}
                   >
                     {cell}
                   </td>
@@ -199,6 +220,33 @@ export default function ComparePage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Below xl: one block per axis. Each answer gets the full measure, which
+          suits cells that are sentences rather than yes/no. */}
+      <div className="flex flex-col gap-7 xl:hidden">
+        {ROWS.map((r) => (
+          <section key={r.axis}>
+            <h2 className="border-b border-line pb-1.5 font-display text-base font-semibold text-ink">
+              {r.axis}
+            </h2>
+            <dl className="mt-1">
+              {r.cells.map((cell, i) => (
+                <div
+                  key={COLS[i]}
+                  className={`grid gap-x-4 gap-y-0.5 border-b border-line/60 py-2 text-[13px] sm:grid-cols-[13rem_1fr] ${
+                    i === last ? "-mx-3 rounded bg-panel2 px-3" : ""
+                  }`}
+                >
+                  <dt className={i === last ? "font-semibold text-ink" : "text-faint"}>
+                    {COLS[i]}
+                  </dt>
+                  <dd className={i === last ? "text-ink" : "text-dim"}>{cell}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
       </div>
 
       <div className="mt-12 flex flex-col gap-8">
