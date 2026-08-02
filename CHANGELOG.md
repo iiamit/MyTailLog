@@ -6,6 +6,21 @@ the git log.
 
 ## 2026.08
 
+### Added — Automatic cloud backups (Dropbox)
+- **Your records back themselves up to storage you own.** Connect Dropbox from
+  Profile and the same re-importable `.zip` you can download by hand — records
+  plus every original scan — is pushed to your account **monthly or quarterly**,
+  one dated file per aircraft at `MyTailLog/<TAIL>/<date>-<TAIL>.zip`.
+- **App-folder access only.** We ask for permission to write files in our own
+  folder and nothing else, so the rest of your Dropbox stays invisible to us —
+  and we only ever *add* files. Nothing in your account is renamed, replaced, or
+  deleted; retention is your call.
+- **You can tell whether it's working.** Profile shows the last run, its result,
+  and its size, and you get an email if two runs in a row fail — a backup that
+  quietly stopped six months ago is worse than none.
+- Very large aircraft are reported as **too large to upload** rather than failing
+  mysteriously, with a pointer to the manual download.
+
 ### Added — AD discovery by model
 - **Find ADs by your actual variant, not just your make.** The AD explorer now
   searches by **model** and by free-text **keyword** alongside the existing

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { resolveAlerts } from "@/lib/reminders";
+import { getProvider } from "@/lib/backup/providers";
+import { formatBytes } from "@/lib/backup/schedule";
 import { AccountShell } from "@/components/shell/AccountShell";
 import { ProfileClient } from "./ProfileClient";
 
@@ -23,6 +25,11 @@ export default async function ProfilePage() {
   // returns only non-sensitive state — never the client secret or tokens.
   const { data: mfbRows } = await supabase.rpc("my_mfb_status");
   const mfb = mfbRows?.[0];
+
+  // Cloud backups (0049): same rule — the destination's OAuth tokens live in
+  // the private schema and this RPC returns state only, never ciphertext.
+  const { data: backupRows } = await supabase.rpc("my_backup_destinations");
+  const dest = backupRows?.[0];
 
   // BYOK: whether the user has their own Anthropic key, and their usage/cost
   // ledger. Rows are summed here (a personal account's volume is small); move
@@ -139,6 +146,21 @@ export default async function ProfilePage() {
             username: mfb?.mfb_username ?? "",
           }}
           ai={ai}
+          backup={{
+            // Null when DROPBOX_CLIENT_ID/SECRET aren't provisioned — the card
+            // then says so instead of offering a button that can't work.
+            configured: getProvider("dropbox") != null,
+            connected: Boolean(dest?.connected),
+            accountLabel: dest?.account_label ?? "",
+            frequency: dest?.frequency ?? "off",
+            nextRunAt: dest?.next_run_at ?? null,
+            lastRunAt: dest?.last_run_at ?? null,
+            lastStatus: dest?.last_status ?? null,
+            // Formatted here: lib/backup/schedule pulls node:crypto, which has
+            // no business in the client bundle.
+            lastSize: dest?.last_bytes != null ? formatBytes(dest.last_bytes) : "",
+            lastError: dest?.last_error ?? null,
+          }}
           connectedApps={connectedApps}
         />
       </main>

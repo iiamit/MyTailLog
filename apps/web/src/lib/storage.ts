@@ -70,6 +70,36 @@ export async function getBlob(
 }
 
 /**
+ * A blob's size in bytes without downloading it, or null when it's missing.
+ *
+ * The scheduled backup sums these BEFORE building an archive: a 300-page
+ * aircraft is ~600 MB and won't finish inside the cron's 300 s, so the sweep
+ * needs to know the size to refuse it honestly rather than time out at 3am.
+ * `page` has no size column in the DB (only `document` does), so this asks the
+ * backend.
+ */
+export async function blobSize(path: string): Promise<number | null> {
+  if (BACKEND === "gcs") {
+    try {
+      const [meta] = await (await bucket()).file(path).getMetadata();
+      const n = Number(meta.size);
+      return Number.isFinite(n) ? n : null;
+    } catch {
+      return null;
+    }
+  }
+  // Supabase Storage has no stat; list the containing folder filtered to the
+  // one name. `search` is a prefix match, so confirm the exact name back.
+  const slash = path.lastIndexOf("/");
+  const dir = slash < 0 ? "" : path.slice(0, slash);
+  const name = path.slice(slash + 1);
+  const { data } = await supa().storage.from(BUCKET).list(dir, { search: name, limit: 100 });
+  const hit = (data ?? []).find((f) => f.name === name);
+  const size = (hit?.metadata as { size?: number } | undefined)?.size;
+  return typeof size === "number" ? size : null;
+}
+
+/**
  * Store a blob. `upsert:false` fails if the key already exists (matches the
  * documents route). Returns `{ error }` rather than throwing so callers can do
  * orphan cleanup, mirroring the Supabase upload shape.

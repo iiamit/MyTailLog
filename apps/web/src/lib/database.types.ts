@@ -541,6 +541,36 @@ export type ReminderLog = {
   sent_at: string;
 }
 
+/** Scheduled cloud backups (0049). The DESTINATION (with its OAuth tokens)
+ *  deliberately has no type here — it lives in the private schema. */
+export type BackupSchedule = {
+  id: string;
+  user_id: string;
+  destination_id: string | null;
+  aircraft_id: string | null; // null ⇒ all the user's aircraft
+  frequency: "off" | "monthly" | "quarterly";
+  day_of_month: number;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  claimed_at: string | null;
+  consecutive_failures: number;
+  created_at: string;
+}
+
+export type BackupRun = {
+  id: string;
+  schedule_id: string;
+  user_id: string;
+  aircraft_id: string | null;
+  started_at: string;
+  finished_at: string | null;
+  status: "running" | "ok" | "failed" | "skipped_too_large";
+  bytes: number | null;
+  remote_path: string | null;
+  /** Redacted of anything token-shaped before it's stored — it's readable here. */
+  error: string | null;
+}
+
 /** Latest recorded hobbs/tach for an aircraft, e.g. synced from MyFlightBook. */
 export type HoursReading = {
   id: string;
@@ -598,6 +628,10 @@ export type Database = {
       oauth_account_grant: { Row: OauthAccountGrant; Insert: Partial<OauthAccountGrant>; Update: Partial<OauthAccountGrant>; Relationships: [] };
       oauth_access_log: { Row: OauthAccessLog; Insert: Partial<OauthAccessLog>; Update: Partial<OauthAccessLog>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
+      // backup_destination lives in a private schema (0049) — not exposed to
+      // PostgREST; reached only via the backup SECURITY DEFINER functions below.
+      backup_schedule: { Row: BackupSchedule; Insert: Partial<BackupSchedule>; Update: Partial<BackupSchedule>; Relationships: [] };
+      backup_run: { Row: BackupRun; Insert: Partial<BackupRun>; Update: Partial<BackupRun>; Relationships: [] };
     };
     Views: {
       admin_user_stats: { Row: AdminUserStat; Relationships: [] };
@@ -693,6 +727,91 @@ export type Database = {
       set_mfb_client_secret: {
         Args: { p_user_id: string; p_cipher: string };
         Returns: undefined;
+      };
+      // Cloud backups (0049). The destination tokens live in a private schema;
+      // only backup_due_runs (service_role only) ever returns ciphertext.
+      my_backup_destinations: {
+        Args: Record<string, never>;
+        Returns: {
+          provider: string;
+          account_label: string | null;
+          connected: boolean;
+          folder_path: string | null;
+          frequency: "off" | "monthly" | "quarterly";
+          day_of_month: number | null;
+          next_run_at: string | null;
+          last_run_at: string | null;
+          last_status: BackupRun["status"] | null;
+          last_bytes: number | null;
+          last_error: string | null;
+          consecutive_failures: number;
+        }[];
+      };
+      upsert_backup_destination: {
+        Args: {
+          p_user_id: string;
+          p_provider: string;
+          p_account_label: string | null;
+          p_access_cipher: string | null;
+          p_refresh_cipher: string | null;
+          p_expires_at: string | null;
+        };
+        Returns: string;
+      };
+      set_backup_tokens: {
+        Args: { p_destination_id: string; p_access_cipher: string | null; p_expires_at: string | null };
+        Returns: undefined;
+      };
+      delete_backup_destination: {
+        Args: { p_user_id: string; p_provider: string };
+        Returns: undefined;
+      };
+      set_backup_schedule: {
+        Args: {
+          p_user_id: string;
+          p_frequency: string;
+          p_day_of_month: number;
+          p_next_run_at: string | null;
+        };
+        Returns: undefined;
+      };
+      backup_due_runs: {
+        Args: { p_now: string };
+        Returns: {
+          schedule_id: string;
+          user_id: string;
+          aircraft_id: string | null;
+          destination_id: string;
+          provider: string;
+          folder_path: string | null;
+          access_cipher: string | null;
+          refresh_cipher: string | null;
+          expires_at: string | null;
+          frequency: string;
+          day_of_month: number | null;
+        }[];
+      };
+      claim_backup_schedule: {
+        Args: { p_schedule_id: string; p_lease_minutes: number };
+        Returns: boolean;
+      };
+      start_backup_run: {
+        Args: { p_schedule_id: string; p_user_id: string; p_aircraft_id: string | null };
+        Returns: string;
+      };
+      finish_backup_run: {
+        Args: {
+          p_run_id: string;
+          p_status: string;
+          p_bytes: number | null;
+          p_remote_path: string | null;
+          p_error: string | null;
+        };
+        Returns: undefined;
+      };
+      complete_backup_schedule: {
+        Args: { p_schedule_id: string; p_next_run_at: string | null; p_failed: boolean };
+        Returns: number;
       };
     };
     Enums: {
