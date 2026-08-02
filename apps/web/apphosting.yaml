@@ -66,6 +66,27 @@ env:
     secret: opensky-client-secret
     availability:
       - RUNTIME
+  # Dropbox app credentials for scheduled cloud backups (dropbox.com/developers
+  # → an app with "App folder" access and the files.content.write scope).
+  # Server-only; the OAuth tokens they mint are encrypted at rest and live in the
+  # private schema (0049). Absent → the backup sweep logs one line and skips and
+  # the Profile card says it isn't configured, so the rest of the app is
+  # unaffected.
+  #
+  # NOT YET PROVISIONED. Create them with EXACTLY these Secret Manager IDs:
+  #   firebase apphosting:secrets:set DROPBOX_CLIENT_ID
+  #   firebase apphosting:secrets:set DROPBOX_CLIENT_SECRET
+  # The `secret:` key must match the Secret Manager ID character for character —
+  # PR #131 was a deploy that failed purely because it didn't (see the OPENSKY_*
+  # note above).
+  - variable: DROPBOX_CLIENT_ID
+    secret: DROPBOX_CLIENT_ID
+    availability:
+      - RUNTIME
+  - variable: DROPBOX_CLIENT_SECRET
+    secret: DROPBOX_CLIENT_SECRET
+    availability:
+      - RUNTIME
   # Server-only. Encrypts MyFlightBook secrets/tokens and users' own Anthropic
   # keys at rest (AES-256-GCM, src/lib/crypto.ts). Any non-empty string works
   # (SHA-256'd to a 32-byte key); rotating it makes existing ciphertext
@@ -109,6 +130,14 @@ env:
       - RUNTIME
   - variable: AI_SHARED_DAILY_USD
     value: "20"
+    availability:
+      - RUNTIME
+  # Scheduled-backup size ceiling in bytes (default 400 MB). Above this the run
+  # is recorded as skipped_too_large and the user is told, instead of timing out
+  # against the cron's 300 s limit at 3am. Tune the number + redeploy once the
+  # phase-1 telemetry shows the real archive size distribution.
+  - variable: BACKUP_MAX_BYTES
+    value: "419430400"
     availability:
       - RUNTIME
   - variable: LOGBOOK_STORAGE_BUCKET

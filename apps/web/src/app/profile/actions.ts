@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { encryptSecret } from "@/lib/crypto";
+import { dayOfMonthFor, nextRunAt } from "@/lib/backup/schedule";
 
 /** Update the signed-in user's profile details. Notification preferences are
  *  owned by updateNotifications so this never clobbers the alerts bag. */
@@ -175,6 +176,57 @@ export async function removeAiKey(): Promise<{ error?: string }> {
 
   const { error } = await createServiceClient().rpc("delete_ai_key", { p_user_id: user.id });
   if (error) return { error: "Couldn't remove the key." };
+  revalidatePath("/profile");
+  return {};
+}
+
+/**
+ * Set the cloud-backup cadence (off / monthly / quarterly — monthly is the
+ * ceiling). The day of the month is derived from a hash of the user id so the
+ * fleet's backups spread across the month; the user doesn't choose it.
+ *
+ * Written through the service-role RPC because backup_schedule has no write
+ * policy: letting the browser set next_run_at itself would let anyone ask us to
+ * ship a full archive every night.
+ */
+export async function setBackupFrequency(formData: FormData): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const frequency = String(formData.get("backup_frequency") ?? "");
+  if (frequency !== "off" && frequency !== "monthly" && frequency !== "quarterly") {
+    return { error: "Pick a backup frequency." };
+  }
+
+  const day = dayOfMonthFor(user.id);
+  const { error } = await createServiceClient().rpc("set_backup_schedule", {
+    p_user_id: user.id,
+    p_frequency: frequency,
+    p_day_of_month: day,
+    p_next_run_at: nextRunAt(frequency, day),
+  });
+  if (error) return { error: "Couldn't save the backup schedule." };
+  revalidatePath("/profile");
+  return {};
+}
+
+/** Disconnect cloud backups: DELETE the stored tokens (not just flag a row) and
+ *  switch the schedule off. The run history is kept. */
+export async function disconnectBackup(): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { error } = await createServiceClient().rpc("delete_backup_destination", {
+    p_user_id: user.id,
+    p_provider: "dropbox",
+  });
+  if (error) return { error: "Couldn't disconnect cloud backups." };
   revalidatePath("/profile");
   return {};
 }

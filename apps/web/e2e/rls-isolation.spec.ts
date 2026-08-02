@@ -374,6 +374,103 @@ test.describe("RLS multi-tenant isolation", () => {
     expect(JSON.stringify(s)).not.toContain("v1:");
   });
 
+  // Cloud backups (0049). Three separate boundaries: the destination TOKENS are
+  // out of PostgREST's reach entirely (private schema — a column revoke would
+  // not have held), the schedule/history rows are row-scoped to their owner, and
+  // the schedule has no write policy at all so nobody can hand themselves a
+  // next_run_at of "now" and make us ship a full archive every night.
+  test("cannot read or steer another user's backup schedule / runs (0049)", async () => {
+    const { data: sched, error: se } = await admin
+      .from("backup_schedule")
+      .insert({ user_id: victimId, frequency: "monthly", day_of_month: 9 })
+      .select("id")
+      .single();
+    expect(se, `victim schedule insert failed: ${se?.message}`).toBeFalsy();
+    const { data: run } = await admin
+      .from("backup_run")
+      .insert({
+        schedule_id: sched!.id,
+        user_id: victimId,
+        aircraft_id: victimAc,
+        status: "failed",
+        error: "victim error",
+      })
+      .select("id")
+      .single();
+
+    try {
+      // Rows belong to their owner.
+      const seenSchedule = await attackerDb.from("backup_schedule").select("id").eq("id", sched!.id);
+      expect(seenSchedule.data, "another user's schedule must not be readable").toEqual([]);
+      const seenRun = await attackerDb.from("backup_run").select("id, error").eq("id", run!.id);
+      expect(seenRun.data, "another user's run history must not be readable").toEqual([]);
+
+      // No write policy → even the attacker's OWN schedule is not writable from
+      // the browser, so next_run_at can't be forced.
+      const forced = await attackerDb
+        .from("backup_schedule")
+        .update({ next_run_at: new Date().toISOString() })
+        .eq("user_id", attackerId)
+        .select("id");
+      expect(
+        forced.error || (forced.data ?? []).length === 0,
+        "backup_schedule must not be writable from the browser",
+      ).toBeTruthy();
+
+      const injected = await attackerDb
+        .from("backup_schedule")
+        .insert({ user_id: attackerId, frequency: "monthly", day_of_month: 1 });
+      expect(injected.error, "backup_schedule INSERT must be denied").toBeTruthy();
+    } finally {
+      await admin.from("backup_schedule").delete().eq("id", sched!.id); // cascades the run
+    }
+  });
+
+  // The destination is seeded on the VICTIM, not the harness user: backup.spec.ts
+  // connects (and disconnects) the harness user's own destination in another
+  // worker, and two specs fighting over one row is a flake, not a test.
+  test("backup destination tokens are unreachable by the browser role (0049)", async () => {
+    await admin.rpc("upsert_backup_destination", {
+      p_user_id: victimId,
+      p_provider: "dropbox",
+      p_account_label: "victim-dropbox",
+      p_access_cipher: "v1:not-a-real-dropbox-access-token",
+      p_refresh_cipher: "v1:not-a-real-dropbox-refresh-token",
+      p_expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+    });
+    try {
+      // The private table must not be REST-readable at all — RLS scopes rows,
+      // not columns, so relocating it is the only thing that actually protects
+      // the ciphertext (0038 → 0039 → 0047 → 0049).
+      const direct = await attackerDb
+        .from("backup_destination")
+        .select("access_token_cipher, refresh_token_cipher");
+      const leaked = direct.data?.[0] as { access_token_cipher?: string } | undefined;
+      expect(
+        direct.error || leaked?.access_token_cipher == null,
+        "private.backup_destination must not be REST-readable",
+      ).toBeTruthy();
+
+      // The service-only sweep RPC (the one that DOES return ciphertext) is not
+      // granted to the browser role.
+      const viaRpc = await attackerDb.rpc("backup_due_runs", { p_now: new Date().toISOString() });
+      expect(
+        viaRpc.error || (viaRpc.data ?? []).length === 0,
+        "backup_due_runs must not return ciphertext to the browser",
+      ).toBeTruthy();
+
+      // The browser-facing status RPC is scoped to auth.uid() and carries no
+      // ciphertext for anyone — this is the exact leak 0047 existed to fix.
+      const status = await attackerDb.rpc("my_backup_destinations");
+      expect(status.error).toBeFalsy();
+      const payload = JSON.stringify(status.data ?? []);
+      expect(payload, "another user's destination must not appear").not.toContain("victim-dropbox");
+      expect(payload, "no ciphertext may reach the browser").not.toContain("v1:");
+    } finally {
+      await admin.rpc("delete_backup_destination", { p_user_id: victimId, p_provider: "dropbox" });
+    }
+  });
+
   test("cannot self-promote to admin (profile column lockdown 0028)", async () => {
     const { error } = await attackerDb.from("profile").update({ is_admin: true }).eq("id", attackerId);
     expect(error, "is_admin UPDATE must be denied at the column level").toBeTruthy();

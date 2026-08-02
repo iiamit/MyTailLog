@@ -64,6 +64,12 @@ export default defineConfig({
           // (which needs real OAuth credentials and burns a shared credit
           // bucket). Set here ONLY — never in prod/apphosting.yaml.
           E2E_STUB_ADSB: "1",
+          // And again for cloud backups: E2E_STUB_DROPBOX swaps the Dropbox
+          // transport for an in-process fake SERVER that refuses everything the
+          // live API refuses (bad token, wrong offset, closed session, malformed
+          // path, oversized call). Set here ONLY — never in prod/apphosting.yaml,
+          // so CI can never touch a real Dropbox account.
+          E2E_STUB_DROPBOX: "1",
           CRON_SECRET: "e2e-cron-secret",
           // OAuth provider signing keys (see e2e/oauth.spec.ts).
           OIDC_JWKS: process.env.TEST_OIDC_JWKS ?? testJwks(),
