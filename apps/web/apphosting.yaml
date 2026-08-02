@@ -54,12 +54,16 @@ env:
   # rest of the cron is unaffected. /flights/* is 4,000 credits/day and the
   # sweep's 3-UTC-day lookback costs 8 per aircraft (two legal 2-partition
   # requests), so this ceilings at ~500 opted-in aircraft/day.
+  # NOTE: these two Secret Manager entries are lower-kebab, unlike the rest of
+  # the file. That is the name they were actually created under — the `secret:`
+  # key must match the Secret Manager ID exactly, so don't "fix" the casing
+  # without renaming the secret first.
   - variable: OPENSKY_CLIENT_ID
-    secret: OPENSKY_CLIENT_ID
+    secret: opensky-client-id
     availability:
       - RUNTIME
   - variable: OPENSKY_CLIENT_SECRET
-    secret: OPENSKY_CLIENT_SECRET
+    secret: opensky-client-secret
     availability:
       - RUNTIME
   # Server-only. Encrypts MyFlightBook secrets/tokens and users' own Anthropic
