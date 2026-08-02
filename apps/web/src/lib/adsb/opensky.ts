@@ -17,8 +17,7 @@ const TOKEN_URL =
   "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token";
 const API = "https://opensky-network.org/api/flights/aircraft";
 
-/** The API rejects a begin→end interval longer than 2 days. Stay under it. */
-const MAX_WINDOW_S = 47 * 3600;
+const DAY_S = 86_400;
 const TIMEOUT_MS = 10_000;
 
 export type OpenSkyFlight = {
@@ -78,11 +77,38 @@ async function accessToken(): Promise<string> {
   return cached.token;
 }
 
-/** Split [begin, end) into slices the API will accept (≤ 2 days each). */
+/** Midnight UTC of the day containing `t` (unix seconds). */
+export function startOfUtcDay(t: number): number {
+  return Math.floor(t / DAY_S) * DAY_S;
+}
+
+/** How many UTC calendar days a [begin, end] window touches, endpoints included. */
+export function utcDaySpan(begin: number, end: number): number {
+  return Math.floor(end / DAY_S) - Math.floor(begin / DAY_S) + 1;
+}
+
+/**
+ * Split [begin, end] into segments the API will actually accept.
+ *
+ * The real constraint is NOT "no more than 2 days of elapsed time" — that's what
+ * the docs say, and reasoning in hours is how a 47h window shipped that the API
+ * rejects with:
+ *
+ *   400 "You can only query across 2 partitions (days). Your query will
+ *        naturally spill into the 3rd day."
+ *
+ * OpenSky partitions by UTC CALENDAR DAY and allows at most 2 partitions. A 47h
+ * window ending before 23:00 UTC touches three of them, so it 400s on nearly
+ * every run. So: reason in UTC dates, never in hours. Each segment is capped at
+ * the last second before its begin-day + 2 days, which is exactly 2 partitions.
+ */
 export function windowChunks(begin: number, end: number): [number, number][] {
   const out: [number, number][] = [];
-  for (let s = begin; s < end; s += MAX_WINDOW_S) {
-    out.push([s, Math.min(s + MAX_WINDOW_S, end)]);
+  for (let s = begin; s <= end; ) {
+    const limit = startOfUtcDay(s) + 2 * DAY_S - 1; // inclusive last second of the 2nd day
+    const e = Math.min(end, limit);
+    out.push([s, e]);
+    s = e + 1;
   }
   return out;
 }
@@ -103,10 +129,17 @@ export const fetchFlights: OpenSkyClient = async (icao24, begin, end) => {
       const retry = Number(res.headers.get("x-rate-limit-retry-after-seconds"));
       throw new RateLimited(Number.isFinite(retry) ? retry : null);
     }
-    // 404 = "no flights in this window", which OpenSky reports instead of [].
+    // 404 with an empty body is how OpenSky reports "no flights in this window".
+    // That's a successful, legal query — not an error, and not a reason to stop.
     if (res.status === 404) continue;
-    if (!res.ok) throw new Error(`OpenSky flights request failed (${res.status})`);
+    if (!res.ok) {
+      // Surface the body on a 400: that's where the partition-limit message
+      // lives, and it's the difference between a 5-minute fix and a blind one.
+      const detail = res.status === 400 ? `: ${(await res.text()).slice(0, 200)}` : "";
+      throw new Error(`OpenSky flights request failed (${res.status})${detail}`);
+    }
 
+    // Only present on a 200 — absent on 400/404, so never assume it's there.
     const remaining = res.headers.get("x-rate-limit-remaining");
     if (remaining) console.log(`[adsb] OpenSky credits remaining: ${remaining}`);
 
@@ -135,6 +168,11 @@ function str(v: unknown): string | null {
 // E2E test double: ONLY set in playwright.config.ts's webServer.env, never in
 // prod. Two deterministic flights ~26 h and ~2 h ago so the reconciliation and
 // the suggestion banner have something real to chew on.
+//
+// It enforces the SAME 2-UTC-day partition limit as the live API. An earlier
+// version returned canned flights for any range, which is exactly why a window
+// the real API rejects with a 400 got through CI — a stub that accepts more than
+// production does isn't a test, it's a blindfold.
 function e2eStubFlights(icao24: string, begin: number, end: number): OpenSkyFlight[] {
   const mk = (hoursAgo: number, minutes: number): OpenSkyFlight => {
     const firstSeen = end - hoursAgo * 3600;
@@ -147,13 +185,27 @@ function e2eStubFlights(icao24: string, begin: number, end: number): OpenSkyFlig
       callsign: "E2ESTUB",
     };
   };
-  return [mk(26, 90), mk(2, 66)].filter((f) => f.firstSeen >= begin);
+  return [mk(26, 90), mk(2, 66)].filter((f) => f.firstSeen >= begin && f.firstSeen <= end);
 }
 
 /** The client the cron should use, or null when OpenSky isn't configured. */
 export function openSkyClient(): OpenSkyClient | null {
   if (process.env.E2E_STUB_ADSB) {
-    return async (icao24, begin, end) => e2eStubFlights(icao24, begin, end);
+    return async (icao24, begin, end) => {
+      // Reject exactly what the live API rejects, per SEGMENT — so a caller that
+      // reasons in hours instead of UTC days fails in CI instead of in prod.
+      for (const [f, t] of windowChunks(begin, end)) {
+        if (utcDaySpan(f, t) > 2) {
+          throw new Error(
+            "OpenSky flights request failed (400): You can only query across 2 partitions " +
+              "(days). Your query will naturally spill into the 3rd day. [E2E_STUB_ADSB]",
+          );
+        }
+      }
+      // Generated once over the whole range, not per segment — the canned
+      // flights are a fixed pair, and chunking must not duplicate them.
+      return e2eStubFlights(icao24, begin, end);
+    };
   }
   return openSkyConfigured() ? fetchFlights : null;
 }

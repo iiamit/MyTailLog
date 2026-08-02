@@ -11,7 +11,7 @@ import {
   dueSignature,
   itemKey,
 } from "@/lib/reminders";
-import { openSkyClient, RateLimited } from "@/lib/adsb/opensky";
+import { openSkyClient, startOfUtcDay, RateLimited } from "@/lib/adsb/opensky";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Preferences } from "@/lib/database.types";
 
@@ -33,10 +33,17 @@ type Aircraft = {
 const SYNC_STALE_MS = 23 * 60 * 60 * 1000;
 const SITE = "https://mytaillog.com";
 
-// ADS-B lookback. OpenSky rejects a begin→end interval over 2 days, and a
-// sub-24h window costs 4 credits — so a single 47h call is both legal and the
-// cheapest way to get ~2x overlap against a daily schedule.
-const ADSB_LOOKBACK_S = 47 * 3600;
+// ADS-B lookback, in whole UTC DAYS — never hours. OpenSky partitions by UTC
+// calendar day and allows at most 2 partitions per query, so an hours-based
+// window silently spills into a third day and 400s (see lib/adsb/opensky.ts).
+//
+// Going back to the start of the UTC day 2 days ago covers 3 calendar days,
+// which windowChunks splits into two legal requests (8 credits/aircraft/day,
+// ceiling ~500 opted-in aircraft/day against the 4,000/day bucket). Worth double
+// the credits: reconciliation only ever counts what's in adsb_flight, so with a
+// 1-day window a single missed cron run would lose those hours permanently. This
+// way the sweep heals itself.
+const ADSB_LOOKBACK_DAYS = 2;
 // maxDuration is 300s. The ADS-B sweep runs LAST and stops here, so a large
 // opted-in fleet can never starve the MFB sync or the reminder emails.
 const ADSB_DEADLINE_MS = 240_000;
@@ -99,7 +106,7 @@ async function runAdsb(supabase: Service, started: number): Promise<number> {
   if (!fleet?.length) return 0;
 
   const end = Math.floor(Date.now() / 1000);
-  const begin = end - ADSB_LOOKBACK_S;
+  const begin = startOfUtcDay(end - ADSB_LOOKBACK_DAYS * 86_400);
   let ingested = 0;
 
   for (const ac of fleet) {
