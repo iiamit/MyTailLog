@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import type { DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS, documentTypeLabel } from "@/lib/documents";
-import { deleteDocument } from "./actions";
+import { deleteDocument, setDocumentEntry } from "./actions";
 
 type Doc = {
   id: string;
@@ -20,6 +21,14 @@ type Doc = {
   size_bytes: number | null;
   log_entry_id: string | null;
   created_at: string;
+};
+
+/** The log entry a document is attached to (0041's `document.log_entry_id`). */
+export type LinkedEntry = {
+  id: string;
+  entryDate: string | null;
+  summary: string;
+  href: string;
 };
 
 const inputClass =
@@ -36,10 +45,12 @@ export function DocumentsClient({
   aircraftId,
   canEdit,
   docs,
+  linkedEntries,
 }: {
   aircraftId: string;
   canEdit: boolean;
   docs: Doc[];
+  linkedEntries: Record<string, LinkedEntry>;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -68,6 +79,13 @@ export function DocumentsClient({
     const res = await deleteDocument(aircraftId, id);
     if (res.error) return toast.error(res.error);
     toast.success("Document removed.");
+    router.refresh();
+  }
+
+  async function unlink(id: string) {
+    const res = await setDocumentEntry(aircraftId, id, null);
+    if (res.error) return toast.error(res.error);
+    toast.success("Detached from the entry — still in the Vault.");
     router.refresh();
   }
 
@@ -146,23 +164,38 @@ export function DocumentsClient({
           <section key={t} className="flex flex-col gap-2">
             <div className="eyebrow">{documentTypeLabel(t)}</div>
             <ul className="flex flex-col divide-y divide-line rounded-lg border border-line">
-              {byType.get(t)!.map((d) => (
+              {byType.get(t)!.map((d) => {
+                const linked = d.log_entry_id ? linkedEntries[d.log_entry_id] : undefined;
+                return (
                 <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                   <div className="min-w-0 text-sm">
                     <div className="flex items-center gap-2 font-medium text-ink">
                       <a href={`/api/document/${d.id}`} target="_blank" rel="noreferrer" className="truncate hover:underline">
                         {d.title || d.file_name || "Document"}
                       </a>
-                      {d.log_entry_id && (
-                        <span className="rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint">
-                          on an entry
-                        </span>
-                      )}
                     </div>
                     <div className="mt-0.5 text-faint">
                       {[d.reference, d.document_date, fmtSize(d.size_bytes)].filter(Boolean).join(" · ")}
                       {d.notes ? ` — ${d.notes}` : ""}
                     </div>
+                    {linked && (
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span className="text-faint">Linked record:</span>
+                        <Link href={linked.href} className="truncate text-accent hover:underline">
+                          {linked.entryDate ?? "undated"}
+                          {linked.summary ? ` — ${linked.summary}` : ""}
+                        </Link>
+                        {canEdit && (
+                          <button
+                            onClick={() => unlink(d.id)}
+                            title="Detach from the entry — the document stays here in the Vault."
+                            className="text-faint hover:text-annun-red"
+                          >
+                            unlink
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <a
@@ -182,7 +215,8 @@ export function DocumentsClient({
                     )}
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </section>
         ))

@@ -81,7 +81,9 @@ AI reads the page; you review it next to the original, with low-confidence field
 - **Timeline & search** across all logbooks; **Status** grid (color-coded, at a
   glance); **Maintenance forecast** (Part 91 recurring items, hours- and
   date-based); **AD/SB compliance** with official FAA reference lookup (Federal
-  Register + DRS fallback); **Installed equipment** reconstructed from the logs;
+  Register + DRS fallback) and **AD discovery** by manufacturer, model, or
+  keyword — each candidate listing the models the AD names, with yours
+  highlighted; **Installed equipment** reconstructed from the logs;
   **Weight & Balance** history with a stale-since-last-equipment-change flag;
   **Records gap audit**.
 - **Squawks** — pilots report in-flight discrepancies (severity + who reported),
@@ -128,10 +130,16 @@ AI reads the page; you review it next to the original, with low-confidence field
 - **Records Vault** — keep the aircraft's permanent records (airworthiness
   certificate, registration, radio station authorization, POH/AFM, W&B, **STCs**,
   337s, 8130-3s, manuals) in one place, alongside the logbook scans.
-- Print/PDF and CSV exports, plus a full **`.zip` backup** (records + scans) you
-  can **re-import**.
+- A printable **maintenance summary** — one page of status, open squawks, AD/SB
+  compliance, upcoming due items, installed equipment and current W&B: the
+  document you hand a buyer, an insurer, or an IA at annual. Plus a full
+  entry-by-entry records report and CSV exports.
+- A full **`.zip` backup** (records + original scans) you can **re-import**,
+  carrying a `README.txt` that documents every file and column in it.
 - **Sharing** (viewer / contributor), **ownership transfer**, and delete.
-- In-app **Help** documenting every feature and how the pieces affect each other.
+- In-app **Help** documenting every feature and how the pieces affect each other,
+  and a public **[`/whats-new`](https://mytaillog.com/whats-new)** rendered from
+  [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Repository layout
 

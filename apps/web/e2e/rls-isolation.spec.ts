@@ -145,6 +145,75 @@ test.describe("RLS multi-tenant isolation", () => {
     }
   });
 
+  // WP3: the entry↔document attachment is a plain column on `document`
+  // (0041 `log_entry_id`), and RLS scopes ROWS, not COLUMNS — so the only thing
+  // standing between a read-only viewer and re-linking someone else's records is
+  // the document_write policy. Prove attach AND detach are both refused.
+  test("a viewer cannot attach or detach a document to a log entry (0041 log_entry_id)", async () => {
+    await admin.from("aircraft_share").insert({
+      aircraft_id: victimAc,
+      invited_email: attackerEmail,
+      role: "viewer",
+      invited_by: victimId,
+    });
+    let docId: string | undefined;
+    let entryId: string | undefined;
+    try {
+      const { data: lb } = await admin
+        .from("logbook")
+        .insert({ aircraft_id: victimAc, type: "airframe" })
+        .select("id")
+        .single();
+      const { data: entry } = await admin
+        .from("log_entry")
+        .insert({ aircraft_id: victimAc, logbook_id: lb!.id, description: "victim entry" })
+        .select("id")
+        .single();
+      entryId = entry!.id;
+      const { data: doc } = await admin
+        .from("document")
+        .insert({ aircraft_id: victimAc, type: "other", title: "victim doc", log_entry_id: entryId })
+        .select("id")
+        .single();
+      docId = doc!.id;
+
+      // The viewer can READ both (has_aircraft_access)…
+      const read = await attackerDb.from("document").select("id, log_entry_id").eq("id", docId);
+      expect(read.data?.length, "a viewer should be able to read documents").toBe(1);
+      expect(read.data![0].log_entry_id).toBe(entryId);
+
+      // …but cannot DETACH (update → 0 rows, no error: RLS filters the row out).
+      const detach = await attackerDb
+        .from("document")
+        .update({ log_entry_id: null })
+        .eq("id", docId)
+        .select("id");
+      expect(detach.error).toBeFalsy();
+      expect(detach.data, "a viewer must not be able to detach a document").toEqual([]);
+
+      // …nor ATTACH it somewhere else.
+      const attach = await attackerDb
+        .from("document")
+        .update({ log_entry_id: entryId })
+        .eq("id", docId)
+        .select("id");
+      expect(attach.error).toBeFalsy();
+      expect(attach.data, "a viewer must not be able to attach a document").toEqual([]);
+
+      // The link is untouched.
+      const { data: after } = await admin
+        .from("document")
+        .select("log_entry_id")
+        .eq("id", docId)
+        .single();
+      expect(after!.log_entry_id).toBe(entryId);
+    } finally {
+      if (docId) await admin.from("document").delete().eq("id", docId);
+      if (entryId) await admin.from("log_entry").delete().eq("id", entryId);
+      await admin.from("aircraft_share").delete().eq("aircraft_id", victimAc).eq("invited_email", attackerEmail);
+    }
+  });
+
   test("a viewer can REPORT a squawk but cannot RESOLVE it (0043 policy)", async () => {
     await admin.from("aircraft_share").insert({
       aircraft_id: victimAc,

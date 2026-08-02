@@ -301,8 +301,9 @@ const SECTIONS: Section[] = [
         color-coded card — <span className="text-annun-red">red = overdue</span>,{" "}
         <span className="text-annun-amber">amber = due soon</span>,{" "}
         <span className="text-annun-green">green = current</span> — with days
-        and hours remaining. It&apos;s a read-only rollup of your{" "}
-        <L href="#maintenance">maintenance forecast</L> and recurring{" "}
+        and hours remaining — plus, where there&apos;s enough flying history,{" "}
+        <L href="#projection">an approximate calendar date</L> for the hours to run out. It&apos;s
+        a read-only rollup of your <L href="#maintenance">maintenance forecast</L> and recurring{" "}
         <L href="#compliance">ADs</L>; each card links to where you manage it.
       </p>
     ),
@@ -334,8 +335,69 @@ const SECTIONS: Section[] = [
           See <L href="#meters">Meters</L>.
           Extraction and{" "}
           &ldquo;Update from logs&rdquo; advance last-done automatically. The 100-hour resets off the
-          later of the last 100-hour <em>or</em> the last annual. Everything here also feeds{" "}
-          <L href="#status">Status</L>.
+          later of the last 100-hour <em>or</em> the last annual. Hours-based items also show a{" "}
+          <L href="#projection">projected ≈ date</L> when your reading history supports one.
+          Everything here also feeds <L href="#status">Status</L>.
+        </Effects>
+      </>
+    ),
+  },
+  {
+    id: "projection",
+    icon: <ClockIcon />,
+    title: "Projected due dates (≈)",
+    body: (
+      <>
+        <p>
+          &ldquo;Due in 38.4 hours&rdquo; is accurate but hard to plan around. Wherever an item
+          counts down on <em>hours</em>, MyTailLog also shows an approximate calendar date —{" "}
+          <strong>≈ 14 Mar 2027</strong> — worked out from how much this aircraft has actually
+          been flown, using your own logged meter readings from the past <strong>365 days</strong>.
+        </p>
+        <p>
+          It is a <strong>planning estimate, not a determination</strong>. The hours figure is the
+          thing that comes due; the date is only our arithmetic on a rate that can change the
+          moment your flying does. Every projection carries the <strong>≈</strong> sign and a
+          confidence level, and hovering it shows the rate and the exact readings it came from, so
+          you can judge it yourself.
+        </p>
+        <p>
+          <strong>Confidence</strong> reflects how much evidence sits behind the rate — both how
+          many readings and how long a stretch they cover:
+        </p>
+        <ul className="ml-4 list-disc space-y-1">
+          <li>
+            <strong>High</strong> — 6+ readings spanning 180 days or more.
+          </li>
+          <li>
+            <strong>Medium</strong> — 4+ readings over 90 days.
+          </li>
+          <li>
+            <strong>Low</strong> — 2+ readings over 30 days. Treat as a rough sketch.
+          </li>
+          <li>
+            <strong>None</strong> — anything thinner. No date is shown at all; you simply see the
+            hours, exactly as before. MyTailLog will not guess a date from a single data point.
+          </li>
+        </ul>
+        <p>
+          The rate is measured on the <strong>tach</strong> wherever possible, because hour-based
+          limits — the 100-hour, TBO, hour-interval ADs — are written against engine time. If your
+          logs carry no usable tach history it falls back to <strong>hobbs</strong> and says so in
+          the hover text. Hobbs runs a little faster than tach, so a hobbs-based projection tends
+          to land slightly early — the safe direction to be wrong in.
+        </p>
+        <Effects>
+          A projection <strong>never</strong> overrides a <strong>calendar</strong> limit. An annual
+          is a date in its own right; the ≈ date only ever appears next to an <em>hours</em>{" "}
+          countdown, and never replaces or softens a real due date. Intervals that span a recorded{" "}
+          <L href="#meters">meter replacement</L> are dropped from the rate entirely — a swapped
+          tach makes the raw difference meaningless, and that is the most likely source of a badly
+          wrong date. Projections appear on <L href="#status">Status</L>, the{" "}
+          <L href="#maintenance">maintenance forecast</L>, your <L href="#compliance">AD</L> rows,
+          and in <L href="#notifications">reminder emails</L>. They are never used to decide{" "}
+          <em>whether</em> something is due or when to email you — that stays on the real hours and
+          dates.
         </Effects>
       </>
     ),
@@ -613,8 +675,29 @@ const SECTIONS: Section[] = [
           Track Airworthiness Directives and Service Bulletins: compliance status (complied /
           previously complied / does-not-apply), method, dates, and recurring intervals →
           next-due. Look up the official FAA reference (Federal Register, with a DRS fallback) to
-          confirm applicability, and explore applicability by tail/serial. ADs referenced in your
-          logs but not yet tracked are surfaced so you can add them.
+          confirm applicability. ADs referenced in your logs but not yet tracked are surfaced so
+          you can add them.
+        </p>
+        <p>
+          <strong>Explore</strong> searches for ADs you might not know about, three ways at once:
+          by <strong>manufacturer</strong> (the airframe make plus every installed
+          equipment&apos;s make — the broad net), by <strong>model</strong> (your specific
+          variant — the sharp one), and by any <strong>keyword</strong> you type. Results come
+          from the Federal Register plus the FAA&apos;s DRS, which is what surfaces the{" "}
+          <strong>pre-1994 legacy ADs</strong> the Federal Register archive doesn&apos;t hold; if
+          either source is unreachable the other still returns. Each result lists the{" "}
+          <strong>models the AD names</strong>, with yours highlighted and those results sorted
+          first, so you can see whether your variant is actually named instead of guessing from
+          the make. <strong>Track this AD</strong> adds it in one click as a one-time item, or{" "}
+          <em>Track with an interval</em> records it as recurring on hours, calendar months, or
+          both, with a next-due.
+        </p>
+        <p className="text-dim">
+          Search results are a starting point, not a determination. The parsed model list is read
+          off the AD&apos;s title and summary and can be incomplete — real applicability often
+          turns on serial numbers and installed equipment. Confirm against the AD itself; the call
+          is yours and your A&amp;P&apos;s. For ground truth, scan an{" "}
+          <L href="#other">A&amp;P AD compliance report</L>.
         </p>
         <Effects>
           Recurring ADs with a next-due join the <L href="#maintenance">forecast</L> and{" "}
@@ -678,9 +761,19 @@ const SECTIONS: Section[] = [
           with a category and reference number, and it&apos;s a click away instead of buried in a
           binder. These sit alongside your logbook scans.
         </p>
+        <p className="mt-2">
+          Any Vault document can be <strong>attached to a specific maintenance entry</strong> — the
+          8130-3 for the part that entry installed, the 337 for the alteration it records. On an
+          entry in <L href="/aircraft">Review</L>, use <strong>+ Link from Vault</strong> to pick an
+          existing document (or <strong>+ Add file</strong> to upload and attach in one step);{" "}
+          <strong>unlink</strong> detaches it without deleting — the document stays in the Vault. The
+          Vault shows the same link from the other side, as the{" "}
+          <strong>linked record</strong> under each document, and attachments appear on their entry
+          in the <L href="/aircraft">Logbook timeline</L>. A document attaches to one entry at a time.
+        </p>
         <p className="mt-2 text-sm text-faint">
-          Editors can add and remove documents; anyone with access can view and download them. A
-          document can also be attached to a specific maintenance entry.
+          Editors can add, attach, detach, and remove documents; viewers can view and download them
+          but cannot change any of it. Attachments travel in the .zip backup and survive a re-import.
         </p>
       </>
     ),
@@ -703,13 +796,37 @@ const SECTIONS: Section[] = [
     icon: <ArchiveIcon />,
     title: "Export & backup",
     body: (
-      <p>
-        Print a full records bundle (browser Print → Save as PDF), download CSVs of entries /
-        AD-SB / equipment / maintenance, or take a complete <strong>.zip backup</strong> (all
-        records + original scans) that you can <strong>re-import</strong> as a new aircraft. Since
-        the free tier has no automatic backups, exporting periodically is your safety net — and the
-        way to hand an aircraft&apos;s full history to someone else.
-      </p>
+      <>
+        <p>
+          Two PDFs, both produced by your browser&apos;s Print → Save as PDF (nothing to install).
+          The <strong>maintenance summary</strong> is the one-page document you hand a buyer, an
+          insurer, or your IA at annual: status at a glance, open squawks, the AD/SB compliance
+          table, what&apos;s coming due, installed equipment, and current weight &amp; balance. The{" "}
+          <strong>full records report</strong> is the same thing plus every transcribed logbook
+          entry. You can also download CSVs of entries / AD-SB / equipment / maintenance.
+        </p>
+        <p className="mt-3">
+          The <strong>.zip backup</strong> takes everything — all records plus your original
+          scans — and includes a <code className="readout text-[12px]">README.txt</code>{" "}
+          documenting every file and every column, so the archive still explains itself years
+          from now. Since the free tier has no automatic backups, exporting periodically is your
+          safety net.
+        </p>
+        <p className="mt-3">
+          <strong>On lock-in.</strong> That .zip <strong>re-imports</strong>: restoring it
+          recreates the aircraft, entries, ADs and scans as a <em>new</em> aircraft (it never
+          overwrites an existing one). Everything inside is plain JSON and your original
+          JPEG/PNG/PDF files — readable with no special software. MyTailLog itself is{" "}
+          <a
+            href="https://github.com/iiamit/MyTailLog"
+            className="underline decoration-line underline-offset-2 hover:decoration-line2"
+          >
+            open source under the MIT licence
+          </a>{" "}
+          and can be self-hosted against your own database, so leaving is always an option you
+          actually have.
+        </p>
+      </>
     ),
   },
   {
@@ -767,7 +884,13 @@ export default function HelpPage() {
         <p className="mt-2 text-dim">
           What every part of MyTailLog does — and, just as important, how the pieces affect each
           other. The amber <span className="font-medium text-annun-amber">Ripple effects</span>{" "}
-          notes call out where one action changes something elsewhere.
+          notes call out where one action changes something elsewhere. For what changed in the
+          latest release, see <L href="/whats-new">What&apos;s new</L>.
+        </p>
+        <p className="mt-2 text-sm text-faint">
+          Looking for cost, privacy, accuracy, or how to get your data back out? Those live in the{" "}
+          <L href="/faq">FAQ</L>, alongside <L href="/compare">how this compares</L> to the other
+          ways of keeping records.
         </p>
       </header>
 

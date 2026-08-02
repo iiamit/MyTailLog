@@ -29,6 +29,11 @@ export type Reading = {
   tach: number | null;
   airframe?: number | null;
   reviewedAt: string | null; // hours_reviewed_at — suppresses anomaly re-flagging
+  // True when the value was INFERRED by us (e.g. an ADS-B-derived estimate)
+  // rather than read off the meter. Such a reading must never feed the
+  // utilization RATE — deriving a rate from numbers we ourselves projected is
+  // circular. It may still stand as a current value; that is the caller's call.
+  estimated?: boolean;
 };
 
 export type RatioConfidence = "measured" | "estimated" | "default";

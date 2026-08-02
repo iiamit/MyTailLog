@@ -208,6 +208,9 @@ export async function importBackup(
     const o = clean(d);
     o.id = nid;
     o.aircraft_id = aircraftId;
+    // 0041's entry attachment. Without the remap this carries the SOURCE
+    // aircraft's entry id, which fails the FK and kills the whole restore.
+    o.log_entry_id = d.log_entry_id ? entryMap.get(d.log_entry_id as string) ?? null : null;
     if (d.storage_path) {
       const ext = extOf(d.storage_path as string);
       const file = files[`docs/${d.id}.${ext}`];

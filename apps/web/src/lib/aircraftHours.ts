@@ -19,6 +19,7 @@ import {
   type MeterReset,
   type Reading,
 } from "@/lib/hobbsTach";
+import { computeUtilization, type Utilization } from "@/lib/utilization";
 
 /** What the caller knows about the aircraft's origin readings. */
 export type Enrollment = {
@@ -43,14 +44,16 @@ async function fetchReadings(
 ): Promise<Reading[]> {
   const [{ data: entries }, { data: readings }] = await Promise.all([
     supabase.from("log_entry").select("id, entry_date, hobbs, tach, airframe, hours_reviewed_at").eq("aircraft_id", aircraftId),
-    supabase.from("hours_reading").select("id, reading_date, hobbs, tach, airframe, hours_reviewed_at").eq("aircraft_id", aircraftId),
+    supabase.from("hours_reading").select("id, reading_date, hobbs, tach, airframe, hours_reviewed_at, source").eq("aircraft_id", aircraftId),
   ]);
 
   const out: Reading[] = [];
   for (const r of entries ?? [])
     out.push({ id: r.id, source: "entry", date: r.entry_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at });
   for (const r of readings ?? [])
-    out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at });
+    // `*_estimate` sources are values we inferred, not meter reads — flagged so
+    // the utilization rate can exclude them (see Reading.estimated).
+    out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at, estimated: String(r.source ?? "").endsWith("_estimate") });
   if (enrollment && (enrollment.hobbs != null || enrollment.tach != null || enrollment.airframe != null))
     out.push({
       id: "enrollment",
@@ -91,12 +94,14 @@ async function fetchStitched(
   supabase: SupabaseClient<Database>,
   aircraftId: string,
   enrollment?: Enrollment,
-): Promise<{ readings: Reading[]; resets: MeterReset[] }> {
+): Promise<{ raw: Reading[]; readings: Reading[]; resets: MeterReset[] }> {
   const [raw, resets] = await Promise.all([
     fetchReadings(supabase, aircraftId, enrollment),
     getMeterResets(supabase, aircraftId),
   ]);
-  return { readings: applyResets(raw, resets), resets };
+  // `raw` comes back too: the utilization rate works on UNSTITCHED readings so it
+  // can DROP an interval that spans a meter replacement rather than smooth over it.
+  return { raw, readings: applyResets(raw, resets), resets };
 }
 
 /**
@@ -135,8 +140,12 @@ export async function getCurrentMeters(
   // Lifts stored face-value scalars onto the readings' scale — identity unless a
   // meter has been replaced.
   toTotalHours: (value: number | null, date: string | null, meter: Meter) => number | null;
+  // How fast this aircraft has actually been flown lately, for turning an
+  // hours-remaining figure into an approximate calendar date. `none` confidence
+  // when the readings can't support one — callers then show hours only.
+  utilization: Utilization;
 }> {
-  const { readings: stitched, resets } = await fetchStitched(supabase, aircraftId, enrollment);
+  const { raw, readings: stitched, resets } = await fetchStitched(supabase, aircraftId, enrollment);
   const readings = normalizeReadings(stitched);
   return {
     tach: currentTach(readings),
@@ -144,6 +153,7 @@ export async function getCurrentMeters(
     airframe: currentAirframe(readings),
     baselineFor: (date, meter) => meterValueAtDate(readings, date, meter),
     toTotalHours: (value, date, meter) => toTotal(value, date, meter, resets),
+    utilization: computeUtilization(raw, resets),
   };
 }
 

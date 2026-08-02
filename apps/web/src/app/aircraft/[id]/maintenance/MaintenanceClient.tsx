@@ -8,9 +8,15 @@ import { ConfirmButton } from "@/components/ConfirmButton";
 import { MfbSyncButton } from "@/components/MfbSyncButton";
 import type { MaintenanceItem } from "@/lib/database.types";
 import { dueText } from "@/lib/compliance";
-import { meterForItem, type StatusItem } from "@/lib/status";
+import { meterForItem, hoursRemaining, type StatusItem } from "@/lib/status";
 import type { Meter } from "@/lib/hobbsTach";
 import { STANDARD_ITEMS } from "@/lib/maintenance";
+import {
+  projectDueDate,
+  projectionLabel,
+  projectionTitle,
+  type Utilization,
+} from "@/lib/utilization";
 import {
   upsertMaintenanceItem,
   deleteMaintenanceItem,
@@ -106,6 +112,7 @@ export function MaintenanceClient({
   currentTachEstimated = false,
   currentTachRough = false,
   currentHobbsEstimated = false,
+  utilization,
   mfbReading,
   extractionConfigured,
 }: {
@@ -118,6 +125,7 @@ export function MaintenanceClient({
   currentTachEstimated?: boolean;
   currentTachRough?: boolean;
   currentHobbsEstimated?: boolean;
+  utilization: Utilization;
   mfbReading: { date: string | null; hobbs: number | null; tach: number | null } | null;
   extractionConfigured: boolean;
 }) {
@@ -389,6 +397,11 @@ export function MaintenanceClient({
               remaining = dueText(d.nextDueDate, d.nextDueForItem, d.currentForItem) ?? "";
               if (d.currentEstimated && d.nextDueForItem != null && d.currentForItem != null) remaining += " est.";
             }
+            // Projection is for the HOURS limit only — a calendar due date is a
+            // date already and is never replaced or softened by our arithmetic.
+            const proj = d.hoursUnreliable
+              ? null
+              : projectDueDate(hoursRemaining(d.nextDueForItem, d.currentForItem), utilization);
             const marking = m && markId === m.id;
             return (
               <div key={`${d.source}-${d.id}`} className="border-b border-line last:border-b-0">
@@ -424,6 +437,11 @@ export function MaintenanceClient({
                   </span>
                   <span className="readout text-[11.5px]" style={{ color }}>
                     {remaining ?? "—"}
+                    {proj && (
+                      <span className="block text-[10.5px] text-dim" title={projectionTitle(utilization)}>
+                        {projectionLabel(proj)}
+                      </span>
+                    )}
                   </span>
                   <div className="flex flex-wrap justify-end gap-1.5">
                     {m ? (

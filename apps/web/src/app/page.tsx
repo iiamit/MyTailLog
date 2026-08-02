@@ -107,8 +107,27 @@ export default async function Home() {
           className="underline underline-offset-2 hover:text-ink"
         >
           see everything it does →
+        </Link>{" "}
+        ·{" "}
+        <Link
+          href="/whats-new"
+          className="underline underline-offset-2 hover:text-ink"
+        >
+          what&apos;s new
         </Link>
       </p>
+
+      <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-faint">
+        <Link href="/faq" className="underline underline-offset-2 hover:text-ink">
+          FAQ
+        </Link>
+        <Link href="/compare" className="underline underline-offset-2 hover:text-ink">
+          How it compares
+        </Link>
+        <Link href="/switch/myfbo" className="underline underline-offset-2 hover:text-ink">
+          Coming from MyFBO
+        </Link>
+      </nav>
 
       {/* Structured data for search engines. */}
       <script

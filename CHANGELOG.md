@@ -4,6 +4,76 @@ Notable changes to MyTailLog, newest first. Versions are calendar-based
 (`APP_VERSION`, shown in the app header). Started 2026-07; earlier history is in
 the git log.
 
+## 2026.08
+
+### Added — AD discovery by model
+- **Find ADs by your actual variant, not just your make.** The AD explorer now
+  searches by **model** and by free-text **keyword** alongside the existing
+  manufacturer-wide search (both run — the make is the broad net, the model is
+  the sharp one).
+- **Every result lists the models the AD names**, parsed from its title and
+  summary, with the ones covering your model highlighted; those results sort
+  first. You can see whether your variant is actually named instead of guessing
+  from the manufacturer.
+- **Pre-1994 legacy ADs now surface.** Model and keyword searches also query the
+  FAA's Dynamic Regulatory System, whose archive reaches back past the Federal
+  Register's 1994 start. If either source is unreachable the other still returns.
+- **"Track this AD" in one click**, or with a **recurrence**: one-time vs
+  recurring, an interval in hours and/or calendar months, and a next-due — which
+  feeds the maintenance forecast and the Status grid like any other tracked AD.
+- Search results remain a **starting point, not a determination**: the parsed
+  model list can be incomplete, and applicability often turns on serial numbers.
+  A scanned A&P AD compliance report is still the ground truth.
+
+### Added — Maintenance due dates you can plan around
+- **"Due in 38.4 hours" now also reads "due ≈ 14 Mar."** Hours-based items —
+  100-hour, hour-interval ADs, oil, component TBO — are projected onto a calendar
+  date from how much you actually fly, using your own logged tach readings.
+- Every projection carries a **confidence** (from how many readings back it and
+  how far apart they are) and shows the window it was computed over. Below the
+  threshold you see hours only, exactly as before — one reading never becomes a
+  forecast.
+- **Intervals spanning a meter replacement are excluded**, so a tach swapped in
+  at airframe total can't inflate the rate. Projections are planning estimates,
+  never a substitute for the record: a calendar limit like the annual is always
+  the date it says.
+
+### Added — Maintenance summary (print / PDF)
+- A one-page **maintenance summary** per aircraft — status at a glance,
+  inspections and recurring ADs, open squawks, full AD/SB compliance, installed
+  equipment, and current weight & balance. The document you hand a buyer, an
+  insurer, or an IA at annual. Figures come from the same engine as the Status
+  page, so the summary can't disagree with the app.
+- Every `.zip` backup now carries a **`README.txt` manifest** describing each
+  file and column, so the archive still explains itself years later.
+
+### Added — What's new
+- This changelog is now published at **[/whats-new](https://mytaillog.com/whats-new)**,
+  and the version chip in the header links to it.
+
+### Added — Questions, comparisons, and getting your records out
+- New public pages: **/faq** (what it costs, what happens to your data, who can
+  see it, what happens if the project stops), **/compare** (how six different
+  ways of keeping records actually stack up, including where MyTailLog loses),
+  and **/switch/myfbo** for owners whose platform is shutting down.
+
+### Added — Attach documents to log entries
+- Link a **Records Vault** document to a specific log entry — a 337, an 8130-3,
+  an invoice — from either review flow, and see the linked entry from the Vault
+  side. Attachments show on the timeline and travel with the `.zip` backup.
+
+### Fixed
+- **Restoring a backup that contained an attached document failed outright.**
+  The importer remapped every other entry reference but not the document's, so
+  the restore hit a foreign-key violation and rolled back the whole archive —
+  not just the attachment.
+- **Removing an attachment deleted the file.** The only control on an attached
+  document deleted it from the Vault instead of unlinking it. It now unlinks and
+  the document stays.
+- **Printing came out nearly blank.** The design tokens are dark-only and
+  browsers drop backgrounds, so printed pages rendered pale ink on white; the
+  app shell also clipped print output to a single screenful.
+
 ## 2026.07
 
 ### Added — Native iOS app (offline-first, beta)

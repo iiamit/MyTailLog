@@ -34,6 +34,39 @@ export async function updateDocument(
   return {};
 }
 
+/**
+ * Attach a Vault document to a log entry, or detach it (`entryId = null`) so it
+ * drops back to the Vault. Both rows must belong to `aircraftId` — RLS scopes
+ * the write to editors of the DOCUMENT's aircraft but says nothing about which
+ * entry the FK points at, so the entry is checked explicitly.
+ */
+export async function setDocumentEntry(
+  aircraftId: string,
+  documentId: string,
+  entryId: string | null,
+): Promise<{ error?: string }> {
+  const { supabase, error } = await assertEditor(aircraftId);
+  if (error) return { error };
+  if (entryId) {
+    const { data: entry } = await supabase
+      .from("log_entry")
+      .select("id")
+      .eq("id", entryId)
+      .eq("aircraft_id", aircraftId)
+      .maybeSingle();
+    if (!entry) return { error: "That entry isn't on this aircraft." };
+  }
+  const { error: upErr } = await supabase
+    .from("document")
+    .update({ log_entry_id: entryId })
+    .eq("id", documentId)
+    .eq("aircraft_id", aircraftId);
+  if (upErr) return { error: upErr.message };
+  revalidatePath(`/aircraft/${aircraftId}/documents`);
+  revalidatePath(`/aircraft/${aircraftId}/timeline`);
+  return {};
+}
+
 export async function deleteDocument(aircraftId: string, id: string): Promise<{ error?: string }> {
   const { supabase, error } = await assertEditor(aircraftId);
   if (error) return { error };

@@ -91,6 +91,55 @@ export default async function ExportPage({
 
       <PrintBar aircraftId={id} />
 
+      {/* The portability position, stated plainly. Every claim here is checkable
+          in the repo: LICENSE (MIT), README "Getting started (local)" + "Deploy"
+          (self-hosting), lib/backup/import.ts + e2e/backup-roundtrip.spec.ts
+          (the export really does re-import). */}
+      <section className="mb-8 rounded-xl border border-line bg-panel p-5 print:hidden">
+        <h2 className="mb-2 text-[15px] font-semibold text-ink">
+          You can leave whenever you like
+        </h2>
+        <p className="mb-3 text-[12.5px] leading-relaxed text-dim">
+          Most maintenance trackers will export your data. Getting it back{" "}
+          <em>in</em> is the part nobody offers — so an export becomes a folder of
+          files you can never use again. MyTailLog&apos;s{" "}
+          <b className="text-dim">.zip is a round trip</b>: the same archive you
+          download restores as a complete aircraft, scans and all.
+        </p>
+        <ul className="flex flex-col gap-1.5 text-[12.5px] leading-relaxed text-dim">
+          {[
+            <>
+              <b className="text-dim">Export and re-import.</b> The .zip restores as a
+              new aircraft — every entry, AD, item and original scan. Never overwrites
+              what&apos;s already there, so it&apos;s safe to test right now.
+            </>,
+            <>
+              <b className="text-dim">Open formats, no reader required.</b> Plain JSON
+              plus your original JPEG/PNG/PDF scans, described by a{" "}
+              <code className="readout px-1 text-[11.5px]">README.txt</code> inside the
+              archive. CSV for anything you&apos;d rather do in a spreadsheet.
+            </>,
+            <>
+              <b className="text-dim">MIT licensed and self-hostable.</b> The whole
+              app is{" "}
+              <a
+                href="https://github.com/iiamit/MyTailLog"
+                className="underline decoration-line underline-offset-2 hover:text-ink"
+              >
+                open source
+              </a>{" "}
+              — if this service ever went away, you could run it yourself against
+              your own database.
+            </>,
+          ].map((li, i) => (
+            <li key={i} className="flex gap-2.5">
+              <span aria-hidden className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-annun-green" />
+              <span>{li}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {/* Printable report — hidden on screen (the cards above are the on-screen
           view); rendered for "Generate PDF" / Cmd+P, which prints this page. */}
       <div className="hidden print:block">
