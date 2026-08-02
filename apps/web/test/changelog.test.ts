@@ -13,13 +13,26 @@ test("parses the real CHANGELOG.md into releases with tagged groups", () => {
   assert.ok(releases.length > 0, "expected at least one release");
 
   // The newest release must be the one APP_VERSION claims — the header chip
-  // links here, so a mismatch would show users the wrong release.
+  // links here, so a mismatch would show users the wrong release. This is the
+  // invariant that catches a CHANGELOG section added without bumping the
+  // version (or the reverse); keep it pinned to releases[0].
   assert.equal(releases[0].version, APP_VERSION);
-  assert.equal(releases[0].dateLabel, "July 2026");
+  assert.ok(releases[0].groups.length > 0, "the newest release must have content");
 
-  const groups = releases[0].groups;
+  // Format coverage is asserted against 2026.07 by name rather than "whatever
+  // is newest": it's the release that happens to exercise every heading shape
+  // at once, and pinning it here means a new release doesn't break the parser
+  // test just by being newer.
+  const july = releases.find((r) => r.version === "2026.07");
+  assert.ok(july, "expected the 2026.07 release to still be present");
+  assert.equal(july.dateLabel, "July 2026");
+
+  const groups = july.groups;
   assert.ok(groups.length > 0);
-  assert.ok(groups.every((g) => g.items.length > 0), "no group should be empty");
+  assert.ok(
+    releases.every((r) => r.groups.every((g) => g.items.length > 0)),
+    "no group in any release should be empty",
+  );
 
   // The format uses "Added —", "Changed —", "Fixed —" and a bare "Security".
   const tags = new Set(groups.map((g) => g.tag));
