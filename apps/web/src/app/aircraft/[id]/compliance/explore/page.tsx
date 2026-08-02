@@ -12,7 +12,7 @@ export default async function ExplorePage({
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("id, tail_number, make")
+    .select("id, tail_number, make, model")
     .eq("id", id)
     .single();
   if (!aircraft) notFound();
@@ -35,14 +35,22 @@ export default async function ExplorePage({
       <header className="mt-2 mb-6">
         <h1 className="text-2xl font-bold">Explore applicable ADs</h1>
         <p className="text-sm text-dim">
-          Search the Federal Register for Airworthiness Directives by
-          manufacturer — the airframe make and your installed equipment&apos;s
-          makes. This is a starting point, not a determination: confirm which
-          actually apply to your serial numbers, then track them.
+          Search for Airworthiness Directives by <strong>manufacturer</strong> —
+          the airframe make and your installed equipment&apos;s makes — and by{" "}
+          <strong>model</strong> or a keyword. The manufacturer search is the
+          broad net; the model search is the sharp one, and each result lists the
+          models the AD actually names. This is a starting point, not a
+          determination: applicability is your and your A&amp;P&apos;s call —
+          confirm against the AD itself (serial numbers, installed equipment),
+          then track what applies.
         </p>
       </header>
 
-      <ExploreClient aircraftId={id} suggestedMakes={makes} />
+      <ExploreClient
+        aircraftId={id}
+        suggestedMakes={makes}
+        aircraftModel={aircraft.model ?? ""}
+      />
     </main>
   );
 }

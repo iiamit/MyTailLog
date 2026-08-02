@@ -3,8 +3,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { syncUserHours } from "@/lib/mfbSync";
 import { sendEmail } from "@/lib/email";
 import { getCurrentMeters } from "@/lib/aircraftHours";
-import { buildStatusItems, type StatusItem } from "@/lib/status";
+import { buildStatusItems, hoursRemaining, type StatusItem } from "@/lib/status";
 import { dueText } from "@/lib/compliance";
+import { projectDueDate, projectionLabel, type Projection } from "@/lib/utilization";
 import {
   resolveAlerts,
   isDueForReminder,
@@ -104,7 +105,7 @@ async function runReminders(supabase: Service, emailById: Map<string, string>): 
   return emailsSent;
 }
 
-type DueRow = { item: StatusItem; currentHours: number | null };
+type DueRow = { item: StatusItem; currentHours: number | null; projection: Projection | null };
 type AircraftGroup = { tail: string; aircraftId: string; rows: DueRow[] };
 
 async function remindUser(
@@ -139,7 +140,7 @@ async function remindUser(
         .not("status", "in", "(not_applicable,superseded)"),
     ]);
 
-    const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, ac.id, {
+    const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours, utilization } = await getCurrentMeters(supabase, ac.id, {
       hobbs: ac.enrollment_hobbs,
       tach: ac.enrollment_tach,
       airframe: ac.enrollment_airframe,
@@ -163,7 +164,12 @@ async function remindUser(
       const key = itemKey(s);
       const sig = dueSignature(s);
       if (alreadySent.has(`${key}|${sig}`)) continue;
-      rows.push({ item: s, currentHours: s.currentForItem });
+      // Hours axis only — an annual is a date and stays one.
+      rows.push({
+        item: s,
+        currentHours: s.currentForItem,
+        projection: projectDueDate(hoursRemaining(s.nextDueForItem, s.currentForItem), utilization),
+      });
       toLog.push({ item_key: key, due_signature: sig, aircraft_id: ac.id });
     }
     if (rows.length) groups.push({ tail: ac.tail_number, aircraftId: ac.id, rows });
@@ -251,12 +257,16 @@ function reminderHtml(groups: AircraftGroup[]): string {
   const sections = groups
     .map((g) => {
       const rows = g.rows
-        .map(({ item, currentHours }) => {
+        .map(({ item, currentHours, projection }) => {
           const due = dueText(item.nextDueDate, item.nextDueHours, currentHours) ?? "due";
           const tag = item.source === "ad" ? " (AD)" : "";
+          // The projection is an estimate under the hard figure, never instead of it.
+          const proj = projection
+            ? `<div style="font-size:12px;color:#64748b;font-weight:400;">${esc(projectionLabel(projection))}</div>`
+            : "";
           return `<tr>
             <td style="padding:6px 0;color:#0f172a;">${esc(item.label)}${tag}</td>
-            <td style="padding:6px 0;text-align:right;color:#b45309;white-space:nowrap;">${esc(due)}</td>
+            <td style="padding:6px 0;text-align:right;color:#b45309;white-space:nowrap;">${esc(due)}${proj}</td>
           </tr>`;
         })
         .join("");
@@ -274,8 +284,10 @@ function reminderHtml(groups: AircraftGroup[]): string {
     <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:24px;">
       <h2 style="margin:0 0 4px;font-size:18px;color:#0f172a;">Maintenance coming due</h2>
       <p style="margin:0 0 20px;font-size:14px;color:#475569;">
-        These items are within your reminder window (or overdue). MyTailLog is an index and
-        decision-support tool — confirm anything you rely on against the physical logbooks.
+        These items are within your reminder window (or overdue). Any <strong>≈ date</strong> is a
+        planning estimate projected from your recent flying, not a determination — the hours
+        figure is what comes due. MyTailLog is an index and decision-support tool — confirm
+        anything you rely on against the physical logbooks.
       </p>
       ${sections}
       <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px;">

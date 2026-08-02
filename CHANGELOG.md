@@ -4,6 +4,27 @@ Notable changes to MyTailLog, newest first. Versions are calendar-based
 (`APP_VERSION`, shown in the app header). Started 2026-07; earlier history is in
 the git log.
 
+## 2026.08
+
+### Added — AD discovery by model
+- **Find ADs by your actual variant, not just your make.** The AD explorer now
+  searches by **model** and by free-text **keyword** alongside the existing
+  manufacturer-wide search (both run — the make is the broad net, the model is
+  the sharp one).
+- **Every result lists the models the AD names**, parsed from its title and
+  summary, with the ones covering your model highlighted; those results sort
+  first. You can see whether your variant is actually named instead of guessing
+  from the manufacturer.
+- **Pre-1994 legacy ADs now surface.** Model and keyword searches also query the
+  FAA's Dynamic Regulatory System, whose archive reaches back past the Federal
+  Register's 1994 start. If either source is unreachable the other still returns.
+- **"Track this AD" in one click**, or with a **recurrence**: one-time vs
+  recurring, an interval in hours and/or calendar months, and a next-due — which
+  feeds the maintenance forecast and the Status grid like any other tracked AD.
+- Search results remain a **starting point, not a determination**: the parsed
+  model list can be incomplete, and applicability often turns on serial numbers.
+  A scanned A&P AD compliance report is still the ground truth.
+
 ## 2026.07
 
 ### Added — Native iOS app (offline-first, beta)

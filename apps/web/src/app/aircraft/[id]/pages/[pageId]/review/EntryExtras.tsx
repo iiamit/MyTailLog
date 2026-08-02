@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { ReferenceLink } from "@/lib/database.types";
 import { setEntryLinks } from "./actions";
-import { deleteDocument } from "../../../documents/actions";
+import { setDocumentEntry } from "../../../documents/actions";
 
 export type EntryAttachment = { id: string; title: string | null; file_name: string | null };
 
@@ -34,6 +35,33 @@ export function EntryExtras({
   const [error, setError] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
+  // Vault documents not yet attached to any entry — loaded on demand (opening
+  // the picker) rather than prop-drilled through both review pages. RLS scopes
+  // the read to this aircraft.
+  const [picker, setPicker] = useState<EntryAttachment[] | null>(null);
+
+  async function openPicker() {
+    setError(null);
+    setBusy(true);
+    const { data, error: e } = await createClient()
+      .from("document")
+      .select("id, title, file_name")
+      .eq("aircraft_id", aircraftId)
+      .is("log_entry_id", null)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setBusy(false);
+    if (e) return setError(e.message);
+    setPicker(data ?? []);
+  }
+
+  async function setAttachment(documentId: string, entry: string | null) {
+    setError(null);
+    const res = await setDocumentEntry(aircraftId, documentId, entry);
+    if (res.error) return setError(res.error);
+    setPicker(null);
+    router.refresh();
+  }
 
   async function saveLinks(next: ReferenceLink[]) {
     setError(null);
@@ -73,13 +101,6 @@ export function EntryExtras({
     }
   }
 
-  async function removeDoc(id: string) {
-    setError(null);
-    const res = await deleteDocument(aircraftId, id);
-    if (res.error) return setError(res.error);
-    router.refresh();
-  }
-
   return (
     <div className="mt-3 flex flex-col gap-3 rounded-md border border-line bg-panel/40 p-3">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -94,18 +115,45 @@ export function EntryExtras({
                   {d.title || d.file_name || "Document"}
                 </a>
                 {canEdit && (
-                  <button onClick={() => removeDoc(d.id)} className="ml-auto shrink-0 text-xs text-faint hover:text-annun-red">
-                    remove
+                  <button
+                    onClick={() => setAttachment(d.id, null)}
+                    title="Detach from this entry — the document stays in the Records Vault."
+                    className="ml-auto shrink-0 text-xs text-faint hover:text-annun-red"
+                  >
+                    unlink
                   </button>
                 )}
               </li>
             ))}
           </ul>
           {canEdit && (
-            <label className="mt-1.5 inline-block cursor-pointer text-xs text-accent hover:underline">
-              {busy ? "Uploading…" : "+ Add file"}
-              <input type="file" accept="application/pdf,image/*" className="hidden" onChange={uploadFile} disabled={busy} />
-            </label>
+            <div className="mt-1.5 flex flex-wrap items-center gap-3">
+              <label className="cursor-pointer text-xs text-accent hover:underline">
+                {busy ? "Working…" : "+ Add file"}
+                <input type="file" accept="application/pdf,image/*" className="hidden" onChange={uploadFile} disabled={busy} />
+              </label>
+              {picker === null ? (
+                <button onClick={openPicker} disabled={busy} className="text-xs text-accent hover:underline">
+                  + Link from Vault
+                </button>
+              ) : (
+                <select
+                  aria-label="Link a Vault document"
+                  defaultValue=""
+                  onChange={(e) => e.target.value && setAttachment(e.target.value, entryId)}
+                  className={`${inputClass} max-w-full text-xs`}
+                >
+                  <option value="">
+                    {picker.length ? "Choose a document…" : "No unattached documents in the Vault"}
+                  </option>
+                  {picker.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title || d.file_name || "Document"}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           )}
         </div>
 

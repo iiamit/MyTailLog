@@ -29,6 +29,9 @@ export type TimelineEntry = {
 
 export type LogbookMeta = { label: string; type: string };
 
+/** A Records Vault document attached to this entry (0041 `document.log_entry_id`). */
+export type EntryAttachment = { id: string; title: string | null; file_name: string | null };
+
 const TYPE_COLOR: Record<string, string> = {
   airframe: "bg-book-airframe/15 text-book-airframe",
   engine: "bg-book-engine/15 text-book-engine",
@@ -49,9 +52,11 @@ const bookAccent = (t: string) => BOOK_ACCENT[t] ?? "var(--book-other)";
 function EntryRow({
   aircraftId,
   e,
+  attachments,
 }: {
   aircraftId: string;
   e: TimelineEntry;
+  attachments: EntryAttachment[];
 }) {
   const refs = [...e.adRefs.map((r) => `AD ${r}`), ...e.sbRefs.map((r) => `SB ${r}`)];
   // Parts as chips — split the free-text field on common separators, keeping
@@ -124,6 +129,22 @@ function EntryRow({
             ))}
           </div>
         )}
+        {attachments.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
+            <span className="text-[10.5px] text-faint">Attached:</span>
+            {attachments.map((d) => (
+              <a
+                key={d.id}
+                href={`/api/document/${d.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-sm border border-line px-1.5 py-0.5 text-[11px] text-dim hover:border-line2 hover:text-ink"
+              >
+                {d.title || d.file_name || "Document"}
+              </a>
+            ))}
+          </div>
+        )}
         {partChips.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {partChips.map((p, i) => (
@@ -160,12 +181,14 @@ export function TimelineClient({
   logbookMap,
   thumbnailByPageId,
   fullByPageId,
+  attachmentsByEntry,
 }: {
   aircraftId: string;
   entries: TimelineEntry[];
   logbookMap: Record<string, LogbookMeta>;
   thumbnailByPageId: Record<string, string>;
   fullByPageId: Record<string, string>;
+  attachmentsByEntry: Record<string, EntryAttachment[]>;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TimelineEntry[] | null>(null);
@@ -320,7 +343,12 @@ export function TimelineClient({
                   {open && (
                     <ul>
                       {g.items.map((e) => (
-                        <EntryRow key={e.id} aircraftId={aircraftId} e={e} />
+                        <EntryRow
+                          key={e.id}
+                          aircraftId={aircraftId}
+                          e={e}
+                          attachments={attachmentsByEntry[e.id] ?? []}
+                        />
                       ))}
                     </ul>
                   )}

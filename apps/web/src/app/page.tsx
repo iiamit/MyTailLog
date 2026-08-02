@@ -117,6 +117,18 @@ export default async function Home() {
         </Link>
       </p>
 
+      <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-faint">
+        <Link href="/faq" className="underline underline-offset-2 hover:text-ink">
+          FAQ
+        </Link>
+        <Link href="/compare" className="underline underline-offset-2 hover:text-ink">
+          How it compares
+        </Link>
+        <Link href="/switch/myfbo" className="underline underline-offset-2 hover:text-ink">
+          Coming from MyFBO
+        </Link>
+      </nav>
+
       {/* Structured data for search engines. */}
       <script
         type="application/ld+json"
