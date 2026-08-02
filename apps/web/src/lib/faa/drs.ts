@@ -83,13 +83,13 @@ type DrsDoc = {
   docUniqueId?: string;
 };
 
-async function simpleSearch(text: string): Promise<DrsDoc[]> {
+async function simpleSearch(text: string, rowCount = 25): Promise<DrsDoc[]> {
   const body = JSON.stringify({
     searchText: [`"${text}"`],
     sort: ["Relevance"],
     fuzzy: false,
     offSet: 0,
-    rowCount: "25",
+    rowCount: String(rowCount),
     filtersAfterSearchApplied: false,
     filtersAfterSearch: {
       documentType: [],
@@ -146,6 +146,68 @@ const attivio = (
   const v = arr?.find((x) => x.attivioField === field)?.metadataValue;
   return v ? stripTags(v) : null;
 };
+
+// --- Search by term (make/model/keyword) -----------------------------------
+// DRS earns its keep here for one reason: the Federal Register archive starts in
+// 1994, so a model search there structurally cannot return the legacy ADs a
+// 1978 airframe most cares about. A DRS term search does — 64-24-04, 77-16-01,
+// 92-12-05 all come back for "Cessna 172" — and it carries a document status
+// (Current / superseded) the FR API doesn't expose.
+//
+// The documentType filter in the search payload silently returns zero results
+// for every value we tried (label AND code), so we filter by the sourceText
+// field on the way out instead.
+
+/** DRS document types that are Airworthiness Directives. */
+const AD_SOURCE_TYPE = /^(?:AD Final Rules|Emergency ADs)/i;
+
+/** AD numbers look like 'YY-MM-NN' or 'YYYY-MM-NN'; DRS mixes in STC/PMA ids. */
+const AD_NUMBER_SHAPE = /^(?:\d{2}|\d{4})-\d{2}-\d{2}/;
+
+export type DrsSearchAd = DrsAd & {
+  publishedOn: string | null; // YYYY-MM-DD
+  effectiveOn: string | null;
+};
+
+const isoDate = (v: string | null) => (v && v.length >= 10 ? v.slice(0, 10) : null);
+
+/**
+ * Search DRS for ADs matching a make/model/keyword term. Best-effort like the
+ * rest of this client: returns [] on ANY failure so the Federal Register path
+ * (which runs in the browser, separately) still carries the search.
+ */
+export async function searchADsInDRS(
+  term: string,
+  rowCount = 40,
+): Promise<DrsSearchAd[]> {
+  try {
+    if (!term.trim()) return [];
+    const docs = await simpleSearch(term.trim(), rowCount);
+    const out: DrsSearchAd[] = [];
+    const seen = new Set<string>();
+    for (const d of docs) {
+      const sourceType = attivio(d.subText, "sourceType") ?? "";
+      if (!AD_SOURCE_TYPE.test(sourceType)) continue;
+      const adNumber = stripTags(d.headerLink?.metadataValue);
+      if (!adNumber || !AD_NUMBER_SHAPE.test(adNumber) || !d.docUniqueId) continue;
+      const key = adNumber.replace(/\s+/g, "").toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        adNumber,
+        title: attivio(d.description, "title"),
+        status: d.status ?? null,
+        docUniqueId: d.docUniqueId,
+        viewUrl: `${ORIGIN}/browse/excelExternalWindow/${d.docUniqueId}`,
+        publishedOn: isoDate(attivio(d.subText, "docPublishedDate")),
+        effectiveOn: isoDate(attivio(d.subText, "docEffectivedate")),
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Find an AD in DRS by number. Matches the result whose document number equals

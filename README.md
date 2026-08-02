@@ -81,7 +81,9 @@ AI reads the page; you review it next to the original, with low-confidence field
 - **Timeline & search** across all logbooks; **Status** grid (color-coded, at a
   glance); **Maintenance forecast** (Part 91 recurring items, hours- and
   date-based); **AD/SB compliance** with official FAA reference lookup (Federal
-  Register + DRS fallback); **Installed equipment** reconstructed from the logs;
+  Register + DRS fallback) and **AD discovery** by manufacturer, model, or
+  keyword — each candidate listing the models the AD names, with yours
+  highlighted; **Installed equipment** reconstructed from the logs;
   **Weight & Balance** history with a stale-since-last-equipment-change flag;
   **Records gap audit**.
 - **Squawks** — pilots report in-flight discrepancies (severity + who reported),
