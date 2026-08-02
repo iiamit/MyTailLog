@@ -179,6 +179,40 @@ test.describe("RLS multi-tenant isolation", () => {
     }
   });
 
+  test("cannot read or write another user's ADS-B flights (0048)", async () => {
+    // Observed flights are position-derived data about someone's aircraft — the
+    // one table in the app where a leak reveals where a stranger has been.
+    const firstSeen = new Date("2026-07-14T15:00:00.000Z").toISOString();
+    await admin.from("adsb_flight").insert({
+      aircraft_id: victimAc,
+      icao24: "a12239",
+      first_seen: firstSeen,
+      last_seen: new Date("2026-07-14T16:30:00.000Z").toISOString(),
+      airborne_minutes: 90,
+    });
+
+    const { data } = await attackerDb.from("adsb_flight").select("id").eq("aircraft_id", victimAc);
+    expect(data, "adsb_flight must be invisible across tenants").toEqual([]);
+
+    const { error } = await attackerDb.from("adsb_flight").insert({
+      aircraft_id: victimAc,
+      icao24: "000000",
+      first_seen: new Date("2026-07-15T15:00:00.000Z").toISOString(),
+      last_seen: new Date("2026-07-15T16:00:00.000Z").toISOString(),
+      airborne_minutes: 60,
+    });
+    expect(error, "WITH CHECK must reject an adsb_flight on a non-owned aircraft").toBeTruthy();
+
+    // Dismissing someone else's observation is hidden by the USING clause.
+    const dismiss = await attackerDb
+      .from("adsb_flight")
+      .update({ dismissed_at: new Date().toISOString() })
+      .eq("aircraft_id", victimAc)
+      .select("id");
+    expect(dismiss.error).toBeFalsy();
+    expect(dismiss.data, "a stranger must not be able to dismiss observed flights").toEqual([]);
+  });
+
   test("cannot share another user's aircraft to themselves (share self-escalation)", async () => {
     const { error } = await attackerDb.from("aircraft_share").insert({
       aircraft_id: victimAc,

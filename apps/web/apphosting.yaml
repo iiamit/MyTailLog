@@ -48,6 +48,19 @@ env:
     secret: CRON_SECRET
     availability:
       - RUNTIME
+  # OpenSky Network OAuth2 client credentials for the ADS-B passive-hours sweep
+  # (opensky-network.org → Account → API client). Server-only; the sweep sends
+  # nothing but a public Mode S hex. Absent → the sweep logs and skips, so the
+  # rest of the cron is unaffected. /flights/* is 4,000 credits/day and one
+  # aircraft costs 4, so this ceilings at ~1,000 opted-in aircraft/day.
+  - variable: OPENSKY_CLIENT_ID
+    secret: OPENSKY_CLIENT_ID
+    availability:
+      - RUNTIME
+  - variable: OPENSKY_CLIENT_SECRET
+    secret: OPENSKY_CLIENT_SECRET
+    availability:
+      - RUNTIME
   # Server-only. Encrypts MyFlightBook secrets/tokens and users' own Anthropic
   # keys at rest (AES-256-GCM, src/lib/crypto.ts). Any non-empty string works
   # (SHA-256'd to a 32-byte key); rotating it makes existing ciphertext

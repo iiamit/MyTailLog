@@ -93,6 +93,14 @@ AI reads the page; you review it next to the original, with low-confidence field
   the forecast reflects real hours — one half of the two-way MFB link (see below).
 - A **daily job** auto-syncs hours (once/day) and emails **reminders** before due
   items — annual, oil, ADs, and more, each with a configurable lead time.
+- **ADS-B passive hours** — **opt-in per aircraft, off by default.** The daily job
+  asks the free **OpenSky Network** whether the aircraft flew, sending only its
+  public ICAO 24-bit Mode S address (no user data, no track storage). Your own
+  records always win: a MyFlightBook sync, a logbook entry or a typed reading
+  already accounts for everything up to its date, so it only speaks up about
+  flying that no reading covers. It then *suggests* a meter value — pre-filled,
+  fully editable, **never auto-written**, and stored as `adsb_estimate`, which is
+  never compliance evidence and never feeds a utilization rate.
 
 **Open API & integrations (OAuth 2.1)**
 - **MyTailLog is its own OAuth 2.1 Authorization + Resource Server**: other apps
@@ -212,7 +220,7 @@ Data model (Postgres, migrations `supabase/migrations/00*`): `aircraft` →
 `logbook` → `page` → `log_entry`, plus `ad_compliance` / `ad_reference`,
 `component` / `equipment_proposal`, `maintenance_item`, `weight_balance`,
 `scanned_document`, `document`, `oil_analysis_sample`, `aircraft_share`,
-`mfb_connection` / `hours_reading`, `reminder_log`, `ai_usage` / `user_ai_key`,
+`mfb_connection` / `hours_reading`, `adsb_flight`, `reminder_log`, `ai_usage` / `user_ai_key`,
 `profile`, and the OAuth-provider tables `oidc_payloads`, `oauth_client`,
 `oauth_aircraft_grant`, `oauth_access_log`.
 
@@ -263,6 +271,9 @@ firebase apphosting:secrets:set SUPABASE_SECRET_KEY   # Supabase → API Keys �
 # For the daily reminder/sync cron (optional but recommended):
 firebase apphosting:secrets:set RESEND_API_KEY        # for reminder email
 firebase apphosting:secrets:set CRON_SECRET           # random string; gates the cron endpoint
+# For ADS-B passive hours (optional; the sweep skips itself when unset):
+firebase apphosting:secrets:set OPENSKY_CLIENT_ID     # opensky-network.org → Account → API client
+firebase apphosting:secrets:set OPENSKY_CLIENT_SECRET # OAuth2 client credentials (anonymous access was removed in 2026)
 ```
 
 Non-secret config in [`apphosting.yaml`](./apphosting.yaml): `NEXT_PUBLIC_SITE_URL`
