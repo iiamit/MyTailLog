@@ -622,8 +622,29 @@ const SECTIONS: Section[] = [
           Track Airworthiness Directives and Service Bulletins: compliance status (complied /
           previously complied / does-not-apply), method, dates, and recurring intervals →
           next-due. Look up the official FAA reference (Federal Register, with a DRS fallback) to
-          confirm applicability, and explore applicability by tail/serial. ADs referenced in your
-          logs but not yet tracked are surfaced so you can add them.
+          confirm applicability. ADs referenced in your logs but not yet tracked are surfaced so
+          you can add them.
+        </p>
+        <p>
+          <strong>Explore</strong> searches for ADs you might not know about, three ways at once:
+          by <strong>manufacturer</strong> (the airframe make plus every installed
+          equipment&apos;s make — the broad net), by <strong>model</strong> (your specific
+          variant — the sharp one), and by any <strong>keyword</strong> you type. Results come
+          from the Federal Register plus the FAA&apos;s DRS, which is what surfaces the{" "}
+          <strong>pre-1994 legacy ADs</strong> the Federal Register archive doesn&apos;t hold; if
+          either source is unreachable the other still returns. Each result lists the{" "}
+          <strong>models the AD names</strong>, with yours highlighted and those results sorted
+          first, so you can see whether your variant is actually named instead of guessing from
+          the make. <strong>Track this AD</strong> adds it in one click as a one-time item, or{" "}
+          <em>Track with an interval</em> records it as recurring on hours, calendar months, or
+          both, with a next-due.
+        </p>
+        <p className="text-dim">
+          Search results are a starting point, not a determination. The parsed model list is read
+          off the AD&apos;s title and summary and can be incomplete — real applicability often
+          turns on serial numbers and installed equipment. Confirm against the AD itself; the call
+          is yours and your A&amp;P&apos;s. For ground truth, scan an{" "}
+          <L href="#other">A&amp;P AD compliance report</L>.
         </p>
         <Effects>
           Recurring ADs with a next-due join the <L href="#maintenance">forecast</L> and{" "}
