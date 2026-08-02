@@ -34,11 +34,15 @@ function fakeSupabase() {
   } as unknown as SupabaseClient<Database>;
 }
 
-async function readData(blob: Blob): Promise<Record<string, { _t: string }[]>> {
+async function readFiles(blob: Blob): Promise<Record<string, Uint8Array>> {
   const u8 = new Uint8Array(await blob.arrayBuffer());
-  const files = await new Promise<Record<string, Uint8Array>>((resolve, reject) =>
+  return new Promise<Record<string, Uint8Array>>((resolve, reject) =>
     unzip(u8, (err, out) => (err ? reject(err) : resolve(out))),
   );
+}
+
+async function readData(blob: Blob): Promise<Record<string, { _t: string }[]>> {
+  const files = await readFiles(blob);
   return JSON.parse(new TextDecoder().decode(files["data.json"]));
 }
 
@@ -56,4 +60,31 @@ test("exportBackup maps each table to the right backup key (pages ≠ log_entrie
   assert.equal(data.maintenance_items[0]._t, "maintenance_item");
   assert.equal(data.ad_compliance[0]._t, "ad_compliance");
   assert.equal(data.logbooks[0]._t, "logbook");
+});
+
+test("the archive carries a README.txt documenting every file and column", async () => {
+  const { blob } = await exportBackup(fakeSupabase(), "ac");
+  const files = await readFiles(blob);
+  const readme = new TextDecoder().decode(files["README.txt"]);
+
+  // Every file the archive can contain is named in it.
+  for (const f of ["README.txt", "manifest.json", "data.json", "scans/", "docs/"]) {
+    assert.ok(readme.includes(f), `README.txt should document ${f}`);
+  }
+
+  // Every record set in data.json is documented...
+  const data = await readData(blob);
+  for (const key of Object.keys(data)) {
+    assert.ok(readme.includes(key), `README.txt should document the ${key} record set`);
+  }
+
+  // ...with its columns read from the rows themselves, so a migration that adds
+  // a column can't leave the manifest silently stale.
+  assert.ok(readme.includes("tail_number"), "aircraft columns should be listed");
+  assert.ok(readme.includes("ad_refs"), "log_entry columns should be listed");
+  assert.ok(readme.includes("storage_path"), "page columns should be listed");
+
+  // The portability claim, which is the point of shipping it at all.
+  assert.ok(/MIT/.test(readme) && /self-host/i.test(readme));
+  assert.ok(/Restore from backup/.test(readme));
 });

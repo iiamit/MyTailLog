@@ -650,13 +650,37 @@ const SECTIONS: Section[] = [
     icon: <ArchiveIcon />,
     title: "Export & backup",
     body: (
-      <p>
-        Print a full records bundle (browser Print → Save as PDF), download CSVs of entries /
-        AD-SB / equipment / maintenance, or take a complete <strong>.zip backup</strong> (all
-        records + original scans) that you can <strong>re-import</strong> as a new aircraft. Since
-        the free tier has no automatic backups, exporting periodically is your safety net — and the
-        way to hand an aircraft&apos;s full history to someone else.
-      </p>
+      <>
+        <p>
+          Two PDFs, both produced by your browser&apos;s Print → Save as PDF (nothing to install).
+          The <strong>maintenance summary</strong> is the one-page document you hand a buyer, an
+          insurer, or your IA at annual: status at a glance, open squawks, the AD/SB compliance
+          table, what&apos;s coming due, installed equipment, and current weight &amp; balance. The{" "}
+          <strong>full records report</strong> is the same thing plus every transcribed logbook
+          entry. You can also download CSVs of entries / AD-SB / equipment / maintenance.
+        </p>
+        <p className="mt-3">
+          The <strong>.zip backup</strong> takes everything — all records plus your original
+          scans — and includes a <code className="readout text-[12px]">README.txt</code>{" "}
+          documenting every file and every column, so the archive still explains itself years
+          from now. Since the free tier has no automatic backups, exporting periodically is your
+          safety net.
+        </p>
+        <p className="mt-3">
+          <strong>On lock-in.</strong> That .zip <strong>re-imports</strong>: restoring it
+          recreates the aircraft, entries, ADs and scans as a <em>new</em> aircraft (it never
+          overwrites an existing one). Everything inside is plain JSON and your original
+          JPEG/PNG/PDF files — readable with no special software. MyTailLog itself is{" "}
+          <a
+            href="https://github.com/iiamit/MyTailLog"
+            className="underline decoration-line underline-offset-2 hover:decoration-line2"
+          >
+            open source under the MIT licence
+          </a>{" "}
+          and can be self-hosted against your own database, so leaving is always an option you
+          actually have.
+        </p>
+      </>
     ),
   },
   {
@@ -714,7 +738,8 @@ export default function HelpPage() {
         <p className="mt-2 text-dim">
           What every part of MyTailLog does — and, just as important, how the pieces affect each
           other. The amber <span className="font-medium text-annun-amber">Ripple effects</span>{" "}
-          notes call out where one action changes something elsewhere.
+          notes call out where one action changes something elsewhere. For what changed in the
+          latest release, see <L href="/whats-new">What&apos;s new</L>.
         </p>
       </header>
 

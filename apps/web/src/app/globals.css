@@ -223,4 +223,45 @@
       transition-duration: 0.001ms !important;
     }
   }
+
+  /* ============================================================
+   Print. The design system is dark-only on screen, but browsers
+   drop backgrounds when printing — so --ink (#e9eef5) would come
+   out near-invisible on white paper. Re-point the tokens at a
+   light ramp for print and every component follows, because they
+   all consume the same vars. This is what makes /aircraft/[id]/
+   summary (and the records export) usable as a handed-over PDF.
+   ============================================================ */
+  @media print {
+    :root {
+      color-scheme: light;
+
+      --bg: #fff;
+      --panel: #fff;
+      --panel2: #fff;
+      --raise: #fff;
+      --line: #c9ced6;
+      --line2: #98a1ad;
+
+      --ink: #000;
+      --dim: #2c3340;
+      --faint: #55606f;
+
+      --accent: #14508f;
+      --accent-soft: #eaf1fa;
+
+      --grn: #1c7a49;
+      --amb: #8a5a06;
+      --red: #b3241a;
+
+      --grn-bg: #eef8f2;
+      --amb-bg: #fdf5e6;
+      --red-bg: #fdeeed;
+    }
+
+    html,
+    body {
+      background: #fff;
+    }
+  }
 }

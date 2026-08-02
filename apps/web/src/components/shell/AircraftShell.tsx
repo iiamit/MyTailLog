@@ -162,22 +162,34 @@ export function AircraftShell({
     // h-screen (not min-h-screen) so the content pane below scrolls INTERNALLY —
     // that makes it the scroll container sticky children (e.g. the review scan)
     // stick within, and keeps the top bar + nav rail fixed like a real cockpit.
-    <div className="flex h-screen flex-col">
+    // print:* — on paper the chrome is noise and, worse, h-screen + the content
+    // pane's overflow-auto would clip the report to one screenful. Unwind both
+    // so a printed page (the summary, the records export) flows over all pages.
+    <div className="flex h-screen flex-col print:block print:h-auto">
       {/* Top bar — aircraft context always on. */}
-      <header className="sticky top-0 z-40 flex h-[60px] shrink-0 items-center gap-4 border-b border-line bg-bg/85 px-4 backdrop-blur-md sm:gap-5">
-        <Link href="/dashboard" className="flex shrink-0 items-center gap-2.5 border-r border-line pr-4">
-          <span
-            className="h-[22px] w-[22px]"
-            style={{
-              background: "conic-gradient(from 45deg,var(--accent),#8ec8ff)",
-              clipPath: "polygon(50% 0,100% 86%,0 86%)",
-            }}
-          />
-          <span className="font-display text-[17px] font-bold tracking-[0.2px]">MyTailLog</span>
-          <span className="readout hidden rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint sm:inline">
+      <header className="sticky top-0 z-40 flex h-[60px] shrink-0 items-center gap-4 border-b border-line bg-bg/85 px-4 backdrop-blur-md sm:gap-5 print:hidden">
+        {/* The version chip links to /whats-new — it's the changelog entry the
+            reader is on, so it doubles as the way in. Separate <Link> (an <a>
+            can't nest inside the dashboard <a>). */}
+        <div className="flex shrink-0 items-center gap-2.5 border-r border-line pr-4">
+          <Link href="/dashboard" className="flex shrink-0 items-center gap-2.5">
+            <span
+              className="h-[22px] w-[22px]"
+              style={{
+                background: "conic-gradient(from 45deg,var(--accent),#8ec8ff)",
+                clipPath: "polygon(50% 0,100% 86%,0 86%)",
+              }}
+            />
+            <span className="font-display text-[17px] font-bold tracking-[0.2px]">MyTailLog</span>
+          </Link>
+          <Link
+            href="/whats-new"
+            title="What's new in this release"
+            className="readout hidden rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint hover:border-line2 hover:text-dim sm:inline"
+          >
             v{APP_VERSION}
-          </span>
-        </Link>
+          </Link>
+        </div>
 
         <div className="flex min-w-0 items-center gap-3">
           <span className="readout text-base font-semibold tracking-[0.5px]">{context.reg}</span>
@@ -216,7 +228,7 @@ export function AircraftShell({
       </header>
 
       {/* Mobile nav strip — full width above the content row. */}
-      <nav className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-line bg-panel px-3 py-2 md:hidden">
+      <nav className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-line bg-panel px-3 py-2 md:hidden print:hidden">
         {allItems.map((it) => {
           const active = itemActive(it);
           return (
@@ -234,9 +246,9 @@ export function AircraftShell({
         })}
       </nav>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 print:block">
         {/* Persistent nav rail (desktop). */}
-        <nav className="hidden w-[236px] shrink-0 flex-col gap-0.5 overflow-auto border-r border-line bg-linear-to-b from-panel to-bg px-3.5 pb-6 pt-4 md:flex">
+        <nav className="hidden w-[236px] shrink-0 flex-col gap-0.5 overflow-auto border-r border-line bg-linear-to-b from-panel to-bg px-3.5 pb-6 pt-4 md:flex print:hidden">
           <Link
             href="/dashboard"
             className="mb-1 flex items-center gap-2 rounded-[10px] border border-line bg-panel2 p-2 text-left hover:border-line2"
@@ -279,12 +291,12 @@ export function AircraftShell({
         {/* Content region. Pages control their own max-width (varies by screen);
             during the reskin, un-migrated pages keep their own <main>, so this is
             a <div> to avoid nesting landmarks. */}
-        <div className="min-w-0 flex-1 overflow-auto">
+        <div className="min-w-0 flex-1 overflow-auto print:overflow-visible">
           {/* Hub sub-tabs — the consolidated views of Airworthiness / Logbook.
               Rendered by the shell so the underlying pages need no changes, and
               works on every viewport (it's the mobile sub-nav too). */}
           {activeHub?.tabs && (
-            <div className="sticky top-0 z-30 flex gap-1 overflow-x-auto border-b border-line bg-bg/85 px-4 py-2 backdrop-blur-md md:px-6">
+            <div className="sticky top-0 z-30 flex gap-1 overflow-x-auto border-b border-line bg-bg/85 px-4 py-2 backdrop-blur-md md:px-6 print:hidden">
               {activeHub.tabs.map((t) => {
                 const active = ownsPath(t.href);
                 return (

@@ -2,6 +2,7 @@
 // Backup archive format — a single .zip a user can save and re-import.
 //
 //   <file>.zip
+//   ├─ README.txt      export manifest: every file + column, in plain English
 //   ├─ manifest.json   format id + version + export metadata (gate the importer)
 //   ├─ data.json       every aircraft-scoped row (full column set, verbatim)
 //   ├─ scans/<pageId>.<ext>       original page images (source of truth)
