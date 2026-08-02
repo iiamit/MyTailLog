@@ -9,6 +9,7 @@ import {
   type BackupManifest,
   type Row,
 } from "./format";
+import { buildReadme } from "./readme";
 
 type Progress = (msg: string) => void;
 
@@ -115,6 +116,9 @@ export async function exportBackup(
   const enc = new TextEncoder();
   files["manifest.json"] = [enc.encode(JSON.stringify(manifest, null, 2)), { level: 6 }];
   files["data.json"] = [enc.encode(JSON.stringify(data)), { level: 6 }];
+  // Human-readable export manifest: what every file and column in this archive
+  // is, so it's still legible without MyTailLog years from now.
+  files["README.txt"] = [enc.encode(buildReadme(data, manifest)), { level: 6 }];
 
   onProgress?.("Compressing…");
   const zipped = await new Promise<Uint8Array>((resolve, reject) =>

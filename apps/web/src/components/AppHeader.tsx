@@ -37,19 +37,28 @@ export function AppHeader({ email }: { email: string | null }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-[60px] max-w-6xl items-center justify-between px-5 sm:px-7">
-        <Link href="/dashboard" className="flex items-center gap-2.5 hover:opacity-90">
-          <span
-            className="h-[22px] w-[22px]"
-            style={{
-              background: "conic-gradient(from 45deg,var(--accent),#8ec8ff)",
-              clipPath: "polygon(50% 0,100% 86%,0 86%)",
-            }}
-          />
-          <span className="font-display text-[17px] font-bold tracking-[0.2px]">MyTailLog</span>
-          <span className="readout ml-1 rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint">
+        {/* The version chip links to /whats-new — it's the changelog entry the
+            reader is on, so it doubles as the way in. Separate <Link> (an <a>
+            can't nest inside the dashboard <a>). */}
+        <div className="flex items-center gap-2.5">
+          <Link href="/dashboard" className="flex items-center gap-2.5 hover:opacity-90">
+            <span
+              className="h-[22px] w-[22px]"
+              style={{
+                background: "conic-gradient(from 45deg,var(--accent),#8ec8ff)",
+                clipPath: "polygon(50% 0,100% 86%,0 86%)",
+              }}
+            />
+            <span className="font-display text-[17px] font-bold tracking-[0.2px]">MyTailLog</span>
+          </Link>
+          <Link
+            href="/whats-new"
+            title="What's new in this release"
+            className="readout rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint hover:border-line2 hover:text-dim"
+          >
             v{APP_VERSION}
-          </span>
-        </Link>
+          </Link>
+        </div>
 
         <nav className="flex items-center gap-0.5">
           <Link href="/help" aria-current={pathname.startsWith("/help") ? "page" : undefined} className={link("/help", pathname.startsWith("/help"))}>

@@ -122,10 +122,16 @@ AI reads the page; you review it next to the original, with low-confidence field
 - **Records Vault** — keep the aircraft's permanent records (airworthiness
   certificate, registration, radio station authorization, POH/AFM, W&B, **STCs**,
   337s, 8130-3s, manuals) in one place, alongside the logbook scans.
-- Print/PDF and CSV exports, plus a full **`.zip` backup** (records + scans) you
-  can **re-import**.
+- A printable **maintenance summary** — one page of status, open squawks, AD/SB
+  compliance, upcoming due items, installed equipment and current W&B: the
+  document you hand a buyer, an insurer, or an IA at annual. Plus a full
+  entry-by-entry records report and CSV exports.
+- A full **`.zip` backup** (records + original scans) you can **re-import**,
+  carrying a `README.txt` that documents every file and column in it.
 - **Sharing** (viewer / contributor), **ownership transfer**, and delete.
-- In-app **Help** documenting every feature and how the pieces affect each other.
+- In-app **Help** documenting every feature and how the pieces affect each other,
+  and a public **[`/whats-new`](https://mytaillog.com/whats-new)** rendered from
+  [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Repository layout
 
