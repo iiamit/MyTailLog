@@ -73,8 +73,13 @@ test("backups: connect both providers, the sweep uploads to each, disconnect cle
   }
 
   // --- Make both due, scoped to THIS test's aircraft -------------------------
-  // Pinning aircraft_id keeps the sweep off aircraft other parallel specs are
-  // creating and deleting underneath it.
+  // Pinning aircraft_id is a HARNESS trick, not a product configuration: the
+  // suite is fullyParallel and the sweep would otherwise archive every aircraft
+  // this account owns, including ones other specs are creating and deleting
+  // underneath it. Nothing in the app writes aircraft_id — set_backup_schedule
+  // has no such parameter — so it is restored to null before anything asserts on
+  // the Profile card, which reads the all-aircraft schedule the UI actually
+  // creates.
   const scheduleIds = armed.data!.map((s) => s.id);
   for (const id of scheduleIds) {
     await admin
@@ -121,12 +126,14 @@ test("backups: connect both providers, the sweep uploads to each, disconnect cle
   const prefixed = runs.data!.filter((r) => r.remote_path!.startsWith("/MyTailLog/"));
   expect(prefixed.length, "the Drive upload must nest under MyTailLog/").toBe(1);
 
-  // Both schedules re-armed for next month, both leases released.
+  // Both schedules re-armed for next month, both leases released. Queried by id
+  // rather than by aircraft_id so the assertion can't go vacuous when the pin is
+  // lifted below.
   const after = await admin
     .from("backup_schedule")
     .select("next_run_at, claimed_at, consecutive_failures")
-    .eq("user_id", userId)
-    .eq("aircraft_id", scratch.id);
+    .in("id", scheduleIds);
+  expect(after.data!.length).toBe(2);
   for (const s of after.data!) {
     expect(s.claimed_at).toBeNull();
     expect(s.consecutive_failures).toBe(0);
@@ -134,19 +141,38 @@ test("backups: connect both providers, the sweep uploads to each, disconnect cle
   }
 
   // --- The Profile page reports each destination honestly, and separately ---
+  // Lift the harness pin: my_backup_destinations() reports the all-aircraft
+  // schedule, which is the only kind the UI can create. Same schedule rows, same
+  // runs — only the scope narrowing the sweep is undone.
+  await admin.from("backup_schedule").update({ aircraft_id: null }).in("id", scheduleIds);
+
   await page.reload();
   await expect(page.getByText("Succeeded")).toHaveCount(2);
+
+  // Each card must report ITS OWN destination's last run. 0049 scoped the lookup
+  // to the user, so with two providers connected each card showed the other's
+  // result — and two successful runs look identical, which is exactly why this
+  // fails one of them first. Under the old user-scoped lateral both cards would
+  // show the same status and this would read 0/2 or 2/0.
+  const driveRun = runs.data!.find((r) => r.remote_path!.startsWith("/MyTailLog/"))!;
+  await admin
+    .from("backup_run")
+    .update({ status: "failed", error: "e2e cross-report probe" })
+    .eq("schedule_id", driveRun.schedule_id)
+    .eq("aircraft_id", scratch.id);
+
+  await page.reload();
+  await expect(page.getByText("Succeeded")).toHaveCount(1);
+  await expect(page.getByText("Failed")).toHaveCount(1);
+  await expect(page.getByText("e2e cross-report probe")).toBeVisible();
 
   // --- Disconnect destroys the tokens, one destination at a time ------------
   for (const p of PROVIDERS) {
     await page.getByRole("button", { name: `Disconnect ${p.name}` }).click();
     await expect(page.getByText(`${p.name} disconnected`)).toBeVisible();
   }
-  const off = await admin
-    .from("backup_schedule")
-    .select("frequency")
-    .eq("user_id", userId)
-    .eq("aircraft_id", scratch.id);
+  const off = await admin.from("backup_schedule").select("frequency").in("id", scheduleIds);
+  expect(off.data!.length).toBe(2);
   expect(off.data!.every((s) => s.frequency === "off")).toBe(true);
   // Nothing is due for this user any more: 0050's disconnect nulls every token
   // column and stamps revoked_at, and backup_due_runs joins on revoked_at null.
