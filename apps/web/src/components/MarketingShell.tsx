@@ -10,6 +10,8 @@ const LINKS: { href: string; label: string }[] = [
   { href: "/compare", label: "How it compares" },
   { href: "/switch/myfbo", label: "Coming from MyFBO" },
   { href: "/help", label: "Help & docs" },
+  { href: "/developers/docs", label: "API" },
+  { href: "/whats-new", label: "What's new" },
 ];
 
 export function MarketingShell({

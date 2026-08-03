@@ -6,6 +6,33 @@ the git log.
 
 ## 2026.08
 
+### Changed — A landing page that says what the thing does
+- **The front page listed six features; the app has closer to thirty**, and the
+  ones people actually pick it for — that it is free with no billing code in it
+  at all, that it is MIT-licensed and self-hostable, that extraction is
+  automated and self-serve rather than a transcription service you mail your
+  books to, that it answers questions instead of just storing files, and that it
+  backs itself up to a Dropbox or Google Drive *you* own — were absent
+  altogether. They are on the page now.
+- **It opens with a scenario rather than a slogan**, and sets data the way the
+  app does: tail numbers, tach readings, AD numbers and dates in the mono
+  instrument face, inline in the prose.
+- **All six product screenshots are used**, each next to the paragraph it
+  illustrates, instead of four rotating in a carousel that showed one at a time.
+  The carousel component is gone.
+- **Starting is a primary action again.** Account creation is the main call to
+  action for signed-out visitors (`/login` handles sign-in *and* sign-up);
+  signed-in visitors get a route straight to their hangar in the same places.
+- **The other public pages are properly reachable** — FAQ, How it compares,
+  Coming from MyFBO, Help, the API docs and What's new are in a top bar and a
+  footer, rather than one line of small print. The same two additions were made
+  to the shared marketing footer.
+- **It says what the product does not do**, in its own section: no accuracy
+  percentage (nothing measures one — you get per-field confidence and the scan
+  beside the entry), no scheduling/dispatch/invoicing/billing, iOS is a
+  TestFlight beta with no Android app, and CSV import is CSV only. The
+  index-not-the-legal-record notice (14 CFR 91.417) stays.
+
 ### Added — Import a CSV
 - **Bring maintenance history in from a spreadsheet or another platform**, without
   printing it to PDF first. Pick the logbook, upload the CSV, and the entries are
