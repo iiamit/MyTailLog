@@ -313,8 +313,10 @@ export function ImportCsvClient({
           </h2>
           {preview.skipped > 0 && (
             <details className="text-xs text-dim">
+              {/* One text node: an expression that renders "" between two
+                  literals eats the space around it. */}
               <summary className="cursor-pointer text-annun-amber">
-                {preview.skipped} row{preview.skipped === 1 ? "" : "s"} can&apos;t be read and will be skipped
+                {`${preview.skipped} row${preview.skipped === 1 ? "" : "s"} can't be read and will be skipped`}
               </summary>
               <ul className="mt-1.5 flex flex-col gap-0.5">
                 {preview.errors.map((e) => (
