@@ -56,6 +56,10 @@ AI reads the page; you review it next to the original, with low-confidence field
 - Vision-LLM extraction into structured entries (date, hours, work, parts,
   AD/SB refs, signature) with **per-field confidence**; a review screen shows the
   page image beside editable entries and flags low-confidence fields.
+- **CSV import** for history you already have as data — one AI pass maps your
+  *columns* to fields (no importer per vendor), you confirm the mapping once, and
+  every row is converted deterministically in code. Dates are detected from the
+  whole column, never guessed. Imported entries land unconfirmed.
 - Five logbook types — airframe, engine, prop, avionics, and **Other**.
 - **Find duplicates** — flags likely-duplicate scans and entries (by date,
   tach/hobbs, and work text) so re-captures and re-extractions don't pile up.

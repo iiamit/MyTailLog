@@ -65,8 +65,8 @@ const DOESNT: { what: string; why: string }[] = [
     why: "Fully commoditized elsewhere, and unconnected to records.",
   },
   {
-    what: "A direct CSV / spreadsheet importer",
-    why: "Not built. Pages come in as PDF, JPEG or PNG. Print or export a CSV to PDF and it goes through the same extractor as a scan — that works, but it's a workaround, not a feature.",
+    what: "XLSX / Google Sheets imports",
+    why: "CSV only. Every spreadsheet saves as CSV in one step, and an XLSX parser is a dependency and a zip/XML reader for no additional outcome. Save as CSV and import that.",
   },
   {
     what: "An automated MyFBO connector",
@@ -133,10 +133,18 @@ export default function SwitchMyFboPage() {
             stated plainly: <strong>you are the reviewer</strong>. Nobody else checks the entries;
             the app&apos;s job is to show you precisely where to look.
           </p>
+          <p>
+            If your MyFBO export is a <strong>CSV</strong> rather than paper, you don&apos;t need
+            any of that: import it directly. There is no MyFBO-specific importer and there won&apos;t
+            be — instead the <strong>columns</strong> are mapped, not the rows. One AI pass reads
+            your header and a few sample rows, proposes what each column means, you correct it once,
+            and every row is then converted in plain code. Dates are never guessed: the whole date
+            column is scanned, and you&apos;re only asked which way round they are if every single
+            row genuinely reads both ways.
+          </p>
           <p className="text-sm text-faint">
-            If your MyFBO export is a CSV or a spreadsheet, there is no direct importer today. Print
-            it to PDF and it goes through the same extractor as a scan. It works; it is also a gap
-            we&apos;d rather name than dress up.
+            CSV only — save your spreadsheet as CSV first. Up to 5 MB / 5,000 rows per file, and
+            imported entries land unconfirmed so you review them before they drive anything.
           </p>
         </MarketingSection>
 
@@ -148,9 +156,14 @@ export default function SwitchMyFboPage() {
               avionics, and Other for A&amp;P documents.
             </li>
             <li>
-              <strong>Upload into the right logbook</strong> and let extraction run. Start with the
-              last few years if the backlog is large; the searchable index is useful long before
-              it&apos;s complete.
+              <strong>Import your CSV export</strong>, if you have one — pick the logbook, confirm
+              what each column means, check the count, import. Everything that came out of MyFBO as
+              data goes in as data.
+            </li>
+            <li>
+              <strong>Upload the paper into the right logbook</strong> and let extraction run. Start
+              with the last few years if the backlog is large; the searchable index is useful long
+              before it&apos;s complete.
             </li>
             <li>
               <strong>Review</strong> with the original page beside the entry. Flagged fields first;

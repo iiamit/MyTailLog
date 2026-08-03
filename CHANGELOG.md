@@ -6,6 +6,37 @@ the git log.
 
 ## 2026.08
 
+### Added — Import a CSV
+- **Bring maintenance history in from a spreadsheet or another platform**, without
+  printing it to PDF first. Pick the logbook, upload the CSV, and the entries are
+  created directly.
+- **The columns are mapped, not the rows.** There is no importer per vendor and
+  there won't be: one AI pass reads your header plus a few sample rows and
+  proposes what each column means — "Tach Out" → Tach, "A&P" → Signature,
+  "Invoice #" → don't import. You confirm that **once**, and every row is then
+  converted in plain code. The same file always imports the same way, and a
+  wrong import is explainable by pointing at the mapping rather than at a model.
+- **Dates are never guessed.** `03/04/2026` is 3 April or 4 March depending on
+  who exported it, and getting it wrong would shift a maintenance date by up to
+  eleven months — which then drives annual-due, 100-hour and AD compliance. The
+  whole date column is scanned and the first date with a day past the 12th
+  settles the reading for the entire file; you're asked only when *every* row
+  genuinely reads both ways, and then you're shown what the first few dates
+  become each way. A column that's internally inconsistent is reported as a
+  broken file rather than quietly coerced.
+- **You see the count before anything is written**, along with every row that
+  can't be read and why. An unreadable date or an implausible tach fails that one
+  row instead of being imported as a zero, and never takes the rest of the file
+  with it.
+- **Imported entries land unconfirmed** and show up in Review all grouped as
+  "imported (no scan)" — a foreign spreadsheet hasn't earned the right to drive a
+  reminder or a forecast until you've looked at it. Importing into an aircraft
+  that already has entries is the usual way to create duplicates, so the finish
+  line points at Fix duplicates.
+- Reads what spreadsheets actually emit: comma, semicolon and tab separated
+  files, a UTF-8 BOM, CRLF, and quoted fields containing commas or line breaks.
+  CSV only (save an XLSX as CSV in one step), up to 5 MB / 5,000 rows.
+
 ### Added — Cloud backups to Google Drive
 - **Google Drive joins Dropbox as a backup destination**, and you can connect
   **both at once** — each has its own cadence, schedule and history, so a

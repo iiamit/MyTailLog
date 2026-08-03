@@ -307,7 +307,8 @@ export default function ComparePage() {
             </li>
             <li>
               <strong>The spreadsheet you already have</strong> — if it already answers your
-              questions. Switching costs you the evenings; only do it if the answers are missing.
+              questions. Only switch if the answers are missing; if you do, the spreadsheet imports
+              as CSV, so what it costs you is reviewing the paper, not re-typing the data.
             </li>
           </ul>
         </MarketingSection>

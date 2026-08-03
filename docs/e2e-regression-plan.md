@@ -103,6 +103,9 @@ env-gated test mode:
 - **Notifications**: settings save round-trip.
 - **Sharing**: invite by email → share row created (no real email).
 - **Export**: CSV / print / `.zip` download; `.zip` re-import round-trip.
+- **CSV import**: map → preview → import → the entries appear for review; the
+  route refuses a non-CSV, a header-only file, an over-cap file, and a mapping
+  with no date column; a viewer-level share gets a 403.
 
 ## Phasing
 
