@@ -34,6 +34,12 @@ import { CHUNK_MULTIPLE, uploadVia, type Fetcher } from "./gdrive";
 //                              corrupts the file, so we always send it.
 // ===========================================================================
 
+// The stub mints tokens with Google's real prefix ON PURPOSE: a stub whose
+// tokens don't look like the real thing wouldn't exercise redactSecrets()'s
+// ya29.… pattern, which is the thing standing between a provider 401 body and
+// the browser-readable backup_run.error. Not a credential — the literal string
+// below is the whole value, and it is only ever reachable under E2E_STUB_GDRIVE.
+// nosemgrep: generic.secrets.security.detected-google-oauth-access-token.detected-google-oauth-access-token
 const TOKEN_PREFIX = "ya29.e2e-";
 const SESSION_TTL_MS = 60 * 60 * 1000;
 const SESSION_BASE = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=";
