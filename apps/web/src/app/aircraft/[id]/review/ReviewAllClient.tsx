@@ -11,12 +11,17 @@ import { mergeContinuation, type EntryFields } from "../pages/[pageId]/review/ac
 import { confirmClean } from "./actions";
 
 export type FlatEntry = ReviewEntry & {
-  pageId: string;
+  // null = no scan behind this entry (a CSV import). log_entry.page_id is
+  // nullable, so these are real entries with no page to open or crop from.
+  pageId: string | null;
   logbookId: string;
   pageLabel: string;
   thumbnailUrl: string | null;
   fullUrl: string | null;
 };
+
+/** Group key: the source page, or the logbook for scan-less imported entries. */
+const groupKey = (e: FlatEntry) => e.pageId ?? `imported:${e.logbookId}`;
 
 type Filter = "review" | "all";
 
@@ -43,13 +48,14 @@ export function ReviewAllClient({
 
   const shown = filter === "review" ? needsReview : entries;
 
-  // Group by source page, preserving the server's ordering.
+  // Group by source page (or logbook, for imports), preserving the server's ordering.
   const groups = useMemo(() => {
     const map = new Map<string, FlatEntry[]>();
     for (const e of shown) {
-      const g = map.get(e.pageId) ?? [];
+      const key = groupKey(e);
+      const g = map.get(key) ?? [];
       g.push(e);
-      map.set(e.pageId, g);
+      map.set(key, g);
     }
     return [...map.entries()];
   }, [shown]);
@@ -64,7 +70,7 @@ export function ReviewAllClient({
 
   async function onMerge(tailId: string) {
     const tail = entries.find((e) => e.id === tailId);
-    if (!tail) return;
+    if (!tail?.pageId) return; // no page → no previous page to merge into
     setMergingId(tailId);
     const res = await mergeContinuation(aircraftId, tail.pageId, tailId);
     setMergingId(null);
@@ -148,10 +154,10 @@ export function ReviewAllClient({
             : "No entries yet."}
         </p>
       ) : (
-        groups.map(([pageId, pageEntries]) => {
+        groups.map(([key, pageEntries]) => {
           const head = pageEntries[0];
           return (
-            <div key={pageId} className="flex flex-col gap-3">
+            <div key={key} className="flex flex-col gap-3">
               <div className="flex items-center gap-3 border-b border-line pb-2">
                 {head.thumbnailUrl ? (
                   <ZoomableImage
@@ -167,14 +173,17 @@ export function ReviewAllClient({
                   <div className="text-sm font-semibold text-ink">{head.pageLabel}</div>
                   <div className="text-xs text-faint">
                     {pageEntries.length} {pageEntries.length === 1 ? "entry" : "entries"} here
+                    {!head.pageId && " · no scan to check against"}
                   </div>
                 </div>
-                <Link
-                  href={`/aircraft/${aircraftId}/pages/${pageId}/review`}
-                  className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs hover:border-line2"
-                >
-                  Open page ↗
-                </Link>
+                {head.pageId && (
+                  <Link
+                    href={`/aircraft/${aircraftId}/pages/${head.pageId}/review`}
+                    className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs hover:border-line2"
+                  >
+                    Open page ↗
+                  </Link>
+                )}
               </div>
 
               {pageEntries.map((e) => (

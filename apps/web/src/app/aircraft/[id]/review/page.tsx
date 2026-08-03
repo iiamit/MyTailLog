@@ -26,11 +26,14 @@ export default async function ReviewAllPage({
   if (!canEditRole(role)) redirect(`/aircraft/${id}`);
 
   const [{ data: entries }, { data: pages }, { data: logbooks }] = await Promise.all([
+    // Scan-less entries (CSV imports — log_entry.page_id is nullable) are
+    // included: they need review exactly as much as extracted ones, and this
+    // screen already has the bulk-confirm a 200-row import wants. A second
+    // review surface would be a second place to forget.
     supabase
       .from("log_entry")
       .select("*")
       .eq("aircraft_id", id)
-      .not("page_id", "is", null)
       .order("created_at", { ascending: true }),
     supabase
       .from("page")
@@ -61,10 +64,43 @@ export default async function ReviewAllPage({
   );
   const fullUrl = new Map(orderedPages.map((p) => [p.id, `/api/page/${p.id}/image`]));
 
+  // Imported entries have no page, so they can't inherit a page's slot. They sit
+  // after every scanned page, grouped by logbook, in date order — a defined
+  // position rather than an accident of created_at.
+  const IMPORTED_SLOT = orderedPages.length;
+
   const flat: FlatEntry[] = (entries ?? [])
-    .filter((e) => e.page_id && pageById.has(e.page_id))
+    .filter((e) => !e.page_id || pageById.has(e.page_id))
     .map((e) => {
-      const page = pageById.get(e.page_id!)!;
+      const page = e.page_id ? pageById.get(e.page_id) : undefined;
+      if (!page) {
+        const label = logbookLabel.get(e.logbook_id) ?? "Logbook";
+        return {
+          id: e.id,
+          entry_date: e.entry_date,
+          hobbs: e.hobbs,
+          airframe: e.airframe,
+          tach: e.tach,
+          description: e.description,
+          work_performed: e.work_performed,
+          parts: e.parts,
+          signature_name: e.signature_name,
+          mechanic_cert_number: e.mechanic_cert_number,
+          ad_refs: e.ad_refs ?? [],
+          sb_refs: e.sb_refs ?? [],
+          confidence: e.confidence,
+          field_confidence: e.field_confidence,
+          field_boxes: e.field_boxes,
+          owner_confirmed: e.owner_confirmed,
+          is_continuation: e.is_continuation,
+          reference_links: e.reference_links ?? [],
+          pageId: null,
+          logbookId: e.logbook_id,
+          pageLabel: `${label} · imported (no scan)`,
+          thumbnailUrl: null,
+          fullUrl: null,
+        };
+      }
       const label = logbookLabel.get(page.logbook_id) ?? "Logbook";
       return {
         id: e.id,
@@ -92,7 +128,17 @@ export default async function ReviewAllPage({
         fullUrl: fullUrl.get(page.id) ?? null,
       };
     })
-    .sort((a, b) => (pageOrder.get(a.pageId) ?? 0) - (pageOrder.get(b.pageId) ?? 0));
+    .sort((a, b) => {
+      const sa = a.pageId ? (pageOrder.get(a.pageId) ?? 0) : IMPORTED_SLOT;
+      const sb = b.pageId ? (pageOrder.get(b.pageId) ?? 0) : IMPORTED_SLOT;
+      if (sa !== sb) return sa - sb;
+      if (!a.pageId && !b.pageId) {
+        // Within the imported block: logbook, then date (undated last).
+        if (a.logbookId !== b.logbookId) return a.pageLabel.localeCompare(b.pageLabel);
+        return (a.entry_date ?? "9999").localeCompare(b.entry_date ?? "9999");
+      }
+      return 0;
+    });
 
   // Documents attached to any of these entries (Vault items linked to an entry).
   const attachmentsByEntry: Record<string, { id: string; title: string | null; file_name: string | null }[]> = {};

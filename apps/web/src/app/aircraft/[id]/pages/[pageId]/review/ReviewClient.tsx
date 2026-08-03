@@ -242,7 +242,9 @@ export function EntryCard({
   isNew: boolean;
   logbookId: string;
   aircraftId: string;
-  pageId: string;
+  // null = no scan behind this entry (a CSV import). Used only to route the
+  // revalidate and the attachments panel — the writes key off the entry id.
+  pageId: string | null;
   imageUrl: string | null;
   canEdit: boolean;
   attachments: EntryAttachment[];
@@ -468,7 +470,7 @@ export function EntryCard({
             {entry.owner_confirmed ? "Unconfirm" : "Confirm as-is"}
           </button>
         )}
-        {!isNew && !entry.is_continuation && (
+        {!isNew && !entry.is_continuation && pageId && (
           <button
             onClick={() => onMerge(entry.id)}
             disabled={busy || merging}

@@ -71,6 +71,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
       label: "Add records",
       items: [
         { ident: "CAP", label: "Capture pages", href: `${a}/capture` },
+        { ident: "CSV", label: "Import a CSV", href: `${a}/import` },
         { ident: "PGS", label: "Logbook pages", href: `${a}/pages` },
         { ident: "RVW", label: "Review", href: `${a}/review`, badge: ctx.badges.review, tone: "amber" },
         { ident: "DUP", label: "Fix duplicates", href: `${a}/duplicates` },

@@ -60,6 +60,48 @@ function withUsageLogging(c: Anthropic): Anthropic {
 
 let serverClient: Anthropic | null = null;
 
+// --- E2E stub helpers (only reachable when E2E_STUB_AI is set) --------------
+
+/** The user turn's text, whatever content shape the caller used. */
+function stubPromptText(body: Anthropic.MessageCreateParamsNonStreaming): string {
+  const content = body.messages?.[0]?.content;
+  if (typeof content === "string") return content;
+  return (Array.isArray(content) ? content : [])
+    .map((b) => (b && typeof b === "object" && "text" in b ? String((b as { text: unknown }).text) : ""))
+    .join("\n");
+}
+
+// Exact header names only. A real header the dictionary doesn't list stays
+// "ignore" — the stub must never be MORE permissive than the model it stands in
+// for (the ADS-B lesson: a lenient stub shipped a permanently-broken request).
+const STUB_HEADERS: Record<string, string> = {
+  date: "entry_date", "work date": "entry_date", workdate: "entry_date",
+  description: "description", squawk: "description", notes: "work_performed",
+  "work performed": "work_performed", parts: "parts",
+  hobbs: "hobbs", tach: "tach", "tach out": "tach",
+  airframe: "airframe", tt: "airframe", "total time": "airframe",
+  mechanic: "signature_name", "a&p": "signature_name", signature: "signature_name",
+  cert: "mechanic_cert_number", "cert #": "mechanic_cert_number",
+  ad: "ad_refs", "ad refs": "ad_refs", sb: "sb_refs", "sb refs": "sb_refs",
+};
+
+function stubColumnMapping(prompt: string): { index: number; field: string; confidence: number }[] {
+  const line = /^Header: (\[.*\])$/m.exec(prompt);
+  let header: string[] = [];
+  try {
+    header = line ? (JSON.parse(line[1]) as string[]) : [];
+  } catch {
+    header = [];
+  }
+  const claimed = new Set<string>();
+  return header.map((h, index) => {
+    const field = STUB_HEADERS[String(h).trim().toLowerCase()] ?? "ignore";
+    if (field === "ignore" || claimed.has(field)) return { index, field: "ignore", confidence: 0 };
+    claimed.add(field);
+    return { index, field, confidence: 0.9 };
+  });
+}
+
 // E2E test double: when E2E_STUB_AI is set (ONLY in the Playwright test env —
 // never in prod/apphosting.yaml), getAnthropic returns this instead of a real
 // client, so AI flows are deterministic and free. Returns canned JSON shaped for
@@ -71,7 +113,14 @@ function e2eStubClient(): Anthropic {
       .output_config?.format?.schema;
     const props = schema?.properties ?? {};
     let text: string;
-    if ("samples" in props) {
+    if ("columns" in props) {
+      // CSV column mapping. Derived from the REAL header in the prompt, by exact
+      // normalized name, with everything unrecognized left as "ignore" — so the
+      // stub can never make the route accept a file the real model wouldn't
+      // (a file whose columns it can't name still fails the route's own
+      // "map a Date column" check). Deliberately dumber than production.
+      text = JSON.stringify({ columns: stubColumnMapping(stubPromptText(body)) });
+    } else if ("samples" in props) {
       // oil analysis report
       text = JSON.stringify({
         lab: "E2E Lab", lab_number: "E2E-1", tail_number: null, oil_type: "Stub 20W50",
