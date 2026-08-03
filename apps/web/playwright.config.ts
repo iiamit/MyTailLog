@@ -70,6 +70,14 @@ export default defineConfig({
           // path, oversized call). Set here ONLY — never in prod/apphosting.yaml,
           // so CI can never touch a real Dropbox account.
           E2E_STUB_DROPBOX: "1",
+          // Google Drive the same way: E2E_STUB_GDRIVE swaps the transport for
+          // an in-process fake SERVER that refuses what Google refuses (bad
+          // token, a non-final request leaving the total off a 256 KB boundary,
+          // a Content-Range that disagrees with the session offset → 308 + the
+          // true Range, an expired/unknown session → 404, an unknown parent
+          // folder → 404). Set here ONLY — never in prod/apphosting.yaml, so CI
+          // can never touch a real Google account.
+          E2E_STUB_GDRIVE: "1",
           CRON_SECRET: "e2e-cron-secret",
           // OAuth provider signing keys (see e2e/oauth.spec.ts).
           OIDC_JWKS: process.env.TEST_OIDC_JWKS ?? testJwks(),
