@@ -310,10 +310,33 @@ already have and already test.
 | Phase | Scope | Notes |
 | --- | --- | --- |
 | **0 — DONE** | Extract `collectBackupData()`; add the streaming server-side archive builder + unit tests | No user-visible change. Measured: a **600 MB archive builds with ~95 MB of RSS growth** under a 512 MB heap cap, so memory is bounded rather than proportional — the claim the whole design rests on. |
-| **1** | Migration 0049; **Dropbox** adapter; connect/revoke UI; `/api/cron/backup`; status + failure email | First shippable value. Proves the pipeline with the easiest provider. |
-| **2** | **Google Drive** adapter | Gated on publishing the OAuth app to **Production** — otherwise tokens die in 7 days. |
-| **3** | **Box** *or* the **S3-compatible** target | I'd argue for S3-compatible over Box; see §3. |
-| **4** | Two-phase resumable upload | **Only if** phase-1 telemetry shows real archives near the ceiling. |
+| **1 — DONE** | Migration 0049; **Dropbox** adapter; connect/revoke UI; `/api/cron/backup`; status + failure email | Shipped in #134. Verified against real Dropbox: 3 archives, 0 failures, 34.6 s. |
+| **2 — DONE** | **Google Drive** adapter; migration 0050 made schedules per-destination | Shipped in #136. Verified against real Drive: 3 archives, 0 failures, 31 s, nested under `MyTailLog/`. Both providers run side by side without interfering. |
+| **3 — DEFERRED** | **S3-compatible** target (Box was already dropped) | Not needed short or mid term — see below. |
+| **4 — DEFERRED** | Two-phase resumable upload | Not needed short or mid term — the telemetry says so; see below. |
+
+### Deferred, and why
+
+Both were always conditional, and the conditions haven't been met. Neither is
+cancelled — this records what would have to change for them to be worth building.
+
+**Phase 3 — an S3-compatible target.** Dropbox and Google Drive cover where GA
+owners actually keep files, and a user can connect **both** for genuine
+redundancy across two companies. An S3 adapter would mainly serve self-hosters
+and people who prefer Backblaze/Wasabi/R2. Revisit if self-hosted deployments ask
+for it, since they're the constituency with no reason to hold a consumer cloud
+account.
+
+**Phase 4 — two-phase resumable upload.** This was explicitly gated on
+*"only if phase-1 telemetry shows real archives near the ceiling."* The telemetry
+now exists and says no: the **largest real archive is 70 MB against a 400 MB size
+guard**, uploading in ~22 s against a 300 s request budget. Roughly 5× headroom
+on size and 13× on time. Revisit if `backup_run.bytes` starts showing archives
+past ~250 MB, or if `skipped_too_large` rows appear.
+
+Between them these were the two most expensive items on the plan, and both were
+deferred on evidence rather than on a guess — which is what the size guard and
+the byte logging were added to make possible.
 
 Testing throughout: stub the provider behind an env flag exactly as
 `E2E_STUB_AI` and `E2E_STUB_ADSB` do (set only in `playwright.config.ts`'s

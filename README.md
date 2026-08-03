@@ -136,6 +136,15 @@ AI reads the page; you review it next to the original, with low-confidence field
   entry-by-entry records report and CSV exports.
 - A full **`.zip` backup** (records + original scans) you can **re-import**,
   carrying a `README.txt` that documents every file and column in it.
+- **Automatic backups to cloud storage you own** — connect **Dropbox** and/or
+  **Google Drive** and the same re-importable `.zip` is pushed there on a
+  schedule (monthly or quarterly), one archive per aircraft. Connect both and you
+  get redundancy across two companies; each destination runs on its own schedule
+  and reports its own status. Minimum scopes only — Dropbox **App folder** and
+  Google **`drive.file`** mean the app can only ever see files it created, so
+  reading the rest of your storage is impossible rather than merely promised
+  against. Archives are streamed, never buffered, so size isn't bounded by
+  server memory; nothing in your cloud account is ever deleted or overwritten.
 - **Sharing** (viewer / contributor), **ownership transfer**, and delete.
 - In-app **Help** documenting every feature and how the pieces affect each other,
   and a public **[`/whats-new`](https://mytaillog.com/whats-new)** rendered from

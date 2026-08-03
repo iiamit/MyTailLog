@@ -812,10 +812,12 @@ const SECTIONS: Section[] = [
           from now.
         </p>
         <p className="mt-3">
-          <strong>Automatic cloud backups.</strong> Connect <strong>Dropbox</strong> or{" "}
+          <strong>Automatic cloud backups.</strong> Connect <strong>Dropbox</strong> and/or{" "}
           <strong>Google Drive</strong> from <L href="/profile">Profile</L> and that same .zip is
-          pushed to your own account <strong>monthly or quarterly</strong>, one file per aircraft at{" "}
-          <code className="readout text-[12px]">MyTailLog/&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
+          pushed to your own account <strong>monthly or quarterly</strong>, one file per aircraft,
+          named <code className="readout text-[12px]">&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
+          On Drive that sits inside a <code className="readout text-[12px]">MyTailLog</code> folder;
+          on Dropbox the app folder is already that folder, so there&apos;s no second one.
           You can connect <em>both</em> — each has its own schedule and runs independently, which is
           real redundancy rather than one basket. We can only ever see the files we put there, never
           the rest of your account: Dropbox gives us an <em>app folder</em>, and on Google Drive we

@@ -254,14 +254,67 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           </li>
         </ul>
         <p>
-          Take one periodically regardless: the free Supabase tier has no automatic backups, so the
-          ZIP <em>is</em> your safety net. It&apos;s also the clean way to hand an aircraft&apos;s
-          full history to a buyer.
+          You don&apos;t have to remember to do it, either — MyTailLog can push that same ZIP to{" "}
+          <A href="#cloud-backup">cloud storage you own</A> on a schedule. It&apos;s also the clean
+          way to hand an aircraft&apos;s full history to a buyer.
         </p>
         <p className="text-sm text-faint">
           What we don&apos;t have yet: pilot-logbook interchange formats (ForeFlight / MyFlightbook
           CSV). Maintenance records export fully; those two flight-logging formats aren&apos;t
           written today.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "cloud-backup",
+    title: "Can it back up to my own Dropbox or Google Drive automatically?",
+    body: (
+      <>
+        <p>
+          Yes. Connect <strong>Dropbox</strong> and/or <strong>Google Drive</strong> in Profile, pick{" "}
+          <strong>monthly</strong> or <strong>quarterly</strong>, and the same re-importable{" "}
+          <code className="readout text-[13px]">.zip</code> described above is pushed there on that
+          schedule — one archive per aircraft, named{" "}
+          <code className="readout text-[13px]">&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
+          It&apos;s off until you connect something.
+        </p>
+        <p>
+          Connect <em>both</em> if you want to: they run independently, on separate schedules, each
+          reporting its own status. That gives you copies in two different companies&apos; clouds,
+          which is a materially better position than trusting any one of us — including us.
+        </p>
+        <p>
+          <strong>MyTailLog cannot read the rest of your storage</strong>, and that&apos;s enforced
+          by the permission we ask for rather than by a promise. Dropbox uses an{" "}
+          <strong>App folder</strong>, so we only ever see our own folder. Google uses{" "}
+          <code className="readout text-[13px]">drive.file</code>, which grants access only to files
+          the app itself created. Neither can list, read, or touch anything else you keep there. We
+          also don&apos;t request your email address from either provider.
+        </p>
+        <p>
+          <strong>Nothing in your account is ever deleted or overwritten.</strong> Each run writes a
+          new dated file and leaves every previous one alone, so retention is yours to manage.
+          Automatically pruning someone else&apos;s cloud storage isn&apos;t a risk worth taking for
+          the disk space it would save.
+        </p>
+        <p>
+          <strong>Disconnecting destroys the tokens.</strong> Revoking a destination in Profile
+          erases the stored access and refresh tokens outright — not a flag on a row — so nothing
+          decryptable is left behind. The archives already in your cloud are yours and stay put.
+          While connected, the tokens are encrypted (AES-256-GCM) in a database schema that
+          isn&apos;t reachable over the API at all, and are never sent to the browser.
+        </p>
+        <p>
+          <strong>If a backup fails you get told.</strong> Profile shows the last run, its status and
+          its size; after two consecutive failures you get an email. A backup that quietly stopped
+          working months ago is worse than no backup, because you believed you had one. Very large
+          aircraft (currently over 400 MB of scans) are reported as skipped rather than failing
+          silently — take a manual ZIP for those.
+        </p>
+        <p className="text-sm text-faint">
+          This is a copy of the index, not a substitute for the paper. See{" "}
+          <A href="#paper">does this replace my paper logbooks</A>.
         </p>
       </>
     ),

@@ -60,7 +60,7 @@ const ROWS: { axis: string; cells: string[] }[] = [
       "The photos",
       "Whatever was delivered to you",
       "Whatever their export gives you",
-      "A ZIP of every row as JSON + the original scans, re-importable",
+      "A ZIP of every row as JSON + the original scans, re-importable — and it can already be sitting in your own Dropbox or Drive",
     ],
   },
   {
@@ -71,7 +71,18 @@ const ROWS: { axis: string; cells: string[] }[] = [
       "Doesn't apply",
       "You keep the delivered files",
       "You migrate on their timeline",
-      "Run the same code yourself",
+      "Run the same code yourself — and the monthly archive in your own cloud doesn't need us to exist",
+    ],
+  },
+  {
+    axis: "Automatic offsite copy",
+    cells: [
+      "No — a hangar fire is a hangar fire",
+      "Only if the file lives in a synced folder",
+      "Whatever your phone's backup already does",
+      "No — you're sent a copy once",
+      "Their backups, on their terms, not a copy you hold",
+      "Monthly or quarterly to your own Dropbox and/or Google Drive; connect both for two independent copies",
     ],
   },
   {
