@@ -17,9 +17,11 @@ the git log.
 - **It opens with a scenario rather than a slogan**, and sets data the way the
   app does: tail numbers, tach readings, AD numbers and dates in the mono
   instrument face, inline in the prose.
-- **All six product screenshots are used**, each next to the paragraph it
-  illustrates, instead of four rotating in a carousel that showed one at a time.
-  The carousel component is gone.
+- **All six product screenshots are used**, each at full width under the
+  paragraph it illustrates, instead of four rotating in a carousel that showed
+  one at a time. They are captures of dense UI, so a half-column reduced most of
+  them to a dark smudge; at full width every one is readable. The carousel
+  component is gone.
 - **Starting is a primary action again.** Account creation is the main call to
   action for signed-out visitors (`/login` handles sign-in *and* sign-up);
   signed-in visitors get a route straight to their hangar in the same places.

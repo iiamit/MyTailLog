@@ -443,34 +443,40 @@ export default async function Home() {
 
         {/* ── The spine: what happens to a record after it's captured ─── */}
         <div className="flex flex-col">
-          {STAGES.map((s, i) => (
+          {STAGES.map((s) => (
             <section
               key={s.eyebrow}
               className="border-t border-line py-14 sm:py-16"
             >
-              <div
-                className={`${CONTAINER} grid items-center gap-9 md:grid-cols-2 lg:gap-14`}
-              >
-                <div className={i % 2 === 1 ? "md:order-2" : undefined}>
-                  <p className="eyebrow mb-3">{s.eyebrow}</p>
-                  <h2 className="font-display text-[clamp(1.4rem,3vw,1.9rem)] font-semibold leading-tight text-balance">
-                    {s.title}
-                  </h2>
-                  <div className="mt-4 flex flex-col gap-3 leading-relaxed text-dim">
+              {/*
+                These are ~3200x1800 captures of dense UI. In a half-column
+                (~518 CSS px) every one of them except the review shot rendered
+                as a dark smudge — the problem is how much interface is in
+                frame, not only the pixel count. So the prose runs as a
+                two-column band and the screenshot gets the full container
+                width, which is the ~1100px the review shot is already legible
+                at. `sizes` states that real slot width so the browser can pick
+                a 2x candidate on a retina display.
+              */}
+              <div className={`${CONTAINER} flex flex-col gap-8`}>
+                <div className="grid gap-x-12 gap-y-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+                  <div>
+                    <p className="eyebrow mb-3">{s.eyebrow}</p>
+                    <h2 className="font-display text-[clamp(1.4rem,3vw,1.9rem)] font-semibold leading-tight text-balance">
+                      {s.title}
+                    </h2>
+                  </div>
+                  <div className="flex max-w-[44rem] flex-col gap-3 leading-relaxed text-dim">
                     {s.body}
                   </div>
                 </div>
 
-                <figure
-                  className={`flex min-w-0 flex-col gap-2 ${
-                    i % 2 === 1 ? "md:order-1" : ""
-                  }`}
-                >
+                <figure className="flex min-w-0 flex-col gap-2">
                   <div className="overflow-hidden rounded-lg border border-line bg-panel2">
                     <Image
                       src={s.src}
                       alt={s.alt}
-                      sizes="(max-width: 768px) 100vw, 560px"
+                      sizes="(max-width: 1200px) 100vw, 1100px"
                       placeholder="blur"
                       className="h-auto w-full"
                     />
