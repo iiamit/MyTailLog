@@ -11,7 +11,8 @@ import {
   remotePath,
   tooLargeToArchive,
 } from "../src/lib/backup/schedule";
-import { CHUNK_BYTES, MAX_CALL_BYTES, chunkStream, uploadVia } from "../src/lib/backup/providers/dropbox";
+import { chunkStream } from "../src/lib/backup/providers/chunk";
+import { CHUNK_BYTES, MAX_CALL_BYTES, uploadVia } from "../src/lib/backup/providers/dropbox";
 import { stubContentCall, stubDropboxProvider, stubUploads } from "../src/lib/backup/providers/dropboxStub";
 
 // --- The day-of-month spread ------------------------------------------------
@@ -121,6 +122,19 @@ test("refresh tokens, client secrets and our own ciphertext are redacted", () =>
   assert.ok(!out.includes("QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo"));
 });
 
+test("a Google 401 body cannot carry ya29./1// tokens into backup_run.error", () => {
+  const access = "ya29.a0AfB_byC3xYzQ-shortish";
+  const refresh = "1//09xTgQZ-e2eRefreshTokenValue";
+  const out = redactSecrets(
+    `Google Drive upload failed (401): {"error":{"message":"Invalid Credentials","token":"${access}"}}` +
+      ` refresh_token=${refresh}`,
+  );
+  assert.ok(!out.includes(access), `access token leaked: ${out}`);
+  assert.ok(!out.includes("ya29."), `access token prefix leaked: ${out}`);
+  assert.ok(!out.includes(refresh), `refresh token leaked: ${out}`);
+  assert.ok(out.includes("Invalid Credentials"), "the diagnostic reason must survive");
+});
+
 test("redaction leaves an ordinary message alone and bounds the length", () => {
   const msg = "Aircraft not found.";
   assert.equal(redactSecrets(msg), msg);
@@ -130,13 +144,9 @@ test("redaction leaves an ordinary message alone and bounds the length", () => {
 // --- Remote path ------------------------------------------------------------
 
 test("remote paths are absolute, dated, and per-tail", () => {
-  assert.equal(remotePath(null, "N734DM", "2026-08-01-N734DM.zip"), "/N734DM/2026-08-01-N734DM.zip");
-  assert.equal(
-    remotePath("/MyTailLog/", "N734DM", "2026-08-01-N734DM.zip"),
-    "/MyTailLog/N734DM/2026-08-01-N734DM.zip",
-  );
+  assert.equal(remotePath("N734DM", "2026-08-01-N734DM.zip"), "/N734DM/2026-08-01-N734DM.zip");
   // A tail with slashes or spaces must not invent path segments.
-  assert.equal(remotePath(null, "N7/34 DM", "a.zip"), "/N734DM/a.zip");
+  assert.equal(remotePath("N7/34 DM", "a.zip"), "/N734DM/a.zip");
 });
 
 // --- Chunking maths ---------------------------------------------------------
@@ -171,7 +181,11 @@ test("an empty archive yields exactly one empty chunk", async () => {
 
 test("the chunk size stays under Dropbox's 150 MB per-call cap", async () => {
   assert.ok(CHUNK_BYTES < MAX_CALL_BYTES);
-  await assert.rejects(() => chunksOf([Buffer.alloc(1)], MAX_CALL_BYTES + 1), /chunk size must be/);
+  await assert.rejects(
+    () => uploadVia(stubContentCall("x"), "/N1/a.zip", Readable.from(["x"]), MAX_CALL_BYTES + 1),
+    /chunk size must be 1\.\./,
+  );
+  await assert.rejects(() => chunksOf([Buffer.alloc(1)], 0), /positive integer/);
 });
 
 // --- The stub refuses what production refuses -------------------------------

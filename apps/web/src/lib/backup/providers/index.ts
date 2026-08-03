@@ -1,16 +1,28 @@
 import type { Readable } from "node:stream";
 import { dropboxProvider } from "./dropbox";
+import { gdriveProvider } from "./gdrive";
 
 // ===========================================================================
 // The one shape a cloud-storage target has to satisfy for the backup sweep.
 //
-// Phase 1 ships Dropbox only (plan §3: no token expiry, no console gauntlet).
-// Google Drive is phase 2 and slots in here; Box is dropped. There is
-// deliberately no half-built second adapter — an unused stub is a maintenance
-// cost that proves nothing about whether the interface fits.
+// Phase 1 shipped Dropbox, phase 2 adds Google Drive. Box stays dropped (plan
+// §3: its single-use rotating refresh token permanently breaks a connection if
+// a crash lands between "refreshed" and "persisted"). A user can connect both
+// and get genuine redundancy — each destination is scheduled, claimed and swept
+// independently (migration 0050).
 // ===========================================================================
 
-export type BackupProviderId = "dropbox";
+export type BackupProviderId = "dropbox" | "gdrive";
+
+/** Everything the UI needs to render a provider that may not be connected. */
+export const BACKUP_PROVIDERS: { id: BackupProviderId; name: string }[] = [
+  { id: "dropbox", name: "Dropbox" },
+  { id: "gdrive", name: "Google Drive" },
+];
+
+export function isBackupProviderId(id: string): id is BackupProviderId {
+  return BACKUP_PROVIDERS.some((p) => p.id === id);
+}
 
 export type BackupTokens = {
   accessToken: string;
@@ -30,11 +42,25 @@ export type BackupProvider = {
   /**
    * Stream `body` to `path` (absolute, provider-rooted) in chunks. Returns the
    * bytes actually written, which is also the archive size.
+   *
+   * `state` is opaque per-destination provider state, persisted in
+   * `backup_destination.folder_path` and handed back on the next run. Dropbox
+   * ignores it (App-folder access already roots us); Google Drive caches there
+   * the id of the MyTailLog folder it created, because `drive.file` can only
+   * see files our app made and re-resolving it every run is a wasted round
+   * trip. A returned `state` that differs from the one passed in is persisted.
    */
-  upload(accessToken: string, path: string, body: Readable): Promise<{ path: string; bytes: number }>;
+  upload(
+    accessToken: string,
+    path: string,
+    body: Readable,
+    state?: string | null,
+  ): Promise<{ path: string; bytes: number; state?: string | null }>;
 };
 
 /** The adapter for a stored destination, or null when it isn't configured. */
 export function getProvider(id: string): BackupProvider | null {
-  return id === "dropbox" ? dropboxProvider() : null;
+  if (id === "dropbox") return dropboxProvider();
+  if (id === "gdrive") return gdriveProvider();
+  return null;
 }

@@ -87,6 +87,44 @@ env:
     secret: DROPBOX_CLIENT_SECRET
     availability:
       - RUNTIME
+  # Google Drive OAuth client for scheduled cloud backups (Google Cloud Console
+  # → APIs & Services → Credentials → OAuth client ID → Web application), with
+  # the Drive API enabled and the authorised redirect URI
+  # https://mytaillog.com/api/backup/gdrive/callback.
+  #
+  # ⚠️ THE OAUTH APP MUST BE PUBLISHED TO "IN PRODUCTION", NOT LEFT IN "TESTING".
+  # An app in Testing publishing status issues refresh tokens that EXPIRE AFTER
+  # 7 DAYS. A backup that runs monthly therefore finds a dead token on every
+  # single run, and it fails SILENTLY — the exact "I thought I had a backup"
+  # outcome this feature exists to prevent. Publishing is a functional
+  # prerequisite, not paperwork.
+  #
+  # We request ONLY https://www.googleapis.com/auth/drive.file, which is
+  # NON-SENSITIVE: no security assessment, no CASA, and it grants access solely
+  # to files our app created. Do not widen it — `drive` / `drive.readonly` are
+  # sensitive or restricted and would drag in an assessment.
+  #
+  # (Dropbox is NOT like this: its development status is fine indefinitely.
+  # See docs/plan-cloud-backups.md §3.)
+  #
+  # Server-only; the tokens they mint are encrypted at rest in the private
+  # schema (0049/0050). Absent → the sweep logs one line and skips Google Drive
+  # destinations only, and the Profile card says it isn't configured.
+  #
+  # NOT YET PROVISIONED. Create them with EXACTLY these Secret Manager IDs:
+  #   firebase apphosting:secrets:set GOOGLE_DRIVE_CLIENT_ID
+  #   firebase apphosting:secrets:set GOOGLE_DRIVE_CLIENT_SECRET
+  # The `secret:` key must match the Secret Manager ID character for character —
+  # PR #131 was a deploy that failed purely because it didn't (see the OPENSKY_*
+  # note above).
+  - variable: GOOGLE_DRIVE_CLIENT_ID
+    secret: GOOGLE_DRIVE_CLIENT_ID
+    availability:
+      - RUNTIME
+  - variable: GOOGLE_DRIVE_CLIENT_SECRET
+    secret: GOOGLE_DRIVE_CLIENT_SECRET
+    availability:
+      - RUNTIME
   # Server-only. Encrypts MyFlightBook secrets/tokens and users' own Anthropic
   # keys at rest (AES-256-GCM, src/lib/crypto.ts). Any non-empty string works
   # (SHA-256'd to a 32-byte key); rotating it makes existing ciphertext

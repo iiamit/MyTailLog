@@ -71,6 +71,7 @@ async function runBackups(supabase: Service, started: number) {
   let uploaded = 0;
   let failed = 0;
   let skipped = 0;
+  const unconfigured = new Set<string>();
 
   for (const d of due ?? []) {
     if (Date.now() - started > DEADLINE_MS) {
@@ -78,13 +79,17 @@ async function runBackups(supabase: Service, started: number) {
       break;
     }
 
-    // Phase 1 is Dropbox-only, so a missing client id/secret means the whole
-    // sweep is a no-op. One line, then stop — same as the ADS-B sweep without
-    // OpenSky credentials.
+    // A provider whose CLIENT_ID/SECRET aren't provisioned skips ITS
+    // destinations and leaves the others alone — one unconfigured provider must
+    // not stop a user's other backup. One line per provider, same as the ADS-B
+    // sweep without OpenSky credentials.
     const provider = getProvider(d.provider);
     if (!provider) {
-      console.log("[backup] DROPBOX_CLIENT_ID/SECRET not configured — skipping the sweep");
-      break;
+      if (!unconfigured.has(d.provider)) {
+        unconfigured.add(d.provider);
+        console.log(`[backup] ${d.provider} credentials not configured — skipping its destinations`);
+      }
+      continue;
     }
 
     // Someone else (a retry, an overlapping tick) already has this one.
@@ -141,6 +146,9 @@ async function runDestination(
   }
 
   const limit = maxArchiveBytes();
+  // Opaque provider state (a Drive folder id). Resolved on the first aircraft
+  // and reused for the rest of this run, then persisted once.
+  let state = d.folder_path;
 
   for (const ac of await aircraftFor(supabase, d)) {
     const { data: runId } = await supabase.rpc("start_backup_run", {
@@ -167,12 +175,22 @@ async function runDestination(
       }
 
       const archive = buildServerArchive(collected, getBlob);
-      const path = remotePath(d.folder_path, collected.tail, archive.filename);
+      const path = remotePath(collected.tail, archive.filename);
       try {
-        const up = await provider.upload(token, path, archive.stream);
+        const up = await provider.upload(token, path, archive.stream, state);
         await archive.result; // surfaces a build-side failure
         out.uploaded += 1;
         await finish(supabase, runId, "ok", up.bytes, up.path, null);
+        // The folder the provider resolved (Drive) or nothing (Dropbox). Only
+        // written when it actually changed — the user may have deleted the
+        // folder, in which case the adapter made a new one.
+        if (up.state !== undefined && up.state !== state) {
+          state = up.state;
+          await supabase.rpc("set_backup_folder", {
+            p_destination_id: d.destination_id,
+            p_folder_path: state,
+          });
+        }
       } catch (e) {
         archive.stream.destroy();
         throw e;
@@ -232,8 +250,14 @@ async function aircraftFor(supabase: Service, d: Due) {
 
 /**
  * A usable access token, refreshing and persisting when the stored one has
- * expired. Dropbox access tokens last ~4 hours, so a monthly job refreshes on
- * essentially every run — the refresh token itself never expires.
+ * expired. Access tokens are short-lived everywhere (Dropbox ~4 h, Google 1 h),
+ * so a monthly job refreshes on essentially every run.
+ *
+ * Only the ACCESS token is written back: a refresh may not reissue a refresh
+ * token (Google never does, Dropbox only on first consent), so the stored one
+ * must survive. If a refresh starts failing for Google, the likeliest cause is
+ * an OAuth app still in "Testing" publishing status — those refresh tokens
+ * expire after 7 days, which a monthly job hits every single time.
  */
 async function validAccessToken(supabase: Service, provider: BackupProvider, d: Due): Promise<string> {
   const access = decryptSecret(d.access_cipher);

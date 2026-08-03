@@ -6,6 +6,19 @@ the git log.
 
 ## 2026.08
 
+### Added — Cloud backups to Google Drive
+- **Google Drive joins Dropbox as a backup destination**, and you can connect
+  **both at once** — each has its own cadence, schedule and history, so a
+  problem with one doesn't take the other down with it. That's the difference
+  between a backup and a second copy.
+- **We ask for the narrowest Drive permission that exists**: access to *files
+  this app creates*, and nothing else. Your existing Drive is invisible to us by
+  construction, not by promise. Backups land in a `MyTailLog` folder, nested per
+  aircraft, and we only ever *add* — nothing is renamed, replaced or deleted.
+- Uploads are **resumable**: a dropped connection part-way through a large
+  archive picks up from exactly where the server actually got to, rather than
+  starting again or — worse — quietly writing a truncated file.
+
 ### Added — Automatic cloud backups (Dropbox)
 - **Your records back themselves up to storage you own.** Connect Dropbox from
   Profile and the same re-importable `.zip` you can download by hand — records

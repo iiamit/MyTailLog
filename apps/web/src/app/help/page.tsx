@@ -812,16 +812,19 @@ const SECTIONS: Section[] = [
           from now.
         </p>
         <p className="mt-3">
-          <strong>Automatic cloud backups.</strong> Connect Dropbox from{" "}
-          <L href="/profile">Profile</L> and that same .zip is pushed to your own account{" "}
-          <strong>monthly or quarterly</strong>, one file per aircraft at{" "}
+          <strong>Automatic cloud backups.</strong> Connect <strong>Dropbox</strong> or{" "}
+          <strong>Google Drive</strong> from <L href="/profile">Profile</L> and that same .zip is
+          pushed to your own account <strong>monthly or quarterly</strong>, one file per aircraft at{" "}
           <code className="readout text-[12px]">MyTailLog/&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
-          It goes into an <em>app folder</em> — we can only ever see files we put there, never the
-          rest of your Dropbox — and we only ever <em>add</em> files: nothing in your account is
-          renamed, replaced or deleted, so retention stays your call. Profile shows the last run,
-          its result and its size, and emails you if two runs in a row fail. Very large aircraft
-          (hundreds of scanned pages) are reported as <em>too large to upload</em> rather than
-          silently failing — download those by hand.
+          You can connect <em>both</em> — each has its own schedule and runs independently, which is
+          real redundancy rather than one basket. We can only ever see the files we put there, never
+          the rest of your account: Dropbox gives us an <em>app folder</em>, and on Google Drive we
+          ask only for permission to touch <em>files this app creates</em>, so your existing Drive is
+          invisible to us by construction rather than by promise. We only ever <em>add</em> files —
+          nothing in your account is renamed, replaced or deleted, so retention stays your call.
+          Profile shows each destination&apos;s last run, its result and its size, and emails you if
+          two runs in a row fail. Very large aircraft (hundreds of scanned pages) are reported as{" "}
+          <em>too large to upload</em> rather than silently failing — download those by hand.
         </p>
         <p className="mt-3">
           <strong>On lock-in.</strong> That .zip <strong>re-imports</strong>: restoring it
