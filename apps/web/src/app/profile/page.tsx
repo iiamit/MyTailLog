@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { resolveAlerts } from "@/lib/reminders";
-import { getProvider } from "@/lib/backup/providers";
+import { BACKUP_PROVIDERS, getProvider } from "@/lib/backup/providers";
 import { formatBytes } from "@/lib/backup/schedule";
 import { AccountShell } from "@/components/shell/AccountShell";
 import { ProfileClient } from "./ProfileClient";
@@ -26,10 +26,31 @@ export default async function ProfilePage() {
   const { data: mfbRows } = await supabase.rpc("my_mfb_status");
   const mfb = mfbRows?.[0];
 
-  // Cloud backups (0049): same rule — the destination's OAuth tokens live in
-  // the private schema and this RPC returns state only, never ciphertext.
+  // Cloud backups (0049/0050): same rule — the destination's OAuth tokens live
+  // in the private schema and this RPC returns state only, never ciphertext.
+  // One row per CONNECTED destination, so the full provider list is merged in
+  // here: a provider the user hasn't connected still needs a card.
   const { data: backupRows } = await supabase.rpc("my_backup_destinations");
-  const dest = backupRows?.[0];
+  const backups = BACKUP_PROVIDERS.map(({ id, name }) => {
+    const row = backupRows?.find((r) => r.provider === id);
+    return {
+      id,
+      name,
+      // Null when this provider's CLIENT_ID/SECRET aren't provisioned — the card
+      // then says so instead of offering a button that can't work.
+      configured: getProvider(id) != null,
+      connected: Boolean(row?.connected),
+      accountLabel: row?.account_label ?? "",
+      frequency: row?.frequency ?? "off",
+      nextRunAt: row?.next_run_at ?? null,
+      lastRunAt: row?.last_run_at ?? null,
+      lastStatus: row?.last_status ?? null,
+      // Formatted here: lib/backup/schedule pulls node:crypto, which has no
+      // business in the client bundle.
+      lastSize: row?.last_bytes != null ? formatBytes(row.last_bytes) : "",
+      lastError: row?.last_error ?? null,
+    };
+  });
 
   // BYOK: whether the user has their own Anthropic key, and their usage/cost
   // ledger. Rows are summed here (a personal account's volume is small); move
@@ -146,21 +167,7 @@ export default async function ProfilePage() {
             username: mfb?.mfb_username ?? "",
           }}
           ai={ai}
-          backup={{
-            // Null when DROPBOX_CLIENT_ID/SECRET aren't provisioned — the card
-            // then says so instead of offering a button that can't work.
-            configured: getProvider("dropbox") != null,
-            connected: Boolean(dest?.connected),
-            accountLabel: dest?.account_label ?? "",
-            frequency: dest?.frequency ?? "off",
-            nextRunAt: dest?.next_run_at ?? null,
-            lastRunAt: dest?.last_run_at ?? null,
-            lastStatus: dest?.last_status ?? null,
-            // Formatted here: lib/backup/schedule pulls node:crypto, which has
-            // no business in the client bundle.
-            lastSize: dest?.last_bytes != null ? formatBytes(dest.last_bytes) : "",
-            lastError: dest?.last_error ?? null,
-          }}
+          backups={backups}
           connectedApps={connectedApps}
         />
       </main>

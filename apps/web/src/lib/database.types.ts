@@ -766,13 +766,21 @@ export type Database = {
         Args: { p_user_id: string; p_provider: string };
         Returns: undefined;
       };
+      // 0050: keyed on (user_id, provider) — one schedule per DESTINATION, so a
+      // user can back up to Dropbox and Google Drive at the same time.
       set_backup_schedule: {
         Args: {
           p_user_id: string;
+          p_provider: string;
           p_frequency: string;
           p_day_of_month: number;
           p_next_run_at: string | null;
         };
+        Returns: undefined;
+      };
+      // 0050: opaque per-provider state (a Drive folder id), not a path.
+      set_backup_folder: {
+        Args: { p_destination_id: string; p_folder_path: string | null };
         Returns: undefined;
       };
       backup_due_runs: {

@@ -34,7 +34,10 @@ type MfbState = {
 };
 
 type BackupState = {
-  /** False when DROPBOX_CLIENT_ID/SECRET aren't provisioned on the server. */
+  id: string;
+  /** "Dropbox", "Google Drive". */
+  name: string;
+  /** False when this provider's CLIENT_ID/SECRET aren't provisioned. */
   configured: boolean;
   connected: boolean;
   accountLabel: string;
@@ -64,14 +67,16 @@ const MFB_STATUS: Record<string, { ok: boolean; text: string }> = {
   error: { ok: false, text: "Something went wrong talking to MyFlightBook." },
 };
 
-// Maps the ?backup=<status> the Dropbox authorize / callback routes redirect with.
-const BACKUP_STATUS: Record<string, { ok: boolean; text: string }> = {
-  connected: { ok: true, text: "Dropbox connected — backups run monthly." },
-  denied: { ok: false, text: "Authorization was denied at Dropbox." },
-  state: { ok: false, text: "Couldn’t verify the sign-in request — please try again." },
-  unconfigured: { ok: false, text: "Cloud backups aren’t configured on this server yet." },
-  error: { ok: false, text: "Something went wrong talking to Dropbox." },
-};
+// Maps the ?backup=<status>&provider=<id> the authorize / callback routes
+// redirect with. `who` is the provider's display name, or a neutral fallback.
+const backupStatus = (status: string, who: string): { ok: boolean; text: string } | null =>
+  ({
+    connected: { ok: true, text: `${who} connected — backups run monthly.` },
+    denied: { ok: false, text: `Authorization was denied at ${who}.` },
+    state: { ok: false, text: "Couldn’t verify the sign-in request — please try again." },
+    unconfigured: { ok: false, text: `${who} backups aren’t configured on this server yet.` },
+    error: { ok: false, text: `Something went wrong talking to ${who}.` },
+  })[status] ?? null;
 
 const RUN_STATUS: Record<string, { ok: boolean; text: string }> = {
   ok: { ok: true, text: "Succeeded" },
@@ -138,7 +143,7 @@ export function ProfileClient({
   alerts,
   mfb,
   ai,
-  backup,
+  backups,
   connectedApps,
 }: {
   email: string;
@@ -148,7 +153,7 @@ export function ProfileClient({
   alerts: AlertSettings;
   mfb: MfbState;
   ai: AiState;
-  backup: BackupState;
+  backups: BackupState[];
   connectedApps: ConnectedApp[];
 }) {
   const router = useRouter();
@@ -261,26 +266,34 @@ export function ProfileClient({
     if (!res.error) router.refresh();
   }
 
-  // Cloud backups (Dropbox)
-  const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string } | null>(
-    search.get("backup") ? BACKUP_STATUS[search.get("backup")!] ?? null : null,
-  );
-  const [savingBackup, setSavingBackup] = useState(false);
+  // Cloud backups — one card per provider, each independently connected,
+  // scheduled and swept. Messages are keyed by provider id so a failure on one
+  // doesn't appear under the other.
+  const [backupMsg, setBackupMsg] = useState<Record<string, { ok: boolean; text: string }>>(() => {
+    const status = search.get("backup");
+    const which = search.get("provider") ?? "";
+    const msg = status
+      ? backupStatus(status, backups.find((b) => b.id === which)?.name ?? "The backup destination")
+      : null;
+    return msg ? { [which]: msg } : {};
+  });
+  const [savingBackup, setSavingBackup] = useState<string | null>(null);
+
+  const setMsg = (id: string, msg: { ok: boolean; text: string }) =>
+    setBackupMsg((prev) => ({ ...prev, [id]: msg }));
 
   async function saveBackupFrequency(formData: FormData) {
-    setSavingBackup(true);
-    setBackupMsg(null);
+    const id = String(formData.get("backup_provider") ?? "");
+    setSavingBackup(id);
     const res = await setBackupFrequency(formData);
-    setSavingBackup(false);
-    setBackupMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Saved." });
+    setSavingBackup(null);
+    setMsg(id, res.error ? { ok: false, text: res.error } : { ok: true, text: "Saved." });
     if (!res.error) router.refresh();
   }
 
-  async function disconnectCloudBackup() {
-    const res = await disconnectBackup();
-    setBackupMsg(
-      res.error ? { ok: false, text: res.error } : { ok: true, text: "Dropbox disconnected." },
-    );
+  async function disconnectCloudBackup(id: string, name: string) {
+    const res = await disconnectBackup(id);
+    setMsg(id, res.error ? { ok: false, text: res.error } : { ok: true, text: `${name} disconnected.` });
     if (!res.error) router.refresh();
   }
 
@@ -623,119 +636,129 @@ export function ProfileClient({
         </p>
       </div>
 
-      {/* Scheduled cloud backups (Dropbox) */}
+      {/* Scheduled cloud backups — one destination per provider, each with its
+          own cadence, schedule and history. Connect both for real redundancy. */}
       <div className={card}>
         <h2 className="font-semibold">Automatic cloud backups</h2>
         <p className="text-xs text-faint">
           Push a full <code className="readout text-[12px]">.zip</code> backup — every record plus
-          your original scans — to your own Dropbox, once a month or once a quarter. Files are
-          written to a dated path inside an app folder we can&apos;t see out of
-          (<code className="readout text-[12px]">MyTailLog/&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>).
-          Nothing in your Dropbox is ever deleted or overwritten — old backups are yours to keep or
-          prune.
+          your original scans — to storage you own, once a month or once a quarter, one dated file
+          per aircraft at{" "}
+          <code className="readout text-[12px]">MyTailLog/&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
+          We can only ever see the files we put there, never the rest of your account, and we only
+          ever <em>add</em> — nothing is renamed, replaced or deleted, so retention stays your call.
+          Connect more than one and each backs up independently.
         </p>
 
-        {!backup.configured ? (
-          <p className="text-sm text-faint">
-            Cloud backups aren&apos;t configured on this server yet (no Dropbox app credentials).
-            You can still download a .zip from any aircraft&apos;s Export page.
-          </p>
-        ) : (
-          <>
-            <p className="text-sm">
-              Status:{" "}
-              {backup.connected ? (
-                <span className="font-medium text-annun-green">
-                  Connected{backup.accountLabel ? ` — ${backup.accountLabel}` : ""}
-                </span>
-              ) : (
-                <span className="text-faint">Not connected</span>
-              )}
-            </p>
+        {backups.map((b) => (
+          <div key={b.id} className="flex flex-col gap-3 border-t border-line pt-4">
+            <h3 className="text-sm font-semibold">{b.name}</h3>
 
-            {backup.connected && (
+            {!b.configured ? (
+              <p className="text-sm text-faint">
+                {b.name} backups aren&apos;t configured on this server yet (no app credentials). You
+                can still download a .zip from any aircraft&apos;s Export page.
+              </p>
+            ) : (
               <>
-                <form action={saveBackupFrequency} className="flex flex-wrap items-center gap-3">
-                  <label className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">Frequency</span>
-                    <select
-                      name="backup_frequency"
-                      defaultValue={backup.frequency}
-                      className={inputClass}
-                    >
-                      <option value="off">Off</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                    </select>
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={savingBackup}
-                    className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-60"
-                  >
-                    {savingBackup ? "Saving…" : "Save"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={disconnectCloudBackup}
-                    className="rounded-md border border-line px-4 py-2 text-sm text-dim hover:border-line2 hover:text-ink"
-                  >
-                    Disconnect
-                  </button>
-                </form>
+                <p className="text-sm">
+                  Status:{" "}
+                  {b.connected ? (
+                    <span className="font-medium text-annun-green">
+                      Connected{b.accountLabel ? ` — ${b.accountLabel}` : ""}
+                    </span>
+                  ) : (
+                    <span className="text-faint">Not connected</span>
+                  )}
+                </p>
 
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-line pt-3 text-sm sm:grid-cols-4">
-                  <div>
-                    <dt className="text-xs text-faint">Next run</dt>
-                    <dd className="font-medium tabular-nums">
-                      {backup.frequency === "off" ? "—" : day(backup.nextRunAt)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-faint">Last run</dt>
-                    <dd className="font-medium tabular-nums">{day(backup.lastRunAt)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-faint">Result</dt>
-                    <dd
-                      className={`font-medium ${
-                        backup.lastStatus && RUN_STATUS[backup.lastStatus]?.ok === false
-                          ? "text-annun-red"
-                          : ""
-                      }`}
-                    >
-                      {backup.lastStatus ? RUN_STATUS[backup.lastStatus]?.text ?? backup.lastStatus : "—"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-faint">Size</dt>
-                    <dd className="font-medium tabular-nums">{backup.lastSize || "—"}</dd>
-                  </div>
-                </dl>
+                {b.connected && (
+                  <>
+                    <form action={saveBackupFrequency} className="flex flex-wrap items-center gap-3">
+                      <input type="hidden" name="backup_provider" value={b.id} />
+                      <label className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">Frequency</span>
+                        <select
+                          name="backup_frequency"
+                          defaultValue={b.frequency}
+                          aria-label={`${b.name} backup frequency`}
+                          className={inputClass}
+                        >
+                          <option value="off">Off</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="quarterly">Quarterly</option>
+                        </select>
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={savingBackup === b.id}
+                        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-60"
+                      >
+                        {savingBackup === b.id ? "Saving…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => disconnectCloudBackup(b.id, b.name)}
+                        className="rounded-md border border-line px-4 py-2 text-sm text-dim hover:border-line2 hover:text-ink"
+                      >
+                        Disconnect {b.name}
+                      </button>
+                    </form>
 
-                {backup.lastStatus === "skipped_too_large" && (
-                  <p className="text-xs text-annun-amber">
-                    That aircraft&apos;s records are too large to upload in one scheduled run —
-                    download the .zip from its Export page instead.
-                  </p>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                      <div>
+                        <dt className="text-xs text-faint">Next run</dt>
+                        <dd className="font-medium tabular-nums">
+                          {b.frequency === "off" ? "—" : day(b.nextRunAt)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-faint">Last run</dt>
+                        <dd className="font-medium tabular-nums">{day(b.lastRunAt)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-faint">Result</dt>
+                        <dd
+                          className={`font-medium ${
+                            b.lastStatus && RUN_STATUS[b.lastStatus]?.ok === false
+                              ? "text-annun-red"
+                              : ""
+                          }`}
+                        >
+                          {b.lastStatus ? RUN_STATUS[b.lastStatus]?.text ?? b.lastStatus : "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-faint">Size</dt>
+                        <dd className="font-medium tabular-nums">{b.lastSize || "—"}</dd>
+                      </div>
+                    </dl>
+
+                    {b.lastStatus === "skipped_too_large" && (
+                      <p className="text-xs text-annun-amber">
+                        That aircraft&apos;s records are too large to upload in one scheduled run —
+                        download the .zip from its Export page instead.
+                      </p>
+                    )}
+                    {b.lastStatus === "failed" && b.lastError && (
+                      <p className="text-xs text-annun-red">{b.lastError}</p>
+                    )}
+                  </>
                 )}
-                {backup.lastStatus === "failed" && backup.lastError && (
-                  <p className="text-xs text-annun-red">{backup.lastError}</p>
-                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <a
+                    href={`/api/backup/${b.id}/authorize`}
+                    className="rounded-md border border-line px-4 py-2 text-sm font-medium text-dim hover:border-line2 hover:text-ink"
+                  >
+                    {b.connected ? `Reconnect ${b.name}` : `Connect ${b.name}`}
+                  </a>
+                  <Status msg={backupMsg[b.id] ?? null} />
+                </div>
               </>
             )}
-
-            <div className="flex flex-wrap items-center gap-3">
-              <a
-                href="/api/backup/dropbox/authorize"
-                className="rounded-md border border-line px-4 py-2 text-sm font-medium text-dim hover:border-line2 hover:text-ink"
-              >
-                {backup.connected ? "Reconnect Dropbox" : "Connect Dropbox"}
-              </a>
-              <Status msg={backupMsg} />
-            </div>
-          </>
-        )}
+          </div>
+        ))}
       </div>
 
       {/* Connected apps (OAuth) — read-only access other apps hold to aircraft. */}

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { encryptSecret } from "@/lib/crypto";
 import { dayOfMonthFor, nextRunAt } from "@/lib/backup/schedule";
+import { isBackupProviderId } from "@/lib/backup/providers";
 
 /** Update the signed-in user's profile details. Notification preferences are
  *  owned by updateNotifications so this never clobbers the alerts bag. */
@@ -181,13 +182,15 @@ export async function removeAiKey(): Promise<{ error?: string }> {
 }
 
 /**
- * Set the cloud-backup cadence (off / monthly / quarterly — monthly is the
- * ceiling). The day of the month is derived from a hash of the user id so the
- * fleet's backups spread across the month; the user doesn't choose it.
+ * Set one destination's cloud-backup cadence (off / monthly / quarterly —
+ * monthly is the ceiling). The day of the month is derived from a hash of the
+ * user id so the fleet's backups spread across the month; the user doesn't
+ * choose it.
  *
  * Written through the service-role RPC because backup_schedule has no write
  * policy: letting the browser set next_run_at itself would let anyone ask us to
- * ship a full archive every night.
+ * ship a full archive every night. Since 0050 the schedule is per DESTINATION,
+ * so the provider comes in with the form.
  */
 export async function setBackupFrequency(formData: FormData): Promise<{ error?: string }> {
   const supabase = await createClient();
@@ -195,6 +198,9 @@ export async function setBackupFrequency(formData: FormData): Promise<{ error?: 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
+
+  const provider = String(formData.get("backup_provider") ?? "");
+  if (!isBackupProviderId(provider)) return { error: "Unknown backup destination." };
 
   const frequency = String(formData.get("backup_frequency") ?? "");
   if (frequency !== "off" && frequency !== "monthly" && frequency !== "quarterly") {
@@ -204,6 +210,7 @@ export async function setBackupFrequency(formData: FormData): Promise<{ error?: 
   const day = dayOfMonthFor(user.id);
   const { error } = await createServiceClient().rpc("set_backup_schedule", {
     p_user_id: user.id,
+    p_provider: provider,
     p_frequency: frequency,
     p_day_of_month: day,
     p_next_run_at: nextRunAt(frequency, day),
@@ -213,18 +220,20 @@ export async function setBackupFrequency(formData: FormData): Promise<{ error?: 
   return {};
 }
 
-/** Disconnect cloud backups: DELETE the stored tokens (not just flag a row) and
- *  switch the schedule off. The run history is kept. */
-export async function disconnectBackup(): Promise<{ error?: string }> {
+/** Disconnect one destination: destroy the stored tokens (not just flag a row)
+ *  and switch its schedule off. The run history is kept, and the user's OTHER
+ *  destination keeps running. */
+export async function disconnectBackup(provider: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
+  if (!isBackupProviderId(provider)) return { error: "Unknown backup destination." };
 
   const { error } = await createServiceClient().rpc("delete_backup_destination", {
     p_user_id: user.id,
-    p_provider: "dropbox",
+    p_provider: provider,
   });
   if (error) return { error: "Couldn't disconnect cloud backups." };
   revalidatePath("/profile");

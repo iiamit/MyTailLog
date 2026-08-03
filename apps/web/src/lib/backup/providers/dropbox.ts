@@ -1,4 +1,5 @@
 import type { BackupProvider, BackupTokens } from "./index";
+import { chunkStream, type ArchiveSource } from "./chunk";
 import { stubDropboxProvider } from "./dropboxStub";
 
 // ===========================================================================
@@ -41,44 +42,12 @@ export function dropboxConfigured(): boolean {
   return !!(process.env.DROPBOX_CLIENT_ID && process.env.DROPBOX_CLIENT_SECRET);
 }
 
-export type ArchiveSource = AsyncIterable<Buffer | Uint8Array | string>;
-
 /** One call against Dropbox's content endpoints. Swapped for the E2E stub. */
 export type ContentCall = (
   endpoint: string,
   arg: unknown,
   body: Buffer,
 ) => Promise<Record<string, unknown>>;
-
-/**
- * Split an arbitrary byte stream into fixed-size chunks. The final chunk is the
- * remainder and may be empty (an empty stream yields exactly one empty chunk).
- * Exported for the unit test — the arithmetic here is what a 600 MB upload
- * depends on, and off-by-one lands as a corrupt archive in someone's Dropbox.
- */
-export async function* chunkStream(body: ArchiveSource, size = CHUNK_BYTES): AsyncGenerator<Buffer> {
-  if (size < 1 || size > MAX_CALL_BYTES) {
-    throw new Error(`chunk size must be 1..${MAX_CALL_BYTES} bytes (got ${size})`);
-  }
-  let held: Buffer[] = [];
-  let heldLen = 0;
-  for await (const piece of body) {
-    let b = typeof piece === "string" ? Buffer.from(piece) : Buffer.from(piece);
-    while (heldLen + b.length >= size) {
-      const take = size - heldLen;
-      held.push(b.subarray(0, take));
-      yield Buffer.concat(held);
-      held = [];
-      heldLen = 0;
-      b = b.subarray(take);
-    }
-    if (b.length) {
-      held.push(b);
-      heldLen += b.length;
-    }
-  }
-  yield Buffer.concat(held);
-}
 
 /**
  * The upload state machine: start (empty) → append_v2 per chunk → finish.
@@ -101,6 +70,9 @@ export async function uploadVia(
   body: ArchiveSource,
   chunkSize = CHUNK_BYTES,
 ): Promise<{ path: string; bytes: number }> {
+  if (chunkSize < 1 || chunkSize > MAX_CALL_BYTES) {
+    throw new Error(`chunk size must be 1..${MAX_CALL_BYTES} bytes (got ${chunkSize})`);
+  }
   const started = await call("upload_session/start", { close: false }, Buffer.alloc(0));
   const sessionId = started.session_id;
   if (typeof sessionId !== "string") throw new Error("Dropbox upload_session/start returned no session_id");

@@ -93,6 +93,11 @@ const PATTERNS: [RegExp, string][] = [
   // Dropbox short-lived access tokens ("sl.u.…") and our own AES ciphertext.
   [/\bsl\.[A-Za-z0-9._~+/-]{10,}/g, "[redacted]"],
   [/\bv1:[A-Za-z0-9+/=]{16,}/g, "[redacted]"],
+  // Google: access tokens are "ya29.…", refresh tokens start "1//". Both are
+  // long enough for the catch-all below, but only by luck — Google has changed
+  // token lengths before, and the prefixes are the documented, stable part.
+  [/\bya29\.[A-Za-z0-9._~+/-]{10,}/g, "[redacted]"],
+  [/(?<![A-Za-z0-9])1\/\/[A-Za-z0-9._~+/-]{10,}/g, "[redacted]"],
   // Anything else long and opaque enough to be a credential.
   [/[A-Za-z0-9_~+/-]{40,}={0,2}/g, "[redacted]"],
 ];
@@ -104,9 +109,15 @@ export function redactSecrets(text: string, max = 500): string {
   return out.length > max ? `${out.slice(0, max)}…` : out;
 }
 
-/** `/<TAIL>/<YYYY-MM-DD>-<TAIL>.zip`, under the provider folder when there is one. */
-export function remotePath(folderPath: string | null, tail: string, filename: string): string {
+/**
+ * `/<TAIL>/<YYYY-MM-DD>-<TAIL>.zip` — the logical path, which each adapter roots
+ * wherever it can write: Dropbox's App folder, or the Drive `MyTailLog` folder.
+ *
+ * There is deliberately no folder prefix argument any more. `folder_path` used
+ * to be one and is now opaque per-provider state (a Drive folder id), which
+ * must never be pasted into a path.
+ */
+export function remotePath(tail: string, filename: string): string {
   const safeTail = tail.replace(/[^A-Za-z0-9-]/g, "") || "aircraft";
-  const folder = (folderPath ?? "").replace(/^\/+|\/+$/g, "");
-  return `/${folder ? `${folder}/` : ""}${safeTail}/${filename}`;
+  return `/${safeTail}/${filename}`;
 }
