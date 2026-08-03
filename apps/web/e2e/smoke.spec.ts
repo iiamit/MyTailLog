@@ -46,6 +46,7 @@ test.describe("public marketing pages", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   const PAGES = [
+    ["/", /the logbooks are a cardboard box/i],
     ["/faq", /questions before you sign up/i],
     ["/compare", /six ways to keep aircraft maintenance records/i],
     ["/switch/myfbo", /myfbo is going away/i],
@@ -55,6 +56,34 @@ test.describe("public marketing pages", () => {
     test(`${path} renders signed out`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    });
+  }
+
+  // The landing page's job is to make starting obvious and to route to the
+  // other public pages — both were previously one small link each, so assert
+  // them rather than just that the page rendered.
+  test("landing page offers a way in and reaches the other marketing pages", async ({ page }) => {
+    await page.goto("/");
+    // Signed out: account creation is a primary CTA, not a buried "Sign in".
+    await expect(page.getByRole("link", { name: /create your account/i }).first()).toBeVisible();
+    for (const href of ["/faq", "/compare", "/switch/myfbo", "/help", "/whats-new", "/developers/docs"]) {
+      await expect(page.locator(`footer a[href="${href}"]`)).toBeVisible();
+    }
+    // The claim the page is built around, and the scope guardrail it must keep.
+    await expect(page.getByText("$0.00")).toBeVisible();
+    await expect(page.getByText(/14 CFR 91\.417/).first()).toBeVisible();
+  });
+
+  // No horizontal overflow at any width — a previous marketing page shipped a
+  // table wider than its container and scrolled sideways at every viewport.
+  for (const width of [1512, 1280, 1024, 768, 390]) {
+    test(`landing page does not scroll sideways at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/");
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(1); // 1px of sub-pixel rounding slack
     });
   }
 });
