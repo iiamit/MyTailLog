@@ -11,6 +11,12 @@ on:
     - cron: "27 7 * * 1" # Mondays ~07:27 UTC
   workflow_dispatch:
 
+# Least privilege for GITHUB_TOKEN: every step here only reads the repo.
+# Without this the workflow inherits the repository default, which can be
+# read/write (CodeQL actions/missing-workflow-permissions).
+permissions:
+  contents: read
+
 jobs:
   semgrep:
     runs-on: ubuntu-latest

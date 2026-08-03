@@ -87,7 +87,9 @@ test("MyFlightBook full OAuth exchange: authorize → consent → token → API 
     let code: string | null = null;
     for (let i = 0; i < 6 && loc; i++) {
       const abs: string = loc.startsWith("http") ? loc : new URL(loc, baseURL!).toString();
-      if (abs.includes("developer.myflightbook.com")) {
+      // Parsed hostname, not a substring — see oauth-write.spec.ts for why
+      // (CodeQL js/incomplete-url-substring-sanitization).
+      if (new URL(abs).hostname === "developer.myflightbook.com") {
         code = new URL(abs).searchParams.get("code");
         break;
       }

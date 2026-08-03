@@ -7,6 +7,12 @@ on:
   push:
     branches: [main]
 
+# Least privilege for GITHUB_TOKEN: every step here only reads the repo.
+# Without this the workflow inherits the repository default, which can be
+# read/write (CodeQL actions/missing-workflow-permissions).
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
