@@ -25,7 +25,7 @@ export function EntryExtras({
 }: {
   entryId: string;
   aircraftId: string;
-  pageId: string;
+  pageId: string | null;
   canEdit: boolean;
   attachments: EntryAttachment[];
   links: ReferenceLink[];

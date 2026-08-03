@@ -139,6 +139,10 @@ const SECTIONS: Section[] = [
           </li>
         </ul>
         <p className="mt-2">
+          Already have the history as data rather than paper? <L href="#csv-import">Import a CSV</L>{" "}
+          instead — no scan needed.
+        </p>
+        <p className="mt-2">
           Pick the right <strong>logbook</strong> for what you&apos;re scanning — airframe/engine/
           prop/avionics for running maintenance pages, and <strong>Other</strong> for A&amp;P
           documents (see below). Pages queue on-device and upload when you&apos;re online, so
@@ -148,6 +152,52 @@ const SECTIONS: Section[] = [
           Note: scanned logbook spreads sometimes contain two physical pages side by side — the
           extractor flags these so you can review both halves.
         </p>
+      </>
+    ),
+  },
+  {
+    id: "csv-import",
+    icon: <ArchiveIcon />,
+    title: "Import a CSV",
+    body: (
+      <>
+        <p>
+          Coming from another platform, or from your own spreadsheet? Export it as{" "}
+          <strong>CSV</strong> and bring the maintenance history in directly — no printing to PDF,
+          no re-typing. Up to <strong>5 MB / 5,000 rows</strong> per file; comma, semicolon and tab
+          separated files all work, as do quoted fields containing commas or line breaks.
+        </p>
+        <p className="mt-2">
+          We don&apos;t ship an importer per vendor. Instead, <strong>the columns are mapped, not
+          the rows</strong>: one AI pass reads your header plus a few sample rows and proposes what
+          each column means (&ldquo;Tach Out&rdquo; → Tach, &ldquo;A&amp;P&rdquo; → Signature,
+          &ldquo;Invoice #&rdquo; → don&apos;t import). <strong>You confirm that mapping once</strong>,
+          and every row is then converted in plain code — so the same file always imports the same
+          way, and a wrong import is explainable by pointing at the mapping. Pick which{" "}
+          <strong>logbook</strong> the file belongs to; a spreadsheet doesn&apos;t say.
+        </p>
+        <p className="mt-2">
+          <strong>Dates are never guessed.</strong> <code className="readout text-[13px]">03/04/2026</code>{" "}
+          is 3 April or 4 March depending on who exported it, and getting it wrong would shift a
+          maintenance date by up to eleven months. We scan the whole date column: the first date
+          anywhere in the file with a day past the 12th settles the reading for the entire file. Only
+          if <em>every</em> row reads both ways are you asked — and you&apos;re shown what the first
+          few dates become each way. A column that&apos;s internally inconsistent (some rows only
+          day/month, others only month/day) is reported as a broken file rather than coerced.
+        </p>
+        <p className="mt-2">
+          Before anything is written you get a <strong>count of what will be created</strong>, plus
+          every row that can&apos;t be read and why — an unreadable date or an implausible tach
+          fails that one row rather than importing as a zero, and never takes the rest of the file
+          with it.
+        </p>
+        <Effects>
+          Imported entries land <strong>unconfirmed</strong> — they show up in{" "}
+          <L href="#extract">Review all</L> grouped as &ldquo;imported (no scan)&rdquo;, and drive
+          no reminder or forecast until you confirm them. Importing into an aircraft that already
+          has entries is the usual way to create duplicates, so check{" "}
+          <L href="#duplicates">Fix duplicates</L> afterwards.
+        </Effects>
       </>
     ),
   },

@@ -26,8 +26,12 @@ export type EntryFields = {
 
 type Result = { ok: true } | { error: string };
 
-function reviewPath(aircraftId: string, pageId: string) {
-  return `/aircraft/${aircraftId}/pages/${pageId}/review`;
+// An imported entry has no page (log_entry.page_id is nullable), so there is no
+// single-page reviewer to revalidate — the flat "Review all" screen is its home.
+function reviewPath(aircraftId: string, pageId: string | null) {
+  return pageId
+    ? `/aircraft/${aircraftId}/pages/${pageId}/review`
+    : `/aircraft/${aircraftId}/review`;
 }
 
 /**
@@ -37,7 +41,7 @@ function reviewPath(aircraftId: string, pageId: string) {
  */
 export async function setEntryLinks(
   aircraftId: string,
-  pageId: string,
+  pageId: string | null,
   entryId: string,
   links: ReferenceLink[],
 ): Promise<Result> {
@@ -68,7 +72,7 @@ const unionRefs = (a: string[] | null, b: string[] | null): string[] => [
  */
 export async function mergeContinuation(
   aircraftId: string,
-  pageId: string,
+  pageId: string | null,
   tailId: string,
 ): Promise<Result> {
   const supabase = await createClient();
@@ -148,7 +152,7 @@ export async function mergeContinuation(
  *  has now vetted the fields, so it's trustworthy enough to drive reminders. */
 export async function saveEntry(
   aircraftId: string,
-  pageId: string,
+  pageId: string | null,
   entryId: string,
   fields: EntryFields,
 ): Promise<Result> {
@@ -164,7 +168,7 @@ export async function saveEntry(
 
 export async function setEntryConfirmed(
   aircraftId: string,
-  pageId: string,
+  pageId: string | null,
   entryId: string,
   confirmed: boolean,
 ): Promise<Result> {
@@ -180,7 +184,7 @@ export async function setEntryConfirmed(
 
 export async function deleteEntry(
   aircraftId: string,
-  pageId: string,
+  pageId: string | null,
   entryId: string,
 ): Promise<Result> {
   const supabase = await createClient();
@@ -194,7 +198,7 @@ export async function deleteEntry(
  *  machine confidence/model provenance. */
 export async function addEntry(
   aircraftId: string,
-  pageId: string,
+  pageId: string | null,
   logbookId: string,
   fields: EntryFields,
 ): Promise<{ ok: true; id: string } | { error: string }> {
@@ -221,7 +225,7 @@ export async function addEntry(
 /** Mark the whole page reviewed (confirmed) or disputed. */
 export async function setPageReview(
   aircraftId: string,
-  pageId: string,
+  pageId: string, // a real page — this marks the page itself reviewed
   status: ReviewStatus,
 ): Promise<Result> {
   const supabase = await createClient();

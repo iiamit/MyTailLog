@@ -231,6 +231,43 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
     ),
   },
   {
+    id: "import",
+    title: "I'm coming from another platform — can I bring a CSV in?",
+    body: (
+      <>
+        <p>
+          Yes. Export your maintenance history as <strong>CSV</strong> and import it directly —
+          you don&apos;t have to print it to PDF and run it through the page extractor.
+        </p>
+        <p>
+          There is no importer per vendor, because <strong>the columns are mapped, not the
+          rows</strong>. One AI pass reads your header row plus a few sample rows and proposes what
+          each column means — &ldquo;Tach Out&rdquo; → Tach, &ldquo;A&amp;P&rdquo; → Signature,
+          &ldquo;Invoice #&rdquo; → don&apos;t import. You confirm or correct that{" "}
+          <strong>once</strong>, and then every row is converted in plain code, so the same file
+          always imports the same way and nothing is invented per row.
+        </p>
+        <p>
+          <strong>Dates are never guessed.</strong>{" "}
+          <code className="readout text-[13px]">03/04/2026</code> is 3 April or 4 March depending on
+          who exported it. The whole date column is scanned, and the first date with a day past the
+          12th settles the reading for the file; you&apos;re asked only when every row genuinely
+          reads both ways, and then you&apos;re shown what the first few dates become each way.
+        </p>
+        <p>
+          You see a count of what will be created before anything is written, and imported entries
+          land <strong>unconfirmed</strong> — a foreign spreadsheet doesn&apos;t get to drive a
+          reminder or an annual-due date until you&apos;ve reviewed it.
+        </p>
+        <p className="text-sm text-faint">
+          Limits, stated plainly: CSV only (save your XLSX as CSV first), maintenance log entries
+          only as the target, 5 MB / 5,000 rows per file. Importing into an aircraft that already
+          has entries can create duplicates — there&apos;s a screen for finding those.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "export",
     title: "Can I get my data out?",
     body: (
@@ -550,6 +587,10 @@ export default function FaqPage() {
               {
                 q: "Is my data used to train AI models?",
                 a: "MyTailLog trains nothing — there is no training pipeline in the (public, MIT-licensed) codebase. Page images and entry text are sent to Anthropic's API to be read; that traffic is governed by Anthropic's terms.",
+              },
+              {
+                q: "Can I import a CSV from another maintenance platform?",
+                a: "Yes. Export as CSV and import it directly. Rather than an importer per vendor, one AI pass maps your COLUMNS to fields — you confirm that mapping once and every row is then converted deterministically in code. Dates are never guessed: the whole date column is scanned and you're only asked which way round they read when every row is genuinely ambiguous. Imported entries land unconfirmed until you review them.",
               },
               {
                 q: "Can I get my data out of MyTailLog?",
