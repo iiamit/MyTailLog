@@ -32,13 +32,25 @@ function normalizeTail(tail: string): string {
   return tail.trim().toUpperCase().replace(/^N/, "");
 }
 
+const ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  "#39": "'",
+};
+
+/**
+ * Decode the handful of entities the FAA page emits, in ONE pass.
+ *
+ * Chained .replace() calls decoded `&amp;` first, so the literal text `&amp;lt;`
+ * became `&lt;` and was then decoded again into `<` — a value the page never
+ * contained. One pass can't re-read its own output, so each entity decodes
+ * exactly once (CodeQL js/double-escaping).
+ */
 function decode(s: string): string {
   return s
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
+    .replace(/&(amp|lt|gt|quot|#39);/g, (_m, e: string) => ENTITIES[e])
     .replace(/\s+/g, " ")
     .trim();
 }

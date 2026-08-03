@@ -57,7 +57,11 @@ async function connect(
   let code: string | null = null;
   for (let i = 0; i < 6 && loc; i++) {
     const abs: string = loc.startsWith("http") ? loc : new URL(loc, baseURL).toString();
-    if (abs.includes("developer.myflightbook.com")) {
+    // Compare the parsed hostname, not a substring: `includes()` would also
+    // match a hop like https://elsewhere.test/?next=developer.myflightbook.com
+    // and pull a code off the wrong redirect (CodeQL
+    // js/incomplete-url-substring-sanitization).
+    if (new URL(abs).hostname === "developer.myflightbook.com") {
       code = new URL(abs).searchParams.get("code");
       break;
     }

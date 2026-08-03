@@ -77,3 +77,26 @@ test("lookupRegistration: an empty/invalid tail short-circuits to null without f
   assert.equal(await lookupRegistration("N"), null);
   assert.equal(await lookupRegistration("   "), null);
 });
+
+// CodeQL js/double-escaping. Chained .replace() decoded `&amp;` first, so the
+// literal text `&amp;lt;` became `&lt;` and was decoded a second time into `<` —
+// a character the FAA page never contained. One pass can't re-read its own
+// output, so an escaped entity survives as text.
+test("lookupRegistration: an escaped entity is decoded exactly once", async () => {
+  const html = `
+    <table>
+      <td data-label="Manufacturer Name">CESSNA</td>
+      <td data-label="Serial Number">17271234</td>
+      <td data-label="Name">A &amp;lt;B&amp;gt; &amp; C</td>
+    </table>`;
+  const rec = await withFetch(
+    () => new Response(html, { status: 200 }),
+    () => lookupRegistration("N172NX"),
+  );
+  // The raw cell holds `&amp;lt;`. Decoding once gives the literal text `&lt;`.
+  // The old chain decoded `&amp;` first (→ `&lt;`) and then decoded THAT (→ `<`),
+  // manufacturing a tag delimiter the page never contained. This input is chosen
+  // to separate the two: anything that isn't `&amp;`-prefixed passes either way.
+  assert.equal(rec?.registrantName, "A &lt;B&gt; & C");
+  assert.ok(!rec?.registrantName?.includes("<"), "must not manufacture a tag that wasn't there");
+});

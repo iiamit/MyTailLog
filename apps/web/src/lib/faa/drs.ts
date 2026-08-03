@@ -137,8 +137,21 @@ export type DrsAd = {
 
 // DRS wraps the matched term in <span class='highlight'>…</span> — strip any
 // markup before matching or storing.
-const stripTags = (s: string | undefined | null) =>
-  (s ?? "").replace(/<[^>]*>/g, "").trim();
+//
+// Applied to a fixed point rather than once: a single pass over `<sc<b>ript>`
+// removes the inner tag and LEAVES `<script>` behind, so one pass can construct
+// the very markup it was meant to remove (CodeQL
+// js/incomplete-multi-character-sanitization). Nothing here reaches innerHTML —
+// React escapes it — but a sanitizer that can be walked past is not one worth
+// keeping.
+const stripTags = (s: string | undefined | null) => {
+  let out = s ?? "";
+  for (let prev = ""; out !== prev; ) {
+    prev = out;
+    out = out.replace(/<[^>]*>/g, "");
+  }
+  return out.trim();
+};
 const attivio = (
   arr: { attivioField?: string; metadataValue?: string }[] | undefined,
   field: string,
