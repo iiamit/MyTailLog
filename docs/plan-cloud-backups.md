@@ -94,6 +94,33 @@ but I'd take it over Box.
 
 ---
 
+### App-status rules differ per provider — do not generalise from one to the other
+
+This is the detail most likely to cause a silent outage, because the two
+providers use the same word for very different things.
+
+**Dropbox — Development status is fine, indefinitely, for a small user base.**
+A development-status app behaves *identically* to a production one, and
+**token lifetime is unaffected by app status**. The only limits are on how many
+accounts may link it. So there is nothing to do here until we grow.
+
+One nuance worth knowing before we get there: linking the **50th user starts a
+two-week clock** to apply for and receive production approval. Miss it and the
+app's ability to link *additional* users freezes — already-linked users keep
+working. So the trigger isn't "apply whenever after 50", it's "apply within two
+weeks of 50". (A development app tops out at 500 linked users regardless.)
+
+**Google Drive — Testing status is NOT the equivalent, and would break us.**
+An app in Testing publishing status issues **refresh tokens that expire after 7
+days**. For a job that runs monthly that is fatal, and it fails *silently*: every
+connection dies between runs and the next sweep just reports a failure. Publishing
+to **Production** is therefore a functional prerequisite for Phase 2, not a growth
+cap to defer. The saving grace is that `drive.file` is non-sensitive, so
+publishing needs no security assessment.
+
+**Summary:** Dropbox status limits *how many* users; Google status limits *how
+long tokens live*. Only the second one can break a working feature.
+
 ## 4. Architecture
 
 ```
