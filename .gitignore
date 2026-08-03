@@ -59,3 +59,6 @@ e2e/.auth/
 
 # Claude Code local worktrees/plugins
 .claude/
+
+# npm run at the repo root creates an empty lockfile; the real one is apps/web's
+/package-lock.json
