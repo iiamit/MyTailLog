@@ -520,7 +520,7 @@ export type OauthAccountGrant = {
   revoked_at: string | null;
 }
 
-/** Audit row: which client read which aircraft/scope. */
+/** Audit row: which client called which aircraft/scope, and whether it was served. */
 export type OauthAccessLog = {
   id: string;
   client_id: string | null;
@@ -528,6 +528,10 @@ export type OauthAccessLog = {
   aircraft_id: string | null;
   scope: string | null;
   path: string | null;
+  /** 200 = served; 4xx = denied by guard(). Defaults to 200 (0051). */
+  status: number;
+  /** OAuth error code on a denial; null when served. Never a token (0051). */
+  error: string | null;
   created_at: string;
 }
 

@@ -115,11 +115,82 @@ export function rateLimit(clientId: string, now: number): void {
  * (404 from requireAircraft when the aircraft isn't granted.)
  */
 export async function guard(request: Request, aircraftId: string, scope: string): Promise<ApiCaller> {
-  const caller = await authenticate(request);
-  rateLimit(caller.clientId, Date.now());
-  requireScope(caller, scope);
-  await requireAircraft(caller, aircraftId, scope);
-  return caller;
+  let caller: ApiCaller | null = null;
+  try {
+    caller = await authenticate(request);
+    rateLimit(caller.clientId, Date.now());
+    requireScope(caller, scope);
+    await requireAircraft(caller, aircraftId, scope);
+    return caller;
+  } catch (e) {
+    await logDenied(caller, aircraftId, scope, requestPath(request), e);
+    throw e;
+  }
+}
+
+/** `POST /api/v1/aircraft/<id>/hours` — method + pathname, never the query string. */
+export function requestPath(request: Request): string {
+  return `${request.method} ${new URL(request.url).pathname}`;
+}
+
+/**
+ * Decide what a denial should record. Pure, so the rules are testable without a
+ * database — and the rule that matters is the `null` case.
+ *
+ * A 401 from an unidentifiable token has no client to attribute, so persisting a
+ * row per attempt would let anyone on the internet grow an owner-readable table
+ * without bound. Those go to the server log instead. Rows returned here always
+ * belong to a client that authenticated.
+ */
+export function deniedLogRow(
+  caller: ApiCaller | null,
+  aircraftId: string | null,
+  scope: string,
+  path: string,
+  err: unknown,
+): { client_id: string; account_id: string; aircraft_id: string | null; scope: string; path: string; status: number; error: string } | null {
+  if (!caller) return null;
+  const status = err instanceof ApiError ? err.status : 500;
+  // The CODE only. `err.message` can carry caller-supplied text, and this table
+  // is owner-readable.
+  const code = err instanceof ApiError ? err.code : "server_error";
+  return {
+    client_id: caller.clientId,
+    account_id: caller.accountId,
+    aircraft_id: aircraftId,
+    scope,
+    path,
+    status,
+    error: code,
+  };
+}
+
+/**
+ * Audit a DENIED call. Never throws: a logging failure must not turn a clean 403
+ * into a 500, and must not mask the original error.
+ */
+export async function logDenied(
+  caller: ApiCaller | null,
+  aircraftId: string | null,
+  scope: string,
+  path: string,
+  err: unknown,
+): Promise<void> {
+  try {
+    const row = deniedLogRow(caller, aircraftId, scope, path, err);
+    if (!row) {
+      // Unattributable: log, don't store. No token material — the presence and
+      // shape of the header is enough to separate "sent nothing", "sent a
+      // malformed header" and "sent a token we rejected".
+      const code = err instanceof ApiError ? err.code : "server_error";
+      console.error(`[api/v1] denied ${path} — ${code} (no identifiable client)`);
+      return;
+    }
+    console.error(`[api/v1] denied ${path} — ${row.error} (client ${row.client_id})`);
+    await createServiceClient().from("oauth_access_log").insert(row);
+  } catch (logErr) {
+    console.error("[api/v1] failed to record a denial:", (logErr as Error).message);
+  }
 }
 
 /** Audit one read into oauth_access_log (service-role write; owner can read it). */
