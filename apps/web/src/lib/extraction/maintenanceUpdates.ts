@@ -61,6 +61,7 @@ export async function applyMaintenanceFromEntries(
         (!existing.last_done_date || detected.date > existing.last_done_date)
       ) {
         const due = maintenanceNextDue({
+          kind,
           interval_months: existing.interval_months,
           interval_hours: existing.interval_hours,
           last_done_date: detected.date,
@@ -82,6 +83,7 @@ export async function applyMaintenanceFromEntries(
       const std = STANDARD_ITEMS.find((s) => s.kind === kind);
       if (std && detected.date) {
         const due = maintenanceNextDue({
+          kind: std.kind,
           interval_months: std.interval_months,
           interval_hours: std.interval_hours,
           last_done_date: detected.date,

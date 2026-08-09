@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   maintenanceNextDue,
   effectiveNextDue,
+  calendarMonthsDue,
+  CALENDAR_MONTH_KINDS,
   STANDARD_ITEMS,
   DEFAULT_SEED_KINDS,
 } from "../src/lib/maintenance";
@@ -116,4 +118,91 @@ test("STANDARD_ITEMS: advisory items are flagged non-regulatory", () => {
   const oil = STANDARD_ITEMS.find((i) => i.kind === "oil_change");
   assert.equal(oil!.regulatory, false);
   assert.equal(oil!.interval_hours, 50);
+});
+
+// --- calendar months (14 CFR "within the preceding N calendar months") -------
+// Reported by an owner: we were adding EXACT months, so an annual signed off on
+// 15 Mar showed as due 15 Mar the following year when the reg gives you through
+// the 31st. We were up to a month early — the safe direction, but still wrong,
+// and it costs real scheduling room. These move due dates LATER, so they get
+// tested case by case.
+
+test("calendarMonthsDue: the day of the month is irrelevant — due end of month", () => {
+  // Every annual done in March 2025 is good through 31 Mar 2026.
+  for (const day of ["01", "15", "31"]) {
+    assert.equal(calendarMonthsDue(`2025-03-${day}`, 12), "2026-03-31");
+  }
+});
+
+test("calendarMonthsDue: short months and leap years land on the real last day", () => {
+  assert.equal(calendarMonthsDue("2024-02-15", 12), "2025-02-28"); // non-leap target
+  assert.equal(calendarMonthsDue("2023-02-15", 12), "2024-02-29"); // leap target
+  assert.equal(calendarMonthsDue("2025-01-31", 12), "2026-01-31");
+  assert.equal(calendarMonthsDue("2025-04-10", 12), "2026-04-30"); // 30-day month
+});
+
+test("calendarMonthsDue: 24-month intervals roll the year correctly", () => {
+  assert.equal(calendarMonthsDue("2025-06-05", 24), "2027-06-30");
+  assert.equal(calendarMonthsDue("2025-12-20", 24), "2027-12-31"); // year boundary
+});
+
+test("maintenanceNextDue: the calendar-month regs use end-of-month", () => {
+  for (const kind of ["annual", "transponder", "pitot_static", "elt"]) {
+    const months = STANDARD_ITEMS.find((i) => i.kind === kind)!.interval_months!;
+    const { next_due_date } = maintenanceNextDue({
+      kind,
+      interval_months: months,
+      interval_hours: null,
+      last_done_date: "2025-03-15",
+      last_done_hours: null,
+    });
+    assert.equal(next_due_date, calendarMonthsDue("2025-03-15", months), kind);
+    assert.ok(next_due_date!.endsWith("-31") || next_due_date!.endsWith("-30"), kind);
+  }
+});
+
+test("VOR is NOT a calendar-month item — 91.171 is 30 days, not a month", () => {
+  // Marking it calendar would push it to end-of-month, which is markedly LATER
+  // than the reg allows. Being early here is the safe side.
+  assert.ok(!CALENDAR_MONTH_KINDS.has("vor"));
+  assert.equal(
+    maintenanceNextDue({
+      kind: "vor",
+      interval_months: 1,
+      interval_hours: null,
+      last_done_date: "2025-03-15",
+      last_done_hours: null,
+    }).next_due_date,
+    "2025-04-15",
+  );
+});
+
+test("advisory month items keep exact months (no reg to read 'calendar' into)", () => {
+  assert.ok(!CALENDAR_MONTH_KINDS.has("prop_overhaul"));
+  assert.equal(
+    maintenanceNextDue({
+      kind: "prop_overhaul",
+      interval_months: 72,
+      interval_hours: null,
+      last_done_date: "2025-03-15",
+      last_done_hours: null,
+    }).next_due_date,
+    "2031-03-15",
+  );
+});
+
+test("an unknown kind, or no kind at all, keeps the old exact-month behaviour", () => {
+  for (const kind of ["other", undefined]) {
+    assert.equal(
+      maintenanceNextDue({
+        kind,
+        interval_months: 12,
+        interval_hours: null,
+        last_done_date: "2025-03-15",
+        last_done_hours: null,
+      }).next_due_date,
+      "2026-03-15",
+      String(kind),
+    );
+  }
 });

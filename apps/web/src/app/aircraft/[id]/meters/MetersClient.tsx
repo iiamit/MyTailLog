@@ -8,6 +8,7 @@ import { METERS, type Meter } from "@/lib/hobbsTach";
 import type { AdsbSuggestion } from "@/lib/adsb/reconcile";
 import {
   addMeterReset,
+  updateEnrollmentMeters,
   deleteMeterReset,
   addMeterReading,
   deleteMeterReading,
@@ -260,6 +261,7 @@ export function MetersClient({
   resets,
   readings,
   adsb,
+  enrollment,
 }: {
   aircraftId: string;
   canEdit: boolean;
@@ -268,6 +270,7 @@ export function MetersClient({
   estimated: Record<Meter, boolean>;
   resets: ResetRow[];
   readings: ReadingRow[];
+  enrollment: { hobbs: number | null; tach: number | null; airframe: number | null; date: string | null };
   adsb: { enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
 }) {
   const router = useRouter();
@@ -286,6 +289,24 @@ export function MetersClient({
     tach: string;
     airframe: string;
   } | null>(null);
+  const [baseForm, setBaseForm] = useState<{ hobbs: string; tach: string; airframe: string } | null>(
+    null,
+  );
+
+  async function saveBaseline() {
+    if (!baseForm) return;
+    setBusy(true);
+    const res = await updateEnrollmentMeters(aircraftId, {
+      hobbs: num(baseForm.hobbs),
+      tach: num(baseForm.tach),
+      airframe: num(baseForm.airframe),
+    });
+    setBusy(false);
+    if ("error" in res) return toast.error(res.error);
+    toast.success("Starting readings updated.");
+    setBaseForm(null);
+    router.refresh();
+  }
 
   async function saveReset() {
     if (!resetForm) return;
@@ -368,6 +389,82 @@ export function MetersClient({
           Airframe time is never estimated from the other two: there is no fixed relationship
           between them, so it shows only what has actually been recorded.
         </p>
+      </section>
+
+      {/* The enrollment baseline used to be write-once — set on the enroll form
+          and reachable nowhere afterwards, so a number typed into the wrong box
+          followed you around every hours countdown with no way to correct it. */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink">Starting readings</h2>
+          {canEdit && !baseForm && (
+            <button
+              onClick={() =>
+                setBaseForm({
+                  hobbs: enrollment.hobbs?.toString() ?? "",
+                  tach: enrollment.tach?.toString() ?? "",
+                  airframe: enrollment.airframe?.toString() ?? "",
+                })
+              }
+              className={secondaryBtn}
+            >
+              Edit
+            </button>
+          )}
+        </div>
+
+        {!baseForm ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {METERS.map((m) => (
+                <div key={m} className="rounded-lg border border-line bg-panel p-4">
+                  <div className="text-[9px] uppercase tracking-[0.14em] text-faint">{LABEL[m]}</div>
+                  <div className="readout mt-1 text-lg text-ink">{show(enrollment[m])}</div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
+              What each meter read when you added this aircraft
+              {enrollment.date ? ` on ${enrollment.date}` : ""}. Every hours countdown starts from
+              here, so a wrong figure shifts all of them.{" "}
+              <strong className="text-dim">Clear a meter to stop tracking it</strong> — if you work
+              from tach only, leave Hobbs blank.
+            </p>
+          </>
+        ) : (
+          <div className="rounded-lg border border-line bg-panel p-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {METERS.map((m) => (
+                <label key={m} className="block">
+                  <span className="mb-1 block text-[9px] uppercase tracking-[0.14em] text-faint">
+                    {LABEL[m]}
+                  </span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    inputMode="decimal"
+                    placeholder="not tracked"
+                    value={baseForm[m]}
+                    onChange={(e) => setBaseForm({ ...baseForm, [m]: e.target.value })}
+                    className={inputClass}
+                  />
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-[11.5px] text-faint">
+              Leave a box empty to clear that meter entirely.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button onClick={saveBaseline} disabled={busy} className={primaryBtn}>
+                Save
+              </button>
+              <button onClick={() => setBaseForm(null)} disabled={busy} className={secondaryBtn}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section>
