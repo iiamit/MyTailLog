@@ -215,7 +215,17 @@ const SECTIONS: Section[] = [
           showing where that value was read from, so you can confirm it without hunting the whole
           page (snippets appear once a page is extracted under the current model; re-extract older
           pages to get them). The full page image sits alongside the entries too. Editing an entry
-          marks it confirmed. You can <strong>re-extract</strong> a page (e.g. if a multi-page
+          marks it confirmed.
+        </p>
+        <p className="mt-3">
+          <strong>Stickers at odd angles.</strong> Shops stick labels wherever there&apos;s room, so
+          one page can carry an upright sticker and another rotated 90°. Each sticker is normally its
+          own entry, and a page is read in every orientation. If rotated content is spotted but
+          can&apos;t be read in full, the page gets a second look automatically — and if that still
+          doesn&apos;t resolve it, <strong>Review shows an amber warning on that page</strong> asking
+          you to compare against the paper. That matters more than a wrong value does: a low
+          confidence score flags a field you can see, but an entry that was never extracted has
+          nothing to flag. Use <strong>Add an entry the extractor missed</strong> to key it in. You can <strong>re-extract</strong> a page (e.g. if a multi-page
           entry wasn&apos;t linked) right from the review screen — it replaces that page&apos;s
           entries. The <strong>Logbook pages</strong> view (in the left nav) lists every captured
           scan grouped by logbook with its <strong>Needs review / Processing</strong> status, and can
