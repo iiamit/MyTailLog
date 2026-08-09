@@ -19,6 +19,47 @@ function revalidateHours(aircraftId: string) {
 }
 
 /**
+ * Correct the enrollment meter readings — the baseline captured when the
+ * aircraft was first added.
+ *
+ * These were previously WRITE-ONCE: set by the enroll form, read by eight
+ * surfaces, and editable nowhere. An owner who typed an airframe total into the
+ * Hobbs box (easy to do — reported) had a wrong number on every hours countdown
+ * with no way to reach it. Passing null CLEARS a meter, which is how an
+ * owner who tracks tach only removes hobbs from the app entirely.
+ *
+ * Editors only — the write is RLS-scoped, and we check the row actually changed
+ * rather than trusting a silent no-op.
+ */
+export async function updateEnrollmentMeters(
+  aircraftId: string,
+  input: { hobbs: number | null; tach: number | null; airframe: number | null },
+): Promise<Result> {
+  const bad = (n: number | null) => n != null && (!Number.isFinite(n) || n < 0);
+  if (bad(input.hobbs) || bad(input.tach) || bad(input.airframe)) {
+    return { error: "Readings must be zero or a positive number — leave blank to clear." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("aircraft")
+    .update({
+      enrollment_hobbs: input.hobbs,
+      enrollment_tach: input.tach,
+      enrollment_airframe: input.airframe,
+    })
+    .eq("id", aircraftId)
+    .select("id");
+  if (error) return { error: error.message };
+  // RLS makes a non-editor's UPDATE match zero rows rather than fail, so an
+  // empty result is a permission problem, not success.
+  if (!data || data.length === 0) return { error: "You don't have permission to edit this aircraft." };
+
+  revalidateHours(aircraftId);
+  return { ok: true };
+}
+
+/**
  * Record a meter replacement: the old meter's final reading and what the new one
  * started at. The app stitches history across it so hour-based items keep
  * counting instead of seeing time run backwards. Editors only (RLS).

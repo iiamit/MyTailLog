@@ -78,11 +78,12 @@ export async function markMaintenanceDone(
   const supabase = await createClient();
   const { data: item } = await supabase
     .from("maintenance_item")
-    .select("interval_months, interval_hours")
+    .select("kind, interval_months, interval_hours")
     .eq("id", id)
     .single();
   if (!item) return { error: "Item not found." };
   const due = maintenanceNextDue({
+    kind: item.kind,
     interval_months: item.interval_months,
     interval_hours: item.interval_hours,
     last_done_date: date,

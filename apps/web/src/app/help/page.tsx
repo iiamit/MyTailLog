@@ -380,6 +380,15 @@ const SECTIONS: Section[] = [
           interval and last-done. Seed the standard set with one click, mark items done, or add
           your own. Regulatory items are distinguished from advisory ones (TBO/overhaul).
         </p>
+        <p className="mt-3">
+          <strong>Calendar months, not exact months.</strong> The regulations that count in months —
+          annual (91.409), transponder (91.413), pitot-static (91.411), ELT (91.207) — say{" "}
+          <em>&ldquo;within the preceding N calendar months&rdquo;</em>, so the day of the month the
+          work was signed off doesn&apos;t matter: an annual completed anywhere in March 2025 is good
+          through <strong>31 March 2026</strong>. Due dates for those items land on the last day of
+          the month. Advisory items (prop overhaul) and the VOR check are <em>not</em> calendar-month
+          rules — 91.171 is 30 days — so those count from the date itself.
+        </p>
         <Effects>
           Each item counts down on the meter it&apos;s tracked against. By default that&apos;s the{" "}
           <strong>oil change</strong> on <strong>Hobbs</strong> (the meter you fly and record it
@@ -486,6 +495,15 @@ const SECTIONS: Section[] = [
           glider has no engine to drive a tach, and a motorglider accrues far more airframe time than
           engine time, so airframe is never derived from the other two — it shows only what has
           actually been recorded. Enter it on a logbook entry, at enrollment, or by hand on this page.
+        </p>
+        <p>
+          <strong>Starting readings</strong> on the same page are the figures captured when you added
+          the aircraft. Every hours countdown starts from them, so a number typed into the wrong box
+          shifts all of them — and they used to be set once at enrollment and unreachable afterwards.
+          You can now edit them, and <strong>clearing a meter stops tracking it entirely</strong>: if
+          you work from tach only, leave Hobbs blank and nothing will count against it. (The oil
+          change is the one item that defaults to Hobbs; its{" "}
+          <strong>&ldquo;Hours counted on&rdquo;</strong> setting switches it to tach.)
         </p>
         <Effects>
           A recorded replacement changes every hours figure in the app: current meters, last-done

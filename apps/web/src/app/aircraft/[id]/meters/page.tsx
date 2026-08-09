@@ -76,6 +76,7 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
         aircraftId={id}
         canEdit={ctx.canEdit}
         face={{ tach: ctx.tach, hobbs: ctx.hobbs, airframe: ctx.airframe }}
+        enrollment={enrollment}
         total={{ tach: meters.tach.tach, hobbs: meters.hobbs.hobbs, airframe: meters.airframe.airframe }}
         estimated={{ tach: meters.tach.estimated, hobbs: meters.hobbs.estimated, airframe: false }}
         resets={resets ?? []}
