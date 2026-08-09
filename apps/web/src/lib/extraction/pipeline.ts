@@ -135,7 +135,10 @@ export async function extractPage(
         // reports anything outstanding.
         rotatedStillUnread = stillUnreadAfterRetry(second);
       } catch (e) {
-        console.error(`[extract] rotated second pass failed for page ${page.id}:`, (e as Error).message);
+        // Constant format string, values as arguments: an interpolated template
+        // passed to a format function lets an injected specifier forge the log
+        // line (semgrep javascript.lang.security.audit.unsafe-formatstring).
+        console.error("[extract] rotated second pass failed for page %s: %s", page.id, (e as Error).message);
       }
     }
 
