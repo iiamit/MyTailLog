@@ -512,6 +512,7 @@ export function ReviewClient({
   reviewStatus,
   extractionStatus,
   detectedPageCount,
+  unreadRotatedContent,
   entries: initialEntries,
   returnLogbookId,
   canEdit,
@@ -525,6 +526,7 @@ export function ReviewClient({
   reviewStatus: ReviewStatus;
   extractionStatus: ExtractionStatus;
   detectedPageCount: number | null;
+  unreadRotatedContent: boolean;
   entries: ReviewEntry[];
   returnLogbookId: string | null;
   canEdit: boolean;
@@ -648,6 +650,20 @@ export function ReviewClient({
           >
             Detected as a two-page spread — entries from both pages are listed;
             check that none were missed.
+          </p>
+        )}
+
+        {/* A missed entry has nothing to review against — no low-confidence field
+            to catch the eye — so the only recoverable outcome is saying so. */}
+        {unreadRotatedContent && (
+          <p
+            className="mt-2 rounded-md border border-annun-amber/40 px-3 py-2 text-xs text-annun-amber"
+            style={{ background: "var(--amb-bg)" }}
+          >
+            There is sideways or rotated content on this page (often a sticker
+            affixed at 90°) that couldn&apos;t be read in full. Compare against the
+            paper — if an entry is missing, add it with{" "}
+            <strong>Add an entry the extractor missed</strong> below.
           </p>
         )}
 

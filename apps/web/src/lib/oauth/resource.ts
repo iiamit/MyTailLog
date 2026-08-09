@@ -183,10 +183,13 @@ export async function logDenied(
       // shape of the header is enough to separate "sent nothing", "sent a
       // malformed header" and "sent a token we rejected".
       const code = err instanceof ApiError ? err.code : "server_error";
-      console.error(`[api/v1] denied ${path} — ${code} (no identifiable client)`);
+      // Constant format string, values as arguments. `path` comes from the
+      // request URL, so it is attacker-influenced: interpolating it into the
+      // format string itself would let a crafted request forge log lines.
+      console.error("[api/v1] denied %s — %s (no identifiable client)", path, code);
       return;
     }
-    console.error(`[api/v1] denied ${path} — ${row.error} (client ${row.client_id})`);
+    console.error("[api/v1] denied %s — %s (client %s)", path, row.error, row.client_id);
     await createServiceClient().from("oauth_access_log").insert(row);
   } catch (logErr) {
     console.error("[api/v1] failed to record a denial:", (logErr as Error).message);

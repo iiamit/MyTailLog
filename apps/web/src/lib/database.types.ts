@@ -96,6 +96,12 @@ export type Page = {
   extraction_status: ExtractionStatus;
   extraction_error: string | null;
   detected_page_count: number | null;
+  /**
+   * Rotated content was visible but not fully read, even after the follow-up
+   * pass (0052). Review warns on it — a missed entry has nothing to review
+   * against, so a visible flag is the only recoverable outcome.
+   */
+  unread_rotated_content: boolean;
   extracted_at: string | null;
   created_at: string;
   updated_at: string;

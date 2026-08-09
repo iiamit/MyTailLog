@@ -97,6 +97,92 @@ export async function extractFromImage(
         ? Math.round(parsed.detected_page_count)
         : 1,
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
+    unread_rotated_content: parsed.unread_rotated_content === true,
     entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
   };
+}
+
+/**
+ * Should the page KEEP its "rotated content unread" warning after the retry?
+ *
+ * Clear it only on evidence: the retry must have actually returned something AND
+ * no longer report anything outstanding. Getting this backwards would suppress
+ * the warning on exactly the pages that need it — a silent miss is the failure
+ * mode this whole change exists to remove — so it errs toward keeping it.
+ */
+export function stillUnreadAfterRetry(second: {
+  unread_rotated_content: boolean;
+  entries: unknown[];
+}): boolean {
+  return second.unread_rotated_content || second.entries.length === 0;
+}
+
+/** Prompt for the follow-up pass. Deliberately narrow: ONLY the rotated content. */
+const ROTATED_PASS_PROMPT = `Your previous pass over this page reported rotated or sideways content that was not fully read.
+
+Read it now. Rotate the page mentally as needed — content may run bottom-to-top, top-to-bottom along an edge, upside down, or at an angle.
+
+Return ONLY entries from that rotated content. Do NOT return entries you already read upright — they are captured, and repeating them creates duplicates the owner has to clean up. If, on a second look, there is genuinely nothing rotated that you can read, return an empty entries array and set unread_rotated_content appropriately.`;
+
+/**
+ * Second, targeted pass for a page whose first pass flagged rotated content.
+ *
+ * Runs on the SAME image with a narrower prompt rather than rotating the bytes:
+ * a vision model reads rotated text when it is told to look, and re-encoding
+ * would mean importing sharp into app code — which `package.json` deliberately
+ * avoids (it is pinned for a CVE precisely because user-uploaded images reach
+ * it via image optimization, and nothing in the app imports it).
+ *
+ * Only runs when the model asked for it, so the extra call lands on the few
+ * pages that need it rather than on every page — extraction is bounded by a
+ * per-user daily cap and a global dollar ceiling.
+ */
+export async function extractRotatedFromImage(
+  imageBase64: string,
+  mediaType: ImageMediaType,
+): Promise<ExtractionResult> {
+  const client = getAnthropic();
+
+  const response = await client.messages.create({
+    model: EXTRACTION_MODEL,
+    max_tokens: 16000,
+    system: EXTRACTION_SYSTEM_PROMPT,
+    thinking: { type: "adaptive" },
+    output_config: {
+      effort: "medium",
+      format: { type: "json_schema", schema: EXTRACTION_JSON_SCHEMA },
+    },
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } },
+          { type: "text", text: ROTATED_PASS_PROMPT },
+        ],
+      },
+    ],
+  });
+
+  if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") {
+    // Never fatal: the first pass's entries are already good. Report "still
+    // unread" so the page keeps its warning.
+    return { detected_page_count: 1, raw_text: "", unread_rotated_content: true, entries: [] };
+  }
+
+  const text = response.content
+    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+
+  try {
+    const parsed = JSON.parse(text) as ExtractionResult;
+    return {
+      detected_page_count: 1,
+      raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
+      unread_rotated_content: parsed.unread_rotated_content === true,
+      entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
+    };
+  } catch {
+    return { detected_page_count: 1, raw_text: "", unread_rotated_content: true, entries: [] };
+  }
 }

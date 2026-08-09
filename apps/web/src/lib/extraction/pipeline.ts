@@ -11,7 +11,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { extractFromImage } from "./extract";
+import { extractFromImage, extractRotatedFromImage, stillUnreadAfterRetry } from "./extract";
 import { safeIsoDate } from "./date";
 import {
   ENTRY_FIELDS,
@@ -117,6 +117,31 @@ export async function extractPage(
 
     const result = await extractFromImage(base64, "image/jpeg");
 
+    // Shops affix stickers wherever there's room, so a page can carry an upright
+    // sticker and a 90°-rotated one. Reported from the field: only the upright
+    // one came back. When the first pass says it saw rotated content it couldn't
+    // read, spend one more call on it — targeted at that content only.
+    //
+    // Best-effort: the first pass's entries are already saved-worthy, so a
+    // failure here must never cost them. `rotatedStillUnread` drives the warning
+    // the review screen shows, because a missed entry has nothing to review
+    // against — the only recoverable outcome is telling the owner to look.
+    let rotatedStillUnread = result.unread_rotated_content;
+    if (result.unread_rotated_content) {
+      try {
+        const second = await extractRotatedFromImage(base64, "image/jpeg");
+        result.entries.push(...second.entries);
+        // Cleared only if the follow-up actually read something and no longer
+        // reports anything outstanding.
+        rotatedStillUnread = stillUnreadAfterRetry(second);
+      } catch (e) {
+        // Constant format string, values as arguments: an interpolated template
+        // passed to a format function lets an injected specifier forge the log
+        // line (semgrep javascript.lang.security.audit.unsafe-formatstring).
+        console.error("[extract] rotated second pass failed for page %s: %s", page.id, (e as Error).message);
+      }
+    }
+
     // The model can emit calendar-invalid dates (e.g. "1987-11-31"); coerce each
     // to a Postgres-safe date up front so one bad date can't fail the whole page.
     for (const e of result.entries) e.entry_date = safeIsoDate(e.entry_date);
@@ -167,6 +192,7 @@ export async function extractPage(
         ocr_text: result.raw_text || null,
         extraction_confidence: minConfidence,
         detected_page_count: result.detected_page_count,
+        unread_rotated_content: rotatedStillUnread,
         extraction_status: "extracted",
         extraction_error: null,
         extracted_at: new Date().toISOString(),

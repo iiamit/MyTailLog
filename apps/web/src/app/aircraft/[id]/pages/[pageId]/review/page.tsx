@@ -22,7 +22,7 @@ export default async function ReviewPage({
   const { data: page } = await supabase
     .from("page")
     .select(
-      "id, aircraft_id, logbook_id, page_sequence, storage_path, ocr_text, review_status, extraction_status, detected_page_count",
+      "id, aircraft_id, logbook_id, page_sequence, storage_path, ocr_text, review_status, extraction_status, detected_page_count, unread_rotated_content",
     )
     .eq("id", pageId)
     .single();
@@ -201,6 +201,7 @@ export default async function ReviewPage({
         reviewStatus={page.review_status}
         extractionStatus={page.extraction_status}
         detectedPageCount={page.detected_page_count}
+        unreadRotatedContent={page.unread_rotated_content ?? false}
         entries={reviewEntries}
         returnLogbookId={returnLogbookId ?? null}
         canEdit={canEdit}
