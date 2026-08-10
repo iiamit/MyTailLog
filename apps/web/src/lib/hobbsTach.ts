@@ -19,7 +19,33 @@
 // airframe is RECORDED ONLY — never derived from, or bridged to, hobbs/tach.
 export type Meter = "hobbs" | "tach" | "airframe";
 export const METERS: Meter[] = ["hobbs", "tach", "airframe"];
-export type ReadingSource = "entry" | "mfb" | "enrollment";
+/**
+ * Where a reading came from. Every `hours_reading` row used to be tagged "mfb"
+ * regardless of its actual `source` column, so a hand-typed reading and an
+ * ADS-B estimate were indistinguishable from a MyFlightBook sync. Nothing
+ * user-facing depended on it until we started showing provenance — at which
+ * point the tag had to stop lying.
+ */
+export type ReadingSource = "entry" | "mfb" | "manual" | "adsb" | "enrollment";
+
+/** How each source reads in the UI. Written for an owner, not a developer. */
+export const READING_SOURCE_LABEL: Record<ReadingSource, string> = {
+  entry: "a logbook entry",
+  mfb: "MyFlightBook",
+  manual: "entered by hand",
+  adsb: "an ADS-B estimate",
+  enrollment: "the starting reading",
+};
+
+/** Map the stored `hours_reading.source` string onto a ReadingSource. */
+export function readingSourceOf(stored: string | null | undefined): ReadingSource {
+  if (stored === "manual") return "manual";
+  if (String(stored ?? "").endsWith("_estimate")) return "adsb";
+  // The column defaults to 'myflightbook'; anything unrecognised is likelier a
+  // sync than a hand entry, and mislabelling it "entered by hand" would be the
+  // more misleading of the two.
+  return "mfb";
+}
 
 export type Reading = {
   id: string;
@@ -38,7 +64,13 @@ export type Reading = {
 
 export type RatioConfidence = "measured" | "estimated" | "default";
 export type RatioResult = { ratio: number; confidence: RatioConfidence; pairs: number };
-export type CurrentTach = { tach: number | null; estimated: boolean; asOf: string | null; rough: boolean };
+/**
+ * `from` is the source of the reading this value is anchored to. When
+ * `estimated` is true the number was derived (e.g. tach projected from hobbs),
+ * so `from` names where the ANCHOR came from, not where the number did — the UI
+ * says "estimated" separately rather than conflating the two.
+ */
+export type CurrentTach = { tach: number | null; estimated: boolean; asOf: string | null; rough: boolean; from: ReadingSource | null };
 export type AnomalyReason = "non_monotonic" | "magnitude" | "duplicate";
 export type Anomaly = {
   readingId: string;
@@ -204,7 +236,14 @@ export function detectDuplicateMeters(readings: Reading[]): Anomaly[] {
     }));
 }
 
-export type Pair = { hobbs: number; tach: number; date: string | null; weight: number };
+export type Pair = {
+  hobbs: number;
+  tach: number;
+  date: string | null;
+  weight: number;
+  /** Source of the reading this pair came from — surfaced as provenance. */
+  source: ReadingSource;
+};
 
 /** Pairs of (hobbs, tach) at the same engine-time point. */
 export function buildPairs(readings: Reading[]): Pair[] {
@@ -213,11 +252,11 @@ export function buildPairs(readings: Reading[]): Pair[] {
   let maxHobbsSoFar: number | null = null; // = the last flight's ending hobbs
   for (const r of sorted) {
     if (r.hobbs != null && r.tach != null) {
-      pairs.push({ hobbs: r.hobbs, tach: r.tach, date: r.date, weight: CO_WEIGHT });
+      pairs.push({ hobbs: r.hobbs, tach: r.tach, date: r.date, weight: CO_WEIGHT, source: r.source });
     } else if (r.tach != null && maxHobbsSoFar != null) {
       // tach-only (maintenance): nothing ran the engine since the last flight,
       // so its hobbs = the highest hobbs recorded before it.
-      pairs.push({ hobbs: maxHobbsSoFar, tach: r.tach, date: r.date, weight: INFERRED_WEIGHT });
+      pairs.push({ hobbs: maxHobbsSoFar, tach: r.tach, date: r.date, weight: INFERRED_WEIGHT, source: r.source });
     }
     if (r.hobbs != null) maxHobbsSoFar = Math.max(maxHobbsSoFar ?? -Infinity, r.hobbs);
   }
@@ -301,10 +340,10 @@ export function currentTach(readings: Reading[]): CurrentTach {
     // Can't relate the meters (no shared point). Prefer an actual tach reading —
     // it's the authoritative maintenance meter (covers the all-tach logbook).
     // ponytail: a tach-then-only-hobbs history falls back to the tach here too.
-    if (latestTach) return { tach: round1(latestTach.tach), estimated: false, asOf: latestTach.date, rough: false };
+    if (latestTach) return { tach: round1(latestTach.tach), estimated: false, asOf: latestTach.date, rough: false, from: latestTach.source };
     return latestHobbs
-      ? { tach: round1(latestHobbs.hobbs * DEFAULT_RATIO), estimated: true, asOf: latestHobbs.date, rough: true }
-      : { tach: null, estimated: false, asOf: null, rough: false };
+      ? { tach: round1(latestHobbs.hobbs * DEFAULT_RATIO), estimated: true, asOf: latestHobbs.date, rough: true, from: latestHobbs.source }
+      : { tach: null, estimated: false, asOf: null, rough: false, from: null };
   }
 
   const { ratio, confidence } = deriveRatio(readings);
@@ -316,12 +355,13 @@ export function currentTach(readings: Reading[]): CurrentTach {
       estimated: true,
       asOf: latestHobbs.date,
       rough: confidence === "default",
+      from: latestHobbs.source,
     };
   }
-  return { tach: round1(anchor.tach), estimated: false, asOf: anchor.date, rough: false };
+  return { tach: round1(anchor.tach), estimated: false, asOf: anchor.date, rough: false, from: anchor.source };
 }
 
-export type CurrentHobbs = { hobbs: number | null; estimated: boolean; asOf: string | null; rough: boolean };
+export type CurrentHobbs = { hobbs: number | null; estimated: boolean; asOf: string | null; rough: boolean; from: ReadingSource | null };
 
 /**
  * Current hobbs — the meter usage items (oil, etc.) count down on. Hobbs is the
@@ -331,20 +371,20 @@ export type CurrentHobbs = { hobbs: number | null; estimated: boolean; asOf: str
  */
 export function currentHobbs(readings: Reading[]): CurrentHobbs {
   const latestHobbs = currentReading(readings.filter((r) => r.hobbs != null) as (Reading & { hobbs: number })[], "hobbs");
-  if (latestHobbs) return { hobbs: round1(latestHobbs.hobbs), estimated: false, asOf: latestHobbs.date, rough: false };
+  if (latestHobbs) return { hobbs: round1(latestHobbs.hobbs), estimated: false, asOf: latestHobbs.date, rough: false, from: latestHobbs.source };
 
   // No hobbs ever recorded — bridge from the current tach.
   const ct = currentTach(readings);
-  if (ct.tach == null) return { hobbs: null, estimated: false, asOf: null, rough: false };
+  if (ct.tach == null) return { hobbs: null, estimated: false, asOf: null, rough: false, from: null };
   const pairs = buildPairs(readings);
   if (pairs.length === 0)
-    return { hobbs: round1(ct.tach / DEFAULT_RATIO), estimated: true, asOf: ct.asOf, rough: true };
+    return { hobbs: round1(ct.tach / DEFAULT_RATIO), estimated: true, asOf: ct.asOf, rough: true, from: ct.from };
   const { ratio } = deriveRatio(readings);
   const anchor = latestPair(pairs);
-  return { hobbs: round1(anchor.hobbs + (ct.tach - anchor.tach) / ratio), estimated: true, asOf: ct.asOf, rough: ct.rough };
+  return { hobbs: round1(anchor.hobbs + (ct.tach - anchor.tach) / ratio), estimated: true, asOf: ct.asOf, rough: ct.rough, from: ct.from };
 }
 
-export type CurrentAirframe = { airframe: number | null; estimated: boolean; asOf: string | null; rough: boolean };
+export type CurrentAirframe = { airframe: number | null; estimated: boolean; asOf: string | null; rough: boolean; from: ReadingSource | null };
 
 /**
  * Current AIRFRAME time — simply the latest recorded reading. Deliberately never
@@ -359,8 +399,8 @@ export function currentAirframe(readings: Reading[]): CurrentAirframe {
     "airframe",
   );
   return latest
-    ? { airframe: round1(latest.airframe), estimated: false, asOf: latest.date, rough: false }
-    : { airframe: null, estimated: false, asOf: null, rough: false };
+    ? { airframe: round1(latest.airframe), estimated: false, asOf: latest.date, rough: false, from: latest.source }
+    : { airframe: null, estimated: false, asOf: null, rough: false, from: null };
 }
 
 /**

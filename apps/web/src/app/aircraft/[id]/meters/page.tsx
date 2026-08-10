@@ -33,7 +33,7 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
       .order("reset_date", { ascending: false }),
     supabase
       .from("hours_reading")
-      .select("id, reading_date, hobbs, tach, airframe")
+      .select("id, reading_date, hobbs, tach, airframe, source")
       .eq("aircraft_id", id)
       .eq("source", "manual")
       .order("reading_date", { ascending: false })
@@ -77,6 +77,11 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
         canEdit={ctx.canEdit}
         face={{ tach: ctx.tach, hobbs: ctx.hobbs, airframe: ctx.airframe }}
         enrollment={enrollment}
+        provenance={{
+          tach: { asOf: meters.tach.asOf, from: meters.tach.from },
+          hobbs: { asOf: meters.hobbs.asOf, from: meters.hobbs.from },
+          airframe: { asOf: meters.airframe.asOf, from: meters.airframe.from ?? null },
+        }}
         total={{ tach: meters.tach.tach, hobbs: meters.hobbs.hobbs, airframe: meters.airframe.airframe }}
         estimated={{ tach: meters.tach.estimated, hobbs: meters.hobbs.estimated, airframe: false }}
         resets={resets ?? []}

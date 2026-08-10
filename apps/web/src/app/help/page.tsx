@@ -497,6 +497,14 @@ const SECTIONS: Section[] = [
           actually been recorded. Enter it on a logbook entry, at enrollment, or by hand on this page.
         </p>
         <p>
+          <strong>Where a reading came from.</strong> Each current reading shows the date it is
+          anchored to and its source — a logbook entry, a MyFlightBook sync, something you entered
+          by hand, an ADS-B estimate, or the starting reading. A value marked <em>estimated</em> was
+          derived rather than read off the meter, and the source then names what it was derived
+          from. The readings list labels each row the same way, so an ADS-B estimate is never
+          mistaken for a meter read.
+        </p>
+        <p>
           <strong>Starting readings</strong> on the same page are the figures captured when you added
           the aircraft. Every hours countdown starts from them, so a number typed into the wrong box
           shifts all of them — and they used to be set once at enrollment and unreachable afterwards.
