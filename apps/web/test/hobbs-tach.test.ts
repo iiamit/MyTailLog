@@ -13,6 +13,8 @@ import {
   normalizeReadings,
   detectAnomalies,
   detectDuplicateMeters,
+  readingSourceOf,
+  READING_SOURCE_LABEL,
 } from "../src/lib/hobbsTach";
 
 // Reading builder. Note hobbs/tach have DIFFERENT absolute origins across tests
@@ -309,4 +311,56 @@ test("detectAnomalies: a reviewed reading is skipped", () => {
     R("c", "2025-01-03", 3305, null),
   ];
   assert.equal(detectAnomalies(rs).find((x) => x.readingId === "b"), undefined);
+});
+
+// --- provenance -------------------------------------------------------------
+// An owner emailed asking where a current reading came from and couldn't find
+// out — the value was on screen with nothing saying when or from where. Worse,
+// every hours_reading row was internally tagged "mfb" regardless of its real
+// source, so a hand entry and an ADS-B estimate were indistinguishable from a
+// MyFlightBook sync.
+
+test("readingSourceOf maps the stored source honestly", () => {
+  assert.equal(readingSourceOf("myflightbook"), "mfb");
+  assert.equal(readingSourceOf("manual"), "manual");
+  assert.equal(readingSourceOf("adsb_estimate"), "adsb");
+  // Unknown/absent defaults to a sync, not "entered by hand": claiming a person
+  // typed something they didn't is the more misleading of the two errors.
+  assert.equal(readingSourceOf(null), "mfb");
+  assert.equal(readingSourceOf("something_new"), "mfb");
+});
+
+test("every ReadingSource has a human label (no raw enum can reach the UI)", () => {
+  for (const s of ["entry", "mfb", "manual", "adsb", "enrollment"] as const) {
+    assert.ok(READING_SOURCE_LABEL[s], s);
+    assert.ok(!READING_SOURCE_LABEL[s].includes("_"), `${s} label looks like an enum`);
+  }
+});
+
+test("currentTach/currentHobbs report the source they are anchored to", () => {
+  const readings: Reading[] = [
+    { id: "e1", source: "entry", date: "2026-01-01", hobbs: 100, tach: 90, reviewedAt: null },
+    { id: "m1", source: "manual", date: "2026-06-01", hobbs: 150, tach: 135, reviewedAt: null },
+  ];
+  const t = currentTach(readings);
+  assert.equal(t.from, "manual", "anchored to the newest reading, which was hand-entered");
+  assert.equal(t.asOf, "2026-06-01");
+  assert.equal(currentHobbs(readings).from, "manual");
+});
+
+test("a DERIVED value reports the source of its anchor, and stays flagged estimated", () => {
+  // Hobbs only, from a sync → tach must be derived. `from` names where the
+  // anchor came from; `estimated` separately says the number was computed.
+  const readings: Reading[] = [
+    { id: "s1", source: "mfb", date: "2026-06-01", hobbs: 200, tach: null, reviewedAt: null },
+  ];
+  const t = currentTach(readings);
+  assert.equal(t.estimated, true);
+  assert.equal(t.from, "mfb");
+  assert.equal(t.asOf, "2026-06-01");
+});
+
+test("with nothing recorded there is no source to claim", () => {
+  assert.equal(currentTach([]).from, null);
+  assert.equal(currentHobbs([]).from, null);
 });

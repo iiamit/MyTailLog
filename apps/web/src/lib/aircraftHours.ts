@@ -11,6 +11,7 @@ import {
   applyResets,
   toTotal,
   toFace,
+  readingSourceOf,
   type Anomaly,
   type CurrentTach,
   type CurrentHobbs,
@@ -53,7 +54,7 @@ async function fetchReadings(
   for (const r of readings ?? [])
     // `*_estimate` sources are values we inferred, not meter reads — flagged so
     // the utilization rate can exclude them (see Reading.estimated).
-    out.push({ id: r.id, source: "mfb", date: r.reading_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at, estimated: String(r.source ?? "").endsWith("_estimate") });
+    out.push({ id: r.id, source: readingSourceOf(r.source), date: r.reading_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at, estimated: String(r.source ?? "").endsWith("_estimate") });
   if (enrollment && (enrollment.hobbs != null || enrollment.tach != null || enrollment.airframe != null))
     out.push({
       id: "enrollment",

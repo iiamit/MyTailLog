@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
-import { METERS, type Meter } from "@/lib/hobbsTach";
+import { METERS, READING_SOURCE_LABEL, readingSourceOf, type ReadingSource, type Meter } from "@/lib/hobbsTach";
 import type { AdsbSuggestion } from "@/lib/adsb/reconcile";
 import {
   addMeterReset,
@@ -27,6 +27,7 @@ type ResetRow = {
 };
 
 type ReadingRow = {
+  source?: string | null;
   id: string;
   reading_date: string | null;
   hobbs: number | null;
@@ -262,6 +263,7 @@ export function MetersClient({
   readings,
   adsb,
   enrollment,
+  provenance,
 }: {
   aircraftId: string;
   canEdit: boolean;
@@ -271,6 +273,8 @@ export function MetersClient({
   resets: ResetRow[];
   readings: ReadingRow[];
   enrollment: { hobbs: number | null; tach: number | null; airframe: number | null; date: string | null };
+  /** Where each CURRENT reading came from — the answer to "why does it say that?" */
+  provenance: Record<Meter, { asOf: string | null; from: ReadingSource | null }>;
   adsb: { enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
 }) {
   const router = useRouter();
@@ -380,6 +384,15 @@ export function MetersClient({
               {estimated[m] && (
                 <div className="mt-1 text-[11px] text-annun-amber">
                   estimated — no {LABEL[m].toLowerCase()} reading on record
+                </div>
+              )}
+              {/* "Where is this number coming from?" was a real support email.
+                  The value alone couldn't answer it, so say it on the card. */}
+              {face[m] != null && provenance[m].from && (
+                <div className="mt-1 text-[11px] text-dim">
+                  {provenance[m].asOf ? `as of ${provenance[m].asOf}` : "undated"} ·{" "}
+                  {estimated[m] ? "derived from " : "from "}
+                  {READING_SOURCE_LABEL[provenance[m].from!]}
                 </div>
               )}
             </div>
@@ -666,6 +679,16 @@ export function MetersClient({
                       {LABEL[m].toLowerCase()} {r[m]?.toFixed(1)}
                     </span>
                   ))}
+                  {/* A sync, a hand entry and an ADS-B estimate used to look
+                      identical here. The estimate especially needs to be
+                      distinguishable — it is a prompt, not a meter read. */}
+                  <span
+                    className={`ml-3 ${
+                      readingSourceOf(r.source) === "adsb" ? "text-annun-amber" : "text-faint"
+                    }`}
+                  >
+                    {READING_SOURCE_LABEL[readingSourceOf(r.source)]}
+                  </span>
                 </div>
                 {canEdit && (
                   <ConfirmButton
