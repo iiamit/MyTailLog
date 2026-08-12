@@ -61,6 +61,40 @@ export async function localImageSrc(
 }
 
 /**
+ * The raw BYTES of a cached blob, downloading first if needed.
+ *
+ * `localImageSrc` hands back a webview URL, which is all an <img> needs — but
+ * pdf.js needs the actual bytes. Same cache, same path, so a document already
+ * pulled down by "Download all" is read straight off disk with no network.
+ */
+export async function localFileBytes(
+  kind: "page" | "document",
+  id: string,
+): Promise<Uint8Array | null> {
+  const path = pathFor(kind, id, false);
+  // Reuse the download-and-cache path; we only want its side effect on disk.
+  if (!(await cachedSrc(path))) {
+    const src = await localImageSrc(kind, id);
+    if (!src) return null;
+  }
+  try {
+    const { data } = await Filesystem.readFile({ path, directory: DIR });
+    if (typeof data !== "string") return null;
+    return base64ToBytes(data);
+  } catch {
+    return null;
+  }
+}
+
+/** atob in chunks — a POH runs to several MB and one giant call is wasteful. */
+function base64ToBytes(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
+/**
  * Download every page (thumb + full) and document to the device, so the whole
  * record browses offline. Skips anything already cached (localImageSrc checks
  * disk first), so it's cheap to re-run and resumes after an interruption. Bounded

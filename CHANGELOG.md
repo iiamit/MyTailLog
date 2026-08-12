@@ -24,7 +24,9 @@ the git log.
   non-compliant while telling you that you were fine.
 - **AROW documents offline** — airworthiness certificate, registration, POH/AFM
   and weight & balance pinned together for a ramp check, each either present or
-  explicitly missing.
+  explicitly missing. **PDFs open in the app**, page by page: they used to say
+  "open on the web app", which is the wrong answer on a taxiway, and a
+  registration or airworthiness certificate is usually a PDF.
 - **Nothing recorded disappears quietly.** A "Waiting to upload" list shows what
   hasn't reached the server and keeps the reason on anything refused. Retries are
   safe: every queued action carries an id that becomes the server row's key, so a

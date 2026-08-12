@@ -10,11 +10,13 @@ touch the web app or its deploy.
 
 **How it works** (architecture + the self-hosted sync engine):
 [`../../docs/mobile-and-sync.md`](../../docs/mobile-and-sync.md). Module map, in
-short: `sync.ts` (pull), `db.ts` (SQLite mirror + capture queue), `blobs.ts` (scan
-cache + download-all), `capture.ts` (camera → queue → upload), `airworthiness.ts`
-(status, computed on device), `screens.tsx` / `status-screen.tsx` /
-`documents-screen.tsx` / `capture-screen.tsx` / `lightbox.tsx` (UI), `App.tsx`
-(auth + nav + swipe-back).
+short: `sync.ts` (pull), `db.ts` (SQLite mirror + capture/action queues),
+`blobs.ts` (scan cache + download-all + raw bytes), `capture.ts` (camera → queue
+→ upload), `actions.ts` (offline write queue → drain), `airworthiness.ts` (status,
+computed on device), `screens.tsx` / `status-screen.tsx` / `documents-screen.tsx`
+/ `pdf-screen.tsx` / `record-screen.tsx` / `complete-screen.tsx` /
+`squawks-screen.tsx` / `pending.tsx` / `capture-screen.tsx` / `lightbox.tsx` (UI),
+`App.tsx` (auth + nav + swipe-back).
 
 ## Shared code with the web app
 
@@ -73,8 +75,10 @@ just `npm run ios`.
    hangar list. Open it → **Status** shows current tach/hobbs with provenance,
    then every maintenance item and recurring AD worst-first.
 5. **Documents** → the four AROW slots, each either the document or an explicit
-   "not in the vault yet". Turn on airplane mode and check both screens still
-   render — that's the whole point of them.
+   "not in the vault yet". Tap a **PDF** — it renders in-app (pdf.js, page by
+   page), because a registration or airworthiness certificate is usually a PDF
+   and "open it on the web" is useless during a ramp check. Turn on airplane mode
+   and check all of this still renders — that's the whole point of these screens.
 
 If sync errors, note the message — it comes straight from `/api/sync/pull`
 (e.g. a 401 = token issue, a network error = the API base or connectivity).

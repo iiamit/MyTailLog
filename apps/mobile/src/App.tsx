@@ -9,6 +9,7 @@ import { prefetchAll } from "./blobs";
 import { Hangar, Entries, EntryDetail, Pages, PageViewer } from "./screens";
 import { Status } from "./status-screen";
 import { Documents } from "./documents-screen";
+import { PdfViewer } from "./pdf-screen";
 import { Record } from "./record-screen";
 import { Squawks } from "./squawks-screen";
 import { CompleteItem } from "./complete-screen";
@@ -79,6 +80,7 @@ type Nav =
   | { screen: "record"; aircraft: Aircraft }
   | { screen: "squawks"; aircraft: Aircraft }
   | { screen: "complete"; aircraft: Aircraft; item: StatusItem }
+  | { screen: "pdf"; aircraft: Aircraft; doc: { id: string; title: string } }
   | { screen: "pending" }
   | { screen: "capture" };
 
@@ -123,6 +125,8 @@ function Shell({ session }: { session: Session }) {
           return { screen: "entries", aircraft: n.aircraft };
         case "complete":
           return { screen: "status", aircraft: n.aircraft };
+        case "pdf":
+          return { screen: "documents", aircraft: n.aircraft };
         case "page":
           return { screen: "pages", aircraft: n.aircraft };
         case "capture":
@@ -291,7 +295,16 @@ function Shell({ session }: { session: Session }) {
       )}
 
       {nav.screen === "documents" && (
-        <Documents aircraft={nav.aircraft} onBack={back} onZoom={setZoom} />
+        <Documents
+          aircraft={nav.aircraft}
+          onBack={back}
+          onZoom={setZoom}
+          onOpenPdf={(doc) => setNav({ screen: "pdf", aircraft: nav.aircraft, doc })}
+        />
+      )}
+
+      {nav.screen === "pdf" && (
+        <PdfViewer documentId={nav.doc.id} title={nav.doc.title} onBack={back} onZoom={setZoom} />
       )}
 
       {nav.screen === "entry" && (
