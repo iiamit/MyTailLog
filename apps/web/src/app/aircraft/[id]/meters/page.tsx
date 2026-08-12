@@ -48,7 +48,7 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
     const [{ data: flights }, latestReading, meterResets] = await Promise.all([
       supabase
         .from("adsb_flight")
-        .select("first_seen, airborne_minutes, dismissed_at")
+        .select("first_seen, last_seen, airborne_minutes, dismissed_at")
         .eq("aircraft_id", id),
       getLatestRecordedReading(supabase, id, enrollment),
       getMeterResets(supabase, id),

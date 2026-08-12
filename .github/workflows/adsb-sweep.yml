@@ -1,0 +1,47 @@
+# Daily ADS-B sweep.
+#
+# This runs here rather than in the Cloud Scheduler job because OpenSky
+# blackholes Google Cloud egress — from Cloud Run (us-east4 and us-central1) the
+# TCP handshake to 194.209.200.34 never completes, while a GitHub-hosted runner
+# gets http=200 in under a second. See scripts/adsb-sweep.mjs for the numbers.
+#
+# The runner holds NO database credentials. It asks /api/cron/adsb what to query,
+# fetches it from OpenSky, and posts the results back for the server to write.
+name: adsb-sweep
+
+on:
+  schedule:
+    # 17:30 UTC — half an hour after the Cloud Scheduler daily job (13:00
+    # America/New_York), so MyFlightBook has already synced and its readings are
+    # the cutoff ADS-B is measured against. GitHub cron is always UTC and this
+    # deliberately does NOT follow US daylight saving: the sweep looks back three
+    # UTC days, so an hour of drift can't lose a flight.
+    - cron: "30 17 * * *"
+  workflow_dispatch:
+
+# No pull_request trigger: this repo is public, and secrets must never be
+# reachable from a fork's PR.
+permissions:
+  contents: read
+
+concurrency:
+  group: adsb-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+
+      - name: Sweep
+        run: node scripts/adsb-sweep.mjs
+        env:
+          MYTAILLOG_URL: https://mytaillog.com
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
+          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
