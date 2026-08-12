@@ -3,13 +3,19 @@ import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
-import { initDb, applyChanges, getCursor, setCursor } from "./db";
+import { initDb, applyChanges, getCursor, setCursor, actionCount } from "./db";
+import { drainActions, refreshEditable } from "./actions";
 import { prefetchAll } from "./blobs";
 import { Hangar, Entries, EntryDetail, Pages, PageViewer } from "./screens";
 import { Status } from "./status-screen";
 import { Documents } from "./documents-screen";
+import { Record } from "./record-screen";
+import { Squawks } from "./squawks-screen";
+import { CompleteItem } from "./complete-screen";
 import { CaptureScreen } from "./capture-screen";
+import { Pending, PendingBanner } from "./pending";
 import { Lightbox } from "./lightbox";
+import type { StatusItem } from "@/lib/status";
 import type { Aircraft, LogEntry, Page } from "./types";
 import { Screen, Brand, ghost, input, primary, dim, amber, faint, accent, line, panel } from "./ui";
 
@@ -70,6 +76,10 @@ type Nav =
   | { screen: "page"; aircraft: Aircraft; pages: Page[]; index: number }
   | { screen: "status"; aircraft: Aircraft }
   | { screen: "documents"; aircraft: Aircraft }
+  | { screen: "record"; aircraft: Aircraft }
+  | { screen: "squawks"; aircraft: Aircraft }
+  | { screen: "complete"; aircraft: Aircraft; item: StatusItem }
+  | { screen: "pending" }
   | { screen: "capture" };
 
 function Shell({ session }: { session: Session }) {
@@ -79,6 +89,7 @@ function Shell({ session }: { session: Session }) {
   const [nav, setNav] = useState<Nav>({ screen: "hangar" });
   const [dl, setDl] = useState<{ done: number; total: number } | null>(null);
   const [zoom, setZoom] = useState<string | null>(null);
+  const [pending, setPending] = useState(0);
   const zoomRef = useRef<string | null>(null);
   zoomRef.current = zoom;
 
@@ -87,6 +98,10 @@ function Shell({ session }: { session: Session }) {
     (async () => {
       await initDb();
       setCur(await getCursor());
+      setPending(await actionCount());
+      // Best-effort: offline, canEdit() falls back to allowing, and the server
+      // still refuses what it must.
+      refreshEditable().catch(() => {});
     })().catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
@@ -103,10 +118,15 @@ function Shell({ session }: { session: Session }) {
           return { screen: "entries", aircraft: n.aircraft };
         case "status":
         case "documents":
+        case "record":
+        case "squawks":
           return { screen: "entries", aircraft: n.aircraft };
+        case "complete":
+          return { screen: "status", aircraft: n.aircraft };
         case "page":
           return { screen: "pages", aircraft: n.aircraft };
         case "capture":
+        case "pending":
           return { screen: "hangar" };
         default:
           return n; // hangar has nowhere to go
@@ -140,6 +160,10 @@ function Shell({ session }: { session: Session }) {
     };
   }, []);
 
+  async function bumpPending() {
+    setPending(await actionCount());
+  }
+
   async function downloadAll() {
     setDl({ done: 0, total: 0 });
     try {
@@ -156,11 +180,21 @@ function Shell({ session }: { session: Session }) {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("No session token.");
+      // Push before pull: otherwise a reading typed at the aircraft would be
+      // overwritten in the UI by a pull that predates it.
+      setSyncing("Uploading…");
+      const drained = await drainActions();
+      setPending(await actionCount());
+      if (drained.failed > 0) {
+        setError(`${drained.failed} queued change${drained.failed === 1 ? "" : "s"} was refused — see the pending list.`);
+      }
+
       const from = await getCursor();
       const res = await pullAll(token, from, (n) => setSyncing(`Syncing… ${n}`));
       await applyChanges(res.changes);
       await setCursor(res.cursor);
       setCur(res.cursor);
+      refreshEditable().catch(() => {});
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -188,6 +222,7 @@ function Shell({ session }: { session: Session }) {
             <button style={{ ...ghost, marginLeft: "auto" }} onClick={() => supabase.auth.signOut()}>Sign out</button>
           </div>
           <p style={{ color: dim, fontSize: 12.5, marginTop: 6 }}>{session.user.email}</p>
+          <PendingBanner count={pending} onOpen={() => setNav({ screen: "pending" })} />
           <button
             onClick={() => setNav({ screen: "capture" })}
             style={{ width: "100%", marginTop: 14, background: accent, color: "#071018", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700 }}
@@ -230,10 +265,30 @@ function Shell({ session }: { session: Session }) {
           onScans={() => setNav({ screen: "pages", aircraft: nav.aircraft })}
           onStatus={() => setNav({ screen: "status", aircraft: nav.aircraft })}
           onDocuments={() => setNav({ screen: "documents", aircraft: nav.aircraft })}
+          onRecord={() => setNav({ screen: "record", aircraft: nav.aircraft })}
+          onSquawks={() => setNav({ screen: "squawks", aircraft: nav.aircraft })}
         />
       )}
 
-      {nav.screen === "status" && <Status aircraft={nav.aircraft} onBack={back} />}
+      {nav.screen === "status" && (
+        <Status
+          aircraft={nav.aircraft}
+          onBack={back}
+          onComplete={(item) => setNav({ screen: "complete", aircraft: nav.aircraft, item })}
+        />
+      )}
+
+      {nav.screen === "record" && (
+        <Record aircraft={nav.aircraft} onBack={back} onQueued={bumpPending} />
+      )}
+
+      {nav.screen === "squawks" && (
+        <Squawks aircraft={nav.aircraft} onBack={back} onQueued={bumpPending} />
+      )}
+
+      {nav.screen === "complete" && (
+        <CompleteItem aircraft={nav.aircraft} item={nav.item} onBack={back} onQueued={bumpPending} />
+      )}
 
       {nav.screen === "documents" && (
         <Documents aircraft={nav.aircraft} onBack={back} onZoom={setZoom} />
@@ -256,6 +311,8 @@ function Shell({ session }: { session: Session }) {
       )}
 
       {nav.screen === "capture" && <CaptureScreen onBack={back} onSynced={sync} />}
+
+      {nav.screen === "pending" && <Pending onBack={back} onChanged={bumpPending} />}
 
       {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
     </Screen>

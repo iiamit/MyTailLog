@@ -107,13 +107,32 @@ const SECTIONS: Section[] = [
       <>
         <p>
           A native <strong>iPhone / iPad app</strong> is in TestFlight beta. It syncs your aircraft once,
-          then works <strong>fully offline</strong> — browse every log entry, document, and original
-          scanned page with no signal — and lets you <strong>capture new logbook pages offline</strong>{" "}
-          that upload when you&apos;re back online. It stays in sync with everything you do on the web.
+          then works <strong>fully offline</strong> — which matters, because the hangar is exactly where
+          you have no signal.
+        </p>
+        <p>
+          <strong>Status</strong> answers &ldquo;can I fly this?&rdquo; without a connection: current
+          tach and hobbs with where each reading came from, then every maintenance item and recurring
+          AD worst-first, with the same countdowns and calendar-month rules the web app uses. The
+          aircraft list flags the worst one, so you see a problem before you open anything.
+        </p>
+        <p>
+          <strong>Record</strong> writes back. Type the meters you&apos;re looking at (pre-filled, and
+          it warns if the number is lower than the last one), log oil you added, raise a squawk, or
+          mark a recurring item done. A <strong>VOR check</strong> asks for the place, the bearing
+          error and your signature, because <strong>91.171(d)</strong> requires those recorded and
+          signed — so it resets the counter <em>and</em> writes a real log entry, rather than just
+          moving a due-date.
+        </p>
+        <p>
+          Everything you record is saved on the device immediately and uploads on the next sync. A{" "}
+          <strong>Waiting to upload</strong> list shows anything still queued, and keeps the reason on
+          anything the server refused — nothing you record disappears quietly.
         </p>
         <Effects>
-          Today the app is view-everything-offline plus offline capture; editing existing entries is still
-          done on the web. It&apos;s rolling out through TestFlight — more soon.
+          Browse, check status, and record readings/squawks/oil/completions offline. Editing existing
+          entries, resolving squawks, and reviewing extractions are still done on the web. Viewers see
+          everything read-only. It&apos;s rolling out through TestFlight — more soon.
         </Effects>
       </>
     ),

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { computeAirworthiness, type Airworthiness, type StatusLine } from "./airworthiness";
+import { canEdit } from "./actions";
+import type { StatusItem } from "@/lib/status";
 import { READING_SOURCE_LABEL } from "@/lib/hobbsTach";
 import type { Aircraft } from "./types";
 import {
@@ -10,9 +12,18 @@ import {
 // The screen you open standing at the aircraft: what's due, on what meter, and
 // how long you've got — all from the on-device mirror, no signal needed.
 
-export function Status({ aircraft, onBack }: { aircraft: Aircraft; onBack: () => void }) {
+export function Status({
+  aircraft,
+  onBack,
+  onComplete,
+}: {
+  aircraft: Aircraft;
+  onBack: () => void;
+  onComplete: (item: StatusItem) => void;
+}) {
   const [data, setData] = useState<Airworthiness | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const editable = canEdit(aircraft.id);
 
   useEffect(() => {
     let live = true;
@@ -41,7 +52,13 @@ export function Status({ aircraft, onBack }: { aircraft: Aircraft; onBack: () =>
             </p>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-            {data.lines.map((l) => <Line key={`${l.item.source}:${l.item.id}`} line={l} />)}
+            {data.lines.map((l) => (
+              <Line
+                key={`${l.item.source}:${l.item.id}`}
+                line={l}
+                onComplete={editable && l.item.source === "maintenance" ? () => onComplete(l.item) : undefined}
+              />
+            ))}
           </div>
           <p style={{ color: faint, fontSize: 11, marginTop: 16, lineHeight: 1.5 }}>
             Computed on device from your last sync. This mirrors your records — it is not a
@@ -94,7 +111,7 @@ function MeterBox({
   );
 }
 
-function Line({ line: l }: { line: StatusLine }) {
+function Line({ line: l, onComplete }: { line: StatusLine; onComplete?: () => void }) {
   const color = URGENCY_COLOR[l.urgency] ?? faint;
   const i = l.item;
   return (
@@ -139,6 +156,25 @@ function Line({ line: l }: { line: StatusLine }) {
       )}
       {i.verifiedReport && (
         <div style={{ color: faint, fontSize: 10.5, marginTop: 5 }}>✓ corroborated by a scanned report</div>
+      )}
+
+      {onComplete && (
+        <button
+          onClick={onComplete}
+          style={{
+            marginTop: 9,
+            background: "transparent",
+            color: accent,
+            border: `1px solid ${line}`,
+            borderRadius: 8,
+            padding: "8px 12px",
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Mark done{i.kind === "vor" ? " (91.171)" : ""}
+        </button>
       )}
     </div>
   );

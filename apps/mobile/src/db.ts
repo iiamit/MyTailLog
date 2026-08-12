@@ -40,6 +40,20 @@ export async function initDb(): Promise<void> {
       image          TEXT NOT NULL,
       thumbnail      TEXT
     );
+    -- Offline writes waiting to reach the server. \`payload\` is the JSON action
+    -- body; \`id\` is the client-generated UUID that also becomes the server row's
+    -- key, so draining twice can't write twice. \`error\` holds the last failure so
+    -- the UI can show WHY something is stuck instead of silently retrying.
+    CREATE TABLE IF NOT EXISTS action_queue (
+      id          TEXT PRIMARY KEY,
+      aircraft_id TEXT NOT NULL,
+      type        TEXT NOT NULL,
+      label       TEXT NOT NULL,
+      payload     TEXT NOT NULL,
+      created_at  TEXT NOT NULL,
+      attempts    INTEGER NOT NULL DEFAULT 0,
+      error       TEXT
+    );
   `);
 }
 
@@ -76,6 +90,52 @@ export async function removeCapture(id: string): Promise<void> {
 export async function captureCount(): Promise<number> {
   if (!db) return 0;
   const res = await db.query("SELECT COUNT(*) AS n FROM capture_queue");
+  return Number((res.values?.[0] as { n: number } | undefined)?.n ?? 0);
+}
+
+export type QueuedAction = {
+  id: string;
+  aircraft_id: string;
+  type: string;
+  /** Human wording for the pending list — "Tach 4141.6", "Oil +1 qt". */
+  label: string;
+  payload: string; // JSON
+  created_at: string;
+  attempts: number;
+  error: string | null;
+};
+
+export async function enqueueAction(a: Omit<QueuedAction, "attempts" | "error">): Promise<void> {
+  if (!db) return;
+  await db.run(
+    "INSERT OR REPLACE INTO action_queue (id,aircraft_id,type,label,payload,created_at,attempts,error) VALUES (?,?,?,?,?,?,0,NULL)",
+    [a.id, a.aircraft_id, a.type, a.label, a.payload, a.created_at],
+  );
+}
+
+/** Oldest first — actions are applied in the order they were taken. */
+export async function listActions(aircraftId?: string): Promise<QueuedAction[]> {
+  if (!db) return [];
+  const res = aircraftId
+    ? await db.query("SELECT * FROM action_queue WHERE aircraft_id=? ORDER BY created_at", [aircraftId])
+    : await db.query("SELECT * FROM action_queue ORDER BY created_at");
+  return (res.values ?? []) as QueuedAction[];
+}
+
+export async function removeAction(id: string): Promise<void> {
+  if (!db) return;
+  await db.run("DELETE FROM action_queue WHERE id=?", [id]);
+}
+
+/** Record a failed attempt so the pending list can explain itself. */
+export async function markActionFailed(id: string, error: string): Promise<void> {
+  if (!db) return;
+  await db.run("UPDATE action_queue SET attempts=attempts+1, error=? WHERE id=?", [error, id]);
+}
+
+export async function actionCount(): Promise<number> {
+  if (!db) return 0;
+  const res = await db.query("SELECT COUNT(*) AS n FROM action_queue");
   return Number((res.values?.[0] as { n: number } | undefined)?.n ?? 0);
 }
 
