@@ -6,6 +6,28 @@ the git log.
 
 ## 2026.08
 
+### Fixed — ADS-B passive hours never actually ran
+- **The sweep had not made a single successful call since it shipped.** Every
+  daily run failed with a 10-second timeout, for every opted-in aircraft, and no
+  flight was ever recorded. The cause was not our code: **OpenSky blackholes
+  Google Cloud egress.** Measured from a Cloud Run job in us-east4 *and*
+  us-central1, DNS resolves but the TCP handshake to their host never completes
+  (`connect=0.000000s`, dropped rather than refused), while `api.github.com`
+  answers in 27 ms from the same container. Raising the timeout could never have
+  fixed a blackhole.
+- **The sweep moved to a GitHub Actions job**, which reaches OpenSky in under a
+  second. The runner holds **no database credentials**: it asks `/api/cron/adsb`
+  which aircraft to look up and what windows to ask for, then posts the results
+  back for the server to write. Opt-in is re-checked at write time, so switching
+  ADS-B off mid-sweep still means no rows.
+- **Overlapping observations no longer inflate the estimate.** OpenSky emits more
+  than one record for a single flight when receiver coverage breaks up — the real
+  data that surfaced this had a 23-minute segment sitting inside a 72-minute one.
+  Summing them reported 3.4 h for 3.0 h of flying, on the very number we suggest
+  adding to a tach. Overlapping spans are now merged and counted once.
+- **/help now says when the check runs** (17:30 UTC, daily) and that it looks back
+  three days, so a flight this afternoon is expected tomorrow rather than tonight.
+
 ### Changed — A landing page that says what the thing does
 - **The front page listed six features; the app has closer to thirty**, and the
   ones people actually pick it for — that it is free with no billing code in it

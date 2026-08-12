@@ -547,6 +547,12 @@ const SECTIONS: Section[] = [
           silently pull another aircraft&apos;s flights. You can always enter it by hand.
         </p>
         <p>
+          <strong>The check runs once a day, at 17:30 UTC</strong> (1:30 pm US Eastern in summer,
+          12:30 pm in winter). So a flight this afternoon usually shows up tomorrow, not tonight.
+          Each run looks back over the last three days, which means a run that fails or is skipped
+          catches up by itself rather than losing those hours.
+        </p>
+        <p>
           <strong>Your own records always win.</strong> Hobbs and tach are cumulative, so a reading
           from a <L href="#myflightbook">MyFlightBook</L> sync, a logbook entry, or one you typed
           already accounts for everything flown up to its date. ADS-B only speaks up about flights

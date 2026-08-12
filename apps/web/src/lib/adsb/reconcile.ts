@@ -22,6 +22,7 @@
 
 export type AdsbFlightRow = {
   first_seen: string; // ISO timestamp
+  last_seen: string; // ISO timestamp
   airborne_minutes: number;
   dismissed_at: string | null;
 };
@@ -53,6 +54,46 @@ const day = (iso: string): string => iso.slice(0, 10);
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 
 /**
+ * Total wall-clock minutes covered by these observations, counting overlapping
+ * ones ONCE.
+ *
+ * OpenSky really does emit overlapping records for a single flight. Observed for
+ * N9363V on 2026-08-11:
+ *
+ *   22:12 → 23:24Z  (71 min)  KFZY→KCDW
+ *   23:01 → 23:24Z  (23 min)  KMSV→(none)
+ *
+ * The second is contained in the first — same landing, two receiver-coverage
+ * segments. Summing airborne_minutes reports 3.4 h for 3.0 h of flying, and
+ * since this number is what we suggest the owner add to their tach, an inflated
+ * estimate is the one failure mode this feature cannot afford.
+ *
+ * Classic sweep: sort by start, merge anything that starts before the running
+ * segment ends.
+ */
+export function mergedMinutes(flights: AdsbFlightRow[]): number {
+  const spans = flights
+    .map((f) => [Date.parse(f.first_seen), Date.parse(f.last_seen)] as const)
+    .filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b) && b > a)
+    .sort((x, y) => x[0] - y[0]);
+
+  let total = 0;
+  let start = 0;
+  let end = -1;
+  for (const [a, b] of spans) {
+    if (a > end) {
+      if (end > start) total += end - start;
+      start = a;
+      end = b;
+    } else if (b > end) {
+      end = b;
+    }
+  }
+  if (end > start) total += end - start;
+  return total / 60_000;
+}
+
+/**
  * Returns a suggestion, or null when we should say nothing.
  *
  * Silent when: no flights; every flight is covered by a recorded reading; the
@@ -77,7 +118,7 @@ export function reconcileAdsb(input: {
   );
   if (uncovered.length === 0) return null;
 
-  const hours = round1(uncovered.reduce((n, f) => n + Math.max(0, f.airborne_minutes), 0) / 60);
+  const hours = round1(mergedMinutes(uncovered) / 60);
   if (hours < MIN_HOURS) return null;
 
   // Tach is the maintenance meter, so express the suggestion there when we have

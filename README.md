@@ -99,7 +99,7 @@ AI reads the page; you review it next to the original, with low-confidence field
   the forecast reflects real hours — one half of the two-way MFB link (see below).
 - A **daily job** auto-syncs hours (once/day) and emails **reminders** before due
   items — annual, oil, ADs, and more, each with a configurable lead time.
-- **ADS-B passive hours** — **opt-in per aircraft, off by default.** The daily job
+- **ADS-B passive hours** — **opt-in per aircraft, off by default.** A daily sweep
   asks the free **OpenSky Network** whether the aircraft flew, sending only its
   public ICAO 24-bit Mode S address (no user data, no track storage). Your own
   records always win: a MyFlightBook sync, a logbook entry or a typed reading
@@ -292,10 +292,24 @@ firebase apphosting:secrets:set SUPABASE_SECRET_KEY   # Supabase → API Keys �
 # For the daily reminder/sync cron (optional but recommended):
 firebase apphosting:secrets:set RESEND_API_KEY        # for reminder email
 firebase apphosting:secrets:set CRON_SECRET           # random string; gates the cron endpoint
-# For ADS-B passive hours (optional; the sweep skips itself when unset):
-firebase apphosting:secrets:set OPENSKY_CLIENT_ID     # opensky-network.org → Account → API client
-firebase apphosting:secrets:set OPENSKY_CLIENT_SECRET # OAuth2 client credentials (anonymous access was removed in 2026)
 ```
+
+**ADS-B passive hours run outside the app.** OpenSky blackholes Google Cloud
+egress — from Cloud Run the TCP handshake to their host never completes, while a
+GitHub-hosted runner reaches it in under a second — so the sweep lives in
+[`.github/workflows/adsb-sweep.yml`](./.github/workflows/adsb-sweep.yml) and the
+credentials are **repository** secrets, not App Hosting ones. The runner never
+touches the database: it asks `/api/cron/adsb` what to query and posts the
+results back. Set these under *Settings → Secrets and variables → Actions*:
+
+| Secret | Where it comes from |
+| --- | --- |
+| `OPENSKY_CLIENT_ID` | opensky-network.org → Account → API client |
+| `OPENSKY_CLIENT_SECRET` | OAuth2 client credentials (anonymous access was removed in 2026) |
+| `CRON_SECRET` | the same value you set for App Hosting above |
+
+Self-hosting somewhere that *can* reach OpenSky? Run `node scripts/adsb-sweep.mjs`
+from any scheduler with those three in the environment plus `MYTAILLOG_URL`.
 
 Non-secret config in [`apphosting.yaml`](./apphosting.yaml): `NEXT_PUBLIC_SITE_URL`
 (pins the public origin), `EXTRACTION_MODEL` / `TEXT_MODEL`, and the AI cost caps

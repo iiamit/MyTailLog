@@ -43,29 +43,18 @@ env:
     secret: RESEND_API_KEY
     availability:
       - RUNTIME
-  # Shared bearer secret gating POST /api/cron/daily (Cloud Scheduler sends it).
+  # Shared bearer secret gating the scheduled endpoints: POST /api/cron/daily
+  # (Cloud Scheduler) and GET/POST /api/cron/adsb (the GitHub Actions sweep, which
+  # holds this as a repository secret).
   - variable: CRON_SECRET
     secret: CRON_SECRET
     availability:
       - RUNTIME
-  # OpenSky Network OAuth2 client credentials for the ADS-B passive-hours sweep
-  # (opensky-network.org → Account → API client). Server-only; the sweep sends
-  # nothing but a public Mode S hex. Absent → the sweep logs and skips, so the
-  # rest of the cron is unaffected. /flights/* is 4,000 credits/day and the
-  # sweep's 3-UTC-day lookback costs 8 per aircraft (two legal 2-partition
-  # requests), so this ceilings at ~500 opted-in aircraft/day.
-  # NOTE: these two Secret Manager entries are lower-kebab, unlike the rest of
-  # the file. That is the name they were actually created under — the `secret:`
-  # key must match the Secret Manager ID exactly, so don't "fix" the casing
-  # without renaming the secret first.
-  - variable: OPENSKY_CLIENT_ID
-    secret: opensky-client-id
-    availability:
-      - RUNTIME
-  - variable: OPENSKY_CLIENT_SECRET
-    secret: opensky-client-secret
-    availability:
-      - RUNTIME
+  # NO OPENSKY_* HERE, deliberately. OpenSky blackholes Google Cloud egress — the
+  # TCP handshake to 194.209.200.34 never completes from Cloud Run — so the sweep
+  # runs on a GitHub-hosted runner instead and the credentials live as repository
+  # secrets. Mounting them here would only be an unused secret in the container.
+  # See app/api/cron/adsb/route.ts for the measurements.
   # Dropbox app credentials for scheduled cloud backups (dropbox.com/developers
   # → an app with "App folder" access and the files.content.write scope).
   # Server-only; the OAuth tokens they mint are encrypted at rest and live in the
