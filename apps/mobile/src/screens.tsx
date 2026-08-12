@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { getRows, getByAircraft } from "./db";
 import { localImageSrc } from "./blobs";
+import { computeAirworthiness } from "./airworthiness";
+import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Card, Row, TopBar, dim, faint, ink, mono, panel, panel2, line, accent } from "./ui";
+import { Card, Row, TopBar, Pill, URGENCY_LABEL, dim, faint, ink, mono, panel, panel2, line, accent } from "./ui";
 
 // ---- Hangar: the aircraft you have on device ----------------------------------
 export function Hangar({
@@ -19,12 +21,33 @@ export function Hangar({
   error: string | null;
 }) {
   const [aircraft, setAircraft] = useState<Aircraft[] | null>(null);
+  // Worst urgency per aircraft, so the list itself answers "anything wrong?"
+  // without opening each one. Computed from the local mirror, so it costs
+  // nothing but a few SQLite reads and works with no signal.
+  const [worst, setWorst] = useState<Record<string, Urgency>>({});
 
   useEffect(() => {
     getRows<Aircraft>("aircraft").then((rows) =>
       setAircraft(rows.sort((a, b) => (a.tail_number || "").localeCompare(b.tail_number || ""))),
     );
   }, [cursor]); // reload after a sync advances the cursor
+
+  useEffect(() => {
+    if (!aircraft) return;
+    let live = true;
+    (async () => {
+      const out: Record<string, Urgency> = {};
+      for (const a of aircraft) {
+        // One aircraft failing to compute must not blank the whole list.
+        const w = await computeAirworthiness(a.id).then((r) => r.worst).catch(() => null);
+        if (w) out[a.id] = w;
+      }
+      if (live) setWorst(out);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [aircraft, cursor]);
 
   return (
     <>
@@ -44,8 +67,17 @@ export function Hangar({
           <Card key={a.id} onClick={() => onOpen(a)}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ ...mono, fontSize: 16, fontWeight: 700 }}>{a.tail_number}</span>
-              <span style={{ color: dim, fontSize: 13 }}>{[a.make, a.model].filter(Boolean).join(" ")}</span>
-              <span style={{ marginLeft: "auto", color: faint }}>›</span>
+              <span style={{ color: dim, fontSize: 13, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {[a.make, a.model].filter(Boolean).join(" ")}
+              </span>
+              <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                {/* Only shout when it matters — a green "OK" pill on every row
+                    would train the eye to ignore the red one. */}
+                {worst[a.id] && worst[a.id] !== "none" && (
+                  <Pill tone={worst[a.id]}>{URGENCY_LABEL[worst[a.id]]}</Pill>
+                )}
+                <span style={{ color: faint }}>›</span>
+              </span>
             </div>
           </Card>
         ))}
@@ -61,11 +93,15 @@ export function Entries({
   onBack,
   onOpen,
   onScans,
+  onStatus,
+  onDocuments,
 }: {
   aircraft: Aircraft;
   onBack: () => void;
   onOpen: (e: LogEntry) => void;
   onScans: () => void;
+  onStatus: () => void;
+  onDocuments: () => void;
 }) {
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
 
@@ -77,8 +113,17 @@ export function Entries({
 
   return (
     <>
-      <TopBar title={aircraft.tail_number} onBack={onBack} right={<button onClick={onScans} style={{ background: "transparent", color: accent, border: `1px solid ${line}`, borderRadius: 8, padding: "6px 11px", fontSize: 12.5, cursor: "pointer" }}>Scans ›</button>} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+      <TopBar title={aircraft.tail_number} onBack={onBack} />
+      {/* Status first: it's the reason to open the app at the aircraft. */}
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <NavTab label="Status" onClick={onStatus} primary />
+        <NavTab label="Documents" onClick={onDocuments} />
+        <NavTab label="Scans" onClick={onScans} />
+      </div>
+      <div style={{ marginTop: 18, color: faint, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>
+        Maintenance log
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
         {entries?.length === 0 && <p style={{ color: faint, fontSize: 13 }}>No entries.</p>}
         {entries?.map((e) => (
           <div key={e.id} onClick={() => onOpen(e)} style={{ display: "flex", gap: 10, padding: "10px 2px", borderBottom: `1px solid ${line}`, cursor: "pointer" }}>
@@ -96,6 +141,27 @@ export function Entries({
         {!entries && <p style={{ color: faint, fontSize: 13 }}>Loading…</p>}
       </div>
     </>
+  );
+}
+
+function NavTab({ label, onClick, primary }: { label: string; onClick: () => void; primary?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        background: primary ? accent : panel,
+        color: primary ? "#071018" : ink,
+        border: primary ? "none" : `1px solid ${line}`,
+        borderRadius: 10,
+        padding: "11px 6px",
+        fontSize: 13.5,
+        fontWeight: primary ? 700 : 600,
+        cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
