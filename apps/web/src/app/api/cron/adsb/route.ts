@@ -158,14 +158,24 @@ export async function POST(req: Request) {
     });
   }
 
-  if (rows.length === 0) return json({ ingested: 0, skipped: flights.length });
+  if (rows.length === 0) return json({ ingested: 0, received: 0, skipped: flights.length });
 
-  const { error } = await supabase
+  // .select() so `ingested` counts rows the database actually INSERTED, not rows
+  // we handed it. ON CONFLICT DO NOTHING ... RETURNING yields only the new ones,
+  // and the 3-day lookback re-posts the same flights every day — reporting the
+  // input length would log "ingested 2 new flights" forever. (Service-role
+  // client, so the insert().select() RLS trap doesn't apply here.)
+  const { data: inserted, error } = await supabase
     .from("adsb_flight")
-    .upsert(rows, { onConflict: "aircraft_id,first_seen", ignoreDuplicates: true });
+    .upsert(rows, { onConflict: "aircraft_id,first_seen", ignoreDuplicates: true })
+    .select("id");
   if (error) return json({ error: error.message }, 500);
 
-  return json({ ingested: rows.length, skipped: flights.length - rows.length });
+  return json({
+    ingested: inserted?.length ?? 0,
+    received: rows.length,
+    skipped: flights.length - rows.length,
+  });
 }
 
 function str(v: unknown): string | null {

@@ -119,13 +119,18 @@ test("adsb: opt in, sweep ingests flights, suggestion appears, accepting writes 
     expect(res.ok(), `POST /api/cron/adsb failed: ${res.status()}`).toBeTruthy();
     expect((await res.json()).ingested).toBe(2);
 
-    // Re-posting the same flights writes nothing: idempotent on (aircraft_id, first_seen).
+    // Re-posting the same flights writes nothing: idempotent on
+    // (aircraft_id, first_seen). The daily sweep's 3-day lookback re-sends the
+    // same flights every run, so `ingested` must count what the DB actually
+    // inserted — not what we handed it.
     const again = await anon.post("/api/cron/adsb", {
       headers: { authorization: `Bearer ${CRON_SECRET}` },
       data: { flights: observed },
       timeout: 60_000,
     });
-    expect((await again.json()).ingested).toBe(0);
+    const repeat = await again.json();
+    expect(repeat.ingested, "re-posting must insert nothing").toBe(0);
+    expect(repeat.received, "…but the rows are still accepted and deduped").toBe(2);
   } finally {
     await anon.dispose();
   }
