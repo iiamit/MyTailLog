@@ -20,6 +20,7 @@
     "@capacitor/ios": "^6.2.0",
     "@capacitor/status-bar": "^6.0.2",
     "@supabase/supabase-js": "^2.45.0",
+    "pdfjs-dist": "^6.2.108",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

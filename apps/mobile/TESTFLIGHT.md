@@ -72,6 +72,11 @@ prev/next. Then **Status** (current tach/hobbs, items worst-first) and **Documen
 (the four AROW slots). All should work with no signal — that's the whole point of
 those two screens.
 
+**PDFs**, still offline: open a PDF document (registration and airworthiness
+certificates usually are). It should render in-app, page by page, with prev/next
+on a multi-page file, and tap-to-zoom. A PDF you've never downloaded says so
+rather than hanging — run **Download all scans for offline** first.
+
 **Offline writes**, still in Airplane Mode:
 - **Record** → the meters are prefilled; type a *lower* tach and check it warns you,
   then correct it and queue it.
@@ -96,7 +101,7 @@ Once steps 0–5 are done, shipping a new version is just this:
 ```bash
 git pull                       # get the changes you're shipping
 cd apps/mobile
-npm install                    # only if package.json changed
+npm install                    # only if package.json changed — it DID for the PDF viewer
 npm run ios                    # vite build && cap sync ios && cap open ios
 ```
 

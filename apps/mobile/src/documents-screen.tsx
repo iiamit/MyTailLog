@@ -29,10 +29,12 @@ export function Documents({
   aircraft,
   onBack,
   onZoom,
+  onOpenPdf,
 }: {
   aircraft: Aircraft;
   onBack: () => void;
   onZoom: (src: string) => void;
+  onOpenPdf: (doc: { id: string; title: string }) => void;
 }) {
   const [docs, setDocs] = useState<Doc[] | null>(null);
 
@@ -56,7 +58,7 @@ export function Documents({
         {AROW.map((t) => {
           const found = arow.filter((d) => d.type === t);
           return found.length > 0 ? (
-            found.map((d) => <DocRow key={d.id} doc={d} onZoom={onZoom} />)
+            found.map((d) => <DocRow key={d.id} doc={d} onZoom={onZoom} onOpenPdf={onOpenPdf} />)
           ) : (
             <div
               key={t}
@@ -72,7 +74,7 @@ export function Documents({
       {rest.length > 0 && (
         <Section label="Everything else">
           {[...rest].sort((a, b) => order(a) - order(b) || (b.document_date ?? "").localeCompare(a.document_date ?? "")).map((d) => (
-            <DocRow key={d.id} doc={d} onZoom={onZoom} />
+            <DocRow key={d.id} doc={d} onZoom={onZoom} onOpenPdf={onOpenPdf} />
           ))}
         </Section>
       )}
@@ -98,14 +100,26 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function DocRow({ doc, onZoom }: { doc: Doc; onZoom: (src: string) => void }) {
+function DocRow({
+  doc,
+  onZoom,
+  onOpenPdf,
+}: {
+  doc: Doc;
+  onZoom: (src: string) => void;
+  onOpenPdf: (doc: { id: string; title: string }) => void;
+}) {
   const [state, setState] = useState<"idle" | "opening" | "missing">("idle");
-  // PDFs can't go in the lightbox — it renders an <img>. Say so rather than
-  // opening a blank sheet on the ramp, which is the worst possible moment.
+  // A PDF can't go in the lightbox (it renders an <img>), so it gets the pdf.js
+  // viewer instead. Registration and airworthiness certificates are very often
+  // PDFs, so this is the common case on this screen, not the exception.
   const isPdf = (doc.mime_type ?? "").includes("pdf") || (doc.file_name ?? "").toLowerCase().endsWith(".pdf");
 
   async function open() {
-    if (isPdf) return;
+    if (isPdf) {
+      onOpenPdf({ id: doc.id, title: doc.title || documentTypeLabel(doc.type) });
+      return;
+    }
     setState("opening");
     const src = await localImageSrc("document", doc.id).catch(() => null);
     setState(src ? "idle" : "missing");
@@ -113,7 +127,7 @@ function DocRow({ doc, onZoom }: { doc: Doc; onZoom: (src: string) => void }) {
   }
 
   return (
-    <Card onClick={isPdf ? undefined : open}>
+    <Card onClick={open}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: ink }}>
@@ -129,11 +143,11 @@ function DocRow({ doc, onZoom }: { doc: Doc; onZoom: (src: string) => void }) {
               Not on device — connect once, or use “Download all”.
             </div>
           )}
-          {isPdf && (
-            <div style={{ color: faint, fontSize: 10.5, marginTop: 4 }}>PDF — open on the web app</div>
-          )}
+          {isPdf && <div style={{ color: faint, fontSize: 10.5, marginTop: 4 }}>PDF</div>}
         </div>
-        {!isPdf && <span style={{ color: state === "opening" ? faint : accent, fontSize: 12 }}>{state === "opening" ? "…" : "View"}</span>}
+        <span style={{ color: state === "opening" ? faint : accent, fontSize: 12 }}>
+          {state === "opening" ? "…" : "View"}
+        </span>
       </div>
     </Card>
   );

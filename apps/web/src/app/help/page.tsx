@@ -129,6 +129,12 @@ const SECTIONS: Section[] = [
           <strong>Waiting to upload</strong> list shows anything still queued, and keeps the reason on
           anything the server refused — nothing you record disappears quietly.
         </p>
+        <p>
+          <strong>Documents</strong> keeps your AROW paperwork to hand — airworthiness certificate,
+          registration, POH/AFM and weight &amp; balance — for a ramp check with no signal.{" "}
+          <strong>PDFs open in the app</strong>, page by page, which matters because a registration
+          or airworthiness certificate usually is one.
+        </p>
         <Effects>
           Browse, check status, and record readings/squawks/oil/completions offline. Editing existing
           entries, resolving squawks, and reviewing extractions are still done on the web. Viewers see
