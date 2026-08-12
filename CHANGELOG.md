@@ -6,6 +6,30 @@ the git log.
 
 ## 2026.08
 
+### Added — The iOS app can now tell you if you're legal, and record what you did
+- **Status, computed on the device.** Current tach/hobbs with provenance, then
+  every maintenance item and recurring AD worst-first — offline, in the hangar,
+  where there's no signal. The aircraft list flags the worst one so a problem is
+  visible before you open anything. None of the airworthiness math is a second
+  implementation: the app imports the *same* pure compliance code the web runs,
+  because two copies is how a phone and a website start disagreeing about
+  whether an annual is due.
+- **Record it there and then** — meter readings (pre-filled, and it warns when
+  the value is lower than the last one, which is either a meter swap or a typo),
+  oil added, squawks, and marking a recurring item done. All queue on device and
+  upload on the next sync.
+- **The VOR check writes a real record.** 91.171(d) wants the place, the bearing
+  error and a signature, so the app asks for them and writes a log entry as well
+  as resetting the counter. A tick-box that only moved a due-date would leave you
+  non-compliant while telling you that you were fine.
+- **AROW documents offline** — airworthiness certificate, registration, POH/AFM
+  and weight & balance pinned together for a ramp check, each either present or
+  explicitly missing.
+- **Nothing recorded disappears quietly.** A "Waiting to upload" list shows what
+  hasn't reached the server and keeps the reason on anything refused. Retries are
+  safe: every queued action carries an id that becomes the server row's key, so a
+  re-send after a dropped connection writes nothing the second time.
+
 ### Fixed — ADS-B passive hours never actually ran
 - **The sweep had not made a single successful call since it shipped.** Every
   daily run failed with a 10-second timeout, for every opted-in aircraft, and no
