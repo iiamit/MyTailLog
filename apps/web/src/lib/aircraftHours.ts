@@ -32,26 +32,43 @@ export type Enrollment = {
   date?: string | null;
 } | null;
 
-/**
- * All meter readings for an aircraft, normalized for hobbsTach — log entries,
- * synced hours_reading rows (MyFlightBook, etc.), and the enrollment readings as
- * an oldest-origin anchor. A shared aircraft collects readings from every
- * connected co-owner, so this naturally spans all of them.
- */
-async function fetchReadings(
-  supabase: SupabaseClient<Database>,
-  aircraftId: string,
-  enrollment?: Enrollment,
-): Promise<Reading[]> {
-  const [{ data: entries }, { data: readings }] = await Promise.all([
-    supabase.from("log_entry").select("id, entry_date, hobbs, tach, airframe, hours_reviewed_at").eq("aircraft_id", aircraftId),
-    supabase.from("hours_reading").select("id, reading_date, hobbs, tach, airframe, hours_reviewed_at, source").eq("aircraft_id", aircraftId),
-  ]);
+// Row shapes the pure builders need — the columns fetchReadings selects, and
+// nothing more. Declared structurally (not as Database["log_entry"]["Row"]) so
+// the native app can pass rows read out of its own SQLite mirror.
+export type EntryRowLite = {
+  id: string;
+  entry_date: string | null;
+  hobbs: number | null;
+  tach: number | null;
+  airframe: number | null;
+  hours_reviewed_at: string | null;
+};
+export type HoursRowLite = {
+  id: string;
+  reading_date: string | null;
+  hobbs: number | null;
+  tach: number | null;
+  airframe: number | null;
+  hours_reviewed_at: string | null;
+  source: string | null;
+};
 
+/**
+ * PURE core of fetchReadings: the same normalization, over rows you already
+ * have. The native app reads log_entry/hours_reading out of on-device SQLite and
+ * calls this, so there is exactly ONE definition of what counts as a reading.
+ * Duplicating this on the device is how the two would drift and a countdown
+ * would disagree between phone and web — on numbers people fly against.
+ */
+export function toReadings(
+  entries: EntryRowLite[],
+  readings: HoursRowLite[],
+  enrollment?: Enrollment,
+): Reading[] {
   const out: Reading[] = [];
-  for (const r of entries ?? [])
+  for (const r of entries)
     out.push({ id: r.id, source: "entry", date: r.entry_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at });
-  for (const r of readings ?? [])
+  for (const r of readings)
     // `*_estimate` sources are values we inferred, not meter reads — flagged so
     // the utilization rate can exclude them (see Reading.estimated).
     out.push({ id: r.id, source: readingSourceOf(r.source), date: r.reading_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at, estimated: String(r.source ?? "").endsWith("_estimate") });
@@ -66,6 +83,24 @@ async function fetchReadings(
       reviewedAt: null,
     });
   return out; // RAW — forecast consumers normalize; anomaly detection needs the raw hobbs==tach.
+}
+
+/**
+ * All meter readings for an aircraft — log entries, synced hours_reading rows
+ * (MyFlightBook, etc.), and the enrollment readings as an oldest-origin anchor.
+ * A shared aircraft collects readings from every connected co-owner, so this
+ * naturally spans all of them. Fetch half only; the shaping is in toReadings().
+ */
+async function fetchReadings(
+  supabase: SupabaseClient<Database>,
+  aircraftId: string,
+  enrollment?: Enrollment,
+): Promise<Reading[]> {
+  const [{ data: entries }, { data: readings }] = await Promise.all([
+    supabase.from("log_entry").select("id, entry_date, hobbs, tach, airframe, hours_reviewed_at").eq("aircraft_id", aircraftId),
+    supabase.from("hours_reading").select("id, reading_date, hobbs, tach, airframe, hours_reviewed_at, source").eq("aircraft_id", aircraftId),
+  ]);
+  return toReadings(entries ?? [], readings ?? [], enrollment);
 }
 
 /** Declared meter replacements, oldest first. Usually empty. */
@@ -121,17 +156,7 @@ export async function getCurrentTach(
   return currentTach(normalizeReadings(readings));
 }
 
-/**
- * Both current meters from a single readings fetch. Maintenance items count down
- * on the meter matching their kind — regulatory (100-hr, annual) on tach, usage
- * (oil, advisory) on hobbs — so the forecast needs both. Hobbs is the abundant
- * meter (MFB syncs it every flight); tach is the authoritative maintenance meter.
- */
-export async function getCurrentMeters(
-  supabase: SupabaseClient<Database>,
-  aircraftId: string,
-  enrollment?: Enrollment,
-): Promise<{
+export type CurrentMeters = {
   tach: CurrentTach;
   hobbs: CurrentHobbs;
   airframe: CurrentAirframe;
@@ -145,9 +170,19 @@ export async function getCurrentMeters(
   // hours-remaining figure into an approximate calendar date. `none` confidence
   // when the readings can't support one — callers then show hours only.
   utilization: Utilization;
-}> {
-  const { raw, readings: stitched, resets } = await fetchStitched(supabase, aircraftId, enrollment);
-  const readings = normalizeReadings(stitched);
+};
+
+/**
+ * PURE core of getCurrentMeters: everything downstream of the fetch. Takes RAW
+ * (unstitched) readings plus the meter resets, because the utilization rate must
+ * see the unstitched series so it can DROP an interval spanning a meter
+ * replacement rather than smooth over it.
+ *
+ * The native app calls this with rows from its own SQLite mirror, so phone and
+ * web derive "current hours" from one implementation.
+ */
+export function currentMetersFrom(raw: Reading[], resets: MeterReset[]): CurrentMeters {
+  const readings = normalizeReadings(applyResets(raw, resets));
   return {
     tach: currentTach(readings),
     hobbs: currentHobbs(readings),
@@ -156,6 +191,24 @@ export async function getCurrentMeters(
     toTotalHours: (value, date, meter) => toTotal(value, date, meter, resets),
     utilization: computeUtilization(raw, resets),
   };
+}
+
+/**
+ * Both current meters from a single readings fetch. Maintenance items count down
+ * on the meter matching their kind — regulatory (100-hr, annual) on tach, usage
+ * (oil, advisory) on hobbs — so the forecast needs both. Hobbs is the abundant
+ * meter (MFB syncs it every flight); tach is the authoritative maintenance meter.
+ */
+export async function getCurrentMeters(
+  supabase: SupabaseClient<Database>,
+  aircraftId: string,
+  enrollment?: Enrollment,
+): Promise<CurrentMeters> {
+  const [raw, resets] = await Promise.all([
+    fetchReadings(supabase, aircraftId, enrollment),
+    getMeterResets(supabase, aircraftId),
+  ]);
+  return currentMetersFrom(raw, resets);
 }
 
 /** Current hours (= current tach) for callers that only need the number. */

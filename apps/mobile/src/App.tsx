@@ -6,6 +6,8 @@ import { pullAll } from "./sync";
 import { initDb, applyChanges, getCursor, setCursor } from "./db";
 import { prefetchAll } from "./blobs";
 import { Hangar, Entries, EntryDetail, Pages, PageViewer } from "./screens";
+import { Status } from "./status-screen";
+import { Documents } from "./documents-screen";
 import { CaptureScreen } from "./capture-screen";
 import { Lightbox } from "./lightbox";
 import type { Aircraft, LogEntry, Page } from "./types";
@@ -66,6 +68,8 @@ type Nav =
   | { screen: "entry"; aircraft: Aircraft; entry: LogEntry }
   | { screen: "pages"; aircraft: Aircraft }
   | { screen: "page"; aircraft: Aircraft; pages: Page[]; index: number }
+  | { screen: "status"; aircraft: Aircraft }
+  | { screen: "documents"; aircraft: Aircraft }
   | { screen: "capture" };
 
 function Shell({ session }: { session: Session }) {
@@ -96,6 +100,9 @@ function Shell({ session }: { session: Session }) {
         case "entry":
           return { screen: "entries", aircraft: n.aircraft };
         case "pages":
+          return { screen: "entries", aircraft: n.aircraft };
+        case "status":
+        case "documents":
           return { screen: "entries", aircraft: n.aircraft };
         case "page":
           return { screen: "pages", aircraft: n.aircraft };
@@ -221,7 +228,15 @@ function Shell({ session }: { session: Session }) {
           onBack={back}
           onOpen={(e) => setNav({ screen: "entry", aircraft: nav.aircraft, entry: e })}
           onScans={() => setNav({ screen: "pages", aircraft: nav.aircraft })}
+          onStatus={() => setNav({ screen: "status", aircraft: nav.aircraft })}
+          onDocuments={() => setNav({ screen: "documents", aircraft: nav.aircraft })}
         />
+      )}
+
+      {nav.screen === "status" && <Status aircraft={nav.aircraft} onBack={back} />}
+
+      {nav.screen === "documents" && (
+        <Documents aircraft={nav.aircraft} onBack={back} onZoom={setZoom} />
       )}
 
       {nav.screen === "entry" && (

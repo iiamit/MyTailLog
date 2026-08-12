@@ -12,7 +12,11 @@
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    // Mirrors the Vite alias: `@/…` is apps/web/src, so the shared pure math is
+    // typechecked here too rather than trusted. See vite.config.ts.
+    "baseUrl": ".",
+    "paths": { "@/*": ["../web/src/*"] }
   },
   "include": ["src"]
 }

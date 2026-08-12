@@ -84,6 +84,47 @@ export function Card({ children, onClick }: { children: React.ReactNode; onClick
   );
 }
 
+// Urgency palette. Deliberately NOT the accent blue — these encode "can I fly
+// this aircraft", so they must read as status, not as chrome. Red/amber also
+// carry a text label everywhere they're used: colour alone fails for the ~8% of
+// men with colour-vision deficiency, which is a lot of pilots.
+export const red = "#ff6b6b";
+export const green = "#4ec9a0";
+export const URGENCY_COLOR: Record<string, string> = {
+  overdue: red,
+  due_soon: amber,
+  upcoming: accent,
+  none: green,
+};
+export const URGENCY_LABEL: Record<string, string> = {
+  overdue: "OVERDUE",
+  due_soon: "DUE SOON",
+  upcoming: "UPCOMING",
+  none: "OK",
+};
+
+export function Pill({ tone, children }: { tone: string; children: React.ReactNode }) {
+  const c = URGENCY_COLOR[tone] ?? faint;
+  return (
+    <span
+      style={{
+        ...mono,
+        fontSize: 9.5,
+        letterSpacing: 0.6,
+        fontWeight: 700,
+        color: c,
+        border: `1px solid ${c}55`,
+        background: `${c}18`,
+        borderRadius: 5,
+        padding: "2px 6px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
 export const input: React.CSSProperties = { background: panel, border: `1px solid ${line}`, borderRadius: 10, padding: "12px 14px", color: ink, fontSize: 16 };
 export const primary: React.CSSProperties = { background: accent, color: "#071018", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700 };
 export const ghost: React.CSSProperties = { background: "transparent", color: dim, border: `1px solid ${line}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, cursor: "pointer" };
