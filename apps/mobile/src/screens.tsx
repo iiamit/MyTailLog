@@ -95,6 +95,8 @@ export function Entries({
   onScans,
   onStatus,
   onDocuments,
+  onRecord,
+  onSquawks,
 }: {
   aircraft: Aircraft;
   onBack: () => void;
@@ -102,6 +104,8 @@ export function Entries({
   onScans: () => void;
   onStatus: () => void;
   onDocuments: () => void;
+  onRecord: () => void;
+  onSquawks: () => void;
 }) {
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
 
@@ -117,6 +121,10 @@ export function Entries({
       {/* Status first: it's the reason to open the app at the aircraft. */}
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <NavTab label="Status" onClick={onStatus} primary />
+        <NavTab label="Record" onClick={onRecord} primary />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <NavTab label="Squawks" onClick={onSquawks} />
         <NavTab label="Documents" onClick={onDocuments} />
         <NavTab label="Scans" onClick={onScans} />
       </div>
