@@ -154,9 +154,10 @@ const SECTIONS: Section[] = [
         </p>
         <ul className="ml-4 mt-1 list-disc space-y-1">
           <li>
-            <strong>Capture</strong> — use your phone camera. If the document scanner loads, it
-            auto-detects the page edges, deskews, and crops; if not, it captures the full frame and
-            you crop later. Blurry/glare shots are flagged.
+            <strong>Capture</strong> — opens your phone&apos;s own camera app, so you get its
+            autofocus, HDR and stabilisation, and the shot is instant. Fill the frame with the page;
+            it doesn&apos;t need to be cropped or perfectly square, because the extractor reads the
+            page out of the photo. Blurry or glare-heavy shots are flagged before you keep them.
           </li>
           <li>
             <strong>Upload scans</strong> — PDF, JPEG, or PNG. Multi-page PDFs are split into one

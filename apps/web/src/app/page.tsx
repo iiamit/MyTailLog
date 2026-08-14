@@ -171,7 +171,7 @@ const INDEX: { group: string; items: React.ReactNode[] }[] = [
   {
     group: "Capture & extract",
     items: [
-      "Camera capture with automatic edge-detection, deskew and crop — or upload PDF, JPEG, PNG",
+      "Capture with your phone's own camera — or upload PDF, JPEG, PNG",
       "Pages queue on the device with no signal and upload when you're back",
       "Five logbook types: airframe, engine, prop, avionics, other",
       "Per-field confidence scores; low-confidence fields are held back from bulk-confirm",

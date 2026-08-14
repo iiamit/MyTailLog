@@ -64,7 +64,7 @@ test("form-action is 'self' by default, broadened only for the consent flow", ()
 // must be permitted by the CSP. Add a new CDN dependency without allowlisting it
 // and this fails — which is exactly what shipped broken before.
 test("every external URL in the client script loaders is allowed by the CSP", () => {
-  const loaders = ["src/lib/capture/scanner.ts", "src/lib/capture/importFiles.ts"];
+  const loaders = ["src/lib/capture/importFiles.ts"];
   const allowed = new Set(SCRIPT_CDN_ORIGINS);
   for (const file of loaders) {
     const src = readFileSync(new URL(file, root), "utf8");

@@ -1,13 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  loadScanner,
-  scannerReady,
-  highlightPage,
-  extractPage,
-} from "@/lib/capture/scanner";
-import { assessQuality, type QualityReport } from "@/lib/capture/imageQuality";
+import { rasterizeFile } from "@/lib/capture/importFiles";
+import { type QualityReport } from "@/lib/capture/imageQuality";
 import { enqueuePage, countQueued } from "@/lib/capture/queue";
 import { drainQueue, registerBackgroundDrain } from "@/lib/capture/uploader";
 import { makeThumbnail } from "@/lib/capture/thumbnail";
@@ -19,8 +14,6 @@ export type CaptureLogbook = {
   existingPages: number;
 };
 
-type ScannerStatus = "loading" | "ready" | "unavailable";
-
 // A processed shot awaiting the user's keep/retake decision.
 type PendingShot = {
   dataUrl: string;
@@ -29,31 +22,6 @@ type PendingShot = {
   height: number;
   report: QualityReport;
 };
-
-function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
-      "image/jpeg",
-      0.9,
-    );
-  });
-}
-
-// Cap the stored image's long edge. A phone frame can be 3–4000px / several MB;
-// a logbook page needs ~2000px for review/OCR, which cuts storage + egress
-// several-fold with no legibility loss. (The upload path already caps at 2400.)
-const MAX_STORED_EDGE = 2000;
-function downscale(canvas: HTMLCanvasElement): HTMLCanvasElement {
-  const long = Math.max(canvas.width, canvas.height);
-  if (long <= MAX_STORED_EDGE) return canvas;
-  const scale = MAX_STORED_EDGE / long;
-  const out = document.createElement("canvas");
-  out.width = Math.round(canvas.width * scale);
-  out.height = Math.round(canvas.height * scale);
-  out.getContext("2d")!.drawImage(canvas, 0, 0, out.width, out.height);
-  return out;
-}
 
 export function CaptureClient({
   aircraftId,
@@ -64,23 +32,20 @@ export function CaptureClient({
   logbooks: CaptureLogbook[];
   tailNumber?: string | null;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const overlayRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const highlightTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // The native camera. On iOS `capture` opens the Camera app directly; on
+  // desktop it falls back to a normal file picker, which is the sane behaviour
+  // there anyway.
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [logbookId, setLogbookId] = useState(logbooks[0]?.id ?? "");
   const [isHandwritten, setIsHandwritten] = useState(true);
-  const [batchMode, setBatchMode] = useState(true);
 
   // Session page-sequence counters, seeded from each logbook's existing count.
   const [sequences, setSequences] = useState<Record<string, number>>(() =>
     Object.fromEntries(logbooks.map((lb) => [lb.id, lb.existingPages])),
   );
 
-  const [scanner, setScanner] = useState<ScannerStatus>("loading");
-  const [cameraOn, setCameraOn] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<PendingShot | null>(null);
   const [queueCount, setQueueCount] = useState(0);
   const [online, setOnline] = useState(true);
@@ -107,14 +72,12 @@ export function CaptureClient({
     await refreshCount();
   }, [refreshCount]);
 
-  // --- Lifecycle: scanner load, queue drain, online + SW-message listeners ---
+  // --- Lifecycle: queue drain, online + SW-message listeners ---
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate SSR-safe init: render `true`, correct to navigator.onLine on mount (avoids a hydration mismatch on the offline-sync path)
     setOnline(navigator.onLine);
     refreshCount();
     drain();
-
-    loadScanner().then((ok) => setScanner(ok ? "ready" : "unavailable"));
 
     const onOnline = () => {
       setOnline(true);
@@ -136,94 +99,35 @@ export function CaptureClient({
     };
   }, [drain, refreshCount]);
 
-  const stopCamera = useCallback(() => {
-    if (highlightTimer.current) {
-      clearInterval(highlightTimer.current);
-      highlightTimer.current = null;
-    }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCameraOn(false);
-  }, []);
-
-  // Stop the camera when the component unmounts.
-  useEffect(() => stopCamera, [stopCamera]);
-
-  // Throttled live outline of the detected page over the video preview.
-  const startHighlightLoop = useCallback(() => {
-    if (highlightTimer.current) clearInterval(highlightTimer.current);
-    highlightTimer.current = setInterval(() => {
-      const video = videoRef.current;
-      const overlay = overlayRef.current;
-      if (!video || !overlay || !video.videoWidth || !scannerReady()) return;
-      // Work on a downscaled snapshot to keep detection cheap.
-      const scale = Math.min(1, 640 / video.videoWidth);
-      const w = Math.round(video.videoWidth * scale);
-      const h = Math.round(video.videoHeight * scale);
-      const tmp = document.createElement("canvas");
-      tmp.width = w;
-      tmp.height = h;
-      tmp.getContext("2d")!.drawImage(video, 0, 0, w, h);
-      if (highlightPage(tmp)) {
-        overlay.width = w;
-        overlay.height = h;
-        overlay.getContext("2d")!.drawImage(tmp, 0, 0);
-      }
-    }, 500);
-  }, []);
-
-  const startCamera = useCallback(async () => {
-    setCameraError(null);
+  /**
+   * Turn the photo the OS camera returned into a queued page.
+   *
+   * All of the heavy lifting is `rasterizeFile` — the SAME path an uploaded
+   * scan takes, so a captured page and an uploaded one are identical
+   * downstream. It honours EXIF orientation (a phone photo is otherwise
+   * sideways) and bounds the long edge before anything is stored.
+   */
+  const onPhoto = useCallback(async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    setStatus(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 2560 },
-          height: { ideal: 1440 },
-        },
-        audio: false,
+      await rasterizeFile(file, async (page) => {
+        setPending({
+          dataUrl: URL.createObjectURL(page.blob),
+          blob: page.blob,
+          width: page.width,
+          height: page.height,
+          report: page.report,
+        });
       });
-      streamRef.current = stream;
-      const video = videoRef.current!;
-      video.srcObject = stream;
-      await video.play();
-      setCameraOn(true);
-      if (scannerReady()) startHighlightLoop();
     } catch {
-      setCameraError(
-        "Couldn't access the camera. Grant camera permission and use HTTPS (or localhost).",
-      );
+      setStatus("Couldn't read that photo. Try again, or use Upload scans.");
+    } finally {
+      setBusy(false);
+      // Clear the input so picking the SAME file again still fires onChange.
+      if (fileRef.current) fileRef.current.value = "";
     }
-  }, [startHighlightLoop]);
-
-  // If the scanner finishes loading after the camera started, begin the overlay.
-  useEffect(() => {
-    if (scanner === "ready" && cameraOn) startHighlightLoop();
-  }, [scanner, cameraOn, startHighlightLoop]);
-
-  const capture = useCallback(async () => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth) return;
-
-    // Grab the frame at the camera's full intrinsic resolution.
-    const frame = document.createElement("canvas");
-    frame.width = video.videoWidth;
-    frame.height = video.videoHeight;
-    frame.getContext("2d")!.drawImage(video, 0, 0);
-
-    // Detect + deskew + crop (no-op if the scanner is unavailable), then cap
-    // resolution before storing so egress/storage stay bounded.
-    const processed = downscale(extractPage(frame));
-    const report = assessQuality(processed);
-    const blob = await toBlob(processed);
-
-    setPending({
-      dataUrl: URL.createObjectURL(blob),
-      blob,
-      width: processed.width,
-      height: processed.height,
-      report,
-    });
   }, []);
 
   const discardPending = useCallback(() => {
@@ -261,7 +165,6 @@ export function CaptureClient({
       registerBackgroundDrain();
 
       discardPending();
-      if (!batchMode) stopCamera();
     } catch {
       setStatus("Couldn't save the page to the on-device queue.");
     }
@@ -274,26 +177,10 @@ export function CaptureClient({
     refreshCount,
     drain,
     discardPending,
-    batchMode,
-    stopCamera,
   ]);
 
   const inputClass =
     "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent";
-
-  const scannerLine =
-    scanner === "loading"
-      ? "Loading auto-crop…"
-      : scanner === "ready"
-        ? "Auto-crop + deskew on"
-        : "Auto-crop unavailable — capturing full frame";
-
-  const viewfinderBadge =
-    scanner === "loading"
-      ? "LOADING AUTO-CROP…"
-      : scanner === "ready"
-        ? "AUTO-CROP · HOLD STEADY"
-        : "FULL FRAME CAPTURE";
 
   return (
     <div className="flex flex-col gap-6">
@@ -313,37 +200,19 @@ export function CaptureClient({
             )}
           </div>
 
-          {/* Camera / preview */}
+          {/* Last shot / prompt. There is no live preview: the OS camera IS
+              the viewfinder, and it focuses and exposes better than a WebRTC
+              frame grab ever did. */}
           <div className="relative aspect-3/4 bg-black">
-            <video
-              ref={videoRef}
-              playsInline
-              muted
-              className={`h-full w-full object-cover ${cameraOn ? "block" : "hidden"}`}
-            />
-            <canvas
-              ref={overlayRef}
-              className={`pointer-events-none absolute inset-0 h-full w-full ${
-                cameraOn && scanner === "ready" ? "block" : "hidden"
-              }`}
-            />
-            {cameraOn && (
-              <>
-                <div className="pointer-events-none absolute left-4 top-4 h-6 w-6 border-l-2 border-t-2 border-accent" />
-                <div className="pointer-events-none absolute right-4 top-4 h-6 w-6 border-r-2 border-t-2 border-accent" />
-                <div className="pointer-events-none absolute bottom-4 left-4 h-6 w-6 border-b-2 border-l-2 border-accent" />
-                <div className="pointer-events-none absolute bottom-4 right-4 h-6 w-6 border-b-2 border-r-2 border-accent" />
-                <span
-                  className="readout pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-[9.5px] tracking-widest text-accent"
-                  style={{ background: "rgba(4,18,31,.7)" }}
-                >
-                  {viewfinderBadge}
+            {pending ? (
+              // eslint-disable-next-line @next/next/no-img-element -- a blob: URL from the camera, not a remote asset
+              <img src={pending.dataUrl} alt="Captured page" className="h-full w-full object-contain" />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+                <span className="text-3xl">📷</span>
+                <span className="text-sm text-faint">
+                  {busy ? "Processing…" : "Take a photo of the page"}
                 </span>
-              </>
-            )}
-            {!cameraOn && (
-              <div className="flex h-full items-center justify-center text-sm text-faint">
-                {cameraError ?? "Camera off"}
               </div>
             )}
           </div>
@@ -363,38 +232,29 @@ export function CaptureClient({
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-between border-t border-line px-6 py-4">
-            {!cameraOn ? (
-              <button
-                onClick={startCamera}
-                disabled={!logbookId}
-                className="w-full rounded-md bg-accent px-5 py-2.5 font-medium text-bg hover:opacity-90 disabled:opacity-60"
-              >
-                Start camera
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={stopCamera}
-                  className="w-12 text-left text-[11px] text-faint hover:text-ink"
-                >
-                  Stop
-                </button>
-                <button
-                  onClick={capture}
-                  aria-label="Capture page"
-                  className="h-[62px] w-[62px] shrink-0 rounded-full bg-accent shadow-[0_0_0_2px_var(--accent)]"
-                  style={{ border: "4px solid var(--panel)" }}
-                />
-                <button
-                  onClick={drain}
-                  disabled={!(queueCount > 0 && online)}
-                  className="w-12 text-right text-[11px] text-accent hover:opacity-80 disabled:opacity-40"
-                >
-                  Sync
-                </button>
-              </>
-            )}
+          <div className="flex items-center justify-between gap-3 border-t border-line px-6 py-4">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => onPhoto(e.target.files?.[0])}
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={!logbookId || busy}
+              className="flex-1 rounded-md bg-accent px-5 py-2.5 font-medium text-bg hover:opacity-90 disabled:opacity-60"
+            >
+              {busy ? "Processing…" : pending ? "Retake" : "Take a photo"}
+            </button>
+            <button
+              onClick={drain}
+              disabled={!(queueCount > 0 && online)}
+              className="text-[11px] text-accent hover:opacity-80 disabled:opacity-40"
+            >
+              Sync
+            </button>
           </div>
         </section>
         {status && <p className="text-xs text-dim">{status}</p>}
@@ -440,14 +300,6 @@ export function CaptureClient({
               />
               Handwritten page (routes to vision extraction)
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={batchMode}
-                onChange={(e) => setBatchMode(e.target.checked)}
-              />
-              Batch mode (keep camera on after each page)
-            </label>
             {queueCount > 0 && online && (
               <button
                 onClick={drain}
@@ -465,9 +317,13 @@ export function CaptureClient({
               <span className="flex h-6 w-6 items-center justify-center rounded-[7px] border border-accent bg-accent-soft text-[13px] text-accent">
                 ◳
               </span>
-              <span className="text-sm font-semibold">Auto edge-detect &amp; deskew</span>
+              <span className="text-sm font-semibold">Your phone&apos;s own camera</span>
             </div>
-            <p className="text-[12.5px] leading-relaxed text-dim">{scannerLine}</p>
+            <p className="text-[12.5px] leading-relaxed text-dim">
+              Capture opens the camera app you already use, so you get its autofocus, HDR and
+              stabilisation. Fill the frame with the page and hold steady — cropping isn&apos;t
+              needed, the extractor reads the page out of the photo.
+            </p>
           </div>
 
           <div className="panel p-[18px]">
@@ -478,9 +334,9 @@ export function CaptureClient({
               <span className="text-sm font-semibold">Batch a whole logbook</span>
             </div>
             <p className="text-[12.5px] leading-relaxed text-dim">
-              {batchMode
-                ? "Batch mode is on — the camera stays live after each page so you can shoot the whole logbook in one pass."
-                : "Batch mode is off — the camera stops after each page. Turn it on to shoot page after page without restarting."}
+              Keep a page and the button resets to &ldquo;Take a photo&rdquo; with the page number
+              already advanced, so you can work through a whole logbook without leaving this
+              screen. Pages queue on-device and upload when you have signal.
             </p>
           </div>
 
