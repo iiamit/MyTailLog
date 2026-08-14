@@ -308,10 +308,40 @@ export function deriveRatio(readings: Reading[]): RatioResult {
 // bad MFB hobbs of 6267.9 landing next to the real 957.6) hijacks "current" purely
 // by being largest. Ties among equally-close → the higher (a flight's ending
 // reading over a mid-day note); no earlier reading to anchor against → the higher.
-function currentReading<K extends Meter>(
+/**
+ * Drop ADS-B estimates that a real reading has already overtaken.
+ *
+ * An estimate is a FALLBACK OBSERVER, never a correction: it exists to say "the
+ * aircraft demonstrably flew and nothing in your records accounts for it". The
+ * moment a real reading reaches or passes it, it has nothing left to add —
+ * meters are cumulative, so a measured 965.1 already contains whatever the
+ * estimate was guessing at.
+ *
+ * Without this, an estimate competes with real readings on equal terms and the
+ * anchor-proximity tie-break below actively PREFERS it: ADS-B airborne time
+ * excludes taxi and runup, so an estimate is systematically *closer* to the
+ * previous reading than the true value is. Observed on N9363V — an accepted
+ * estimate of 964.4 beat a MyFlightBook sync of 965.1 covering the same flights,
+ * and kept beating it on every later render.
+ *
+ * An estimate ABOVE every real reading survives: that's the case it was built
+ * for, flying your records don't cover yet.
+ */
+function dropSupersededEstimates<K extends Meter>(
   rows: (Reading & Record<K, number>)[],
   k: K,
+): (Reading & Record<K, number>)[] {
+  const real = rows.filter((r) => !r.estimated);
+  if (real.length === 0) return rows; // nothing measured to supersede them
+  const highestReal = real.reduce((m, r) => (r[k] > m ? r[k] : m), -Infinity);
+  return rows.filter((r) => !r.estimated || r[k] > highestReal);
+}
+
+function currentReading<K extends Meter>(
+  input: (Reading & Record<K, number>)[],
+  k: K,
 ): (Reading & Record<K, number>) | null {
+  const rows = dropSupersededEstimates(input, k);
   if (!rows.length) return null;
   const latestDate = rows.reduce((d, r) => ((r.date ?? "") > d ? r.date ?? "" : d), "");
   const onLatest = rows.filter((r) => (r.date ?? "") === latestDate);

@@ -6,6 +6,25 @@ the git log.
 
 ## 2026.08
 
+### Fixed — an ADS-B estimate could outrank your own recorded hours
+- **An accepted ADS-B estimate kept beating a later MyFlightBook sync of the same
+  flights.** Reported on N9363V: the app showed 964.4 hobbs (the estimate) while
+  MyFlightBook had 965.1 for those flights. Tach was right, which is what made it
+  visible — that estimate carried no tach, so it never competed there.
+- The principle was always "your own records win; ADS-B is only a fallback
+  observer", but that was enforced only where suggestions are *raised*, never
+  where current hours are *chosen*. The `estimated` flag existed and was set
+  correctly; the meter-selection code simply never looked at it.
+- The tie-break made it systematic rather than unlucky: on a shared date the
+  reading closest to the previous value wins, and ADS-B airborne time under-reads
+  by construction (it excludes taxi and runup) — so the estimate was reliably the
+  closer one. A rule meant to reject outliers was quietly picking the guess over
+  the measurement, every time.
+- An estimate is now discarded as soon as any real reading reaches or passes it:
+  meters are cumulative, so a measured value already contains whatever the
+  estimate was guessing at. An estimate **above** every real reading still
+  counts — that's the case it exists for.
+
 ### Added — The iOS app can now tell you if you're legal, and record what you did
 - **Status, computed on the device.** Current tach/hobbs with provenance, then
   every maintenance item and recurring AD worst-first — offline, in the hangar,
