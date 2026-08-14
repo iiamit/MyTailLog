@@ -2,18 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { buildStatusItems } from "@/lib/status";
-import {
-  currentTach,
-  currentHobbs,
-  currentAirframe,
-  meterValueAtDate,
-  normalizeReadings,
-  applyResets,
-  toTotal,
-  type Meter,
-  type MeterReset,
-  type Reading as HTReading,
-} from "@/lib/hobbsTach";
+import { toReadings, currentMetersFrom } from "@/lib/aircraftHours";
+import { toFace, type Meter, type MeterReset } from "@/lib/hobbsTach";
 
 /**
  * Everything the persistent aircraft shell (top bar + nav rail) needs, loaded
@@ -61,8 +51,14 @@ export async function getAircraftShellContext(
     { data: unconfirmed },
   ] = await Promise.all([
     getAircraftRole(supabase, id, aircraft.owner_id),
-    supabase.from("log_entry").select("hobbs, tach, airframe, entry_date").eq("aircraft_id", id),
-    supabase.from("hours_reading").select("hobbs, tach, airframe, reading_date").eq("aircraft_id", id),
+    // `source` and `hours_reviewed_at` are NOT optional extras: toReadings() uses
+    // source to mark ADS-B estimates, and without that flag an estimate competes
+    // with a real reading as an equal.
+    supabase.from("log_entry").select("id, hobbs, tach, airframe, entry_date, hours_reviewed_at").eq("aircraft_id", id),
+    supabase
+      .from("hours_reading")
+      .select("id, hobbs, tach, airframe, reading_date, hours_reviewed_at, source")
+      .eq("aircraft_id", id),
     supabase.from("maintenance_item").select("*").eq("aircraft_id", id),
     supabase
       .from("ad_compliance")
@@ -94,82 +90,60 @@ export async function getAircraftShellContext(
     (unconfirmed ?? []).map((e) => e.page_id).filter(Boolean),
   ).size;
 
-  // The top bar shows each instrument's LATEST recorded reading — from the newest
-  // logbook entry or synced MyFlightBook reading (by date), falling back to the
-  // enrollment value. Not the max: a single mis-read high value shouldn't inflate
-  // the displayed hours forever. Each meter is resolved independently, since an
-  // entry may record tach but not hobbs (or vice versa).
-  type Reading = { date: string | null; hobbs: number | null; tach: number | null; airframe: number | null };
-  const all: Reading[] = [
-    ...(entryHours ?? []).map((r) => ({ date: r.entry_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe })),
-    ...(readings ?? []).map((r) => ({ date: r.reading_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe })),
-  ];
-  const latest = (key: Meter): number | null => {
-    const withVal = all.filter((r) => r[key] != null && Number.isFinite(r[key] as number));
-    if (!withVal.length) return null;
-    withVal.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
-    return withVal[0][key] as number;
+  // ONE definition of "current hours" for the whole app.
+  //
+  // This used to hand-roll its own "newest date wins" pick, which is how the top
+  // bar came to disagree with the meters page: it never even SELECTED `source`,
+  // so it couldn't tell an accepted ADS-B estimate from a MyFlightBook reading
+  // and simply took whichever was dated latest. On N9363V that showed 964.4 (an
+  // estimate) beside a provenance line reading "from MyFlightBook" — the number
+  // and its explanation came from two different implementations.
+  //
+  // Now both go through toReadings() + currentMetersFrom(), the same pair the
+  // meters/status/maintenance pages and the native app use.
+  const enrollment = {
+    hobbs: aircraft.enrollment_hobbs,
+    tach: aircraft.enrollment_tach,
+    airframe: aircraft.enrollment_airframe,
+    date: aircraft.enrollment_date ?? null,
   };
-  // Face values — what the instruments in the panel actually read today. The
-  // maintenance math below runs on the reset-stitched total scale instead, which
-  // is a different (larger) number once a meter has been replaced.
-  const tach = latest("tach") ?? aircraft.enrollment_tach;
-  const hobbs = latest("hobbs") ?? aircraft.enrollment_hobbs;
-  const airframe = latest("airframe") ?? aircraft.enrollment_airframe;
-
-  // currentHours stays the best estimate of TOTAL time (highest known across all
-  // readings + enrollment) — that drives airworthiness urgency below and must not
-  // regress when the latest logged reading happens to be a lower meter.
-  const bump = (cur: number | null, v: number | null | undefined) =>
-    v != null && Number.isFinite(v) && (cur == null || v > cur) ? v : cur;
-  let currentHours: number | null = null;
-  for (const r of all) currentHours = bump(bump(bump(currentHours, r.hobbs), r.tach), r.airframe);
-  currentHours = bump(
-    bump(bump(currentHours, aircraft.enrollment_hobbs), aircraft.enrollment_tach),
-    aircraft.enrollment_airframe,
-  );
-
-  // Airworthiness urgency runs on the reconciled per-meter currents: regulatory
-  // items on tach, usage items (oil) on hobbs. (currentHours above stays the
-  // total-time figure the AI narration uses.)
-  // A replaced meter restarts near zero, so readings are stitched onto one
-  // continuous total-time scale before any of this is compared (0046).
   const resets: MeterReset[] = (resetRows ?? []).map((r) => ({
     meter: r.meter as Meter,
     date: r.reset_date,
     prior: r.prior_value,
     next: r.new_value,
   }));
-  const htReadings: HTReading[] = normalizeReadings(
-    applyResets(
-      [
-        ...all.map((r, i) => ({ id: `r${i}`, source: "entry" as const, date: r.date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: null })),
-        ...(aircraft.enrollment_hobbs != null || aircraft.enrollment_tach != null || aircraft.enrollment_airframe != null
-          ? [{
-              id: "enroll",
-              source: "enrollment" as const,
-              date: aircraft.enrollment_date ?? null,
-              hobbs: aircraft.enrollment_hobbs,
-              tach: aircraft.enrollment_tach,
-              airframe: aircraft.enrollment_airframe,
-              reviewedAt: null,
-            }]
-          : []),
-      ],
-      resets,
-    ),
-  );
-  const ctTach = currentTach(htReadings);
-  const chHobbs = currentHobbs(htReadings);
-  const caAirframe = currentAirframe(htReadings);
+  const raw = toReadings(entryHours ?? [], readings ?? [], enrollment);
+  const meters = currentMetersFrom(raw, resets);
+
+  // Face values — what the instruments in the panel actually READ today. The
+  // maintenance math runs on the reset-stitched total scale, which is a
+  // different (larger) number once a meter has been replaced, so the selected
+  // reading is converted back down for display.
+  const tach = toFace(meters.tach.tach, meters.tach.asOf, "tach", resets) ?? aircraft.enrollment_tach;
+  const hobbs = toFace(meters.hobbs.hobbs, meters.hobbs.asOf, "hobbs", resets) ?? aircraft.enrollment_hobbs;
+  const airframe =
+    toFace(meters.airframe.airframe, meters.airframe.asOf, "airframe", resets) ?? aircraft.enrollment_airframe;
+
+  // currentHours stays the best estimate of TOTAL time (highest known across all
+  // readings + enrollment) — that drives the AI narration and must not regress
+  // when the latest logged reading happens to be a lower meter.
+  const bump = (cur: number | null, v: number | null | undefined) =>
+    v != null && Number.isFinite(v) && (cur == null || v > cur) ? v : cur;
+  let currentHours: number | null = null;
+  for (const r of raw) currentHours = bump(bump(bump(currentHours, r.hobbs), r.tach), r.airframe);
+
+  // Airworthiness urgency runs on the reconciled per-meter currents: regulatory
+  // items on tach, usage items (oil) on hobbs — on the stitched TOTAL scale, so a
+  // replaced meter that restarted near zero doesn't read as time going backwards.
   const status = buildStatusItems(items ?? [], ads ?? [], {
-    tach: ctTach.tach,
-    hobbs: chHobbs.hobbs,
-    airframe: caAirframe.airframe,
-    tachEstimated: ctTach.estimated,
-    hobbsEstimated: chHobbs.estimated,
-    baselineFor: (date, meter) => meterValueAtDate(htReadings, date, meter),
-    toTotalHours: (value, date, meter) => toTotal(value, date, meter, resets),
+    tach: meters.tach.tach,
+    hobbs: meters.hobbs.hobbs,
+    airframe: meters.airframe.airframe,
+    tachEstimated: meters.tach.estimated,
+    hobbsEstimated: meters.hobbs.estimated,
+    baselineFor: meters.baselineFor,
+    toTotalHours: meters.toTotalHours,
   });
   const annun = {
     overdue: status.filter((s) => s.urgency === "overdue").length,

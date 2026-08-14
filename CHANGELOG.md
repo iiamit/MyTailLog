@@ -6,6 +6,20 @@ the git log.
 
 ## 2026.08
 
+### Fixed — the top bar and the meters page disagreed about your hours
+- **Two different implementations of "current hours" existed.** The aircraft shell
+  (the top bar on every aircraft page) hand-rolled its own "newest date wins"
+  pick, and it never even *selected* the `source` column — so it could not tell an
+  accepted ADS-B estimate from a MyFlightBook reading. On N9363V it showed 964.4
+  (an estimate) directly beside a provenance line reading *"as of 2026-08-11 ·
+  from MyFlightBook"*, where the real MyFlightBook value was 965.1. The number and
+  its own explanation were coming from two different code paths.
+- The duplicate is deleted. The shell now uses the same `toReadings()` +
+  `currentMetersFrom()` the meters, status, maintenance and compliance pages —
+  and the iOS app — already use. Face values (what the instrument physically
+  reads, after a meter replacement) are still distinct from stitched total time;
+  that conversion now happens once, in one place.
+
 ### Fixed — an ADS-B estimate could outrank your own recorded hours
 - **An accepted ADS-B estimate kept beating a later MyFlightBook sync of the same
   flights.** Reported on N9363V: the app showed 964.4 hobbs (the estimate) while
