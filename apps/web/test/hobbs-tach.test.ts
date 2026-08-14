@@ -364,3 +364,63 @@ test("with nothing recorded there is no source to claim", () => {
   assert.equal(currentTach([]).from, null);
   assert.equal(currentHobbs([]).from, null);
 });
+
+// --- ADS-B estimates must never outrank a real reading ----------------------
+// Regression for N9363V (2026-08-14): an accepted ADS-B estimate of 964.4 hobbs
+// kept beating a MyFlightBook sync of 965.1 covering the same flights, so the
+// owner's own record never became "current". Tach was unaffected only because
+// that estimate carried no tach — which is what made the bug visible.
+//
+// The trap is that the same-date tie-break prefers the value CLOSEST to the
+// previous reading, and an ADS-B estimate under-reads by construction (airborne
+// time excludes taxi and runup). So it is systematically the closer one: the
+// heuristic reliably picks the guess over the measurement.
+
+const HR = (date: string, hobbs: number, source: Reading["source"], estimated = false): Reading => ({
+  id: `${source}-${date}-${hobbs}`,
+  source,
+  date,
+  hobbs,
+  tach: null,
+  airframe: null,
+  reviewedAt: null,
+  estimated,
+});
+
+test("currentHobbs: a real reading at or above an estimate supersedes it", () => {
+  const readings = [
+    HR("2026-08-09", 961.4, "mfb"),
+    HR("2026-08-11", 965.1, "mfb"), // the truth, dated EARLIER than the estimate
+    HR("2026-08-12", 964.4, "adsb", true),
+  ];
+  const out = currentHobbs(readings);
+  assert.equal(out.hobbs, 965.1, "the owner's own record must win");
+  assert.equal(out.from, "mfb");
+});
+
+test("currentHobbs: an estimate loses even when it is the closest to the anchor", () => {
+  // Exactly the shape that broke: two rows share the latest date, and the
+  // estimate is nearer the previous value (0.7) than the real one (5.1).
+  const readings = [
+    HR("2026-08-11", 965.1, "mfb"),
+    HR("2026-08-12", 964.4, "adsb", true),
+    HR("2026-08-12", 960.0, "manual"),
+  ];
+  assert.equal(currentHobbs(readings).from, "manual", "proximity must not rescue an estimate");
+});
+
+test("currentHobbs: an estimate ABOVE every real reading still counts", () => {
+  // The case ADS-B exists for — flying no record accounts for yet.
+  const readings = [
+    HR("2026-08-09", 961.4, "mfb"),
+    HR("2026-08-12", 968.0, "adsb", true),
+  ];
+  const out = currentHobbs(readings);
+  assert.equal(out.hobbs, 968.0);
+  assert.equal(out.from, "adsb");
+});
+
+test("currentHobbs: estimates alone (nothing measured) are still usable", () => {
+  const out = currentHobbs([HR("2026-08-12", 968.0, "adsb", true)]);
+  assert.equal(out.hobbs, 968.0);
+});
