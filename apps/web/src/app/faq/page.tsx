@@ -489,7 +489,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         </p>
         <p className="text-sm text-faint">
           Pages come in as PDF, JPEG, or PNG (multi-page PDFs are split into one page each), or
-          straight from your phone camera with edge detection and deskew.
+          straight from your phone&apos;s own camera app.
         </p>
       </>
     ),

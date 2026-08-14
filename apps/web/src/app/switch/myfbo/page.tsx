@@ -121,9 +121,9 @@ export default function SwitchMyFboPage() {
           <p>
             There is no import wizard that needs their schema, and no ticket to open. Pages come in
             as <strong>PDF, JPEG or PNG</strong> — a multi-page PDF is split into one page each, in
-            order — or straight from your phone camera, which detects the page edges, deskews and
-            crops. A plain photo of a paper page, taken in the hangar with no signal, queues on the
-            device and uploads when you&apos;re back online.
+            order — or straight from your phone&apos;s own camera app. A plain photo of a paper page,
+            taken in the hangar with no signal, queues on the device and uploads when you&apos;re
+            back online.
           </p>
           <p>
             Then a vision model reads each page into structured entries, in minutes, with a{" "}

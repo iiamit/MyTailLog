@@ -6,6 +6,28 @@ the git log.
 
 ## 2026.08
 
+### Fixed — camera capture on a phone was unusable
+- **Reported from the field: on an iPhone the in-browser camera was glitchy,
+  often wouldn't capture at all, and when it did it took far too long.** It was
+  not the phone. Capture was pulling a **9 MB, ungzipped** OpenCV.js build from a
+  CDN before it would work, running a full edge-detection pipeline on the main
+  thread **twice a second** to draw the live outline, and then — on the shutter —
+  detecting and perspective-warping at the camera's **full resolution**
+  synchronously, freezing the page for seconds. (The library it used also leaks a
+  matrix on every call, which iOS Safari is unforgiving about.)
+- **Capture now opens your phone's own camera app.** You get its autofocus, HDR
+  and stabilisation, the shot is instant, and the photo is generally *better* than
+  the frame-grab it replaces. Nothing is downloaded and nothing is processed on
+  the critical path; a captured page now takes the exact same route as an
+  uploaded one.
+- **Auto edge-detect, deskew and crop are gone with it.** They only ever worked
+  when that 9 MB download succeeded, which on a phone often it didn't — and the
+  extractor reads the page out of a plain photo perfectly well. Fill the frame and
+  hold steady; it doesn't need to be square.
+- Consequently the app now loads **no third-party scripts at all**. The OpenCV and
+  jscanify CDNs are removed from the Content-Security-Policy, which is the whole
+  external script surface gone.
+
 ### Fixed — the top bar and the meters page disagreed about your hours
 - **Two different implementations of "current hours" existed.** The aircraft shell
   (the top bar on every aircraft page) hand-rolled its own "newest date wins"

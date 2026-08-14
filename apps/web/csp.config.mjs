@@ -14,11 +14,8 @@
 // smoke test first.
 // ===========================================================================
 
-/** External origins loaded via <script> by the camera scanner (src/lib/capture/scanner.ts). */
-export const SCRIPT_CDN_ORIGINS = [
-  "https://docs.opencv.org", // OpenCV.js (~9MB wasm, embedded) — too big to bundle
-  "https://cdn.jsdelivr.net", // jscanify
-];
+/** External origins loaded via <script> by client code. Empty, deliberately. */
+export const SCRIPT_CDN_ORIGINS = [];
 
 /**
  * Build the CSP header value for the given Supabase host.
@@ -43,9 +40,11 @@ export function buildCsp(supabaseHost, { broadFormAction = false } = {}) {
     "frame-ancestors 'none'",
     "img-src 'self' data: blob: https:",
     "style-src 'self' 'unsafe-inline'",
-    // ponytail: permissive ('unsafe-inline'/'unsafe-eval' — Next hydration +
-    // OpenCV's eval). Tighten to nonce-based once verified against a live smoke test.
-    `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${SCRIPT_CDN_ORIGINS.join(" ")}`,
+    // ponytail: still permissive for Next's inline hydration scripts.
+    // 'unsafe-eval' was here for OpenCV.js, which is gone — it is very likely
+    // droppable now, but that needs a live smoke test (upload a PDF, capture a
+    // page) before tightening, so it stays for the moment.
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${SCRIPT_CDN_ORIGINS.join(" ")}`.trim(),
     // pdf.js worker is self-hosted (same origin); blob: covers pdf.js fallbacks.
     "worker-src 'self' blob:",
     "font-src 'self' data:",
