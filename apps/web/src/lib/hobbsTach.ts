@@ -467,6 +467,44 @@ export function meterValueAtDate(readings: Reading[], date: string | null, meter
     : round1(anchor.hobbs + (otherVal - anchor.tach) / ratio);
 }
 
+/**
+ * Everything needed to convert a HOBBS reading into the equivalent TACH.
+ *
+ * Serializable on purpose: the server derives it and hands it to a client
+ * component, which can't receive a function.
+ */
+export type TachBridge = {
+  /** dTach/dHobbs for this aircraft. */
+  ratio: number;
+  /** A real co-recorded pair the conversion is anchored on. */
+  anchorHobbs: number;
+  anchorTach: number;
+  confidence: RatioConfidence;
+};
+
+/**
+ * Build a hobbs→tach converter for this aircraft, or null if nothing anchors it.
+ *
+ * The ratio ALONE is not enough and assuming otherwise is the trap here: hobbs
+ * and tach are independent cumulative counters with unrelated origins (946.1
+ * hobbs sitting beside 4141.6 tach on the same aeroplane). `ratio` is the SLOPE,
+ * so a conversion has to start from a real co-recorded pair and walk the
+ * difference: tach ≈ anchorTach + ratio·(hobbs − anchorHobbs). Multiplying
+ * hobbs by the ratio would be off by thousands of hours.
+ */
+export function tachBridge(readings: Reading[]): TachBridge | null {
+  const pairs = buildPairs(readings);
+  if (pairs.length === 0) return null;
+  const { ratio, confidence } = deriveRatio(readings);
+  const anchor = latestPair(pairs);
+  return { ratio, anchorHobbs: anchor.hobbs, anchorTach: anchor.tach, confidence };
+}
+
+/** Apply a bridge: the tach this aircraft would have read at `hobbs`. */
+export function tachFromHobbs(bridge: TachBridge, hobbs: number): number {
+  return round1(bridge.anchorTach + bridge.ratio * (hobbs - bridge.anchorHobbs));
+}
+
 /** Plausible typo-corrections of a reading: digit insert/delete/transpose + decimal shift. */
 export function digitEditCandidates(value: number): number[] {
   const out = new Set<number>();

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import type { OilAddition } from "@/lib/database.types";
-import { oilConsumption } from "@/lib/oilConsumption";
+import { oilConsumption, type TachBridge } from "@/lib/oilConsumption";
 import { addOilTopOff, deleteOilTopOff } from "./actions";
 
 const inputClass =
@@ -21,12 +21,14 @@ export function OilConsumptionClient({
   aircraftId,
   canEdit,
   additions,
+  bridge,
   currentTach,
   currentHobbs,
 }: {
   aircraftId: string;
   canEdit: boolean;
   additions: OilAddition[];
+  bridge: TachBridge | null;
   currentTach: number | null;
   currentHobbs: number | null;
 }) {
@@ -42,7 +44,7 @@ export function OilConsumptionClient({
     notes: "",
   });
 
-  const { avgHoursPerQuart } = oilConsumption(additions);
+  const { avgHoursPerQuart, meter, excluded, bridged } = oilConsumption(additions, bridge);
   // newest first for the list
   const rows = [...additions].sort((a, b) => (b.added_date ?? "").localeCompare(a.added_date ?? ""));
 
@@ -78,6 +80,21 @@ export function OilConsumptionClient({
           <p className="text-[13px] text-dim">
             Log each top-off with the tach/hobbs to track the burn rate over time.
           </p>
+          {bridged > 0 && (
+            <p className="mt-1 text-[13px] text-dim">
+              {bridged} top-off{bridged === 1 ? " has" : "s have"} no tach reading, so the tach is
+              estimated from the hobbs using this aircraft&apos;s measured ratio
+              ({bridge ? bridge.ratio.toFixed(2) : "—"} tach/hobbs). Log a tach next time and the
+              real number replaces it.
+            </p>
+          )}
+          {excluded > 0 && (
+            <p className="mt-1 text-[13px] text-annun-amber">
+              {excluded} top-off{excluded === 1 ? " has" : "s have"} no {meter ?? "tach or hobbs"}{" "}
+              reading, so {excluded === 1 ? "it isn't" : "they aren't"} in the burn rate. The whole
+              trend is measured on one meter — mixing them would compare different scales.
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
@@ -85,7 +102,11 @@ export function OilConsumptionClient({
               {avgHoursPerQuart != null ? `${avgHoursPerQuart.toFixed(1)}` : "—"}
               {avgHoursPerQuart != null && <span className="text-xs text-dim"> hrs/qt</span>}
             </div>
-            <div className="eyebrow mt-1">avg burn rate</div>
+            {/* Name the meter: hobbs over-reads engine time, so the same
+                aircraft looks healthier measured on hobbs than on tach. */}
+            <div className="eyebrow mt-1">
+              avg burn rate{meter ? ` · on ${meter}` : ""}
+            </div>
           </div>
           {canEdit && (
             <button
