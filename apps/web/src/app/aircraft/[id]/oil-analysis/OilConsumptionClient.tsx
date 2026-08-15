@@ -42,7 +42,7 @@ export function OilConsumptionClient({
     notes: "",
   });
 
-  const { avgHoursPerQuart } = oilConsumption(additions);
+  const { avgHoursPerQuart, meter, excluded } = oilConsumption(additions);
   // newest first for the list
   const rows = [...additions].sort((a, b) => (b.added_date ?? "").localeCompare(a.added_date ?? ""));
 
@@ -78,6 +78,13 @@ export function OilConsumptionClient({
           <p className="text-[13px] text-dim">
             Log each top-off with the tach/hobbs to track the burn rate over time.
           </p>
+          {excluded > 0 && (
+            <p className="mt-1 text-[13px] text-annun-amber">
+              {excluded} top-off{excluded === 1 ? " has" : "s have"} no {meter ?? "tach or hobbs"}{" "}
+              reading, so {excluded === 1 ? "it isn't" : "they aren't"} in the burn rate. The whole
+              trend is measured on one meter — mixing them would compare different scales.
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
@@ -85,7 +92,11 @@ export function OilConsumptionClient({
               {avgHoursPerQuart != null ? `${avgHoursPerQuart.toFixed(1)}` : "—"}
               {avgHoursPerQuart != null && <span className="text-xs text-dim"> hrs/qt</span>}
             </div>
-            <div className="eyebrow mt-1">avg burn rate</div>
+            {/* Name the meter: hobbs over-reads engine time, so the same
+                aircraft looks healthier measured on hobbs than on tach. */}
+            <div className="eyebrow mt-1">
+              avg burn rate{meter ? ` · on ${meter}` : ""}
+            </div>
           </div>
           {canEdit && (
             <button

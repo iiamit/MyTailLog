@@ -6,6 +6,21 @@ the git log.
 
 ## 2026.08
 
+### Fixed — oil burn rate could be computed across two different meters
+- **A top-off logged with tach only and the next logged with hobbs only were
+  subtracted from each other.** The meter was picked per row, so ~4141 (tach) and
+  ~965 (hobbs) ended up in the same series: 19 hours of flying on one quart was
+  reported as **3176 hours and 453 hrs/qt** — and attributed to the wrong date
+  and the wrong quantity, because sorting on the mixed scale reversed the order
+  too. Every part of that error read reassuringly, which is the wrong direction
+  to be wrong about oil consumption.
+- The whole trend is now measured on **one** meter: tach when it can carry the
+  series (it's the engine-time meter oil burn actually follows), hobbs only when
+  tach can't. The chart says which meter it used — the same aircraft looks
+  healthier measured on hobbs, because hobbs runs on the ground.
+- A top-off with no reading on that meter is **counted and explained** instead of
+  silently vanishing from the chart.
+
 ### Fixed — camera capture on a phone was unusable
 - **Reported from the field: on an iPhone the in-browser camera was glitchy,
   often wouldn't capture at all, and when it did it took far too long.** It was
