@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
 import { ImportBackup } from "./ImportBackup";
+import { RemoveShared } from "./RemoveShared";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const DUE_SOON_DAYS = 30;
@@ -210,6 +211,14 @@ export default async function Dashboard() {
               >
                 Open aircraft →
               </Link>
+
+              {/* Shared WITH you (incl. the read-only demo) → you can drop your
+                  own grant. An aircraft you own has no share row to remove. */}
+              {shared && (
+                <div className="mt-2 text-center">
+                  <RemoveShared aircraftId={a.id} tail={a.tail_number} />
+                </div>
+              )}
             </div>
           );
         })}

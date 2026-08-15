@@ -466,6 +466,21 @@ export function PagesPanel({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{r.logbookLabel}</div>
+                  {/* On a phone the right-hand date/tach column is hidden for
+                      width, which left the list with no visible dates at all
+                      even though it can be SORTED by date. Fold them into the
+                      meta line below that breakpoint instead of dropping them. */}
+                  {(r.latestDate || r.tach != null || r.hobbs != null) && (
+                    <div className="font-mono text-[11px] text-dim sm:hidden">
+                      {r.latestDate}
+                      {r.latestDate && (r.tach != null || r.hobbs != null) ? " · " : ""}
+                      {r.tach != null
+                        ? `${r.tach.toLocaleString()} tach`
+                        : r.hobbs != null
+                          ? `${r.hobbs.toLocaleString()} hobbs`
+                          : ""}
+                    </div>
+                  )}
                   <div className="text-xs text-dim">
                     {r.extractionStatus === "extracted"
                       ? `${r.entryCount} ${r.entryCount === 1 ? "entry" : "entries"}`
