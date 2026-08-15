@@ -2,7 +2,10 @@
 // engine burned roughly the quarts added at the second one over the hours flown
 // between them → "hours per quart" (higher is healthier). Pure + client-safe.
 
+import { tachFromHobbs, type TachBridge } from "./hobbsTach";
+
 export type Meter = "tach" | "hobbs";
+export type { TachBridge };
 
 export type OilAdditionInput = {
   added_date: string | null;
@@ -16,6 +19,8 @@ export type ConsumptionPoint = {
   hours: number; // engine hours since the previous top-off
   quarts: number; // quarts added at this top-off
   hoursPerQuart: number;
+  /** Either endpoint's tach was bridged from hobbs rather than read off the meter. */
+  estimated: boolean;
 };
 
 export type OilConsumption = {
@@ -25,6 +30,8 @@ export type OilConsumption = {
   meter: Meter | null;
   /** Top-offs left out because they carry no reading on that meter. */
   excluded: number;
+  /** Top-offs whose tach was derived from hobbs via the aircraft's ratio. */
+  bridged: number;
 };
 
 /**
@@ -55,17 +62,52 @@ function chooseMeter(additions: OilAdditionInput[]): Meter | null {
  * it is counted in `excluded` rather than silently dropped, so the UI can say
  * why a top-off you entered isn't on the chart.
  */
-export function oilConsumption(additions: OilAdditionInput[]): OilConsumption {
-  const meter = chooseMeter(additions);
-  if (!meter) {
-    return { points: [], avgHoursPerQuart: null, meter: null, excluded: additions.length };
+export function oilConsumption(
+  additions: OilAdditionInput[],
+  bridge?: TachBridge | null,
+): OilConsumption {
+  const withQuarts = additions.filter((a) => a.quarts > 0);
+
+  // With a usable bridge every top-off can be expressed in TACH — including the
+  // hobbs-only ones — so nothing has to be dropped and the whole series sits on
+  // the meter oil burn actually follows. A `default` ratio is refused: that's a
+  // generic constant, not this aircraft, and inventing engine hours from it is
+  // worse than measuring on hobbs.
+  const canBridge = !!bridge && bridge.confidence !== "default";
+
+  if (canBridge) {
+    const metered = withQuarts
+      .map((a) => ({
+        ...a,
+        value: a.tach ?? (a.hobbs != null ? tachFromHobbs(bridge, a.hobbs) : null),
+        derived: a.tach == null && a.hobbs != null,
+      }))
+      .filter((a): a is typeof a & { value: number } => a.value != null)
+      .sort((x, y) => x.value - y.value);
+    return build(metered, "tach", withQuarts.length - metered.length);
   }
 
-  const withQuarts = additions.filter((a) => a.quarts > 0);
+  const meter = chooseMeter(additions);
+  if (!meter) {
+    return {
+      points: [],
+      avgHoursPerQuart: null,
+      meter: null,
+      excluded: withQuarts.length,
+      bridged: 0,
+    };
+  }
+
   const metered = withQuarts
-    .map((a) => ({ ...a, value: a[meter] }))
+    .map((a) => ({ ...a, value: a[meter], derived: false }))
     .filter((a): a is typeof a & { value: number } => a.value != null)
     .sort((x, y) => x.value - y.value);
+  return build(metered, meter, withQuarts.length - metered.length);
+}
+
+type Metered = OilAdditionInput & { value: number; derived: boolean };
+
+function build(metered: Metered[], meter: Meter, excluded: number): OilConsumption {
 
   const points: ConsumptionPoint[] = [];
   for (let i = 1; i < metered.length; i++) {
@@ -76,6 +118,8 @@ export function oilConsumption(additions: OilAdditionInput[]): OilConsumption {
       hours,
       quarts: metered[i].quarts,
       hoursPerQuart: hours / metered[i].quarts,
+      // An interval is only as solid as its weaker end.
+      estimated: metered[i].derived || metered[i - 1].derived,
     });
   }
 
@@ -86,6 +130,7 @@ export function oilConsumption(additions: OilAdditionInput[]): OilConsumption {
     points,
     avgHoursPerQuart: avg,
     meter,
-    excluded: withQuarts.length - metered.length,
+    excluded,
+    bridged: metered.filter((m) => m.derived).length,
   };
 }

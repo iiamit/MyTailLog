@@ -18,8 +18,15 @@ the git log.
   series (it's the engine-time meter oil burn actually follows), hobbs only when
   tach can't. The chart says which meter it used — the same aircraft looks
   healthier measured on hobbs, because hobbs runs on the ground.
-- A top-off with no reading on that meter is **counted and explained** instead of
-  silently vanishing from the chart.
+- **A hobbs-only top-off is now bridged into tach** rather than dropped, using
+  this aircraft's own *measured* hobbs↔tach ratio, so the trend stays on the
+  meter oil burn actually follows and nothing you log goes missing from the
+  chart. The estimate is derived when the page is read and never stored — log a
+  real tach later and it replaces the estimate by itself. A generic default ratio
+  is refused: that's a constant, not your aeroplane.
+- A top-off that still can't be measured is **counted and explained** instead of
+  silently vanishing from the chart, and any interval resting on an estimate is
+  marked as one.
 
 ### Fixed — camera capture on a phone was unusable
 - **Reported from the field: on an iPhone the in-browser camera was glitchy,

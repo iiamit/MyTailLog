@@ -26,12 +26,14 @@ test("oilConsumption: fewer than two metered top-offs → no points", () => {
     avgHoursPerQuart: null,
     meter: null,
     excluded: 1,
+    bridged: 0,
   });
   assert.deepEqual(oilConsumption([]), {
     points: [],
     avgHoursPerQuart: null,
     meter: null,
     excluded: 0,
+    bridged: 0,
   });
 });
 
@@ -112,4 +114,72 @@ test("oilConsumption: no usable meter at all → no points, everything excluded"
   assert.equal(out.points.length, 0);
   assert.equal(out.avgHoursPerQuart, null);
   assert.equal(out.excluded, 2);
+});
+
+// --- Bridging a hobbs-only top-off into tach --------------------------------
+// Rather than dropping a hobbs-only top-off (or dragging the whole series onto
+// hobbs), estimate its tach from the aircraft's own measured ratio so the trend
+// stays on the meter oil burn actually follows. Derived on read, never stored —
+// a real tach logged later replaces the estimate by itself.
+
+const BRIDGE = { ratio: 0.9378881987577853, anchorHobbs: 946.1, anchorTach: 4141.6, confidence: "measured" as const };
+
+test("oilConsumption: a hobbs-only top-off is bridged to tach, and flagged", () => {
+  const out = oilConsumption(
+    [
+      { added_date: "2026-07-05", quarts: 7, hobbs: 946.1, tach: 4141.6 },
+      { added_date: "2026-08-14", quarts: 1, hobbs: 965.1, tach: null },
+    ],
+    BRIDGE,
+  );
+  assert.equal(out.meter, "tach");
+  assert.equal(out.excluded, 0, "nothing is dropped once it can be bridged");
+  assert.equal(out.bridged, 1);
+  assert.equal(out.points.length, 1);
+  // 19.0 hobbs-hours × 0.938 ≈ 17.8 tach-hours — less than the hobbs figure,
+  // because the tach doesn't run on the ground.
+  assert.ok(Math.abs(out.points[0].hours - 17.8) < 0.05, `got ${out.points[0].hours}`);
+  assert.equal(out.points[0].estimated, true, "an interval is only as solid as its weaker end");
+});
+
+test("oilConsumption: the bridge anchors on a real pair, it does not scale hobbs", () => {
+  // The trap: hobbs and tach are independent counters. hobbs×ratio would be
+  // ~905 against a real tach of ~4159 — out by three thousand hours.
+  const out = oilConsumption(
+    [
+      { added_date: "2026-07-05", quarts: 1, hobbs: 946.1, tach: null },
+      { added_date: "2026-08-14", quarts: 1, hobbs: 965.1, tach: null },
+    ],
+    BRIDGE,
+  );
+  assert.equal(out.points.length, 1);
+  assert.ok(out.points[0].hours > 0 && out.points[0].hours < 25, `got ${out.points[0].hours}`);
+});
+
+test("oilConsumption: a real tach is never overwritten by a bridged one", () => {
+  const out = oilConsumption(
+    [
+      { added_date: "2026-01-01", quarts: 1, hobbs: 900, tach: 4100 },
+      { added_date: "2026-02-01", quarts: 1, hobbs: 946.1, tach: 4141.6 },
+    ],
+    BRIDGE,
+  );
+  assert.equal(out.bridged, 0);
+  assert.equal(out.points[0].estimated, false);
+  assert.ok(Math.abs(out.points[0].hours - 41.6) < 0.001, `got ${out.points[0].hours}`);
+});
+
+test("oilConsumption: a `default` ratio is refused — that's a constant, not this aircraft", () => {
+  const generic = { ...BRIDGE, confidence: "default" as const };
+  const out = oilConsumption(
+    [
+      { added_date: "2026-07-05", quarts: 7, hobbs: 946.1, tach: 4141.6 },
+      { added_date: "2026-08-14", quarts: 1, hobbs: 965.1, tach: null },
+    ],
+    generic,
+  );
+  // Falls back to measuring on hobbs rather than inventing engine hours.
+  assert.equal(out.meter, "hobbs");
+  assert.equal(out.bridged, 0);
+  assert.equal(out.points[0].hours, 19);
 });
