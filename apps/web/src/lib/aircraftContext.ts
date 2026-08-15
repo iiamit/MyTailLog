@@ -3,7 +3,7 @@ import type { Database } from "@/lib/database.types";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { buildStatusItems } from "@/lib/status";
 import { toReadings, currentMetersFrom } from "@/lib/aircraftHours";
-import { toFace, type Meter, type MeterReset } from "@/lib/hobbsTach";
+import { toFace, type Meter, type MeterReset, type TachBridge } from "@/lib/hobbsTach";
 
 /**
  * Everything the persistent aircraft shell (top bar + nav rail) needs, loaded
@@ -23,6 +23,8 @@ export type AircraftShellContext = {
   hobbs: number | null;
   airframe: number | null;
   currentHours: number | null;
+  /** hobbs→tach converter for this aircraft (null when nothing anchors it). */
+  bridge: TachBridge | null;
   annun: { overdue: number; due: number; current: number };
   badges: { equipment: number; status: number; review: number };
 };
@@ -163,6 +165,7 @@ export async function getAircraftShellContext(
     hobbs,
     airframe,
     currentHours,
+    bridge: meters.bridge,
     annun,
     badges: {
       equipment: equipment ?? 0,

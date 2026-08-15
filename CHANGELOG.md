@@ -6,6 +6,17 @@ the git log.
 
 ## 2026.08
 
+### Fixed — the hobbs→tach estimate could be anchored on a mis-keyed reading
+- **Still a wrong burn rate after the fix below: 666 hrs/qt from two ordinary
+  top-offs.** The estimate that converts a hobbs-only top-off into tach was built
+  from *raw* readings, so a mis-keyed entry with the same number typed into both
+  the hobbs and tach fields counted as a real pair — anchoring the conversion at
+  hobbs == tach and throwing it out by thousands of hours.
+- `normalizeReadings()` exists to discard exactly that, and every other hours
+  calculation already ran through it. The converter now lives with the rest of
+  the meter maths, on the same normalized, meter-reset-stitched readings, so no
+  caller can skip the step.
+
 ### Fixed — oil burn rate could be computed across two different meters
 - **A top-off logged with tach only and the next logged with hobbs only were
   subtracted from each other.** The meter was picked per row, so ~4141 (tach) and

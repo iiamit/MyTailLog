@@ -12,6 +12,8 @@ import {
   toTotal,
   toFace,
   readingSourceOf,
+  tachBridge,
+  type TachBridge,
   type Anomaly,
   type CurrentTach,
   type CurrentHobbs,
@@ -170,6 +172,11 @@ export type CurrentMeters = {
   // hours-remaining figure into an approximate calendar date. `none` confidence
   // when the readings can't support one — callers then show hours only.
   utilization: Utilization;
+  // Converts a hobbs reading to the equivalent tach. Built from the SAME
+  // normalized, reset-stitched readings as everything else here — building it
+  // from raw rows lets a mis-keyed hobbs==tach row anchor it and produce
+  // nonsense, which is not a hypothetical (see the oil burn-rate report).
+  bridge: TachBridge | null;
 };
 
 /**
@@ -190,6 +197,7 @@ export function currentMetersFrom(raw: Reading[], resets: MeterReset[]): Current
     baselineFor: (date, meter) => meterValueAtDate(readings, date, meter),
     toTotalHours: (value, date, meter) => toTotal(value, date, meter, resets),
     utilization: computeUtilization(raw, resets),
+    bridge: tachBridge(readings),
   };
 }
 
