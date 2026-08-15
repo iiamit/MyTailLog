@@ -148,3 +148,41 @@ test("currentMetersFrom: toTotalHours lifts a stored scalar onto the readings' s
   // Identity when there is no reset to apply.
   assert.equal(currentMetersFrom([], []).toTotalHours(20, "2026-07-01", "tach"), 20);
 });
+
+// --- The hobbs→tach bridge must come off NORMALIZED readings ----------------
+// Reported via a nonsensical oil burn rate (666 hrs/qt). The bridge had been
+// built from RAW rows, so a mis-keyed reading with the same number in both
+// fields became a "pair" — anchoring the conversion at hobbs==tach and throwing
+// the estimate out by thousands of hours. normalizeReadings() exists to discard
+// exactly that, and currentMetersFrom() now owns the bridge so no caller can
+// skip it.
+
+test("currentMetersFrom: a mis-keyed hobbs==tach row does not anchor the bridge", () => {
+  const raw = toReadings(
+    [
+      entry({ id: "a", entry_date: "2026-03-18", hobbs: 930.0, tach: 4126.5 }),
+      entry({ id: "b", entry_date: "2026-07-26", hobbs: 957.6, tach: 4151.4 }),
+      // Same value in both fields — a transcription slip, not a real pair.
+      entry({ id: "c", entry_date: "2026-08-01", hobbs: 4151.4, tach: 4151.4 }),
+    ],
+    [],
+  );
+  const bridge = currentMetersFrom(raw, []).bridge;
+  assert.ok(bridge, "there are real pairs, so a bridge should exist");
+  assert.notEqual(bridge.anchorHobbs, bridge.anchorTach, "the mis-keyed row must not anchor it");
+  assert.equal(bridge.anchorHobbs, 957.6);
+  assert.equal(bridge.anchorTach, 4151.4);
+
+  // And the conversion it produces stays in the right neighbourhood: ~6 hobbs
+  // hours of flying is ~6 tach hours, not thousands.
+  const t = bridge.anchorTach + bridge.ratio * (963.8 - bridge.anchorHobbs);
+  assert.ok(t > 4151 && t < 4160, `bridged tach ${t} is not plausible`);
+});
+
+test("currentMetersFrom: no co-recorded pair at all → no bridge, rather than a guess", () => {
+  const raw = toReadings(
+    [entry({ id: "a", entry_date: "2026-07-26", hobbs: 957.6, tach: null })],
+    [],
+  );
+  assert.equal(currentMetersFrom(raw, []).bridge, null);
+});
