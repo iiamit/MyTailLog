@@ -6,6 +6,18 @@ the git log.
 
 ## 2026.08
 
+### Fixed — you couldn't get rid of the demo aircraft, and phone page lists had no dates
+- **The demo aircraft had no exit.** It's auto-shared read-only with every new
+  account, so you're a viewer rather than its owner, and nothing in the app let a
+  viewer drop their own grant. Every aircraft shared with you — the demo
+  included — now has **Remove from my dashboard**. It removes your access and
+  nothing else: not the aircraft, not a single record, and not anyone else's
+  access. Whoever shared it can share it again.
+- **Page lists on a phone showed no dates.** The date and tach column is hidden
+  below 640px for width, which left the list undated even though it can be
+  *sorted* by date. They now fold into the line under each page instead of
+  disappearing.
+
 ### Fixed — the hobbs→tach estimate could be anchored on a mis-keyed reading
 - **Still a wrong burn rate after the fix below: 666 hrs/qt from two ordinary
   top-offs.** The estimate that converts a hobbs-only top-off into tach was built
