@@ -121,9 +121,38 @@ npm run ios                    # vite build && cap sync ios && cap open ios
 > npm run ios
 > ```
 >
-> In Xcode: **Product → Clean Build Folder** before archiving. If the build
-> complains about the iOS deployment target, raise it to whatever
-> `ios/App/Podfile` now specifies — Capacitor 8 requires a newer minimum than 6.
+> **You will hit this**, because `ios/` is git-ignored and still carries the
+> Capacitor 6 settings:
+>
+> ```
+> [!] CocoaPods could not find compatible versions for pod "Capacitor":
+>     … they required a higher minimum deployment target.
+> ```
+>
+> Every Capacitor 8 pod needs **iOS 15.0**; the generated project was on 13.0.
+> Fix both places, then re-sync:
+>
+> ```bash
+> # 1. ios/App/Podfile
+> sed -i '' "s/platform :ios, '13.0'/platform :ios, '15.0'/" ios/App/Podfile
+>
+> # 2. the Xcode project (there may be several build configs)
+> sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g" \
+>   ios/App/App.xcodeproj/project.pbxproj
+>
+> rm -rf ios/App/Pods ios/App/Podfile.lock
+> npx cap sync ios
+> ```
+>
+> Check with `grep -o "IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*" ios/App/App.xcodeproj/project.pbxproj | sort -u`
+> — nothing below 15.0 should remain. **Anyone who re-runs `npx cap add ios` has
+> to redo this**, since the regenerated project defaults low again.
+>
+> In Xcode: **Product → Clean Build Folder** before archiving.
+>
+> Raising the floor to iOS 15 drops support for iOS 13–14 devices — an iPhone 6s
+> or SE (1st gen) that can't go past 15 is fine, but anything stuck on 14 or below
+> can no longer install the app.
 >
 > **Test the on-device database before you ship it.** `@capacitor-community/sqlite`
 > also went 6 → 8, and existing installs already hold a synced mirror. Install the
