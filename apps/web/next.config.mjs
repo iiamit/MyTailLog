@@ -30,6 +30,8 @@ const nextConfig = {
     // CSP lives in csp.config.mjs (single source of truth, covered by tests).
     // form-action stays 'self' everywhere EXCEPT the OAuth consent flow, which
     // must POST out to a client's registered redirect URI (see buildCsp docs).
+    // Hot reload compiles through eval(), and these headers apply in dev too.
+    const dev = process.env.NODE_ENV !== "production";
     const securityHeaders = (csp) => [
       { key: "Content-Security-Policy", value: csp },
       { key: "X-Frame-Options", value: "DENY" },
@@ -45,8 +47,8 @@ const nextConfig = {
       // Consent flow gets the broad form-action; matched first and excluded from
       // the catch-all below so only ONE CSP header is ever emitted per path
       // (duplicate CSP headers intersect → 'self' would win and break consent).
-      { source: "/oauth/consent/:path*", headers: securityHeaders(buildCsp(supabaseHost, { broadFormAction: true })) },
-      { source: "/((?!oauth/consent).*)", headers: securityHeaders(buildCsp(supabaseHost)) },
+      { source: "/oauth/consent/:path*", headers: securityHeaders(buildCsp(supabaseHost, { broadFormAction: true, dev })) },
+      { source: "/((?!oauth/consent).*)", headers: securityHeaders(buildCsp(supabaseHost, { dev })) },
       {
         source: "/sw.js",
         headers: [
