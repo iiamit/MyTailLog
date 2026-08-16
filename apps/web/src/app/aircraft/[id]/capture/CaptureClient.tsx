@@ -26,10 +26,13 @@ type PendingShot = {
 export function CaptureClient({
   aircraftId,
   logbooks,
+  initialLogbookId,
   tailNumber,
 }: {
   aircraftId: string;
   logbooks: CaptureLogbook[];
+  /** Preselected via ?logbook= when arriving from a specific logbook. */
+  initialLogbookId?: string;
   tailNumber?: string | null;
 }) {
   // The native camera. On iOS `capture` opens the Camera app directly; on
@@ -37,7 +40,7 @@ export function CaptureClient({
   // there anyway.
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [logbookId, setLogbookId] = useState(logbooks[0]?.id ?? "");
+  const [logbookId, setLogbookId] = useState(initialLogbookId ?? logbooks[0]?.id ?? "");
   const [isHandwritten, setIsHandwritten] = useState(true);
 
   // Session page-sequence counters, seeded from each logbook's existing count.

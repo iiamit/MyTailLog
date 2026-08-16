@@ -177,6 +177,11 @@ const SECTIONS: Section[] = [
           <strong>Reorder</strong> still nudge a single page up or down.
         </p>
         <p className="mt-2">
+          Easiest way in: open <L href="/aircraft">Aircraft → Pages</L>, tap the logbook you&apos;re
+          about to scan, and use <strong>Capture into &lt;that logbook&gt;</strong> — the camera opens
+          with it already selected, so there&apos;s no dropdown to get wrong.
+        </p>
+        <p className="mt-2">
           Pick the right <strong>logbook</strong> for what you&apos;re scanning — airframe/engine/
           prop/avionics for running maintenance pages, and <strong>Other</strong> for A&amp;P
           documents (see below). Pages queue on-device and upload when you&apos;re online, so

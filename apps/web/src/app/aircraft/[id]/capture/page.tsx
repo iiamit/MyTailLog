@@ -5,10 +5,16 @@ import { CaptureClient, type CaptureLogbook } from "./CaptureClient";
 
 export default async function CapturePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ logbook?: string }>;
 }) {
   const { id } = await params;
+  // ?logbook=<id> arrives from the "Capture into this logbook" button on the
+  // aircraft page, so you land here with the right book already chosen instead
+  // of picking it out of a dropdown you've just navigated away from.
+  const { logbook: requestedLogbook } = await searchParams;
   const supabase = await createClient();
 
   // RLS restricts this to the owner; a non-owner id returns no row.
@@ -62,6 +68,9 @@ export default async function CapturePage({
       <CaptureClient
         aircraftId={id}
         logbooks={captureLogbooks}
+        initialLogbookId={
+          captureLogbooks.some((lb) => lb.id === requestedLogbook) ? requestedLogbook : undefined
+        }
         tailNumber={aircraft.tail_number}
       />
     </main>

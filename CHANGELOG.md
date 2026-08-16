@@ -6,6 +6,13 @@ the git log.
 
 ## 2026.08
 
+### Added — capture straight into the logbook you're looking at
+- Tap a logbook on **Aircraft → Pages** and there's now a **Capture into
+  &lt;logbook&gt;** button: the camera opens with that book already selected.
+  Previously you left the logbook you were browsing, went to a separate Capture
+  page, and picked it again out of a dropdown — easy to get wrong when the
+  airframe and engine books look alike.
+
 ### Added — put a logbook back in order in one step
 - **Uploaded the second volume before the first?** Open that logbook's pages,
   sort by **Entry date**, and hit **Save this order** — it renumbers the whole
