@@ -78,3 +78,24 @@ test("every external URL in the client script loaders is allowed by the CSP", ()
     }
   }
 });
+
+// 'unsafe-eval' was only ever there for OpenCV.js, which capture no longer uses.
+// It is gone from production — but hot reload compiles modules through eval()
+// and these headers apply in dev too, so dev keeps it. Dropping it everywhere
+// looks like a pure hardening win and quietly breaks `next dev`.
+test("script-src drops 'unsafe-eval' in production and keeps it in dev", () => {
+  const prod = directivesOf(buildCsp("db.example.supabase.co"));
+  assert.ok(!prod["script-src"].includes("'unsafe-eval'"), "production must not allow eval");
+  assert.ok(prod["script-src"].includes("'self'"));
+  // Next's hydration scripts are inline, so this one stays for now.
+  assert.ok(prod["script-src"].includes("'unsafe-inline'"));
+
+  const dev = directivesOf(buildCsp("db.example.supabase.co", { dev: true }));
+  assert.ok(dev["script-src"].includes("'unsafe-eval'"), "dev needs eval for hot reload");
+});
+
+test("the consent CSP is tightened the same way", () => {
+  // /oauth/consent gets its own header; it must not silently keep eval.
+  const consent = directivesOf(buildCsp("db.example.supabase.co", { broadFormAction: true }));
+  assert.ok(!consent["script-src"].includes("'unsafe-eval'"));
+});

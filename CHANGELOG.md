@@ -6,6 +6,15 @@ the git log.
 
 ## 2026.08
 
+### Security — `unsafe-eval` is gone from the production Content-Security-Policy
+- It was only ever there for OpenCV.js, which capture no longer loads. Removing
+  it means a script injected into a page can no longer reach `eval()` or
+  `new Function()` to build code at runtime.
+- Kept in **development only**: the dev server compiles modules through `eval()`
+  for hot reload, and these headers apply in dev too — dropping it everywhere
+  looks like a pure hardening win while quietly breaking local development.
+- pdf.js needed no change; version 6 doesn't use `eval` at all.
+
 ### Added — crop and clean up a page after the fact
 - A page photographed on a desk comes with the desk. The review screen now has
   **Crop & clean up**: drag the corners to cut out the background, rotate, and

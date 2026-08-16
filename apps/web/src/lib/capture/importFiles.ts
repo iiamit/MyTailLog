@@ -123,6 +123,9 @@ export async function rasterizeFile(
 
   const pdfjs = await getPdfLib();
   const data = await file.arrayBuffer();
+  // No isEvalSupported flag needed: pdf.js 6 doesn't use eval at all (checked
+  // the built bundle), so it's unaffected by dropping 'unsafe-eval' from the
+  // production CSP.
   const loadingTask = pdfjs.getDocument({ data });
   const pdf = await loadingTask.promise;
   try {
