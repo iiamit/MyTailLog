@@ -169,6 +169,14 @@ const SECTIONS: Section[] = [
           instead — no scan needed.
         </p>
         <p className="mt-2">
+          Uploaded a logbook out of order — the second volume before the first? Open that
+          logbook on <L href="/aircraft">Aircraft → Pages</L>, sort by <strong>Entry date</strong>,
+          and hit <strong>Save this order</strong>. It renumbers that logbook&apos;s pages to match
+          what you&apos;re looking at, in one step. (It only offers this once every page in the
+          logbook has been extracted — before that there are no dates to order by.) The arrows in{" "}
+          <strong>Reorder</strong> still nudge a single page up or down.
+        </p>
+        <p className="mt-2">
           Pick the right <strong>logbook</strong> for what you&apos;re scanning — airframe/engine/
           prop/avionics for running maintenance pages, and <strong>Other</strong> for A&amp;P
           documents (see below). Pages queue on-device and upload when you&apos;re online, so

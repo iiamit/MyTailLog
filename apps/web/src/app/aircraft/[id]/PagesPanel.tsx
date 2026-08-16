@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
-import { sortPages, movedOrder, type SortKey, type SortDir } from "@/lib/pageSort";
+import { sortPages, movedOrder, displayedOrder, type SortKey, type SortDir } from "@/lib/pageSort";
 import { deletePage, reorderPages } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -244,6 +244,38 @@ export function PagesPanel({
   // chronological place inside its own logbook.
   const sortedRows = sortPages(displayRows, sort, dir, logbookOrder);
 
+  /**
+   * Persist the order currently displayed for the selected logbook.
+   *
+   * The move-one-step arrows are fine for nudging a stray page, but not for the
+   * case that actually happens: the second prop book gets uploaded before the
+   * first, and fifty pages each need to move fifty places. Sorting by entry date
+   * already SHOWS them right — this makes that the stored order in one step.
+   */
+  async function saveDisplayedOrder(): Promise<void> {
+    if (!selectedLogbookId) return;
+    const orderedIds = displayedOrder(displayRows, selectedLogbookId, sort, dir);
+    if (!orderedIds) return;
+    setSavingOrder(true);
+    const res = await reorderPages(aircraftId, orderedIds);
+    setSavingOrder(false);
+    if ("error" in res) {
+      toast.error(res.error);
+      router.refresh();
+      return;
+    }
+    toast.success(`Saved the order of ${orderedIds.length} pages.`);
+    router.refresh();
+  }
+
+  // Offered only when it would be a fact rather than a guess: one logbook in
+  // view, and every page in it carries the key being sorted on.
+  const persistableOrder =
+    selectedLogbookId && sort !== "upload"
+      ? displayedOrder(displayRows, selectedLogbookId, sort, dir)
+      : null;
+
+
   return (
     <div className="flex flex-col gap-4">
       {/* Logbook tiles double as a filter. */}
@@ -405,6 +437,16 @@ export function PagesPanel({
                 <option value="tach">Tach</option>
               </select>
             </label>
+            {persistableOrder && (
+              <button
+                onClick={saveDisplayedOrder}
+                disabled={savingOrder}
+                title={`Renumber this logbook's pages to match the ${sort === "date" ? "entry date" : "tach"} order shown`}
+                className="rounded-md border border-accent px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent-soft disabled:opacity-50"
+              >
+                {savingOrder ? "Saving…" : "Save this order"}
+              </button>
+            )}
             <button
               onClick={() => changeDir(dir === "asc" ? "desc" : "asc")}
               disabled={reordering}

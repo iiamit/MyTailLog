@@ -61,16 +61,38 @@ export async function reorderPages(
   aircraftId: string,
   orderedIds: string[],
 ): Promise<{ ok: true } | { error: string }> {
-  const supabase = await createClient();
-  for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await supabase
-      .from("page")
-      .update({ page_sequence: i + 1 })
-      .eq("id", orderedIds[i])
-      .eq("aircraft_id", aircraftId);
-    if (error) return { error: `Couldn't save order: ${error.message}` };
+  if (orderedIds.length === 0) return { ok: true };
+  if (new Set(orderedIds).size !== orderedIds.length) {
+    return { error: "Couldn't save order: the same page appeared twice." };
   }
+
+  const supabase = await createClient();
+  // Chunked concurrency rather than one round trip per page. Nudging a page one
+  // step is 2 updates, but re-sequencing a whole logbook off a date sort is
+  // however many pages that book has — sequential awaits made a 150-page book a
+  // minutes-long wait. Chunked so a large logbook doesn't open 150 sockets at once.
+  const CHUNK = 25;
+  for (let start = 0; start < orderedIds.length; start += CHUNK) {
+    const slice = orderedIds.slice(start, start + CHUNK);
+    const results = await Promise.all(
+      slice.map((id, k) =>
+        supabase
+          .from("page")
+          .update({ page_sequence: start + k + 1 })
+          .eq("id", id)
+          .eq("aircraft_id", aircraftId)
+          .select("id"),
+      ),
+    );
+    for (const r of results) {
+      if (r.error) return { error: `Couldn't save order: ${r.error.message}` };
+      // RLS makes a non-editor's update match zero rows instead of failing.
+      if (!r.data?.length) return { error: "You don't have permission to reorder these pages." };
+    }
+  }
+
   revalidatePath(`/aircraft/${aircraftId}/pages`);
+  revalidatePath(`/aircraft/${aircraftId}`);
   return { ok: true };
 }
 
