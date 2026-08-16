@@ -231,7 +231,7 @@ function Shell({ session }: { session: Session }) {
             onClick={() => setNav({ screen: "capture" })}
             style={{ width: "100%", marginTop: 14, background: accent, color: "#071018", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700 }}
           >
-            📷  Capture a page
+            📷  Scan pages
           </button>
           <Hangar
             onOpen={(a) => setNav({ screen: "entries", aircraft: a })}

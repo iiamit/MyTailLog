@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getRows, getByAircraft, enqueueCapture, captureCount } from "./db";
-import { takePhoto, drainCaptures } from "./capture";
+import { scanPages, drainCaptures } from "./capture";
 import type { Aircraft, Logbook } from "./types";
 import { TopBar, dim, faint, ink, accent, line, panel, panel2, mono } from "./ui";
 
@@ -41,24 +41,33 @@ export function CaptureScreen({ onBack, onSynced }: { onBack: () => void; onSync
 
   async function shoot() {
     if (!acId || !lbId) return;
-    setBusy("Opening camera…");
+    setBusy("Opening scanner…");
     setMsg(null);
     try {
-      const photo = await takePhoto();
-      if (!photo) return;
-      await enqueueCapture({
-        id: crypto.randomUUID(),
-        aircraft_id: acId,
-        logbook_id: lbId,
-        page_sequence: null,
-        captured_at: new Date().toISOString(),
-        is_handwritten: handwritten ? 1 : 0,
-        image: photo.image,
-        thumbnail: photo.thumbnail,
-      });
-      setThumb(photo.thumbnail);
+      // One session can return a whole stack of pages, so queue them in the
+      // order VisionKit handed them back.
+      const pages = await scanPages();
+      if (pages.length === 0) return; // backed out of the scanner
+      setBusy(`Saving ${pages.length} page${pages.length === 1 ? "" : "s"}…`);
+      for (const page of pages) {
+        await enqueueCapture({
+          id: crypto.randomUUID(),
+          aircraft_id: acId,
+          logbook_id: lbId,
+          page_sequence: null,
+          captured_at: new Date().toISOString(),
+          is_handwritten: handwritten ? 1 : 0,
+          image: page.image,
+          thumbnail: page.thumbnail,
+        });
+      }
+      setThumb(pages[pages.length - 1].thumbnail);
       setPending(await captureCount());
-      setMsg("Queued — snap more, or upload.");
+      setMsg(
+        pages.length === 1
+          ? "1 page queued — scan more, or upload."
+          : `${pages.length} pages queued — scan more, or upload.`,
+      );
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -111,7 +120,7 @@ export function CaptureScreen({ onBack, onSynced }: { onBack: () => void; onSync
         disabled={!canShoot}
         style={{ width: "100%", marginTop: 20, background: canShoot ? accent : panel, color: canShoot ? "#071018" : faint, border: `1px solid ${line}`, borderRadius: 12, padding: "15px", fontSize: 16, fontWeight: 700 }}
       >
-        {busy && busy.startsWith("Opening") ? busy : "📷  Take photo"}
+        {busy ? busy : "📷  Scan pages"}
       </button>
 
       {thumb && (
