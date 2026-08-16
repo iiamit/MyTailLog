@@ -6,6 +6,18 @@ the git log.
 
 ## 2026.08
 
+### Added — put a logbook back in order in one step
+- **Uploaded the second volume before the first?** Open that logbook's pages,
+  sort by **Entry date**, and hit **Save this order** — it renumbers the whole
+  logbook to match what you're looking at. Previously the only way to reorder was
+  nudging one page up or down at a time, which is fine for a stray page and
+  hopeless for fifty of them.
+- Offered only when it's a fact rather than a guess: one logbook in view, and
+  every page in it already extracted. An un-extracted page has no date, and
+  sorting would quietly dump it at the end and renumber the book around it.
+- Reordering a large logbook used to be one database round trip per page, which
+  made a 150-page book a minutes-long wait. Now batched.
+
 ### Changed — the iOS app now scans with Apple's own document scanner
 - **Scanning uses VisionKit — the scanner Apple Notes uses.** Automatic edge
   detection, perspective correction and the black-and-white document look, done

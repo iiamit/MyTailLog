@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cmpKey, sortPages, movedOrder, type SortablePage } from "../src/lib/pageSort";
+import { cmpKey, sortPages, movedOrder, type SortablePage, displayedOrder } from "../src/lib/pageSort";
 
 const P = (
   id: string,
@@ -79,4 +79,52 @@ test("movedOrder never crosses logbooks", () => {
   ];
   assert.equal(movedOrder(rows, "b1", -1), null); // first in B
   assert.deepEqual(movedOrder(rows, "b2", -1), ["b2", "b1"]); // stays within B
+});
+
+// --- Persisting the displayed order ----------------------------------------
+// The realistic mess: the second prop book was uploaded before the first, so
+// upload order is exactly backwards. Sorting by entry date already displays it
+// right; displayedOrder() is what makes that the STORED order in one step,
+// rather than fifty move-one-step nudges.
+
+const DP = (
+  id: string,
+  logbookId: string,
+  pageSequence: number | null,
+  latestDate: string | null = null,
+  tach: number | null = null,
+) => ({ id, logbookId, pageSequence, latestDate, tach });
+
+test("displayedOrder: entry-date order becomes the stored order", () => {
+  const rows = [
+    DP("b1", "prop", 1, "2019-06-01"), // uploaded first, but the LATER book
+    DP("b2", "prop", 2, "2020-07-01"),
+    DP("a1", "prop", 3, "2011-03-01"), // the earlier book, uploaded second
+    DP("a2", "prop", 4, "2012-04-01"),
+  ];
+  assert.deepEqual(displayedOrder(rows, "prop", "date", "asc"), ["a1", "a2", "b1", "b2"]);
+});
+
+test("displayedOrder: refuses when some pages lack the sort key", () => {
+  // An un-extracted page has no date. Sorting dumps it at the end; persisting
+  // that would renumber a logbook off the back of a value we don't have.
+  const rows = [DP("x", "prop", 1, "2019-06-01"), DP("y", "prop", 2, null)];
+  assert.equal(displayedOrder(rows, "prop", "date", "asc"), null);
+  // Upload order is always known, so it stays available.
+  assert.deepEqual(displayedOrder(rows, "prop", "upload", "asc"), ["x", "y"]);
+});
+
+test("displayedOrder: never crosses logbooks, and needs at least two pages", () => {
+  const rows = [DP("p1", "prop", 1, "2019-06-01"), DP("e1", "engine", 1, "2011-01-01")];
+  assert.equal(displayedOrder(rows, "prop", "date", "asc"), null, "one page = nothing to order");
+  assert.deepEqual(
+    displayedOrder([...rows, DP("p2", "prop", 2, "2015-01-01")], "prop", "date", "asc"),
+    ["p2", "p1"],
+    "engine's page must not appear in prop's order",
+  );
+});
+
+test("displayedOrder: descending is honoured", () => {
+  const rows = [DP("a", "prop", 1, "2011-01-01"), DP("b", "prop", 2, "2020-01-01")];
+  assert.deepEqual(displayedOrder(rows, "prop", "date", "desc"), ["b", "a"]);
 });
