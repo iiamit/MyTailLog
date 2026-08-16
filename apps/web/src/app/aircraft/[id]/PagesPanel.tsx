@@ -244,6 +244,8 @@ export function PagesPanel({
   // chronological place inside its own logbook.
   const sortedRows = sortPages(displayRows, sort, dir, logbookOrder);
 
+  const selectedLogbook = logbooks.find((lb) => lb.id === selectedLogbookId) ?? null;
+
   /**
    * Persist the order currently displayed for the selected logbook.
    *
@@ -304,6 +306,23 @@ export function PagesPanel({
           );
         })}
       </div>
+
+      {/* Capture straight into the logbook you're looking at. The tiles are
+          <button> filters, so this can't be nested inside one — it sits under
+          the grid and follows the selection. */}
+      {selectedLogbook && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href={`/aircraft/${aircraftId}/capture?logbook=${selectedLogbook.id}`}
+            className="rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-bg hover:opacity-90"
+          >
+            📷 Capture into {selectedLogbook.label}
+          </Link>
+          <span className="text-xs text-faint">
+            Opens the camera with this logbook already selected.
+          </span>
+        </div>
+      )}
 
       {/* Pages header + summary */}
       <div className="flex items-center justify-between">
