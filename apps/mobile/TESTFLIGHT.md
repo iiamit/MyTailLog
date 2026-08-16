@@ -72,6 +72,11 @@ prev/next. Then **Status** (current tach/hobbs, items worst-first) and **Documen
 (the four AROW slots). All should work with no signal — that's the whole point of
 those two screens.
 
+**Scanning** (the reason for this build): tap **Scan pages**. You should get
+Apple's document scanner — the Notes one — with automatic edge detection and the
+black-and-white document look. Check that you can drag the crop handles before
+keeping a page, and that shooting several pages in one session queues them all.
+
 **PDFs**, still offline: open a PDF document (registration and airworthiness
 certificates usually are). It should render in-app, page by page, with prev/next
 on a multi-page file, and tap-to-zoom. A PDF you've never downloaded says so
@@ -104,6 +109,28 @@ cd apps/mobile
 npm install                    # only if package.json changed — it DID for the PDF viewer
 npm run ios                    # vite build && cap sync ios && cap open ios
 ```
+
+> **⚠️ The Capacitor 6 → 8 upgrade is a bigger step than a normal build.** Do this
+> once, instead of the above:
+>
+> ```bash
+> cd apps/mobile
+> rm -rf node_modules package-lock.json && npm install
+> rm -rf ios/App/Pods ios/App/Podfile.lock
+> npx cap sync ios              # regenerates the pods for Capacitor 8
+> npm run ios
+> ```
+>
+> In Xcode: **Product → Clean Build Folder** before archiving. If the build
+> complains about the iOS deployment target, raise it to whatever
+> `ios/App/Podfile` now specifies — Capacitor 8 requires a newer minimum than 6.
+>
+> **Test the on-device database before you ship it.** `@capacitor-community/sqlite`
+> also went 6 → 8, and existing installs already hold a synced mirror. Install the
+> new build **over** an existing one (don't delete the app first) and confirm your
+> aircraft, entries and any queued captures are still there. If the mirror is
+> empty, that's a migration problem, not a sync problem — say so rather than
+> re-syncing over it.
 
 Then in Xcode:
 

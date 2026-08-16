@@ -2,8 +2,14 @@
 
 Offline-first native app for iPhone/iPad. Sync an aircraft once, then — **fully
 offline** — see whether it's airworthy, browse every log entry, document and
-original scanned page, pull up the AROW paperwork for a ramp check, and
-**capture** new logbook pages that upload when back online.
+original scanned page, pull up the AROW paperwork for a ramp check, and **scan**
+new logbook pages that upload when back online.
+
+Scanning uses **Apple's own document scanner** (VisionKit, the one Notes uses) via
+`@capgo/capacitor-document-scanner`: automatic edge detection, perspective
+correction and the black-and-white document look, natively and instantly. You can
+correct its crop by hand before keeping a page, and one session takes up to **24
+pages**, so a whole logbook goes in without reopening the camera.
 
 Standalone npm project (its own `node_modules` + `package-lock.json`) — it doesn't
 touch the web app or its deploy.

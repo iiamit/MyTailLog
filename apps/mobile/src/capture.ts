@@ -1,27 +1,56 @@
-import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { DocumentScanner, ResponseType } from "@capgo/capacitor-document-scanner";
 import { CapacitorHttp } from "@capacitor/core";
 import { API_BASE, supabase } from "./supabase";
 import { listCaptures, removeCapture } from "./db";
 
-// Offline capture: photograph a logbook page → downscale + thumbnail in the
-// webview → queue in SQLite → drain to /api/aircraft/[id]/capture (JSON base64,
-// Bearer) when online. The server uploads the blob + inserts the page row, then
-// runs extraction; the new page flows back on the next sync.
+// Offline capture: scan logbook pages → downscale + thumbnail in the webview →
+// queue in SQLite → drain to /api/aircraft/[id]/capture (JSON base64, Bearer)
+// when online. The server uploads the blob + inserts the page row, then runs
+// extraction; the new page flows back on the next sync.
+//
+// Scanning is Apple's OWN document scanner (VisionKit, via
+// @capgo/capacitor-document-scanner) — the one Notes uses. It does the edge
+// detection, the perspective correction and the black-and-white document filter
+// natively and instantly.
+//
+// That matters beyond looks. The previous in-browser attempt pulled a 9 MB
+// OpenCV build from a CDN and ran edge detection on the main thread, which on an
+// iPhone was reported as "very glitchy, it will not capture photos, and if it
+// does, it takes too long". None of that work happens in our JavaScript now.
 
 export type Photo = { image: string; thumbnail: string };
 
-/** Open the camera, return a downscaled JPEG + thumbnail (base64, no prefix). */
-export async function takePhoto(): Promise<Photo | null> {
-  const shot = await Camera.getPhoto({
-    resultType: CameraResultType.Base64,
-    source: CameraSource.Camera,
-    quality: 85,
-    correctOrientation: true,
+// VisionKit's own ceiling is 24 pages per session.
+const MAX_PAGES = 24;
+
+/**
+ * Open the document scanner and return one downscaled JPEG + thumbnail per page
+ * (base64, no data: prefix). Empty when the user backs out.
+ *
+ * `letUserAdjustCrop` keeps VisionKit's editor in the flow, so the crop it
+ * guesses can be corrected by hand before the page is kept — the "give the
+ * ability to the end user to crop and adjust" half of the request. Multi-page is
+ * the other half: a whole logbook can be shot in one session instead of
+ * re-opening the camera per page.
+ */
+export async function scanPages(): Promise<Photo[]> {
+  const res = await DocumentScanner.scanDocument({
+    responseType: ResponseType.Base64,
+    letUserAdjustCrop: true,
+    maxNumDocuments: MAX_PAGES,
   });
-  if (!shot.base64String) return null;
-  const image = await rescale(shot.base64String, 2000, 0.85);
-  const thumbnail = await rescale(shot.base64String, 400, 0.7);
-  return { image, thumbnail };
+
+  const out: Photo[] = [];
+  for (const raw of res.scannedImages ?? []) {
+    // Some builds hand back a data: URL rather than bare base64.
+    const base64 = raw.includes(",") ? raw.slice(raw.indexOf(",") + 1) : raw;
+    if (!base64) continue;
+    out.push({
+      image: await rescale(base64, 2000, 0.85),
+      thumbnail: await rescale(base64, 400, 0.7),
+    });
+  }
+  return out;
 }
 
 /** Draw to a canvas at a bounded long-edge and re-encode JPEG → base64 (no prefix). */

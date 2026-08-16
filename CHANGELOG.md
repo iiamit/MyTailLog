@@ -6,6 +6,19 @@ the git log.
 
 ## 2026.08
 
+### Changed — the iOS app now scans with Apple's own document scanner
+- **Scanning uses VisionKit — the scanner Apple Notes uses.** Automatic edge
+  detection, perspective correction and the black-and-white document look, done
+  natively and instantly. A beta user pointed at Notes as the thing to match; it
+  turned out to be literally available.
+- **You can correct the crop before keeping a page**, in Apple's own editor —
+  which is the part the old in-browser auto-crop never offered.
+- **Up to 24 pages in one session**, so a whole logbook goes in without reopening
+  the camera between pages.
+- Under the hood this needed **Capacitor 6 → 8** (no document scanner supports 6).
+  Nothing in the app's own code needed changing for it, but it is a native
+  rebuild, and the on-device database library moved two majors with it.
+
 ### Fixed — you couldn't get rid of the demo aircraft, and phone page lists had no dates
 - **The demo aircraft had no exit.** It's auto-shared read-only with every new
   account, so you're a viewer rather than its owner, and nothing in the app let a
