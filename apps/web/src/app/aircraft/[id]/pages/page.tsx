@@ -40,19 +40,24 @@ export default async function LogbookPagesPage({
   const { data: pages } = await supabase
     .from("page")
     .select(
-      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error, storage_path, thumbnail_path",
+      "id, logbook_id, page_sequence, review_status, extraction_status, detected_page_count, extraction_error, storage_path, thumbnail_path, updated_at",
     )
     .eq("aircraft_id", id)
     .order("logbook_id", { ascending: true })
     .order("page_sequence", { ascending: true, nullsFirst: false });
 
+  // `?v=` is the page's updated_at. The image route sets a 7-day immutable
+  // cache on a stable URL, which is what keeps repeat views off Supabase egress
+  // — but it also means an EDITED page would keep showing the old scan for a
+  // week. Versioning the URL keeps the caching and makes an edit appear at once.
+  const ver = (u: string | null) => (u ? Date.parse(u) : 0);
   // Stable, browser-cacheable image URLs (see /api/page/[pageId]/image). ?thumb=1
   // serves the thumbnail, falling back to the full scan for legacy pages.
   const thumbById = new Map<string, string>();
   const fullById = new Map<string, string>();
   for (const p of pages ?? []) {
-    fullById.set(p.id, `/api/page/${p.id}/image`);
-    thumbById.set(p.id, `/api/page/${p.id}/image?thumb=1`);
+    fullById.set(p.id, `/api/page/${p.id}/image?v=${ver(p.updated_at)}`);
+    thumbById.set(p.id, `/api/page/${p.id}/image?thumb=1&v=${ver(p.updated_at)}`);
   }
 
   const { data: entries } = await supabase

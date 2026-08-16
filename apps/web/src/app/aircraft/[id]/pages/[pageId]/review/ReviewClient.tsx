@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ZoomableImage } from "@/components/ZoomableImage";
+import { PageImageEditor } from "./PageImageEditor";
 import { CONFIDENCE_THRESHOLD, type FieldBox } from "@/lib/extraction/schema";
 import type { ExtractionStatus, ReviewStatus, ReferenceLink } from "@/lib/database.types";
 import { EntryExtras, type EntryAttachment } from "./EntryExtras";
@@ -508,6 +509,7 @@ export function ReviewClient({
   pageId,
   logbookId,
   imageUrl,
+  storagePath,
   rawText,
   reviewStatus,
   extractionStatus,
@@ -522,6 +524,7 @@ export function ReviewClient({
   pageId: string;
   logbookId: string;
   imageUrl: string | null;
+  storagePath: string | null;
   rawText: string | null;
   reviewStatus: ReviewStatus;
   extractionStatus: ExtractionStatus;
@@ -538,6 +541,7 @@ export function ReviewClient({
   const backToPages = `/aircraft/${aircraftId}/pages${
     returnLogbookId ? `?logbook=${encodeURIComponent(returnLogbookId)}` : ""
   }`;
+  const [editingImage, setEditingImage] = useState(false);
   const [entries, setEntries] = useState<ReviewEntry[]>(initialEntries);
   const [drafts, setDrafts] = useState<ReviewEntry[]>([]);
   const [review, setReview] = useState<ReviewStatus>(reviewStatus);
@@ -610,8 +614,28 @@ export function ReviewClient({
       {/* Source: image + raw transcription, so the owner can verify against the
           original (entries mix printed and handwritten content). */}
       <div className="lg:sticky lg:top-[72px] lg:self-start">
-        {imageUrl ? (
+        {editingImage && imageUrl && storagePath ? (
+          <PageImageEditor
+            aircraftId={aircraftId}
+            pageId={pageId}
+            imageUrl={imageUrl}
+            storagePath={storagePath}
+            onDone={() => setEditingImage(false)}
+          />
+        ) : imageUrl ? (
           <div>
+            {/* A photo of a page taken on a desk includes the desk. The native
+                app gets Apple's scanner; here it's a manual pass. */}
+            {canEdit && storagePath && (
+              <div className="mb-2 flex justify-end">
+                <button
+                  onClick={() => setEditingImage(true)}
+                  className="rounded-md border border-line px-3 py-1 text-xs text-dim hover:border-accent hover:text-accent"
+                >
+                  ✂ Crop &amp; clean up
+                </button>
+              </div>
+            )}
             <div className="relative overflow-hidden rounded-lg border border-line">
               <ZoomableImage
                 src={imageUrl}
