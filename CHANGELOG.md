@@ -6,6 +6,21 @@ the git log.
 
 ## 2026.08
 
+### Added — crop and clean up a page after the fact
+- A page photographed on a desk comes with the desk. The review screen now has
+  **Crop & clean up**: drag the corners to cut out the background, rotate, and
+  switch on a **scan look** for a black-and-white document finish rather than a
+  snapshot. (On iPhone the app now uses Apple's own scanner and does this as you
+  shoot — this is the web equivalent, since a browser has no VisionKit.)
+- It runs **once**, on an image you already have. That's the whole difference
+  from the live auto-crop this replaces, which did the same work on every preview
+  frame and made capture unusable on a phone.
+- The contrast pass is deliberately mild: hard thresholding looks more "scanned"
+  but eats faint pencil, which is most of what a logbook is.
+- Editing **replaces the stored scan** (the paper remains your legal record), and
+  says so. Entries already extracted came from the old image, so it prompts you
+  to re-extract if the crop changed what's readable.
+
 ### Added — capture straight into the logbook you're looking at
 - Tap a logbook on **Aircraft → Pages** and there's now a **Capture into
   &lt;logbook&gt;** button: the camera opens with that book already selected.

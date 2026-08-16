@@ -37,7 +37,7 @@ export default async function ReviewAllPage({
       .order("created_at", { ascending: true }),
     supabase
       .from("page")
-      .select("id, logbook_id, page_sequence, storage_path, thumbnail_path")
+      .select("id, logbook_id, page_sequence, storage_path, thumbnail_path, updated_at")
       .eq("aircraft_id", id),
     supabase.from("logbook").select("id, type, title").eq("aircraft_id", id),
   ]);
@@ -57,12 +57,15 @@ export default async function ReviewAllPage({
   });
   const pageOrder = new Map(orderedPages.map((p, i) => [p.id, i]));
 
+  // `?v=` is updated_at — the route caches immutably for 7 days, so an edited
+  // page would otherwise show its old scan until the cache expired.
+  const ver = (u: string | null) => (u ? Date.parse(u) : 0);
   // Stable, browser-cacheable image URLs (see /api/page/[pageId]/image) instead
   // of a fresh signed URL per view. ?thumb=1 serves thumb-or-full.
   const thumbUrl = new Map(
-    orderedPages.map((p) => [p.id, `/api/page/${p.id}/image?thumb=1`]),
+    orderedPages.map((p) => [p.id, `/api/page/${p.id}/image?thumb=1&v=${ver(p.updated_at)}`]),
   );
-  const fullUrl = new Map(orderedPages.map((p) => [p.id, `/api/page/${p.id}/image`]));
+  const fullUrl = new Map(orderedPages.map((p) => [p.id, `/api/page/${p.id}/image?v=${ver(p.updated_at)}`]));
 
   // Imported entries have no page, so they can't inherit a page's slot. They sit
   // after every scanned page, grouped by logbook, in date order — a defined

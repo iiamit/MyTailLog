@@ -197,6 +197,7 @@ export default async function ReviewPage({
         pageId={pageId}
         logbookId={page.logbook_id}
         imageUrl={signed?.signedUrl ?? null}
+        storagePath={page.storage_path}
         rawText={page.ocr_text}
         reviewStatus={page.review_status}
         extractionStatus={page.extraction_status}

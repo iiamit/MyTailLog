@@ -158,6 +158,12 @@ const SECTIONS: Section[] = [
             autofocus, HDR and stabilisation, and the shot is instant. Fill the frame with the page;
             it doesn&apos;t need to be cropped or perfectly square, because the extractor reads the
             page out of the photo. Blurry or glare-heavy shots are flagged before you keep them.
+            Got the desk in the shot? Open the page&apos;s review screen and use{" "}
+            <strong>Crop &amp; clean up</strong> — drag the corners to cut out the background,
+            rotate, and turn on the <strong>scan look</strong> for a black-and-white document finish.
+            It <strong>replaces the stored scan</strong> (your paper page is still the legal record),
+            so re-extract afterwards if the crop changed what&apos;s readable. On iPhone the app uses
+            Apple&apos;s own document scanner and does this as you shoot.
           </li>
           <li>
             <strong>Upload scans</strong> — PDF, JPEG, or PNG. Multi-page PDFs are split into one
