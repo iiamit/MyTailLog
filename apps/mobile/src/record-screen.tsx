@@ -12,11 +12,13 @@ import { color, text, radius, hit, accentGradient, tabular, display, tint } from
 // meters and the oil. The old screen had two submits labelled "Queue reading"
 // and "Queue oil" — an internal word for the offline queue, used as a verb.
 
-const OIL_CHOICES = [
+// "3+" isn't a quantity — it can't go on a consumption trend, and it can't
+// express the half-quart top-up that is the common case. The presets cover the
+// usual amounts; "Other" takes any number, including 0.5 and 1.5.
+const OIL_PRESETS = [
   { label: "None", quarts: 0 },
   { label: "1 qt", quarts: 1 },
   { label: "2 qt", quarts: 2 },
-  { label: "3+", quarts: 3 },
 ];
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -26,6 +28,12 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
   const [tach, setTach] = useState<number | null>(null);
   const [hobbs, setHobbs] = useState<number | null>(null);
   const [oil, setOil] = useState(0);
+  const [oilCustom, setOilCustom] = useState(false);
+  const [oilText, setOilText] = useState("");
+  // Only one meter is mandatory. Recording BOTH when you only read one writes a
+  // reading that asserts the other meter still shows its previous value today —
+  // which is false the moment the aircraft has flown.
+  const [include, setInclude] = useState({ tach: true, hobbs: true });
   const [saved, setSaved] = useState<string | null>(null);
   const editable = canEdit(aircraft.id);
 
@@ -43,30 +51,40 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
       .catch(() => setPrev({ tach: null, hobbs: null }));
   }, [aircraft.id]);
 
-  const nothingEntered = tach == null && hobbs == null;
+  const sendTach = include.tach ? tach : null;
+  const sendHobbs = include.hobbs ? hobbs : null;
+  const oilQuarts = oilCustom ? Number(oilText) : oil;
+  const oilValid = !oilCustom || (oilText.trim() !== "" && Number.isFinite(oilQuarts) && oilQuarts > 0);
+
+  const nothingEntered = sendTach == null && sendHobbs == null;
   const unchanged =
-    (tach == null || tach === prev?.tach) && (hobbs == null || hobbs === prev?.hobbs) && oil === 0;
+    (sendTach == null || sendTach === prev?.tach) &&
+    (sendHobbs == null || sendHobbs === prev?.hobbs) &&
+    !(oilQuarts > 0);
 
   async function save() {
     if (!editable) return;
     const date = todayIso();
-    if (tach != null || hobbs != null) {
+    if (sendTach != null || sendHobbs != null) {
       await queueAction({
         aircraftId: aircraft.id,
         type: "reading",
-        label: [tach != null ? `Tach ${tach.toFixed(1)}` : null, hobbs != null ? `Hobbs ${hobbs.toFixed(1)}` : null].filter(Boolean).join(" · "),
-        payload: { date, tach, hobbs },
+        label: [sendTach != null ? `Tach ${sendTach.toFixed(1)}` : null, sendHobbs != null ? `Hobbs ${sendHobbs.toFixed(1)}` : null].filter(Boolean).join(" · "),
+        payload: { date, tach: sendTach, hobbs: sendHobbs },
       });
     }
-    if (oil > 0) {
+    if (oilQuarts > 0) {
       await queueAction({
         aircraftId: aircraft.id,
         type: "oil",
-        label: `Oil +${oil} qt`,
-        payload: { date, quarts: oil, tach, hobbs },
+        label: `Oil +${oilQuarts} qt`,
+        // Recorded against whichever meters were actually read.
+        payload: { date, quarts: oilQuarts, tach: sendTach, hobbs: sendHobbs },
       });
     }
     setOil(0);
+    setOilCustom(false);
+    setOilText("");
     setSaved("Saved · will upload on next sync");
     onQueued();
   }
@@ -88,9 +106,21 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
       )}
 
       <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.panel, padding: "18px 16px", display: "flex", flexDirection: "column", gap: 18 }}>
-        <Meter label="TACH" value={tach} was={prev?.tach ?? null} onChange={setTach} deltaTone={color.success} />
+        <Meter
+          label="TACH" value={tach} was={prev?.tach ?? null} onChange={setTach}
+          deltaTone={color.success}
+          included={include.tach}
+          onToggle={() => setInclude((s) => ({ ...s, tach: !s.tach }))}
+          canOmit={include.hobbs}
+        />
         <div style={{ height: 1, background: color.hairline }} />
-        <Meter label="HOBBS" value={hobbs} was={prev?.hobbs ?? null} onChange={setHobbs} deltaTone={color.faint} />
+        <Meter
+          label="HOBBS" value={hobbs} was={prev?.hobbs ?? null} onChange={setHobbs}
+          deltaTone={color.faint}
+          included={include.hobbs}
+          onToggle={() => setInclude((s) => ({ ...s, hobbs: !s.hobbs }))}
+          canOmit={include.tach}
+        />
       </div>
 
       <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.panel, padding: 16, marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -99,12 +129,12 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
           <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>optional</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          {OIL_CHOICES.map((o) => {
-            const on = oil === o.quarts;
+          {OIL_PRESETS.map((o) => {
+            const on = !oilCustom && oil === o.quarts;
             return (
               <button
                 key={o.label}
-                onClick={() => setOil(o.quarts)}
+                onClick={() => { setOilCustom(false); setOil(o.quarts); }}
                 disabled={!editable}
                 style={{
                   flex: 1, minHeight: hit.min, borderRadius: radius.control,
@@ -119,20 +149,55 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
               </button>
             );
           })}
+          <button
+            onClick={() => { setOilCustom(true); setOil(0); }}
+            disabled={!editable}
+            style={{
+              flex: 1, minHeight: hit.min, borderRadius: radius.control,
+              background: oilCustom ? tint.accent : color.surfaceRaised,
+              border: `1px solid ${oilCustom ? color.accent : color.hairline}`,
+              color: oilCustom ? color.accent : color.dim,
+              fontFamily: text.rowTitle.fontFamily, fontSize: 14, fontWeight: oilCustom ? 600 : 500,
+              cursor: editable ? "pointer" : "default",
+            }}
+          >
+            Other
+          </button>
         </div>
+
+        {oilCustom && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <input
+              autoFocus
+              value={oilText}
+              onChange={(e) => setOilText(e.target.value)}
+              inputMode="decimal"
+              placeholder="0.5"
+              aria-label="Quarts added"
+              style={{
+                flex: 1, minWidth: 0, height: hit.stepper, textAlign: "center",
+                background: color.bg, border: `1px solid ${color.hairline}`, borderRadius: 13,
+                color: color.ink, fontFamily: display, fontSize: 20, fontWeight: 700, ...tabular,
+              }}
+            />
+            <span style={{ ...text.rowTitle, color: color.dim }}>quarts</span>
+          </div>
+        )}
+
         <span style={{ ...text.meta, color: color.faint }}>
-          Tracked against these meters, so it shows up on your consumption trend.
+          Any amount — half a quart counts. Tracked against the meters you recorded, so it shows
+          up on your consumption trend.
         </span>
       </div>
 
       <button
         onClick={save}
-        disabled={!editable || nothingEntered || unchanged}
+        disabled={!editable || nothingEntered || unchanged || !oilValid}
         style={{
           width: "100%", marginTop: 16, minHeight: hit.primary, borderRadius: 15, border: "none",
           background: accentGradient, color: color.onAccent,
           fontFamily: text.button.fontFamily, fontSize: 16, fontWeight: 600,
-          opacity: !editable || nothingEntered || unchanged ? 0.4 : 1,
+          opacity: !editable || nothingEntered || unchanged || !oilValid ? 0.4 : 1,
           cursor: "pointer",
         }}
       >
@@ -152,10 +217,14 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
  * nobody wants forty taps to add four hours.
  */
 function Meter({
-  label, value, was, onChange, deltaTone,
+  label, value, was, onChange, deltaTone, included, onToggle, canOmit,
 }: {
   label: string; value: number | null; was: number | null;
   onChange: (v: number) => void; deltaTone: string;
+  included: boolean;
+  onToggle: () => void;
+  /** The other meter is being recorded, so this one may be left out. */
+  canOmit: boolean;
 }) {
   const hold = useRef<ReturnType<typeof setInterval> | null>(null);
   const speed = useRef(0);
@@ -204,9 +273,25 @@ function Meter({
         <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>
           {was != null ? `was ${was.toFixed(1)}` : "no previous reading"}
         </span>
+        {/* Only one meter is mandatory. Omitting is better than saving a number
+            you didn't read — that would assert this meter still shows its old
+            value today. Can't omit both. */}
+        {(included ? canOmit : true) && (
+          <button
+            onClick={onToggle}
+            style={{
+              background: "transparent", border: "none", padding: "4px 0 4px 10px",
+              color: included ? color.faint : color.accent,
+              fontFamily: text.meta.fontFamily, fontSize: 11.5, fontWeight: 600,
+              cursor: "pointer", minHeight: 32,
+            }}
+          >
+            {included ? "Not this time" : "Record this"}
+          </button>
+        )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, opacity: included ? 1 : 0.35, pointerEvents: included ? "auto" : "none" }}>
         <button aria-label={`${label} down`} style={btn}
           onPointerDown={() => start(-1)} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}>−</button>
         <input
@@ -226,13 +311,16 @@ function Meter({
           onPointerDown={() => start(1)} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}>+</button>
       </div>
 
-      {delta != null && delta !== 0 && (
+      {!included && (
+        <span style={{ ...text.meta, color: color.faint }}>Not recorded this time.</span>
+      )}
+      {included && delta != null && delta !== 0 && (
         <span style={{ ...text.meta, fontSize: 12, fontWeight: 500, color: backwards ? color.warning : deltaTone }}>
           {delta > 0 ? `+${delta.toFixed(1)} hours this flight` : `${delta.toFixed(1)} hours`}
         </span>
       )}
       {/* A lower value isn't an error — meters get replaced. Say so, keep save enabled. */}
-      {backwards && was != null && (
+      {included && backwards && was != null && (
         <span style={{ ...text.meta, color: color.warning, lineHeight: 1.45 }}>
           Lower than the last reading ({was.toFixed(1)}). Meter replaced or rolled over?
         </span>

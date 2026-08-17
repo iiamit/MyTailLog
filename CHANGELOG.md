@@ -19,7 +19,10 @@ the git log.
   a segmented control, with scanning moved in beside the pages it produces.
 - **Log a flight has steppers**, shows the delta as you go ("+2.4 hours this
   flight"), and commits meters *and* oil with one **Save to logbook**. It used to
-  be two buttons that said "Queue".
+  be two buttons that said "Queue". Either meter can be left out — only one is
+  required, and recording a number you didn't read would claim that meter still
+  shows its old value today. Oil takes **any amount**, so a half-quart top-up is
+  a half quart rather than being rounded into a bucket.
 - **Squawks lead, the composer is a sheet.** It used to sit above the list, so
   opening the keyboard hid the squawks you were checking. Severity now reads
   Low / Watch / **Ground** — "high" doesn't tell you whether the aircraft flies.
