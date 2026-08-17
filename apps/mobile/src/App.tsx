@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
 import { initDb, applyChanges, getCursor, setCursor, actionCount, getRows } from "./db";
-import { computeAirworthiness } from "./airworthiness";
+import { computeAirworthiness, buildVerdict } from "./airworthiness";
 import type { Urgency } from "@/lib/compliance";
 import { drainActions, refreshEditable } from "./actions";
 import { prefetchAll } from "./blobs";
@@ -23,7 +23,9 @@ import { Pending, PendingBanner } from "./pending";
 import { Lightbox } from "./lightbox";
 import type { StatusItem } from "@/lib/status";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Screen, Brand, ghost, input, primary, dim, amber, faint, accent, line, panel } from "./ui";
+import { Screen, Brand, input, primary, dim, amber, faint, line, panel2, text, display } from "./ui";
+import { AccountMenu } from "./account-menu";
+import { FirstRun } from "./first-run";
 
 const NATIVE = Capacitor.isNativePlatform();
 
@@ -105,6 +107,8 @@ function Shell({ session }: { session: Session }) {
   // Lifted out of Hangar: the header switcher needs the same fleet + urgency.
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [worst, setWorst] = useState<Record<string, Urgency>>({});
+  const [summaries, setSummaries] = useState<Record<string, { urgency: Urgency; line: string }>>({});
+  const [menu, setMenu] = useState(false);
   const zoomRef = useRef<string | null>(null);
   zoomRef.current = zoom;
 
@@ -164,11 +168,18 @@ function Shell({ session }: { session: Session }) {
     const sorted = rows.sort((a, b) => (a.tail_number || "").localeCompare(b.tail_number || ""));
     setFleet(sorted);
     const out: Record<string, Urgency> = {};
+    const sum: Record<string, { urgency: Urgency; line: string }> = {};
     for (const a of sorted) {
-      const w = await computeAirworthiness(a.id).then((r) => r.worst).catch(() => null);
-      if (w) out[a.id] = w;
+      const d = await computeAirworthiness(a.id).catch(() => null);
+      if (!d) continue;
+      const w = d.worst ?? "none";
+      out[a.id] = w;
+      // The single line an owner needs: what drives this aircraft's status.
+      const v = buildVerdict(d.lines);
+      sum[a.id] = { urgency: w, line: d.lines.length === 0 ? "Nothing tracked yet" : v.detail };
     }
     setWorst(out);
+    setSummaries(sum);
   }
 
   async function bumpPending() {
@@ -237,43 +248,63 @@ function Shell({ session }: { session: Session }) {
     <Screen tabBar={tabBar}>
       {nav.screen === "hangar" && (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
             <Brand small />
-            <button style={{ ...ghost, marginLeft: "auto" }} onClick={() => supabase.auth.signOut()}>Sign out</button>
+            {/* Sign out lives in here — it must not be a top-level button. */}
+            <button
+              onClick={() => setMenu(true)}
+              aria-label="Account"
+              style={{
+                marginLeft: "auto", width: 34, height: 34, borderRadius: "50%",
+                background: panel2, border: `1px solid ${line}`, color: dim,
+                fontFamily: display, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              {(session.user.email ?? "?").slice(0, 2).toUpperCase()}
+            </button>
           </div>
-          <p style={{ color: dim, fontSize: 12.5, marginTop: 6 }}>{session.user.email}</p>
+
           <PendingBanner count={pending} onOpen={() => setNav({ screen: "pending" })} />
-          <button
-            onClick={() => setNav({ screen: "capture" })}
-            style={{ width: "100%", marginTop: 14, background: accent, color: "#071018", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700 }}
-          >
-            📷  Scan pages
-          </button>
+
+          {fleet.length === 0 && cursor > 0 ? (
+            <FirstRun
+              onAddAircraft={() => setNav({ screen: "capture" })}
+              onDemo={sync}
+              onSignIn={() => setMenu(true)}
+            />
+          ) : (
           <Hangar
+            fleet={fleet}
+            summaries={summaries}
             onOpen={(a) => setNav({ screen: "aircraft", aircraft: a, tab: "status", segment: "documents", sub: null })}
-            sync={sync}
             syncing={syncing}
-            cursor={cursor}
+            syncedLabel={cursor > 0 ? "Synced" : "Not synced yet"}
             error={error}
           />
-          <div style={{ marginTop: 22, borderTop: `1px solid ${line}`, paddingTop: 16 }}>
-            {!dl || (dl.total > 0 && dl.done >= dl.total) ? (
-              <button
-                onClick={downloadAll}
-                style={{ width: "100%", background: panel, color: accent, border: `1px solid ${line}`, borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 600 }}
-              >
-                {dl && dl.done >= dl.total ? "✓ All scans downloaded — tap to refresh" : "⤓ Download all scans for offline"}
-              </button>
-            ) : (
-              <>
-                <div style={{ color: dim, fontSize: 13 }}>Downloading scans… {dl.done}{dl.total ? ` / ${dl.total}` : ""}</div>
-                <div style={{ height: 6, background: line, borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: dl.total ? `${(dl.done / dl.total) * 100}%` : "0%", background: accent }} />
-                </div>
-              </>
-            )}
-            <p style={{ color: faint, fontSize: 11, marginTop: 8 }}>Fetches every page &amp; document once so the full record browses with no signal. Safe to leave running.</p>
-          </div>
+          )}
+
+          {/* Add aircraft — dashed, so it reads as a slot rather than a card. */}
+          <button
+            onClick={() => setNav({ screen: "capture" })}
+            style={{
+              width: "100%", marginTop: 16, minHeight: 48, background: "transparent",
+              border: `1px dashed ${line}`, borderRadius: 14, color: dim,
+              fontFamily: text.rowTitle.fontFamily, fontSize: 14, fontWeight: 500, cursor: "pointer",
+            }}
+          >
+            + Add pages to an aircraft
+          </button>
+
+          {menu && (
+            <AccountMenu
+              email={session.user.email ?? ""}
+              onClose={() => setMenu(false)}
+              onSync={() => { setMenu(false); sync(); }}
+              onDownloadAll={() => { setMenu(false); downloadAll(); }}
+              dl={dl}
+              onSignOut={() => supabase.auth.signOut()}
+            />
+          )}
         </>
       )}
 

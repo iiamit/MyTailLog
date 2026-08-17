@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { getByAircraft, listActions } from "./db";
 import { queueAction, canEdit } from "./actions";
+import { shortDate } from "./airworthiness";
 import type { Aircraft } from "./types";
-import { TopBar, Pill, dim, faint, ink, mono, panel, panel2, line, accent, amber, red, input, primary } from "./ui";
+import { color, text, radius, hit, accentGradient, tint } from "./tokens";
+import { ChevronRightIcon } from "./icons";
 
-// Open defects, and logging a new one the moment you notice it — which is
-// usually on the ramp with a cowling open and no signal.
+// Squawks — tab 4.
+//
+// The list leads and the composer is a sheet. It used to sit at the top of the
+// screen, so opening the keyboard covered the squawks you were checking, and a
+// half-typed one sat above the two you'd already filed.
 
 type SquawkRow = {
   id: string;
@@ -17,24 +22,22 @@ type SquawkRow = {
   resolution_notes: string | null;
 };
 
-const SEVERITY_TONE: Record<string, string> = { high: "overdue", medium: "due_soon", low: "upcoming" };
-const SEVERITIES: SquawkRow["severity"][] = ["low", "medium", "high"];
+/**
+ * Severity is renamed at the presentation layer only — the stored enum stays
+ * low|medium|high. "High" doesn't tell a pilot whether the aircraft is flyable;
+ * "Ground" does.
+ */
+const SEVERITY: Record<SquawkRow["severity"], { label: string; color: string }> = {
+  low: { label: "Low", color: color.accent },
+  medium: { label: "Watch", color: color.warning },
+  high: { label: "Ground", color: color.danger },
+};
+const ORDER: SquawkRow["severity"][] = ["low", "medium", "high"];
 
-export function Squawks({
-  aircraft,
-  onBack,
-  onQueued,
-}: {
-  aircraft: Aircraft;
-  /** Absent when this is a tab root — the tab bar is the navigation. */
-  onBack?: () => void;
-  onQueued: () => void;
-}) {
+export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: () => void }) {
   const [rows, setRows] = useState<SquawkRow[] | null>(null);
   const [pending, setPending] = useState<{ id: string; label: string }[]>([]);
-  const [adding, setAdding] = useState(false);
-  const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<SquawkRow["severity"]>("low");
+  const [composing, setComposing] = useState(false);
   const editable = canEdit(aircraft.id);
 
   async function reload() {
@@ -42,153 +45,185 @@ export function Squawks({
     const queued = await listActions(aircraft.id);
     setPending(queued.filter((a) => a.type === "squawk").map((a) => ({ id: a.id, label: a.label })));
   }
-
-  useEffect(() => {
-    reload();
-  }, [aircraft.id]);
-
-  async function save() {
-    const text = description.trim();
-    if (!text) return;
-    await queueAction({
-      aircraftId: aircraft.id,
-      type: "squawk",
-      label: text.length > 48 ? `${text.slice(0, 48)}…` : text,
-      payload: { description: text, severity, reported_at: new Date().toISOString() },
-    });
-    setDescription("");
-    setSeverity("low");
-    setAdding(false);
-    await reload();
-    onQueued();
-  }
+  useEffect(() => { reload(); }, [aircraft.id]);
 
   const open = (rows ?? []).filter((s) => s.status === "open");
   const resolved = (rows ?? []).filter((s) => s.status !== "open");
-  const byNewest = (a: SquawkRow, b: SquawkRow) => (b.reported_at ?? "").localeCompare(a.reported_at ?? "");
+  const newest = (a: SquawkRow, b: SquawkRow) => (b.reported_at ?? "").localeCompare(a.reported_at ?? "");
 
   return (
     <>
-      <TopBar
-        title={`${aircraft.tail_number} · squawks`}
-        onBack={onBack}
-        right={
-          editable ? (
-            <button
-              onClick={() => setAdding((v) => !v)}
-              style={{ background: "transparent", color: accent, border: `1px solid ${line}`, borderRadius: 8, padding: "6px 11px", fontSize: 12.5, cursor: "pointer" }}
-            >
-              {adding ? "Cancel" : "+ New"}
-            </button>
-          ) : undefined
-        }
-      />
-
-      {adding && (
-        <div style={{ marginTop: 14, background: panel, border: `1px solid ${line}`, borderRadius: 12, padding: "13px 14px" }}>
-          <textarea
-            style={{ ...input, width: "100%", minHeight: 76, resize: "vertical" }}
-            placeholder="What's wrong? e.g. #3 CHT reads intermittently"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            autoFocus
-          />
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            {SEVERITIES.map((s) => (
-              <button
-                key={s}
-                onClick={() => setSeverity(s)}
-                style={{
-                  flex: 1,
-                  background: severity === s ? panel2 : "transparent",
-                  color: severity === s ? ink : faint,
-                  border: `1px solid ${severity === s ? accent : line}`,
-                  borderRadius: 8,
-                  padding: "9px 6px",
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  textTransform: "capitalize",
-                  cursor: "pointer",
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={save}
-            disabled={!description.trim()}
-            style={{ ...primary, width: "100%", marginTop: 10, opacity: description.trim() ? 1 : 0.4 }}
-          >
-            Queue squawk
-          </button>
-          <p style={{ color: faint, fontSize: 11, marginTop: 8 }}>
-            Saved on device now; uploads on the next sync. Resolving a squawk is done on the web app.
-          </p>
-        </div>
-      )}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
+        <h1 style={{ ...text.screenTitle, color: color.ink, margin: 0 }}>Squawks</h1>
+        <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>{aircraft.tail_number}</span>
+      </div>
 
       {pending.length > 0 && (
         <>
-          <Heading>Waiting to upload</Heading>
-          {pending.map((p) => (
-            <div key={p.id} style={{ background: panel2, border: `1px dashed ${accent}66`, borderRadius: 10, padding: "10px 12px", marginTop: 8 }}>
-              <div style={{ fontSize: 13, color: ink }}>{p.label}</div>
-              <div style={{ color: accent, fontSize: 10.5, marginTop: 3 }}>queued — not on the server yet</div>
-            </div>
-          ))}
+          <div style={{ ...text.sectionLabel, color: color.faint, marginBottom: 8 }}>Waiting to upload</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+            {pending.map((p) => (
+              <div key={p.id} style={{ background: color.surface, border: `1px dashed ${color.accent}66`, borderRadius: radius.row, padding: 12 }}>
+                <div style={{ ...text.rowTitle, fontWeight: 500, color: color.ink }}>{p.label}</div>
+                <div style={{ ...text.meta, color: color.accent, marginTop: 3 }}>Not on the server yet</div>
+              </div>
+            ))}
+          </div>
         </>
       )}
 
-      <Heading>Open{open.length ? ` (${open.length})` : ""}</Heading>
-      {open.length === 0 && <p style={{ color: faint, fontSize: 13, marginTop: 8 }}>Nothing open.</p>}
-      {[...open].sort(byNewest).map((s) => <SquawkCard key={s.id} squawk={s} />)}
+      <div style={{ ...text.sectionLabel, color: color.faint, marginBottom: 8 }}>
+        Open{open.length ? ` · ${open.length}` : ""}
+      </div>
+      {open.length === 0 && <p style={{ ...text.secondary, color: color.faint }}>Nothing open.</p>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {[...open].sort(newest).map((s) => <SquawkCard key={s.id} squawk={s} />)}
+      </div>
 
       {resolved.length > 0 && (
-        <>
-          <Heading>Resolved</Heading>
-          {[...resolved].sort(byNewest).map((s) => <SquawkCard key={s.id} squawk={s} resolved />)}
-        </>
+        <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: "12px 14px", marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ ...text.rowTitle, fontWeight: 500, color: color.dim }}>Resolved</span>
+          <span style={{ ...text.countdown, color: color.faint, marginLeft: "auto" }}>{resolved.length}</span>
+          <ChevronRightIcon size={14} color={color.faint} />
+        </div>
       )}
 
-      {!rows && <p style={{ color: faint, fontSize: 13, marginTop: 14 }}>Loading…</p>}
+      {/* Resolution stays on the web, matching the current build. */}
+      {resolved.length > 0 && (
+        <p style={{ ...text.meta, color: color.faint, marginTop: 8 }}>Resolve a squawk on the web app.</p>
+      )}
+
+      {editable && (
+        <button
+          onClick={() => setComposing(true)}
+          style={{
+            position: "fixed", right: 20, bottom: "calc(78px + env(safe-area-inset-bottom) + 20px)",
+            height: 50, padding: "0 20px", borderRadius: 999, border: "none",
+            background: accentGradient, color: color.onAccent,
+            fontFamily: text.button.fontFamily, fontSize: 14.5, fontWeight: 600,
+            boxShadow: `0 10px 26px ${color.accent}57`, cursor: "pointer", zIndex: 30,
+          }}
+        >
+          + New squawk
+        </button>
+      )}
+
+      {composing && (
+        <Composer
+          onClose={() => setComposing(false)}
+          onSave={async (description, severity) => {
+            await queueAction({
+              aircraftId: aircraft.id,
+              type: "squawk",
+              label: description.length > 48 ? `${description.slice(0, 48)}…` : description,
+              payload: { description, severity, reported_at: new Date().toISOString() },
+            });
+            setComposing(false);
+            await reload();
+            onQueued();
+          }}
+        />
+      )}
     </>
   );
 }
 
-function Heading({ children }: { children: React.ReactNode }) {
+function SquawkCard({ squawk: s }: { squawk: SquawkRow }) {
+  const sev = SEVERITY[s.severity] ?? SEVERITY.low;
   return (
-    <div style={{ marginTop: 18, color: faint, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>
-      {children}
+    <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", gap: 10 }}>
+        <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: sev.color, flex: "0 0 auto", marginTop: 6 }} />
+        {/* Never truncated — this is the only place the defect is written down. */}
+        <span style={{ ...text.rowTitle, fontWeight: 500, color: color.ink, textWrap: "pretty" }}>{s.description}</span>
+      </div>
+      <div style={{ ...text.meta, color: color.faint, paddingLeft: 18 }}>
+        {sev.label} · {relative(s.reported_at)}
+        {s.reporter_name ? ` · ${s.reporter_name}` : ""}
+      </div>
     </div>
   );
 }
 
-function SquawkCard({ squawk: s, resolved }: { squawk: SquawkRow; resolved?: boolean }) {
+/** Relative under ~6 weeks, absolute beyond — "3 weeks ago" beats a date here. */
+function relative(iso: string | null): string {
+  if (!iso) return "";
+  const days = Math.round((Date.now() - Date.parse(iso)) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 42) return `${Math.round(days / 7)} weeks ago`;
+  return shortDate(iso.slice(0, 10));
+}
+
+function Composer({
+  onClose, onSave,
+}: {
+  onClose: () => void;
+  onSave: (description: string, severity: SquawkRow["severity"]) => void;
+}) {
+  const [description, setDescription] = useState("");
+  const [severity, setSeverity] = useState<SquawkRow["severity"]>("low");
+
   return (
-    <div
-      style={{
-        background: panel2,
-        border: `1px solid ${line}`,
-        borderLeft: `3px solid ${resolved ? line : s.severity === "high" ? red : s.severity === "medium" ? amber : line}`,
-        borderRadius: 10,
-        padding: "10px 12px",
-        marginTop: 8,
-        opacity: resolved ? 0.6 : 1,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-        <div style={{ minWidth: 0, flex: 1, fontSize: 13.5, color: ink }}>{s.description}</div>
-        {!resolved && <Pill tone={SEVERITY_TONE[s.severity] ?? "upcoming"}>{s.severity.toUpperCase()}</Pill>}
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%", background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+          border: `1px solid ${color.hairline}`, padding: "14px 16px calc(16px + env(safe-area-inset-bottom))",
+          display: "flex", flexDirection: "column", gap: 10,
+        }}
+      >
+        <div style={{ ...text.rowTitle, color: color.ink }}>New squawk</div>
+        <textarea
+          autoFocus
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What did you notice? e.g. #3 CHT reads intermittently"
+          style={{
+            minHeight: 48, background: color.bg, border: `1px solid ${color.hairline}`,
+            borderRadius: 13, padding: "12px 13px", color: color.ink,
+            fontFamily: text.rowTitle.fontFamily, fontSize: 14, resize: "vertical",
+          }}
+        />
+        <div style={{ display: "flex", gap: 8 }}>
+          {ORDER.map((k) => {
+            const on = severity === k;
+            const sev = SEVERITY[k];
+            return (
+              <button
+                key={k}
+                onClick={() => setSeverity(k)}
+                style={{
+                  flex: 1, minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  background: on ? tint.accent : color.surfaceRaised,
+                  border: `1px solid ${on ? color.accent : color.hairline}`,
+                  borderRadius: radius.control, color: on ? color.ink : color.dim,
+                  fontFamily: text.rowTitle.fontFamily, fontSize: 13.5, fontWeight: on ? 600 : 500, cursor: "pointer",
+                }}
+              >
+                <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: sev.color }} />
+                {sev.label}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => onSave(description.trim(), severity)}
+          disabled={!description.trim()}
+          style={{
+            minHeight: hit.stepper, borderRadius: 14, border: "none", background: accentGradient,
+            color: color.onAccent, fontFamily: text.button.fontFamily, fontSize: 15, fontWeight: 600,
+            opacity: description.trim() ? 1 : 0.4, cursor: "pointer",
+          }}
+        >
+          Add squawk
+        </button>
+        <button onClick={onClose} style={{ minHeight: 40, background: "transparent", border: "none", color: color.faint, fontFamily: text.rowTitle.fontFamily, fontSize: 13.5, cursor: "pointer" }}>
+          Cancel
+        </button>
       </div>
-      <div style={{ ...mono, color: faint, fontSize: 10.5, marginTop: 5 }}>
-        {(s.reported_at ?? "").slice(0, 10)}
-        {s.reporter_name ? ` · ${s.reporter_name}` : ""}
-        {resolved ? " · resolved" : ""}
-      </div>
-      {resolved && s.resolution_notes && (
-        <div style={{ color: dim, fontSize: 12, marginTop: 5 }}>{s.resolution_notes}</div>
-      )}
     </div>
   );
 }

@@ -6,6 +6,32 @@ the git log.
 
 ## 2026.08
 
+### Changed — the iOS app is rebuilt around "can I fly today?"
+- **A verdict comes before any list.** Status now opens with one countdown ring
+  and one sentence — "One item due soon", "Grounded — annual overdue" — then the
+  single item that needs doing, then everything healthy collapsed into one row.
+  Seven items used to render as near-identical cards, so an engine overhaul due
+  in 2038 competed for attention with a VOR check due in 26 days.
+- **A tab bar replaces the Back-stack.** Status, Log, Records, Squawks. The tail
+  number in the header switches aircraft in place, so the fleet stops being
+  somewhere you have to back out through.
+- **Records is one tab, not three buttons** — Documents, Scans and History behind
+  a segmented control, with scanning moved in beside the pages it produces.
+- **Log a flight has steppers**, shows the delta as you go ("+2.4 hours this
+  flight"), and commits meters *and* oil with one **Save to logbook**. It used to
+  be two buttons that said "Queue".
+- **Squawks lead, the composer is a sheet.** It used to sit above the list, so
+  opening the keyboard hid the squawks you were checking. Severity now reads
+  Low / Watch / **Ground** — "high" doesn't tell you whether the aircraft flies.
+- **Maintenance history is readable.** Entries get a written title instead of
+  shouted imported text, a one-line summary, and the same job recorded by two
+  sources collapses into one marked "2 merged".
+- **Scans are grouped by logbook** with page numbers, instead of a hundred
+  identical thumbnails; the page viewer swipes and has a thumbnail strip instead
+  of two buttons that took a third of the screen.
+- Documents lead with a **Carry aboard** card that answers "is my AROW current?".
+- One warm dark palette and two brand faces throughout; monospace is retired.
+
 ### Security — `unsafe-eval` is gone from the production Content-Security-Policy
 - It was only ever there for OpenCV.js, which capture no longer loads. Removing
   it means a script injected into a page can no longer reach `eval()` or
