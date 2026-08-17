@@ -3,10 +3,15 @@ import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
-import { initDb, applyChanges, getCursor, setCursor, actionCount } from "./db";
+import { initDb, applyChanges, getCursor, setCursor, actionCount, getRows } from "./db";
+import { computeAirworthiness } from "./airworthiness";
+import type { Urgency } from "@/lib/compliance";
 import { drainActions, refreshEditable } from "./actions";
 import { prefetchAll } from "./blobs";
-import { Hangar, Entries, EntryDetail, Pages, PageViewer } from "./screens";
+import { Hangar, EntryDetail, PageViewer } from "./screens";
+import { Records } from "./records-screen";
+import { TabBar, type Tab } from "./tabbar";
+import { AircraftSwitcher } from "./switcher";
 import { Status } from "./status-screen";
 import { Documents } from "./documents-screen";
 import { PdfViewer } from "./pdf-screen";
@@ -69,20 +74,25 @@ function Login() {
   );
 }
 
+/** Records consolidates three former destinations behind one tab. */
+export type Segment = "documents" | "scans" | "history";
+
+/** Screens pushed ON TOP of a tab. Each tab keeps its own stack. */
+type Sub =
+  | { kind: "entry"; entry: LogEntry }
+  | { kind: "page"; pages: Page[]; index: number }
+  | { kind: "complete"; item: StatusItem }
+  | { kind: "pdf"; doc: { id: string; title: string } };
+
+// The Back-stack is gone: instead of a screen per node, there is a fleet list,
+// and an aircraft context that holds a tab, a Records segment, and whatever is
+// pushed on top of the current tab. Aircraft are changed in place from the
+// header switcher rather than by backing out.
 type Nav =
   | { screen: "hangar" }
-  | { screen: "entries"; aircraft: Aircraft }
-  | { screen: "entry"; aircraft: Aircraft; entry: LogEntry }
-  | { screen: "pages"; aircraft: Aircraft }
-  | { screen: "page"; aircraft: Aircraft; pages: Page[]; index: number }
-  | { screen: "status"; aircraft: Aircraft }
-  | { screen: "documents"; aircraft: Aircraft }
-  | { screen: "record"; aircraft: Aircraft }
-  | { screen: "squawks"; aircraft: Aircraft }
-  | { screen: "complete"; aircraft: Aircraft; item: StatusItem }
-  | { screen: "pdf"; aircraft: Aircraft; doc: { id: string; title: string } }
   | { screen: "pending" }
-  | { screen: "capture" };
+  | { screen: "capture" }
+  | { screen: "aircraft"; aircraft: Aircraft; tab: Tab; segment: Segment; sub: Sub | null };
 
 function Shell({ session }: { session: Session }) {
   const [cursor, setCur] = useState(0);
@@ -92,6 +102,9 @@ function Shell({ session }: { session: Session }) {
   const [dl, setDl] = useState<{ done: number; total: number } | null>(null);
   const [zoom, setZoom] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
+  // Lifted out of Hangar: the header switcher needs the same fleet + urgency.
+  const [fleet, setFleet] = useState<Aircraft[]>([]);
+  const [worst, setWorst] = useState<Record<string, Urgency>>({});
   const zoomRef = useRef<string | null>(null);
   zoomRef.current = zoom;
 
@@ -101,6 +114,7 @@ function Shell({ session }: { session: Session }) {
       await initDb();
       setCur(await getCursor());
       setPending(await actionCount());
+      await loadFleet();
       // Best-effort: offline, canEdit() falls back to allowing, and the server
       // still refuses what it must.
       refreshEditable().catch(() => {});
@@ -111,30 +125,11 @@ function Shell({ session }: { session: Session }) {
   // left-edge swipe below.
   function back() {
     setNav((n) => {
-      switch (n.screen) {
-        case "entries":
-          return { screen: "hangar" };
-        case "entry":
-          return { screen: "entries", aircraft: n.aircraft };
-        case "pages":
-          return { screen: "entries", aircraft: n.aircraft };
-        case "status":
-        case "documents":
-        case "record":
-        case "squawks":
-          return { screen: "entries", aircraft: n.aircraft };
-        case "complete":
-          return { screen: "status", aircraft: n.aircraft };
-        case "pdf":
-          return { screen: "documents", aircraft: n.aircraft };
-        case "page":
-          return { screen: "pages", aircraft: n.aircraft };
-        case "capture":
-        case "pending":
-          return { screen: "hangar" };
-        default:
-          return n; // hangar has nowhere to go
+      if (n.screen === "aircraft") {
+        // Pop what's pushed on the tab; only leave the aircraft when nothing is.
+        return n.sub ? { ...n, sub: null } : { screen: "hangar" };
       }
+      return { screen: "hangar" };
     });
   }
 
@@ -164,6 +159,18 @@ function Shell({ session }: { session: Session }) {
     };
   }, []);
 
+  async function loadFleet() {
+    const rows = await getRows<Aircraft>("aircraft").catch(() => []);
+    const sorted = rows.sort((a, b) => (a.tail_number || "").localeCompare(b.tail_number || ""));
+    setFleet(sorted);
+    const out: Record<string, Urgency> = {};
+    for (const a of sorted) {
+      const w = await computeAirworthiness(a.id).then((r) => r.worst).catch(() => null);
+      if (w) out[a.id] = w;
+    }
+    setWorst(out);
+  }
+
   async function bumpPending() {
     setPending(await actionCount());
   }
@@ -189,6 +196,7 @@ function Shell({ session }: { session: Session }) {
       setSyncing("Uploading…");
       const drained = await drainActions();
       setPending(await actionCount());
+      await loadFleet();
       if (drained.failed > 0) {
         setError(`${drained.failed} queued change${drained.failed === 1 ? "" : "s"} was refused — see the pending list.`);
       }
@@ -199,6 +207,7 @@ function Shell({ session }: { session: Session }) {
       await setCursor(res.cursor);
       setCur(res.cursor);
       refreshEditable().catch(() => {});
+      await loadFleet();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -217,8 +226,15 @@ function Shell({ session }: { session: Session }) {
     );
   }
 
+  // The bar is part of the aircraft context, and only shows with nothing pushed
+  // on top — a pushed viewer owns the whole screen.
+  const tabBar =
+    nav.screen === "aircraft" && !nav.sub ? (
+      <TabBar active={nav.tab} onChange={(tab) => setNav({ ...nav, tab, sub: null })} />
+    ) : null;
+
   return (
-    <Screen>
+    <Screen tabBar={tabBar}>
       {nav.screen === "hangar" && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -234,7 +250,7 @@ function Shell({ session }: { session: Session }) {
             📷  Scan pages
           </button>
           <Hangar
-            onOpen={(a) => setNav({ screen: "entries", aircraft: a })}
+            onOpen={(a) => setNav({ screen: "aircraft", aircraft: a, tab: "status", segment: "documents", sub: null })}
             sync={sync}
             syncing={syncing}
             cursor={cursor}
@@ -261,66 +277,50 @@ function Shell({ session }: { session: Session }) {
         </>
       )}
 
-      {nav.screen === "entries" && (
-        <Entries
-          aircraft={nav.aircraft}
-          onBack={back}
-          onOpen={(e) => setNav({ screen: "entry", aircraft: nav.aircraft, entry: e })}
-          onScans={() => setNav({ screen: "pages", aircraft: nav.aircraft })}
-          onStatus={() => setNav({ screen: "status", aircraft: nav.aircraft })}
-          onDocuments={() => setNav({ screen: "documents", aircraft: nav.aircraft })}
-          onRecord={() => setNav({ screen: "record", aircraft: nav.aircraft })}
-          onSquawks={() => setNav({ screen: "squawks", aircraft: nav.aircraft })}
-        />
-      )}
+      {nav.screen === "aircraft" && (
+        <>
+          {/* The header switcher is what replaces backing out to the fleet. */}
+          <AircraftSwitcher
+            aircraft={nav.aircraft}
+            fleet={fleet}
+            worst={worst}
+            onSwitch={(a) => setNav({ ...nav, aircraft: a, sub: null })}
+            onSeeAll={() => setNav({ screen: "hangar" })}
+          />
 
-      {nav.screen === "status" && (
-        <Status
-          aircraft={nav.aircraft}
-          onBack={back}
-          onComplete={(item) => setNav({ screen: "complete", aircraft: nav.aircraft, item })}
-        />
-      )}
-
-      {nav.screen === "record" && (
-        <Record aircraft={nav.aircraft} onBack={back} onQueued={bumpPending} />
-      )}
-
-      {nav.screen === "squawks" && (
-        <Squawks aircraft={nav.aircraft} onBack={back} onQueued={bumpPending} />
-      )}
-
-      {nav.screen === "complete" && (
-        <CompleteItem aircraft={nav.aircraft} item={nav.item} onBack={back} onQueued={bumpPending} />
-      )}
-
-      {nav.screen === "documents" && (
-        <Documents
-          aircraft={nav.aircraft}
-          onBack={back}
-          onZoom={setZoom}
-          onOpenPdf={(doc) => setNav({ screen: "pdf", aircraft: nav.aircraft, doc })}
-        />
-      )}
-
-      {nav.screen === "pdf" && (
-        <PdfViewer documentId={nav.doc.id} title={nav.doc.title} onBack={back} onZoom={setZoom} />
-      )}
-
-      {nav.screen === "entry" && (
-        <EntryDetail entry={nav.entry} tail={nav.aircraft.tail_number} onBack={back} onZoom={setZoom} />
-      )}
-
-      {nav.screen === "pages" && (
-        <Pages
-          aircraft={nav.aircraft}
-          onBack={back}
-          onOpen={(pages, index) => setNav({ screen: "page", aircraft: nav.aircraft, pages, index })}
-        />
-      )}
-
-      {nav.screen === "page" && (
-        <PageViewer pages={nav.pages} index={nav.index} onBack={back} onZoom={setZoom} />
+          <div style={{ marginTop: 18 }}>
+            {/* Anything pushed wins over the tab's own root screen. */}
+            {nav.sub?.kind === "entry" ? (
+              <EntryDetail entry={nav.sub.entry} tail={nav.aircraft.tail_number} onBack={back} onZoom={setZoom} />
+            ) : nav.sub?.kind === "page" ? (
+              <PageViewer pages={nav.sub.pages} index={nav.sub.index} onBack={back} onZoom={setZoom} />
+            ) : nav.sub?.kind === "complete" ? (
+              <CompleteItem aircraft={nav.aircraft} item={nav.sub.item} onBack={back} onQueued={bumpPending} />
+            ) : nav.sub?.kind === "pdf" ? (
+              <PdfViewer documentId={nav.sub.doc.id} title={nav.sub.doc.title} onBack={back} onZoom={setZoom} />
+            ) : nav.tab === "status" ? (
+              <Status
+                aircraft={nav.aircraft}
+                onComplete={(item) => setNav({ ...nav, sub: { kind: "complete", item } })}
+              />
+            ) : nav.tab === "log" ? (
+              <Record aircraft={nav.aircraft} onQueued={bumpPending} />
+            ) : nav.tab === "squawks" ? (
+              <Squawks aircraft={nav.aircraft} onQueued={bumpPending} />
+            ) : (
+              <Records
+                aircraft={nav.aircraft}
+                segment={nav.segment}
+                onSegment={(segment) => setNav({ ...nav, segment })}
+                onOpenEntry={(entry) => setNav({ ...nav, sub: { kind: "entry", entry } })}
+                onOpenPage={(pages, index) => setNav({ ...nav, sub: { kind: "page", pages, index } })}
+                onOpenPdf={(doc) => setNav({ ...nav, sub: { kind: "pdf", doc } })}
+                onCapture={() => setNav({ screen: "capture" })}
+                onZoom={setZoom}
+              />
+            )}
+          </div>
+        </>
       )}
 
       {nav.screen === "capture" && <CaptureScreen onBack={back} onSynced={sync} />}

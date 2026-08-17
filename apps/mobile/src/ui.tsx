@@ -1,45 +1,88 @@
-// Shared chrome + tokens (inline styles for now; the real design system lands
-// with the shell). Dark "glass cockpit" to match the web app.
+// Shared chrome + style shorthands, built on the design tokens in tokens.ts.
+//
+// The names below are the ones the screens already import. They now resolve to
+// the redesign's palette, so the whole app moves together rather than living in
+// two colour systems while screens are migrated one at a time.
 
-export const bg = "#090c12";
-export const panel = "#131a26";
-export const panel2 = "#1b2432";
-export const line = "#26303f";
-export const ink = "#e8eef7";
-export const dim = "#9fb0c6";
-export const faint = "#647890";
-export const accent = "#5aa0ff";
-export const amber = "#ffb020";
+import { color, tint, text, display, body, tabular, radius, accentGradient } from "./tokens";
 
-export function Screen({ children }: { children: React.ReactNode }) {
+export { color, tint, text, display, body, tabular, radius, accentGradient };
+
+// --- Palette (redesign values) ---------------------------------------------
+export const bg = color.bg;
+export const panel = color.surface;
+export const panel2 = color.surfaceRaised;
+export const line = color.hairline;
+export const ink = color.ink;
+export const dim = color.dim;
+export const faint = color.faint;
+export const accent = color.accent;
+export const amber = color.warning;
+export const red = color.danger;
+export const green = color.success;
+
+/**
+ * Retired as a FACE, kept as a style.
+ *
+ * The old monospace metadata is what made this app read as console output. What
+ * it was actually buying was digits that don't jitter between renders, so this
+ * is now the brand body face with tabular figures — same alignment, none of the
+ * terminal look. (The design calls this "monospace is retired"; SwiftUI would
+ * spell it .monospacedDigit().)
+ */
+export const mono: React.CSSProperties = { fontFamily: body, ...tabular };
+
+// --- Urgency ----------------------------------------------------------------
+// Colour is never the only signal — each entry carries its word too.
+export const URGENCY_COLOR: Record<string, string> = {
+  overdue: color.danger,
+  due_soon: color.warning,
+  upcoming: color.accent,
+  none: color.success,
+};
+export const URGENCY_LABEL: Record<string, string> = {
+  overdue: "OVERDUE",
+  due_soon: "DUE SOON",
+  upcoming: "UPCOMING",
+  none: "OK",
+};
+
+export function Screen({ children, tabBar }: { children: React.ReactNode; tabBar?: React.ReactNode }) {
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: bg,
-        color: ink,
-        padding: "max(20px, env(safe-area-inset-top)) 18px calc(20px + env(safe-area-inset-bottom))",
-        fontFamily: "-apple-system, system-ui, sans-serif",
+        background: color.bg,
+        color: color.ink,
+        fontFamily: body,
+        // Leave room for the tab bar so content never hides behind it.
+        padding: `max(20px, env(safe-area-inset-top)) 20px ${
+          tabBar ? "calc(78px + env(safe-area-inset-bottom))" : "calc(20px + env(safe-area-inset-bottom))"
+        }`,
         boxSizing: "border-box",
       }}
     >
       {children}
+      {tabBar}
     </div>
   );
 }
 
+/** Upward triangle, 135° accent gradient. Proportions are fixed by the brand. */
 export function Brand({ small }: { small?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
       <span
         style={{
-          width: small ? 18 : 24,
-          height: small ? 18 : 24,
-          background: `conic-gradient(from 45deg, ${accent}, #8ec8ff)`,
-          clipPath: "polygon(50% 0,100% 86%,0 86%)",
+          width: small ? 15 : 24,
+          height: small ? 13 : 21,
+          background: accentGradient,
+          clipPath: "polygon(50% 0, 100% 86%, 0 86%)",
         }}
       />
-      <span style={{ fontWeight: 800, fontSize: small ? 17 : 22, letterSpacing: -0.3 }}>MyTailLog</span>
+      <span style={{ fontFamily: display, fontWeight: 700, fontSize: small ? 17 : 22, letterSpacing: "-0.01em" }}>
+        MyTailLog
+      </span>
     </div>
   );
 }
@@ -52,7 +95,7 @@ export function TopBar({ title, onBack, right }: { title: string; onBack?: () =>
           ‹ Back
         </button>
       )}
-      <span style={{ fontWeight: 700, fontSize: 17 }}>{title}</span>
+      <span style={{ fontFamily: display, fontSize: 19, fontWeight: 700 }}>{title}</span>
       {right && <span style={{ marginLeft: "auto" }}>{right}</span>}
     </div>
   );
@@ -60,9 +103,9 @@ export function TopBar({ title, onBack, right }: { title: string; onBack?: () =>
 
 export function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderBottom: `1px solid ${line}` }}>
-      <span style={{ color: dim, fontSize: 13 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, textAlign: "right" }}>{value}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderBottom: `1px solid ${color.hairline}` }}>
+      <span style={{ ...text.secondary, color: color.dim }}>{label}</span>
+      <span style={{ ...text.rowTitle, textAlign: "right" }}>{value}</span>
     </div>
   );
 }
@@ -72,9 +115,9 @@ export function Card({ children, onClick }: { children: React.ReactNode; onClick
     <div
       onClick={onClick}
       style={{
-        background: panel,
-        border: `1px solid ${line}`,
-        borderRadius: 12,
+        background: color.surface,
+        border: `1px solid ${color.hairline}`,
+        borderRadius: radius.card,
         padding: "12px 14px",
         cursor: onClick ? "pointer" : "default",
       }}
@@ -84,39 +127,18 @@ export function Card({ children, onClick }: { children: React.ReactNode; onClick
   );
 }
 
-// Urgency palette. Deliberately NOT the accent blue — these encode "can I fly
-// this aircraft", so they must read as status, not as chrome. Red/amber also
-// carry a text label everywhere they're used: colour alone fails for the ~8% of
-// men with colour-vision deficiency, which is a lot of pilots.
-export const red = "#ff6b6b";
-export const green = "#4ec9a0";
-export const URGENCY_COLOR: Record<string, string> = {
-  overdue: red,
-  due_soon: amber,
-  upcoming: accent,
-  none: green,
-};
-export const URGENCY_LABEL: Record<string, string> = {
-  overdue: "OVERDUE",
-  due_soon: "DUE SOON",
-  upcoming: "UPCOMING",
-  none: "OK",
-};
-
+/** Status chip: semantic colour on semantic tint, always carrying its word. */
 export function Pill({ tone, children }: { tone: string; children: React.ReactNode }) {
-  const c = URGENCY_COLOR[tone] ?? faint;
+  const c = URGENCY_COLOR[tone] ?? color.faint;
   return (
     <span
       style={{
-        ...mono,
-        fontSize: 9.5,
-        letterSpacing: 0.6,
-        fontWeight: 700,
+        ...text.chip,
         color: c,
-        border: `1px solid ${c}55`,
-        background: `${c}18`,
-        borderRadius: 5,
-        padding: "2px 6px",
+        border: `1px solid ${c}4D`,
+        background: `${c}1F`,
+        borderRadius: 6,
+        padding: "4px 8px",
         whiteSpace: "nowrap",
       }}
     >
@@ -125,7 +147,35 @@ export function Pill({ tone, children }: { tone: string; children: React.ReactNo
   );
 }
 
-export const input: React.CSSProperties = { background: panel, border: `1px solid ${line}`, borderRadius: 10, padding: "12px 14px", color: ink, fontSize: 16 };
-export const primary: React.CSSProperties = { background: accent, color: "#071018", border: "none", borderRadius: 10, padding: "13px", fontSize: 15, fontWeight: 700 };
-export const ghost: React.CSSProperties = { background: "transparent", color: dim, border: `1px solid ${line}`, borderRadius: 8, padding: "7px 12px", fontSize: 13, cursor: "pointer" };
-export const mono: React.CSSProperties = { fontFamily: "ui-monospace, Menlo, monospace", fontVariantNumeric: "tabular-nums" };
+export const input: React.CSSProperties = {
+  background: color.surface,
+  border: `1px solid ${color.hairline}`,
+  borderRadius: radius.control,
+  padding: "12px 14px",
+  color: color.ink,
+  fontFamily: body,
+  fontSize: 16,
+};
+
+/** The single primary action per screen. */
+export const primary: React.CSSProperties = {
+  background: accentGradient,
+  color: color.onAccent,
+  border: "none",
+  borderRadius: 15,
+  padding: "15px",
+  fontFamily: body,
+  fontSize: 16,
+  fontWeight: 600,
+};
+
+export const ghost: React.CSSProperties = {
+  background: "transparent",
+  color: color.dim,
+  border: `1px solid ${color.hairline}`,
+  borderRadius: 8,
+  padding: "7px 12px",
+  fontFamily: body,
+  fontSize: 13,
+  cursor: "pointer",
+};

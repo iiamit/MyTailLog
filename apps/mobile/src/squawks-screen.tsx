@@ -26,7 +26,8 @@ export function Squawks({
   onQueued,
 }: {
   aircraft: Aircraft;
-  onBack: () => void;
+  /** Absent when this is a tab root — the tab bar is the navigation. */
+  onBack?: () => void;
   onQueued: () => void;
 }) {
   const [rows, setRows] = useState<SquawkRow[] | null>(null);

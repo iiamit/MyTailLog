@@ -24,6 +24,29 @@ computed on device), `screens.tsx` / `status-screen.tsx` / `documents-screen.tsx
 `squawks-screen.tsx` / `pending.tsx` / `capture-screen.tsx` / `lightbox.tsx` (UI),
 `App.tsx` (auth + nav + swipe-back).
 
+## Design system
+
+The app follows the approved **"Verdict first"** iOS redesign, specified in the
+Claude Design project (`MyTailLog iOS Redesign - Approved 1a.dc.html`) and pulled
+via the DesignSync MCP. `src/tokens.ts` transcribes its tokens — palette, type
+scale, spacing, radii, hit targets — and is the only place they're written down.
+**Change them in the design first, not here.**
+
+Two translations, because the handoff was authored for SwiftUI and this app is
+Capacitor + React:
+
+| Handoff says | Here |
+| --- | --- |
+| `Color` / `DesignTokens.swift` | `src/tokens.ts` |
+| SF Symbols | inline SVG in `src/icons.tsx`, drawn to the same optical weight |
+| `.monospacedDigit()` | `fontVariantNumeric: "tabular-nums"` (monospace as a *face* is retired) |
+| `TabView` | `src/tabbar.tsx` |
+| Dynamic Type | rem-relative sizes; the webview honours the OS text-size setting |
+
+Fonts are **self-hosted** (`@fontsource/*`) rather than loaded from Google as the
+design file does — this app has to render its own typography in a hangar with no
+signal.
+
 ## Shared code with the web app
 
 `@/…` resolves into `apps/web/src` (see `vite.config.ts` + `tsconfig.json`), so

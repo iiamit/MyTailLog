@@ -18,7 +18,8 @@ export function Status({
   onComplete,
 }: {
   aircraft: Aircraft;
-  onBack: () => void;
+  /** Absent when this is a tab root — the tab bar is the navigation. */
+  onBack?: () => void;
   onComplete: (item: StatusItem) => void;
 }) {
   const [data, setData] = useState<Airworthiness | null>(null);

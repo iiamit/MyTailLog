@@ -32,7 +32,8 @@ export function Documents({
   onOpenPdf,
 }: {
   aircraft: Aircraft;
-  onBack: () => void;
+  /** Absent when this is a tab root — the tab bar is the navigation. */
+  onBack?: () => void;
   onZoom: (src: string) => void;
   onOpenPdf: (doc: { id: string; title: string }) => void;
 }) {

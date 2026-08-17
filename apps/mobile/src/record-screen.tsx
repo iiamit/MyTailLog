@@ -15,7 +15,8 @@ export function Record({
   onQueued,
 }: {
   aircraft: Aircraft;
-  onBack: () => void;
+  /** Absent when this is a tab root — the tab bar is the navigation. */
+  onBack?: () => void;
   onQueued: () => void;
 }) {
   const [current, setCurrent] = useState<{ tach: number | null; hobbs: number | null } | null>(null);

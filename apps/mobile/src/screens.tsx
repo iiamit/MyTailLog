@@ -4,7 +4,7 @@ import { localImageSrc } from "./blobs";
 import { computeAirworthiness } from "./airworthiness";
 import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Card, Row, TopBar, Pill, URGENCY_LABEL, dim, faint, ink, mono, panel, panel2, line, accent } from "./ui";
+import { Card, Row, TopBar, Pill, URGENCY_LABEL, text, dim, faint, ink, mono, panel, panel2, line, accent } from "./ui";
 
 // ---- Hangar: the aircraft you have on device ----------------------------------
 export function Hangar({
@@ -90,22 +90,10 @@ export function Hangar({
 // ---- Entries: one aircraft's log, newest first --------------------------------
 export function Entries({
   aircraft,
-  onBack,
   onOpen,
-  onScans,
-  onStatus,
-  onDocuments,
-  onRecord,
-  onSquawks,
 }: {
   aircraft: Aircraft;
-  onBack: () => void;
   onOpen: (e: LogEntry) => void;
-  onScans: () => void;
-  onStatus: () => void;
-  onDocuments: () => void;
-  onRecord: () => void;
-  onSquawks: () => void;
 }) {
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
 
@@ -116,60 +104,29 @@ export function Entries({
   }, [aircraft.id]);
 
   return (
-    <>
-      <TopBar title={aircraft.tail_number} onBack={onBack} />
-      {/* Status first: it's the reason to open the app at the aircraft. */}
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <NavTab label="Status" onClick={onStatus} primary />
-        <NavTab label="Record" onClick={onRecord} primary />
-      </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <NavTab label="Squawks" onClick={onSquawks} />
-        <NavTab label="Documents" onClick={onDocuments} />
-        <NavTab label="Scans" onClick={onScans} />
-      </div>
-      <div style={{ marginTop: 18, color: faint, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>
-        Maintenance log
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-        {entries?.length === 0 && <p style={{ color: faint, fontSize: 13 }}>No entries.</p>}
-        {entries?.map((e) => (
-          <div key={e.id} onClick={() => onOpen(e)} style={{ display: "flex", gap: 10, padding: "10px 2px", borderBottom: `1px solid ${line}`, cursor: "pointer" }}>
-            <span style={{ ...mono, color: accent, fontSize: 11, width: 62, flex: "0 0 auto", paddingTop: 2 }}>{e.entry_date ?? "—"}</span>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: ink }}>{e.description || e.work_performed || "(no description)"}</div>
-              <div style={{ ...mono, color: faint, fontSize: 10.5, marginTop: 3 }}>
-                {e.tach != null ? `TACH ${e.tach}` : e.hobbs != null ? `HOBBS ${e.hobbs}` : ""}
-                {e.signature_name ? `  ·  ${e.signature_name}` : ""}
-              </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {entries?.length === 0 && <p style={{ ...text.secondary, color: faint }}>No entries.</p>}
+      {entries?.map((e) => (
+        <div
+          key={e.id}
+          onClick={() => onOpen(e)}
+          style={{ display: "flex", gap: 10, padding: "10px 2px", borderBottom: `1px solid ${line}`, cursor: "pointer" }}
+        >
+          <span style={{ ...mono, color: accent, fontSize: 11, width: 62, flex: "0 0 auto", paddingTop: 2 }}>
+            {e.entry_date ?? "—"}
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ ...text.rowTitle, color: ink }}>{e.description || e.work_performed || "(no description)"}</div>
+            <div style={{ ...mono, color: faint, fontSize: 10.5, marginTop: 3 }}>
+              {e.tach != null ? `tach ${e.tach}` : e.hobbs != null ? `hobbs ${e.hobbs}` : ""}
+              {e.signature_name ? `  ·  ${e.signature_name}` : ""}
             </div>
-            <span style={{ color: faint }}>›</span>
           </div>
-        ))}
-        {!entries && <p style={{ color: faint, fontSize: 13 }}>Loading…</p>}
-      </div>
-    </>
-  );
-}
-
-function NavTab({ label, onClick, primary }: { label: string; onClick: () => void; primary?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1,
-        background: primary ? accent : panel,
-        color: primary ? "#071018" : ink,
-        border: primary ? "none" : `1px solid ${line}`,
-        borderRadius: 10,
-        padding: "11px 6px",
-        fontSize: 13.5,
-        fontWeight: primary ? 700 : 600,
-        cursor: "pointer",
-      }}
-    >
-      {label}
-    </button>
+          <span style={{ color: faint }}>›</span>
+        </div>
+      ))}
+      {!entries && <p style={{ ...text.secondary, color: faint }}>Loading…</p>}
+    </div>
   );
 }
 
@@ -241,7 +198,7 @@ function orderPages(pages: Page[]): Page[] {
 }
 
 // ---- Scans browser: every page for an aircraft, tap to view full --------------
-export function Pages({ aircraft, onBack, onOpen }: { aircraft: Aircraft; onBack: () => void; onOpen: (pages: Page[], i: number) => void }) {
+export function Pages({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (pages: Page[], i: number) => void }) {
   const [pages, setPages] = useState<Page[] | null>(null);
   useEffect(() => {
     getByAircraft<Page>("page", aircraft.id).then((rows) => setPages(orderPages(rows)));
@@ -249,7 +206,7 @@ export function Pages({ aircraft, onBack, onOpen }: { aircraft: Aircraft; onBack
 
   return (
     <>
-      <TopBar title={`${aircraft.tail_number} · scans`} onBack={onBack} right={<span style={{ color: faint, fontSize: 12 }}>{pages?.length ?? ""} pages</span>} />
+      <div style={{ ...text.meta, color: faint, marginBottom: 10 }}>{pages?.length ?? ""} pages</div>
       {pages?.length === 0 && <p style={{ color: faint, fontSize: 13, marginTop: 14 }}>No scans.</p>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
         {pages?.map((p, i) => <Thumb key={p.id} pageId={p.id} onClick={() => onOpen(pages, i)} />)}
