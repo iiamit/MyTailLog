@@ -1,0 +1,227 @@
+<meta charset="utf-8">
+<title>MyTailLog iOS Redesign — Screen 11, Scan pages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:#0F1216; --surface:#191D24; --raised:#212630; --hairline:#2B313C;
+    --ink:#ECEFF4; --dim:#9AA3B0; --faint:#6B7482;
+    --accent:#5AA9FF; --accentLight:#8EC8FF; --onAccent:#0B1017;
+    --warning:#F2B544; --danger:#FF7060; --success:#4ED69A;
+    --grotesk:"Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --sans:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    background:#0A0C0F; color:var(--ink); font-family:var(--sans);
+    padding:40px 28px 64px; -webkit-font-smoothing:antialiased;
+  }
+  .head { max-width:760px; margin:0 auto 34px; }
+  .head h1 { font-family:var(--grotesk); font-size:24px; font-weight:700; letter-spacing:-.02em; }
+  .head p { color:var(--dim); font-size:14px; line-height:1.55; margin-top:8px; max-width:60ch; }
+  .frames { display:flex; gap:36px; flex-wrap:wrap; justify-content:center; }
+  .col { width:340px; }
+  .cap { font-family:var(--sans); font-size:12px; font-weight:600; letter-spacing:.08em;
+         text-transform:uppercase; color:var(--faint); margin-bottom:10px; }
+
+  /* The frame: 340 x 718, but every value inside is authored at 390pt logical scale. */
+  .frame { width:340px; height:718px; background:var(--bg); border:1px solid var(--hairline);
+           border-radius:26px; overflow:hidden; position:relative; }
+
+  /* Scans grid showing through behind the sheet. */
+  .behind { padding:16px 20px 0; filter:saturate(.9); }
+  .behind .t { font-family:var(--grotesk); font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .behind .seg { display:flex; gap:3px; background:var(--surface); border:1px solid var(--hairline);
+                 border-radius:12px; padding:3px; margin:14px 0 14px; }
+  .behind .seg span { flex:1; text-align:center; padding:8px 0; font-size:13.5px; color:var(--dim); border-radius:9px; }
+  .behind .seg span.on { background:var(--raised); color:var(--ink); font-weight:600; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+  .grid i { aspect-ratio:3/4; border-radius:9px; border:1px solid var(--hairline);
+            background:linear-gradient(160deg,#2A303A,#1C212A); display:block; }
+  .scrim { position:absolute; inset:0; background:rgba(0,0,0,.5); }
+
+  /* The sheet. */
+  .sheet { position:absolute; left:0; right:0; bottom:0; background:var(--surface);
+           border:1px solid var(--hairline); border-bottom:none;
+           border-radius:20px 20px 0 0; padding:10px 20px 22px; }
+  .grab { width:36px; height:4px; border-radius:2px; background:var(--hairline); margin:0 auto 14px; }
+  .titlerow { display:flex; align-items:baseline; gap:10px; margin-bottom:18px; }
+  .titlerow h2 { font-family:var(--grotesk); font-size:19px; font-weight:700; }
+  .titlerow .tail { margin-left:auto; font-size:12.5px; color:var(--faint); }
+
+  .label { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+           color:var(--faint); margin-bottom:8px; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; }
+  .chip { border-radius:9px; padding:7px 12px; font-size:12px; font-weight:600;
+          background:var(--surface); border:1px solid var(--hairline); color:var(--dim); }
+  .chip.on { background:var(--accent); border-color:var(--accent); color:var(--onAccent); }
+  .note { font-size:12px; color:var(--faint); margin-top:9px; }
+
+  .row { display:flex; align-items:center; gap:14px; background:var(--surface);
+         border:1px solid var(--hairline); border-radius:14px; padding:13px 15px; margin-top:16px; }
+  .row .rt { font-size:14.5px; font-weight:600; }
+  .row .rd { font-size:12px; color:var(--faint); line-height:1.45; margin-top:3px; }
+  .sw { flex:none; width:42px; height:26px; border-radius:13px; background:var(--accent); position:relative; }
+  .sw::after { content:""; position:absolute; top:3px; left:19px; width:20px; height:20px;
+               border-radius:10px; background:#fff; }
+  .sw.off { background:var(--raised); }
+  .sw.off::after { left:3px; }
+
+  .primary { display:flex; align-items:center; justify-content:center; gap:9px;
+             height:52px; border-radius:15px; margin-top:18px;
+             background:linear-gradient(135deg,var(--accent),var(--accentLight));
+             color:var(--onAccent); font-size:16px; font-weight:600; }
+  .under { font-size:12px; color:var(--faint); text-align:center; line-height:1.45;
+           max-width:250px; margin:10px auto 0; }
+
+  .card { background:var(--surface); border:1px solid var(--hairline); border-radius:16px;
+          padding:14px; display:flex; flex-direction:column; gap:12px; }
+  .strip { display:flex; gap:6px; overflow:hidden; }
+  .strip i { flex:none; width:38px; height:50px; border-radius:5px; border:1px solid var(--hairline);
+             background:linear-gradient(160deg,#333A45,#20252E); display:block; }
+  .count { font-size:13.5px; font-weight:600; }
+  .countd { font-size:12px; color:var(--faint); margin-top:3px; line-height:1.45; }
+  .secondary { display:flex; align-items:center; justify-content:center; height:46px;
+               border-radius:13px; background:var(--raised); border:1px solid var(--hairline);
+               color:var(--accent); font-size:14px; font-weight:600; }
+
+  .empty .rt { font-size:14.5px; font-weight:600; }
+  .primary.off { background:var(--raised); color:var(--faint); border:1px solid var(--hairline); }
+
+  .designnote { max-width:760px; margin:38px auto 0; border-top:1px solid var(--hairline); padding-top:20px; }
+  .designnote h3 { font-family:var(--grotesk); font-size:15px; font-weight:700; margin-bottom:10px; }
+  .designnote p { color:var(--dim); font-size:13.5px; line-height:1.6; margin-bottom:10px; max-width:68ch; }
+  .designnote b { color:var(--ink); font-weight:600; }
+  .designnote code { font-family:ui-monospace,monospace; font-size:12.5px; color:var(--faint); }
+</style>
+
+<div class="head">
+  <h1>Screen 11 — Scan pages</h1>
+  <p>The screen the Scan FAB opens. Not in the approved ten; it shipped unchanged from the old build and
+     is the last surface still using the Back-stack, the aircraft picker and the word “queued”. Same
+     tokens, same scale, same voice as the rest of the direction.</p>
+</div>
+
+<div class="frames">
+  <div class="col">
+    <div class="cap">11 · Sheet as opened</div>
+    <div class="frame">
+      <div class="behind">
+        <div class="t">Records</div>
+        <div class="seg"><span>Documents</span><span class="on">Scans</span><span>History</span></div>
+        <div class="grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="scrim"></div>
+
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="titlerow"><h2>Scan pages</h2><span class="tail">N9363V</span></div>
+
+        <div class="label">Which logbook</div>
+        <div class="chips">
+          <span class="chip on">Airframe</span>
+          <span class="chip">Engine</span>
+          <span class="chip">Propeller</span>
+          <span class="chip">Avionics</span>
+        </div>
+        <div class="note">Adds to the end — 24 pages so far.</div>
+
+        <div class="row">
+          <div>
+            <div class="rt">Handwritten entries</div>
+            <div class="rd">Reads cursive as well as typed entries. Turn it off for printed pages and
+              they come back faster.</div>
+          </div>
+          <span class="sw"></span>
+        </div>
+
+        <div class="primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1017" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 8.8A1.5 1.5 0 0 1 5 7.3h2.2l1.1-1.8h7.4l1.1 1.8H19a1.5 1.5 0 0 1 1.5 1.5v8.4A1.5 1.5 0 0 1 19 18.7H5a1.5 1.5 0 0 1-1.5-1.5z"/>
+            <circle cx="12" cy="13" r="3.2"/>
+          </svg>
+          Scan pages
+        </div>
+        <div class="under">Apple’s scanner finds the page edges. Shoot the whole stack in one go — up to
+          24 pages.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cap">11a · Pages held on the phone</div>
+    <div class="frame">
+      <div class="behind">
+        <div class="t">Records</div>
+        <div class="seg"><span>Documents</span><span class="on">Scans</span><span>History</span></div>
+        <div class="grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="scrim"></div>
+
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="titlerow"><h2>Scan pages</h2><span class="tail">N9363V</span></div>
+
+        <div class="label">Which logbook</div>
+        <div class="chips">
+          <span class="chip on">Airframe</span>
+          <span class="chip">Engine</span>
+          <span class="chip">Propeller</span>
+          <span class="chip">Avionics</span>
+        </div>
+        <div class="note">Adds to the end — 27 pages so far.</div>
+
+        <div class="row">
+          <div>
+            <div class="rt">Handwritten entries</div>
+            <div class="rd">Reads cursive as well as typed entries. Turn it off for printed pages and
+              they come back faster.</div>
+          </div>
+          <span class="sw"></span>
+        </div>
+
+        <div class="primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1017" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 8.8A1.5 1.5 0 0 1 5 7.3h2.2l1.1-1.8h7.4l1.1 1.8H19a1.5 1.5 0 0 1 1.5 1.5v8.4A1.5 1.5 0 0 1 19 18.7H5a1.5 1.5 0 0 1-1.5-1.5z"/>
+            <circle cx="12" cy="13" r="3.2"/>
+          </svg>
+          Scan pages
+        </div>
+
+        <div class="label" style="margin-top:22px">On this phone</div>
+        <div class="card">
+          <div class="strip"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div>
+            <div class="count">3 pages saved on your phone</div>
+            <div class="countd">They upload on the next sync. Send them now if you have signal.</div>
+          </div>
+          <div class="secondary">Upload 3 pages</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="designnote">
+  <h3>What this fixes</h3>
+  <p>The old screen <b>asked which aircraft</b> — from inside an aircraft context whose header already
+     carried the tail number. The answer was on screen while the question was being asked. Here the
+     aircraft is inherited and shown as trailing metadata, like every other screen in the direction.</p>
+  <p>It opened as a <code>‹ Back</code> stack screen, which is the structure this redesign removed. As a
+     sheet it does one job and hands you back the grid you launched it from, so shooting a second
+     logbook means changing a chip rather than navigating out and in again.</p>
+  <p>It said <b>“queued”</b>, <b>“pending”</b> and <b>“routes to vision extraction”</b> — our words for
+     our machinery. What the owner is choosing is whether the pages have handwriting on them, and what
+     it costs them is time; the copy now says that. The offline queue is described (“saved on your
+     phone”, “upload on the next sync”) and never named.</p>
+  <p>The <code>📷</code> emoji in the primary button becomes <code>camera.viewfinder</code>, as screen 7
+     already called for. The sentence beneath it exists to say the thing nobody currently knows: the
+     whole stack can be shot in one session, up to 24 pages, without reopening the camera.</p>
+  <p><b>“Adds to the end — 24 pages so far”</b> is the only new idea on the screen. Page order is a real
+     concern for a logbook and re-sequencing lives on the web; saying where the pages land stops anyone
+     believing they have to shoot in sequence.</p>
+</div>
