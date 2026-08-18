@@ -1,12 +1,7 @@
 import { API_BASE } from "./supabase";
+import type { SyncChange, PullPage } from "./types";
 
-// Mirror of the server's pull response (see src/lib/sync/changes.ts + the
-// /api/sync/pull route). Kept minimal here; this becomes the shared package.
-export type SyncChange =
-  | { table: string; op: "upsert"; id: string; seq: number; row: Record<string, unknown> }
-  | { table: string; op: "delete"; id: string; seq: number };
-
-export type PullPage = { changes: SyncChange[]; nextCursor: number; hasMore: boolean };
+export type { SyncChange, PullPage };
 
 /**
  * Drain /api/sync/pull from `cursor` to the tip, following pagination. Returns

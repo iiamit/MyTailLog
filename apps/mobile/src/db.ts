@@ -1,5 +1,6 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from "@capacitor-community/sqlite";
 import type { SyncChange } from "./sync";
+import { changeStatements } from "./sync-apply";
 
 // On-device mirror of the synced data. Schema-agnostic: every pulled row is
 // stored as JSON in one `records` table keyed by (table_name, id), so the client
@@ -137,37 +138,6 @@ export async function actionCount(): Promise<number> {
   if (!db) return 0;
   const res = await db.query("SELECT COUNT(*) AS n FROM action_queue");
   return Number((res.values?.[0] as { n: number } | undefined)?.n ?? 0);
-}
-
-/**
- * Turn pulled changes into SQLite statements: upserts replace, deletes remove.
- *
- * Split out from `applyChanges` so the cascade rule below can be tested without
- * a device.
- */
-export function changeStatements(changes: SyncChange[]): { statement: string; values: unknown[] }[] {
-  const set: { statement: string; values: unknown[] }[] = [];
-  for (const c of changes) {
-    if (c.op !== "delete") {
-      set.push({
-        statement: "INSERT OR REPLACE INTO records (table_name,id,data,seq) VALUES (?,?,?,?)",
-        values: [c.table, c.id, JSON.stringify(c.row), c.seq],
-      });
-      continue;
-    }
-    set.push({ statement: "DELETE FROM records WHERE table_name=? AND id=?", values: [c.table, c.id] });
-    // Deleting an aircraft cascades on the server, but those child deletes are
-    // announced against an aircraft nobody can read any more, so they never
-    // reach us. Cascade locally instead of keeping orphaned pages and entries
-    // for an aircraft that no longer exists.
-    if (c.table === "aircraft") {
-      set.push({
-        statement: "DELETE FROM records WHERE json_extract(data,'$.aircraft_id') = ?",
-        values: [c.id],
-      });
-    }
-  }
-  return set;
 }
 
 /** Apply a batch of pulled changes: upserts replace, deletes remove. */

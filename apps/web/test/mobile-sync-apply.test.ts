@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { changeStatements } from "../../mobile/src/db";
+import { changeStatements } from "../../mobile/src/sync-apply";
 
 // The offline client's apply path, tested here because apps/mobile has no runner
 // of its own. Only the statement building is covered — executing them needs a
