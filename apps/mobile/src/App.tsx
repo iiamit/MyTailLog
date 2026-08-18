@@ -93,7 +93,6 @@ type Sub =
 type Nav =
   | { screen: "hangar" }
   | { screen: "pending" }
-  | { screen: "capture" }
   | { screen: "aircraft"; aircraft: Aircraft; tab: Tab; segment: Segment; sub: Sub | null };
 
 function Shell({ session }: { session: Session }) {
@@ -103,6 +102,8 @@ function Shell({ session }: { session: Session }) {
   const [nav, setNav] = useState<Nav>({ screen: "hangar" });
   const [dl, setDl] = useState<{ done: number; total: number } | null>(null);
   const [zoom, setZoom] = useState<string | null>(null);
+  // undefined = closed. null = open with no aircraft in context (fleet entry).
+  const [capture, setCapture] = useState<Aircraft | null | undefined>(undefined);
   const [pending, setPending] = useState(0);
   // Lifted out of Hangar: the header switcher needs the same fleet + urgency.
   const [fleet, setFleet] = useState<Aircraft[]>([]);
@@ -268,7 +269,7 @@ function Shell({ session }: { session: Session }) {
 
           {fleet.length === 0 && cursor > 0 ? (
             <FirstRun
-              onAddAircraft={() => setNav({ screen: "capture" })}
+              onAddAircraft={() => setCapture(null)}
               onDemo={sync}
               onSignIn={() => setMenu(true)}
             />
@@ -285,7 +286,7 @@ function Shell({ session }: { session: Session }) {
 
           {/* Add aircraft — dashed, so it reads as a slot rather than a card. */}
           <button
-            onClick={() => setNav({ screen: "capture" })}
+            onClick={() => setCapture(null)}
             style={{
               width: "100%", marginTop: 16, minHeight: 48, background: "transparent",
               border: `1px dashed ${line}`, borderRadius: 14, color: dim,
@@ -346,7 +347,7 @@ function Shell({ session }: { session: Session }) {
                 onOpenEntry={(entry) => setNav({ ...nav, sub: { kind: "entry", entry } })}
                 onOpenPage={(pages, index) => setNav({ ...nav, sub: { kind: "page", pages, index } })}
                 onOpenPdf={(doc) => setNav({ ...nav, sub: { kind: "pdf", doc } })}
-                onCapture={() => setNav({ screen: "capture" })}
+                onCapture={() => setCapture(nav.aircraft)}
                 onZoom={setZoom}
               />
             )}
@@ -354,7 +355,9 @@ function Shell({ session }: { session: Session }) {
         </>
       )}
 
-      {nav.screen === "capture" && <CaptureScreen onBack={back} onSynced={sync} />}
+      {capture !== undefined && (
+        <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onSynced={sync} />
+      )}
 
       {nav.screen === "pending" && <Pending onBack={back} onChanged={bumpPending} />}
 

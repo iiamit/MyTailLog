@@ -17,6 +17,12 @@ the git log.
   somewhere you have to back out through.
 - **Records is one tab, not three buttons** — Documents, Scans and History behind
   a segmented control, with scanning moved in beside the pages it produces.
+- **Scanning is a sheet that already knows the aircraft.** It used to ask which
+  tail you were scanning — from inside an aircraft whose header was showing the
+  tail number while the question was on screen. Now it opens over the Scans grid,
+  asks only which logbook, and says where the pages land ("Adds to the end — 24
+  pages so far"). It no longer says "queued", "pending" or "routes to vision
+  extraction": pages are "saved on your phone" and "upload on the next sync".
 - **Log a flight has steppers**, shows the delta as you go ("+2.4 hours this
   flight"), and commits meters *and* oil with one **Save to logbook**. It used to
   be two buttons that said "Queue". Either meter can be left out — only one is
