@@ -1,3 +1,12 @@
+// Mirror of the server's pull response (see src/lib/sync/changes.ts + the
+// /api/sync/pull route). Lives here rather than in sync.ts so the pure apply
+// rules can be imported without pulling in Capacitor or import.meta.env.
+export type SyncChange =
+  | { table: string; op: "upsert"; id: string; seq: number; row: Record<string, unknown> }
+  | { table: string; op: "delete"; id: string; seq: number };
+
+export type PullPage = { changes: SyncChange[]; nextCursor: number; hasMore: boolean };
+
 // Minimal shapes of the rows we render (a subset of the server columns). These
 // move to the shared package with the monorepo consolidation.
 

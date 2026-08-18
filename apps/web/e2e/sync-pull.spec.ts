@@ -104,6 +104,57 @@ test("sync/pull: an insert arrives as an upsert with its row, a delete as an exp
   expect(del).not.toHaveProperty("row");
 });
 
+test("sync/pull: deleting the AIRCRAFT itself propagates, not just its children", async ({
+  request,
+}) => {
+  // Deleting a child row is already covered above, and it works — the aircraft
+  // still exists, so change_log's `has_aircraft_access(aircraft_id)` still says
+  // yes. Deleting the AIRCRAFT is the case that breaks: the read policy derives
+  // access from a row that the delete just removed, so the tombstone announcing
+  // the deletion is hidden from the only device that needs it. The plane then
+  // lives forever on the phone, which is exactly what was reported from the
+  // field after a full sync.
+  const admin = createClient(env("TEST_SUPABASE_URL"), env("TEST_SUPABASE_SECRET_KEY"), {
+    auth: { persistSession: false },
+  });
+
+  const { data: profile } = await admin
+    .from("profile")
+    .select("id")
+    .eq("email", env("TEST_USER_EMAIL"))
+    .single();
+
+  // Our own throwaway aircraft — the `scratch` fixture's is torn down for us and
+  // we need to control exactly when the delete lands relative to the cursor.
+  const id = randomUUID();
+  const { error: ae } = await admin.from("aircraft").insert({
+    id,
+    owner_id: profile!.id,
+    tail_number: `NDEL${id.slice(0, 4).toUpperCase()}`,
+    make: "Cessna",
+    model: "172",
+    engine_serials: [],
+    prop_serials: [],
+  });
+  expect(ae, `seed aircraft: ${ae?.message}`).toBeFalsy();
+
+  try {
+    // It must be in the feed while it exists — otherwise the delete assertion
+    // below could pass for the wrong reason (nothing was ever visible).
+    const beforeTip = await drainToTip(request);
+    expect(beforeTip, "the insert must have advanced the feed").toBeGreaterThan(0);
+
+    await admin.from("aircraft").delete().eq("id", id);
+
+    const after = (await (await request.get(`/api/sync/pull?cursor=${beforeTip}&limit=1000`)).json()) as Pull;
+    const del = after.changes.find((c) => c.table === "aircraft" && c.id === id);
+    expect(del, "a deleted aircraft must still be announced to devices that had it").toBeTruthy();
+    expect(del!.op, "it must arrive as `delete` so the client drops it locally").toBe("delete");
+  } finally {
+    await admin.from("aircraft").delete().eq("id", id);
+  }
+});
+
 test("sync/pull: the feed is RLS-scoped — another tenant's device pulls nothing of ours", async ({
   request,
   scratch,

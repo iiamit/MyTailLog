@@ -1,5 +1,6 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from "@capacitor-community/sqlite";
 import type { SyncChange } from "./sync";
+import { changeStatements } from "./sync-apply";
 
 // On-device mirror of the synced data. Schema-agnostic: every pulled row is
 // stored as JSON in one `records` table keyed by (table_name, id), so the client
@@ -142,15 +143,7 @@ export async function actionCount(): Promise<number> {
 /** Apply a batch of pulled changes: upserts replace, deletes remove. */
 export async function applyChanges(changes: SyncChange[]): Promise<void> {
   if (!db || changes.length === 0) return;
-  const set = changes.map((c) =>
-    c.op === "delete"
-      ? { statement: "DELETE FROM records WHERE table_name=? AND id=?", values: [c.table, c.id] }
-      : {
-          statement: "INSERT OR REPLACE INTO records (table_name,id,data,seq) VALUES (?,?,?,?)",
-          values: [c.table, c.id, JSON.stringify(c.row), c.seq],
-        },
-  );
-  await db.executeSet(set);
+  await db.executeSet(changeStatements(changes));
 }
 
 export async function getCursor(): Promise<number> {
