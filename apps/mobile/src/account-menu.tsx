@@ -13,6 +13,7 @@ export function AccountMenu({
   onSync,
   onDownloadAll,
   dl,
+  onRebuild,
   onSignOut,
 }: {
   email: string;
@@ -20,6 +21,7 @@ export function AccountMenu({
   onSync: () => void;
   onDownloadAll: () => void;
   dl: { done: number; total: number } | null;
+  onRebuild: () => void;
   onSignOut: () => void;
 }) {
   const downloading = !!dl && dl.total > 0 && dl.done < dl.total;
@@ -47,6 +49,14 @@ export function AccountMenu({
           detail="Fetches every page and document once so the full record browses with no signal."
           onClick={onDownloadAll}
           disabled={downloading}
+        />
+        {/* The feed is forward-only, so a device that passed a change it could
+            not read at the time can never catch up by syncing. This is the way
+            back. */}
+        <MenuItem
+          label="Rebuild from the server"
+          detail="Downloads everything fresh. Use it if something on here looks out of date after a sync. Anything you've recorded that hasn't uploaded yet is kept."
+          onClick={onRebuild}
         />
         <MenuItem label="Sign out" onClick={onSignOut} tone={color.danger} />
 

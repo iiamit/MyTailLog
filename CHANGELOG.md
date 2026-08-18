@@ -6,6 +6,19 @@ the git log.
 
 ## 2026.08
 
+### Fixed
+- **A deleted aircraft now disappears from the phone.** `change_log` was written
+  so hard deletes reach the offline app, and the tombstones were being recorded
+  correctly — they just weren't *readable*, because the row-level policy checked
+  access by looking up the aircraft that the delete had removed. The one row
+  announcing a deletion was hidden from the one device that needed it. Deleting
+  a page or an entry always worked, which is why this went unnoticed.
+- **Existing phones repair themselves once.** The sync feed only moves forward,
+  so a device that passed an unreadable tombstone could never learn of it by
+  syncing again. The local copy is therefore dropped and rebuilt from the server
+  a single time on upgrade, and "Rebuild from the server" now sits in the account
+  menu for any future drift. Anything recorded but not yet uploaded is kept.
+
 ### Changed — the iOS app is rebuilt around "can I fly today?"
 - **A verdict comes before any list.** Status now opens with one countdown ring
   and one sentence — "One item due soon", "Grounded — annual overdue" — then the
