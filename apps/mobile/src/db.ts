@@ -146,6 +146,45 @@ export async function applyChanges(changes: SyncChange[]): Promise<void> {
   await db.executeSet(changeStatements(changes));
 }
 
+/**
+ * One-time self-heal for mirrors built before the deleted-aircraft fix.
+ *
+ * Every device that synced past a tombstone it was not allowed to read still
+ * holds the deleted rows, and no amount of syncing will remove them: the feed
+ * only ever moves forward. Bumping this constant wipes the mirror ONCE per
+ * device so the next sync rebuilds it from the server.
+ */
+const MIRROR_VERSION = "2";
+
+export async function healMirrorIfStale(): Promise<boolean> {
+  if (!db) return false;
+  const res = await db.query("SELECT value FROM sync_state WHERE key='mirror_version'");
+  const at = res.values?.[0]?.value;
+  if (at === MIRROR_VERSION) return false;
+  await resetLocal();
+  await db.run("INSERT OR REPLACE INTO sync_state (key,value) VALUES ('mirror_version',?)", [MIRROR_VERSION]);
+  return true;
+}
+
+/**
+ * Drop the local mirror and the sync cursor so the next sync rebuilds from the
+ * server. Queued captures and actions are deliberately KEPT — those are writes
+ * that have not reached the server yet, and wiping them would lose work.
+ *
+ * This is the escape hatch for a mirror that has drifted. It is needed because
+ * the feed is strictly forward-only (`seq > cursor`): if a change was
+ * unreadable at the moment a device passed it — as every deleted aircraft's
+ * tombstone was before migration 0054 — that device can never learn of it by
+ * syncing, because it will never ask for that range again.
+ */
+export async function resetLocal(): Promise<void> {
+  if (!db) return;
+  await db.executeSet([
+    { statement: "DELETE FROM records", values: [] },
+    { statement: "DELETE FROM sync_state WHERE key='cursor'", values: [] },
+  ]);
+}
+
 export async function getCursor(): Promise<number> {
   if (!db) return 0;
   const res = await db.query("SELECT value FROM sync_state WHERE key='cursor'");

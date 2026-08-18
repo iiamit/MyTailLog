@@ -3,7 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
-import { initDb, applyChanges, getCursor, setCursor, actionCount, getRows } from "./db";
+import { initDb, applyChanges, resetLocal, healMirrorIfStale, getCursor, setCursor, actionCount, getRows } from "./db";
 import { computeAirworthiness, buildVerdict } from "./airworthiness";
 import type { Urgency } from "@/lib/compliance";
 import { drainActions, refreshEditable } from "./actions";
@@ -117,12 +117,20 @@ function Shell({ session }: { session: Session }) {
     if (!NATIVE) return;
     (async () => {
       await initDb();
+      // A mirror built before the deleted-aircraft fix can hold rows the feed
+      // will never retract, so it is dropped once and rebuilt.
+      const healed = await healMirrorIfStale();
       setCur(await getCursor());
       setPending(await actionCount());
       await loadFleet();
       // Best-effort: offline, canEdit() falls back to allowing, and the server
       // still refuses what it must.
       refreshEditable().catch(() => {});
+      // The wipe left nothing to show, so refill it now rather than leaving an
+      // empty fleet until someone thinks to sync. Offline, this fails quietly
+      // and the mirror stays empty until there is signal — unavoidable, and the
+      // reason the heal only ever runs once.
+      if (healed) sync().catch(() => {});
     })().catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
@@ -194,6 +202,23 @@ function Shell({ session }: { session: Session }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
+  }
+
+  // Wipe the mirror and re-pull from zero. A deleted aircraft simply never
+  // arrives (every change row for it is unreadable), so the rebuild converges on
+  // the server's truth rather than trying to replay a delete the device already
+  // scrolled past.
+  async function rebuild() {
+    setSyncing("Rebuilding…");
+    try {
+      await resetLocal();
+      setCur(0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setSyncing(null);
+      return;
+    }
+    await sync();
   }
 
   async function sync() {
@@ -303,6 +328,7 @@ function Shell({ session }: { session: Session }) {
               onSync={() => { setMenu(false); sync(); }}
               onDownloadAll={() => { setMenu(false); downloadAll(); }}
               dl={dl}
+              onRebuild={() => { setMenu(false); rebuild(); }}
               onSignOut={() => supabase.auth.signOut()}
             />
           )}
