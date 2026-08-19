@@ -51,6 +51,7 @@ type BackupState = {
 
 type AiState = {
   keyLast4: string | null;
+  provider: "anthropic" | "openai" | null;
   calls: number;
   inputTokens: number;
   outputTokens: number;
@@ -247,7 +248,7 @@ export function ProfileClient({
     if (!res.error) router.refresh();
   }
 
-  // Bring-your-own Anthropic key
+  // Bring-your-own AI key
   const [savingAiKey, setSavingAiKey] = useState(false);
   const [aiKeyMsg, setAiKeyMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -544,33 +545,25 @@ export function ProfileClient({
         )}
       </div>
 
-      {/* Anthropic API key (BYOK) + usage */}
+      {/* API key (BYOK) + usage */}
       <div className={card}>
-        <h2 className="font-semibold">AI &amp; your Anthropic key</h2>
+        <h2 className="font-semibold">AI &amp; your API key</h2>
         <p className="text-xs text-faint">
-          Extraction and Q&amp;A use Claude. By default they run on the app&apos;s shared key with a
-          daily cap. Add your own{" "}
-          <a
-            href="https://console.anthropic.com/settings/keys"
-            target="_blank"
-            rel="noreferrer"
-            className="underline decoration-line hover:decoration-line2"
-          >
-            Anthropic API key
-          </a>{" "}
+          Extraction and Q&amp;A run on the app&apos;s shared AI provider with a daily cap. Add your own
+          Anthropic or OpenAI API key
           to bill AI usage to your own account and get a much higher daily limit. Your key is stored
           encrypted and never shown again.
         </p>
         <p className="text-xs text-faint">
-          Use an <strong>API key</strong> (<code>sk-ant-…</code>) from the Anthropic Console — a
-          Claude.ai Pro/Max subscription can&apos;t be used here.
+          Create a key in the <a className="underline" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">Anthropic Console</a>
+          {" or "}<a className="underline" href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">OpenAI Platform</a>. Chat subscriptions do not include API usage.
         </p>
 
         <p className="text-sm">
           Status:{" "}
           {ai.keyLast4 ? (
             <span className="font-medium text-annun-green">
-              Using your key (…{ai.keyLast4})
+              Using your {ai.provider === "openai" ? "OpenAI" : "Anthropic"} key (…{ai.keyLast4})
             </span>
           ) : (
             <span className="text-faint">On the shared key</span>
@@ -600,13 +593,20 @@ export function ProfileClient({
 
         <form action={saveKey} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Anthropic API key</span>
+            <span className="font-medium">Provider</span>
+            <select name="provider" defaultValue={ai.provider ?? "anthropic"} className={inputClass}>
+              <option value="anthropic">Anthropic</option>
+              <option value="openai">OpenAI</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">API key</span>
             <input
               type="password"
-              name="anthropic_key"
+              name="api_key"
               autoComplete="off"
               className={inputClass}
-              placeholder={ai.keyLast4 ? `•••••••• …${ai.keyLast4} (paste to replace)` : "sk-ant-…"}
+              placeholder={ai.keyLast4 ? `•••••••• …${ai.keyLast4} (paste to replace)` : "Paste API key"}
             />
           </label>
           <div className="flex flex-wrap items-center gap-3">
@@ -631,7 +631,7 @@ export function ProfileClient({
         </form>
 
         <p className="text-[11px] text-faint">
-          Cost is estimated from token counts at Anthropic&apos;s list prices — treat it as a close
+          Cost is estimated from token counts at the provider&apos;s list prices — treat it as a close
           guide, not your exact invoice.
         </p>
       </div>

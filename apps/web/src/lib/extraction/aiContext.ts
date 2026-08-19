@@ -20,8 +20,9 @@ import { decryptSecret } from "@/lib/crypto";
 import { createServiceClient } from "@/lib/supabase/service";
 import { estimateCost } from "./pricing";
 
-export type AiUsage = { model: string; inputTokens: number; outputTokens: number };
-type AiCtx = { apiKey?: string; onUsage?: (u: AiUsage) => void | Promise<void> };
+export type AiProvider = "anthropic" | "openai";
+export type AiUsage = { provider: AiProvider; model: string; inputTokens: number; outputTokens: number };
+type AiCtx = { provider: AiProvider; apiKey: string; onUsage?: (u: AiUsage) => void | Promise<void> };
 
 const store = new AsyncLocalStorage<AiCtx>();
 
@@ -30,7 +31,9 @@ export function runWithAiContext<T>(ctx: AiCtx, fn: () => Promise<T>): Promise<T
 }
 
 export function currentAiContext(): AiCtx {
-  return store.getStore() ?? {};
+  const ctx = store.getStore();
+  if (!ctx) throw new Error("AI request context is missing.");
+  return ctx;
 }
 
 // Usage limits, all env-tunable (change the number + redeploy, no code edit):
@@ -62,21 +65,36 @@ type Supabase = SupabaseClient<Database>;
  * reachable only via the ai_key_cipher() SECURITY DEFINER function, granted to
  * the service role. userId is the authenticated route's trusted user.id.
  */
-export async function getUserAiKey(userId: string): Promise<string | null> {
-  const { data } = await ledger().rpc("ai_key_cipher", { p_user_id: userId });
-  return data ? decryptSecret(data) : null;
+export async function getUserAiKey(
+  userId: string,
+): Promise<{ provider: AiProvider; apiKey: string } | null> {
+  const [{ data: cipher }, { data: provider }] = await Promise.all([
+    ledger().rpc("ai_key_cipher", { p_user_id: userId }),
+    ledger().rpc("ai_key_provider", { p_user_id: userId }),
+  ]);
+  const apiKey = cipher ? decryptSecret(cipher) : null;
+  return apiKey && (provider === "anthropic" || provider === "openai") ? { provider, apiKey } : null;
 }
 
-export type AiGate = { apiKey?: string; ownKey: boolean } | { error: string; status: number };
+export type AiGate = { provider: AiProvider; apiKey: string; ownKey: boolean } | { error: string; status: number };
 
 /** Resolve the key, check configuration, and enforce the daily cap. */
 export async function prepareAi(supabase: Supabase, userId: string): Promise<AiGate> {
   const userKey = await getUserAiKey(userId);
   const ownKey = Boolean(userKey);
-
-  if (!userKey && !process.env.ANTHROPIC_API_KEY) {
-    return { error: "AI isn't configured. Add your own Anthropic API key in Settings.", status: 501 };
+  const { data: configured } = userKey
+    ? { data: null }
+    : await ledger().from("app_setting").select("value").eq("key", "shared_ai_provider").maybeSingle();
+  const sharedProvider = configured?.value ?? process.env.AI_SHARED_PROVIDER ?? "anthropic";
+  if (!userKey && !["anthropic", "openai", "disabled"].includes(sharedProvider)) {
+    return { error: "Shared AI provider configuration is invalid.", status: 501 };
   }
+  if (!userKey && sharedProvider === "disabled") {
+    return { error: "Shared AI is disabled. Add your own API key in Settings.", status: 501 };
+  }
+  const provider: AiProvider = userKey?.provider ?? (sharedProvider === "openai" ? "openai" : "anthropic");
+  const apiKey = userKey?.apiKey ?? (provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
+  if (!apiKey) return { error: `AI isn't configured for ${provider}. Add your own API key in Settings.`, status: 501 };
 
   const cap = ownKey ? OWN_KEY_DAILY_CAP : SHARED_DAILY_CAP;
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -90,7 +108,7 @@ export async function prepareAi(supabase: Supabase, userId: string): Promise<AiG
     return {
       error: ownKey
         ? `Daily AI limit reached (${cap} calls). Try again tomorrow.`
-        : `Daily AI limit reached (${cap} calls). Add your own Anthropic API key in Settings to raise it.`,
+        : `Daily AI limit reached (${cap} calls). Add your own API key in Settings to raise it.`,
       status: 429,
     };
   }
@@ -101,13 +119,13 @@ export async function prepareAi(supabase: Supabase, userId: string): Promise<AiG
     if (Number(spentToday ?? 0) >= SHARED_DAILY_USD) {
       return {
         error:
-          "The app's shared AI budget for today is used up. Add your own Anthropic API key in Settings to keep using AI.",
+          "The app's shared AI budget for today is used up. Add your own API key in Settings to keep using AI.",
         status: 429,
       };
     }
   }
 
-  return { apiKey: userKey ?? undefined, ownKey };
+  return { provider, apiKey, ownKey };
 }
 
 // The ledger is written ONLY by the service-role client (RLS-bypass), never the
@@ -125,15 +143,16 @@ const ledger = () => (ledgerClient ??= createServiceClient());
 // via the service-role client because reserve_ai_call writes ai_usage (client
 // insert revoked, 0032) and must run with server-trusted args. Fails CLOSED:
 // any error → no reservation → the route denies the call.
-export async function reserveAiCall(userId: string, ownKey: boolean): Promise<string | null> {
+export async function reserveAiCall(userId: string, ownKey: boolean, provider: AiProvider): Promise<string | null> {
   const cap = ownKey ? OWN_KEY_DAILY_CAP : SHARED_DAILY_CAP;
   try {
-    const { data, error } = await ledger().rpc("reserve_ai_call", {
+    const { data, error } = await ledger().rpc("reserve_ai_call_v2", {
       p_user_id: userId,
       p_cap: cap,
       p_usd_cap: ownKey ? 0 : SHARED_DAILY_USD,
       p_own_key: ownKey,
       p_estimate: ownKey ? 0 : CALL_ESTIMATE_USD,
+      p_provider: provider,
     });
     if (error) {
       console.error("reserve_ai_call failed", error);
@@ -150,7 +169,7 @@ export async function reserveAiCall(userId: string, ownKey: boolean): Promise<st
 export function aiBudgetMessage(ownKey: boolean): string {
   return ownKey
     ? "Daily AI limit reached. Try again tomorrow."
-    : "Daily AI limit reached. Add your own Anthropic API key in Settings to raise it.";
+    : "Daily AI limit reached. Add your own API key in Settings to raise it.";
 }
 
 /** Release a reservation (delete the placeholder row). Never throws. */
@@ -179,6 +198,7 @@ export async function logAiUsage(
       output_tokens: usage.outputTokens,
       cost_usd: estimateCost(usage.model, usage.inputTokens, usage.outputTokens),
       used_own_key: ownKey,
+      provider: usage.provider,
     });
   } catch (err) {
     console.error("ai_usage insert failed", err);

@@ -51,7 +51,7 @@ export async function POST(
 
   // Atomically claim a budget slot right before the paid call (closes the
   // check-then-act race in prepareAi). Released in the finally below.
-  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  const reservationId = await reserveAiCall(user.id, gate.ownKey, gate.provider);
   if (!reservationId) {
     return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
   }
@@ -59,6 +59,7 @@ export async function POST(
   try {
     const result = await runWithAiContext(
       {
+        provider: gate.provider,
         apiKey: gate.apiKey,
         onUsage: (u) => logAiUsage(user.id, "extract", u, gate.ownKey),
       },

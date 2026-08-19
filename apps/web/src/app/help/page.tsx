@@ -717,15 +717,15 @@ const SECTIONS: Section[] = [
   {
     id: "ai-key",
     icon: <SparklesIcon />,
-    title: "AI & your Anthropic key",
+    title: "AI & your API key",
     body: (
       <>
         <p>
-          Extraction and Q&amp;A run on <strong>Claude</strong>. By default they use the app&apos;s
+          Extraction and Q&amp;A run on the app&apos;s selected AI provider. By default they use the app&apos;s
           shared key, which has a <strong>daily limit</strong> (both per person and an overall daily
           budget). If the shared budget for the day is used up, AI pauses until tomorrow. To bill AI
           usage to your own account and get a much higher limit, add your own{" "}
-          <strong>Anthropic API key</strong> in <L href="/profile">Profile → AI &amp; your Anthropic
+          <strong>Anthropic or OpenAI API key</strong> in <L href="/profile">Profile → AI &amp; your API
           key</L>. Your key is <strong>stored encrypted</strong> and never shown again; only the last
           four characters are kept for display.
         </p>
@@ -745,7 +745,7 @@ const SECTIONS: Section[] = [
         <p className="mt-2">
           With your own key connected, the panel shows your <strong>usage</strong> — calls, input and
           output tokens, and <strong>estimated cost so far</strong> (from token counts at
-          Anthropic&apos;s list prices; a close guide, not your exact invoice). If your key is
+          the provider&apos;s list prices; a close guide, not your exact invoice). If your key is
           rejected (invalid or out of quota) the request fails with a clear message — it is never
           silently charged to the shared key.
         </p>

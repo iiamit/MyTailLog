@@ -15,7 +15,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, AdStatus, AdCompliance } from "@/lib/database.types";
-import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
+import { generateAi } from "./ai";
 import { safeIsoDate } from "./date";
 import type { ImageMediaType } from "./extract";
 import { completeWB } from "@/lib/weightBalance";
@@ -132,41 +132,21 @@ export async function classifyOtherDocument(
   imageBase64: string,
   mediaType: ImageMediaType,
 ): Promise<OtherDocPayload> {
-  const client = getAnthropic();
-
-  const response = await client.messages.create({
-    model: EXTRACTION_MODEL,
-    max_tokens: 8000,
-    system: SYSTEM_PROMPT,
-    thinking: { type: "adaptive" },
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: OTHER_DOC_SCHEMA },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: imageBase64 },
-          },
-          {
-            type: "text",
-            text: "Classify this document and extract its data following the schema.",
-          },
-        ],
-      },
+  const response = await generateAi({
+    modelKind: "vision",
+    maxOutputTokens: 8000,
+    systemPrompt: SYSTEM_PROMPT,
+    jsonSchema: OTHER_DOC_SCHEMA,
+    content: [
+      { type: "image", mediaType, data: imageBase64 },
+      { type: "text", text: "Classify this document and extract its data following the schema." },
     ],
   });
 
-  if (response.stop_reason === "refusal") {
+  if (response.stopReason === "refusal") {
     throw new Error("Document read was declined by the safety system for this image.");
   }
-  const text = response.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const text = response.text;
 
   let parsed: Partial<OtherDocPayload>;
   try {

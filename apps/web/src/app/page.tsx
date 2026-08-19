@@ -212,7 +212,7 @@ const INDEX: { group: string; items: React.ReactNode[] }[] = [
       </>,
       "Oil analysis — a lab report in, wear metals charted against the lab's universal average",
       "Oil consumption — hours per quart between top-offs",
-      "Bring your own Anthropic API key to bill AI usage to your own account",
+      "Bring your own Anthropic or OpenAI API key to bill AI usage to your own account",
     ],
   },
   {
@@ -511,7 +511,7 @@ export default async function Home() {
                   back out as a <D>.zip</D> of every row as JSON plus the
                   original scans, re-importable into any instance — including
                   one you run yourself, on your own Supabase and your own
-                  Anthropic key. Portability that survives us losing interest is
+                  Anthropic or OpenAI key. Portability that survives us losing interest is
                   a stronger promise than portability that depends on us staying
                   nice.
                 </p>
@@ -526,7 +526,7 @@ export default async function Home() {
                   tomorrow and everything else keeps working.
                 </p>
                 <p>
-                  Add your own Anthropic key in Profile and the calls bill to
+                  Add your own Anthropic or OpenAI key in Profile and the calls bill to
                   your account at list prices, with a much higher limit. The
                   numbers, and everything else about cost and privacy, are in
                   the{" "}

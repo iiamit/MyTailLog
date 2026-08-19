@@ -29,9 +29,9 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         </p>
         <p>
           If you have a backlog of hundreds of pages and don&apos;t want to wait out the cap, add
-          your own Anthropic API key in Profile. Then the calls bill to your account at Anthropic&apos;s
+          your own Anthropic or OpenAI API key in Profile. Then the calls bill to your provider account at its
           list prices and your limit is much higher. See{" "}
-          <A href="#api-key">is my Anthropic key safe</A>.
+          <A href="#api-key">is my API key safe</A>.
         </p>
         <p className="text-sm text-faint">
           We&apos;re not going to pretend there&apos;s a price list coming, because there isn&apos;t
@@ -108,9 +108,9 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           repository is public — that claim is checkable rather than promised.
         </p>
         <p>
-          What does happen: to read a page, its image is sent to <strong>Anthropic&apos;s API</strong>,
+          What does happen: to read a page, its image is sent to the configured <strong>AI provider API</strong>,
           and to answer a question, the relevant entry text is sent the same way. That is the only
-          place your records go. What Anthropic does with API traffic is governed by their terms, and
+          place your records go. What the selected provider does with API traffic is governed by their terms, and
           we&apos;d rather you{" "}
           <a
             href="https://www.anthropic.com/legal/commercial-terms"
@@ -123,7 +123,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           than take our paraphrase of someone else&apos;s policy.
         </p>
         <p>
-          If you&apos;d rather that relationship be yours and not ours, add your own Anthropic API
+          If you&apos;d rather that relationship be yours and not ours, add your own Anthropic or OpenAI API
           key — then the calls are made under your account, subject to your agreement with them.
         </p>
       </>
@@ -403,7 +403,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         <p>
           Yes. MIT-licensed, and the deployment path is documented rather than theoretical. You
           need a <strong>Supabase project</strong> (Postgres + Auth), an{" "}
-          <strong>Anthropic API key</strong>, and somewhere to run a Next.js server — the README
+          <strong>Anthropic or OpenAI API key</strong>, and somewhere to run a Next.js server — the README
           walks through Firebase App Hosting on Cloud Run, which is what mytaillog.com runs on. A
           Google Cloud Storage bucket holds the scans; Resend plus a scheduled daily POST enable the
           reminder emails, and both are optional.
@@ -420,7 +420,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
   },
   {
     id: "api-key",
-    title: "Is my Anthropic API key safe here?",
+    title: "Is my AI API key safe here?",
     body: (
       <>
         <p>
@@ -578,7 +578,7 @@ export default function FaqPage() {
             mainEntity: [
               {
                 q: "What does MyTailLog cost?",
-                a: "Nothing. There is no billing, no plans and no trial clock. The metered cost is AI calls, which are capped per person per day on the shared key; you can add your own Anthropic API key to bill your own account and lift the limit.",
+                a: "Nothing. There is no billing, no plans and no trial clock. The metered cost is AI calls, which are capped per person per day on the shared key; you can add your own Anthropic or OpenAI API key to bill your own account and lift the limit.",
               },
               {
                 q: "Does MyTailLog replace my paper logbooks?",
@@ -586,7 +586,7 @@ export default function FaqPage() {
               },
               {
                 q: "Is my data used to train AI models?",
-                a: "MyTailLog trains nothing — there is no training pipeline in the (public, MIT-licensed) codebase. Page images and entry text are sent to Anthropic's API to be read; that traffic is governed by Anthropic's terms.",
+                a: "MyTailLog trains nothing — there is no training pipeline in the (public, MIT-licensed) codebase. Page images and entry text are sent to the configured AI provider to be read; that traffic is governed by that provider's terms.",
               },
               {
                 q: "Can I import a CSV from another maintenance platform?",
@@ -598,7 +598,7 @@ export default function FaqPage() {
               },
               {
                 q: "Can I self-host MyTailLog?",
-                a: "Yes. It is MIT-licensed and the deployment path (Supabase, an Anthropic API key, a Next.js host, optional Google Cloud Storage and reminder email) is documented in the repository.",
+                a: "Yes. It is MIT-licensed and the deployment path (Supabase, an Anthropic or OpenAI API key, a Next.js host, optional Google Cloud Storage and reminder email) is documented in the repository.",
               },
             ].map(({ q, a }) => ({
               "@type": "Question",

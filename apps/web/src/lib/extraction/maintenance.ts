@@ -9,7 +9,7 @@
 // next-due.
 // ===========================================================================
 
-import { getAnthropic, TEXT_MODEL, reasoningParams } from "./anthropic";
+import { generateAi } from "./ai";
 
 // Kinds must line up with STANDARD_ITEMS in src/lib/maintenance.ts.
 export type MaintenanceEvent = {
@@ -80,34 +80,20 @@ const BATCH_SIZE = 40;
 async function extractBatch(
   entries: MaintenanceEntryInput[],
 ): Promise<MaintenanceEvent[]> {
-  const client = getAnthropic();
   const transcript = entries
     .map((e) => `[${e.entry_id}] ${e.date ?? "undated"}\n${e.text.trim()}`)
     .join("\n\n");
 
-  const { thinking, effort } = reasoningParams(TEXT_MODEL);
-  const response = await client.messages.create({
-    model: TEXT_MODEL,
-    max_tokens: 16000,
-    system: SYSTEM_PROMPT,
-    ...(thinking ? { thinking } : {}),
-    output_config: {
-      ...(effort ? { effort } : {}),
-      format: { type: "json_schema", schema: MAINTENANCE_JSON_SCHEMA },
-    },
-    messages: [
-      {
-        role: "user",
-        content: `Maintenance entries:\n\n${transcript}\n\nList the recurring-maintenance completions following the schema.`,
-      },
-    ],
+  const response = await generateAi({
+    modelKind: "text",
+    maxOutputTokens: 16000,
+    systemPrompt: SYSTEM_PROMPT,
+    jsonSchema: MAINTENANCE_JSON_SCHEMA,
+    content: [{ type: "text", text: `Maintenance entries:\n\n${transcript}\n\nList the recurring-maintenance completions following the schema.` }],
   });
 
-  if (response.stop_reason === "refusal") return [];
-  const text = response.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  if (response.stopReason === "refusal") return [];
+  const text = response.text;
   try {
     const parsed = JSON.parse(text) as { events?: MaintenanceEvent[] };
     return Array.isArray(parsed.events) ? parsed.events : [];

@@ -12,7 +12,7 @@
 // model is asked, and nothing here carries a per-cell confidence score.
 // ===========================================================================
 
-import { getAnthropic, TEXT_MODEL, reasoningParams } from "@/lib/extraction/anthropic";
+import { generateAi } from "@/lib/extraction/ai";
 import { stripFormulaGuard, type ParsedCsv } from "./parse";
 import { detectDateFormat, parseDate, type DateFormat } from "./dates";
 import { IMPORT_FIELDS, FIELD_LABEL, type ImportField } from "./fields";
@@ -84,9 +84,6 @@ Rules:
  * this in the shared AI context/usage gate.
  */
 export async function proposeMapping(parsed: ParsedCsv, sampleCount = 5): Promise<ColumnProposal[]> {
-  const client = getAnthropic();
-  const { thinking, effort } = reasoningParams(TEXT_MODEL);
-
   // Keep the sample SMALL — this call is about what a column means, and five
   // rows settles that. Tokens scale with it, so it does not grow with the file.
   const samples = parsed.rows.slice(0, sampleCount);
@@ -95,30 +92,18 @@ export async function proposeMapping(parsed: ParsedCsv, sampleCount = 5): Promis
     ...samples.map((r, i) => `Row ${i + 1}: ${JSON.stringify(r.slice(0, parsed.header.length))}`),
   ].join("\n");
 
-  const response = await client.messages.create({
-    model: TEXT_MODEL,
-    max_tokens: 2000,
-    system: SYSTEM_PROMPT,
-    ...(thinking ? { thinking } : {}),
-    output_config: {
-      ...(effort ? { effort } : {}),
-      format: { type: "json_schema", schema: MAPPING_SCHEMA },
-    },
-    messages: [
-      {
-        role: "user",
-        content: `${preview}\n\nMap every column to a field following the schema.`,
-      },
-    ],
+  const response = await generateAi({
+    modelKind: "text",
+    maxOutputTokens: 2000,
+    systemPrompt: SYSTEM_PROMPT,
+    jsonSchema: MAPPING_SCHEMA,
+    content: [{ type: "text", text: `${preview}\n\nMap every column to a field following the schema.` }],
   });
 
-  if (response.stop_reason === "refusal") {
+  if (response.stopReason === "refusal") {
     throw new Error("Column mapping was declined by the safety system for this file.");
   }
-  const text = response.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const text = response.text;
 
   let parsedOut: { columns?: unknown };
   try {

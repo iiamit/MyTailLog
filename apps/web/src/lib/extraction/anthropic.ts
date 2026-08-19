@@ -20,7 +20,7 @@ export const EXTRACTION_MODEL = process.env.EXTRACTION_MODEL || "claude-opus-4-8
 export const TEXT_MODEL = process.env.TEXT_MODEL || "claude-haiku-4-5";
 
 export function extractionConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
 }
 
 // Adaptive thinking + `effort` exist only on 4.6+ / 5-gen models. Haiku 4.5
@@ -48,6 +48,7 @@ function withUsageLogging(c: Anthropic): Anthropic {
     const { onUsage } = currentAiContext();
     if (onUsage && res && typeof res === "object" && "usage" in res && res.usage) {
       await onUsage({
+        provider: "anthropic",
         model: String(body.model),
         inputTokens: res.usage.input_tokens ?? 0,
         outputTokens: res.usage.output_tokens ?? 0,

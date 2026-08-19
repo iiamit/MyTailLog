@@ -12,7 +12,7 @@
 // text-only pass (no image), so it's cheap relative to page extraction.
 // ===========================================================================
 
-import { getAnthropic, TEXT_MODEL, reasoningParams } from "./anthropic";
+import { generateAi } from "./ai";
 
 export const EQUIPMENT_SCHEMA_VERSION = 1;
 
@@ -92,7 +92,6 @@ export async function extractEquipmentFromEntries(
   opts: { knownComponents?: string[] } = {},
 ): Promise<EquipmentProposal[]> {
   if (entries.length === 0) return [];
-  const client = getAnthropic();
 
   const transcript = entries
     .map(
@@ -107,31 +106,18 @@ export async function extractEquipmentFromEntries(
     ? `Already-tracked components on this aircraft (do not re-propose these unless the entries show them being removed or replaced):\n${opts.knownComponents.map((c) => `- ${c}`).join("\n")}\n\n`
     : "";
 
-  const { thinking, effort } = reasoningParams(TEXT_MODEL);
-  const response = await client.messages.create({
-    model: TEXT_MODEL,
-    max_tokens: 16000,
-    system: SYSTEM_PROMPT,
-    ...(thinking ? { thinking } : {}),
-    output_config: {
-      ...(effort ? { effort } : {}),
-      format: { type: "json_schema", schema: EQUIPMENT_JSON_SCHEMA },
-    },
-    messages: [
-      {
-        role: "user",
-        content: `${context}Maintenance entries in chronological order:\n\n${transcript}\n\nReconstruct the consolidated equipment list following the schema.`,
-      },
-    ],
+  const response = await generateAi({
+    modelKind: "text",
+    maxOutputTokens: 16000,
+    systemPrompt: SYSTEM_PROMPT,
+    jsonSchema: EQUIPMENT_JSON_SCHEMA,
+    content: [{ type: "text", text: `${context}Maintenance entries in chronological order:\n\n${transcript}\n\nReconstruct the consolidated equipment list following the schema.` }],
   });
 
-  if (response.stop_reason === "refusal") {
+  if (response.stopReason === "refusal") {
     throw new Error("Equipment scan was declined by the safety system.");
   }
-  const text = response.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const text = response.text;
 
   let parsed: { components?: EquipmentProposal[] };
   try {
