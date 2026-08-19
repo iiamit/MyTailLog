@@ -68,10 +68,11 @@ type Supabase = SupabaseClient<Database>;
 export async function getUserAiKey(
   userId: string,
 ): Promise<{ provider: AiProvider; apiKey: string } | null> {
-  const [{ data: cipher }, { data: provider }] = await Promise.all([
+  const [{ data: cipher }, providerResult] = await Promise.all([
     ledger().rpc("ai_key_cipher", { p_user_id: userId }),
     ledger().rpc("ai_key_provider", { p_user_id: userId }),
   ]);
+  const provider = providerResult.data ?? (providerResult.error?.code === "PGRST202" ? "anthropic" : null);
   const apiKey = cipher ? decryptSecret(cipher) : null;
   return apiKey && (provider === "anthropic" || provider === "openai") ? { provider, apiKey } : null;
 }
@@ -154,6 +155,16 @@ export async function reserveAiCall(userId: string, ownKey: boolean, provider: A
       p_estimate: ownKey ? 0 : CALL_ESTIMATE_USD,
       p_provider: provider,
     });
+    if (error?.code === "PGRST202") {
+      const fallback = await ledger().rpc("reserve_ai_call", {
+        p_user_id: userId,
+        p_cap: cap,
+        p_usd_cap: ownKey ? 0 : SHARED_DAILY_USD,
+        p_own_key: ownKey,
+        p_estimate: ownKey ? 0 : CALL_ESTIMATE_USD,
+      });
+      if (!fallback.error) return fallback.data ?? null;
+    }
     if (error) {
       console.error("reserve_ai_call failed", error);
       return null;
@@ -190,7 +201,7 @@ export async function logAiUsage(
   ownKey: boolean,
 ): Promise<void> {
   try {
-    await ledger().from("ai_usage").insert({
+    const row = {
       user_id: userId,
       route,
       model: usage.model,
@@ -199,7 +210,12 @@ export async function logAiUsage(
       cost_usd: estimateCost(usage.model, usage.inputTokens, usage.outputTokens),
       used_own_key: ownKey,
       provider: usage.provider,
-    });
+    };
+    const { error } = await ledger().from("ai_usage").insert(row);
+    if (error?.code === "PGRST204") {
+      const { provider: _provider, ...legacyRow } = row;
+      await ledger().from("ai_usage").insert(legacyRow);
+    }
   } catch (err) {
     console.error("ai_usage insert failed", err);
   }

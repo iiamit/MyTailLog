@@ -135,12 +135,20 @@ export async function saveAiKey(formData: FormData): Promise<{ error?: string }>
 
   // The ciphertext lives in a private schema (0039); write it via the
   // service-role RPC. user.id is the authenticated caller, so it's trusted.
-  const { error } = await createServiceClient().rpc("upsert_ai_key_v2", {
+  const svc = createServiceClient();
+  const encrypted = encryptSecret(raw);
+  const { error } = await svc.rpc("upsert_ai_key_v2", {
     p_user_id: user.id,
     p_provider: provider,
-    p_cipher: encryptSecret(raw),
+    p_cipher: encrypted,
     p_last4: raw.slice(-4),
   });
+  if (error?.code === "PGRST202" && provider === "anthropic") {
+    const legacy = await svc.rpc("upsert_ai_key", {
+      p_user_id: user.id, p_cipher: encrypted, p_last4: raw.slice(-4),
+    });
+    if (!legacy.error) { revalidatePath("/profile"); return {}; }
+  }
   if (error) return { error: "Couldn't save the key." };
   revalidatePath("/profile");
   return {};
