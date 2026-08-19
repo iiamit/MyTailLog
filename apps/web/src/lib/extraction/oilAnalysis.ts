@@ -14,9 +14,8 @@
 // the shared AI context/usage gate (the caller wraps this in runWithAiContext).
 // ===========================================================================
 
-import type Anthropic from "@anthropic-ai/sdk";
 import type { OilAnalysisSample } from "@/lib/database.types";
-import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
+import { generateAi, type AiContent } from "./ai";
 import { safeIsoDate } from "./date";
 import type { ImageMediaType } from "./extract";
 import { OIL_PROPERTIES } from "@/lib/oilElements";
@@ -129,40 +128,26 @@ export async function extractOilAnalysis(
   data: string,
   mediaType: "application/pdf" | ImageMediaType,
 ): Promise<OilReportPayload> {
-  const client = getAnthropic();
-
-  const sourceBlock =
+  const sourceBlock: AiContent =
     mediaType === "application/pdf"
-      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data } }
-      : { type: "image", source: { type: "base64", media_type: mediaType, data } };
+      ? { type: "pdf", data }
+      : { type: "image", mediaType, data };
 
-  const response = await client.messages.create({
-    model: EXTRACTION_MODEL,
-    max_tokens: 8000,
-    system: SYSTEM_PROMPT,
-    thinking: { type: "adaptive" },
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: REPORT_SCHEMA },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          sourceBlock,
-          { type: "text", text: "Extract this oil analysis report following the schema." },
-        ] as unknown as Anthropic.ContentBlockParam[],
-      },
+  const response = await generateAi({
+    modelKind: "vision",
+    maxOutputTokens: 8000,
+    systemPrompt: SYSTEM_PROMPT,
+    jsonSchema: REPORT_SCHEMA,
+    content: [
+      sourceBlock,
+      { type: "text", text: "Extract this oil analysis report following the schema." },
     ],
   });
 
-  if (response.stop_reason === "refusal") {
+  if (response.stopReason === "refusal") {
     throw new Error("Oil report read was declined by the safety system for this file.");
   }
-  const text = response.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const text = response.text;
 
   let parsed: Partial<OilReportPayload>;
   try {

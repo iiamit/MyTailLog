@@ -116,7 +116,7 @@ export async function saveMfbCredentials(
 }
 
 /**
- * Save the user's OWN Anthropic API key (BYOK). Encrypted at rest; used instead
+ * Save the user's own AI API key (BYOK). Encrypted at rest; used instead
  * of the shared key for their AI calls and metered to them (see the usage
  * panel). Only the last 4 chars are kept in the clear, for display.
  */
@@ -127,19 +127,28 @@ export async function saveAiKey(formData: FormData): Promise<{ error?: string }>
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const raw = (formData.get("anthropic_key") as string)?.trim() || "";
-  if (!raw) return { error: "Paste your Anthropic API key." };
-  if (!raw.startsWith("sk-ant-")) {
-    return { error: "That doesn't look like an Anthropic key (expected sk-ant-…)." };
-  }
+  const provider = formData.get("provider") === "openai" ? "openai" : "anthropic";
+  const raw = (formData.get("api_key") as string)?.trim() || "";
+  if (!raw) return { error: `Paste your ${provider === "openai" ? "OpenAI" : "Anthropic"} API key.` };
+  if (provider === "anthropic" ? !raw.startsWith("sk-ant-") : !raw.startsWith("sk-"))
+    return { error: `That doesn't look like a ${provider === "openai" ? "OpenAI" : "Anthropic"} key.` };
 
   // The ciphertext lives in a private schema (0039); write it via the
   // service-role RPC. user.id is the authenticated caller, so it's trusted.
-  const { error } = await createServiceClient().rpc("upsert_ai_key", {
+  const svc = createServiceClient();
+  const encrypted = encryptSecret(raw);
+  const { error } = await svc.rpc("upsert_ai_key_v2", {
     p_user_id: user.id,
-    p_cipher: encryptSecret(raw),
+    p_provider: provider,
+    p_cipher: encrypted,
     p_last4: raw.slice(-4),
   });
+  if (error?.code === "PGRST202" && provider === "anthropic") {
+    const legacy = await svc.rpc("upsert_ai_key", {
+      p_user_id: user.id, p_cipher: encrypted, p_last4: raw.slice(-4),
+    });
+    if (!legacy.error) { revalidatePath("/profile"); return {}; }
+  }
   if (error) return { error: "Couldn't save the key." };
   revalidatePath("/profile");
   return {};

@@ -25,6 +25,12 @@ test("estimateCost: an unknown model falls back to the opus tier (never understa
   near(estimateCost("some-future-model", 1_000_000, 1_000_000), 15 + 75);
 });
 
+test("estimateCost: OpenAI Sol, Terra, and Luna tiers", () => {
+  near(estimateCost("gpt-5.6-sol", 1_000_000, 1_000_000), 35);
+  near(estimateCost("gpt-5.6-terra", 1_000_000, 1_000_000), 14);
+  near(estimateCost("gpt-5.6-luna", 1_000_000, 1_000_000), 1.4);
+});
+
 test("estimateCost: zero tokens costs nothing", () => {
   near(estimateCost("claude-opus-4-8", 0, 0), 0);
 });

@@ -77,7 +77,7 @@ export async function POST(
   }
 
   // Atomically claim a budget slot right before the paid call. Released below.
-  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  const reservationId = await reserveAiCall(user.id, gate.ownKey, gate.provider);
   if (!reservationId) {
     return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
   }
@@ -87,6 +87,7 @@ export async function POST(
     // against existing components and any already-pending proposals.
     const proposed = await runWithAiContext(
       {
+        provider: gate.provider,
         apiKey: gate.apiKey,
         onUsage: (u) => logAiUsage(user.id, "equipment-scan", u, gate.ownKey),
       },

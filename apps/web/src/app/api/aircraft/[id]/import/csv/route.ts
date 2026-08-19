@@ -99,14 +99,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const gate = await prepareAi(supabase, user.id);
     if ("error" in gate) return NextResponse.json({ error: gate.error }, { status: gate.status });
 
-    const reservationId = await reserveAiCall(user.id, gate.ownKey);
+    const reservationId = await reserveAiCall(user.id, gate.ownKey, gate.provider);
     if (!reservationId) {
       return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
     }
     let columns;
     try {
       columns = await runWithAiContext(
-        { apiKey: gate.apiKey, onUsage: (u) => logAiUsage(user.id, "csv-import", u, gate.ownKey) },
+        { provider: gate.provider, apiKey: gate.apiKey, onUsage: (u) => logAiUsage(user.id, "csv-import", u, gate.ownKey) },
         () => proposeMapping(parsed),
       );
     } catch (err) {

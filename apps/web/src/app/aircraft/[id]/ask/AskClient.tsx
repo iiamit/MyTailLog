@@ -76,7 +76,7 @@ export function AskClient({
   if (!configured) {
     return (
       <p className="rounded-lg border border-dashed border-line px-5 py-8 text-center text-sm text-faint">
-        AI Q&amp;A needs <code>ANTHROPIC_API_KEY</code> configured on the server.
+        AI Q&amp;A needs a provider key configured on the server or in Profile.
       </p>
     );
   }

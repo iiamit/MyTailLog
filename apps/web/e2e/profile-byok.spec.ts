@@ -23,11 +23,12 @@ test("BYOK: saving an Anthropic key stores it encrypted (0039) and shows only th
 
   try {
     await page.goto("/profile");
-    await page.getByLabel("Anthropic API key").fill("sk-ant-e2e-test-key-000000001234");
+    await page.getByLabel("Provider").selectOption("anthropic");
+    await page.getByLabel("API key", { exact: true }).fill("sk-ant-e2e-test-key-000000001234");
     await page.getByRole("button", { name: "Save key" }).click();
 
     // UI reflects the stored key by its last 4 only.
-    await expect(page.getByText(/Using your key.*1234/)).toBeVisible();
+    await expect(page.getByText(/Using your Anthropic key.*1234/)).toBeVisible();
 
     // The ciphertext is reachable only via the service-role accessor, and it's
     // encrypted (not the plaintext key).

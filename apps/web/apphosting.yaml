@@ -28,6 +28,10 @@ env:
     secret: ANTHROPIC_API_KEY
     availability:
       - RUNTIME
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+    availability:
+      - RUNTIME
 
   # Server-only — the daily reminder/sync cron. NEVER exposed to the browser.
   # SUPABASE_SECRET_KEY is a Supabase *secret API key* (sb_secret_...), created

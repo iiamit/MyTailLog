@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { AdminUserStat } from "@/lib/database.types";
+import { saveSharedAiProvider } from "./actions";
 
 export const metadata = { title: "Admin — MyTailLog" };
 
@@ -30,6 +31,8 @@ export default async function AdminPage() {
     .select("*")
     .order("entries", { ascending: false });
   const rows = (data ?? []) as AdminUserStat[];
+  const { data: aiSetting } = await svc.from("app_setting").select("value").eq("key", "shared_ai_provider").maybeSingle();
+  const sharedAiProvider = aiSetting?.value ?? "anthropic";
 
   const totals = rows.reduce(
     (t, r) => ({
@@ -81,6 +84,27 @@ export default async function AdminPage() {
             <div className="text-xs text-faint">{label}</div>
           </div>
         ))}
+      </section>
+
+      <section className="panel mb-8 p-4">
+        <h2 className="font-semibold">Shared AI</h2>
+        <p className="mb-3 text-xs text-faint">
+          Choose which subsidized platform key serves users without their own key. Keys remain deployment secrets.
+        </p>
+        <form action={saveSharedAiProvider} className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span>Provider</span>
+            <select name="provider" defaultValue={sharedAiProvider} className="rounded-md border border-line bg-panel px-3 py-2">
+              <option value="anthropic">Anthropic</option>
+              <option value="openai">OpenAI</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </label>
+          <button className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg">Save</button>
+          <span className="text-xs text-faint">
+            Anthropic key: {process.env.ANTHROPIC_API_KEY ? "configured" : "missing"} · OpenAI key: {process.env.OPENAI_API_KEY ? "configured" : "missing"}
+          </span>
+        </form>
       </section>
 
       <section className="overflow-x-auto rounded-lg border border-line">

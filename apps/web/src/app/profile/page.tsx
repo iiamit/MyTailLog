@@ -52,19 +52,21 @@ export default async function ProfilePage() {
     };
   });
 
-  // BYOK: whether the user has their own Anthropic key, and their usage/cost
+  // BYOK: whether the user has their own key, and their usage/cost
   // ledger. Rows are summed here (a personal account's volume is small); move
   // to a SUM RPC only if the ledger ever grows large.
-  const [{ data: keyLast4 }, { data: usage }] = await Promise.all([
+  const [{ data: key, error: keyError }, { data: usage }] = await Promise.all([
     // key_last4 only — the ciphertext lives in a private schema (0039).
-    supabase.rpc("my_ai_key_last4"),
+    supabase.rpc("my_ai_key_metadata"),
     supabase.from("ai_usage").select("input_tokens, output_tokens, cost_usd, used_own_key"),
   ]);
+  const legacyLast4 = keyError?.code === "PGRST202" ? (await supabase.rpc("my_ai_key_last4")).data : null;
   const own = (usage ?? []).filter((r) => r.used_own_key);
   const sum = (rows: typeof own, k: "input_tokens" | "output_tokens" | "cost_usd") =>
     rows.reduce((t, r) => t + (Number(r[k]) || 0), 0);
   const ai = {
-    keyLast4: keyLast4 ?? null,
+    keyLast4: key?.last4 ?? legacyLast4 ?? null,
+    provider: key?.provider ?? (legacyLast4 ? "anthropic" : null),
     calls: own.length,
     inputTokens: sum(own, "input_tokens"),
     outputTokens: sum(own, "output_tokens"),

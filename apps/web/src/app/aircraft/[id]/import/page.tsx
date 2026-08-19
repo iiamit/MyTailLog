@@ -50,7 +50,7 @@ export default async function ImportPage({ params }: { params: Promise<{ id: str
 
       {!extractionConfigured() ? (
         <p className="rounded-lg border border-dashed border-line px-5 py-10 text-center text-sm text-dim">
-          Column mapping needs an Anthropic API key. Add one in Profile, or ask your operator to
+          Column mapping needs an AI API key. Add one in Profile, or ask your operator to
           configure the server key.
         </p>
       ) : (

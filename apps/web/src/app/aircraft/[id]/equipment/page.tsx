@@ -66,7 +66,7 @@ export default async function EquipmentPage({
         components={components ?? []}
         adCountByComponent={adCountByComponent}
         proposals={proposals ?? []}
-        extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
+        extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY)}
       />
     </main>
   );

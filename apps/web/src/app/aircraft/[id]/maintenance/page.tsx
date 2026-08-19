@@ -94,7 +94,7 @@ export default async function MaintenancePage({
         currentHobbsEstimated={ch.estimated}
         utilization={utilization}
         mfbReading={mfbReading}
-        extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
+        extractionConfigured={Boolean(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY)}
       />
     </main>
   );

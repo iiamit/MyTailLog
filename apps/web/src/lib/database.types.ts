@@ -468,10 +468,13 @@ export type AiUsage = {
   output_tokens: number;
   cost_usd: number;
   used_own_key: boolean;
+  provider: "anthropic" | "openai";
   created_at: string;
 }
 
-/** A user's own Anthropic API key, encrypted at rest. */
+export type AppSetting = { key: string; value: string; updated_at: string };
+
+/** A user's own AI API key, encrypted at rest. */
 export type UserAiKey = {
   user_id: string;
   key_cipher: string;
@@ -625,6 +628,7 @@ export type Database = {
       // reached only via the mfb SECURITY DEFINER functions below.
       hours_reading: { Row: HoursReading; Insert: Partial<HoursReading>; Update: Partial<HoursReading>; Relationships: [] };
       ai_usage: { Row: AiUsage; Insert: Partial<AiUsage>; Update: Partial<AiUsage>; Relationships: [] };
+      app_setting: { Row: AppSetting; Insert: Partial<AppSetting>; Update: Partial<AppSetting>; Relationships: [] };
       // user_ai_key lives in a private schema (0039) — not exposed to PostgREST;
       // reached only via the ai-key SECURITY DEFINER functions below.
       oil_analysis_sample: { Row: OilAnalysisSample; Insert: Partial<OilAnalysisSample>; Update: Partial<OilAnalysisSample>; Relationships: [] };
@@ -677,16 +681,39 @@ export type Database = {
         };
         Returns: string | null;
       };
+      reserve_ai_call_v2: {
+        Args: {
+          p_user_id: string;
+          p_cap: number;
+          p_usd_cap: number;
+          p_own_key: boolean;
+          p_estimate: number;
+          p_provider: "anthropic" | "openai";
+        };
+        Returns: string | null;
+      };
       my_ai_key_last4: {
         Args: Record<string, never>;
         Returns: string | null;
+      };
+      my_ai_key_metadata: {
+        Args: Record<string, never>;
+        Returns: { provider: "anthropic" | "openai"; last4: string | null } | null;
       };
       ai_key_cipher: {
         Args: { p_user_id: string };
         Returns: string | null;
       };
+      ai_key_provider: {
+        Args: { p_user_id: string };
+        Returns: "anthropic" | "openai" | null;
+      };
       upsert_ai_key: {
         Args: { p_user_id: string; p_cipher: string; p_last4: string };
+        Returns: undefined;
+      };
+      upsert_ai_key_v2: {
+        Args: { p_user_id: string; p_provider: "anthropic" | "openai"; p_cipher: string; p_last4: string };
         Returns: undefined;
       };
       delete_ai_key: {

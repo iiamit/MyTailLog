@@ -68,7 +68,7 @@ export async function POST(
   const mediaType = file.type as "application/pdf" | ImageMediaType;
 
   // Atomically claim a budget slot right before the paid call. Released below.
-  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  const reservationId = await reserveAiCall(user.id, gate.ownKey, gate.provider);
   if (!reservationId) {
     return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
   }
@@ -77,6 +77,7 @@ export async function POST(
   try {
     payload = await runWithAiContext(
       {
+        provider: gate.provider,
         apiKey: gate.apiKey,
         onUsage: (u) => logAiUsage(user.id, "oil-analysis", u, gate.ownKey),
       },

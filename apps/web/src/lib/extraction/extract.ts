@@ -13,7 +13,7 @@
 // to match EXTRACTION_JSON_SCHEMA — no brittle free-text JSON parsing.
 // ===========================================================================
 
-import { getAnthropic, EXTRACTION_MODEL } from "./anthropic";
+import { generateAi } from "./ai";
 import {
   EXTRACTION_JSON_SCHEMA,
   EXTRACTION_SYSTEM_PROMPT,
@@ -36,51 +36,25 @@ export async function extractFromImage(
   imageBase64: string,
   mediaType: ImageMediaType,
 ): Promise<ExtractionResult> {
-  const client = getAnthropic();
-
-  const response = await client.messages.create({
-    model: EXTRACTION_MODEL,
-    max_tokens: 16000,
-    system: EXTRACTION_SYSTEM_PROMPT,
-    // Structured outputs constrains the response to the schema. effort "medium"
-    // balances careful reading against per-page cost; thinking stays adaptive so
-    // the model can reason about ambiguous handwriting when it needs to.
-    thinking: { type: "adaptive" },
-    output_config: {
-      effort: "medium",
-      format: {
-        type: "json_schema",
-        schema: EXTRACTION_JSON_SCHEMA,
-      },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: imageBase64 },
-          },
-          {
-            type: "text",
-            text: "Extract every maintenance entry from this logbook page image following the schema.",
-          },
-        ],
-      },
+  const response = await generateAi({
+    modelKind: "vision",
+    maxOutputTokens: 16000,
+    systemPrompt: EXTRACTION_SYSTEM_PROMPT,
+    jsonSchema: EXTRACTION_JSON_SCHEMA,
+    content: [
+      { type: "image", mediaType, data: imageBase64 },
+      { type: "text", text: "Extract every maintenance entry from this logbook page image following the schema." },
     ],
   });
 
-  if (response.stop_reason === "refusal") {
+  if (response.stopReason === "refusal") {
     throw new Error("Extraction was declined by the safety system for this image.");
   }
-  if (response.stop_reason === "max_tokens") {
+  if (response.stopReason === "max_tokens") {
     throw new Error("Extraction hit the token limit; the page may be unusually dense.");
   }
 
-  const text = response.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const text = response.text;
 
   let parsed: ExtractionResult;
   try {
@@ -141,38 +115,24 @@ export async function extractRotatedFromImage(
   imageBase64: string,
   mediaType: ImageMediaType,
 ): Promise<ExtractionResult> {
-  const client = getAnthropic();
-
-  const response = await client.messages.create({
-    model: EXTRACTION_MODEL,
-    max_tokens: 16000,
-    system: EXTRACTION_SYSTEM_PROMPT,
-    thinking: { type: "adaptive" },
-    output_config: {
-      effort: "medium",
-      format: { type: "json_schema", schema: EXTRACTION_JSON_SCHEMA },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } },
-          { type: "text", text: ROTATED_PASS_PROMPT },
-        ],
-      },
+  const response = await generateAi({
+    modelKind: "vision",
+    maxOutputTokens: 16000,
+    systemPrompt: EXTRACTION_SYSTEM_PROMPT,
+    jsonSchema: EXTRACTION_JSON_SCHEMA,
+    content: [
+      { type: "image", mediaType, data: imageBase64 },
+      { type: "text", text: ROTATED_PASS_PROMPT },
     ],
   });
 
-  if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") {
+  if (response.stopReason === "refusal" || response.stopReason === "max_tokens") {
     // Never fatal: the first pass's entries are already good. Report "still
     // unread" so the page keeps its warning.
     return { detected_page_count: 1, raw_text: "", unread_rotated_content: true, entries: [] };
   }
 
-  const text = response.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const text = response.text;
 
   try {
     const parsed = JSON.parse(text) as ExtractionResult;

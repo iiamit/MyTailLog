@@ -251,7 +251,7 @@ Targets **~zero marginal cost**: Firebase App Hosting (scale-to-zero) and Supaba
 free tiers cover a personal deployment, and all image work is client-side. The
 one metered line item is **LLM calls** — bounded (cents per page for the one-time
 backlog, then a trickle) and split so the cheap model does the high-volume text
-work. The operator sets an `ANTHROPIC_API_KEY`; usage on it is capped **per user
+work. The operator sets an `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY`, then selects the shared provider in Admin; usage is capped **per user
 per day** (`AI_SHARED_USER_DAILY_CALLS`) and by a **global daily-$ ceiling**
 (`AI_SHARED_DAILY_USD`). Any user can also **bring their own key** to bill their
 own account and lift the limit.
@@ -261,7 +261,7 @@ own account and lift the limit.
 ```bash
 cd apps/web
 npm install
-cp .env.example .env.local     # fill in Supabase URL + anon key, ANTHROPIC_API_KEY, etc.
+cp .env.example .env.local     # fill in Supabase URL + anon key and at least one AI provider key
 # Apply supabase/migrations/*.sql (from the repo root) in order via the Supabase SQL editor
 npm run dev                    # http://localhost:3000
 ```
@@ -287,6 +287,7 @@ it; metered but ~$0 at personal scale — set a budget alert) and the Firebase C
 firebase apphosting:secrets:set NEXT_PUBLIC_SUPABASE_URL
 firebase apphosting:secrets:set NEXT_PUBLIC_SUPABASE_ANON_KEY
 firebase apphosting:secrets:set ANTHROPIC_API_KEY
+firebase apphosting:secrets:set OPENAI_API_KEY
 firebase apphosting:secrets:set ENCRYPTION_KEY        # AES key for at-rest secret encryption; `openssl rand -base64 32`
 firebase apphosting:secrets:set SUPABASE_SECRET_KEY   # Supabase → API Keys → "Create secret key" (also writes the ai_usage ledger)
 # For the daily reminder/sync cron (optional but recommended):

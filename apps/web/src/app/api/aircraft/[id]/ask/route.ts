@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getAnthropic, TEXT_MODEL } from "@/lib/extraction/anthropic";
+import { generateAi } from "@/lib/extraction/ai";
 import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 import { entryText } from "@/lib/extraction/entryText";
 import { logbookLabel } from "@/lib/logbooks";
@@ -114,7 +114,7 @@ export async function POST(
     'Respond ONLY as JSON: {"answer": string, "citations": number[]} where citations are the entry numbers ([n]) you relied on.';
 
   // Atomically claim a budget slot right before the paid call. Released below.
-  const reservationId = await reserveAiCall(user.id, gate.ownKey);
+  const reservationId = await reserveAiCall(user.id, gate.ownKey, gate.provider);
   if (!reservationId) {
     return NextResponse.json({ error: aiBudgetMessage(gate.ownKey) }, { status: 429 });
   }
@@ -122,26 +122,18 @@ export async function POST(
   try {
     const res = await runWithAiContext(
       {
+        provider: gate.provider,
         apiKey: gate.apiKey,
         onUsage: (u) => logAiUsage(user.id, "ask", u, gate.ownKey),
       },
-      () =>
-        getAnthropic().messages.create({
-          model: TEXT_MODEL,
-          max_tokens: 1024,
-          system,
-          messages: [
-            {
-              role: "user",
-              content: `Question: ${question.trim()}\n\n<entries>\n${lines.join("\n")}\n</entries>`,
-            },
-          ],
-        }),
+      () => generateAi({
+        modelKind: "text",
+        maxOutputTokens: 1024,
+        systemPrompt: system,
+        content: [{ type: "text", text: `Question: ${question.trim()}\n\n<entries>\n${lines.join("\n")}\n</entries>` }],
+      }),
     );
-    const text = res.content
-      .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    const text = res.text;
 
     const { answer, citations } = parseReply(text);
     const seen = new Set<number>();

@@ -2,7 +2,7 @@
 // App-layer secret encryption (AES-256-GCM, Node stdlib `crypto`).
 //
 // Used for the only true secrets in user data: MyFlightBook OAuth
-// client_secret + tokens (0022) and each user's own Anthropic API key (0029).
+// client_secret + tokens (0022) and each user's own AI API key (0029/0055).
 // RLS already isolates these per-user; this adds at-rest encryption so a DB
 // backup leak, read-replica/log exposure, or a leaked SUPABASE_SECRET_KEY
 // (which bypasses RLS) doesn't hand over usable credentials.
