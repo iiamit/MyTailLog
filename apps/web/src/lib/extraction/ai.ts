@@ -5,7 +5,7 @@ import { openAiResponse, type OpenAiContent } from "./openai";
 
 export type AiContent = OpenAiContent;
 export type GenerateAiOptions = {
-  modelKind: "text" | "vision";
+  modelKind: "text" | "ocr" | "handwriting";
   systemPrompt: string;
   content: AiContent[];
   jsonSchema?: Record<string, unknown>;
@@ -20,7 +20,7 @@ export async function generateAi(options: GenerateAiOptions): Promise<{ text: st
     return { text: result.text, stopReason: null };
   }
 
-  const model = options.modelKind === "vision" ? EXTRACTION_MODEL : TEXT_MODEL;
+  const model = options.modelKind === "text" ? TEXT_MODEL : EXTRACTION_MODEL;
   const { thinking, effort } = reasoningParams(model);
   const response = await getAnthropic().messages.create({
     model,

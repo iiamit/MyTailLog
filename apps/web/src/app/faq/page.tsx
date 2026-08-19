@@ -34,6 +34,11 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           <A href="#api-key">is my API key safe</A>.
         </p>
         <p className="text-sm text-faint">
+          AI cost is also kept down by routing printed OCR, PDFs, and text-only questions to the
+          provider&apos;s cheapest capable model. Handwritten pages use the stronger vision model
+          because transcription accuracy matters more than the small per-page saving.
+        </p>
+        <p className="text-sm text-faint">
           We&apos;re not going to pretend there&apos;s a price list coming, because there isn&apos;t
           one. If that ever changes, the MIT license and the full ZIP export below mean you are not
           trapped by the change.

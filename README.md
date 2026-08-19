@@ -191,9 +191,12 @@ work happens in `apps/web`.
   mirrors everything into on-device SQLite and caches every scan to the filesystem,
   so the full logbook browses with no signal, and captures queue offline and upload
   later. No sync vendor — see [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md).
-- **Anthropic** — a strong vision model (`claude-opus-4-8`) for handwriting/image
-  extraction (`EXTRACTION_MODEL`), and a cheap text model (`claude-haiku-4-5`) for
-  text-only reasoning — Q&A, equipment/maintenance detection (`TEXT_MODEL`). Every
+- **Anthropic or OpenAI** — model routing matches cost to the task. Anthropic uses
+  `claude-opus-4-8` for images and `claude-haiku-4-5` for text. OpenAI uses
+  `gpt-5.6-sol` for handwritten pages, while printed OCR/PDFs and text-only work
+  (Q&A, CSV mapping, equipment/maintenance detection) use the much cheaper
+  `gpt-5.6-luna`. Capture's handwritten flag selects the OpenAI vision tier;
+  unknown pages take the stronger path. Every
   AI route funnels through one gate (`prepareAi`) that resolves the caller's key
   (shared or their own), enforces the caps, and meters usage into a
   **server-authored** `ai_usage` ledger (written only by the service role, so the
@@ -312,8 +315,9 @@ results back. Set these under *Settings → Secrets and variables → Actions*:
 Self-hosting somewhere that *can* reach OpenSky? Run `node scripts/adsb-sweep.mjs`
 from any scheduler with those three in the environment plus `MYTAILLOG_URL`.
 
-Non-secret config in [`apphosting.yaml`](./apphosting.yaml): `NEXT_PUBLIC_SITE_URL`
-(pins the public origin), `EXTRACTION_MODEL` / `TEXT_MODEL`, and the AI cost caps
+Non-secret config in [`apphosting.yaml`](apps/web/apphosting.yaml): `NEXT_PUBLIC_SITE_URL`
+(pins the public origin), Anthropic's `EXTRACTION_MODEL` / `TEXT_MODEL`, OpenAI's
+`OPENAI_HANDWRITING_MODEL` / `OPENAI_OCR_MODEL` / `OPENAI_TEXT_MODEL`, and the AI cost caps
 (`AI_SHARED_USER_DAILY_CALLS`, `AI_OWN_USER_DAILY_CALLS`, `AI_SHARED_DAILY_USD`).
 **`ENCRYPTION_KEY` must match between prod and any local `.env.local` that shares
 the same database** — a value encrypted under one key can't be decrypted under

@@ -78,11 +78,11 @@ test("maps image and PDF content to Responses API data URLs", async () => {
         { type: "image", data: "aW1hZ2U=", mediaType: "image/jpeg" },
         { type: "pdf", data: "cGRm", filename: "logbook.pdf" },
       ],
-      modelKind: "vision",
+      modelKind: "ocr",
       maxOutputTokens: 100,
     });
     const request = getRequest();
-    assert.equal(request.body.model, "gpt-5.6-terra");
+    assert.equal(request.body.model, "gpt-5.6-luna");
     assert.deepEqual(request.body.input, [
       {
         role: "user",
@@ -96,6 +96,18 @@ test("maps image and PDF content to Responses API data URLs", async () => {
         ],
       },
     ]);
+  });
+});
+
+test("uses the flagship model for handwriting", async () => {
+  await withFetch(success(), async (getRequest) => {
+    await openAiResponse({
+      apiKey: key,
+      content: [{ type: "image", data: "aW1hZ2U=", mediaType: "image/jpeg" }],
+      modelKind: "handwriting",
+      maxOutputTokens: 100,
+    });
+    assert.equal(getRequest().body.model, "gpt-5.6-sol");
   });
 });
 

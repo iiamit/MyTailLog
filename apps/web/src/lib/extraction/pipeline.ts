@@ -32,6 +32,7 @@ export type PageForExtraction = {
   aircraft_id: string;
   logbook_id: string;
   storage_path: string;
+  is_handwritten: boolean | null;
 };
 
 export type PipelineResult = {
@@ -115,7 +116,8 @@ export async function extractPage(
       return await extractOtherDocument(supabase, page, base64);
     }
 
-    const result = await extractFromImage(base64, "image/jpeg");
+    const isHandwritten = page.is_handwritten !== false;
+    const result = await extractFromImage(base64, "image/jpeg", isHandwritten);
 
     // Shops affix stickers wherever there's room, so a page can carry an upright
     // sticker and a 90°-rotated one. Reported from the field: only the upright
@@ -129,7 +131,7 @@ export async function extractPage(
     let rotatedStillUnread = result.unread_rotated_content;
     if (result.unread_rotated_content) {
       try {
-        const second = await extractRotatedFromImage(base64, "image/jpeg");
+        const second = await extractRotatedFromImage(base64, "image/jpeg", isHandwritten);
         result.entries.push(...second.entries);
         // Cleared only if the follow-up actually read something and no longer
         // reports anything outstanding.
