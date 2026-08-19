@@ -730,6 +730,12 @@ const SECTIONS: Section[] = [
           four characters are kept for display.
         </p>
         <p className="mt-2 text-sm text-faint">
+          The app uses the stronger model for handwritten logbook pages, where a missed digit or
+          maintenance entry matters. Printed pages, PDFs, and Ask My Logbook use the provider&apos;s
+          lowest-cost capable model. Marking a captured page as printed or handwritten controls
+          that routing; an unknown page takes the safer handwritten path.
+        </p>
+        <p className="mt-2 text-sm text-faint">
           This must be an <strong>API key</strong> (starts with <code>sk-ant-</code>) from the{" "}
           <a
             href="https://console.anthropic.com/settings/keys"
