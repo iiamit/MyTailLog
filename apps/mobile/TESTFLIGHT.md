@@ -58,11 +58,13 @@ the Apple distribution signing identity installed by Xcode.
 ## 1. App icon (one command)
 ```bash
 cd apps/mobile
-npm install                       # pulls @capacitor/assets
+npm install
 npx cap add ios                   # if you haven't already
-npm run icons                     # generates the AppIcon set from assets/logo.svg
+npx --yes @capacitor/assets@3.0.5 generate --ios --assetPath assets
 npx cap sync ios
 ```
+(The generated icon set is committed. Run the generator only when `assets/logo.svg`
+changes; it is intentionally not installed with every mobile build.)
 (If `capacitor-assets` rejects the SVG on your machine, export `assets/logo.svg` to a
 1024×1024 `assets/logo.png` and re-run — same command.)
 
