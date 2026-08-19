@@ -1,6 +1,6 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from "@capacitor-community/sqlite";
 import type { SyncChange } from "./sync";
-import { changeStatements } from "./sync-apply";
+import { changeStatements, resetStatements } from "./sync-apply";
 
 // On-device mirror of the synced data. Schema-agnostic: every pulled row is
 // stored as JSON in one `records` table keyed by (table_name, id), so the client
@@ -179,10 +179,7 @@ export async function healMirrorIfStale(): Promise<boolean> {
  */
 export async function resetLocal(): Promise<void> {
   if (!db) return;
-  await db.executeSet([
-    { statement: "DELETE FROM records", values: [] },
-    { statement: "DELETE FROM sync_state WHERE key='cursor'", values: [] },
-  ]);
+  await db.executeSet(resetStatements());
 }
 
 export async function getCursor(): Promise<number> {

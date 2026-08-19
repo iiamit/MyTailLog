@@ -34,3 +34,11 @@ export function changeStatements(changes: SyncChange[]): { statement: string; va
   }
   return set;
 }
+
+/** Rebuild the read-only mirror without ever discarding queued offline work. */
+export function resetStatements(): { statement: string; values: unknown[] }[] {
+  return [
+    { statement: "DELETE FROM records", values: [] },
+    { statement: "DELETE FROM sync_state WHERE key='cursor'", values: [] },
+  ];
+}

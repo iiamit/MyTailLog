@@ -8,7 +8,7 @@ export function Lightbox({ src, onClose }: { src: string; onClose: () => void })
   const g = useRef({ mode: "" as "" | "pan" | "pinch", startDist: 0, startScale: 1, startX: 0, startY: 0, baseX: 0, baseY: 0 });
   const animate = useRef(false);
 
-  function dist(touches: TouchList) {
+  function dist(touches: React.TouchList) {
     const a = touches[0], b = touches[1];
     return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
   }

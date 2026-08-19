@@ -25,7 +25,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/mobile/package-lock.json
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
@@ -36,3 +38,6 @@ jobs:
           # secrets needed (nothing calls Supabase/Anthropic at build time).
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
+      - run: npm ci --prefix ../mobile
+      - run: npm run typecheck --prefix ../mobile
+      - run: npm run build --prefix ../mobile
