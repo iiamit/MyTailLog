@@ -134,7 +134,7 @@ export async function extractOilAnalysis(
       : { type: "image", mediaType, data };
 
   const response = await generateAi({
-    modelKind: "vision",
+    modelKind: "ocr",
     maxOutputTokens: 8000,
     systemPrompt: SYSTEM_PROMPT,
     jsonSchema: REPORT_SCHEMA,

@@ -133,7 +133,7 @@ export async function classifyOtherDocument(
   mediaType: ImageMediaType,
 ): Promise<OtherDocPayload> {
   const response = await generateAi({
-    modelKind: "vision",
+    modelKind: "ocr",
     maxOutputTokens: 8000,
     systemPrompt: SYSTEM_PROMPT,
     jsonSchema: OTHER_DOC_SCHEMA,

@@ -35,9 +35,10 @@ function isEntry(e: unknown): e is ExtractedEntry {
 export async function extractFromImage(
   imageBase64: string,
   mediaType: ImageMediaType,
+  isHandwritten = true,
 ): Promise<ExtractionResult> {
   const response = await generateAi({
-    modelKind: "vision",
+    modelKind: isHandwritten ? "handwriting" : "ocr",
     maxOutputTokens: 16000,
     systemPrompt: EXTRACTION_SYSTEM_PROMPT,
     jsonSchema: EXTRACTION_JSON_SCHEMA,
@@ -114,9 +115,10 @@ Return ONLY entries from that rotated content. Do NOT return entries you already
 export async function extractRotatedFromImage(
   imageBase64: string,
   mediaType: ImageMediaType,
+  isHandwritten = true,
 ): Promise<ExtractionResult> {
   const response = await generateAi({
-    modelKind: "vision",
+    modelKind: isHandwritten ? "handwriting" : "ocr",
     maxOutputTokens: 16000,
     systemPrompt: EXTRACTION_SYSTEM_PROMPT,
     jsonSchema: EXTRACTION_JSON_SCHEMA,

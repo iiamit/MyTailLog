@@ -28,7 +28,7 @@ export async function POST(
   // RLS scopes this to the owner; a page on someone else's aircraft returns no row.
   const { data: page } = await supabase
     .from("page")
-    .select("id, aircraft_id, logbook_id, storage_path")
+    .select("id, aircraft_id, logbook_id, storage_path, is_handwritten")
     .eq("id", pageId)
     .single();
 

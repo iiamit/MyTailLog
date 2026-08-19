@@ -1,5 +1,6 @@
-export const OPENAI_EXTRACTION_MODEL =
-  process.env.OPENAI_EXTRACTION_MODEL || "gpt-5.6-terra";
+export const OPENAI_HANDWRITING_MODEL =
+  process.env.OPENAI_HANDWRITING_MODEL || process.env.OPENAI_EXTRACTION_MODEL || "gpt-5.6-sol";
+export const OPENAI_OCR_MODEL = process.env.OPENAI_OCR_MODEL || "gpt-5.6-luna";
 export const OPENAI_TEXT_MODEL = process.env.OPENAI_TEXT_MODEL || "gpt-5.6-luna";
 
 export type OpenAiContent =
@@ -12,7 +13,7 @@ export interface OpenAiResponseOptions {
   content: OpenAiContent[];
   systemPrompt?: string;
   jsonSchema?: Record<string, unknown>;
-  modelKind: "text" | "vision";
+  modelKind: "text" | "ocr" | "handwriting";
   maxOutputTokens: number;
 }
 
@@ -47,7 +48,9 @@ export async function openAiResponse({
   modelKind,
   maxOutputTokens,
 }: OpenAiResponseOptions): Promise<OpenAiResponseResult> {
-  const model = modelKind === "vision" ? OPENAI_EXTRACTION_MODEL : OPENAI_TEXT_MODEL;
+  const model = modelKind === "handwriting"
+    ? OPENAI_HANDWRITING_MODEL
+    : modelKind === "ocr" ? OPENAI_OCR_MODEL : OPENAI_TEXT_MODEL;
   const input = [
     ...(systemPrompt
       ? [{ role: "system", content: [{ type: "input_text", text: systemPrompt }] }]
