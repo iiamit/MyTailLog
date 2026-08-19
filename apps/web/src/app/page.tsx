@@ -350,12 +350,17 @@ export default async function Home() {
                     Help &amp; documentation
                   </Link>
                 ) : (
-                  <Link
-                    href="/login"
-                    className={`rounded-md border border-line px-5 py-3 text-dim hover:border-line2 hover:text-ink ${FOCUS}`}
-                  >
-                    Sign in
-                  </Link>
+                  <>
+                    <Link
+                      href="/demo"
+                      className={`rounded-md border border-line px-5 py-3 text-dim hover:border-line2 hover:text-ink ${FOCUS}`}
+                    >
+                      See the demo
+                    </Link>
+                    <Link href="/login" className={`px-2 py-3 text-sm text-faint hover:text-ink ${FOCUS}`}>
+                      Sign in
+                    </Link>
+                  </>
                 )}
               </div>
 

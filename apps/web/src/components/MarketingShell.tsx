@@ -6,6 +6,7 @@ import Link from "next/link";
 
 const LINKS: { href: string; label: string }[] = [
   { href: "/", label: "Home" },
+  { href: "/demo", label: "Product tour" },
   { href: "/faq", label: "FAQ" },
   { href: "/compare", label: "How it compares" },
   { href: "/switch/myfbo", label: "Coming from MyFBO" },
