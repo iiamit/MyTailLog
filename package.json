@@ -7,6 +7,7 @@
     "lint": "npm --prefix apps/web run lint",
     "typecheck": "npm --prefix apps/web run typecheck",
     "test": "npm --prefix apps/web run test",
-    "e2e": "npm --prefix apps/web run e2e"
+    "e2e": "npm --prefix apps/web run e2e",
+    "mobile:check": "npm --prefix apps/mobile run typecheck && npm --prefix apps/mobile run build"
   }
 }

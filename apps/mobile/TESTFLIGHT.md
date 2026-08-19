@@ -1,7 +1,8 @@
 # Shipping MyTailLog to TestFlight
 
-**Already set up and just shipping a new build?** Jump to
-[Updating an existing build](#updating-an-existing-build) — it's four steps.
+**Already set up and just shipping a new build?** Use the
+[one-command upload](#one-command-upload), or fall back to
+[Updating an existing build](#updating-an-existing-build).
 Everything before it is one-time setup you've already done.
 
 **v1**: sync + browse aircraft/entries/scans offline, download-all, **and offline capture**
@@ -9,8 +10,45 @@ Everything before it is one-time setup you've already done.
 camera-usage string (step 2) — without it the app crashes the first time you tap
 *Take photo*.
 
-The in-repo pieces are done (bundle id, icon source, config). The rest is Xcode +
-App Store Connect, which only you can do (signing, archive, upload).
+The in-repo pieces are done (bundle id, icon source, config). Initial signing is
+still completed once in Xcode; routine builds can then be archived and uploaded
+from the terminal.
+
+## One-command upload
+
+Create an App Store Connect API key under **Users and Access → Integrations**
+with permission to upload builds. Download its `.p8` file when Apple offers it;
+the file cannot be downloaded again.
+
+Set these in your shell profile (never commit the key):
+
+```bash
+export APP_STORE_CONNECT_KEY_ID="ABC123DEF4"
+export APP_STORE_CONNECT_ISSUER_ID="00000000-0000-0000-0000-000000000000"
+export APP_STORE_CONNECT_KEY_PATH="$HOME/private_keys/AuthKey_ABC123DEF4.p8"
+```
+
+Then ship the version already configured in Xcode:
+
+```bash
+cd apps/mobile
+npm run testflight
+```
+
+Or set a new marketing version for this upload:
+
+```bash
+npm run testflight -- 1.4
+```
+
+The script builds the web assets, syncs Capacitor, assigns a UTC timestamp as a
+unique TestFlight build number, archives with Xcode, exports the IPA, and uploads
+it. Override the generated number only when necessary with
+`BUILD_NUMBER=123 npm run testflight -- 1.4`.
+
+The first run may require opening the workspace once and selecting the signing
+team. The API key handles App Store Connect authentication; the Mac still needs
+the Apple distribution signing identity installed by Xcode.
 
 ## 0. Prerequisites
 - Enrolled in the **Apple Developer Program** ($99/yr).
@@ -101,7 +139,7 @@ back into the logbook.
 
 ## Updating an existing build
 
-Once steps 0–5 are done, shipping a new version is just this:
+If the command-line upload is unavailable, the manual fallback is:
 
 ```bash
 git pull                       # get the changes you're shipping

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { changeStatements } from "../../mobile/src/sync-apply";
+import { changeStatements, resetStatements } from "../../mobile/src/sync-apply";
 
 // The offline client's apply path, tested here because apps/mobile has no runner
 // of its own. Only the statement building is covered — executing them needs a
@@ -44,4 +44,13 @@ test("a batch keeps its order so an upsert after a delete survives", () => {
   const set = changeStatements([del("aircraft", "a1"), upsert("aircraft", "a2", { id: "a2" })]);
   assert.equal(set.length, 3);
   assert.match(set[2].statement, /INSERT OR REPLACE/);
+});
+
+test("resetting a stale mirror preserves queued offline work", () => {
+  const set = resetStatements();
+  assert.deepEqual(
+    set.map((s) => s.statement),
+    ["DELETE FROM records", "DELETE FROM sync_state WHERE key='cursor'"],
+  );
+  assert.ok(set.every((s) => !/action_queue|capture_queue/.test(s.statement)));
 });

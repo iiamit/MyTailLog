@@ -7,9 +7,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "cap:sync": "vite build && cap sync ios",
     "ios": "vite build && cap sync ios && cap open ios",
+    "testflight": "./scripts/testflight.sh",
     "icons": "capacitor-assets generate --ios --assetPath assets"
   },
   "dependencies": {
