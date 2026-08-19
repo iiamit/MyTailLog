@@ -11,8 +11,7 @@
     "preview": "vite preview",
     "cap:sync": "vite build && cap sync ios",
     "ios": "vite build && cap sync ios && cap open ios",
-    "testflight": "./scripts/testflight.sh",
-    "icons": "capacitor-assets generate --ios --assetPath assets"
+    "testflight": "./scripts/testflight.sh"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^8.1.1",
@@ -30,8 +29,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.5.0",
+    "@capacitor/cli": "8.4.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
