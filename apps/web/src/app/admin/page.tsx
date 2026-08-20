@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import type { AdminUserStat } from "@/lib/database.types";
+import type { AdminGrowthFunnel, AdminUserStat } from "@/lib/database.types";
 import { saveSharedAiProvider } from "./actions";
 
 export const metadata = { title: "Admin — MyTailLog" };
@@ -32,6 +32,8 @@ export default async function AdminPage() {
     .order("entries", { ascending: false });
   const rows = (data ?? []) as AdminUserStat[];
   const { data: aiSetting } = await svc.from("app_setting").select("value").eq("key", "shared_ai_provider").maybeSingle();
+  const { data: funnelData } = await svc.from("admin_growth_funnel").select("*").single();
+  const funnel = funnelData as AdminGrowthFunnel | null;
   const sharedAiProvider = aiSetting?.value ?? "anthropic";
 
   const totals = rows.reduce(
@@ -85,6 +87,27 @@ export default async function AdminPage() {
           </div>
         ))}
       </section>
+
+      {funnel && (
+        <section className="panel mb-8 p-4">
+          <h2 className="font-semibold">Activation funnel</h2>
+          <p className="mb-3 text-xs text-faint">Unique accounts reaching each durable milestone. No page-view tracking.</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {[
+              ["Signed up", funnel.signed_up],
+              ["Aircraft", funnel.added_aircraft],
+              ["Uploaded", funnel.uploaded_pages],
+              ["Reviewed", funnel.reviewed_pages],
+              ["Summary", funnel.shared_summary],
+            ].map(([label, n]) => (
+              <div key={label}>
+                <div className="readout text-xl font-bold">{Number(n).toLocaleString()}</div>
+                <div className="text-xs text-faint">{label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="panel mb-8 p-4">
         <h2 className="font-semibold">Shared AI</h2>

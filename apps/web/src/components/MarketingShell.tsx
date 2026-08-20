@@ -11,6 +11,7 @@ const LINKS: { href: string; label: string }[] = [
   { href: "/compare", label: "How it compares" },
   { href: "/switch/myfbo", label: "Coming from MyFBO" },
   { href: "/help", label: "Help & docs" },
+  { href: "/guides/digitize-aircraft-logbooks", label: "Owner guides" },
   { href: "/developers/docs", label: "API" },
   { href: "/whats-new", label: "What's new" },
 ];
@@ -48,6 +49,7 @@ export function MarketingShell({
           <a href="https://github.com/iiamit/MyTailLog" className="hover:text-ink">
             Source on GitHub (MIT)
           </a>
+          <a href="/whats-new/rss.xml" className="hover:text-ink">RSS</a>
         </nav>
         <p className="mt-4">
           MyTailLog is an index and decision-support layer, not the legal maintenance record. The

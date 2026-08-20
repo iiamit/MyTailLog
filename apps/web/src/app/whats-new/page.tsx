@@ -83,6 +83,13 @@ export default function WhatsNewPage() {
                       you&apos;re here
                     </span>
                   )}
+                  <a
+                    href={`#${r.version}`}
+                    aria-label={`Link to release ${r.version}`}
+                    className="ml-auto text-xs text-faint hover:text-ink"
+                  >
+                    Share
+                  </a>
                 </div>
 
                 <div className="flex flex-col gap-6">
@@ -116,7 +123,11 @@ export default function WhatsNewPage() {
         )}
 
         <p className="mt-10 border-t border-line pt-4 text-[12.5px] text-faint">
-          MyTailLog is MIT-licensed and open source — the full engineering history is in{" "}
+          Follow updates in your feed reader through the{" "}
+          <a href="/whats-new/rss.xml" className="underline decoration-line underline-offset-2 hover:text-ink">
+            RSS feed
+          </a>
+          . MyTailLog is MIT-licensed and open source — the full engineering history is in{" "}
           <a
             href="https://github.com/iiamit/MyTailLog"
             className="underline decoration-line underline-offset-2 hover:text-ink"

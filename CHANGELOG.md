@@ -6,6 +6,12 @@ the git log.
 
 ## 2026.08
 
+### Added — owner guides and private growth measurement
+
+- Added practical public guides for digitizing aircraft logbooks, maintenance tracking, and AD tracking.
+- Added an RSS feed and stable share links for every What's New release.
+- Added an admin-only activation funnel derived from existing product records, plus one-time summary share/export milestones. No page-view tracking or third-party analytics.
+
 ### Added — shareable maintenance snapshot
 - **Share summary uses the device's native share sheet** for a compact text snapshot of status,
   due items, meters, and weight &amp; balance. It omits scans, serial numbers, reporter names, and
