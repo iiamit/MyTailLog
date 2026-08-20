@@ -15,11 +15,13 @@ export function ShareSummaryButton({ title, text }: { title: string; text: strin
         await navigator.clipboard.writeText(text);
         setStatus("Copied");
       }
+      void fetch("/api/growth/summary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "summary_shared" }) });
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       try {
         await navigator.clipboard.writeText(text);
         setStatus("Copied");
+        void fetch("/api/growth/summary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "summary_shared" }) });
       } catch {
         setStatus("Couldn’t share");
       }

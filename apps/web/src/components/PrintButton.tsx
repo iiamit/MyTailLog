@@ -10,7 +10,10 @@ export function PrintButton({
   className?: string;
 }) {
   return (
-    <button onClick={() => window.print()} className={className}>
+    <button onClick={() => {
+      void fetch("/api/growth/summary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "summary_exported" }) });
+      window.print();
+    }} className={className}>
       {label}
     </button>
   );

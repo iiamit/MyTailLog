@@ -1,4 +1,18 @@
-# Implementation plan — competitive backlog (T1 ×4, T2-1, T3-1)
+# Completed competitive work plan (T1 ×4, T2-1, T3-1)
+
+> Historical plan, not an active backlog. All six work packages have shipped as
+> of August 2026: utilization projections, printable/shareable maintenance
+> summaries, entry attachments, What's New, ADS-B reconciliation, and AD
+> discovery. The prerequisites below are retained as operational context.
+
+| Package | Status | Shipped surface |
+| --- | --- | --- |
+| WP1 | Shipped | `lib/utilization.ts` and maintenance status projections |
+| WP2 | Shipped | `/aircraft/[id]/summary`, print/PDF, and redacted sharing |
+| WP3 | Shipped | Entry/document links and reverse document view |
+| WP4 | Shipped | `/whats-new`, stable release anchors, and RSS |
+| WP5 | Shipped | `lib/adsb/reconcile.ts` and opt-in ADS-B suggestions |
+| WP6 | Shipped | `/aircraft/[id]/compliance/explore` |
 
 Derived from [`competitive-squawkfree.md`](competitive-squawkfree.md). Six work
 packages. Each ships as **its own PR**; nothing merges until CI is green and any

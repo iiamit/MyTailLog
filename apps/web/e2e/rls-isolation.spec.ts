@@ -94,6 +94,13 @@ test.describe("RLS multi-tenant isolation", () => {
     expect(data).toEqual([]);
   });
 
+  test("growth milestones cannot be read or forged through the browser client", async () => {
+    const read = await attackerDb.from("growth_event").select("event");
+    expect(read.error).toBeTruthy();
+    const write = await attackerDb.from("growth_event").insert({ user_id: attackerId, event: "summary_shared" });
+    expect(write.error).toBeTruthy();
+  });
+
   test("cannot read another user's child rows (maintenance_item)", async () => {
     const { data } = await attackerDb.from("maintenance_item").select("id").eq("aircraft_id", victimAc);
     expect(data).toEqual([]);

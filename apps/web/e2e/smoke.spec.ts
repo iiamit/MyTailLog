@@ -50,6 +50,9 @@ test.describe("public marketing pages", () => {
     ["/", /the logbooks are a cardboard box/i],
     ["/faq", /questions before you sign up/i],
     ["/compare", /six ways to keep aircraft maintenance records/i],
+    ["/guides/digitize-aircraft-logbooks", /how to digitize aircraft logbooks/i],
+    ["/guides/aircraft-maintenance-tracking", /aircraft maintenance tracking for owners/i],
+    ["/guides/airworthiness-directive-tracking", /airworthiness directive tracking/i],
     ["/switch/myfbo", /myfbo is going away/i],
   ] as const;
 

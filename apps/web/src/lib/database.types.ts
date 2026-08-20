@@ -389,6 +389,20 @@ export type AdminUserStat = {
   last_entry_at: string | null;
 }
 
+export type AdminGrowthFunnel = {
+  signed_up: number;
+  added_aircraft: number;
+  uploaded_pages: number;
+  reviewed_pages: number;
+  shared_summary: number;
+}
+
+export type GrowthEvent = {
+  user_id: string;
+  event: "summary_shared" | "summary_exported";
+  created_at: string;
+}
+
 export type AircraftShare = {
   id: string;
   aircraft_id: string;
@@ -642,6 +656,7 @@ export type Database = {
       oauth_account_grant: { Row: OauthAccountGrant; Insert: Partial<OauthAccountGrant>; Update: Partial<OauthAccountGrant>; Relationships: [] };
       oauth_access_log: { Row: OauthAccessLog; Insert: Partial<OauthAccessLog>; Update: Partial<OauthAccessLog>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
+      growth_event: { Row: GrowthEvent; Insert: Partial<GrowthEvent>; Update: Partial<GrowthEvent>; Relationships: [] };
       // backup_destination lives in a private schema (0049) — not exposed to
       // PostgREST; reached only via the backup SECURITY DEFINER functions below.
       backup_schedule: { Row: BackupSchedule; Insert: Partial<BackupSchedule>; Update: Partial<BackupSchedule>; Relationships: [] };
@@ -649,6 +664,7 @@ export type Database = {
     };
     Views: {
       admin_user_stats: { Row: AdminUserStat; Relationships: [] };
+      admin_growth_funnel: { Row: AdminGrowthFunnel; Relationships: [] };
     };
     Functions: {
       has_aircraft_access: {
