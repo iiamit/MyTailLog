@@ -948,6 +948,13 @@ const SECTIONS: Section[] = [
           <strong>full records report</strong> is the same thing plus every transcribed logbook
           entry. You can also download CSVs of entries / AD-SB / equipment / maintenance.
         </p>
+        <p>
+          <strong>Share summary</strong> opens your device&apos;s normal share sheet with a compact
+          text snapshot: status counts, due and overdue items, meter readings, and weight &amp;
+          balance. It deliberately leaves out scans, serial numbers, reporter names, and squawk
+          descriptions. On browsers without a share sheet, the same snapshot is copied to the
+          clipboard. Use Print → Save as PDF when the recipient needs the full report.
+        </p>
         <p className="mt-3">
           The <strong>.zip backup</strong> takes everything — all records plus your original
           scans — and includes a <code className="readout text-[12px]">README.txt</code>{" "}
