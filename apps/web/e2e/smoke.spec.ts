@@ -28,6 +28,7 @@ test("whats-new renders the changelog grouped by version", async ({ page }) => {
 test("maintenance summary renders every section for the demo aircraft", async ({ page, demoBase }) => {
   await page.goto(`${demoBase}/summary`);
   await expect(page.getByRole("heading", { name: /maintenance summary/i }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Share summary" })).toBeVisible();
   for (const section of [
     /status at a glance/i,
     /inspections, items & recurring ADs/i,

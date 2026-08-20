@@ -5,6 +5,8 @@ import { AD_STATUS_LABEL, urgencyLabel, type Urgency } from "@/lib/compliance";
 import { buildStatusItems, sortStatusItems, daysUntil, hoursRemaining, type StatusItem } from "@/lib/status";
 import { usefulLoad } from "@/lib/weightBalance";
 import { PrintButton } from "@/components/PrintButton";
+import { ShareSummaryButton } from "@/components/ShareSummaryButton";
+import { maintenanceSummaryText } from "@/lib/summaryShare";
 import type { AdStatus } from "@/lib/database.types";
 
 export const metadata = { title: "Maintenance summary — MyTailLog" };
@@ -137,7 +139,29 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
     ct.tach != null ? `tach ${ct.tach}${ct.estimated ? " est." : ""}` : null,
     ch.hobbs != null ? `hobbs ${ch.hobbs}${ch.estimated ? " est." : ""}` : null,
     ca.airframe != null ? `airframe ${ca.airframe}` : null,
-  ].filter(Boolean);
+  ].filter((meter): meter is string => Boolean(meter));
+  const generated = new Date().toISOString().slice(0, 10);
+  const shareText = maintenanceSummaryText({
+    tailNumber: aircraft.tail_number,
+    description: desc,
+    generated,
+    meters,
+    overdue: overdue.length,
+    dueSoon: dueSoon.length,
+    current: statusItems.length - overdue.length - dueSoon.length,
+    openSquawks: openSquawks.length,
+    adCount: allAds?.length ?? 0,
+    equipmentCount: components?.length ?? 0,
+    attention: [...overdue, ...dueSoon].map((item) => ({
+      label: item.label,
+      status: item.urgency === "overdue" ? urgencyLabel("overdue") : urgencyLabel("due_soon"),
+      nextDue: dueAt(item.nextDueDate, item.nextDueHours),
+      remaining: remainingText(item) || "check records",
+    })),
+    weightBalance: current?.empty_weight != null
+      ? `Weight & balance: empty ${current.empty_weight} lbs${load != null ? ` · useful load ${load} lbs` : ""}`
+      : undefined,
+  });
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
@@ -152,7 +176,10 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
             record, use the records export on the Export &amp; backup page.
           </p>
         </div>
-        <PrintButton />
+        <div className="flex flex-wrap items-center gap-2">
+          <ShareSummaryButton title={`${aircraft.tail_number} maintenance summary`} text={shareText} />
+          <PrintButton />
+        </div>
       </header>
 
       <article className="text-[12px] leading-relaxed text-dim">
@@ -167,7 +194,7 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
             {aircraft.prop_serials?.length ? ` · prop S/N ${aircraft.prop_serials.join(", ")}` : ""}
           </p>
           <p className="mt-0.5 text-[11px] text-faint">
-            Generated {new Date().toISOString().slice(0, 10)}
+            Generated {generated}
             {meters.length > 0 ? ` · ${meters.join(" · ")}` : ""}
           </p>
         </header>

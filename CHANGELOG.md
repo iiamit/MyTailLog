@@ -6,6 +6,11 @@ the git log.
 
 ## 2026.08
 
+### Added — shareable maintenance snapshot
+- **Share summary uses the device's native share sheet** for a compact text snapshot of status,
+  due items, meters, and weight &amp; balance. It omits scans, serial numbers, reporter names, and
+  squawk descriptions; browsers without a share sheet copy the same redacted snapshot instead.
+
 ### Fixed
 - **A deleted aircraft now disappears from the phone.** `change_log` was written
   so hard deletes reach the offline app, and the tombstones were being recorded
