@@ -38,8 +38,8 @@ export async function POST() {
     return json(
       {
         error:
-          "MyTailLog isn’t connected to your MyFlightBook logbook yet. Set that up in your profile — " +
-          "authorizing MyTailLog from MyFlightBook is a separate connection and doesn’t enable this.",
+          "MyTailLog isn’t set up to pull from your MyFlightBook logbook. If MyFlightBook is listed " +
+          "under Connected apps in your profile, it already pushes your hours here — you don’t need this.",
       },
       400,
     );
