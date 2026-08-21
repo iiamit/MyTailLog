@@ -31,7 +31,18 @@ export async function POST() {
     return json({ error: `MyFlightBook error: ${(e as Error).message}` }, 502);
   }
   if (!result) {
-    return json({ error: "MyFlightBook isn’t connected. Connect it in your profile." }, 400);
+    // Say WHICH connection. Authorizing MyTailLog from MyFlightBook — the grant
+    // that lets MFB read your maintenance data — is a different link, and a user
+    // who has done that is looking at "MyFlightBook" in Connected apps while
+    // being told it isn't connected.
+    return json(
+      {
+        error:
+          "MyTailLog isn’t connected to your MyFlightBook logbook yet. Set that up in your profile — " +
+          "authorizing MyTailLog from MyFlightBook is a separate connection and doesn’t enable this.",
+      },
+      400,
+    );
   }
 
   return json({

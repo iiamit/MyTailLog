@@ -225,6 +225,10 @@ export function ProfileClient({
     }
   }
 
+  // An app the user already granted hours:write. Taken from the grant itself so
+  // this never hardcodes a partner name.
+  const hoursWriter = connectedApps.find((a) => a.scopes.includes("hours:write"));
+
   // MyFlightBook connection
   const search = useSearchParams();
   const oauthStatus = search.get("mfb");
@@ -457,6 +461,18 @@ export function ProfileClient({
       {/* MyFlightBook */}
       <div className={card}>
         <h2 className="font-semibold">MyFlightBook</h2>
+        {/* Both directions carry the same two names, and the grant below is the
+            easier one to make, so people arrive here having done that and read
+            "Not connected" as a bug. Name the other link explicitly. */}
+        {hoursWriter && !mfb.connected && (
+          <p className="rounded-md border border-line bg-panel2 p-3 text-xs text-dim">
+            You&apos;ve already authorized <span className="font-medium text-ink">{hoursWriter.name}</span> to
+            reach into MyTailLog — that grant is under <span className="font-medium text-ink">Connected apps</span>{" "}
+            below, and it includes adding hours. <span className="font-medium text-ink">This card is the
+            opposite direction</span>: MyTailLog reaching into your MyFlightBook logbook. It needs its own
+            setup, so &ldquo;Sync from MyFlightBook&rdquo; stays unavailable until you finish it here.
+          </p>
+        )}
         <p className="text-xs text-faint">
           Pull each aircraft&apos;s latest recorded hobbs &amp; tach from your{" "}
           <a
