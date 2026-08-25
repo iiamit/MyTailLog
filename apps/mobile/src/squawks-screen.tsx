@@ -34,7 +34,7 @@ const SEVERITY: Record<SquawkRow["severity"], { label: string; color: string }> 
 };
 const ORDER: SquawkRow["severity"][] = ["low", "medium", "high"];
 
-export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: () => void }) {
+export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: () => Promise<"synced" | "pending"> }) {
   const [rows, setRows] = useState<SquawkRow[] | null>(null);
   const [pending, setPending] = useState<{ id: string; label: string }[]>([]);
   const [composing, setComposing] = useState(false);
@@ -119,8 +119,8 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
               payload: { description, severity, reported_at: new Date().toISOString() },
             });
             setComposing(false);
+            await onQueued();
             await reload();
-            onQueued();
           }}
         />
       )}
@@ -160,13 +160,14 @@ function Composer({
   onClose, onSave,
 }: {
   onClose: () => void;
-  onSave: (description: string, severity: SquawkRow["severity"]) => void;
+  onSave: (description: string, severity: SquawkRow["severity"]) => Promise<void>;
 }) {
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState<SquawkRow["severity"]>("low");
+  const [saving, setSaving] = useState(false);
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+    <div onClick={saving ? undefined : onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -210,15 +211,19 @@ function Composer({
           })}
         </div>
         <button
-          onClick={() => onSave(description.trim(), severity)}
-          disabled={!description.trim()}
+          onClick={async () => {
+            if (saving) return;
+            setSaving(true);
+            try { await onSave(description.trim(), severity); } finally { setSaving(false); }
+          }}
+          disabled={saving || !description.trim()}
           style={{
             minHeight: hit.stepper, borderRadius: 14, border: "none", background: accentGradient,
             color: color.onAccent, fontFamily: text.button.fontFamily, fontSize: 15, fontWeight: 600,
-            opacity: description.trim() ? 1 : 0.4, cursor: "pointer",
+            opacity: !saving && description.trim() ? 1 : 0.4, cursor: "pointer",
           }}
         >
-          Add squawk
+          {saving ? "Saving…" : "Add squawk"}
         </button>
         <button onClick={onClose} style={{ minHeight: 40, background: "transparent", border: "none", color: color.faint, fontFamily: text.rowTitle.fontFamily, fontSize: 13.5, cursor: "pointer" }}>
           Cancel

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listActions, removeAction, type QueuedAction } from "./db";
+import { captureCount, listActions, removeAction, type QueuedAction } from "./db";
 import { faint, ink, dim, line, panel2, accent, amber, red, mono } from "./ui";
 
 // What you've recorded that hasn't reached the server yet.
@@ -36,9 +36,12 @@ export function PendingBanner({ count, onOpen }: { count: number; onOpen: () => 
 
 export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: () => void }) {
   const [rows, setRows] = useState<QueuedAction[] | null>(null);
+  const [captures, setCaptures] = useState(0);
 
   async function reload() {
-    setRows(await listActions());
+    const [actions, pages] = await Promise.all([listActions(), captureCount()]);
+    setRows(actions);
+    setCaptures(pages);
   }
   useEffect(() => {
     reload();
@@ -62,13 +65,19 @@ export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: 
         <span style={{ fontWeight: 700, fontSize: 17 }}>Waiting to upload</span>
       </div>
 
-      {rows?.length === 0 && (
+      {rows?.length === 0 && captures === 0 && (
         <p style={{ color: faint, fontSize: 13, marginTop: 16 }}>
           Everything you&apos;ve recorded has reached the server.
         </p>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+        {captures > 0 && (
+          <div style={{ background: panel2, border: `1px solid ${line}`, borderRadius: 10, padding: "10px 12px" }}>
+            <div style={{ fontSize: 13.5, color: ink }}>{captures} scanned page{captures === 1 ? "" : "s"}</div>
+            <div style={{ color: accent, fontSize: 11, marginTop: 6 }}>saved on this phone — uploads when connected</div>
+          </div>
+        )}
         {rows?.map((a) => (
           <div
             key={a.id}
@@ -87,7 +96,7 @@ export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: 
             {a.error ? (
               <div style={{ color: red, fontSize: 11.5, marginTop: 6, lineHeight: 1.45 }}>{a.error}</div>
             ) : (
-              <div style={{ color: accent, fontSize: 11, marginTop: 6 }}>queued — uploads on the next sync</div>
+              <div style={{ color: accent, fontSize: 11, marginTop: 6 }}>saved on this phone — uploads when connected</div>
             )}
             {/* Only offer discard once something has actually failed: a merely
                 queued action is waiting for signal, not stuck, and throwing it

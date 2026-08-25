@@ -44,14 +44,19 @@ per record** (`reduceChanges` in `apps/web/src/lib/sync/changes.ts`): `upsert`
 `hasMore`. The client applies, stores `nextCursor`, and loops while `hasMore`.
 Idempotent — re-pulling an overlapping window is harmless.
 
-### Writes: capture, not a generic push
+### Writes: durable queue, immediate delivery
 
-v1 is read + **capture** (offline edits are a later phase, where conflicts live —
-captures are inserts, so they're conflict-free). The app therefore reuses the
-existing capture route rather than a `/sync/push`: `POST /api/aircraft/[id]/
-capture`, which now accepts **JSON base64** in addition to multipart (Capacitor's
-native HTTP doesn't do multipart file uploads reliably). The server stores the
-blob + inserts the page (RLS) + extracts; the new page flows back on the next pull.
+Every mobile write is saved to SQLite first with a client-generated id. If the
+app is connected, it immediately drains that row to the server and pulls the
+result back into the local mirror. If delivery fails or iOS reports no network,
+the row stays queued and the app shows a waiting-to-upload notice; reconnecting
+triggers a serialized retry. Server acceptance is the only thing that removes a
+queued write, so an interrupted request is safe to replay.
+
+Structured actions use `POST /api/aircraft/[id]/actions`. Captures use the
+existing `POST /api/aircraft/[id]/capture` route with **JSON base64** because
+Capacitor's native HTTP does not handle multipart uploads reliably. Both routes
+are idempotent on the client-generated id.
 
 ### Auth: Bearer, not cookies
 
@@ -63,7 +68,8 @@ cookie server client for browser use. This is *not* the OAuth resource server
 (`/api/v1/*`, which uses OAuth tokens) — it's the user's own session.
 
 Bearer-enabled routes: `/api/sync/pull`, `/api/page/[id]/image`,
-`/api/document/[id]`, `/api/aircraft/[id]/capture`.
+`/api/document/[id]`, `/api/aircraft/[id]/capture`, and
+`/api/aircraft/[id]/actions`.
 
 ## The app (`apps/mobile`)
 
@@ -74,14 +80,15 @@ matching the web.
 |---|---|
 | `supabase.ts` | Supabase client + `API_BASE`. Session persists in WKWebView storage (→ Keychain later). |
 | `sync.ts` | `pullAll()` — drains `/api/sync/pull` with the Bearer token to the tip. |
-| `db.ts` | On-device SQLite (`@capacitor-community/sqlite`). Schema-agnostic mirror: every row as JSON in one `records(table_name,id,data,seq)` table; cursor in `sync_state`. Plus the `capture_queue`. |
+| `db.ts` | On-device SQLite (`@capacitor-community/sqlite`). Schema-agnostic mirror: every row as JSON in one `records(table_name,id,data,seq)` table; cursor in `sync_state`. Durable action and capture queues hold writes until server acceptance. |
 | `blobs.ts` | Blob cache. `localImageSrc()` downloads a page/document once via CapacitorHttp (binary→base64→Filesystem Data dir), serves via `Capacitor.convertFileSrc`. `prefetchAll()` = "download all for offline". |
-| `capture.ts` | `takePhoto()` (@capacitor/camera → downscaled JPEG + thumbnail via canvas) + `drainCaptures()` (POST JSON base64 to the capture route). |
+| `capture.ts` | VisionKit scan output + `drainCaptures()` (POST JSON base64 to the capture route). |
 | `screens.tsx` / `capture-screen.tsx` / `lightbox.tsx` | Hangar → entries → detail → scans grid → full page viewer; capture flow; pinch-zoom lightbox. |
 | `App.tsx` | Auth + a small nav stack; a left-edge **swipe-back** gesture drives the same `back()` as the button. |
 
 **Offline model:** the UI reads local SQLite (instant, network-independent);
-`Sync` pulls deltas from the stored cursor and applies them; **Download all**
+connected writes push immediately, while offline writes retry on reconnect.
+`Sync` also provides a manual push/pull retry; **Download all**
 prefetches every scan/document to the filesystem so nothing needs a first online
 view. Scans are immutable → downloaded once per device, ever.
 

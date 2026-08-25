@@ -129,15 +129,17 @@ rather than hanging — run **Download all scans for offline** first.
 - **Squawks → + New** → queue one; it shows under *Waiting to upload*.
 - **Status → Mark done** on the VOR check → it should demand place, bearing error
   and signature before it will save.
-- The hangar shows *"N changes waiting to upload"*.
+- Scan a page; the hangar count includes that page as well as the structured writes.
+- The hangar shows *"N changes waiting to upload"* and the Pending screen lists
+  both the actions and the scanned-page count.
 
-Then turn Airplane Mode off and **Sync**. The banner should clear, and everything
-should appear on the web app — the VOR check as both a reset counter **and** a log
-entry containing the place and bearing error. Sync a second time and confirm
-nothing duplicates.
+Then turn Airplane Mode off. Sync should start automatically, the banner should
+clear, and everything should appear on the web app — the VOR check as both a
+reset counter **and** a log entry containing the place and bearing error. Tap
+**Sync** once more and confirm nothing duplicates.
 
-**Capture** offline → back online → **Upload** → it extracts server-side and syncs
-back into the logbook.
+Finally, while already online, record another meter change and scan another page.
+Each should sync without entering the pending list or requiring the Sync button.
 
 ## Updating an existing build
 

@@ -33,7 +33,7 @@ export function CompleteItem({
   aircraft: Aircraft;
   item: StatusItem;
   onBack: () => void;
-  onQueued: () => void;
+  onQueued: () => Promise<"synced" | "pending">;
 }) {
   const isVor = item.kind === "vor";
   const [date, setDate] = useState(today());
@@ -44,7 +44,8 @@ export function CompleteItem({
   const [hours, setHours] = useState("");
   const [logbooks, setLogbooks] = useState<LogbookRow[]>([]);
   const [logbookId, setLogbookId] = useState("");
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<"synced" | "pending" | null>(null);
+  const [saving, setSaving] = useState(false);
   const editable = canEdit(aircraft.id);
 
   useEffect(() => {
@@ -69,6 +70,8 @@ export function CompleteItem({
   const missing = isVor && (!place.trim() || !error.trim() || !signature.trim() || !logbookId);
 
   async function save() {
+    if (saving) return;
+    setSaving(true);
     // 91.171(d) wording, assembled into something that reads like a logbook
     // entry rather than a form dump.
     const description = isVor
@@ -78,37 +81,39 @@ export function CompleteItem({
       ? `VOR receiver accuracy check performed per 14 CFR 91.171. Place: ${place.trim()}. Bearing error: ${error.trim()}.${notes.trim() ? ` ${notes.trim()}` : ""}`
       : notes.trim() || null;
 
-    await queueAction({
-      aircraftId: aircraft.id,
-      type: "mx_complete",
-      label: `${item.label} done ${date}`,
-      payload: {
-        item_id: item.id,
-        date,
-        hours: hours.trim() === "" ? null : Number(hours),
-        // Only send the entry fields when we actually have a record to write.
-        logbook_id: isVor || notes.trim() ? logbookId : null,
-        description: isVor || notes.trim() ? description : null,
-        work_performed: workPerformed,
-        signature_name: signature.trim() || null,
-        [item.meter === "hobbs" ? "hobbs" : "tach"]: hours.trim() === "" ? null : Number(hours),
-      },
-    });
-    setDone(true);
-    onQueued();
+    try {
+      await queueAction({
+        aircraftId: aircraft.id,
+        type: "mx_complete",
+        label: `${item.label} done ${date}`,
+        payload: {
+          item_id: item.id,
+          date,
+          hours: hours.trim() === "" ? null : Number(hours),
+          // Only send the entry fields when we actually have a record to write.
+          logbook_id: isVor || notes.trim() ? logbookId : null,
+          description: isVor || notes.trim() ? description : null,
+          work_performed: workPerformed,
+          signature_name: signature.trim() || null,
+          [item.meter === "hobbs" ? "hobbs" : "tach"]: hours.trim() === "" ? null : Number(hours),
+        },
+      });
+      setDone(await onQueued());
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (done) {
     return (
       <>
-        <TopBar title="Queued" onBack={onBack} />
+        <TopBar title="Saved" onBack={onBack} />
         <p style={{ color: accent, fontSize: 14, marginTop: 16 }}>
-          {item.label} marked done {date}. It uploads on the next sync.
+          {item.label} marked done {date}. {done === "synced" ? "Synced." : "Waiting for a connection."}
         </p>
         {isVor && (
           <p style={{ color: faint, fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>
-            A log entry was queued with the place, bearing error and your signature, as 91.171(d)
-            requires.
+            A log entry was saved with the place, bearing error and your signature, as 91.171(d) requires.
           </p>
         )}
       </>
@@ -214,10 +219,10 @@ export function CompleteItem({
 
       <button
         onClick={save}
-        disabled={!editable || missing}
-        style={{ ...primary, width: "100%", marginTop: 12, opacity: !editable || missing ? 0.4 : 1 }}
+        disabled={saving || !editable || missing}
+        style={{ ...primary, width: "100%", marginTop: 12, opacity: saving || !editable || missing ? 0.4 : 1 }}
       >
-        Mark done &amp; reset the counter
+        {saving ? "Saving…" : <>Mark done &amp; reset the counter</>}
       </button>
     </>
   );

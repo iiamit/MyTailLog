@@ -6,6 +6,10 @@ the git log.
 
 ## 2026.08
 
+### Changed — mobile writes sync when connected
+
+- iOS now sends meter readings, oil additions, squawks, maintenance completions, and scanned pages immediately when connected. Writes still land in SQLite first for crash safety; offline work remains queued, appears in the pending notice, and retries when connectivity returns.
+
 ### Added — owner guides and private growth measurement
 
 - Added practical public guides for digitizing aircraft logbooks, maintenance tracking, and AD tracking.
