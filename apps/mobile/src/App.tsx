@@ -3,10 +3,12 @@ import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
-import { initDb, applyChanges, resetLocal, healMirrorIfStale, getCursor, setCursor, actionCount, getRows } from "./db";
+import { deliveryDecision } from "./sync-policy";
+import { initDb, applyChanges, resetLocal, healMirrorIfStale, getCursor, setCursor, actionCount, captureCount, getRows } from "./db";
 import { computeAirworthiness, buildVerdict } from "./airworthiness";
 import type { Urgency } from "@/lib/compliance";
 import { drainActions, refreshEditable } from "./actions";
+import { drainCaptures } from "./capture";
 import { prefetchAll } from "./blobs";
 import { Hangar, EntryDetail, PageViewer } from "./screens";
 import { Records } from "./records-screen";
@@ -105,12 +107,15 @@ function Shell({ session }: { session: Session }) {
   // undefined = closed. null = open with no aircraft in context (fleet entry).
   const [capture, setCapture] = useState<Aircraft | null | undefined>(undefined);
   const [pending, setPending] = useState(0);
+  const [online, setOnline] = useState(navigator.onLine);
   // Lifted out of Hangar: the header switcher needs the same fleet + urgency.
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [worst, setWorst] = useState<Record<string, Urgency>>({});
   const [summaries, setSummaries] = useState<Record<string, { urgency: Urgency; line: string }>>({});
   const [menu, setMenu] = useState(false);
   const zoomRef = useRef<string | null>(null);
+  const syncTask = useRef<Promise<void> | null>(null);
+  const syncLatest = useRef<(() => Promise<void>) | null>(null);
   zoomRef.current = zoom;
 
   useEffect(() => {
@@ -121,7 +126,7 @@ function Shell({ session }: { session: Session }) {
       // will never retract, so it is dropped once and rebuilt.
       const healed = await healMirrorIfStale();
       setCur(await getCursor());
-      setPending(await actionCount());
+      await updatePending();
       await loadFleet();
       // Best-effort: offline, canEdit() falls back to allowing, and the server
       // still refuses what it must.
@@ -191,8 +196,23 @@ function Shell({ session }: { session: Session }) {
     setSummaries(sum);
   }
 
-  async function bumpPending() {
-    setPending(await actionCount());
+  async function updatePending(): Promise<number> {
+    const [actions, captures] = await Promise.all([actionCount(), captureCount()]);
+    const total = actions + captures;
+    setPending(total);
+    return total;
+  }
+
+  async function writeFinished(): Promise<"synced" | "pending"> {
+    const count = await updatePending();
+    const decision = deliveryDecision(navigator.onLine, count);
+    if (decision === "synced") return "synced";
+    if (decision === "pending") {
+      setOnline(false);
+      return "pending";
+    }
+    await sync();
+    return (await updatePending()) === 0 ? "synced" : "pending";
   }
 
   async function downloadAll() {
@@ -221,7 +241,7 @@ function Shell({ session }: { session: Session }) {
     await sync();
   }
 
-  async function sync() {
+  async function performSync() {
     setSyncing("Syncing…");
     setError(null);
     try {
@@ -232,10 +252,13 @@ function Shell({ session }: { session: Session }) {
       // overwritten in the UI by a pull that predates it.
       setSyncing("Uploading…");
       const drained = await drainActions();
-      setPending(await actionCount());
+      const captures = await drainCaptures((done, total) => setSyncing(`Uploading pages… ${done} of ${total}`));
+      await updatePending();
       await loadFleet();
       if (drained.failed > 0) {
         setError(`${drained.failed} queued change${drained.failed === 1 ? "" : "s"} was refused — see the pending list.`);
+      } else if (captures.failed > 0 && !drained.offline) {
+        setError(`${captures.failed} scanned page${captures.failed === 1 ? "" : "s"} is still waiting to upload.`);
       }
 
       const from = await getCursor();
@@ -243,14 +266,40 @@ function Shell({ session }: { session: Session }) {
       await applyChanges(res.changes);
       await setCursor(res.cursor);
       setCur(res.cursor);
+      setOnline(true);
       refreshEditable().catch(() => {});
       await loadFleet();
     } catch (e) {
+      setOnline(false);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSyncing(null);
     }
   }
+
+  function sync(): Promise<void> {
+    if (syncTask.current) return syncTask.current;
+    const task = performSync().finally(() => {
+      if (syncTask.current === task) syncTask.current = null;
+    });
+    syncTask.current = task;
+    return task;
+  }
+  syncLatest.current = sync;
+
+  useEffect(() => {
+    const connected = () => {
+      setOnline(true);
+      void syncLatest.current?.();
+    };
+    const disconnected = () => setOnline(false);
+    window.addEventListener("online", connected);
+    window.addEventListener("offline", disconnected);
+    return () => {
+      window.removeEventListener("online", connected);
+      window.removeEventListener("offline", disconnected);
+    };
+  }, []);
 
   if (!NATIVE) {
     return (
@@ -304,7 +353,7 @@ function Shell({ session }: { session: Session }) {
             summaries={summaries}
             onOpen={(a) => setNav({ screen: "aircraft", aircraft: a, tab: "status", segment: "documents", sub: null })}
             syncing={syncing}
-            syncedLabel={cursor > 0 ? "Synced" : "Not synced yet"}
+            syncedLabel={!online ? "Offline" : cursor > 0 ? "Synced" : "Not synced yet"}
             error={error}
           />
           )}
@@ -353,7 +402,7 @@ function Shell({ session }: { session: Session }) {
             ) : nav.sub?.kind === "page" ? (
               <PageViewer pages={nav.sub.pages} index={nav.sub.index} onBack={back} onZoom={setZoom} />
             ) : nav.sub?.kind === "complete" ? (
-              <CompleteItem aircraft={nav.aircraft} item={nav.sub.item} onBack={back} onQueued={bumpPending} />
+              <CompleteItem aircraft={nav.aircraft} item={nav.sub.item} onBack={back} onQueued={writeFinished} />
             ) : nav.sub?.kind === "pdf" ? (
               <PdfViewer documentId={nav.sub.doc.id} title={nav.sub.doc.title} onBack={back} onZoom={setZoom} />
             ) : nav.tab === "status" ? (
@@ -362,9 +411,9 @@ function Shell({ session }: { session: Session }) {
                 onComplete={(item) => setNav({ ...nav, sub: { kind: "complete", item } })}
               />
             ) : nav.tab === "log" ? (
-              <Record aircraft={nav.aircraft} onQueued={bumpPending} />
+              <Record aircraft={nav.aircraft} onQueued={writeFinished} />
             ) : nav.tab === "squawks" ? (
-              <Squawks aircraft={nav.aircraft} onQueued={bumpPending} />
+              <Squawks aircraft={nav.aircraft} onQueued={writeFinished} />
             ) : (
               <Records
                 aircraft={nav.aircraft}
@@ -382,10 +431,10 @@ function Shell({ session }: { session: Session }) {
       )}
 
       {capture !== undefined && (
-        <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onSynced={sync} />
+        <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onChanged={writeFinished} />
       )}
 
-      {nav.screen === "pending" && <Pending onBack={back} onChanged={bumpPending} />}
+      {nav.screen === "pending" && <Pending onBack={back} onChanged={updatePending} />}
 
       {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
     </Screen>

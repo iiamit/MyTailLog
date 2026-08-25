@@ -19,12 +19,12 @@ import { CameraIcon } from "./icons";
 export function CaptureScreen({
   aircraft,
   onClose,
-  onSynced,
+  onChanged,
 }: {
   /** From the tab you opened this over. Null only on the fleet-level entry. */
   aircraft: Aircraft | null;
   onClose: () => void;
-  onSynced: () => void;
+  onChanged: () => Promise<"synced" | "pending">;
 }) {
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [picked, setPicked] = useState<Aircraft | null>(aircraft);
@@ -82,7 +82,9 @@ export function CaptureScreen({
           thumbnail: page.thumbnail,
         });
       }
+      const result = await onChanged();
       setHeld(await listCaptures());
+      setMsg(result === "synced" ? "Saved and uploaded." : "Saved on this phone — waiting for a connection.");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -94,14 +96,14 @@ export function CaptureScreen({
     setBusy("Uploading…");
     setMsg(null);
     const { uploaded, failed } = await drainCaptures((d, t) => setBusy(`Uploading ${d} of ${t}`));
+    if (uploaded > 0) await onChanged();
     setHeld(await listCaptures());
     setBusy(null);
     setMsg(
       failed
-        ? `${uploaded} uploaded, ${failed} still waiting — they'll go on the next sync.`
+        ? `${uploaded} uploaded, ${failed} still waiting — they'll retry when connected.`
         : `${uploaded} page${uploaded === 1 ? "" : "s"} uploaded — they'll appear once they're read.`,
     );
-    if (uploaded > 0) onSynced();
   }
 
   const uploading = !!busy && busy.startsWith("Uploading");
@@ -259,7 +261,7 @@ export function CaptureScreen({
                 {held.length} page{held.length === 1 ? "" : "s"} saved on your phone
               </div>
               <div style={{ ...text.meta, color: color.faint, marginTop: 3, lineHeight: 1.45 }}>
-                They upload on the next sync. Send them now if you have signal.
+                They upload automatically when connected. You can also retry now.
               </div>
             </div>
             {/* Secondary on purpose: scanning more is the likelier next act, and

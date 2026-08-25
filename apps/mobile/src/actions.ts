@@ -9,12 +9,12 @@ import {
 } from "./db";
 
 // ===========================================================================
-// Offline writes: queue on device, drain when there's signal.
+// Safe writes: persist on device first, then drain immediately when connected.
 //
 // Same shape as the capture queue, for the same reason — the aircraft is the one
 // place you reliably have no bars, and it's exactly where you want to record the
-// tach you're looking at. Nothing here writes to the server directly; every
-// action lands in SQLite first, so closing the app mid-ramp loses nothing.
+// tach you're looking at. Every action lands in SQLite first, so closing the app
+// mid-ramp loses nothing; App.tsx then drains it without waiting for a manual sync.
 //
 // The action's `id` is a UUID generated HERE and reused as the server row's key,
 // which makes the whole pipeline replay-safe: a drain that uploads successfully

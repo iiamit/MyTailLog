@@ -23,7 +23,7 @@ const OIL_PRESETS = [
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: () => void }) {
+export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: () => Promise<"synced" | "pending"> }) {
   const [prev, setPrev] = useState<{ tach: number | null; hobbs: number | null } | null>(null);
   const [tach, setTach] = useState<number | null>(null);
   const [hobbs, setHobbs] = useState<number | null>(null);
@@ -35,6 +35,7 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
   // which is false the moment the aircraft has flown.
   const [include, setInclude] = useState({ tach: true, hobbs: true });
   const [saved, setSaved] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const editable = canEdit(aircraft.id);
 
   useEffect(() => {
@@ -63,30 +64,35 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
     !(oilQuarts > 0);
 
   async function save() {
-    if (!editable) return;
-    const date = todayIso();
-    if (sendTach != null || sendHobbs != null) {
-      await queueAction({
-        aircraftId: aircraft.id,
-        type: "reading",
-        label: [sendTach != null ? `Tach ${sendTach.toFixed(1)}` : null, sendHobbs != null ? `Hobbs ${sendHobbs.toFixed(1)}` : null].filter(Boolean).join(" · "),
-        payload: { date, tach: sendTach, hobbs: sendHobbs },
-      });
+    if (!editable || saving) return;
+    setSaving(true);
+    try {
+      const date = todayIso();
+      if (sendTach != null || sendHobbs != null) {
+        await queueAction({
+          aircraftId: aircraft.id,
+          type: "reading",
+          label: [sendTach != null ? `Tach ${sendTach.toFixed(1)}` : null, sendHobbs != null ? `Hobbs ${sendHobbs.toFixed(1)}` : null].filter(Boolean).join(" · "),
+          payload: { date, tach: sendTach, hobbs: sendHobbs },
+        });
+      }
+      if (oilQuarts > 0) {
+        await queueAction({
+          aircraftId: aircraft.id,
+          type: "oil",
+          label: `Oil +${oilQuarts} qt`,
+          // Recorded against whichever meters were actually read.
+          payload: { date, quarts: oilQuarts, tach: sendTach, hobbs: sendHobbs },
+        });
+      }
+      setOil(0);
+      setOilCustom(false);
+      setOilText("");
+      const result = await onQueued();
+      setSaved(result === "synced" ? "Saved · synced" : "Saved · waiting for a connection");
+    } finally {
+      setSaving(false);
     }
-    if (oilQuarts > 0) {
-      await queueAction({
-        aircraftId: aircraft.id,
-        type: "oil",
-        label: `Oil +${oilQuarts} qt`,
-        // Recorded against whichever meters were actually read.
-        payload: { date, quarts: oilQuarts, tach: sendTach, hobbs: sendHobbs },
-      });
-    }
-    setOil(0);
-    setOilCustom(false);
-    setOilText("");
-    setSaved("Saved · will upload on next sync");
-    onQueued();
   }
 
   return (
@@ -192,19 +198,19 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
 
       <button
         onClick={save}
-        disabled={!editable || nothingEntered || unchanged || !oilValid}
+        disabled={saving || !editable || nothingEntered || unchanged || !oilValid}
         style={{
           width: "100%", marginTop: 16, minHeight: hit.primary, borderRadius: 15, border: "none",
           background: accentGradient, color: color.onAccent,
           fontFamily: text.button.fontFamily, fontSize: 16, fontWeight: 600,
-          opacity: !editable || nothingEntered || unchanged || !oilValid ? 0.4 : 1,
+          opacity: saving || !editable || nothingEntered || unchanged || !oilValid ? 0.4 : 1,
           cursor: "pointer",
         }}
       >
-        Save to logbook
+        {saving ? "Saving…" : "Save to logbook"}
       </button>
       <p style={{ ...text.meta, color: color.faint, textAlign: "center", marginTop: 8 }}>
-        {saved ?? "Saved on your phone now · uploads on next sync"}
+        {saved ?? "Saves immediately when connected · safely queues offline"}
       </p>
     </>
   );
