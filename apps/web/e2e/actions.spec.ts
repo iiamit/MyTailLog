@@ -137,7 +137,7 @@ test("actions: offline queue drains, is idempotent, and completes a VOR check", 
   expect(after).toMatchObject({
     last_done_date: "2026-08-12",
     last_done_hours: 1500.4,
-    next_due_date: "2026-09-12", // exact months: 91.171 is "preceding 30 days", not calendar months
+    next_due_date: "2026-09-11", // 91.171 is exactly "preceding 30 days"
   });
 
   // …and the legal record, which is the half a checkbox would have missed.
