@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
 import { ImportBackup } from "./ImportBackup";
 import { RemoveShared } from "./RemoveShared";
+import { dueSoonDaysForKind } from "@/lib/compliance";
+import { addDays } from "@/lib/maintenance";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const DUE_SOON_DAYS = 30;
@@ -44,14 +46,10 @@ export default async function Dashboard() {
 
   if (list.length > 0) {
     const t = today();
-    const soon = new Date();
-    soon.setDate(soon.getDate() + DUE_SOON_DAYS);
-    const soonStr = soon.toISOString().slice(0, 10);
-
     const [{ data: entries }, { data: pages }, { data: items }] = await Promise.all([
       supabase.from("log_entry").select("aircraft_id, hobbs, tach, entry_date"),
       supabase.from("page").select("aircraft_id, review_status, extraction_status"),
-      supabase.from("maintenance_item").select("aircraft_id, next_due_date"),
+      supabase.from("maintenance_item").select("aircraft_id, kind, last_done_date, next_due_date"),
     ]);
 
     for (const e of entries ?? []) {
@@ -69,10 +67,19 @@ export default async function Dashboard() {
         needsReview.set(p.aircraft_id, (needsReview.get(p.aircraft_id) ?? 0) + 1);
     }
     for (const it of items ?? []) {
-      if (!it.next_due_date) continue;
-      if (it.next_due_date < t)
+      const dueDate = it.kind === "vor" && it.last_done_date ? addDays(it.last_done_date, 30) : it.next_due_date;
+      if (!dueDate) continue;
+      if (dueDate < t)
         overdue.set(it.aircraft_id, (overdue.get(it.aircraft_id) ?? 0) + 1);
-      else if (it.next_due_date <= soonStr)
+      else if (
+        dueDate <=
+        new Date(
+          Date.parse(`${t}T00:00:00Z`) +
+            dueSoonDaysForKind(it.kind, DUE_SOON_DAYS) * 86_400_000,
+        )
+          .toISOString()
+          .slice(0, 10)
+      )
         dueSoon.set(it.aircraft_id, (dueSoon.get(it.aircraft_id) ?? 0) + 1);
     }
   }

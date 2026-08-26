@@ -37,13 +37,13 @@ export const mono: React.CSSProperties = { fontFamily: body, ...tabular };
 export const URGENCY_COLOR: Record<string, string> = {
   overdue: color.danger,
   due_soon: color.warning,
-  upcoming: color.accent,
+  upcoming: color.success,
   none: color.success,
 };
 export const URGENCY_LABEL: Record<string, string> = {
   overdue: "OVERDUE",
   due_soon: "DUE SOON",
-  upcoming: "UPCOMING",
+  upcoming: "CURRENT",
   none: "OK",
 };
 

@@ -88,6 +88,19 @@ test("buildStatusItems: date-driven annual far in the future → upcoming", () =
   assert.equal(s.nextDueDate, "2099-01-01");
 });
 
+test("buildStatusItems: legacy VOR rows are recalculated to exactly 30 days", () => {
+  const item = {
+    ...annual("2025-04-15"),
+    id: "vor",
+    kind: "vor",
+    label: "VOR check (91.171) — IFR",
+    interval_months: 1,
+    last_done_date: "2025-03-15",
+  } as MaintenanceItem;
+  const [s] = buildStatusItems([item], [], { tach: null, hobbs: null });
+  assert.equal(s.nextDueDate, "2025-04-14");
+});
+
 test("buildStatusItems: an AD row is labeled, tach-metered, and verified when a page backs it", () => {
   const items = buildStatusItems([], [
     {
