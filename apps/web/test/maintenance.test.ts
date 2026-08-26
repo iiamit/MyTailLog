@@ -161,9 +161,7 @@ test("maintenanceNextDue: the calendar-month regs use end-of-month", () => {
   }
 });
 
-test("VOR is NOT a calendar-month item — 91.171 is 30 days, not a month", () => {
-  // Marking it calendar would push it to end-of-month, which is markedly LATER
-  // than the reg allows. Being early here is the safe side.
+test("VOR is exactly 30 elapsed days — never calendar-month arithmetic", () => {
   assert.ok(!CALENDAR_MONTH_KINDS.has("vor"));
   assert.equal(
     maintenanceNextDue({
@@ -173,7 +171,17 @@ test("VOR is NOT a calendar-month item — 91.171 is 30 days, not a month", () =
       last_done_date: "2025-03-15",
       last_done_hours: null,
     }).next_due_date,
-    "2025-04-15",
+    "2025-04-14",
+  );
+  assert.equal(
+    maintenanceNextDue({
+      kind: "vor",
+      interval_months: 1,
+      interval_hours: null,
+      last_done_date: "2025-02-01",
+      last_done_hours: null,
+    }).next_due_date,
+    "2025-03-03",
   );
 });
 

@@ -8,6 +8,8 @@ import {
   dueText,
   DUE_SOON_DAYS,
   DUE_SOON_HOURS,
+  VOR_DUE_SOON_DAYS,
+  dueSoonDaysForKind,
 } from "../src/lib/compliance";
 
 // --- addMonths -------------------------------------------------------------
@@ -124,6 +126,23 @@ test("urgencyOf: date exactly DUE_SOON_DAYS out → due_soon; one day past → u
   assert.equal(urgencyOf({ next_due_date: later, next_due_hours: null }, null, TODAY), "upcoming");
 });
 
+test("urgencyOf: VOR stays current until five days before its deadline", () => {
+  assert.equal(dueSoonDaysForKind("vor"), 5);
+  assert.equal(dueSoonDaysForKind("annual"), DUE_SOON_DAYS);
+  assert.equal(
+    urgencyOf({ next_due_date: "2026-01-07", next_due_hours: null }, null, TODAY, VOR_DUE_SOON_DAYS),
+    "upcoming",
+  );
+  assert.equal(
+    urgencyOf({ next_due_date: "2026-01-06", next_due_hours: null }, null, TODAY, VOR_DUE_SOON_DAYS),
+    "due_soon",
+  );
+  assert.equal(
+    urgencyOf({ next_due_date: "2025-12-31", next_due_hours: null }, null, TODAY, VOR_DUE_SOON_DAYS),
+    "overdue",
+  );
+});
+
 test("urgencyOf: hours at-or-below current → overdue (equal counts as overdue)", () => {
   assert.equal(urgencyOf({ next_due_date: null, next_due_hours: 100 }, 100, TODAY), "overdue");
   assert.equal(urgencyOf({ next_due_date: null, next_due_hours: 100 }, 120, TODAY), "overdue");
@@ -146,7 +165,7 @@ test("urgencyOf: overdue on hours outranks soon on date", () => {
 test("urgencyLabel: maps each urgency to its display string", () => {
   assert.equal(urgencyLabel("overdue"), "OVERDUE");
   assert.equal(urgencyLabel("due_soon"), "due soon");
-  assert.equal(urgencyLabel("upcoming"), "upcoming");
+  assert.equal(urgencyLabel("upcoming"), "current");
 });
 
 // --- dueText ---------------------------------------------------------------

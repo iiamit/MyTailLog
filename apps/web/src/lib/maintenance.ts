@@ -24,10 +24,7 @@ export const STANDARD_ITEMS: StandardItem[] = [
   { kind: "transponder", label: "Transponder test (91.413)", regulatory: true, interval_months: 24, interval_hours: null, calendar_months: true },
   { kind: "pitot_static", label: "Pitot-static / altimeter (91.411)", regulatory: true, interval_months: 24, interval_hours: null, calendar_months: true },
   { kind: "elt", label: "ELT inspection (91.207)", regulatory: true, interval_months: 12, interval_hours: null, calendar_months: true },
-  // NOT calendar months: 91.171 is "within the preceding 30 days". Modelling it
-  // as one month is an approximation that runs a day or two either side of the
-  // real limit depending on month length — kept for now, but do not "fix" it by
-  // adding calendar_months, which would make it markedly LATER and unsafe.
+  // NOT calendar months: 91.171 is "within the preceding 30 days".
   { kind: "vor", label: "VOR check (91.171) — IFR", regulatory: true, interval_months: 1, interval_hours: null },
   { kind: "hundred_hour", label: "100-hour inspection (91.409)", regulatory: true, interval_months: null, interval_hours: 100 },
   { kind: "oil_change", label: "Oil change", regulatory: false, interval_months: null, interval_hours: 50 },
@@ -67,6 +64,13 @@ export function calendarMonthsDue(isoDate: string, months: number): string {
   return endOfDueMonth.toISOString().slice(0, 10);
 }
 
+/** Add exact elapsed days to an ISO date, in UTC. */
+export function addDays(isoDate: string, days: number): string {
+  return new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}
+
 /** Next-due from last-done + interval. Null components stay null (not yet done). */
 export function maintenanceNextDue(item: {
   kind?: string;
@@ -79,7 +83,9 @@ export function maintenanceNextDue(item: {
   return {
     next_due_date:
       item.last_done_date && item.interval_months
-        ? byCalendarMonth
+        ? item.kind === "vor"
+          ? addDays(item.last_done_date, 30)
+          : byCalendarMonth
           ? calendarMonthsDue(item.last_done_date, item.interval_months)
           : addMonths(item.last_done_date, item.interval_months)
         : null,

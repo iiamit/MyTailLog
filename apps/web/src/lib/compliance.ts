@@ -11,6 +11,11 @@ export const AD_STATUS_LABEL: Record<AdStatus, string> = {
 // Days-until / hours-until thresholds for the "due soon" bucket.
 export const DUE_SOON_DAYS = 90;
 export const DUE_SOON_HOURS = 10;
+export const VOR_DUE_SOON_DAYS = 5;
+
+export function dueSoonDaysForKind(kind: string, fallback = DUE_SOON_DAYS): number {
+  return kind === "vor" ? VOR_DUE_SOON_DAYS : fallback;
+}
 
 /** Add whole calendar months to an ISO date (YYYY-MM-DD), UTC. */
 export function addMonths(isoDate: string, months: number): string {
@@ -59,6 +64,7 @@ export function urgencyOf(
   r: { next_due_date: string | null; next_due_hours: number | null },
   currentHours: number | null,
   today: Date = new Date(),
+  dueSoonDays = DUE_SOON_DAYS,
 ): Urgency {
   const todayStr = today.toISOString().slice(0, 10);
   let overdue = false;
@@ -72,7 +78,7 @@ export function urgencyOf(
         (Date.parse(r.next_due_date + "T00:00:00Z") -
           Date.parse(todayStr + "T00:00:00Z")) /
         86_400_000;
-      if (days <= DUE_SOON_DAYS) soon = true;
+      if (days <= dueSoonDays) soon = true;
     }
   }
   if (r.next_due_hours != null && currentHours != null) {
@@ -93,7 +99,7 @@ export const URGENCY_STYLE: Record<Exclude<Urgency, "none">, string> = {
   upcoming: "border border-line bg-panel2 text-dim",
 };
 export function urgencyLabel(u: Exclude<Urgency, "none">): string {
-  return u === "overdue" ? "OVERDUE" : u === "due_soon" ? "due soon" : "upcoming";
+  return u === "overdue" ? "OVERDUE" : u === "due_soon" ? "due soon" : "current";
 }
 
 /** Human "next due" text from a next-due date/hours vs current hours. */

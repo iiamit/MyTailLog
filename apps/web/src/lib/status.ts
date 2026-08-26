@@ -4,8 +4,8 @@
 // the two views never drift. Pure functions over already-loaded rows.
 // ===========================================================================
 
-import { effectiveNextDue } from "./maintenance";
-import { urgencyOf, type Urgency } from "./compliance";
+import { effectiveNextDue, maintenanceNextDue } from "./maintenance";
+import { dueSoonDaysForKind, urgencyOf, type Urgency } from "./compliance";
 import type { Meter } from "./hobbsTach";
 import type { MaintenanceItem } from "./database.types";
 
@@ -108,7 +108,9 @@ export function buildStatusItems(
   const round1 = (x: number) => Math.round(x * 10) / 10;
   const out: StatusItem[] = [];
   for (const m of items) {
-    const due = effectiveNextDue(m, items);
+    // Recompute VOR from the last check so legacy rows that stored "+1 month"
+    // immediately honor the exact 30-day limit without a data migration.
+    const due = m.kind === "vor" ? maintenanceNextDue(m) : effectiveNextDue(m, items);
     // The countdown must compare last-done and current ON THE SAME meter.
     // Explicit per-item meter wins; else oil → hobbs, everything else → tach.
     let meter = meterForItem(m.kind, m.meter);
@@ -186,7 +188,7 @@ export function buildStatusItems(
       nextDueDate: due.next_due_date,
       nextDueHours: due.next_due_hours,
       notes: m.notes,
-      urgency: urgencyOf(urgencyDue, cur.value),
+      urgency: urgencyOf(urgencyDue, cur.value, undefined, dueSoonDaysForKind(m.kind)),
       meter,
       currentForItem: cur.value,
       currentEstimated: cur.estimated,
