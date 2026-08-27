@@ -167,11 +167,11 @@ function Composer({
   const [saving, setSaving] = useState(false);
 
   return (
-    <div onClick={saving ? undefined : onClose} style={{ position: "fixed", inset: 0, width: "100vw", overflow: "hidden", background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+    <div onClick={saving ? undefined : onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "100%", minWidth: 0, overflow: "hidden", background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+          width: "100%", background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
           border: `1px solid ${color.hairline}`, padding: "14px 16px calc(16px + env(safe-area-inset-bottom))",
           display: "flex", flexDirection: "column", gap: 10,
         }}
@@ -183,12 +183,12 @@ function Composer({
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What did you notice? e.g. #3 CHT reads intermittently"
           style={{
-            width: "100%", minWidth: 0, minHeight: 48, background: color.bg, border: `1px solid ${color.hairline}`,
+            minHeight: 48, background: color.bg, border: `1px solid ${color.hairline}`,
             borderRadius: 13, padding: "12px 13px", color: color.ink,
-            fontFamily: text.rowTitle.fontFamily, fontSize: 14, resize: "vertical",
+            fontFamily: text.rowTitle.fontFamily, fontSize: 16, resize: "vertical",
           }}
         />
-        <div style={{ display: "flex", minWidth: 0, gap: 8 }}>
+        <div style={{ display: "flex", gap: 8 }}>
           {ORDER.map((k) => {
             const on = severity === k;
             const sev = SEVERITY[k];
@@ -197,7 +197,7 @@ function Composer({
                 key={k}
                 onClick={() => setSeverity(k)}
                 style={{
-                  flex: 1, minWidth: 0, paddingInline: 4, minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  flex: 1, minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   background: on ? tint.accent : color.surfaceRaised,
                   border: `1px solid ${on ? color.accent : color.hairline}`,
                   borderRadius: radius.control, color: on ? color.ink : color.dim,
