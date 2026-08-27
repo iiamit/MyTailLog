@@ -9,6 +9,8 @@ body,
   margin: 0;
   padding: 0;
   background: #090c12;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 #root {
   min-height: 100vh;
@@ -17,7 +19,10 @@ body {
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none; /* no white rubber-band on overscroll */
 }
-* {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
 /* Native-feel: no text selection or long-press callouts on chrome, but keep it in inputs. */
