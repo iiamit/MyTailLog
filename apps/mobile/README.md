@@ -47,6 +47,14 @@ Fonts are **self-hosted** (`@fontsource/*`) rather than loaded from Google as th
 design file does — this app has to render its own typography in a hangar with no
 signal.
 
+### iOS form-control sizing
+
+Keep editable `input`, `textarea`, and `select` text at **16px or larger**.
+WKWebView automatically zooms a focused control below 16px; in a fixed bottom
+sheet that looks like horizontal overflow and can leave the whole app panned
+after the keyboard closes. Do not work around it with viewport clipping or
+modal width constraints—the focused control's font size is the cause.
+
 ## Shared code with the web app
 
 `@/…` resolves into `apps/web/src` (see `vite.config.ts` + `tsconfig.json`), so

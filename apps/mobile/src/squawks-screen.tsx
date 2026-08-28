@@ -185,6 +185,7 @@ function Composer({
           style={{
             minHeight: 48, background: color.bg, border: `1px solid ${color.hairline}`,
             borderRadius: 13, padding: "12px 13px", color: color.ink,
+            // iOS zooms focused controls below 16px and leaves the whole webview panned afterward.
             fontFamily: text.rowTitle.fontFamily, fontSize: 16, resize: "vertical",
           }}
         />

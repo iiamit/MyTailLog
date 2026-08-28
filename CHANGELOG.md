@@ -6,6 +6,15 @@ the git log.
 
 ## 2026.08
 
+### Fixed — opening New Squawk zoomed and horizontally displaced the iOS app
+
+- Focusing the 14px description field triggered WKWebView's native form-control
+  zoom. The modal then appeared wider than the screen, and dismissing it left the
+  entire app horizontally pannable until restart.
+- The field now uses iOS's 16px no-zoom threshold. Earlier overflow and width
+  constraints treated the visible symptom but could not stop the focus zoom.
+- Verified on-device in TestFlight and released as iOS 1.3 build `202608280002`.
+
 ### Changed — mobile writes sync when connected
 
 - iOS now sends meter readings, oil additions, squawks, maintenance completions, and scanned pages immediately when connected. Writes still land in SQLite first for crash safety; offline work remains queued, appears in the pending notice, and retries when connectivity returns.
