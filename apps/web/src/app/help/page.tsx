@@ -256,11 +256,12 @@ const SECTIONS: Section[] = [
           Extraction reads a page image into structured entries (date, hours, work performed,
           parts, AD/SB references, signature). Each field gets its own confidence score, shown as a
           percentage right on that field in the <strong>Review</strong> screen — anything below
-          threshold is highlighted. Beside each field you also get a cropped snippet of the scan
-          showing where that value was read from, so you can confirm it without hunting the whole
-          page (snippets appear once a page is extracted under the current model; re-extract older
-          pages to get them). The full page image sits alongside the entries too. Editing an entry
-          marks it confirmed.
+          threshold is highlighted. The page image sits alongside the entries, staying put as you
+          scroll, so you can check a transcription against the original without opening anything.
+          Tap the <strong>◎</strong> beside a field to spotlight exactly where on the scan that
+          value was read from (spotlights appear once a page is extracted under the current model;
+          re-extract older pages to get them), and click the image itself to magnify it. Editing an
+          entry marks it confirmed.
         </p>
         <p className="mt-3">
           <strong>Stickers at odd angles.</strong> Shops stick labels wherever there&apos;s room, so
@@ -287,8 +288,10 @@ const SECTIONS: Section[] = [
           extracted entry in one scrollable list — edit inline and confirm as you go, or hit{" "}
           <strong>Confirm N clean</strong> to accept, in one click, every entry the AI was fully
           confident on (high overall score, no flagged field, not a page-spanning fragment).
-          Anything with a low-confidence field is left for you; use <strong>Open page ↗</strong> on
-          any group to check it against the original scan.
+          Anything with a low-confidence field is left for you. Each page&apos;s scan sits beside
+          its entries here too, so you can cross-reference the whole group without leaving the list;
+          <strong> Open page ↗</strong> takes you to that page&apos;s own screen when you want to
+          crop it, re-extract it, or read its raw transcription.
         </p>
         <Effects>
           Extracting a running-maintenance page also (best-effort) proposes{" "}

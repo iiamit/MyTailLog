@@ -6,6 +6,20 @@ the git log.
 
 ## 2026.08
 
+### Changed — the scan sits beside its entries when you review everything at once
+
+- **Review all** now shows each page's scan pinned next to that page's entries, the way the
+  single-page reviewer always has. Checking a transcription used to mean opening the 48px
+  thumbnail full-screen, reading it, closing it, and repeating for the next entry.
+- Tapping a field's **◎** there now spotlights exactly where on the scan that value was read
+  from. The affordance already existed but had never been reachable from this view.
+- Imported entries with no scan behind them keep the full-width single column.
+
+### Fixed — tapping Search in Documents zoomed the iOS app
+
+- Same cause as the squawk composer below: a 13.5px field, under iOS's 16px threshold for
+  form-control zoom. Every editable control in the app is now at or above it.
+
 ### Fixed — opening New Squawk zoomed and horizontally displaced the iOS app
 
 - Focusing the 14px description field triggered WKWebView's native form-control
