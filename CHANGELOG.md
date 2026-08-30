@@ -6,6 +6,17 @@ the git log.
 
 ## 2026.08
 
+### Fixed — searching Documents on iOS appeared to do nothing
+
+- The field filtered only the **Everything else** list, and that list is defined as
+  everything *not* in AROW — so searching for a registration or an airworthiness
+  certificate, the four documents people reach for most, could never return them.
+- A query now searches the whole vault and shows one list of matches with a count.
+  A query that matches nothing says so, instead of silently removing a heading.
+- Titles, type labels, reference numbers, and file names are all searchable, and
+  several words narrow the result rather than having to be typed in order.
+- Added a clear (×) button, and Enter now dismisses the keyboard covering the results.
+
 ### Changed — the scan sits beside its entries when you review everything at once
 
 - **Review all** now shows each page's scan pinned next to that page's entries, the way the
