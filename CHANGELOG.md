@@ -6,6 +6,46 @@ the git log.
 
 ## 2026.08
 
+### Added — airframe pages show AFTT, and you can sort by it
+
+- Pages in an **airframe** logbook are now labelled **AFTT** (airframe total time), which is
+  what an airframe book is kept in.
+- **AFTT** joins upload order, entry date and tach in the sort menu, and can be applied as a
+  logbook's stored page order like the others.
+- Most airframe books never record a separate airframe total — the tach is the instrument that
+  total is kept in — so where none was written down, the page's tach reading is shown as its
+  AFTT, and sorting by AFTT uses it. Without that, sorting an ordinary airframe book by AFTT
+  would send every page to the bottom as a blank.
+- Maintenance countdowns are unaffected and stay stricter: an item due on airframe hours still
+  shows no countdown unless an airframe time was actually recorded.
+
+### Fixed — a page said "✓ reviewed" the moment it was extracted
+
+- The badge reads how many entries are still unconfirmed, and the pages list forgot to
+  update that count when an extraction finished — so a page nobody had looked at reported
+  itself reviewed, and dropped out of the **Needs review** filter.
+- Nothing was ever actually confirmed; the entries were in the review queue the whole time.
+  A reload showed the truth. The count now comes from the server.
+- The same fix corrects the entry count on a re-extracted page, which previously reported
+  only the newly-read entries — visible in the delete button's warning.
+
+### Added — select several pages and delete them at once
+
+- Tick pages in the list, or **Select all shown**, and delete them in one action. The
+  confirmation names both the pages and the entries that go with them. Previously a
+  mis-uploaded batch meant one confirm click per page.
+- Selection is limited to pages currently visible, so a filter or a logbook choice can
+  never hide something from what you are about to delete.
+
+### Added — see your daily AI allowance before you hit it
+
+- The profile now shows calls used against the daily cap, for everyone. Usage was
+  previously visible only if you had added your own API key, so anyone on the shared
+  allowance met "Daily AI limit reached" with no warning.
+- It also says what the number counts: a page takes about 2 calls to read, so the shared
+  allowance is roughly 50 pages a day, and calls free up individually 24 hours after each
+  one — not all at once at midnight.
+
 ### Fixed — searching Documents on iOS appeared to do nothing
 
 - The field filtered only the **Everything else** list, and that list is defined as

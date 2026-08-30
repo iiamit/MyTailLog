@@ -1,7 +1,7 @@
 // Pure page-list ordering: sorting and manual reorder, always WITHIN a logbook.
 // Extracted from PagesPanel so it's unit-testable (test/page-sort.test.ts).
 
-export type SortKey = "upload" | "date" | "tach";
+export type SortKey = "upload" | "date" | "tach" | "airframe";
 export type SortDir = "asc" | "desc";
 
 export type SortablePage = {
@@ -10,7 +10,37 @@ export type SortablePage = {
   pageSequence: number | null;
   latestDate: string | null;
   tach: number | null;
+  /** Airframe total time (AFTT) at this page — how an airframe book is ordered. */
+  airframe: number | null;
 };
+
+/**
+ * The value a given sort key reads off a page.
+ *
+ * AFTT falls back to tach, because most airframe logbooks never write an
+ * airframe total separately — the tach reading in the entry IS the time the
+ * book is kept in. Without the fallback, sorting an ordinary airframe book by
+ * AFTT would send nearly every page to the bottom as a null and order nothing.
+ *
+ * The tach is not an engine counter and does not restart when an engine is
+ * changed — engine time is kept in the logs as time since overhaul or since new
+ * — so on an airframe page the tach reading is that page's total time.
+ *
+ * `currentAirframe` in hobbsTach.ts still does NOT make this substitution, for
+ * its own stated reason: airframe time has no fixed relationship to the meters
+ * on aircraft where they diverge (it cites a glider accruing airframe hours with
+ * the engine off), and it feeds maintenance countdowns where a wrong number is
+ * an airworthiness problem rather than a display one.
+ */
+export function sortValue(r: SortablePage, sort: SortKey): string | number | null {
+  return sort === "upload"
+    ? r.pageSequence
+    : sort === "date"
+      ? r.latestDate
+      : sort === "airframe"
+        ? r.airframe ?? r.tach
+        : r.tach;
+}
 
 /**
  * Ascending/descending compare with NULLS ALWAYS LAST — direction applies only
@@ -39,11 +69,9 @@ export function sortPages<T extends SortablePage>(
   dir: SortDir,
   logbookOrder: Map<string, number>,
 ): T[] {
-  const key = (r: T) =>
-    sort === "upload" ? r.pageSequence : sort === "date" ? r.latestDate : r.tach;
   return [...rows].sort((a, b) => {
     const lg = (logbookOrder.get(a.logbookId) ?? 0) - (logbookOrder.get(b.logbookId) ?? 0);
-    return lg !== 0 ? lg : cmpKey(key(a), key(b), dir);
+    return lg !== 0 ? lg : cmpKey(sortValue(a, sort), sortValue(b, sort), dir);
   });
 }
 
@@ -94,7 +122,7 @@ export function displayedOrder<T extends SortablePage>(
   const lb = rows.filter((r) => r.logbookId === logbookId);
   if (lb.length < 2) return null;
   if (sort !== "upload") {
-    const missing = lb.some((r) => (sort === "date" ? r.latestDate : r.tach) == null);
+    const missing = lb.some((r) => sortValue(r, sort) == null);
     if (missing) return null;
   }
   return sortPages(lb, sort, dir, new Map([[logbookId, 0]])).map((r) => r.id);

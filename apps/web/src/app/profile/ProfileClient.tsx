@@ -57,6 +57,10 @@ type AiState = {
   outputTokens: number;
   costUsd: number;
   totalCalls: number;
+  /** Calls in the last rolling 24 hours — what the daily cap counts. */
+  callsToday: number;
+  /** The cap that applies right now (higher once you bring your own key). */
+  dailyCap: number;
 };
 
 // Maps the ?mfb=<status> the OAuth callback / authorize routes redirect back with.
@@ -586,6 +590,30 @@ export function ProfileClient({
             <span className="text-faint">On the shared key</span>
           )}
         </p>
+
+        {/* Today's allowance, shown to EVERYONE. This used to render only for
+            people with their own key, so anyone on the shared key met "Daily AI
+            limit reached" with no warning — and no way to see that the number
+            counts model calls, not pages. */}
+        <div className="border-t border-line pt-3">
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="text-xs text-faint">Used in the last 24 hours</span>
+            <span className="font-medium tabular-nums">
+              {ai.callsToday} / {ai.dailyCap} calls
+            </span>
+          </div>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-panel2">
+            <div
+              className={`h-full rounded-full ${ai.callsToday >= ai.dailyCap ? "bg-annun-red" : ai.callsToday / ai.dailyCap > 0.8 ? "bg-annun-amber" : "bg-accent"}`}
+              style={{ width: `${Math.min(100, (ai.callsToday / Math.max(1, ai.dailyCap)) * 100)}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-faint">
+            A logbook page usually takes 2 calls to read — 3 if it has rotated stickers — so
+            this allowance is roughly {Math.floor(ai.dailyCap / 2)} pages a day. Calls free up
+            individually 24 hours after you make them, not all at once at midnight.
+          </p>
+        </div>
 
         {ai.keyLast4 && (
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-line pt-3 text-sm sm:grid-cols-4">

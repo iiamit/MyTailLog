@@ -36,6 +36,9 @@ export default async function LogbookPagesPage({
     const lb = logbooks?.find((l) => l.id === logbookId);
     return lb ? lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type : "Logbook";
   };
+  // The airframe book is ordered by airframe total time, not by the engine's
+  // tach — so the list has to know which book a page belongs to.
+  const typeFor = (logbookId: string) => logbooks?.find((l) => l.id === logbookId)?.type ?? null;
 
   const { data: pages } = await supabase
     .from("page")
@@ -62,7 +65,7 @@ export default async function LogbookPagesPage({
 
   const { data: entries } = await supabase
     .from("log_entry")
-    .select("page_id, entry_date, hobbs, tach, owner_confirmed")
+    .select("page_id, entry_date, hobbs, tach, airframe, owner_confirmed")
     .eq("aircraft_id", id);
   const entryCounts = new Map<string, number>();
   // A page "needs review" when it still has an unconfirmed entry — NOT merely
@@ -75,7 +78,7 @@ export default async function LogbookPagesPage({
   // the scan itself, only in the extracted entries).
   const pageContext = new Map<
     string,
-    { date: string | null; tach: number | null; hobbs: number | null }
+    { date: string | null; tach: number | null; hobbs: number | null; airframe: number | null }
   >();
   for (const e of entries ?? []) {
     if (!e.page_id) continue;
@@ -91,6 +94,7 @@ export default async function LogbookPagesPage({
         date: e.entry_date ?? cur?.date ?? null,
         tach: e.tach ?? cur?.tach ?? null,
         hobbs: e.hobbs ?? cur?.hobbs ?? null,
+        airframe: e.airframe ?? cur?.airframe ?? null,
       });
     } else if (cur) {
       // Keep the latest date, but backfill tach/hobbs if the newest entry lacked them.
@@ -98,6 +102,7 @@ export default async function LogbookPagesPage({
         date: cur.date,
         tach: cur.tach ?? e.tach ?? null,
         hobbs: cur.hobbs ?? e.hobbs ?? null,
+        airframe: cur.airframe ?? e.airframe ?? null,
       });
     }
   }
@@ -118,6 +123,8 @@ export default async function LogbookPagesPage({
     latestDate: pageContext.get(p.id)?.date ?? null,
     tach: pageContext.get(p.id)?.tach ?? null,
     hobbs: pageContext.get(p.id)?.hobbs ?? null,
+    airframe: pageContext.get(p.id)?.airframe ?? null,
+    logbookType: typeFor(p.logbook_id),
     thumbnailUrl: thumbById.get(p.id) ?? fullById.get(p.id) ?? null,
     fullUrl: fullById.get(p.id) ?? null,
     storagePath: p.storage_path,

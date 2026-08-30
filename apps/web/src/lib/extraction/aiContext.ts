@@ -57,6 +57,29 @@ const SHARED_DAILY_USD = num(process.env.AI_SHARED_DAILY_USD, 20);
 // concurrent calls. ponytail: flat estimate; make it per-model if it drifts.
 const CALL_ESTIMATE_USD = num(process.env.AI_CALL_ESTIMATE_USD, 1);
 
+/**
+ * The daily call ceiling that applies to a user, for DISPLAY.
+ *
+ * Exported from where the cap is enforced so the number someone reads on their
+ * profile cannot drift from the number that actually stops them.
+ */
+export function dailyCallCap(ownKey: boolean): number {
+  return ownKey ? OWN_KEY_DAILY_CAP : SHARED_DAILY_CAP;
+}
+
+/**
+ * Calls inside the window the cap actually counts.
+ *
+ * It is a ROLLING 24 hours, not a calendar day — reserve_ai_call_v2 counts
+ * `created_at > now() - interval '24 hours'`. Allowance therefore returns call
+ * by call as each one ages out, which is worth stating plainly: people assume a
+ * midnight reset and plan a scanning session around it.
+ */
+export function callsInLastDay(rows: { created_at?: string | null }[]): number {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  return rows.filter((r) => r.created_at != null && Date.parse(r.created_at) > cutoff).length;
+}
+
 type Supabase = SupabaseClient<Database>;
 
 /**

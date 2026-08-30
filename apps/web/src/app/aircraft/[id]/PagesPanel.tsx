@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { sortPages, movedOrder, displayedOrder, type SortKey, type SortDir } from "@/lib/pageSort";
-import { deletePage, reorderPages } from "./actions";
+import { pageNeedsReview, applyExtraction, pageMeter } from "@/lib/pageStatus";
+import { deletePage, deletePages, reorderPages } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { useToast } from "@/components/Toast";
@@ -25,6 +26,10 @@ export type PageRow = {
   unconfirmedCount: number;
   latestDate: string | null;
   tach: number | null;
+  /** Airframe total time (AFTT) at this page. */
+  airframe: number | null;
+  /** 'airframe' | 'engine' | 'prop' | … — decides which meter the row shows. */
+  logbookType: string | null;
   hobbs: number | null;
   thumbnailUrl: string | null;
   fullUrl: string | null;
@@ -42,9 +47,7 @@ export type LogbookTile = {
 // A page needs review when it has been extracted and still has an unconfirmed
 // entry. Keyed off unconfirmed entries (not page.review_status) so entry-less
 // pages and fully-confirmed pages don't nag with nothing to review.
-function pageNeedsReview(r: PageRow): boolean {
-  return r.extractionStatus === "extracted" && r.unconfirmedCount > 0;
-}
+
 
 const STATUS_STYLE: Record<ExtractionStatus, { className: string; style?: CSSProperties }> = {
   pending: { className: "bg-panel2 text-dim" },
@@ -69,6 +72,10 @@ export function PagesPanel({
   const toast = useToast();
   const router = useRouter();
   const [rows, setRows] = useState<PageRow[]>(pages);
+  // Ids ticked for bulk delete. Kept as a Set of ids rather than a flag on the
+  // row so a filter or sort change can't strand a selection on a hidden row.
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [deletingMany, setDeletingMany] = useState(false);
   // Clicking a logbook tile filters the list to that logbook (null = all).
   // Seed from ?logbook=<id> so returning from a page's review keeps the filter.
   const searchParams = useSearchParams();
@@ -87,7 +94,7 @@ export function PagesPanel({
   useEffect(() => {
     const s = localStorage.getItem("mtl.pagesSort");
     /* eslint-disable react-hooks/set-state-in-effect -- deliberate mount read of persisted prefs (see comment above) */
-    if (s === "date" || s === "tach") setSort(s);
+    if (s === "date" || s === "tach" || s === "airframe") setSort(s);
     if (localStorage.getItem("mtl.pagesDir") === "desc") setDir("desc");
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -123,12 +130,13 @@ export function PagesPanel({
         patch(id, { extractionStatus: "failed", extractionError: data.error ?? "Failed." });
         return;
       }
-      patch(id, {
-        extractionStatus: "extracted",
-        extractionError: null,
-        entryCount: data.entryCount ?? 0,
-        detectedPageCount: data.detectedPageCount ?? null,
-      });
+      // applyExtraction carries unconfirmedCount, which this patch used to drop.
+      // The row then said "✓ reviewed" the instant extraction finished — the
+      // page WAS unreviewed, only the badge lied, but it told people their logs
+      // had been checked when they hadn't and hid the page from the "Needs
+      // review" filter. router.refresh() does not cover it: `rows` is seeded
+      // from the prop once and never re-synced.
+      setRows((rs) => rs.map((r) => (r.id === id ? applyExtraction(r, data) : r)));
       // Re-run the persistent shell so its Review nav badge picks up this newly
       // extracted (and now unreviewed) page. Local `rows` state is preserved.
       router.refresh();
@@ -243,6 +251,39 @@ export function PagesPanel({
   // extracted entries, so an early logbook that's been extracted sorts into
   // chronological place inside its own logbook.
   const sortedRows = sortPages(displayRows, sort, dir, logbookOrder);
+
+  // Only what you can currently see is selectable, so "Select all" can never
+  // delete a page hidden behind a filter.
+  const pickable = sortedRows.map((r) => r.id);
+  const pickedVisible = pickable.filter((id) => picked.has(id));
+  const allPicked = pickable.length > 0 && pickedVisible.length === pickable.length;
+  const pickedRows = rows.filter((r) => picked.has(r.id));
+  const pickedEntries = pickedRows.reduce((n, r) => n + r.entryCount, 0);
+
+  const togglePick = (id: string) =>
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
+  const toggleAll = () => setPicked(allPicked ? new Set() : new Set(pickable));
+
+  async function deletePicked() {
+    setDeletingMany(true);
+    const ids = [...picked];
+    const res = await deletePages(aircraftId, ids);
+    setDeletingMany(false);
+    if ("error" in res) {
+      toast.error(res.error);
+      return;
+    }
+    const gone = new Set(ids);
+    setRows((rs) => rs.filter((r) => !gone.has(r.id)));
+    setPicked(new Set());
+    toast.success(`Deleted ${res.deleted} ${res.deleted === 1 ? "page" : "pages"}.`);
+    router.refresh();
+  }
 
   const selectedLogbook = logbooks.find((lb) => lb.id === selectedLogbookId) ?? null;
 
@@ -447,20 +488,23 @@ export function PagesPanel({
               Sort
               <select
                 value={sort}
-                onChange={(e) => changeSort(e.target.value as "upload" | "date" | "tach")}
+                onChange={(e) => changeSort(e.target.value as SortKey)}
                 disabled={reordering}
                 className="rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-hidden focus:border-accent disabled:opacity-50"
               >
                 <option value="upload">Upload order</option>
                 <option value="date">Entry date</option>
                 <option value="tach">Tach</option>
+                {/* An airframe book is kept by airframe total time; the engine's
+                    tach is a different counter and resets with a new engine. */}
+                <option value="airframe">AFTT</option>
               </select>
             </label>
             {persistableOrder && (
               <button
                 onClick={saveDisplayedOrder}
                 disabled={savingOrder}
-                title={`Renumber this logbook's pages to match the ${sort === "date" ? "entry date" : "tach"} order shown`}
+                title={`Renumber this logbook's pages to match the ${sort === "date" ? "entry date" : sort === "airframe" ? "AFTT" : "tach"} order shown`}
                 className="rounded-md border border-accent px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent-soft disabled:opacity-50"
               >
                 {savingOrder ? "Saving…" : "Save this order"}
@@ -492,9 +536,58 @@ export function PagesPanel({
               : `No pages in ${selectedLabel}.`}
         </p>
       ) : (
+        <>
+        {/* Selection bar. Appears only for editors, and only once there is
+            something to select — a permanently docked toolbar for a rarely-used
+            destructive action is noise the rest of the time. */}
+        {canEdit && pickable.length > 0 && (
+          <div className="mb-2 flex flex-wrap items-center gap-3 rounded-lg border border-line px-4 py-2.5 text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-dim">
+              <input
+                type="checkbox"
+                checked={allPicked}
+                // Some-but-not-all reads as neither ticked nor empty.
+                ref={(el) => { if (el) el.indeterminate = pickedVisible.length > 0 && !allPicked; }}
+                onChange={toggleAll}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Select all{queue !== "all" || selectedLogbookId ? " shown" : ""}
+            </label>
+            {picked.size > 0 ? (
+              <>
+                <span className="text-dim">
+                  {picked.size} selected
+                  {pickedEntries > 0 && ` · ${pickedEntries} ${pickedEntries === 1 ? "entry" : "entries"}`}
+                </span>
+                <button onClick={() => setPicked(new Set())} className="text-xs text-dim underline hover:text-ink">
+                  Clear
+                </button>
+                <div className="ml-auto">
+                  <ConfirmButton
+                    // Name the entries as well as the pages: they are the work
+                    // the scanning produced, and they go too.
+                    confirmLabel={
+                      pickedEntries > 0
+                        ? `Delete ${picked.size} pages + ${pickedEntries} entries`
+                        : `Delete ${picked.size} pages`
+                    }
+                    onConfirm={deletePicked}
+                    disabled={deletingMany}
+                  >
+                    {deletingMany ? "Deleting…" : `Delete ${picked.size}`}
+                  </ConfirmButton>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-faint">Tick pages to delete several at once.</span>
+            )}
+          </div>
+        )}
+
         <ul className="divide-y divide-line rounded-lg border border-line">
           {sortedRows.map((r, idx) => {
             const needsReview = pageNeedsReview(r);
+            const meter = pageMeter(r);
             // Disputed (an explicit flag) wins; otherwise unconfirmed entries →
             // needs review, and an extracted page with none left → reviewed.
             const reviewBadge =
@@ -510,8 +603,17 @@ export function PagesPanel({
                 key={r.id}
                 className={`flex items-center gap-3 border-l-4 px-4 py-3 text-sm ${
                   needsReview ? "border-l-annun-amber" : "border-l-transparent"
-                }`}
+                } ${picked.has(r.id) ? "bg-panel2" : ""}`}
               >
+                {canEdit && (
+                  <input
+                    type="checkbox"
+                    checked={picked.has(r.id)}
+                    onChange={() => togglePick(r.id)}
+                    aria-label={`Select ${r.logbookLabel} page ${r.pageSequence ?? ""}`}
+                    className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  />
+                )}
                 {r.thumbnailUrl ? (
                   <ZoomableImage
                     src={r.thumbnailUrl}
@@ -531,15 +633,11 @@ export function PagesPanel({
                       width, which left the list with no visible dates at all
                       even though it can be SORTED by date. Fold them into the
                       meta line below that breakpoint instead of dropping them. */}
-                  {(r.latestDate || r.tach != null || r.hobbs != null) && (
+                  {(r.latestDate || meter) && (
                     <div className="font-mono text-[11px] text-dim sm:hidden">
                       {r.latestDate}
-                      {r.latestDate && (r.tach != null || r.hobbs != null) ? " · " : ""}
-                      {r.tach != null
-                        ? `${r.tach.toLocaleString()} tach`
-                        : r.hobbs != null
-                          ? `${r.hobbs.toLocaleString()} hobbs`
-                          : ""}
+                      {r.latestDate && meter ? " · " : ""}
+                      {meter ? `${meter.value.toLocaleString()} ${meter.label}` : ""}
                     </div>
                   )}
                   <div className="text-xs text-dim">
@@ -558,14 +656,14 @@ export function PagesPanel({
                     )}
                   </div>
                 </div>
-                {(r.latestDate || r.tach != null || r.hobbs != null) && (
+                {(r.latestDate || meter) && (
                   <div className="hidden shrink-0 text-right font-mono text-xs leading-tight text-dim sm:block">
                     {r.latestDate && <div>{r.latestDate}</div>}
-                    {r.tach != null ? (
-                      <div className="text-faint">{r.tach.toLocaleString()} tach</div>
-                    ) : r.hobbs != null ? (
-                      <div className="text-faint">{r.hobbs.toLocaleString()} hobbs</div>
-                    ) : null}
+                    {meter && (
+                      <div className="text-faint">
+                        {meter.value.toLocaleString()} {meter.label}
+                      </div>
+                    )}
                   </div>
                 )}
                 {reviewBadge && (
@@ -642,6 +740,7 @@ export function PagesPanel({
             );
           })}
         </ul>
+        </>
       )}
     </div>
   );
