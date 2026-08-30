@@ -6,6 +6,18 @@ the git log.
 
 ## 2026.08
 
+### Fixed — inspections due on airframe hours now count down
+
+- An item due on airframe time showed no hours countdown unless someone had written an
+  airframe total in the entry. Most logbooks note "TT" only occasionally and a tach reading
+  every time, so in practice those items counted down on nothing.
+- Where a logbook's total time and tach have **never disagreed** — checked against every
+  entry that recorded both — the tach now fills in the total, and airframe items count down
+  like any other. Values derived this way are marked as estimated wherever the app already
+  distinguishes a measured reading from a derived one.
+- If any entry recorded both and they differ, nothing is filled in: that aircraft keeps the
+  two apart deliberately, and its airframe items behave exactly as before.
+
 ### Added — airframe pages show AFTT, and you can sort by it
 
 - Pages in an **airframe** logbook are now labelled **AFTT** (airframe total time), which is

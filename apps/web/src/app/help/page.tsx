@@ -283,9 +283,10 @@ const SECTIONS: Section[] = [
           <strong> AFTT</strong> (airframe total time), which is what an airframe book is kept in.
           Most airframe books don&apos;t record a separate airframe total — the tach is the
           instrument that total is kept in — so where none was written down, the page&apos;s tach
-          reading is shown as its AFTT. Maintenance countdowns are stricter and never make that
-          substitution: an item due on airframe hours shows no countdown unless an airframe time
-          was actually recorded. Filter to a single
+          reading is shown as its AFTT. Maintenance countdowns use the same reading, with a check
+          first: if any entry recorded a total <em>and</em> a tach that disagree, the aircraft
+          keeps those numbers apart on purpose and nothing is filled in — its airframe items then
+          count down only on totals actually written down. Filter to a single
           logbook and hit <strong>Reorder</strong> to hand-arrange its pages with the ↑/↓ arrows —
           handy for scans captured out of order. The
           aircraft <strong>Overview</strong> summarizes how many pages still need review.

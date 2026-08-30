@@ -417,32 +417,93 @@ export function currentHobbs(readings: Reading[]): CurrentHobbs {
 export type CurrentAirframe = { airframe: number | null; estimated: boolean; asOf: string | null; rough: boolean; from: ReadingSource | null };
 
 /**
- * Current AIRFRAME time — simply the latest recorded reading. Deliberately never
- * estimated: airframe time has no fixed relationship to hobbs or tach (a glider
- * accrues airframe hours with the engine off, or with no engine at all), so
- * bridging from them would invent a number. No reading → null, and any item
- * counting on airframe shows no hours countdown rather than a fabricated one.
+ * How far a co-recorded airframe and tach may sit apart and still count as the
+ * same number. Transcription slop and rounding, not drift — a real divergence
+ * (a tach fitted after the airframe had hours on it) is orders of magnitude
+ * bigger than this.
  */
-export function currentAirframe(readings: Reading[]): CurrentAirframe {
-  const latest = currentReading(
-    readings.filter((r) => r.airframe != null) as (Reading & { airframe: number })[],
-    "airframe",
+const AIRFRAME_TACH_TOLERANCE = 1.0;
+
+/**
+ * Does this aircraft's airframe total track its tach?
+ *
+ * True when no reading that recorded BOTH disagrees by more than the tolerance.
+ * Most logbooks write total time straight off the tach, so wherever the two
+ * appear together they agree, and a tach reading can be read as a total.
+ *
+ * False as soon as one co-recorded pair diverges. That aircraft keeps the two
+ * numbers apart on purpose — a tach fitted after the airframe already had hours,
+ * or an airframe accruing time the tach never sees — and synthesising there
+ * would invent hours.
+ *
+ * No co-recorded pair is not evidence of divergence, so it stays true; with no
+ * tach there is nothing to synthesise from and the caller still gets null.
+ */
+export function airframeTracksTach(readings: Reading[]): boolean {
+  return !readings.some(
+    (r) =>
+      r.airframe != null &&
+      r.tach != null &&
+      Math.abs(r.airframe - r.tach) > AIRFRAME_TACH_TOLERANCE,
   );
-  return latest
-    ? { airframe: round1(latest.airframe), estimated: false, asOf: latest.date, rough: false, from: latest.source }
-    : { airframe: null, estimated: false, asOf: null, rough: false, from: null };
 }
 
 /**
- * The value of `meter` at (or nearest before) a date — the reading a maintenance
- * item was actually done at, on the meter it counts down on. This is why the oil
- * change advances on hobbs even though its last-done was recorded in tach: we
- * anchor to the co-recorded hobbs at that date, not the stored tach scalar.
- * Prefers the latest reading on-or-before the date; else the earliest after;
- * bridges from the other meter via the ratio when this meter has no reading.
+ * Readings with airframe filled in from tach, where the logbook keeps its total
+ * time on the tach.
+ *
+ * This is what makes airframe-hours countdowns work on an ordinary book. Such a
+ * book records "TT" only now and then and a tach reading every time, so the
+ * airframe series is too sparse to anchor a countdown — the current value and
+ * the last-done baseline both land on whatever airframe entry happened to exist,
+ * possibly years away. Filling from the tach gives it the same dense series the
+ * other meters have.
+ *
+ * A recorded airframe value is never overwritten, and nothing is filled at all
+ * once a co-recorded pair has diverged.
  */
-export function meterValueAtDate(readings: Reading[], date: string | null, meter: Meter): number | null {
+export function withAirframeFromTach(readings: Reading[]): Reading[] {
+  if (!airframeTracksTach(readings)) return readings;
+  return readings.map((r) =>
+    r.airframe == null && r.tach != null ? { ...r, airframe: r.tach } : r,
+  );
+}
+
+/**
+ * Current AIRFRAME time — the latest reading, with the tach standing in for a
+ * total the logbook never wrote down.
+ *
+ * Airframe time has no FIXED relationship to the other meters (a glider accrues
+ * airframe hours with the engine off), so this never bridges by ratio the way
+ * hobbs↔tach does. It reads the tach directly, and only where the logbook itself
+ * shows the two have never diverged.
+ *
+ * A stood-in value is marked `estimated`: the hours are real, but nobody wrote
+ * them in the airframe column, so every consumer that already distinguishes a
+ * recorded reading from a derived one keeps doing so.
+ */
+export function currentAirframe(readings: Reading[]): CurrentAirframe {
+  const recorded = new Set(readings.filter((r) => r.airframe != null).map((r) => r.id));
+  const filled = withAirframeFromTach(readings);
+  const latest = currentReading(
+    filled.filter((r) => r.airframe != null) as (Reading & { airframe: number })[],
+    "airframe",
+  );
+  if (!latest) return { airframe: null, estimated: false, asOf: null, rough: false, from: null };
+  return {
+    airframe: round1(latest.airframe),
+    estimated: !recorded.has(latest.id),
+    asOf: latest.date,
+    rough: false,
+    from: latest.source,
+  };
+}
+
+export function meterValueAtDate(rawReadings: Reading[], date: string | null, meter: Meter): number | null {
   if (!date) return null;
+  // An ordinary logbook writes "TT" only occasionally, so the airframe series is
+  // too sparse to anchor a countdown against; fill it from the tach first.
+  const readings = meter === "airframe" ? withAirframeFromTach(rawReadings) : rawReadings;
   const withVal = readings.filter((r) => r[meter] != null) as (Reading & Record<Meter, number>)[];
   if (withVal.length) {
     const onOrBefore = withVal.filter((r) => (r.date ?? "") <= date);
@@ -452,7 +513,13 @@ export function meterValueAtDate(readings: Reading[], date: string | null, meter
     return round1(pick[meter]);
   }
   // No reading in this meter at all — bridge from the other meter at that date.
-  // Airframe has no ratio to bridge across (see currentAirframe), so it stops here.
+  // Airframe has no RATIO to bridge across, so it never scales from hobbs; but
+  // where the logbook keeps its total on the tach it can take the tach reading
+  // directly, which is what makes an airframe-hours countdown possible at all on
+  // a book that never wrote a separate total. Same condition as currentAirframe.
+  // Airframe never SCALES from another meter — there is no ratio to scale
+  // across. It is only ever read directly off the tach, which the filled series
+  // above has already done wherever it applies.
   if (meter === "airframe") return null;
   const other: Meter = meter === "hobbs" ? "tach" : "hobbs";
   const otherVal = meterValueAtDate(readings, date, other);

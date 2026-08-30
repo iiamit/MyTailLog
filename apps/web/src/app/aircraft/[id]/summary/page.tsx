@@ -123,6 +123,7 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
       airframe: ca.airframe,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
+      airframeEstimated: ca.estimated,
       baselineFor,
       toTotalHours,
     }),
