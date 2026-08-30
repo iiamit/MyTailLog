@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { useToast } from "@/components/Toast";
-import { isEntryClean } from "@/lib/extraction/schema";
+import { isEntryClean, type FieldBox } from "@/lib/extraction/schema";
 import { EntryCard, type ReviewEntry } from "../pages/[pageId]/review/ReviewClient";
 import type { EntryAttachment } from "../pages/[pageId]/review/EntryExtras";
 import { mergeContinuation, type EntryFields } from "../pages/[pageId]/review/actions";
@@ -154,61 +154,147 @@ export function ReviewAllClient({
             : "No entries yet."}
         </p>
       ) : (
-        groups.map(([key, pageEntries]) => {
-          const head = pageEntries[0];
-          return (
-            <div key={key} className="flex flex-col gap-3">
-              <div className="flex items-center gap-3 border-b border-line pb-2">
-                {head.thumbnailUrl ? (
-                  <ZoomableImage
-                    src={head.thumbnailUrl}
-                    fullSrc={head.fullUrl}
-                    alt={head.pageLabel}
-                    className="h-12 w-12 shrink-0 rounded-sm border border-line object-cover"
-                  />
-                ) : (
-                  <div className="h-12 w-12 shrink-0 rounded-sm bg-panel2" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-ink">{head.pageLabel}</div>
-                  <div className="text-xs text-faint">
-                    {pageEntries.length} {pageEntries.length === 1 ? "entry" : "entries"} here
-                    {!head.pageId && " · no scan to check against"}
-                  </div>
-                </div>
-                {head.pageId && (
-                  <Link
-                    href={`/aircraft/${aircraftId}/pages/${head.pageId}/review`}
-                    className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs hover:border-line2"
-                  >
-                    Open page ↗
-                  </Link>
-                )}
-              </div>
-
-              {pageEntries.map((e) => (
-                <EntryCard
-                  key={e.id}
-                  entry={e}
-                  isNew={false}
-                  aircraftId={aircraftId}
-                  pageId={e.pageId}
-                  logbookId={e.logbookId}
-                  imageUrl={e.fullUrl}
-                  onSaved={onSaved}
-                  onCreated={() => {}}
-                  onDeleted={(id) => setEntries((es) => es.filter((x) => x.id !== id))}
-                  onCancelNew={() => {}}
-                  onMerge={onMerge}
-                  merging={mergingId === e.id}
-                  canEdit
-                  attachments={attachmentsByEntry[e.id] ?? []}
-                />
-              ))}
-            </div>
-          );
-        })
+        groups.map(([key, pageEntries]) => (
+          <PageGroup
+            key={key}
+            aircraftId={aircraftId}
+            pageEntries={pageEntries}
+            attachmentsByEntry={attachmentsByEntry}
+            onSaved={onSaved}
+            onDeleted={(id) => setEntries((es) => es.filter((x) => x.id !== id))}
+            onMerge={onMerge}
+            mergingId={mergingId}
+          />
+        ))
       )}
+    </div>
+  );
+}
+
+/**
+ * One source page: its scan pinned on the left, its entries on the right.
+ *
+ * This view used to show the scan as a 48px thumbnail in the group header, so
+ * checking a transcription against the original meant opening the lightbox,
+ * reading, closing it, and repeating for the next entry. Reported from the
+ * field: "I find myself having to click the image, it shows up within the whole
+ * page, then click off that to go back and keep cross referencing."
+ *
+ * The single-page reviewer already solved this — scan sticky on the left,
+ * entries scrolling on the right — so this lifts that layout rather than
+ * inventing a second one. Wiring `onLocate` also activates the spotlight that
+ * was already built into EntryCard but unreachable here: tapping a field's ◎
+ * rings the exact box it was read from.
+ */
+function PageGroup({
+  aircraftId,
+  pageEntries,
+  attachmentsByEntry,
+  onSaved,
+  onDeleted,
+  onMerge,
+  mergingId,
+}: {
+  aircraftId: string;
+  pageEntries: FlatEntry[];
+  attachmentsByEntry: Record<string, EntryAttachment[]>;
+  onSaved: (id: string, fields: EntryFields) => void;
+  onDeleted: (id: string) => void;
+  onMerge: (tailId: string) => void;
+  mergingId: string | null;
+}) {
+  // Which field's box is spotlighted on this group's scan (null = none).
+  const [spot, setSpot] = useState<{ box: FieldBox; key: string } | null>(null);
+  const head = pageEntries[0];
+  // Imported entries (CSV) have no page behind them, so there is nothing to put
+  // in the left column — those groups stay full width.
+  const scan = head.pageId ? head.fullUrl : null;
+
+  const header = (
+    <div className="flex items-center gap-3 border-b border-line pb-2">
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-ink">{head.pageLabel}</div>
+        <div className="text-xs text-faint">
+          {pageEntries.length} {pageEntries.length === 1 ? "entry" : "entries"} here
+          {!head.pageId && " · no scan to check against"}
+        </div>
+      </div>
+      {head.pageId && (
+        <Link
+          href={`/aircraft/${aircraftId}/pages/${head.pageId}/review`}
+          className="shrink-0 rounded-md border border-line px-3 py-1.5 text-xs hover:border-line2"
+        >
+          Open page ↗
+        </Link>
+      )}
+    </div>
+  );
+
+  const cards = pageEntries.map((e) => (
+    <EntryCard
+      key={e.id}
+      entry={e}
+      isNew={false}
+      aircraftId={aircraftId}
+      pageId={e.pageId}
+      logbookId={e.logbookId}
+      imageUrl={e.fullUrl}
+      onLocate={scan ? (box, k) => setSpot(box ? { box, key: k } : null) : undefined}
+      activeKey={spot?.key ?? null}
+      onSaved={onSaved}
+      onCreated={() => {}}
+      onDeleted={onDeleted}
+      onCancelNew={() => {}}
+      onMerge={onMerge}
+      merging={mergingId === e.id}
+      canEdit
+      attachments={attachmentsByEntry[e.id] ?? []}
+    />
+  ));
+
+  if (!scan) {
+    return (
+      <div className="flex flex-col gap-3">
+        {header}
+        {cards}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {header}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="lg:sticky lg:top-4 lg:self-start">
+          <div className="relative overflow-hidden rounded-lg border border-line">
+            <ZoomableImage
+              src={scan}
+              alt={head.pageLabel}
+              // Capped so a tall page still fits the viewport while pinned —
+              // a sticky image taller than the screen hides its own bottom.
+              className="max-h-[calc(100vh-9rem)] w-full object-contain"
+            />
+            {/* Spotlight: dim the page and ring the located field's box. */}
+            {spot && (
+              <div
+                className="pointer-events-none absolute rounded-[3px] transition-all duration-200"
+                style={{
+                  left: `${spot.box.x * 100}%`,
+                  top: `${spot.box.y * 100}%`,
+                  width: `${spot.box.w * 100}%`,
+                  height: `${spot.box.h * 100}%`,
+                  border: "2px solid var(--accent)",
+                  boxShadow: "0 0 0 9999px rgba(4,10,20,0.55)",
+                }}
+              />
+            )}
+          </div>
+          <p className="mt-1 text-center text-xs text-faint">
+            Tap a field&apos;s ◎ to spotlight where it was read. Click the image to magnify.
+          </p>
+        </div>
+        <div className="flex min-w-0 flex-col gap-3">{cards}</div>
+      </div>
     </div>
   );
 }
