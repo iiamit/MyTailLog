@@ -6,48 +6,71 @@ import { removeBlobs } from "@/lib/storage";
 import { METERS, type Meter } from "@/lib/hobbsTach";
 
 /**
- * Delete a captured page along with any entries extracted from it and its
- * stored image. `log_entry.page_id` is ON DELETE SET NULL (so entries survive a
- * re-scan of the same page), which means deleting the page alone would leave
- * orphaned entries — this action removes them explicitly. Runs under the
- * caller's session, so RLS scopes every step to the owner's aircraft.
+ * Delete captured pages along with any entries extracted from them and their
+ * stored images. `log_entry.page_id` is ON DELETE SET NULL (so entries survive a
+ * re-scan of the same page), which means deleting a page alone would leave
+ * orphaned entries — this removes them explicitly.
+ *
+ * One implementation for one page or five hundred: deleting a whole mis-uploaded
+ * batch used to be one confirm click per page.
  */
+export async function deletePages(
+  aircraftId: string,
+  pageIds: string[],
+): Promise<{ ok: true; deleted: number } | { error: string }> {
+  if (pageIds.length === 0) return { ok: true, deleted: 0 };
+  const supabase = await createClient();
+
+  // A VIEWER can read these pages, and their DELETE matches zero rows and
+  // returns no error — a silent no-op indistinguishable from success. Gate on
+  // edit access rather than trusting the absence of an error.
+  const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: aircraftId });
+  if (!canEdit) return { error: "You don't have edit access to this aircraft." };
+
+  // Re-resolve against the named aircraft: an id belonging to someone else's
+  // aircraft must not ride along in the array.
+  const { data: pages } = await supabase
+    .from("page")
+    .select("id, storage_path")
+    .eq("aircraft_id", aircraftId)
+    .in("id", pageIds.slice(0, MAX_DELETE));
+  const found = pages ?? [];
+  if (found.length === 0) return { error: "Those pages are no longer here." };
+
+  const ids = found.map((p) => p.id);
+
+  const { error: entriesError } = await supabase.from("log_entry").delete().in("page_id", ids);
+  if (entriesError) return { error: `Couldn't delete entries: ${entriesError.message}` };
+
+  // .select() so the count is what the database actually removed, not what was
+  // asked for.
+  const { data: gone, error: pageError } = await supabase
+    .from("page")
+    .delete()
+    .in("id", ids)
+    .select("id");
+  if (pageError) return { error: `Couldn't delete pages: ${pageError.message}` };
+
+  // Best-effort image cleanup — an orphaned object is harmless if this fails,
+  // and the records (the part that matters) are already gone.
+  const paths = found.map((p) => p.storage_path).filter((p): p is string => Boolean(p));
+  if (paths.length) await removeBlobs(paths);
+
+  revalidatePath(`/aircraft/${aircraftId}`);
+  return { ok: true, deleted: gone?.length ?? 0 };
+}
+
+/** Guard against an unbounded .in() list; the UI selects at most a page's worth. */
+const MAX_DELETE = 500;
+
+/** Delete one page. Kept as the single-page door onto deletePages. */
 export async function deletePage(
   aircraftId: string,
   pageId: string,
 ): Promise<{ ok: true } | { error: string }> {
-  const supabase = await createClient();
-
-  const { data: page } = await supabase
-    .from("page")
-    .select("storage_path, aircraft_id")
-    .eq("id", pageId)
-    .single();
-  if (!page || page.aircraft_id !== aircraftId) {
-    return { error: "Page not found." };
-  }
-
-  const { error: entriesError } = await supabase
-    .from("log_entry")
-    .delete()
-    .eq("page_id", pageId);
-  if (entriesError) {
-    return { error: `Couldn't delete entries: ${entriesError.message}` };
-  }
-
-  const { error: pageError } = await supabase.from("page").delete().eq("id", pageId);
-  if (pageError) {
-    return { error: `Couldn't delete page: ${pageError.message}` };
-  }
-
-  // Best-effort image cleanup — an orphaned storage object is harmless if this
-  // fails, and the records (the important part) are already gone.
-  if (page.storage_path) {
-    await removeBlobs([page.storage_path]);
-  }
-
-  revalidatePath(`/aircraft/${aircraftId}`);
-  return { ok: true };
+  const res = await deletePages(aircraftId, [pageId]);
+  if ("error" in res) return res;
+  return res.deleted > 0 ? { ok: true } : { error: "Page not found." };
 }
 
 /**

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { sortPages, movedOrder, displayedOrder, type SortKey, type SortDir } from "@/lib/pageSort";
 import { pageNeedsReview, applyExtraction } from "@/lib/pageStatus";
-import { deletePage, reorderPages } from "./actions";
+import { deletePage, deletePages, reorderPages } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { useToast } from "@/components/Toast";
@@ -68,6 +68,10 @@ export function PagesPanel({
   const toast = useToast();
   const router = useRouter();
   const [rows, setRows] = useState<PageRow[]>(pages);
+  // Ids ticked for bulk delete. Kept as a Set of ids rather than a flag on the
+  // row so a filter or sort change can't strand a selection on a hidden row.
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [deletingMany, setDeletingMany] = useState(false);
   // Clicking a logbook tile filters the list to that logbook (null = all).
   // Seed from ?logbook=<id> so returning from a page's review keeps the filter.
   const searchParams = useSearchParams();
@@ -243,6 +247,39 @@ export function PagesPanel({
   // extracted entries, so an early logbook that's been extracted sorts into
   // chronological place inside its own logbook.
   const sortedRows = sortPages(displayRows, sort, dir, logbookOrder);
+
+  // Only what you can currently see is selectable, so "Select all" can never
+  // delete a page hidden behind a filter.
+  const pickable = sortedRows.map((r) => r.id);
+  const pickedVisible = pickable.filter((id) => picked.has(id));
+  const allPicked = pickable.length > 0 && pickedVisible.length === pickable.length;
+  const pickedRows = rows.filter((r) => picked.has(r.id));
+  const pickedEntries = pickedRows.reduce((n, r) => n + r.entryCount, 0);
+
+  const togglePick = (id: string) =>
+    setPicked((cur) => {
+      const next = new Set(cur);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
+  const toggleAll = () => setPicked(allPicked ? new Set() : new Set(pickable));
+
+  async function deletePicked() {
+    setDeletingMany(true);
+    const ids = [...picked];
+    const res = await deletePages(aircraftId, ids);
+    setDeletingMany(false);
+    if ("error" in res) {
+      toast.error(res.error);
+      return;
+    }
+    const gone = new Set(ids);
+    setRows((rs) => rs.filter((r) => !gone.has(r.id)));
+    setPicked(new Set());
+    toast.success(`Deleted ${res.deleted} ${res.deleted === 1 ? "page" : "pages"}.`);
+    router.refresh();
+  }
 
   const selectedLogbook = logbooks.find((lb) => lb.id === selectedLogbookId) ?? null;
 
@@ -492,6 +529,54 @@ export function PagesPanel({
               : `No pages in ${selectedLabel}.`}
         </p>
       ) : (
+        <>
+        {/* Selection bar. Appears only for editors, and only once there is
+            something to select — a permanently docked toolbar for a rarely-used
+            destructive action is noise the rest of the time. */}
+        {canEdit && pickable.length > 0 && (
+          <div className="mb-2 flex flex-wrap items-center gap-3 rounded-lg border border-line px-4 py-2.5 text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-dim">
+              <input
+                type="checkbox"
+                checked={allPicked}
+                // Some-but-not-all reads as neither ticked nor empty.
+                ref={(el) => { if (el) el.indeterminate = pickedVisible.length > 0 && !allPicked; }}
+                onChange={toggleAll}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Select all{queue !== "all" || selectedLogbookId ? " shown" : ""}
+            </label>
+            {picked.size > 0 ? (
+              <>
+                <span className="text-dim">
+                  {picked.size} selected
+                  {pickedEntries > 0 && ` · ${pickedEntries} ${pickedEntries === 1 ? "entry" : "entries"}`}
+                </span>
+                <button onClick={() => setPicked(new Set())} className="text-xs text-dim underline hover:text-ink">
+                  Clear
+                </button>
+                <div className="ml-auto">
+                  <ConfirmButton
+                    // Name the entries as well as the pages: they are the work
+                    // the scanning produced, and they go too.
+                    confirmLabel={
+                      pickedEntries > 0
+                        ? `Delete ${picked.size} pages + ${pickedEntries} entries`
+                        : `Delete ${picked.size} pages`
+                    }
+                    onConfirm={deletePicked}
+                    disabled={deletingMany}
+                  >
+                    {deletingMany ? "Deleting…" : `Delete ${picked.size}`}
+                  </ConfirmButton>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs text-faint">Tick pages to delete several at once.</span>
+            )}
+          </div>
+        )}
+
         <ul className="divide-y divide-line rounded-lg border border-line">
           {sortedRows.map((r, idx) => {
             const needsReview = pageNeedsReview(r);
@@ -510,8 +595,17 @@ export function PagesPanel({
                 key={r.id}
                 className={`flex items-center gap-3 border-l-4 px-4 py-3 text-sm ${
                   needsReview ? "border-l-annun-amber" : "border-l-transparent"
-                }`}
+                } ${picked.has(r.id) ? "bg-panel2" : ""}`}
               >
+                {canEdit && (
+                  <input
+                    type="checkbox"
+                    checked={picked.has(r.id)}
+                    onChange={() => togglePick(r.id)}
+                    aria-label={`Select ${r.logbookLabel} page ${r.pageSequence ?? ""}`}
+                    className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  />
+                )}
                 {r.thumbnailUrl ? (
                   <ZoomableImage
                     src={r.thumbnailUrl}
@@ -642,6 +736,7 @@ export function PagesPanel({
             );
           })}
         </ul>
+        </>
       )}
     </div>
   );

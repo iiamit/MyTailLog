@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { resolveAlerts } from "@/lib/reminders";
+import { dailyCallCap, callsInLastDay } from "@/lib/extraction/aiContext";
 import { BACKUP_PROVIDERS, getProvider } from "@/lib/backup/providers";
 import { formatBytes } from "@/lib/backup/schedule";
 import { AccountShell } from "@/components/shell/AccountShell";
@@ -58,7 +59,7 @@ export default async function ProfilePage() {
   const [{ data: key, error: keyError }, { data: usage }] = await Promise.all([
     // key_last4 only — the ciphertext lives in a private schema (0039).
     supabase.rpc("my_ai_key_metadata"),
-    supabase.from("ai_usage").select("input_tokens, output_tokens, cost_usd, used_own_key"),
+    supabase.from("ai_usage").select("input_tokens, output_tokens, cost_usd, used_own_key, created_at"),
   ]);
   const legacyLast4 = keyError?.code === "PGRST202" ? (await supabase.rpc("my_ai_key_last4")).data : null;
   const own = (usage ?? []).filter((r) => r.used_own_key);
@@ -72,6 +73,12 @@ export default async function ProfilePage() {
     outputTokens: sum(own, "output_tokens"),
     costUsd: sum(own, "cost_usd"),
     totalCalls: (usage ?? []).length,
+    // Everyone has a daily ceiling, but only own-key users could see any usage
+    // at all — so people on the shared key hit "Daily AI limit reached" with no
+    // warning and no idea what the number counts. Same rolling 24-hour window
+    // the cap itself uses (aiContext.ts / reserve_ai_call_v2).
+    callsToday: callsInLastDay(usage ?? []),
+    dailyCap: dailyCallCap(Boolean(key?.last4 ?? legacyLast4)),
   };
 
   // Connected apps (OAuth): the user's active per-aircraft grants, grouped by
