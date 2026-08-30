@@ -275,10 +275,13 @@ const SECTIONS: Section[] = [
           entry wasn&apos;t linked) right from the review screen — it replaces that page&apos;s
           entries. The <strong>Logbook pages</strong> view (in the left nav) lists every captured
           scan grouped by logbook with its <strong>Needs review / Processing</strong> status, and can
-          be <strong>sorted</strong> — within each logbook — by upload order, entry date, or tach,
-          ascending or descending (the choice is remembered). Sorting reorders pages inside their
-          own logbook, never across logbooks; date/tach come from a page&apos;s extracted entries, so
-          an early logbook you uploaded late still sorts into chronological place. Filter to a single
+          be <strong>sorted</strong> — within each logbook — by upload order, entry date, tach, or
+          <strong>AFTT</strong>, ascending or descending (the choice is remembered). Sorting
+          reorders pages inside their own logbook, never across logbooks; the dates and hours come
+          from a page&apos;s extracted entries, so an early logbook you uploaded late still sorts
+          into chronological place. Pages in an <strong>airframe</strong> logbook show AFTT
+          (airframe total time) rather than tach, because tach counts the engine and starts again
+          when an engine is replaced. Filter to a single
           logbook and hit <strong>Reorder</strong> to hand-arrange its pages with the ↑/↓ arrows —
           handy for scans captured out of order. The
           aircraft <strong>Overview</strong> summarizes how many pages still need review.

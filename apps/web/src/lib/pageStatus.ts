@@ -47,3 +47,28 @@ export function applyExtraction<T extends PageStatusRow>(row: T, result: Extract
     detectedPageCount: result.detectedPageCount ?? null,
   };
 }
+
+/**
+ * Which hour meter a page's row should show.
+ *
+ * An airframe logbook is kept in AIRFRAME TOTAL TIME. Tach is the engine's own
+ * counter — an unrelated number that resets when an engine is replaced — so
+ * showing it against airframe pages invites reading one as the other. Every
+ * other book keeps tach, falling back to hobbs.
+ *
+ * Falls back rather than showing nothing: an airframe page whose entry recorded
+ * only tach is still better labelled honestly than left blank.
+ */
+export function pageMeter(r: {
+  logbookType: string | null;
+  airframe: number | null;
+  tach: number | null;
+  hobbs: number | null;
+}): { value: number; label: string } | null {
+  if (r.logbookType === "airframe" && r.airframe != null) {
+    return { value: r.airframe, label: "AFTT" };
+  }
+  if (r.tach != null) return { value: r.tach, label: "tach" };
+  if (r.hobbs != null) return { value: r.hobbs, label: "hobbs" };
+  return null;
+}

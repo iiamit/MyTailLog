@@ -6,6 +6,16 @@ the git log.
 
 ## 2026.08
 
+### Added — airframe pages show AFTT, and you can sort by it
+
+- Pages in an **airframe** logbook now show **AFTT** (airframe total time) instead of tach.
+  Tach counts the engine and starts again when an engine is replaced, so showing it against
+  airframe pages invited reading one number as the other.
+- **AFTT** joins upload order, entry date and tach in the sort menu, and can be applied as a
+  logbook's stored page order like the others.
+- An airframe page whose entry recorded no AFTT still shows the tach it does have, labelled
+  as tach rather than left blank.
+
 ### Fixed — a page said "✓ reviewed" the moment it was extracted
 
 - The badge reads how many entries are still unconfirmed, and the pages list forgot to

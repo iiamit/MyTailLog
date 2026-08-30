@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pageNeedsReview, applyExtraction } from "../src/lib/pageStatus";
+import { pageNeedsReview, applyExtraction, pageMeter } from "../src/lib/pageStatus";
 
 // The pages list badge. Reported from the field: "If I try to extract a single
 // log from the pages, it automatically extracts and marks it as reviewed."
@@ -57,4 +57,41 @@ test("a missing count is treated as zero rather than NaN", () => {
   const after = applyExtraction(pending, {});
   assert.equal(after.unconfirmedCount, 0);
   assert.equal(after.entryCount, 0);
+});
+
+// Which meter a page row shows. An airframe logbook is kept in airframe total
+// time; tach is the ENGINE's counter and resets when an engine is replaced, so
+// the two must not be shown interchangeably.
+
+test("an airframe page shows AFTT, not the engine's tach", () => {
+  assert.deepEqual(
+    pageMeter({ logbookType: "airframe", airframe: 4310.2, tach: 812.4, hobbs: 900 }),
+    { value: 4310.2, label: "AFTT" },
+  );
+});
+
+test("every other logbook still shows tach", () => {
+  assert.deepEqual(
+    pageMeter({ logbookType: "engine", airframe: 4310.2, tach: 812.4, hobbs: 900 }),
+    { value: 812.4, label: "tach" },
+  );
+});
+
+test("an airframe page with no AFTT recorded falls back, labelled honestly", () => {
+  // Better to show the tach it does have, named as tach, than a blank column.
+  assert.deepEqual(
+    pageMeter({ logbookType: "airframe", airframe: null, tach: 812.4, hobbs: null }),
+    { value: 812.4, label: "tach" },
+  );
+});
+
+test("hobbs is the last resort", () => {
+  assert.deepEqual(
+    pageMeter({ logbookType: "prop", airframe: null, tach: null, hobbs: 965.1 }),
+    { value: 965.1, label: "hobbs" },
+  );
+});
+
+test("a page with no hours at all shows nothing", () => {
+  assert.equal(pageMeter({ logbookType: "airframe", airframe: null, tach: null, hobbs: null }), null);
 });

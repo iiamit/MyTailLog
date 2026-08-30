@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { sortPages, movedOrder, displayedOrder, type SortKey, type SortDir } from "@/lib/pageSort";
-import { pageNeedsReview, applyExtraction } from "@/lib/pageStatus";
+import { pageNeedsReview, applyExtraction, pageMeter } from "@/lib/pageStatus";
 import { deletePage, deletePages, reorderPages } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -26,6 +26,10 @@ export type PageRow = {
   unconfirmedCount: number;
   latestDate: string | null;
   tach: number | null;
+  /** Airframe total time (AFTT) at this page. */
+  airframe: number | null;
+  /** 'airframe' | 'engine' | 'prop' | … — decides which meter the row shows. */
+  logbookType: string | null;
   hobbs: number | null;
   thumbnailUrl: string | null;
   fullUrl: string | null;
@@ -90,7 +94,7 @@ export function PagesPanel({
   useEffect(() => {
     const s = localStorage.getItem("mtl.pagesSort");
     /* eslint-disable react-hooks/set-state-in-effect -- deliberate mount read of persisted prefs (see comment above) */
-    if (s === "date" || s === "tach") setSort(s);
+    if (s === "date" || s === "tach" || s === "airframe") setSort(s);
     if (localStorage.getItem("mtl.pagesDir") === "desc") setDir("desc");
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -484,20 +488,23 @@ export function PagesPanel({
               Sort
               <select
                 value={sort}
-                onChange={(e) => changeSort(e.target.value as "upload" | "date" | "tach")}
+                onChange={(e) => changeSort(e.target.value as SortKey)}
                 disabled={reordering}
                 className="rounded-md border border-line bg-panel2 px-2 py-1 text-ink outline-hidden focus:border-accent disabled:opacity-50"
               >
                 <option value="upload">Upload order</option>
                 <option value="date">Entry date</option>
                 <option value="tach">Tach</option>
+                {/* An airframe book is kept by airframe total time; the engine's
+                    tach is a different counter and resets with a new engine. */}
+                <option value="airframe">AFTT</option>
               </select>
             </label>
             {persistableOrder && (
               <button
                 onClick={saveDisplayedOrder}
                 disabled={savingOrder}
-                title={`Renumber this logbook's pages to match the ${sort === "date" ? "entry date" : "tach"} order shown`}
+                title={`Renumber this logbook's pages to match the ${sort === "date" ? "entry date" : sort === "airframe" ? "AFTT" : "tach"} order shown`}
                 className="rounded-md border border-accent px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent-soft disabled:opacity-50"
               >
                 {savingOrder ? "Saving…" : "Save this order"}
@@ -580,6 +587,7 @@ export function PagesPanel({
         <ul className="divide-y divide-line rounded-lg border border-line">
           {sortedRows.map((r, idx) => {
             const needsReview = pageNeedsReview(r);
+            const meter = pageMeter(r);
             // Disputed (an explicit flag) wins; otherwise unconfirmed entries →
             // needs review, and an extracted page with none left → reviewed.
             const reviewBadge =
@@ -625,15 +633,11 @@ export function PagesPanel({
                       width, which left the list with no visible dates at all
                       even though it can be SORTED by date. Fold them into the
                       meta line below that breakpoint instead of dropping them. */}
-                  {(r.latestDate || r.tach != null || r.hobbs != null) && (
+                  {(r.latestDate || meter) && (
                     <div className="font-mono text-[11px] text-dim sm:hidden">
                       {r.latestDate}
-                      {r.latestDate && (r.tach != null || r.hobbs != null) ? " · " : ""}
-                      {r.tach != null
-                        ? `${r.tach.toLocaleString()} tach`
-                        : r.hobbs != null
-                          ? `${r.hobbs.toLocaleString()} hobbs`
-                          : ""}
+                      {r.latestDate && meter ? " · " : ""}
+                      {meter ? `${meter.value.toLocaleString()} ${meter.label}` : ""}
                     </div>
                   )}
                   <div className="text-xs text-dim">
@@ -652,14 +656,14 @@ export function PagesPanel({
                     )}
                   </div>
                 </div>
-                {(r.latestDate || r.tach != null || r.hobbs != null) && (
+                {(r.latestDate || meter) && (
                   <div className="hidden shrink-0 text-right font-mono text-xs leading-tight text-dim sm:block">
                     {r.latestDate && <div>{r.latestDate}</div>}
-                    {r.tach != null ? (
-                      <div className="text-faint">{r.tach.toLocaleString()} tach</div>
-                    ) : r.hobbs != null ? (
-                      <div className="text-faint">{r.hobbs.toLocaleString()} hobbs</div>
-                    ) : null}
+                    {meter && (
+                      <div className="text-faint">
+                        {meter.value.toLocaleString()} {meter.label}
+                      </div>
+                    )}
                   </div>
                 )}
                 {reviewBadge && (
