@@ -157,8 +157,10 @@ export default async function ReviewAllPage({
     }
   }
 
+  // max-w-6xl matches the single-page reviewer: the scan now sits beside its
+  // entries, and a 3xl column left the scan too narrow to read.
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <header className="mt-2 mb-6">
         <div className="eyebrow mb-2">Add records</div>
         <h1 className="text-2xl font-bold">
