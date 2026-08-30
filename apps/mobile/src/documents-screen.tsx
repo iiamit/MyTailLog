@@ -63,7 +63,10 @@ export function Documents({
         style={{
           width: "100%", boxSizing: "border-box", minHeight: 40, marginBottom: 20,
           background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.control,
-          padding: "0 13px", color: color.ink, fontFamily: text.rowTitle.fontFamily, fontSize: 13.5,
+          padding: "0 13px", color: color.ink, fontFamily: text.rowTitle.fontFamily,
+          // 16px minimum: WKWebView zooms a focused control below it and leaves
+          // the app horizontally pannable (see README, and PR #179).
+          fontSize: 16,
         }}
       />
 
