@@ -51,24 +51,31 @@ export function applyExtraction<T extends PageStatusRow>(row: T, result: Extract
 /**
  * Which hour meter a page's row should show.
  *
- * An airframe logbook is kept in AIRFRAME TOTAL TIME. Tach is the engine's own
- * counter — an unrelated number that resets when an engine is replaced — so
- * showing it against airframe pages invites reading one as the other. Every
- * other book keeps tach, falling back to hobbs.
+ * An airframe logbook is kept in AIRFRAME TOTAL TIME, so airframe pages show
+ * AFTT rather than the engine's tach.
  *
- * Falls back rather than showing nothing: an airframe page whose entry recorded
- * only tach is still better labelled honestly than left blank.
+ * Most airframe books never write an airframe total separately — the tach
+ * reading in the entry IS the time the book is kept in — so tach stands in when
+ * no AFTT was recorded, and `inferred` says so. That distinction is worth
+ * keeping: tach restarts when an engine is replaced, and on an aircraft that has
+ * had one, a stood-in tach is NOT the airframe total. Marking it lets the reader
+ * catch that; asserting it silently would not.
+ *
+ * This is a reading convention for a page list only. `currentAirframe` in
+ * hobbsTach.ts still refuses to infer airframe time, because it feeds
+ * maintenance countdowns where an invented number is an airworthiness problem.
  */
 export function pageMeter(r: {
   logbookType: string | null;
   airframe: number | null;
   tach: number | null;
   hobbs: number | null;
-}): { value: number; label: string } | null {
-  if (r.logbookType === "airframe" && r.airframe != null) {
-    return { value: r.airframe, label: "AFTT" };
+}): { value: number; label: string; inferred: boolean } | null {
+  if (r.logbookType === "airframe") {
+    if (r.airframe != null) return { value: r.airframe, label: "AFTT", inferred: false };
+    if (r.tach != null) return { value: r.tach, label: "AFTT", inferred: true };
   }
-  if (r.tach != null) return { value: r.tach, label: "tach" };
-  if (r.hobbs != null) return { value: r.hobbs, label: "hobbs" };
+  if (r.tach != null) return { value: r.tach, label: "tach", inferred: false };
+  if (r.hobbs != null) return { value: r.hobbs, label: "hobbs", inferred: false };
   return null;
 }

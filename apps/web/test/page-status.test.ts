@@ -66,29 +66,46 @@ test("a missing count is treated as zero rather than NaN", () => {
 test("an airframe page shows AFTT, not the engine's tach", () => {
   assert.deepEqual(
     pageMeter({ logbookType: "airframe", airframe: 4310.2, tach: 812.4, hobbs: 900 }),
-    { value: 4310.2, label: "AFTT" },
+    { value: 4310.2, label: "AFTT", inferred: false },
   );
 });
 
 test("every other logbook still shows tach", () => {
   assert.deepEqual(
     pageMeter({ logbookType: "engine", airframe: 4310.2, tach: 812.4, hobbs: 900 }),
-    { value: 812.4, label: "tach" },
+    { value: 812.4, label: "tach", inferred: false },
   );
 });
 
-test("an airframe page with no AFTT recorded falls back, labelled honestly", () => {
-  // Better to show the tach it does have, named as tach, than a blank column.
+test("an airframe page with no AFTT shows the tach AS the AFTT, marked inferred", () => {
+  // Most airframe books never write a separate airframe total — the tach in the
+  // entry is the time the book is kept in. But tach restarts with a new engine,
+  // so the substitution is flagged rather than asserted.
   assert.deepEqual(
     pageMeter({ logbookType: "airframe", airframe: null, tach: 812.4, hobbs: null }),
-    { value: 812.4, label: "tach" },
+    { value: 812.4, label: "AFTT", inferred: true },
+  );
+});
+
+test("a recorded AFTT is never marked inferred, and wins over tach", () => {
+  assert.deepEqual(
+    pageMeter({ logbookType: "airframe", airframe: 4310.2, tach: 812.4, hobbs: null }),
+    { value: 4310.2, label: "AFTT", inferred: false },
+  );
+});
+
+test("the tach standing in for AFTT stays out of other logbooks", () => {
+  // Only the airframe book is kept in airframe time; an engine book means tach.
+  assert.deepEqual(
+    pageMeter({ logbookType: "engine", airframe: null, tach: 812.4, hobbs: null }),
+    { value: 812.4, label: "tach", inferred: false },
   );
 });
 
 test("hobbs is the last resort", () => {
   assert.deepEqual(
     pageMeter({ logbookType: "prop", airframe: null, tach: null, hobbs: 965.1 }),
-    { value: 965.1, label: "hobbs" },
+    { value: 965.1, label: "hobbs", inferred: false },
   );
 });
 

@@ -14,14 +14,26 @@ export type SortablePage = {
   airframe: number | null;
 };
 
-/** The value a given sort key reads off a page. */
+/**
+ * The value a given sort key reads off a page.
+ *
+ * AFTT falls back to tach, because most airframe logbooks never write an
+ * airframe total separately — the tach reading in the entry IS the time the
+ * book is kept in. Without the fallback, sorting an ordinary airframe book by
+ * AFTT would send nearly every page to the bottom as a null and order nothing.
+ *
+ * This is a READING convention for a page list. It is deliberately not applied
+ * to `currentAirframe` in hobbsTach.ts, which drives maintenance countdowns and
+ * refuses to infer airframe time on purpose: tach restarts when an engine is
+ * replaced, so inferring there would fabricate airworthiness data.
+ */
 export function sortValue(r: SortablePage, sort: SortKey): string | number | null {
   return sort === "upload"
     ? r.pageSequence
     : sort === "date"
       ? r.latestDate
       : sort === "airframe"
-        ? r.airframe
+        ? r.airframe ?? r.tach
         : r.tach;
 }
 

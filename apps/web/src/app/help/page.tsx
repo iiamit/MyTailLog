@@ -281,7 +281,11 @@ const SECTIONS: Section[] = [
           from a page&apos;s extracted entries, so an early logbook you uploaded late still sorts
           into chronological place. Pages in an <strong>airframe</strong> logbook show AFTT
           (airframe total time) rather than tach, because tach counts the engine and starts again
-          when an engine is replaced. Filter to a single
+          when an engine is replaced. Most airframe books don&apos;t write a separate airframe
+          total — the tach in the entry is the time the book is kept in — so where none was
+          recorded the tach stands in, shown as <strong>≈</strong>. Maintenance countdowns never
+          make that substitution: an item due on airframe hours shows no countdown rather than one
+          built on a tach reading. Filter to a single
           logbook and hit <strong>Reorder</strong> to hand-arrange its pages with the ↑/↓ arrows —
           handy for scans captured out of order. The
           aircraft <strong>Overview</strong> summarizes how many pages still need review.

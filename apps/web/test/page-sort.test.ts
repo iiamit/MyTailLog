@@ -153,8 +153,10 @@ test("sortPages: airframe orders by AFTT, not tach", () => {
   );
 });
 
-test("sortPages: a page with no AFTT sorts last in both directions", () => {
-  const rows = [P("has", "A", 1, null, null, 4200), P("none", "A", 2, null, 3000, null)];
+test("sortPages: a page with no hours at all sorts last in both directions", () => {
+  // "No AFTT" is not enough to be null now that tach stands in — it takes a page
+  // with neither, i.e. one that was never extracted.
+  const rows = [P("has", "A", 1, null, null, 4200), P("none", "A", 2, null, null, null)];
   assert.deepEqual(sortPages(rows, "airframe", "asc", order).map((r) => r.id), ["has", "none"]);
   assert.deepEqual(sortPages(rows, "airframe", "desc", order).map((r) => r.id), ["has", "none"]);
 });
@@ -164,12 +166,43 @@ test("sortPages: AFTT still never reorders across logbooks", () => {
   assert.deepEqual(sortPages(rows, "airframe", "asc", order).map((r) => r.id), ["a", "b"]);
 });
 
-test("displayedOrder: refuses to persist AFTT order when a page lacks AFTT", () => {
+test("displayedOrder: refuses to persist AFTT order when a page has no hours at all", () => {
+  // Renumbering a logbook off a value some pages don't have stays refused — the
+  // tach fallback just means fewer pages are missing one.
   const rows = [DP("x", "prop", 1, null, null, 4100), DP("y", "prop", 2, null, null, null)];
   assert.equal(displayedOrder(rows, "prop", "airframe", "asc"), null);
 });
 
 test("displayedOrder: AFTT order becomes the stored order when every page has one", () => {
   const rows = [DP("late", "prop", 1, null, null, 4300), DP("early", "prop", 2, null, null, 4100)];
+  assert.deepEqual(displayedOrder(rows, "prop", "airframe", "asc"), ["early", "late"]);
+});
+
+test("sortPages: AFTT falls back to tach, so an ordinary airframe book still sorts", () => {
+  // Most airframe books record no separate airframe total. Without the fallback
+  // every page would be a null, sort to the bottom, and order nothing at all.
+  const rows = [
+    P("mid", "A", 1, null, 850, null),
+    P("old", "A", 2, null, 700, null),
+    P("new", "A", 3, null, 900, null),
+  ];
+  assert.deepEqual(
+    sortPages(rows, "airframe", "asc", order).map((r) => r.id),
+    ["old", "mid", "new"],
+  );
+});
+
+test("sortPages: a recorded AFTT outranks the tach standing in for one", () => {
+  // The page with a real airframe total must sort on THAT, not on its tach.
+  const recorded = P("recorded", "A", 1, null, 100, 4300);
+  const inferred = P("inferred", "A", 2, null, 4200, null);
+  assert.deepEqual(
+    sortPages([recorded, inferred], "airframe", "asc", order).map((r) => r.id),
+    ["inferred", "recorded"],
+  );
+});
+
+test("displayedOrder: AFTT order persists when tach stands in for every page", () => {
+  const rows = [DP("late", "prop", 1, null, 900, null), DP("early", "prop", 2, null, 700, null)];
   assert.deepEqual(displayedOrder(rows, "prop", "airframe", "asc"), ["early", "late"]);
 });

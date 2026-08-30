@@ -13,8 +13,12 @@ the git log.
   airframe pages invited reading one number as the other.
 - **AFTT** joins upload order, entry date and tach in the sort menu, and can be applied as a
   logbook's stored page order like the others.
-- An airframe page whose entry recorded no AFTT still shows the tach it does have, labelled
-  as tach rather than left blank.
+- Most airframe books never write a separate airframe total — the tach reading in the entry
+  is the time the book is kept in — so when no AFTT was recorded the tach stands in for it,
+  shown as `≈ 812.4 AFTT`. The `≈` matters: tach restarts when an engine is replaced, so on
+  an aircraft that has had one it is not the airframe total.
+- Maintenance countdowns are unaffected. They still refuse to infer airframe time from tach,
+  because an invented number there is an airworthiness problem rather than a display one.
 
 ### Fixed — a page said "✓ reviewed" the moment it was extracted
 
