@@ -637,7 +637,7 @@ export function PagesPanel({
                     <div className="font-mono text-[11px] text-dim sm:hidden">
                       {r.latestDate}
                       {r.latestDate && meter ? " · " : ""}
-                      {meter ? `${meter.inferred ? "≈ " : ""}${meter.value.toLocaleString()} ${meter.label}` : ""}
+                      {meter ? `${meter.value.toLocaleString()} ${meter.label}` : ""}
                     </div>
                   )}
                   <div className="text-xs text-dim">
@@ -660,19 +660,7 @@ export function PagesPanel({
                   <div className="hidden shrink-0 text-right font-mono text-xs leading-tight text-dim sm:block">
                     {r.latestDate && <div>{r.latestDate}</div>}
                     {meter && (
-                      <div
-                        className="text-faint"
-                        // "≈" because the number is the tach standing in for an
-                        // airframe total the page never recorded — true of most
-                        // airframe books, but not on an aircraft whose engine
-                        // has been changed.
-                        title={
-                          meter.inferred
-                            ? "No airframe total was recorded on this page — showing the tach reading, which is what most airframe logbooks are kept in."
-                            : undefined
-                        }
-                      >
-                        {meter.inferred ? "≈ " : ""}
+                      <div className="text-faint">
                         {meter.value.toLocaleString()} {meter.label}
                       </div>
                     )}

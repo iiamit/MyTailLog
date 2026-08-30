@@ -22,10 +22,15 @@ export type SortablePage = {
  * book is kept in. Without the fallback, sorting an ordinary airframe book by
  * AFTT would send nearly every page to the bottom as a null and order nothing.
  *
- * This is a READING convention for a page list. It is deliberately not applied
- * to `currentAirframe` in hobbsTach.ts, which drives maintenance countdowns and
- * refuses to infer airframe time on purpose: tach restarts when an engine is
- * replaced, so inferring there would fabricate airworthiness data.
+ * The tach is not an engine counter and does not restart when an engine is
+ * changed — engine time is kept in the logs as time since overhaul or since new
+ * — so on an airframe page the tach reading is that page's total time.
+ *
+ * `currentAirframe` in hobbsTach.ts still does NOT make this substitution, for
+ * its own stated reason: airframe time has no fixed relationship to the meters
+ * on aircraft where they diverge (it cites a glider accruing airframe hours with
+ * the engine off), and it feeds maintenance countdowns where a wrong number is
+ * an airworthiness problem rather than a display one.
  */
 export function sortValue(r: SortablePage, sort: SortKey): string | number | null {
   return sort === "upload"

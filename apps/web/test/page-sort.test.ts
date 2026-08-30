@@ -192,8 +192,8 @@ test("sortPages: AFTT falls back to tach, so an ordinary airframe book still sor
   );
 });
 
-test("sortPages: a recorded AFTT outranks the tach standing in for one", () => {
-  // The page with a real airframe total must sort on THAT, not on its tach.
+test("sortPages: a separately recorded AFTT outranks a page's tach", () => {
+  // The page with a written airframe total must sort on THAT, not on its tach.
   const recorded = P("recorded", "A", 1, null, 100, 4300);
   const inferred = P("inferred", "A", 2, null, 4200, null);
   assert.deepEqual(

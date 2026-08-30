@@ -66,46 +66,46 @@ test("a missing count is treated as zero rather than NaN", () => {
 test("an airframe page shows AFTT, not the engine's tach", () => {
   assert.deepEqual(
     pageMeter({ logbookType: "airframe", airframe: 4310.2, tach: 812.4, hobbs: 900 }),
-    { value: 4310.2, label: "AFTT", inferred: false },
+    { value: 4310.2, label: "AFTT" },
   );
 });
 
 test("every other logbook still shows tach", () => {
   assert.deepEqual(
     pageMeter({ logbookType: "engine", airframe: 4310.2, tach: 812.4, hobbs: 900 }),
-    { value: 812.4, label: "tach", inferred: false },
+    { value: 812.4, label: "tach" },
   );
 });
 
-test("an airframe page with no AFTT shows the tach AS the AFTT, marked inferred", () => {
-  // Most airframe books never write a separate airframe total — the tach in the
-  // entry is the time the book is kept in. But tach restarts with a new engine,
-  // so the substitution is flagged rather than asserted.
+test("an airframe page with no separate AFTT shows its tach as the AFTT", () => {
+  // Most airframe books never write an airframe total: the tach is the
+  // instrument the total is kept in, and it does not restart when an engine is
+  // changed, so the reading IS the page's total time.
   assert.deepEqual(
-    pageMeter({ logbookType: "airframe", airframe: null, tach: 812.4, hobbs: null }),
-    { value: 812.4, label: "AFTT", inferred: true },
+    pageMeter({ logbookType: "airframe", airframe: null, tach: 4310.2, hobbs: null }),
+    { value: 4310.2, label: "AFTT" },
   );
 });
 
-test("a recorded AFTT is never marked inferred, and wins over tach", () => {
+test("a separately recorded airframe total wins over the tach", () => {
   assert.deepEqual(
-    pageMeter({ logbookType: "airframe", airframe: 4310.2, tach: 812.4, hobbs: null }),
-    { value: 4310.2, label: "AFTT", inferred: false },
+    pageMeter({ logbookType: "airframe", airframe: 4310.2, tach: 4309.8, hobbs: null }),
+    { value: 4310.2, label: "AFTT" },
   );
 });
 
-test("the tach standing in for AFTT stays out of other logbooks", () => {
+test("the AFTT label stays out of other logbooks", () => {
   // Only the airframe book is kept in airframe time; an engine book means tach.
   assert.deepEqual(
     pageMeter({ logbookType: "engine", airframe: null, tach: 812.4, hobbs: null }),
-    { value: 812.4, label: "tach", inferred: false },
+    { value: 812.4, label: "tach" },
   );
 });
 
 test("hobbs is the last resort", () => {
   assert.deepEqual(
     pageMeter({ logbookType: "prop", airframe: null, tach: null, hobbs: 965.1 }),
-    { value: 965.1, label: "hobbs", inferred: false },
+    { value: 965.1, label: "hobbs" },
   );
 });
 
