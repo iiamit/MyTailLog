@@ -174,8 +174,9 @@ function CropStrip({ imageUrl, box }: { imageUrl: string; box: FieldBox }) {
 
 // One labelled field: label + a ◎ locate button (spotlight mode) or an inline
 // crop (fallback) + confidence chip + the input. Spotlight mode wins when an
-// onLocate handler is supplied (single-page reviewer, which has a sticky scan);
-// the flat "Review all" view has no persistent image, so it gets the crop.
+// onLocate handler is supplied, which both reviewers now do — each has a sticky
+// scan to spotlight on. The crop remains the fallback for any caller without
+// one.
 function Field({
   label,
   conf,
