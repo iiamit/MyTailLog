@@ -50,6 +50,8 @@ export type MeterCurrents = {
   airframe?: number | null;
   tachEstimated?: boolean;
   hobbsEstimated?: boolean;
+  /** True when airframe time was read off the tach rather than recorded. */
+  airframeEstimated?: boolean;
   // The meter's value at a maintenance item's last-done date — the same-meter
   // baseline its countdown anchors to. From getCurrentMeters (reading history).
   baselineFor?: (date: string | null, meter: Meter) => number | null;
@@ -102,7 +104,7 @@ export function buildStatusItems(
     meter === "tach"
       ? { value: currents.tach, estimated: Boolean(currents.tachEstimated) }
       : meter === "airframe"
-        ? { value: currents.airframe ?? null, estimated: false }
+        ? { value: currents.airframe ?? null, estimated: Boolean(currents.airframeEstimated) }
         : { value: currents.hobbs, estimated: Boolean(currents.hobbsEstimated) };
 
   const round1 = (x: number) => Math.round(x * 10) / 10;
@@ -133,7 +135,10 @@ export function buildStatusItems(
 
     if (lastDone != null && m.interval_hours != null) {
       // Airframe stands alone — there is no ratio to re-anchor it against, so it
-      // never re-homes to another meter (see currentAirframe in hobbsTach).
+      // never re-homes to another meter. (It may still be READ off the tach when
+      // the logbook keeps total time there — see currentAirframe — but that is a
+      // direct substitution, not a scaled one, so there is no second meter to
+      // compare a stored scalar against.)
       const otherMeter: Meter | null =
         meter === "airframe" ? null : meter === "tach" ? "hobbs" : "tach";
       const baseline = currents.baselineFor?.(m.last_done_date, meter) ?? null;

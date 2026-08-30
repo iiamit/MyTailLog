@@ -155,6 +155,7 @@ async function remindUser(
       airframe: ca.airframe,
       tachEstimated: ct.estimated,
       hobbsEstimated: ch.estimated,
+      airframeEstimated: ca.estimated,
       baselineFor,
       toTotalHours,
     })) {

@@ -9,6 +9,7 @@ import {
   toFace,
   currentTach,
   currentAirframe,
+  airframeTracksTach,
   meterValueAtDate,
   detectAnomalies,
   deriveRatio,
@@ -262,7 +263,7 @@ test("an owner who explicitly picked hobbs keeps hobbs, estimate or not", () => 
 });
 
 // --- airframe (owner feedback: sailplanes) ---------------------------------
-test("currentAirframe: the latest recorded reading, never estimated", () => {
+test("currentAirframe: a recorded reading is used as-is, not estimated", () => {
   const ca = currentAirframe([
     R("a", "2025-01-01", null, null, 3100),
     R("b", "2025-06-01", null, null, 3180.5),
@@ -271,14 +272,78 @@ test("currentAirframe: the latest recorded reading, never estimated", () => {
   assert.equal(ca.estimated, false);
 });
 
-test("currentAirframe: never invented from hobbs or tach", () => {
+// Most logbooks write total time straight off the tach and never fill an
+// airframe column, so an airframe-hours inspection had no countdown at all.
+// The tach now stands in — but only where the book itself shows the two have
+// never disagreed.
+
+test("currentAirframe: the tach stands in when the logbook never wrote a total", () => {
   const ca = currentAirframe([R("a", "2025-01-01", 900, 4000)]);
-  assert.equal(ca.airframe, null);
+  assert.equal(ca.airframe, 4000);
+  // Marked estimated: the hours are real, but nobody wrote them in the airframe
+  // column, and every consumer that distinguishes derived values keeps doing so.
+  assert.equal(ca.estimated, true);
+});
+
+test("currentAirframe: one divergent co-recorded pair stops the substitution", () => {
+  // 3100 airframe against 900 tach on the same reading — this aircraft keeps the
+  // two apart. The later tach-only reading must NOT become the airframe total;
+  // the answer stays the last thing actually written in the airframe column.
+  const rs = [R("a", "2024-01-01", 800, 900, 3100), R("b", "2025-01-01", null, 4000)];
+  const ca = currentAirframe(rs);
+  assert.equal(ca.airframe, 3100, "the tach must not be adopted as the total");
   assert.equal(ca.estimated, false);
 });
 
-test("meterValueAtDate: airframe is not bridged from the engine meters", () => {
+test("currentAirframe: a sparse TT column is filled forward from the tach", () => {
+  // The ordinary book: TT written once, tach every time. Without filling, the
+  // current airframe would be stuck at the 2024 entry.
+  const rs = [R("a", "2024-01-01", 800, 4000, 4000), R("b", "2025-06-01", 950, 4210)];
+  const ca = currentAirframe(rs);
+  assert.equal(ca.airframe, 4210);
+  assert.equal(ca.estimated, true, "derived from the tach, not written down");
+  assert.equal(ca.asOf, "2025-06-01");
+});
+
+test("currentAirframe: a recorded airframe total always wins over the tach", () => {
+  const ca = currentAirframe([R("a", "2025-01-01", 900, 4000, 3180.5)]);
+  assert.equal(ca.airframe, 3180.5);
+  assert.equal(ca.estimated, false);
+});
+
+test("airframeTracksTach: transcription slop is not divergence", () => {
+  // Same number written twice, rounded differently — not two different meters.
+  assert.equal(airframeTracksTach([R("a", "2025-01-01", 900, 4000.2, 4000)]), true);
+  assert.equal(airframeTracksTach([R("a", "2025-01-01", 900, 4000, 3100)]), false);
+});
+
+test("airframeTracksTach: no co-recorded pair is not evidence of divergence", () => {
+  assert.equal(airframeTracksTach([R("a", "2025-01-01", 900, 4000)]), true);
+  assert.equal(airframeTracksTach([]), true);
+});
+
+test("meterValueAtDate: airframe takes the tach at that date when they track", () => {
   const rs = [R("a", "2025-01-01", 900, 4000)];
+  assert.equal(meterValueAtDate(rs, "2025-01-01", "airframe"), 4000);
+});
+
+test("meterValueAtDate: a diverged book keeps its own airframe series", () => {
+  // No synthesis: the 2025 tach of 4000 must not answer for airframe.
+  const rs = [R("a", "2024-01-01", 800, 900, 3100), R("b", "2025-01-01", null, 4000)];
+  assert.equal(meterValueAtDate(rs, "2025-01-01", "airframe"), 3100);
+});
+
+test("meterValueAtDate: a tracking book answers at the date asked, not the nearest TT", () => {
+  // This is the point of filling: an inspection done in 2025 anchors to the 2025
+  // hours, not to the one TT someone wrote in 2024.
+  const rs = [R("a", "2024-01-01", 800, 4000, 4000), R("b", "2025-06-01", 950, 4210)];
+  assert.equal(meterValueAtDate(rs, "2025-06-01", "airframe"), 4210);
+});
+
+test("meterValueAtDate: airframe is still never SCALED from hobbs", () => {
+  // The substitution is a direct read of the tach, never ratio math — there is
+  // no fixed relationship between airframe hours and hobbs to scale across.
+  const rs = [R("a", "2025-01-01", 900, null)];
   assert.equal(meterValueAtDate(rs, "2025-01-01", "airframe"), null);
 });
 

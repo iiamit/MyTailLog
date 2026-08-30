@@ -89,6 +89,7 @@ export default async function AircraftPage({
     airframe: ca.airframe,
     tachEstimated: ct.estimated,
     hobbsEstimated: ch.estimated,
+      airframeEstimated: ca.estimated,
     baselineFor,
     toTotalHours,
   });
