@@ -8,17 +8,16 @@ the git log.
 
 ### Added — airframe pages show AFTT, and you can sort by it
 
-- Pages in an **airframe** logbook now show **AFTT** (airframe total time) instead of tach.
-  Tach counts the engine and starts again when an engine is replaced, so showing it against
-  airframe pages invited reading one number as the other.
+- Pages in an **airframe** logbook are now labelled **AFTT** (airframe total time), which is
+  what an airframe book is kept in.
 - **AFTT** joins upload order, entry date and tach in the sort menu, and can be applied as a
   logbook's stored page order like the others.
-- Most airframe books never write a separate airframe total — the tach reading in the entry
-  is the time the book is kept in — so when no AFTT was recorded the tach stands in for it,
-  shown as `≈ 812.4 AFTT`. The `≈` matters: tach restarts when an engine is replaced, so on
-  an aircraft that has had one it is not the airframe total.
-- Maintenance countdowns are unaffected. They still refuse to infer airframe time from tach,
-  because an invented number there is an airworthiness problem rather than a display one.
+- Most airframe books never record a separate airframe total — the tach is the instrument that
+  total is kept in — so where none was written down, the page's tach reading is shown as its
+  AFTT, and sorting by AFTT uses it. Without that, sorting an ordinary airframe book by AFTT
+  would send every page to the bottom as a blank.
+- Maintenance countdowns are unaffected and stay stricter: an item due on airframe hours still
+  shows no countdown unless an airframe time was actually recorded.
 
 ### Fixed — a page said "✓ reviewed" the moment it was extracted
 
