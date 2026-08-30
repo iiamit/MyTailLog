@@ -36,7 +36,10 @@ export type PageForExtraction = {
 };
 
 export type PipelineResult = {
+  /** Every entry on the page afterwards, including ones already confirmed. */
   entryCount: number;
+  /** How many of those still await review — what drives the "needs review" badge. */
+  unconfirmedCount: number;
   detectedPageCount: number;
   minConfidence: number | null;
   equipmentProposed: number;
@@ -231,8 +234,19 @@ export async function extractPage(
     // (src/app/api/aircraft/[id]/maintenance/scan). Equipment above is safe to
     // run here because it writes PENDING proposals, not confirmed data.
 
+    // Read the counts back rather than deriving them. Re-extraction KEEPS
+    // entries a person confirmed and replaces only the unconfirmed ones, so
+    // `result.entries.length` is the number of new rows, not the page's total —
+    // and the caller needs both numbers to render "needs review" correctly.
+    const { data: after } = await supabase
+      .from("log_entry")
+      .select("owner_confirmed")
+      .eq("page_id", page.id);
+    const saved = after ?? [];
+
     return {
-      entryCount: result.entries.length,
+      entryCount: saved.length,
+      unconfirmedCount: saved.filter((e) => !e.owner_confirmed).length,
       detectedPageCount: result.detected_page_count,
       minConfidence,
       equipmentProposed,
@@ -279,7 +293,10 @@ async function extractOtherDocument(
     .eq("id", page.id);
 
   return {
+    // A classified document produces no log entries, so there is nothing to
+    // review on it — that is why such a page reads "reviewed" and stays there.
     entryCount: 0,
+    unconfirmedCount: 0,
     detectedPageCount: 1,
     minConfidence: payload.confidence,
     equipmentProposed: 0,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ExtractionStatus, ReviewStatus } from "@/lib/database.types";
 import { sortPages, movedOrder, displayedOrder, type SortKey, type SortDir } from "@/lib/pageSort";
+import { pageNeedsReview, applyExtraction } from "@/lib/pageStatus";
 import { deletePage, reorderPages } from "./actions";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ConfirmButton } from "@/components/ConfirmButton";
@@ -42,9 +43,7 @@ export type LogbookTile = {
 // A page needs review when it has been extracted and still has an unconfirmed
 // entry. Keyed off unconfirmed entries (not page.review_status) so entry-less
 // pages and fully-confirmed pages don't nag with nothing to review.
-function pageNeedsReview(r: PageRow): boolean {
-  return r.extractionStatus === "extracted" && r.unconfirmedCount > 0;
-}
+
 
 const STATUS_STYLE: Record<ExtractionStatus, { className: string; style?: CSSProperties }> = {
   pending: { className: "bg-panel2 text-dim" },
@@ -123,12 +122,13 @@ export function PagesPanel({
         patch(id, { extractionStatus: "failed", extractionError: data.error ?? "Failed." });
         return;
       }
-      patch(id, {
-        extractionStatus: "extracted",
-        extractionError: null,
-        entryCount: data.entryCount ?? 0,
-        detectedPageCount: data.detectedPageCount ?? null,
-      });
+      // applyExtraction carries unconfirmedCount, which this patch used to drop.
+      // The row then said "✓ reviewed" the instant extraction finished — the
+      // page WAS unreviewed, only the badge lied, but it told people their logs
+      // had been checked when they hadn't and hid the page from the "Needs
+      // review" filter. router.refresh() does not cover it: `rows` is seeded
+      // from the prop once and never re-synced.
+      setRows((rs) => rs.map((r) => (r.id === id ? applyExtraction(r, data) : r)));
       // Re-run the persistent shell so its Review nav badge picks up this newly
       // extracted (and now unreviewed) page. Local `rows` state is preserved.
       router.refresh();
