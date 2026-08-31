@@ -101,13 +101,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     thumbOk = !error;
   }
 
+  // Page number. The web uploader runs its own counter across a batch and sends
+  // one; the phone cannot, because a capture may sit in the offline queue while
+  // other pages arrive, so anything it worked out at scan time could be stale by
+  // the time it drains. When no sequence is supplied, take the next one for this
+  // logbook here, where the current state is known.
+  //
+  // Before this, an unsupplied sequence was stored as NULL — so every page ever
+  // scanned on the phone came out unnumbered, and a logbook filled from both
+  // clients ended up numbered in patches.
+  const supplied = Number.isFinite(input.pageSequence as number)
+    ? (input.pageSequence as number)
+    : null;
+  const pageSequence = supplied ?? (await nextSequence(supabase, input.logbookId));
+
   const { error: rowError } = await supabase.from("page").insert({
     id: input.pageId,
     logbook_id: input.logbookId,
     aircraft_id: id,
     storage_path: path,
     thumbnail_path: thumbOk ? thumbPath : null,
-    page_sequence: Number.isFinite(input.pageSequence as number) ? (input.pageSequence as number) : null,
+    page_sequence: pageSequence,
     captured_at: input.capturedAt,
     is_handwritten: input.isHandwritten,
     // review_status defaults to 'unreviewed'; OCR/extraction fill the rest later.
@@ -119,4 +133,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   return NextResponse.json({ ok: true, pageId: input.pageId });
+}
+
+/**
+ * The next page number in a logbook: one past the highest already there.
+ *
+ * page_sequence carries no unique constraint (manual reorder renumbers freely),
+ * so two captures draining at the same instant could take the same number. That
+ * is the same tie a manual reorder already tolerates and the list still renders,
+ * where refusing the insert would lose a scan the owner has already taken.
+ *
+ * Falls back to null on a read error rather than guessing at 1 and colliding
+ * with an existing page 1.
+ */
+async function nextSequence(
+  supabase: Awaited<ReturnType<typeof createSyncClient>>,
+  logbookId: string,
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("page")
+    .select("page_sequence")
+    .eq("logbook_id", logbookId)
+    .not("page_sequence", "is", null)
+    .order("page_sequence", { ascending: false })
+    .limit(1);
+  if (error) return null;
+  const highest = data?.[0]?.page_sequence;
+  return typeof highest === "number" ? highest + 1 : 1;
 }

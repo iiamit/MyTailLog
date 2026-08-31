@@ -75,6 +75,10 @@ export function CaptureScreen({
           id: crypto.randomUUID(),
           aircraft_id: picked.id,
           logbook_id: lbId,
+          // Left for the server. A capture can sit in the offline queue while
+          // other pages arrive, so any number worked out here could be stale by
+          // the time it uploads; the capture route takes the next one for this
+          // logbook when it lands.
           page_sequence: null,
           captured_at: new Date().toISOString(),
           is_handwritten: handwritten ? 1 : 0,
