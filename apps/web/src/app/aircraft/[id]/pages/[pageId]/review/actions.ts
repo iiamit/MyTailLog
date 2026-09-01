@@ -140,6 +140,34 @@ export async function mergeContinuation(
     .eq("id", head.id);
   if (updateError) return { error: updateError.message };
 
+  // Re-point everything that referenced the tail at the head BEFORE deleting it.
+  //
+  // Five tables reference log_entry(id) ON DELETE SET NULL, so deleting the tail
+  // silently severs each one: equipment loses the entry that installed or
+  // removed it, an AD compliance record loses the entry documenting it, an
+  // attached document detaches, and a resolved squawk loses the entry that
+  // cleared it. The text was already carried across, which is what made this
+  // hard to see — the entry survives, its provenance quietly does not.
+  //
+  // The merged entry IS the same real-world entry, so anything pointing at the
+  // tail should point at the head.
+  for (const [table, column] of [
+    ["component", "install_entry_id"],
+    ["component", "removal_entry_id"],
+    ["ad_compliance", "reference_entry_id"],
+    ["document", "log_entry_id"],
+    ["squawk", "resolved_log_entry_id"],
+  ] as const) {
+    const { error } = await supabase
+      // dynamic table name — the typed union collapses; cast the arg
+      .from(table as never)
+      .update({ [column]: head.id } as never)
+      .eq(column, tail.id);
+    // A relink failing is worse than the merge not happening: the tail would be
+    // deleted and the reference lost with no way back. Stop before the delete.
+    if (error) return { error: `Couldn't move ${table} links onto the merged entry: ${error.message}` };
+  }
+
   const { error: deleteError } = await supabase.from("log_entry").delete().eq("id", tail.id);
   if (deleteError) return { error: deleteError.message };
 
