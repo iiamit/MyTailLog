@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { extractPage } from "@/lib/extraction/pipeline";
 import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 
@@ -12,12 +12,13 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ pageId: string }> },
 ) {
   const { pageId } = await params;
 
-  const supabase = await createClient();
+  // Bearer (native app) or cookie (browser) — createSyncClient does both.
+  const supabase = await createSyncClient(req);
   const {
     data: { user },
   } = await supabase.auth.getUser();
