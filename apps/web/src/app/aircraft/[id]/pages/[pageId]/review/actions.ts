@@ -2,29 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import * as entries from "@/lib/writes/entries";
+import * as pages from "@/lib/writes/pages";
 import type { ReviewStatus, ReferenceLink } from "@/lib/database.types";
 
-// The editable fields of a log entry. Arrays arrive already split from the
-// client's comma-separated inputs. All mutations run under the caller's session
-// so row-level security scopes them to the owner's aircraft.
-export type EntryFields = {
-  entry_date: string | null;
-  hobbs: number | null;
-  airframe: number | null;
-  tach: number | null;
-  description: string | null;
-  work_performed: string | null;
-  parts: string | null;
-  signature_name: string | null;
-  mechanic_cert_number: string | null;
-  ad_refs: string[];
-  sb_refs: string[];
-  // Optional: only present when the entry's attachment/links editor changes it,
-  // so a normal field save via .update({...fields}) leaves existing links intact.
-  reference_links?: ReferenceLink[];
-};
+// Thin wrappers over lib/writes (CONTRACT §4): resolve the session, call the
+// one implementation, revalidate. All behaviour lives in lib/writes/*.
+
+export type { EntryFields } from "@/lib/writes/entries";
 
 type Result = { ok: true } | { error: string };
+
+async function session(aircraftId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user ? { supabase, ctx: { aircraftId, userId: user.id } } : null;
+}
 
 // An imported entry has no page (log_entry.page_id is nullable), so there is no
 // single-page reviewer to revalidate — the flat "Review all" screen is its home.
@@ -34,162 +29,49 @@ function reviewPath(aircraftId: string, pageId: string | null) {
     : `/aircraft/${aircraftId}/review`;
 }
 
-/**
- * Replace an entry's external reference links. Only http(s) URLs are stored
- * (these render as an <a href>, so a javascript: link would be XSS); labels and
- * count are bounded. RLS scopes the write to editors of this aircraft.
- */
+const NOT_SIGNED_IN = "Not signed in.";
+
+/** Replace an entry's external reference links. */
 export async function setEntryLinks(
   aircraftId: string,
   pageId: string | null,
   entryId: string,
   links: ReferenceLink[],
 ): Promise<Result> {
-  const clean = (links ?? [])
-    .map((l) => ({ label: String(l?.label ?? "").trim().slice(0, 120), url: String(l?.url ?? "").trim() }))
-    .filter((l) => /^https?:\/\//i.test(l.url))
-    .slice(0, 20);
-  const supabase = await createClient();
-  const { error } = await supabase.from("log_entry").update({ reference_links: clean }).eq("id", entryId);
-  if (error) return { error: error.message };
+  const s = await session(aircraftId);
+  if (!s) return { error: NOT_SIGNED_IN };
+  const r = await entries.setLinks(s.supabase, s.ctx, { entryId, links });
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   return { ok: true };
 }
 
-const joinText = (a: string | null, b: string | null): string | null =>
-  [a, b].map((x) => x?.trim()).filter(Boolean).join(" ") || null;
-const unionRefs = (a: string[] | null, b: string[] | null): string[] => [
-  ...new Set([...(a ?? []), ...(b ?? [])]),
-];
-
-/**
- * Consolidate a page-spanning entry. `tailId` is the continuation (the orphaned
- * top-of-page half). We find its "head" — the entry that runs off the bottom of
- * the previous page in the same logbook — merge the two into the head (keeping
- * the head's date/tach, concatenating the work text, taking the closing
- * signature from the tail, unioning AD/SB refs), then delete the tail. The
- * merged entry drops back to unconfirmed so the owner vets the result.
- */
+/** Consolidate a page-spanning entry into the entry it continues (#188 relink included). */
 export async function mergeContinuation(
   aircraftId: string,
   pageId: string | null,
   tailId: string,
 ): Promise<Result> {
-  const supabase = await createClient();
-
-  const { data: tail } = await supabase
-    .from("log_entry")
-    .select("*")
-    .eq("id", tailId)
-    .single();
-  if (!tail || tail.aircraft_id !== aircraftId) return { error: "Entry not found." };
-
-  const { data: tailPage } = await supabase
-    .from("page")
-    .select("page_sequence, logbook_id")
-    .eq("id", tail.page_id ?? "")
-    .single();
-  if (!tailPage || tailPage.page_sequence == null) {
-    return { error: "This page has no sequence number, so the previous page can't be found." };
-  }
-
-  const { data: prevPages } = await supabase
-    .from("page")
-    .select("id")
-    .eq("logbook_id", tailPage.logbook_id)
-    .lt("page_sequence", tailPage.page_sequence)
-    .order("page_sequence", { ascending: false })
-    .limit(1);
-  const prevPage = prevPages?.[0];
-  if (!prevPage) return { error: "There's no previous page in this logbook to merge into." };
-
-  const { data: candidates } = await supabase
-    .from("log_entry")
-    .select("*")
-    .eq("page_id", prevPage.id)
-    .order("entry_index", { ascending: false, nullsFirst: false });
-  const heads = candidates ?? [];
-  // Prefer the entry the model flagged as continuing; else one still "open" (no
-  // signature); else the last entry on the page.
-  const head =
-    heads.find((h) => h.continues_next) ??
-    heads.find((h) => !h.signature_name) ??
-    heads[0];
-  if (!head) return { error: "The previous page has no entry to merge into." };
-  if (head.id === tail.id) return { error: "Nothing to merge." };
-
-  const { error: updateError } = await supabase
-    .from("log_entry")
-    .update({
-      entry_date: head.entry_date ?? tail.entry_date,
-      hobbs: head.hobbs ?? tail.hobbs,
-      airframe: head.airframe ?? tail.airframe,
-      tach: head.tach ?? tail.tach,
-      description: joinText(head.description, tail.description),
-      work_performed: joinText(head.work_performed, tail.work_performed),
-      parts: joinText(head.parts, tail.parts),
-      signature_name: tail.signature_name ?? head.signature_name,
-      mechanic_cert_number: tail.mechanic_cert_number ?? head.mechanic_cert_number,
-      ad_refs: unionRefs(head.ad_refs, tail.ad_refs),
-      sb_refs: unionRefs(head.sb_refs, tail.sb_refs),
-      continues_next: tail.continues_next, // the tail may itself run onward (3+ pages)
-      is_continuation: head.is_continuation,
-      field_confidence: null,
-      owner_confirmed: false,
-    })
-    .eq("id", head.id);
-  if (updateError) return { error: updateError.message };
-
-  // Re-point everything that referenced the tail at the head BEFORE deleting it.
-  //
-  // Five tables reference log_entry(id) ON DELETE SET NULL, so deleting the tail
-  // silently severs each one: equipment loses the entry that installed or
-  // removed it, an AD compliance record loses the entry documenting it, an
-  // attached document detaches, and a resolved squawk loses the entry that
-  // cleared it. The text was already carried across, which is what made this
-  // hard to see — the entry survives, its provenance quietly does not.
-  //
-  // The merged entry IS the same real-world entry, so anything pointing at the
-  // tail should point at the head.
-  for (const [table, column] of [
-    ["component", "install_entry_id"],
-    ["component", "removal_entry_id"],
-    ["ad_compliance", "reference_entry_id"],
-    ["document", "log_entry_id"],
-    ["squawk", "resolved_log_entry_id"],
-  ] as const) {
-    const { error } = await supabase
-      // dynamic table name — the typed union collapses; cast the arg
-      .from(table as never)
-      .update({ [column]: head.id } as never)
-      .eq(column, tail.id);
-    // A relink failing is worse than the merge not happening: the tail would be
-    // deleted and the reference lost with no way back. Stop before the delete.
-    if (error) return { error: `Couldn't move ${table} links onto the merged entry: ${error.message}` };
-  }
-
-  const { error: deleteError } = await supabase.from("log_entry").delete().eq("id", tail.id);
-  if (deleteError) return { error: deleteError.message };
-
+  const s = await session(aircraftId);
+  if (!s) return { error: NOT_SIGNED_IN };
+  const r = await entries.mergeContinuation(s.supabase, s.ctx, { tailEntryId: tailId });
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   revalidatePath(`/aircraft/${aircraftId}`);
   return { ok: true };
 }
 
-/** Save edits to an extracted entry. Editing implicitly confirms it — a human
- *  has now vetted the fields, so it's trustworthy enough to drive reminders. */
+/** Save edits to an extracted entry. Editing implicitly confirms it. */
 export async function saveEntry(
   aircraftId: string,
   pageId: string | null,
   entryId: string,
-  fields: EntryFields,
+  fields: entries.EntryFields,
 ): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("log_entry")
-    .update({ ...fields, owner_confirmed: true })
-    .eq("id", entryId);
-  if (error) return { error: error.message };
+  const s = await session(aircraftId);
+  if (!s) return { error: NOT_SIGNED_IN };
+  const r = await entries.update(s.supabase, s.ctx, { entryId, fields });
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   return { ok: true };
 }
@@ -200,12 +82,10 @@ export async function setEntryConfirmed(
   entryId: string,
   confirmed: boolean,
 ): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("log_entry")
-    .update({ owner_confirmed: confirmed })
-    .eq("id", entryId);
-  if (error) return { error: error.message };
+  const s = await session(aircraftId);
+  if (!s) return { error: NOT_SIGNED_IN };
+  const r = await entries.setConfirmed(s.supabase, s.ctx, { entryId, confirmed });
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   return { ok: true };
 }
@@ -215,39 +95,27 @@ export async function deleteEntry(
   pageId: string | null,
   entryId: string,
 ): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("log_entry").delete().eq("id", entryId);
-  if (error) return { error: error.message };
+  const s = await session(aircraftId);
+  if (!s) return { error: NOT_SIGNED_IN };
+  const r = await entries.remove(s.supabase, s.ctx, { entryId });
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   return { ok: true };
 }
 
-/** Add an entry the extractor missed. Human-authored, so confirmed and with no
- *  machine confidence/model provenance. */
+/** Add an entry the extractor missed. */
 export async function addEntry(
   aircraftId: string,
   pageId: string | null,
   logbookId: string,
-  fields: EntryFields,
+  fields: entries.EntryFields,
 ): Promise<{ ok: true; id: string } | { error: string }> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("log_entry")
-    .insert({
-      page_id: pageId,
-      logbook_id: logbookId,
-      aircraft_id: aircraftId,
-      ...fields,
-      owner_confirmed: true,
-      confidence: null,
-      field_confidence: null,
-      extraction_model: null,
-    })
-    .select("id")
-    .single();
-  if (error || !data) return { error: error?.message ?? "Insert failed." };
+  const s = await session(aircraftId);
+  if (!s) return { error: NOT_SIGNED_IN };
+  const r = await entries.create(s.supabase, s.ctx, { logbookId, pageId, fields });
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
-  return { ok: true, id: data.id };
+  return { ok: true, id: String(r.row?.id) };
 }
 
 /** Mark the whole page reviewed (confirmed) or disputed. */
@@ -256,12 +124,10 @@ export async function setPageReview(
   pageId: string, // a real page — this marks the page itself reviewed
   status: ReviewStatus,
 ): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("page")
-    .update({ review_status: status })
-    .eq("id", pageId);
-  if (error) return { error: error.message };
+  const s = await session(aircraftId);
+  if (!s) return { error: NOT_SIGNED_IN };
+  const r = await pages.setReview(s.supabase, s.ctx, { pageId, status });
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   // 'layout' so the persistent shell's Review nav badge re-fetches (it lives in
   // aircraft/[id]/layout.tsx, which a default 'page' revalidate never touches).
