@@ -192,6 +192,35 @@ export function ProfileClient({
   const [notifMsg, setNotifMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [savingNotif, setSavingNotif] = useState(false);
 
+  const [pushTest, setPushTest] = useState<string | null>(null);
+
+  /**
+   * Ask the server to push to this account's registered devices.
+   *
+   * No token handling: the route takes a Bearer OR the session cookie, and the
+   * browser already has the cookie. Every outcome is reported, including
+   * Apple's own words — a silent success is what made this hard to diagnose.
+   */
+  async function testPush() {
+    setPushTest("Sending…");
+    try {
+      const res = await fetch("/api/push/test", { method: "POST" });
+      const b = (await res.json().catch(() => ({}))) as {
+        devices?: number; sent?: number; error?: string; hint?: string;
+      };
+      if (!res.ok) setPushTest(`Couldn't send it — ${b.error ?? res.status}`);
+      else if (b.error) setPushTest(`Apple refused it — ${b.error}`);
+      else if (!b.devices) setPushTest(b.hint ?? "No device is signed in to the app on this account.");
+      else setPushTest(
+        b.sent
+          ? `Sent to ${b.sent} device${b.sent === 1 ? "" : "s"} — it should arrive now.`
+          : "Nothing was sent.",
+      );
+    } catch (e) {
+      setPushTest(`Couldn't send it — ${e instanceof Error ? e.message : "network error"}`);
+    }
+  }
+
   async function saveNotifications(formData: FormData) {
     setSavingNotif(true);
     setNotifMsg(null);
@@ -361,6 +390,32 @@ export function ProfileClient({
           />
           Email me reminders before items come due
         </label>
+
+        {/* The same reminder also goes to the phone app when it is signed in and
+            notifications are allowed. Testing that used to mean waiting for an
+            item to come due — the reminder rides on the email, so nothing is
+            sent when nothing is newly due, and silence is indistinguishable
+            from a broken setup. This asks directly. */}
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium">The phone app</div>
+            <div className="text-xs text-faint">
+              Reminders also arrive on the MyTailLog app. Send a test to check this account&apos;s
+              devices can receive them.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={testPush}
+            disabled={pushTest === "Sending…"}
+            className="shrink-0 rounded-md border border-line px-3 py-1.5 text-sm hover:border-line2 disabled:opacity-50"
+          >
+            {pushTest === "Sending…" ? "Sending…" : "Send a test"}
+          </button>
+        </div>
+        {pushTest && pushTest !== "Sending…" && (
+          <p className="text-xs text-dim">{pushTest}</p>
+        )}
 
         <fieldset
           disabled={!notifyOn}
