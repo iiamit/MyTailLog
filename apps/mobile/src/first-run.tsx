@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { color, text, radius, hit, accentGradient, tint } from "./tokens";
+import { EnrollSheet } from "./enroll-sheet";
 
 // First run — the screen an AirVenture booth visitor lands on.
 //
@@ -17,10 +19,12 @@ export function FirstRun({
   onDemo,
   onSignIn,
 }: {
-  onAddAircraft: () => void;
+  /** Called once the aircraft actually exists, with its id. */
+  onAddAircraft: (aircraftId?: string) => void;
   onDemo: () => void;
   onSignIn: () => void;
 }) {
+  const [enrolling, setEnrolling] = useState(false);
   return (
     <div style={{ position: "relative", padding: "36px 6px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
       <div aria-hidden style={{
@@ -65,8 +69,20 @@ export function FirstRun({
         ))}
       </div>
 
+      {/* The first promise the app makes. It now keeps it here rather than
+          handing the owner back to the website. */}
+      {enrolling && (
+        <EnrollSheet
+          onClose={() => setEnrolling(false)}
+          onEnrolled={(id) => {
+            setEnrolling(false);
+            onAddAircraft(id);
+          }}
+        />
+      )}
+
       <button
-        onClick={onAddAircraft}
+        onClick={() => setEnrolling(true)}
         style={{
           alignSelf: "stretch", marginTop: 26, minHeight: hit.primary, borderRadius: 15, border: "none",
           background: accentGradient, color: color.onAccent,
