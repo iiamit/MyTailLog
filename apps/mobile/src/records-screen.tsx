@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { color, text, radius, display, hit } from "./tokens";
+import { color, text, radius, display, hit, alpha } from "./tokens";
 import { Documents } from "./documents-screen";
 import { Entries, Pages } from "./screens";
 import { PageManager } from "./page-manager";
@@ -186,7 +186,7 @@ export function Records({
               fontFamily: display,
               fontSize: 14.5,
               fontWeight: 600,
-              boxShadow: `0 10px 26px ${color.accent}57`,
+              boxShadow: `0 10px 26px ${alpha(color.accent, "57")}`,
               cursor: "pointer",
               zIndex: 30,
             }}

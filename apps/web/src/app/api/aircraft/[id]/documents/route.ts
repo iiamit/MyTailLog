@@ -4,6 +4,7 @@ import { createSyncClient } from "@/lib/supabase/sync";
 import { putBlob, removeBlobs, type PutBody } from "@/lib/storage";
 import type { DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES } from "@/lib/documents";
+import { entryIsOnAircraft, FOREIGN_ENTRY } from "@/lib/writes/entries";
 
 // Records Vault upload for BOTH clients (same split as the capture route):
 //  - web        → multipart/form-data (File part `file`)
@@ -91,6 +92,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const f = input.fields;
   const type = (DOCUMENT_TYPES as string[]).includes(f.type) ? (f.type as DocumentType) : "other";
   const logEntryId = f.log_entry_id.trim() || null;
+  // The insert's RLS proves the caller may edit THIS aircraft; it says nothing
+  // about which log_entry the FK points at, and document.log_entry_id is not
+  // aircraft-scoped. Same guard documents.setEntry applies (lib/writes).
+  if (logEntryId && !(await entryIsOnAircraft(supabase, id, logEntryId))) {
+    return NextResponse.json({ error: FOREIGN_ENTRY }, { status: 400 });
+  }
   const title = f.title.trim() || input.name;
   const reference = f.reference.trim() || null;
   const documentDate = f.document_date.trim() || null;

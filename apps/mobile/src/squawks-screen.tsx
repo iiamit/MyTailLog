@@ -6,7 +6,7 @@ import { shortDate } from "./airworthiness";
 import { TwoPane, useSizeClass, useShortcuts, fabBottom } from "./layout";
 import { SquawkDetail, SEVERITY, SEVERITY_ORDER, type SquawkRow } from "./squawk-detail";
 import type { Aircraft, LogEntry } from "./types";
-import { color, text, radius, hit, accentGradient, tint } from "./tokens";
+import { color, text, radius, hit, accentGradient, tint, alpha } from "./tokens";
 import { ChevronRightIcon } from "./icons";
 
 // Squawks — tab 4.
@@ -87,7 +87,7 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
           <div style={{ ...text.sectionLabel, color: color.faint, marginBottom: 8 }}>Waiting to upload</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
             {pending.map((p) => (
-              <div key={p.id} style={{ background: color.surface, border: `1px dashed ${color.accent}66`, borderRadius: radius.row, padding: 12 }}>
+              <div key={p.id} style={{ background: color.surface, border: `1px dashed ${alpha(color.accent, "66")}`, borderRadius: radius.row, padding: 12 }}>
                 <div style={{ ...text.rowTitle, fontWeight: 500, color: color.ink }}>{p.label}</div>
                 <div style={{ ...text.meta, color: color.accent, marginTop: 3 }}>Not on the server yet</div>
               </div>
@@ -156,7 +156,7 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
             height: 50, padding: "0 20px", borderRadius: 999, border: "none",
             background: accentGradient, color: color.onAccent,
             fontFamily: text.button.fontFamily, fontSize: 14.5, fontWeight: 600,
-            boxShadow: `0 10px 26px ${color.accent}57`, cursor: "pointer", zIndex: 30,
+            boxShadow: `0 10px 26px ${alpha(color.accent, "57")}`, cursor: "pointer", zIndex: 30,
           }}
         >
           + New squawk

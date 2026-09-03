@@ -7,7 +7,7 @@ import { canEdit } from "./actions";
 import { DOCUMENT_TYPES, documentTypeLabel } from "@/lib/documents";
 import type { DocumentType } from "@/lib/database.types";
 import type { Aircraft, LogEntry } from "./types";
-import { color, text, radius, tint, hit, accentGradient } from "./tokens";
+import { color, text, radius, tint, hit, accentGradient, alpha } from "./tokens";
 import { ChevronRightIcon } from "./icons";
 import { searchDocuments } from "./documents-search";
 import { shortDate } from "./airworthiness";
@@ -167,7 +167,7 @@ export function Documents({
             ...text.chip,
             color: missing ? color.danger : color.success,
             background: missing ? tint.danger : tint.success,
-            border: `1px solid ${(missing ? color.danger : color.success)}4D`,
+            border: `1px solid ${alpha((missing ? color.danger : color.success), "4D")}`,
             borderRadius: 6, padding: "4px 8px", whiteSpace: "nowrap",
           }}>
             {missing ? `${missing} MISSING` : "ALL PRESENT"}
@@ -254,7 +254,7 @@ function WaitingToUpload({
   return (
     <div
       style={{
-        marginTop: 12, background: color.surface, border: `1px dashed ${color.accent}66`,
+        marginTop: 12, background: color.surface, border: `1px dashed ${alpha(color.accent, "66")}`,
         borderRadius: radius.card, padding: "13px 15px",
       }}
     >
@@ -447,7 +447,7 @@ function DocumentActions({
       {confirming ? (
         <div
           style={{
-            marginTop: 16, background: tint.danger, border: `1px solid ${color.danger}4D`,
+            marginTop: 16, background: tint.danger, border: `1px solid ${alpha(color.danger, "4D")}`,
             borderRadius: radius.card, padding: "12px 14px",
           }}
         >

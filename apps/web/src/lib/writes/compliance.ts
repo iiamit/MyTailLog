@@ -2,7 +2,7 @@ import type { AdCompliance, AdKind, AdReference, AdStatus } from "@/lib/database
 import { computeNextDue } from "@/lib/compliance";
 import type { FaaAd } from "@/lib/faa/federalRegister";
 import { getADFromDRS } from "@/lib/faa/drs";
-import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
+import { entryIsOnAircraft, FOREIGN_ENTRY, canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 import { isIsoDate, validNumber } from "./meters";
 
 // The ONE implementation of every AD/SB compliance write (CONTRACT §3 C2, §4).
@@ -177,6 +177,11 @@ export async function upsert(
   const picked = pickAdFields(input.record);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   const row = { aircraft_id: ctx.aircraftId, ...picked.fields, ...computeNextDue(picked.fields) };
+  // ad_compliance.reference_entry_id is not aircraft-scoped by the FK or by RLS.
+  const entryId = picked.fields.reference_entry_id;
+  if (entryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, entryId))) {
+    return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
+  }
 
   if (input.id) {
     const loaded = await loadRecord(supabase, ctx, input.id);

@@ -12,7 +12,7 @@ import {
 import { ACCEPT_ATTR, fileSizeLabel, validateDocument } from "./document-validate";
 import type { Aircraft } from "./types";
 import { useDropFiles } from "./layout";
-import { color, text, radius, hit, display, accentGradient } from "./tokens";
+import { color, text, radius, hit, display, accentGradient, alpha } from "./tokens";
 import { CameraIcon } from "./icons";
 
 // Adding paperwork from the aircraft rather than from a desk: pick a file out of
@@ -336,7 +336,7 @@ export function DropZone({
       style={{
         border: `1px ${dragging ? "solid" : "dashed"} ${dragging ? color.accent : color.hairline}`,
         borderRadius: radius.card,
-        background: dragging ? `${color.accent}14` : "transparent",
+        background: dragging ? `${alpha(color.accent, "14")}` : "transparent",
         padding: 12,
         transition: "background .12s",
       }}

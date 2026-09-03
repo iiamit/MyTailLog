@@ -2,7 +2,11 @@ logbook-app-plan.md
 marketing-kit.*
 
 # dependencies
+# Both forms on purpose: `node_modules/` matches the directory but NOT a symlink
+# of that name, which is how an absolute path into a laptop's home directory
+# once got committed as a tracked blob.
 node_modules/
+node_modules
 /.pnp
 .pnp.*
 

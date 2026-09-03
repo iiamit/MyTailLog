@@ -1,5 +1,5 @@
 import type { Squawk, SquawkSeverity } from "@/lib/database.types";
-import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
+import { entryIsOnAircraft, FOREIGN_ENTRY, canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
 // The ONE implementation of every squawk write (CONTRACT §3 C3, §4). See
 // entries.ts for the rules. Anyone with access may REPORT (RLS squawk_report);
@@ -126,14 +126,8 @@ export async function resolve(
 ): Promise<WriteResult> {
   const loaded = await loadSquawk(supabase, ctx, input.squawkId, base);
   if ("status" in loaded) return loaded;
-  if (input.resolvedEntryId) {
-    const { data: entry } = await supabase
-      .from("log_entry")
-      .select("id")
-      .eq("id", input.resolvedEntryId)
-      .eq("aircraft_id", ctx.aircraftId)
-      .maybeSingle();
-    if (!entry) return { status: "error", message: "That entry isn't on this aircraft.", httpStatus: 400 };
+  if (input.resolvedEntryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, input.resolvedEntryId))) {
+    return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
   }
   return patchSquawk(supabase, ctx, input.squawkId, {
     status: "resolved",

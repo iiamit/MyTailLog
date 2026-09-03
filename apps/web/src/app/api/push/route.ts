@@ -56,12 +56,22 @@ export async function DELETE(req: Request) {
   const input = await tokenFrom(req);
   if (!input) return NextResponse.json({ error: "Device token missing." }, { status: 400 });
 
-  // RLS scopes the delete to this user's own rows; a token that is not theirs
-  // simply matches nothing, which is the right answer either way.
-  const { error } = await supabase
+  // Rule 7: read the delete back. RLS scopes it to this user's own rows, so a
+  // token re-claimed by a second account on the same phone (register_device_token,
+  // 0059) matches nothing and returns no error — and inferring success from that
+  // would show "notifications off" while the device kept getting the other
+  // account's nightly reminders.
+  const { data, error } = await supabase
     .from("device_token")
     .delete()
-    .eq("token", input.token);
+    .eq("token", input.token)
+    .select("token");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data?.length) {
+    return NextResponse.json(
+      { error: "This device is signed up for notifications under a different account. Sign in as that account to turn them off." },
+      { status: 404 },
+    );
+  }
   return NextResponse.json({ ok: true });
 }

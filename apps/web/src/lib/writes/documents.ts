@@ -1,6 +1,6 @@
 import type { DocumentRecord, DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES } from "@/lib/documents";
-import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
+import { entryIsOnAircraft, FOREIGN_ENTRY, canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
 // The ONE implementation of every Records Vault metadata write (CONTRACT §3 C3,
 // §4). Uploads stay in POST /api/aircraft/[id]/documents (body size). See
@@ -112,14 +112,8 @@ export async function setEntry(
 ): Promise<WriteResult> {
   const loaded = await loadDocument(supabase, ctx, input.documentId, base);
   if ("status" in loaded) return loaded;
-  if (input.entryId) {
-    const { data: entry } = await supabase
-      .from("log_entry")
-      .select("id")
-      .eq("id", input.entryId)
-      .eq("aircraft_id", ctx.aircraftId)
-      .maybeSingle();
-    if (!entry) return { status: "error", message: "That entry isn't on this aircraft.", httpStatus: 400 };
+  if (input.entryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, input.entryId))) {
+    return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
   }
   return patchDocument(supabase, ctx, input.documentId, { log_entry_id: input.entryId ?? null });
 }

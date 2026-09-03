@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { captureCount, listActions, removeAction, type QueuedAction } from "./db";
 import { drainActions, keepMine } from "./actions";
-import { changedFields, mineFields } from "@/lib/sync/mutations";
+import { documentUploadCount } from "./blob-upload";
+import { changedFields, mineFields, isMutationType } from "@/lib/sync/mutations";
 import { faint, ink, dim, line, amber, red, mono, radius } from "./ui";
-import { color, hit } from "./tokens";
+import { color, hit, alpha } from "./tokens";
 
 // What you've recorded that hasn't reached the server yet.
 //
@@ -21,8 +22,8 @@ export function PendingBanner({ count, onOpen }: { count: number; onOpen: () => 
       onClick={onOpen}
       style={{
         marginTop: 14,
-        background: `${color.accent}14`,
-        border: `1px solid ${color.accent}55`,
+        background: `${alpha(color.accent, "14")}`,
+        border: `1px solid ${alpha(color.accent, "55")}`,
         borderRadius: 10,
         padding: "10px 12px",
         minHeight: hit.min,
@@ -54,12 +55,17 @@ const btn = (color: string): React.CSSProperties => ({
 export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: () => void }) {
   const [rows, setRows] = useState<QueuedAction[] | null>(null);
   const [captures, setCaptures] = useState(0);
+  // Documents queued offline live as files under uploads/, not in action_queue
+  // or the capture queue. Left out, this screen tells the owner everything has
+  // reached the server while a 25 MB POH is still sitting on the phone.
+  const [docs, setDocs] = useState(0);
   const [open, setOpen] = useState<QueuedAction | null>(null);
 
   async function reload() {
-    const [actions, pages] = await Promise.all([listActions(), captureCount()]);
+    const [actions, pages, files] = await Promise.all([listActions(), captureCount(), documentUploadCount()]);
     setRows(actions);
     setCaptures(pages);
+    setDocs(files);
   }
   useEffect(() => {
     reload();
@@ -91,13 +97,19 @@ export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: 
         <span style={{ fontWeight: 700, fontSize: 17 }}>Waiting to upload</span>
       </div>
 
-      {rows?.length === 0 && captures === 0 && (
+      {rows?.length === 0 && captures === 0 && docs === 0 && (
         <p style={{ color: faint, fontSize: 13, marginTop: 16 }}>
           Everything you&apos;ve recorded has reached the server.
         </p>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+        {docs > 0 && (
+          <div style={{ background: color.surfaceRaised, border: `1px solid ${line}`, borderRadius: 10, padding: "10px 12px" }}>
+            <div style={{ fontSize: 13.5, color: ink }}>{docs} document{docs === 1 ? "" : "s"}</div>
+            <div style={{ color: color.accent, fontSize: 11, marginTop: 6 }}>saved on this phone — uploads when connected</div>
+          </div>
+        )}
         {captures > 0 && (
           <div style={{ background: color.surfaceRaised, border: `1px solid ${line}`, borderRadius: 10, padding: "10px 12px" }}>
             <div style={{ fontSize: 13.5, color: ink }}>{captures} scanned page{captures === 1 ? "" : "s"}</div>
@@ -109,7 +121,7 @@ export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: 
             key={a.id}
             style={{
               background: color.surfaceRaised,
-              border: `1px solid ${a.status === "failed" ? `${red}66` : a.status === "conflict" ? `${amber}88` : line}`,
+              border: `1px solid ${a.status === "failed" ? `${alpha(red, "66")}` : a.status === "conflict" ? `${alpha(amber, "88")}` : line}`,
               borderRadius: 10,
               padding: "10px 12px",
             }}
@@ -166,8 +178,12 @@ function Conflict({
 }) {
   const payload = JSON.parse(action.payload) as Record<string, unknown>;
   const theirs = action.server_row ? (JSON.parse(action.server_row) as Record<string, unknown>) : {};
-  const mine = mineFields(payload);
-  const changed = new Set(changedFields(payload, theirs));
+  // The type is what maps a short payload key ({date}) onto the column the
+  // write lands on (reading_date) — without it half the catalogue compares
+  // nothing and the table below comes up empty.
+  const type = isMutationType(action.type) ? action.type : undefined;
+  const mine = mineFields(payload, type);
+  const changed = new Set(changedFields(payload, theirs, type));
   const keys = Object.keys(mine).filter((k) => k in theirs);
   const isDelete = keys.length === 0 && /\.delete$/.test(action.type);
 
@@ -183,7 +199,11 @@ function Conflict({
       <p style={{ color: dim, fontSize: 13, marginTop: 10, lineHeight: 1.5 }}>
         {action.label}. Someone else saved this
         {typeof theirs.updated_at === "string" ? ` on ${when(theirs.updated_at)}` : ""}, after you last synced.
-        {isDelete ? " You were deleting it." : " Highlighted lines differ."}
+        {isDelete
+          ? " You were deleting it."
+          : keys.length === 0
+            ? " Your change doesn't line up against theirs field by field, so there's nothing to compare — keeping yours re-applies it on top of what they saved."
+            : " Highlighted lines differ."}
       </p>
 
       {keys.length > 0 && (
@@ -204,7 +224,7 @@ function Conflict({
                   gap: 8,
                   padding: "10px 12px",
                   borderTop: `1px solid ${line}`,
-                  background: diff ? `${amber}1a` : "transparent",
+                  background: diff ? `${alpha(amber, "1a")}` : "transparent",
                   fontSize: 13,
                 }}
               >
@@ -218,7 +238,7 @@ function Conflict({
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}>
-        <button onClick={onKeepMine} style={{ ...btn(ink), background: `${color.accent}22`, borderColor: color.accent }}>
+        <button onClick={onKeepMine} style={{ ...btn(ink), background: `${alpha(color.accent, "22")}`, borderColor: color.accent }}>
           Keep mine — upload over theirs
         </button>
         <button onClick={onTakeTheirs} style={btn(amber)}>

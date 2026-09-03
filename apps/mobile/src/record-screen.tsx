@@ -613,7 +613,7 @@ export function Stepper({
         <div style={{ display: "flex", alignItems: "baseline" }}>
           <span style={{ fontFamily: text.meta.fontFamily, fontSize: 11, fontWeight: 600, letterSpacing: "0.09em", color: color.faint }}>{label}</span>
           {value != null && (
-            <button onClick={onClear} style={{ marginLeft: "auto", background: "transparent", border: "none", padding: "4px 0 4px 10px", color: color.accent, fontFamily: text.meta.fontFamily, fontSize: 11.5, fontWeight: 600, cursor: "pointer", minHeight: 32 }}>
+            <button onClick={onClear} style={{ marginLeft: "auto", background: "transparent", border: "none", padding: "0 0 0 16px", color: color.accent, fontFamily: text.meta.fontFamily, fontSize: 11.5, fontWeight: 600, cursor: "pointer", minHeight: hit.min }}>
               Leave blank
             </button>
           )}

@@ -69,6 +69,7 @@ export type AdsbFlight = {
   airborne_minutes: number;
   dismissed_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export type Logbook = {
@@ -245,6 +246,7 @@ export type EquipmentProposal = {
   confidence: number | null;
   source: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export type MaintenanceItem = {
@@ -445,6 +447,7 @@ export type OilAddition = {
   tach: number | null;
   notes: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export type OilAnalysisSample = {

@@ -202,15 +202,43 @@ const ID_KEY = /(^id$|Id$|Ids$|_id$)/;
 const NESTED = ["fields", "item", "record", "component"];
 const snake = (k: string) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 
+/**
+ * Payload keys whose column is NOT the snake_case of the key: a real column
+ * name, or `null` for a key that lands on some OTHER row entirely.
+ *
+ * A missing entry here is not cosmetic. The key becomes invisible to the
+ * comparison below, so alreadyApplied() can call a real conflict "already
+ * applied" and throw the owner's edit away while reporting success, and the
+ * phone's yours/theirs screen renders an empty table under the words
+ * "Highlighted lines differ." Add a row whenever a §3 payload uses a short name.
+ */
+const COLUMN_ALIAS: Partial<Record<MutationType, Record<string, string | null>>> = {
+  "reading.update": { date: "reading_date" },
+  "entry.confirm": { confirmed: "owner_confirmed" },
+  "component.remove": { date: "removal_date" },
+  // Only the two dates land on maintenance_item; the rest describes the log
+  // entry markDone writes alongside it, which is a different row.
+  "mx.complete": {
+    date: "last_done_date", hours: "last_done_hours",
+    description: null, workPerformed: null, tach: null, hobbs: null, signature: null,
+  },
+  "squawk.resolve": { resolvedAt: "resolved_at" },
+};
+
 /** The row-shaped fields a payload sets, keyed by column name. Identifiers of
- *  the target row are not "mine" — they say which row, not what it holds. */
-export function mineFields(payload: Record<string, unknown>): Record<string, unknown> {
+ *  the target row are not "mine" — they say which row, not what it holds.
+ *  Pass `type` wherever it is known: it is what maps `date` onto the column
+ *  the type actually writes. */
+export function mineFields(payload: Record<string, unknown>, type?: MutationType): Record<string, unknown> {
   const inner = NESTED.map((k) => payload[k]).find(isObject);
   const src = inner ?? payload;
+  const alias: Record<string, string | null> = (type && COLUMN_ALIAS[type]) ?? {};
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(src)) {
     if (ID_KEY.test(k) || v === undefined) continue;
-    out[snake(k)] = v;
+    const col = k in alias ? alias[k] : snake(k);
+    if (col === null) continue; // written to another row — not comparable here
+    out[col] = v;
   }
   return out;
 }
@@ -220,8 +248,8 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stri
 /** Columns the payload sets to a value different from the server row's. Only
  *  columns the row actually has count — a payload key the row lacks is not a
  *  difference, it's a shape the comparison can't see. */
-export function changedFields(payload: Record<string, unknown>, row: Record<string, unknown>): string[] {
-  const mine = mineFields(payload);
+export function changedFields(payload: Record<string, unknown>, row: Record<string, unknown>, type?: MutationType): string[] {
+  const mine = mineFields(payload, type);
   return Object.keys(mine).filter((k) => k in row && !same(mine[k], row[k]));
 }
 
@@ -233,8 +261,13 @@ export function changedFields(payload: Record<string, unknown>, row: Record<stri
  * ponytail: value comparison stands in for a mutation ledger; add a
  * `sync_mutation(id)` table if a type ever needs exact replay detection.
  */
-export function alreadyApplied(payload: Record<string, unknown>, row: Record<string, unknown>): boolean {
-  const mine = mineFields(payload);
-  const comparable = Object.keys(mine).filter((k) => k in row);
-  return comparable.length > 0 && comparable.every((k) => same(mine[k], row[k]));
+export function alreadyApplied(payload: Record<string, unknown>, row: Record<string, unknown>, type?: MutationType): boolean {
+  const mine = mineFields(payload, type);
+  const keys = Object.keys(mine);
+  // Every field the payload sets must be visible on the row. If even one is
+  // not, this cannot tell "my retry landed" from "their edit and mine touched
+  // different columns", and getting that wrong discards the owner's change
+  // while answering ok (CONTRACT §2: nothing is silently overwritten).
+  if (keys.length === 0 || keys.some((k) => !(k in row))) return false;
+  return keys.every((k) => same(mine[k], row[k]));
 }

@@ -252,7 +252,7 @@ the lead in your PR; do not fork the API.
 |---|---|---|
 | 0058 | core sync | `updated_at` audit: every synced table has `updated_at` + a BEFORE UPDATE trigger that bumps it (list any that don't and add them); `ad_reference` and `equipment_proposal` added to the `log_change()` trigger list + backfill |
 | 0059 | platform | `device_token` (user_id, token, platform, created_at) for push, RLS owner-scoped |
-| 0060 | spare | ask the lead |
+| 0060 | integration fix | scope the global (null-aircraft) change feed: an `ad_reference` change row is visible only to users whose own `ad_compliance` references it. 0058 admitted every signed-in user, which turned 0008's world-writable AD cache into a fan-out to every device. Apply to prod AND test. |
 
 Both 0058 and 0059 are written and must be applied to **prod and the test project**
 before the `e2e` check on the PR to `main` can pass.
@@ -378,9 +378,13 @@ integration had to decide, so nobody re-litigates it:
   since the ring spans both halves.
 - Ask is a pane over any tab (`Sub = {kind:'ask'}`), reached from a sidebar Ask
   row and ⌘K — not a fifth tab. ⌘K is registered at regular width only.
-- `ui.tsx` no longer re-exports `bg`, `accent` or `panel2`. Those three are RAW
-  hex read through the tokens `Proxy`, so a module-load `const` snapshotted the
-  launch palette; callers read `color.*` at render time.
+- `ui.tsx` no longer re-exports `bg`, `accent` or `panel2`; callers read
+  `color.*` at render time. There are no longer any RAW tokens: **every** value
+  is a `var(--c-*)`, so nothing snapshots the launch palette. The two places a
+  var() cannot go each have an answer — `alpha(color.danger, "4D")` for a colour
+  plus an alpha byte (`${color.danger}4D` is invalid CSS and drops the whole
+  declaration), and `style={{ stroke: … }}` / `currentColor` for SVG, because a
+  presentation attribute is not var()-substituted.
 - `pickAdFields` / `pickComponentFields` carry `reference_entry_id` /
   `install_entry_id` as **optional** keys, written only when the payload has
   them. Required-with-null would have let a web edit clear a link the phone made.

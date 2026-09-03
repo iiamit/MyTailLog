@@ -170,6 +170,58 @@ export async function deleteReading(
 }
 
 // ---------------------------------------------------------------------------
+// The mis-keyed / duplicated hours flag (0036)
+// ---------------------------------------------------------------------------
+
+/** A flagged reading lives in `log_entry` (source "entry") or `hours_reading`
+ *  ("mfb"); both carry hobbs/tach + hours_reviewed_at. */
+export type HoursSource = "entry" | "mfb";
+
+/**
+ * Resolve one flagged reading: write the corrected meter (or null it, or write
+ * nothing at all) and stamp `hours_reviewed_at` so it stops re-flagging.
+ *
+ * `field` absent = dismiss the flag, the reading is right as it stands.
+ * `value` null with a field = the duplicate is a copy of the other meter and is
+ * cleared. This is the one implementation; the /duplicates server actions are
+ * wrappers (CONTRACT rule 1 — there is no third way).
+ */
+export async function resolveHoursFlag(
+  supabase: Db,
+  ctx: WriteCtx,
+  input: { source: HoursSource; readingId: string; field?: Meter; value?: number | null },
+): Promise<WriteResult> {
+  if (input.source !== "entry" && input.source !== "mfb") {
+    return { status: "error", message: "Unknown reading source.", httpStatus: 400 };
+  }
+  if (input.field !== undefined && !METERS.includes(input.field)) {
+    return { status: "error", message: "Unknown meter.", httpStatus: 400 };
+  }
+  if (input.field !== undefined && input.value != null && !(Number.isFinite(input.value) && input.value > 0)) {
+    return { status: "error", message: "Enter a positive number.", httpStatus: 400 };
+  }
+  // Rule 7: a viewer's UPDATE matches zero rows under RLS and returns no error,
+  // so ask the same function RLS asks, then read the write back.
+  if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
+
+  // Both tables carry hobbs/tach/airframe + hours_reviewed_at; `field` is one of
+  // METERS, so the shape is the same either way.
+  const patch: { hours_reviewed_at: string } & Partial<Record<Meter, number | null>> = {
+    hours_reviewed_at: new Date().toISOString(),
+    ...(input.field !== undefined ? { [input.field]: input.value ?? null } : {}),
+  };
+
+  const q =
+    input.source === "entry"
+      ? supabase.from("log_entry").update(patch)
+      : supabase.from("hours_reading").update(patch);
+  const { data, error } = await q.eq("id", input.readingId).eq("aircraft_id", ctx.aircraftId).select("*");
+  if (error) return { status: "error", message: error.message };
+  if (!data?.length) return { status: "error", message: "That reading is no longer there.", httpStatus: 404 };
+  return { status: "ok", row: data[0] };
+}
+
+// ---------------------------------------------------------------------------
 // Meter replacements (meter_reset)
 // ---------------------------------------------------------------------------
 

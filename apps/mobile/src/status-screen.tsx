@@ -14,7 +14,7 @@ import { READING_SOURCE_LABEL } from "@/lib/hobbsTach";
 import type { MaintenanceItem } from "@/lib/database.types";
 import type { StatusItem } from "@/lib/status";
 import type { Aircraft } from "./types";
-import { color, text, radius, hit, tint, semantic, accentGradient, tabular } from "./tokens";
+import { color, text, radius, hit, tint, semantic, accentGradient, tabular, alpha } from "./tokens";
 import { ChevronRightIcon } from "./icons";
 
 // Status — the default screen after choosing an aircraft.
@@ -66,7 +66,7 @@ export function Status({
       <div aria-hidden style={{
         position: "absolute", top: -70, left: "50%", transform: "translateX(-50%)",
         width: 300, height: 220, pointerEvents: "none",
-        background: `radial-gradient(closest-side, ${semantic[verdict.semantic].color}2E, transparent)`,
+        background: `radial-gradient(closest-side, ${alpha(semantic[verdict.semantic].color, "2E")}, transparent)`,
       }} />
 
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 11, marginBottom: 15 }}>
@@ -141,14 +141,15 @@ function CountdownRing({ verdict }: { verdict: Verdict }) {
       aria-label={`${verdict.value} ${verdict.unit}${verdict.item ? `, ${verdict.item.label}` : ""}. ${verdict.headline}.`}
       style={{
         width: SIZE, height: SIZE, position: "relative", borderRadius: "50%",
-        border: `2px solid ${c}47`, background: `radial-gradient(closest-side, ${c}17, transparent)`,
+        border: `2px solid ${alpha(c, "47")}`, background: `radial-gradient(closest-side, ${alpha(c, "17")}, transparent)`,
         display: "grid", placeItems: "center",
       }}>
       <svg width={SIZE} height={SIZE} style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }} aria-hidden>
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={color.surfaceRaised} strokeWidth={5} />
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={c} strokeWidth={5} strokeLinecap="round"
+        {/* stroke goes through style, not the presentation attribute: a var() is not substituted in an attribute. */}
+        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" strokeWidth={5} style={{ stroke: color.surfaceRaised }} />
+        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" strokeWidth={5} strokeLinecap="round"
           strokeDasharray={circumference} strokeDashoffset={circumference * (1 - sweep)}
-          style={{ transition: "stroke-dashoffset 400ms ease-out" }} />
+          style={{ stroke: c, transition: "stroke-dashoffset 400ms ease-out" }} />
       </svg>
       <div style={{ position: "relative", textAlign: "center" }}>
         <div style={{ ...text.hero, ...tabular, color: color.ink }}>{verdict.value}</div>

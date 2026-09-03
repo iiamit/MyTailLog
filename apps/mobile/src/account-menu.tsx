@@ -159,7 +159,7 @@ function Appearance({ choice, onChoose }: { choice: ThemeChoice; onChoose: (c: T
               aria-pressed={on}
               className="hoverable"
               style={{
-                flex: 1, minHeight: hit.min - 6, borderRadius: radius.chip, cursor: "pointer",
+                flex: 1, minHeight: hit.min, borderRadius: radius.chip, cursor: "pointer",
                 background: on ? color.surface : "transparent",
                 border: `1px solid ${on ? color.hairline : "transparent"}`,
                 color: on ? color.ink : color.dim,

@@ -3,7 +3,7 @@ import { enqueue } from "./mutations";
 import { patchLocal, insertLocal } from "./review-local";
 import { Sheet, Stepper, sheetInput, sheetPrimary, sheetCancel } from "./record-screen";
 import { toForm, validateEntry, fieldChip, type EntryForm, type ReviewEntry } from "./review-rules";
-import { color, text, tint, radius } from "./tokens";
+import { color, text, tint, radius, hit } from "./tokens";
 
 // The entry editor sheet. Opened from a card in the review pane with the tapped
 // field focused, or blank for "Add an entry the extractor missed". The raw
@@ -124,7 +124,7 @@ export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, foc
         <div style={{ background: color.bg, border: `1px solid ${color.hairline}`, borderRadius: radius.control, padding: "10px 12px" }}>
           <button
             onClick={() => setShowScan((s) => !s)}
-            style={{ width: "100%", minHeight: 32, background: "transparent", border: "none", padding: 0, color: color.dim, textAlign: "left", fontFamily: text.rowTitle.fontFamily, fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
+            style={{ width: "100%", minHeight: hit.min, background: "transparent", border: "none", padding: 0, color: color.dim, textAlign: "left", fontFamily: text.rowTitle.fontFamily, fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}
           >
             {showScan ? "▾" : "▸"} What the scanner read
           </button>

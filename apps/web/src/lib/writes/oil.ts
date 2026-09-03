@@ -1,11 +1,12 @@
-import { canEdit, type Db, type WriteCtx, type WriteResult } from "./entries";
+import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
 // The ONE implementation of every oil top-off write (CONTRACT §3 C3, §4). See
 // entries.ts for the rules.
 //
-// oil_addition has NO updated_at column (0042) and no update path, so there is
-// nothing for a `base` to compare against: deleteTopOff ignores it. Reported to
-// the lead as a contract/schema mismatch.
+// Migration 0058 gave oil_addition an `updated_at` and a BEFORE UPDATE trigger,
+// so `oil.delete` carries a real base and deleteTopOff compares it like every
+// other delete. (It did not when this file was written; the stale note that
+// said so is what nearly kept the check out.)
 
 const NO_EDIT = "You don't have edit access to this aircraft.";
 
@@ -84,8 +85,16 @@ export async function deleteTopOff(
   input: { additionId: string },
   base?: string,
 ): Promise<WriteResult> {
-  void base; // no updated_at on this table — see the header
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
+  const { data: row } = await supabase
+    .from("oil_addition")
+    .select("*")
+    .eq("id", input.additionId)
+    .eq("aircraft_id", ctx.aircraftId)
+    .maybeSingle();
+  if (!row) return { status: "error", message: "Top-off not found.", httpStatus: 404 };
+  // §2: the row moved on since the phone last saw it — say so, delete nothing.
+  if (isStale(row.updated_at, base)) return { status: "conflict", row };
   const { data, error } = await supabase
     .from("oil_addition")
     .delete()

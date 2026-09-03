@@ -127,9 +127,42 @@ test("changedFields: only columns the row has, and only where the values differ"
 
 test("alreadyApplied: a retry whose values are already on the row is not a conflict", () => {
   const row = { id: "e1", description: "x", hobbs: 1, updated_at: "t" };
-  assert.equal(alreadyApplied({ entryId: "e1", fields: { description: "x", hobbs: 1 } }, row), true);
-  assert.equal(alreadyApplied({ entryId: "e1", fields: { description: "y" } }, row), false);
-  // Nothing comparable (entry.confirm sets owner_confirmed via `confirmed`) → still a conflict.
+  assert.equal(alreadyApplied({ entryId: "e1", fields: { description: "x", hobbs: 1 } }, row, "entry.update"), true);
+  assert.equal(alreadyApplied({ entryId: "e1", fields: { description: "y" } }, row, "entry.update"), false);
+  assert.equal(alreadyApplied({ entryId: "e1" }, row, "entry.update"), false);
+});
+
+// The bug this locks down: `reading.update` sends {date}, the column is
+// `reading_date`. Unaliased the date is invisible, so a row someone else
+// touched (dismissing the hours flag bumps updated_at without moving tach or
+// hobbs) compared equal, the conflict was answered ok, and the owner's date
+// correction was dropped while the phone said it had uploaded.
+test("a payload's short key is compared against the column it actually writes", () => {
+  const reading = { id: "r1", reading_date: "2026-01-01", tach: 10, hobbs: 12, updated_at: "t" };
+  assert.deepEqual(mineFields({ readingId: "r1", date: "2026-02-02", tach: 10 }, "reading.update"),
+    { reading_date: "2026-02-02", tach: 10 });
+  assert.deepEqual(changedFields({ readingId: "r1", date: "2026-02-02", tach: 10 }, reading, "reading.update"),
+    ["reading_date"]);
+  assert.equal(alreadyApplied({ readingId: "r1", date: "2026-02-02", tach: 10 }, reading, "reading.update"), false);
+  assert.equal(alreadyApplied({ readingId: "r1", date: "2026-01-01", tach: 10 }, reading, "reading.update"), true);
+});
+
+test("the other short-key types map too, so the yours/theirs table is never blank", () => {
+  assert.deepEqual(mineFields({ entryId: "e1", confirmed: true }, "entry.confirm"), { owner_confirmed: true });
+  assert.deepEqual(mineFields({ componentId: "c1", date: "2026-03-03" }, "component.remove"), { removal_date: "2026-03-03" });
+  // mx.complete's description/tach/hobbs/signature land on the log entry it
+  // writes, not on maintenance_item — not comparable against the item row.
+  assert.deepEqual(
+    mineFields({ itemId: "m1", date: "2026-03-03", hours: 100, description: "annual", tach: 1, hobbs: 2, signature: "A&P" }, "mx.complete"),
+    { last_done_date: "2026-03-03", last_done_hours: 100 },
+  );
+});
+
+test("a payload field the row cannot show is never read as 'already applied'", () => {
+  const row = { id: "e1", description: "x", hobbs: 1, owner_confirmed: false, updated_at: "t" };
+  // Unmapped `confirmed`: nothing lines up, so stay a conflict rather than
+  // silently agreeing with the server.
   assert.equal(alreadyApplied({ entryId: "e1", confirmed: true }, row), false);
-  assert.equal(alreadyApplied({ entryId: "e1" }, row), false);
+  assert.equal(alreadyApplied({ entryId: "e1", confirmed: false }, row, "entry.confirm"), true);
+  assert.equal(alreadyApplied({ entryId: "e1", fields: { description: "x", nonesuch: 5 } }, row, "entry.update"), false);
 });

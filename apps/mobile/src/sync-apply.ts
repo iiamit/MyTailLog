@@ -44,6 +44,22 @@ export function resetStatements(): { statement: string; values: unknown[] }[] {
   ];
 }
 
+/**
+ * Everything an account left on the device, including the work it never
+ * uploaded. Used ONLY on sign-out: the next person to sign in on this phone
+ * must not read the last owner's records, and their queued writes must not be
+ * pushed under the new account's token. Keeping the cursor would be worse than
+ * keeping the rows — the feed is forward-only, so the new owner's device would
+ * resume from a stranger's position and never be sent the rows it skipped.
+ */
+export function signOutStatements(): { statement: string; values: unknown[] }[] {
+  return [
+    ...resetStatements(),
+    { statement: "DELETE FROM action_queue", values: [] },
+    { statement: "DELETE FROM capture_queue", values: [] },
+  ];
+}
+
 // --- action_queue schema ----------------------------------------------------
 //
 // CREATE TABLE IF NOT EXISTS never adds a column to a table that already

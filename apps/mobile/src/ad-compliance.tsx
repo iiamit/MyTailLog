@@ -210,7 +210,7 @@ export function AdSheet({
             </span>
           )}
           {navigator.onLine ? (
-            <a href={webUrl} target="_blank" rel="noreferrer" style={{ ...text.secondary, fontWeight: 600, color: color.accent, minHeight: 32, display: "inline-flex", alignItems: "center" }}>
+            <a href={webUrl} target="_blank" rel="noreferrer" style={{ ...text.secondary, fontWeight: 600, color: color.accent, minHeight: hit.min, display: "inline-flex", alignItems: "center" }}>
               Read the full directive on the web ›
             </a>
           ) : (

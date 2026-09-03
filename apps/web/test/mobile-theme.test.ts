@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { palettes, tintsFor, cssVars, parseChoice, resolveTheme, type Palette } from "../../mobile/src/tokens";
+import { palettes, tintsFor, cssVars, parseChoice, resolveTheme, alpha, color, paint, type Palette } from "../../mobile/src/tokens";
 import { nextChoice, THEME_CHOICES, THEME_LABEL } from "../../mobile/src/theme";
 
 // The iOS app's light appearance, checked here because apps/mobile has no
@@ -151,4 +151,28 @@ test("cssVars covers every colour and every tint, and the two themes differ", ()
   assert.equal(dark["--c-ink"], palettes.dark.ink);
   assert.notEqual(dark["--c-bg"], light["--c-bg"], "the two themes paint the same background");
   assert.match(Object.keys(dark).join(" "), /--c-surfaceRaised/);
+});
+
+// --- alpha() ----------------------------------------------------------------
+// `${color.danger}4D` is `var(--c-danger)4D`, which is not a colour: the whole
+// declaration drops and the chip paints with no tint and no border. alpha()
+// resolves the var back to the active palette's hex first.
+
+test("alpha() resolves a var() token to real hex, and follows the theme", () => {
+  paint("dark");
+  assert.equal(alpha(color.danger, "4D"), palettes.dark.danger + "4D");
+  paint("light");
+  assert.equal(alpha(color.danger, "4D"), palettes.light.danger + "4D");
+  assert.match(alpha(color.danger, "4D"), /^#[0-9A-Fa-f]{6}[0-9A-Fa-f]{2}$/);
+  paint("dark");
+});
+
+test("alpha() passes a literal colour straight through", () => {
+  assert.equal(alpha("#FF7060", "1F"), "#FF70601F");
+});
+
+test("every token is a var() — nothing snapshots the launch palette", () => {
+  for (const k of Object.keys(palettes.dark) as (keyof Palette)[]) {
+    assert.equal(color[k], `var(--c-${k})`, `${k} must be a var(), or a module-level const freezes it`);
+  }
 });

@@ -3,7 +3,7 @@ import { enqueue, type MutationType } from "./mutations";
 import { shortDate } from "./airworthiness";
 import { firstSentence, titleCase } from "./history";
 import type { LogEntry } from "./types";
-import { color, text, radius, hit, tint, display, accentGradient } from "./tokens";
+import { color, text, radius, hit, tint, display, accentGradient, alpha } from "./tokens";
 
 // One squawk, and everything that can happen to it: resolved (optionally naming
 // the entry that cleared it), reopened, corrected, or deleted because it was
@@ -240,7 +240,7 @@ export function SquawkDetail({
           {confirmDelete ? (
             <div
               style={{
-                marginTop: 14, background: tint.danger, border: `1px solid ${color.danger}4D`,
+                marginTop: 14, background: tint.danger, border: `1px solid ${alpha(color.danger, "4D")}`,
                 borderRadius: radius.card, padding: "12px 14px",
               }}
             >

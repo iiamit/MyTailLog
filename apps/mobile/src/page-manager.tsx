@@ -9,7 +9,7 @@ import { logbookLabel } from "@/lib/logbooks";
 import { deleteWarning, entriesOnPages, toSortable, toggleSelection, type EntryLike } from "./page-select";
 import { useSizeClass } from "./layout";
 import type { Aircraft, Logbook, Page } from "./types";
-import { color, text, radius, hit, display } from "./tokens";
+import { color, text, radius, hit, display, alpha } from "./tokens";
 
 // Putting a logbook back in order, and taking bad scans out of it — the two
 // things the web app can do to a page stack and the phone could not.
@@ -297,7 +297,7 @@ export function PageManager({
             disabled={!!busy}
             style={{
               flex: 1, minHeight: hit.stepper, borderRadius: radius.control,
-              background: color.surfaceRaised, border: `1px solid ${color.danger}66`, color: color.danger,
+              background: color.surfaceRaised, border: `1px solid ${alpha(color.danger, "66")}`, color: color.danger,
               fontFamily: text.rowTitle.fontFamily, fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}
           >

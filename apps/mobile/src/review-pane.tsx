@@ -14,7 +14,7 @@ import {
 } from "./review-rules";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { Page } from "./types";
-import { color, text, radius, hit, tint, accentGradient, tabular } from "./tokens";
+import { color, text, radius, hit, tint, accentGradient, tabular, alpha } from "./tokens";
 
 // Reviewing a scanned page on the phone.
 //
@@ -81,21 +81,36 @@ export function ReviewPane({
   }
   async function merge(e: ReviewEntry) {
     await enqueue("entry.merge", page.aircraft_id, { tailEntryId: e.id }, { base: e.updated_at, label: "Log entry merged with the previous page" });
-    // The head on the previous page absorbs it server-side; the pull brings the merged head back.
-    await deleteLocal("log_entry", e.id);
-    await after("Merged into the previous page");
+    // NOT deleted locally. A merge is the one write here the server refuses for
+    // ordinary reasons an owner will hit — the page has no sequence number, or
+    // it is the first page in the book — and a refused write emits no change_log
+    // row, so nothing would ever put an optimistically-deleted entry back. The
+    // server deletes the tail when the merge lands and the pull removes it then.
+    await after("Merging into the previous page");
   }
   async function review(status: ReviewPage["review_status"]) {
     await enqueue("page.review", page.aircraft_id, { pageId: page.id, status }, { base: page.updated_at });
     await patchLocal<ReviewPage>("page", page.aircraft_id, page.id, { review_status: status });
     await after(status === "confirmed" ? "Page marked reviewed" : status === "disputed" ? "Page flagged" : "Review reopened");
   }
+  const [reading, setReading] = useState(false);
+  // Reading a page is online-only: it spends an AI call on the server and has
+  // nothing to queue. validateMutation refuses every online-only type, so an
+  // enqueue()d `page.extract` would park in "Waiting to upload" forever and the
+  // pane would sit on a "processing" status no pull could ever correct.
   async function extract() {
-    await enqueue("page.extract", page.aircraft_id, { pageId: page.id }, { label: `Read page ${page.page_sequence ?? ""}`.trim() });
-    await patchLocal<ReviewPage>("page", page.aircraft_id, page.id, { extraction_status: "processing" });
-    const r = await onQueued?.();
-    await onChanged();
-    setNote(r === "synced" ? "Reading the page — entries appear on the next sync" : "Needs a connection — will read the page when you're back online");
+    if (reading) return;
+    setReading(true);
+    setNote(null);
+    try {
+      const r = await runExtract(page.id);
+      if ("error" in r) { setNote(r.error); return; }
+      await onQueued?.();          // pull the entries the server just wrote
+      await onChanged();
+      setNote("Page read — the entries are below");
+    } finally {
+      setReading(false);
+    }
   }
 
   const ext = extractLabel(allowance);
@@ -143,8 +158,10 @@ export function ReviewPane({
               : page.extraction_status === "failed" ? "Reading this page didn't work last time. Try again?"
               : "This page hasn't been read yet."}
           </span>
-          {editable && page.extraction_status !== "processing" && (
-            <button onClick={extract} disabled={ext.exhausted} style={{ ...primaryBtn, opacity: ext.exhausted ? 0.4 : 1 }}>{ext.label}</button>
+          {editable && (page.extraction_status !== "processing" || reading) && (
+            <button onClick={extract} disabled={ext.exhausted || reading} style={{ ...primaryBtn, opacity: ext.exhausted || reading ? 0.4 : 1 }}>
+              {reading ? "Reading the page…" : ext.label}
+            </button>
           )}
         </div>
       )}
@@ -214,7 +231,7 @@ function EntryCard({
   return (
     <div style={{ background: color.surface, border: `1px solid ${e.owner_confirmed ? tint.successBorder : color.hairline}`, borderRadius: radius.card, padding: "10px 12px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span style={{ ...text.chip, color: tone, background: `${tone}1F`, border: `1px solid ${tone}4D`, borderRadius: 6, padding: "3px 7px" }}>{badge}</span>
+        <span style={{ ...text.chip, color: tone, background: `${alpha(tone, "1F")}`, border: `1px solid ${alpha(tone, "4D")}`, borderRadius: 6, padding: "3px 7px" }}>{badge}</span>
       </div>
 
       {FIELD_ROWS.map((f) => {
@@ -383,6 +400,32 @@ function useAllowance(): Allowance | null {
     return () => { live = false; };
   }, []);
   return a;
+}
+
+/**
+ * Read a scanned page. Online only, and NOT queued: the work is a paid model
+ * call on the server, so there is nothing sensible to replay later — the push
+ * endpoint refuses every online-only type for exactly this reason (CONTRACT §12,
+ * same call shape as runScan / enroll).
+ */
+async function runExtract(pageId: string): Promise<{ ok: true } | { error: string }> {
+  if (!navigator.onLine) return { error: "Reading a page needs a connection. Try again when you're back online." };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { error: "Sign in again to read this page." };
+  try {
+    const res = await CapacitorHttp.post({
+      url: `${API_BASE}/api/pages/${pageId}/extract`,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      data: {},
+    });
+    if (res.status < 200 || res.status >= 300) {
+      return { error: typeof res.data?.error === "string" ? res.data.error : `The server answered ${res.status}.` };
+    }
+    return { ok: true };
+  } catch {
+    return { error: "Reading a page needs a connection. Try again when you're back online." };
+  }
 }
 
 // --- Buttons ------------------------------------------------------------------------

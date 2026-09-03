@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import * as pages from "@/lib/writes/pages";
-import { canEdit, failMessage } from "@/lib/writes/entries";
-import { METERS, type Meter } from "@/lib/hobbsTach";
+import * as meters from "@/lib/writes/meters";
+import { failMessage } from "@/lib/writes/entries";
+import type { Meter } from "@/lib/hobbsTach";
 
-// Page ops are thin wrappers over lib/writes/pages (CONTRACT §4): resolve the
-// session, call the one implementation, revalidate. The meter functions below
-// are unchanged (writes C2 owns them).
+// Every function here is a thin wrapper over lib/writes (CONTRACT §4): resolve
+// the session, call the one implementation, revalidate.
 
 async function session(aircraftId: string) {
   const supabase = await createClient();
@@ -59,31 +59,21 @@ export async function reorderPages(
 
 // A flagged reading lives in log_entry (source "entry") or hours_reading
 // ("mfb"); both carry hobbs/tach + hours_reviewed_at and are RLS-scoped to
-// aircraft editors. Branch on source so each .from() stays a concrete table.
-type HoursSource = "entry" | "mfb";
-type HoursPatch = { hobbs?: number | null; tach?: number | null; airframe?: number | null; hours_reviewed_at: string };
+// aircraft editors. The implementation is meters.resolveHoursFlag — these are
+// the web door onto it (CONTRACT §4), nothing more.
+type HoursSource = meters.HoursSource;
 
-async function updateReading(
+async function fixHours(
   aircraftId: string,
-  source: HoursSource,
-  readingId: string,
-  patch: HoursPatch,
-): Promise<{ error: string } | null> {
-  const supabase = await createClient();
-  const table = source === "entry" ? "log_entry" : "mfb" === source ? "hours_reading" : null;
-  if (table !== "log_entry" && table !== "hours_reading") return { error: "Unknown reading source." };
-  // CONTRACT rule 7: a viewer's UPDATE matches zero rows under RLS and comes
-  // back with no error, so all three callers used to report success and change
-  // nothing. Ask the same function RLS asks, then read the write back.
-  if (!(await canEdit(supabase, aircraftId))) return { error: "You don't have permission to edit this aircraft." };
-  const q =
-    table === "log_entry"
-      ? supabase.from("log_entry").update(patch)
-      : supabase.from("hours_reading").update(patch);
-  const { data, error } = await q.eq("id", readingId).eq("aircraft_id", aircraftId).select("id");
-  if (error) return { error: error.message };
-  if (!data || data.length === 0) return { error: "That reading is no longer there." };
-  return null;
+  input: { source: HoursSource; readingId: string; field?: Meter; value?: number | null },
+  verb: string,
+): Promise<{ ok: true } | { error: string }> {
+  const s = await session(aircraftId);
+  if (!s) return { error: "Not signed in." };
+  const r = await meters.resolveHoursFlag(s.supabase, s.ctx, input);
+  if (r.status !== "ok") return { error: `Couldn't ${verb}: ${failMessage(r)}` };
+  revalidatePath(`/aircraft/${aircraftId}/duplicates`);
+  return { ok: true };
 }
 
 /**
@@ -98,14 +88,7 @@ export async function acceptHoursFix(
   field: Meter,
   value: number,
 ): Promise<{ ok: true } | { error: string }> {
-  if (!Number.isFinite(value) || value <= 0) return { error: "Enter a positive number." };
-  if (!METERS.includes(field)) return { error: "Unknown meter." };
-  const stamp = new Date().toISOString();
-  const patch: HoursPatch = { [field]: value, hours_reviewed_at: stamp };
-  const err = await updateReading(aircraftId, source, readingId, patch);
-  if (err) return { error: `Couldn't save: ${err.error}` };
-  revalidatePath(`/aircraft/${aircraftId}/duplicates`);
-  return { ok: true };
+  return fixHours(aircraftId, { source, readingId, field, value }, "save");
 }
 
 /**
@@ -118,13 +101,7 @@ export async function clearHoursField(
   readingId: string,
   field: Meter,
 ): Promise<{ ok: true } | { error: string }> {
-  if (!METERS.includes(field)) return { error: "Unknown meter." };
-  const stamp = new Date().toISOString();
-  const patch: HoursPatch = { [field]: null, hours_reviewed_at: stamp };
-  const err = await updateReading(aircraftId, source, readingId, patch);
-  if (err) return { error: `Couldn't clear: ${err.error}` };
-  revalidatePath(`/aircraft/${aircraftId}/duplicates`);
-  return { ok: true };
+  return fixHours(aircraftId, { source, readingId, field, value: null }, "clear");
 }
 
 /** Dismiss a flag — the reading is correct as-is; just stop re-flagging it. */
@@ -133,8 +110,5 @@ export async function dismissHoursFlag(
   source: HoursSource,
   readingId: string,
 ): Promise<{ ok: true } | { error: string }> {
-  const err = await updateReading(aircraftId, source, readingId, { hours_reviewed_at: new Date().toISOString() });
-  if (err) return { error: `Couldn't dismiss: ${err.error}` };
-  revalidatePath(`/aircraft/${aircraftId}/duplicates`);
-  return { ok: true };
+  return fixHours(aircraftId, { source, readingId }, "dismiss");
 }

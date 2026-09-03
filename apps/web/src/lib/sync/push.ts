@@ -35,7 +35,7 @@ export async function applyMutation(supabase: Db, userId: string, canEdit: EditC
     if (r.status === "conflict") {
       // A retry of a write that already landed (lost response): the row holds
       // the phone's own values. Don't make the owner choose between twins.
-      if (alreadyApplied(m.payload, r.row)) return { id: m.id, status: "ok", row: r.row };
+      if (alreadyApplied(m.payload, r.row, m.type)) return { id: m.id, status: "ok", row: r.row };
       return { id: m.id, status: "conflict", row: r.row };
     }
     return { id: m.id, status: "error", error: r.message };

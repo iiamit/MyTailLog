@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { color, text, radius, hit, accentGradient, tint } from "./tokens";
+import { color, text, radius, hit, accentGradient, tint, alpha } from "./tokens";
 import { EnrollSheet } from "./enroll-sheet";
 
 // First run — the screen an AirVenture booth visitor lands on.
@@ -30,13 +30,13 @@ export function FirstRun({
       <div aria-hidden style={{
         position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)",
         width: 320, height: 240, pointerEvents: "none",
-        background: `radial-gradient(closest-side, ${color.accent}2E, transparent)`,
+        background: `radial-gradient(closest-side, ${alpha(color.accent, "2E")}, transparent)`,
       }} />
 
       <div style={{
         position: "relative", width: 52, height: 45, background: accentGradient,
         clipPath: "polygon(50% 0, 100% 86%, 0 86%)",
-        filter: `drop-shadow(0 6px 22px ${color.accent}66)`,
+        filter: `drop-shadow(0 6px 22px ${alpha(color.accent, "66")})`,
       }} />
 
       <h1 style={{ ...text.screenTitle, fontSize: 27, lineHeight: 1.15, color: color.ink, textAlign: "center", margin: "18px 0 0" }}>

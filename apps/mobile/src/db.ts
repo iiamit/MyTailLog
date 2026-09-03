@@ -1,6 +1,6 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from "@capacitor-community/sqlite";
 import type { SyncChange } from "./sync";
-import { changeStatements, resetStatements, queueUpgradeStatements, QUEUE_VERSION } from "./sync-apply";
+import { changeStatements, resetStatements, signOutStatements, queueUpgradeStatements, QUEUE_VERSION } from "./sync-apply";
 
 // On-device mirror of the synced data. Schema-agnostic: every pulled row is
 // stored as JSON in one `records` table keyed by (table_name, id), so the client
@@ -255,6 +255,19 @@ export async function healMirrorIfStale(): Promise<boolean> {
 export async function resetLocal(): Promise<void> {
   if (!db) return;
   await db.executeSet(resetStatements());
+}
+
+/**
+ * Sign-out wipe: the mirror, the cursor AND both queues. Unlike resetLocal()
+ * this DOES discard unsent work, because the alternative is worse — the queued
+ * writes belong to the account that is leaving and would be pushed with the
+ * next account's token. Everything readable on this device is a copy of server
+ * rows the signed-in account could see, so a shared iPad must not carry them
+ * across a hand-off.
+ */
+export async function wipeForSignOut(): Promise<void> {
+  if (!db) return;
+  await db.executeSet(signOutStatements());
 }
 
 export async function getCursor(): Promise<number> {

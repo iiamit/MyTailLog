@@ -54,6 +54,28 @@ export function isStale(updatedAt: string, base: string | undefined): boolean {
   return base != null && Date.parse(updatedAt) > Date.parse(base);
 }
 
+export const FOREIGN_ENTRY = "That entry isn't on this aircraft.";
+
+/**
+ * Is this log_entry on the aircraft being written?
+ *
+ * RLS proves the caller may edit the ROW, and says nothing about which entry
+ * its foreign key points at — none of the five `references log_entry(id)`
+ * columns is aircraft-scoped. Without this, an editor of aircraft A who knows a
+ * log_entry UUID on aircraft B can persist a row on A that points into B, and
+ * entries.mergeContinuation will later re-point it when B's entry is merged.
+ * Every write that accepts a client-supplied entry id calls this.
+ */
+export async function entryIsOnAircraft(supabase: Db, aircraftId: string, entryId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("log_entry")
+    .select("id")
+    .eq("id", entryId)
+    .eq("aircraft_id", aircraftId)
+    .maybeSingle();
+  return !!data;
+}
+
 // ---------------------------------------------------------------------------
 // Pure helpers — tested in apps/web/test/writes-entries.test.ts
 // ---------------------------------------------------------------------------

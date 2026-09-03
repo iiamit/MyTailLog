@@ -1,5 +1,5 @@
 import type { Component } from "@/lib/database.types";
-import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
+import { entryIsOnAircraft, FOREIGN_ENTRY, canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 import { isIsoDate, validNumber } from "./meters";
 
 // The ONE implementation of every equipment write (CONTRACT §3 C2, §4):
@@ -119,6 +119,11 @@ export async function upsert(
 ): Promise<WriteResult> {
   const picked = pickComponentFields(input.component);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
+  // component.install_entry_id is not aircraft-scoped by the FK or by RLS.
+  const entryId = picked.fields.install_entry_id;
+  if (entryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, entryId))) {
+    return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
+  }
   if (input.id) {
     const loaded = await loadComponent(supabase, ctx, input.id, base);
     if ("status" in loaded) return loaded;
@@ -178,6 +183,10 @@ export async function markRemoved(
   if (!isIsoDate(date)) return { status: "error", message: "Removed on must be a date.", httpStatus: 400 };
   const loaded = await loadComponent(supabase, ctx, input.componentId, base);
   if ("status" in loaded) return loaded;
+  // Same hazard as install_entry_id: the FK says log_entry, not this aircraft's.
+  if (input.entryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, input.entryId))) {
+    return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
+  }
 
   const patched = await patchComponent(supabase, ctx, input.componentId, {
     is_installed: false,

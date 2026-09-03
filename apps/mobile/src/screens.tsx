@@ -15,7 +15,7 @@ import type { FieldBox } from "@/lib/extraction/schema";
 import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
 import { Card, Row, TopBar, Pill, URGENCY_COLOR, URGENCY_LABEL, text, dim, faint, ink, mono, panel, line, green, red, amber, accentGradient } from "./ui";
-import { color } from "./tokens";
+import { color, alpha } from "./tokens";
 
 // ---- Fleet home ------------------------------------------------------------
 // "Which of my aircraft needs me?" in one glance. The fleet IS the content:
@@ -136,7 +136,7 @@ export function Entries({
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: "0 0 auto", width: 34 }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: 9, display: "grid", placeItems: "center",
-                  background: `${CATEGORY[h.category].color}1F`, color: CATEGORY[h.category].color, fontSize: 14,
+                  background: `${alpha(CATEGORY[h.category].color, "1F")}`, color: CATEGORY[h.category].color, fontSize: 14,
                 }}>
                   {CATEGORY[h.category].glyph}
                 </div>
@@ -303,7 +303,7 @@ export function Pages({ aircraft, onOpen, onQueued }: { aircraft: Aircraft; onOp
           <button
             onClick={() => setNeedsOnly((v) => !v)}
             style={{
-              background: needsOnly ? `${amber}1F` : panel, color: needsOnly ? amber : dim,
+              background: needsOnly ? `${alpha(amber, "1F")}` : panel, color: needsOnly ? amber : dim,
               border: `1px solid ${needsOnly ? amber : line}`, borderRadius: 9,
               padding: "7px 12px", minHeight: 44, fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}

@@ -4,13 +4,13 @@ import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
 import { deliveryDecision } from "./sync-policy";
-import { initDb, applyChanges, resetLocal, healMirrorIfStale, getCursor, setCursor, actionCount, captureCount, getRows } from "./db";
+import { initDb, applyChanges, resetLocal, wipeForSignOut, healMirrorIfStale, getCursor, setCursor, actionCount, captureCount, getRows } from "./db";
 import { computeAirworthiness, buildVerdict } from "./airworthiness";
 import type { Urgency } from "@/lib/compliance";
 import { drainActions, refreshEditable } from "./actions";
 import { drainCaptures } from "./capture";
-import { drainDocumentUploads } from "./blob-upload";
-import { prefetchAll } from "./blobs";
+import { drainDocumentUploads, documentUploadCount, clearDocumentUploads } from "./blob-upload";
+import { prefetchAll, clearCache } from "./blobs";
 import { Hangar, EntryDetail, PageViewer } from "./screens";
 import { Records } from "./records-screen";
 import { TabBar, TABS, type Tab } from "./tabbar";
@@ -231,8 +231,8 @@ function Shell({ session }: { session: Session }) {
   }
 
   async function updatePending(): Promise<number> {
-    const [actions, captures] = await Promise.all([actionCount(), captureCount()]);
-    const total = actions + captures;
+    const [actions, captures, docs] = await Promise.all([actionCount(), captureCount(), documentUploadCount()]);
+    const total = actions + captures + docs;
     setPending(total);
     return total;
   }
@@ -275,6 +275,22 @@ function Shell({ session }: { session: Session }) {
     await sync();
   }
 
+  // Signing out has to take the on-device copy with it. The Keychain session
+  // goes, but records/, the cursor and both queues persist across a sign-in by
+  // a DIFFERENT account on the same phone — Shell just remounts on the same
+  // SQLite file — so the next owner would open the app onto the last owner's
+  // fleet, and the forward-only feed (`seq > cursor`) would never retract it.
+  // The two file stores go with it: cached scans and PDFs under blobs/, and
+  // documents queued offline under uploads/.
+  async function signOut() {
+    try {
+      await Promise.all([wipeForSignOut(), clearCache(), clearDocumentUploads()]);
+      setCur(0);
+    } finally {
+      await supabase.auth.signOut();
+    }
+  }
+
   async function performSync() {
     setSyncing("Syncing…");
     setError(null);
@@ -296,6 +312,8 @@ function Shell({ session }: { session: Session }) {
         setError(`${drained.failed} queued change${drained.failed === 1 ? "" : "s"} was refused — see the pending list.`);
       } else if (captures.failed > 0 && !drained.offline) {
         setError(`${captures.failed} scanned page${captures.failed === 1 ? "" : "s"} is still waiting to upload.`);
+      } else if (uploaded.failed > 0 && !drained.offline) {
+        setError(`${uploaded.failed} document${uploaded.failed === 1 ? "" : "s"} is still waiting to upload.`);
       }
 
       const from = await getCursor();
@@ -367,7 +385,7 @@ function Shell({ session }: { session: Session }) {
       onDownloadAll={() => { setMenu(false); downloadAll(); }}
       dl={dl}
       onRebuild={() => { setMenu(false); rebuild(); }}
-      onSignOut={() => supabase.auth.signOut()}
+      onSignOut={signOut}
     />
   );
 

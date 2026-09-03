@@ -51,6 +51,12 @@ export async function queueDocumentUpload(meta: PendingUpload, base64: string): 
   });
 }
 
+/** Drop every held document. Sign-out only: these files are the outgoing
+ *  account's, and the phone may be handed to someone else next. */
+export async function clearDocumentUploads(): Promise<void> {
+  await Filesystem.rmdir({ path: FOLDER, directory: DIR, recursive: true }).catch(() => {});
+}
+
 /** Oldest first — documents upload in the order they were added. */
 export async function listDocumentUploads(aircraftId?: string): Promise<PendingUpload[]> {
   const files = await Filesystem.readdir({ path: FOLDER, directory: DIR }).catch(() => null);

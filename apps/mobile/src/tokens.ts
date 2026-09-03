@@ -22,25 +22,20 @@
 // #5AA9FF that reads perfectly on #0F1216 is unreadable on white. Contrast is
 // checked in apps/web/test/mobile-theme.test.ts, not by eye.
 //
-// HOW A COLOUR REACHES THE SCREEN. Most token values are CSS custom properties
-// (`var(--c-ink)`), written onto <html> by applyTheme() in theme.ts. That is
-// what makes a theme switch reach style objects built once at module load
-// (ui.tsx's `input`, `ghost`, …) — a plain string captured there would stay dark
-// forever. Three keys are RAW hex instead, because a var() cannot be used where
-// they are used:
-//   bg, accent      — concatenated with an alpha suffix (`${color.accent}66`)
-//   surfaceRaised   — passed as an SVG presentation attribute
-// Those three come from the active palette through a Proxy, so they follow the
-// theme on the next render. Anything new doing string maths on a colour has to
-// be added to RAW below.
+// HOW A COLOUR REACHES THE SCREEN. EVERY token value is a CSS custom property
+// (`var(--c-ink)`), written onto <html> by paint(). That is what makes a theme
+// switch reach style objects built once at module load (ui.tsx's `input`,
+// record-screen's `sheetInput`, …) — a plain hex string captured there would
+// stay on the launch palette forever.
 //
-// KNOWN LIMIT of the raw three: ui.tsx re-exports `accent = color.accent` as a
-// module-level alias, so the handful of labels that import THAT (screens.tsx,
-// pending.tsx, complete-screen.tsx) keep the palette the app launched in until
-// the next launch if the owner flips appearance mid-session. Everything painted
-// through a var() changes instantly. The fix is for those files to read
-// `color.accent` at render time; it is a request to their owners, not a change
-// that can be made here.
+// Two places cannot take a var(), and both have a helper here instead of a raw
+// token:
+//   • string maths — `${color.danger}4D` becomes `var(--c-danger)4D`, which is
+//     invalid at computed-value time and drops the whole declaration. Use
+//     `alpha(color.danger, "4D")`, which resolves the var back to hex.
+//   • SVG presentation attributes (`stroke="…"`) do not substitute var().
+//     Set the CSS property instead (`style={{ stroke: … }}`), or paint the
+//     `color` property and stroke/fill with `currentColor` — see icons.tsx.
 
 export type ThemeName = "dark" | "light";
 
@@ -131,9 +126,6 @@ export function tintsFor(p: Palette): Tints {
   };
 }
 
-/** Keys that must resolve to a real colour, not a var() — see the note above. */
-const RAW = new Set(["bg", "accent", "surfaceRaised"]);
-
 let active: ThemeName = "dark";
 
 /** The palette the app is currently painted in. Set by applyTheme(). */
@@ -147,11 +139,25 @@ export function setActiveTheme(t: ThemeName): void {
 }
 
 export const color: Palette = new Proxy({} as Palette, {
-  get: (_t, k: string) => (RAW.has(k) ? palettes[active][k as keyof Palette] : `var(--c-${k})`),
+  get: (_t, k: string) => `var(--c-${k})`,
   // Style objects get spread and inspected; make the proxy enumerate like one.
   ownKeys: () => Object.keys(palettes.dark),
   getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
 });
+
+/**
+ * A token at an alpha, as 8-digit hex.
+ *
+ * `${color.danger}4D` produces `var(--c-danger)4D` — not a colour, so the
+ * declaration is dropped and the element paints with no tint and no border.
+ * This resolves the var() back to the active palette's hex first. Call it at
+ * render time (it reads the live theme); a module-level const would snapshot
+ * the launch palette, which is the bug the var()s exist to avoid.
+ */
+export function alpha(c: string, a: string): string {
+  const m = /^var\(--c-([a-zA-Z]+)\)$/.exec(c);
+  return (m ? palettes[active][m[1] as keyof Palette] : c) + a;
+}
 
 export const tint: Tints = new Proxy({} as Tints, {
   get: (_t, k: string) => `var(--t-${k})`,
