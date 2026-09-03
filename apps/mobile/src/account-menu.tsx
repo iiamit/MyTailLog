@@ -49,6 +49,7 @@ export function AccountMenu({
   const { choice, setChoice } = useTheme();
   const storage = useStorage(dl);
   const push = usePushState();
+  const [testing, setTesting] = useState<string | null>(null);
   const [backup, setBackup] = useState<string | null>(null);
 
   async function runBackup() {
@@ -76,6 +77,20 @@ export function AccountMenu({
         <div style={{ ...text.meta, color: color.faint, marginBottom: 6 }}>{email}</div>
 
         <MenuItem label="Sync now" onClick={onSync} />
+        {/* Only where reminders can actually arrive. The answer is the point:
+            a working push says so, and a failure names the reason instead of
+            leaving someone to guess from an empty inbox. */}
+        {push.status === "registered" && (
+          <MenuItem
+            label={testing ?? "Send a test notification"}
+            detail="Checks that reminders can reach this phone."
+            onClick={() => {
+              if (testing) return;
+              setTesting("Sending…");
+              void sendTestPush().then((r) => setTesting(r));
+            }}
+          />
+        )}
         {/* Shown only when reminders will NOT arrive. A working device says
             nothing; the point is that a silent failure stops being silent. */}
         {push.status !== "registered" && push.status !== "unsupported" && (
@@ -306,4 +321,26 @@ function usePushState(): PushState {
   const [s, setS] = useState<PushState>(() => pushState());
   useEffect(() => onPushState(setS), []);
   return s;
+}
+
+/** Ask the server to push to this account's devices, and report what happened. */
+async function sendTestPush(): Promise<string> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const jwt = data.session?.access_token;
+    if (!jwt) return "Sign in first";
+    const res = await CapacitorHttp.request({
+      method: "POST",
+      url: `${API_BASE}/api/push/test`,
+      headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
+      data: {},
+    });
+    const b = (res.data ?? {}) as { sent?: number; devices?: number; error?: string; hint?: string };
+    if (res.status >= 400) return `Failed — ${b.error ?? res.status}`;
+    if (b.error) return `Apple refused it — ${b.error}`;
+    if (!b.devices) return b.hint ?? "No device registered";
+    return b.sent ? "Sent — it should arrive now" : "Nothing sent";
+  } catch (e) {
+    return e instanceof Error ? `Failed — ${e.message}` : "Failed";
+  }
 }
