@@ -158,6 +158,38 @@ Each should sync without entering the pending list or requiring the Sync button.
   a real tail → the FAA's make/model/serial come back → confirm → the aircraft
   appears in the hangar.
 
+## 6b. Signing: why the export is manual
+
+`npm run testflight` exports with **manual** signing against a named profile:
+
+    PROFILE_NAME="iOS Team Store Provisioning Profile: com.mytaillog.app"
+
+`signingStyle: automatic` asks Apple to mint that profile at export time ("cloud
+signing"), and the App Store Connect API key must hold **App Manager** or
+**Admin** to be allowed to. A key with the Developer role fails with:
+
+    error: exportArchive Cloud signing permission error
+    error: exportArchive Provisioning profile "..." doesn't include the Push
+           Notifications capability.
+
+Those last two lines are misleading — the capability *is* on the App ID; the
+profile simply was never created. Read the first line, not the loudest one.
+
+Naming an existing profile removes the dependency entirely. Xcode installs one
+the first time you distribute from the **Organizer**, so if the script ever says
+it cannot find the profile, that is the fix: archive once from Xcode, then the
+CLI works again. Override `PROFILE_NAME` if the team renames it.
+
+The script preflights the profile before building: it must exist locally and
+carry `aps-environment = production`, or it exits with the reason. A TestFlight
+build signed for the development APNs host registers no device tokens and fails
+silently — that is worth catching in two seconds rather than after an upload.
+
+**Version caveat.** The script passes `MARKETING_VERSION` and
+`CURRENT_PROJECT_VERSION` as `xcodebuild` flags, which do **not** persist to
+`project.pbxproj`. An archive made by hand in Xcode therefore ships whatever the
+project file says — set it there first if you are not using the script.
+
 ## 7. Push notifications — the APNs key (one time)
 
 The app registers its device token after sign-in; the daily cron sends the same
