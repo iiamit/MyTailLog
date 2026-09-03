@@ -138,6 +138,35 @@ env:
     secret: OIDC_JWKS
     availability:
       - RUNTIME
+  # Apple Push Notification service, for the iOS app's due/overdue reminders
+  # (migration 0059 + src/app/api/push). The .p8 key can only be downloaded once,
+  # so the user provisions these; until all five exist the sender logs "APNs is
+  # not configured" and the reminder email goes out alone. Step by step in
+  # apps/mobile/TESTFLIGHT.md §7. Each `secret:` must match the Secret Manager ID
+  # character for character (the PR #131 lesson).
+  #   firebase apphosting:secrets:set APNS_KEY --data-file AuthKey_XXXXXXXXXX.p8
+  - variable: APNS_KEY_ID
+    secret: APNS_KEY_ID
+    availability:
+      - RUNTIME
+  - variable: APNS_TEAM_ID
+    secret: APNS_TEAM_ID
+    availability:
+      - RUNTIME
+  - variable: APNS_KEY
+    secret: APNS_KEY
+    availability:
+      - RUNTIME
+  - variable: APNS_BUNDLE_ID
+    secret: APNS_BUNDLE_ID
+    availability:
+      - RUNTIME
+  # "sandbox" for TestFlight builds signed with a development profile,
+  # "production" for App Store and TestFlight builds signed for distribution.
+  - variable: APNS_ENV
+    secret: APNS_ENV
+    availability:
+      - RUNTIME
 
   # Non-sensitive defaults.
   - variable: EXTRACTION_MODEL # vision / handwriting (keep strong)

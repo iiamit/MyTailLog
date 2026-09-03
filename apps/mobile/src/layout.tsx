@@ -58,9 +58,6 @@ export function Sidebar({
   onAsk?: () => void;
   askOn?: boolean;
 }): ReactElement | null {
-  // ponytail: inline hover until platform ships `.hoverable` in index.css
-  // (requested); the className is already on the rows so the class wins later.
-  const [hover, setHover] = useState<string | null>(null);
   const row = (id: string, on: boolean) => ({
     display: "flex",
     alignItems: "center",
@@ -68,7 +65,7 @@ export function Sidebar({
     width: "100%",
     minHeight: hit.min,
     padding: "0 12px",
-    background: on ? color.surfaceRaised : hover === id ? `${color.surfaceRaised}99` : "transparent",
+    background: on ? color.surfaceRaised : "transparent",
     border: `1px solid ${on ? color.hairline : "transparent"}`,
     borderRadius: radius.control,
     color: on ? color.ink : color.dim,
@@ -114,8 +111,6 @@ export function Sidebar({
             key={id}
             className="hoverable"
             onClick={() => onTab(id)}
-            onMouseEnter={() => setHover(id)}
-            onMouseLeave={() => setHover(null)}
             aria-current={on ? "page" : undefined}
             title={`⌘${i + 1}`}
             style={row(id, on)}
@@ -132,8 +127,6 @@ export function Sidebar({
         <button
           className="hoverable"
           onClick={onAsk}
-          onMouseEnter={() => setHover("ask")}
-          onMouseLeave={() => setHover(null)}
           aria-current={askOn ? "page" : undefined}
           title="⌘K"
           style={{ ...row("ask", !!askOn), marginTop: 8 }}
@@ -161,8 +154,6 @@ export function Sidebar({
       <button
         className="hoverable"
         onClick={onAccount}
-        onMouseEnter={() => setHover("account")}
-        onMouseLeave={() => setHover(null)}
         aria-label="Account"
         style={{ ...row("account", false), marginTop: "auto" }}
       >

@@ -9,14 +9,16 @@ import { color, tint, text, display, body, tabular, radius, accentGradient } fro
 export { color, tint, text, display, body, tabular, radius, accentGradient };
 
 // --- Palette (redesign values) ---------------------------------------------
-export const bg = color.bg;
+// Every name here is a `var(--c-*)` string, so it follows the theme by itself.
+// The three RAW keys (bg, accent, surfaceRaised — see tokens.ts) are NOT
+// re-exported: a `const` would snapshot the launch palette and stay on it when
+// the appearance flips mid-session. Read those as `color.bg` / `color.accent` /
+// `color.surfaceRaised` at render time.
 export const panel = color.surface;
-export const panel2 = color.surfaceRaised;
 export const line = color.hairline;
 export const ink = color.ink;
 export const dim = color.dim;
 export const faint = color.faint;
-export const accent = color.accent;
 export const amber = color.warning;
 export const red = color.danger;
 export const green = color.success;

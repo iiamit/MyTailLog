@@ -8,7 +8,8 @@ import { logbookLabel } from "@/lib/logbooks";
 import type { LogbookType, MaintenanceItem } from "@/lib/database.types";
 import type { StatusItem } from "@/lib/status";
 import type { Aircraft } from "./types";
-import { TopBar, dim, faint, mono, panel, line, accent, amber, input, primary } from "./ui";
+import { TopBar, dim, faint, mono, panel, line, amber, input, primary } from "./ui";
+import { color } from "./tokens";
 
 // Mark a recurring item done and reset its counter.
 //
@@ -136,7 +137,7 @@ export function CompleteItem({
     return (
       <>
         <TopBar title="Saved" onBack={onBack} />
-        <p style={{ color: accent, fontSize: 14, marginTop: 16 }}>
+        <p style={{ color: color.accent, fontSize: 14, marginTop: 16 }}>
           {item.label} marked done {shortDate(date)}. {done === "synced" ? "Synced." : "Waiting for a connection."}
         </p>
         {isVor && (

@@ -14,7 +14,8 @@ import { filterHistory, NO_FILTER, type HistoryFilter } from "./records-filter";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Card, Row, TopBar, Pill, URGENCY_COLOR, URGENCY_LABEL, text, dim, faint, ink, mono, panel, panel2, line, accent, green, red, amber, accentGradient, color } from "./ui";
+import { Card, Row, TopBar, Pill, URGENCY_COLOR, URGENCY_LABEL, text, dim, faint, ink, mono, panel, line, green, red, amber, accentGradient } from "./ui";
+import { color } from "./tokens";
 
 // ---- Fleet home ------------------------------------------------------------
 // "Which of my aircraft needs me?" in one glance. The fleet IS the content:
@@ -146,7 +147,7 @@ export function Entries({
                 <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
                   <span style={{ ...text.rowTitle, color: ink }}>{h.title}</span>
                   {h.merged > 1 && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: dim, background: panel2, borderRadius: 5, padding: "1px 5px" }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: dim, background: color.surfaceRaised, borderRadius: 5, padding: "1px 5px" }}>
                       {h.merged} merged
                     </span>
                   )}
@@ -182,7 +183,7 @@ export function EntryDetail({ entry, tail, onBack, onZoom }: { entry: LogEntry; 
     <>
       <TopBar title={tail} onBack={onBack} />
       <div style={{ marginTop: 12 }}>
-        <div style={{ ...mono, color: accent, fontSize: 13 }}>{entry.entry_date ?? "—"}</div>
+        <div style={{ ...mono, color: color.accent, fontSize: 13 }}>{entry.entry_date ?? "—"}</div>
         <div style={{ fontSize: 17, fontWeight: 700, marginTop: 4 }}>{entry.description || "(no description)"}</div>
       </div>
       {entry.page_id && <Scan pageId={entry.page_id} onZoom={onZoom} />}
@@ -227,7 +228,7 @@ function Scan({ pageId, onZoom }: { pageId: string; onZoom: (src: string) => voi
 
 function Block({ label, text }: { label: string; text: string }) {
   return (
-    <div style={{ marginTop: 14, background: panel2, border: `1px solid ${line}`, borderRadius: 10, padding: "11px 13px" }}>
+    <div style={{ marginTop: 14, background: color.surfaceRaised, border: `1px solid ${line}`, borderRadius: 10, padding: "11px 13px" }}>
       <div style={{ color: faint, fontSize: 10.5, letterSpacing: 1, textTransform: "uppercase" }}>{label}</div>
       <div style={{ color: ink, fontSize: 13.5, marginTop: 5, whiteSpace: "pre-wrap" }}>{text}</div>
     </div>
@@ -335,8 +336,8 @@ export function Pages({ aircraft, onOpen, onQueued }: { aircraft: Aircraft; onOp
                 key={id ?? "all"}
                 onClick={() => setBook(id)}
                 style={{
-                  background: on ? accent : panel, color: on ? "#0B1017" : dim,
-                  border: `1px solid ${on ? accent : line}`, borderRadius: 9,
+                  background: on ? color.accent : panel, color: on ? "#0B1017" : dim,
+                  border: `1px solid ${on ? color.accent : line}`, borderRadius: 9,
                   padding: "7px 12px", minHeight: 36, fontSize: 12, fontWeight: 600, cursor: "pointer",
                 }}
               >
@@ -449,7 +450,7 @@ export function PageViewer({
   return (
     <div style={{ background: "#08090C", margin: -20, padding: `20px 0 ${review === "drawer" ? "70px" : "0"}`, minHeight: "100vh" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 14px" }}>
-        <button onClick={onBack} aria-label="Back" style={{ background: "none", border: "none", color: accent, fontSize: 19, cursor: "pointer", minHeight: 44, padding: "0 8px 0 0" }}>‹</button>
+        <button onClick={onBack} aria-label="Back" style={{ background: "none", border: "none", color: color.accent, fontSize: 19, cursor: "pointer", minHeight: 44, padding: "0 8px 0 0" }}>‹</button>
         <div style={{ textAlign: "center", flex: 1 }}>
           <div style={{ fontFamily: text.rowTitle.fontFamily, fontSize: 14.5, fontWeight: 600, color: ink }}>
             Page {i + 1} of {pages.length}
@@ -517,7 +518,7 @@ function StripThumb({ pageId, current, onClick }: { pageId: string; current: boo
       onClick={onClick}
       style={{
         flex: "0 0 auto", width: 38, height: 50, borderRadius: 5, overflow: "hidden", padding: 0,
-        border: current ? `2px solid ${accent}` : `1px solid ${line}`,
+        border: current ? `2px solid ${color.accent}` : `1px solid ${line}`,
         background: panel, opacity: current ? 1 : 0.6, cursor: "pointer",
       }}
     >

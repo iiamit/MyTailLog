@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { captureCount, listActions, removeAction, type QueuedAction } from "./db";
 import { drainActions, keepMine } from "./actions";
 import { changedFields, mineFields } from "@/lib/sync/mutations";
-import { faint, ink, dim, line, panel2, accent, amber, red, mono, radius } from "./ui";
-import { hit } from "./tokens";
+import { faint, ink, dim, line, amber, red, mono, radius } from "./ui";
+import { color, hit } from "./tokens";
 
 // What you've recorded that hasn't reached the server yet.
 //
@@ -21,8 +21,8 @@ export function PendingBanner({ count, onOpen }: { count: number; onOpen: () => 
       onClick={onOpen}
       style={{
         marginTop: 14,
-        background: `${accent}14`,
-        border: `1px solid ${accent}55`,
+        background: `${color.accent}14`,
+        border: `1px solid ${color.accent}55`,
         borderRadius: 10,
         padding: "10px 12px",
         minHeight: hit.min,
@@ -35,7 +35,7 @@ export function PendingBanner({ count, onOpen }: { count: number; onOpen: () => 
       <span style={{ color: ink, fontSize: 13 }}>
         {count} change{count === 1 ? "" : "s"} waiting to upload
       </span>
-      <span style={{ marginLeft: "auto", color: accent, fontSize: 12 }}>View ›</span>
+      <span style={{ marginLeft: "auto", color: color.accent, fontSize: 12 }}>View ›</span>
     </div>
   );
 }
@@ -99,16 +99,16 @@ export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: 
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
         {captures > 0 && (
-          <div style={{ background: panel2, border: `1px solid ${line}`, borderRadius: 10, padding: "10px 12px" }}>
+          <div style={{ background: color.surfaceRaised, border: `1px solid ${line}`, borderRadius: 10, padding: "10px 12px" }}>
             <div style={{ fontSize: 13.5, color: ink }}>{captures} scanned page{captures === 1 ? "" : "s"}</div>
-            <div style={{ color: accent, fontSize: 11, marginTop: 6 }}>saved on this phone — uploads when connected</div>
+            <div style={{ color: color.accent, fontSize: 11, marginTop: 6 }}>saved on this phone — uploads when connected</div>
           </div>
         )}
         {rows?.map((a) => (
           <div
             key={a.id}
             style={{
-              background: panel2,
+              background: color.surfaceRaised,
               border: `1px solid ${a.status === "failed" ? `${red}66` : a.status === "conflict" ? `${amber}88` : line}`,
               borderRadius: 10,
               padding: "10px 12px",
@@ -140,7 +140,7 @@ export function Pending({ onBack, onChanged }: { onBack: () => void; onChanged: 
             ) : a.error ? (
               <div style={{ color: dim, fontSize: 11.5, marginTop: 6, lineHeight: 1.45 }}>{a.error}</div>
             ) : (
-              <div style={{ color: accent, fontSize: 11, marginTop: 6 }}>saved on this phone — uploads when connected</div>
+              <div style={{ color: color.accent, fontSize: 11, marginTop: 6 }}>saved on this phone — uploads when connected</div>
             )}
           </div>
         ))}
@@ -188,7 +188,7 @@ function Conflict({
 
       {keys.length > 0 && (
         <div style={{ marginTop: 14, border: `1px solid ${line}`, borderRadius: radius.row, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: panel2, padding: "8px 12px", fontSize: 11, color: faint }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: color.surfaceRaised, padding: "8px 12px", fontSize: 11, color: faint }}>
             <span>Field</span>
             <span>Yours</span>
             <span>Theirs</span>
@@ -218,7 +218,7 @@ function Conflict({
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}>
-        <button onClick={onKeepMine} style={{ ...btn(ink), background: `${accent}22`, borderColor: accent }}>
+        <button onClick={onKeepMine} style={{ ...btn(ink), background: `${color.accent}22`, borderColor: color.accent }}>
           Keep mine — upload over theirs
         </button>
         <button onClick={onTakeTheirs} style={btn(amber)}>

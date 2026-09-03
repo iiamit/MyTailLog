@@ -584,6 +584,14 @@ export type BackupSchedule = {
   created_at: string;
 }
 
+/** One device that may receive a push (0059). Keyed on the token, not the user. */
+export type DeviceToken = {
+  token: string;
+  user_id: string;
+  platform: string;
+  created_at: string;
+};
+
 export type BackupRun = {
   id: string;
   schedule_id: string;
@@ -661,6 +669,7 @@ export type Database = {
       // PostgREST; reached only via the backup SECURITY DEFINER functions below.
       backup_schedule: { Row: BackupSchedule; Insert: Partial<BackupSchedule>; Update: Partial<BackupSchedule>; Relationships: [] };
       backup_run: { Row: BackupRun; Insert: Partial<BackupRun>; Update: Partial<BackupRun>; Relationships: [] };
+      device_token: { Row: DeviceToken; Insert: Partial<DeviceToken>; Update: Partial<DeviceToken>; Relationships: [] };
     };
     Views: {
       admin_user_stats: { Row: AdminUserStat; Relationships: [] };
@@ -677,6 +686,12 @@ export type Database = {
       };
       transfer_aircraft: {
         Args: { target_aircraft: string; new_owner_email: string };
+        Returns: undefined;
+      };
+      // 0059: SECURITY DEFINER, because a phone signed into a second account has
+      // to be able to move its APNs token off the first.
+      register_device_token: {
+        Args: { p_token: string; p_platform: string };
         Returns: undefined;
       };
       search_log_entries: {

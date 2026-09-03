@@ -88,7 +88,8 @@ export const palettes: Record<ThemeName, Palette> = {
     hairline: "#D3DAE4",
     ink: "#10151C",
     dim: "#4E5967",
-    faint: "#6E7A89",
+    // 4.0:1 on the light bg at #6E7A89 — design measured it; #666F7C is 4.6:1.
+    faint: "#666F7C",
     accent: "#1667CE",
     // The accent gradient does not change between themes: it is a light-blue
     // fill carrying dark text, and that reads on either ground.

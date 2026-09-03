@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { cacheUsage, clearCache } from "./blobs";
 import { CapacitorHttp } from "@capacitor/core";
 import { color, text, radius, hit } from "./tokens";
 import { THEME_CHOICES, THEME_LABEL, useTheme, type ThemeChoice } from "./theme";
@@ -176,29 +177,17 @@ function Appearance({ choice, onChoose }: { choice: ThemeChoice; onChoose: (c: T
 
 // --- Storage ----------------------------------------------------------------
 
-/**
- * How much of the phone the cached scans are using, and the way to get it back.
- *
- * Reads blobs.ts through a dynamic import on purpose: cacheUsage/clearCache
- * arrive with the core-sync branch, and this row simply doesn't render on a
- * build that doesn't have them yet rather than failing to compile against it.
- * ponytail: the cast goes away once core-sync is merged.
- */
-type BlobCache = {
-  cacheUsage?: () => Promise<{ bytes: number; files: number }>;
-  clearCache?: () => Promise<void>;
-};
-
+/** How much of the phone the cached scans are using, and the way to get it back. */
 function useStorage(dl: { done: number; total: number } | null): { label: string; clear: () => void } | null {
   const [bytes, setBytes] = useState<number | null>(null);
 
   useEffect(() => {
     let live = true;
-    void (async () => {
-      const m = (await import("./blobs")) as BlobCache;
-      const usage = await m.cacheUsage?.().catch(() => null);
-      if (live) setBytes(usage?.bytes ?? null);
-    })();
+    void cacheUsage()
+      .catch(() => null)
+      .then((usage) => {
+        if (live) setBytes(usage?.bytes ?? null);
+      });
     return () => {
       live = false;
     };
@@ -210,10 +199,7 @@ function useStorage(dl: { done: number; total: number } | null): { label: string
     label: megabytes(bytes),
     clear: () => {
       setBytes(0);
-      void (async () => {
-        const m = (await import("./blobs")) as BlobCache;
-        await m.clearCache?.().catch(() => {});
-      })();
+      void clearCache().catch(() => {});
     },
   };
 }

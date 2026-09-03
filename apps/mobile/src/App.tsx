@@ -16,6 +16,7 @@ import { Records } from "./records-screen";
 import { TabBar, TABS, type Tab } from "./tabbar";
 import { AircraftSwitcher } from "./switcher";
 import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useShortcuts } from "./layout";
+import { useTheme } from "./theme";
 import { PageReview } from "./review-pane";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { ShortcutMap } from "./shortcuts";
@@ -31,7 +32,8 @@ import { Pending, PendingBanner } from "./pending";
 import { Lightbox } from "./lightbox";
 import type { StatusItem } from "@/lib/status";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Screen, Brand, input, primary, dim, amber, faint, line, panel2, text, display } from "./ui";
+import { Screen, Brand, input, primary, dim, amber, faint, line, text, display } from "./ui";
+import { color } from "./tokens";
 import { AccountMenu } from "./account-menu";
 import { FirstRun } from "./first-run";
 
@@ -129,6 +131,8 @@ function Shell({ session }: { session: Session }) {
   const syncTask = useRef<Promise<void> | null>(null);
   const syncLatest = useRef<(() => Promise<void>) | null>(null);
   zoomRef.current = zoom;
+  // Follows the phone flipping to dark (or light) while the app is open.
+  useTheme();
   const regular = useSizeClass() === "regular";
 
   // ⌘1–4 switch tabs from anywhere in an aircraft. Screens claim the other
@@ -357,6 +361,7 @@ function Shell({ session }: { session: Session }) {
   const accountMenu = menu && (
     <AccountMenu
       email={session.user.email ?? ""}
+      aircraftId={nav.screen === "aircraft" ? nav.aircraft.id : undefined}
       onClose={() => setMenu(false)}
       onSync={() => { setMenu(false); sync(); }}
       onDownloadAll={() => { setMenu(false); downloadAll(); }}
@@ -436,7 +441,7 @@ function Shell({ session }: { session: Session }) {
               aria-label="Account"
               style={{
                 marginLeft: "auto", width: 34, height: 34, borderRadius: "50%",
-                background: panel2, border: `1px solid ${line}`, color: dim,
+                background: color.surfaceRaised, border: `1px solid ${line}`, color: dim,
                 fontFamily: display, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
               }}
             >
@@ -448,7 +453,13 @@ function Shell({ session }: { session: Session }) {
 
           {fleet.length === 0 && cursor > 0 ? (
             <FirstRun
-              onAddAircraft={() => setCapture(null)}
+              onAddAircraft={(id) => {
+                void sync().then(() => {
+                  const a = id ? fleet.find((f) => f.id === id) : undefined;
+                  if (a) setNav({ screen: "aircraft", aircraft: a, tab: "status", segment: "documents", sub: null });
+                  else setCapture(null);
+                });
+              }}
               onDemo={sync}
               onSignIn={() => setMenu(true)}
             />

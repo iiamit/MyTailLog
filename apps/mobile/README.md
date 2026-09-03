@@ -22,6 +22,10 @@ short: `sync.ts` (pull), `db.ts` (SQLite mirror + capture/action queues),
 computed on device), `screens.tsx` / `status-screen.tsx` / `documents-screen.tsx`
 / `pdf-screen.tsx` / `record-screen.tsx` / `complete-screen.tsx` /
 `squawks-screen.tsx` / `pending.tsx` / `capture-screen.tsx` / `lightbox.tsx` (UI),
+`mutations.ts` (the one write path — `enqueue()` by mutation type),
+`layout.tsx` + `shortcuts.ts` (iPad: size class, sidebar, two panes, ⌘ chords),
+`theme.ts` (light/dark, follows the phone), `push.ts` (APNs registration),
+`enroll-sheet.tsx` (add an aircraft), `blob-upload.ts` (offline document uploads),
 `App.tsx` (auth + nav + swipe-back).
 
 ## Design system
@@ -124,5 +128,8 @@ If sync errors, note the message — it comes straight from `/api/sync/pull`
 - `fetch()` runs through Capacitor's native HTTP (`CapacitorHttp`), so calls to
   `mytaillog.com` aren't blocked by browser CORS. Test in the **simulator**, not
   `npm run dev` in a desktop browser (that path would hit CORS).
-- The session persists in WKWebView storage for now; it moves to the iOS Keychain
-  in a later pass.
+- The session lives in the **iOS Keychain** (`@aparajita/capacitor-secure-storage`
+  as supabase-js's `auth.storage`, `whenUnlocked`, iCloud sync off). Existing
+  testers are migrated from WKWebView storage once, on first launch, so nobody is
+  signed out. There is no biometric unlock — that is a separate plugin and the
+  Keychain already keeps the token off a jailbroken filesystem.

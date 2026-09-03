@@ -13,19 +13,6 @@ import { createSyncClient } from "@/lib/supabase/sync";
 // to take its token off the first — see 0059 for why RLS alone cannot.
 export const runtime = "nodejs";
 
-// device_token is not in the generated Database types yet (see the PR's
-// "Requests for lead"), so the two calls are narrowed by hand rather than by
-// widening the whole client to `any`.
-type PushClient = {
-  rpc(
-    fn: "register_device_token",
-    args: { p_token: string; p_platform: string },
-  ): PromiseLike<{ error: { message: string } | null }>;
-  from(table: "device_token"): {
-    delete(): { eq(column: "token", value: string): PromiseLike<{ error: { message: string } | null }> };
-  };
-};
-
 const PLATFORMS = new Set(["ios"]);
 
 async function tokenFrom(req: Request): Promise<{ token: string; platform: string } | null> {
@@ -51,7 +38,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unsupported device." }, { status: 400 });
   }
 
-  const { error } = await (supabase as unknown as PushClient).rpc("register_device_token", {
+  const { error } = await supabase.rpc("register_device_token", {
     p_token: input.token,
     p_platform: input.platform,
   });
@@ -71,7 +58,7 @@ export async function DELETE(req: Request) {
 
   // RLS scopes the delete to this user's own rows; a token that is not theirs
   // simply matches nothing, which is the right answer either way.
-  const { error } = await (supabase as unknown as PushClient)
+  const { error } = await supabase
     .from("device_token")
     .delete()
     .eq("token", input.token);
