@@ -1,0 +1,548 @@
+{
+ "design": {
+  "stream": "design",
+  "branch": "ios-parity-design",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/193",
+  "summary": "Screens 12-24 of the iOS handoff are done, in the approved \"Verdict first\" direction. Cherry-picked the rescued WIP commit from origin/ios-parity-design-partial rather than restarting: its two .dc.html frames were already complete and are kept. Screens 12-18 (iPad regular width, 1194x834 at 390pt-scale) cover the 200pt sidebar with the fleet-switcher popover, Status 40/60, Log with the last-30 readings beside the steppers, Scans as the three-way review layout with the \u25ce spotlight, Documents with a drag-from-Files drop target, History with the entry beside its scan, and Squawks with in-app resolve plus \"which entry cleared it\". Screens 19-24 cover Ask (regular pane + compact), the field editor (read chip, raw transcription beneath, 0.1 steppers), item editor and AD compliance, equipment install/remove and the meter-replacement prompt, document upload / attach picker / squawk resolve, and the conflict screen. New this session: docs/design/screens-12-24-ipad-and-editors.md \u2014 one spec in the handoff README's voice with purpose, pt-valued layout, copy, SF Symbol mapping and \"what this fixes\" per screen, and the light palette as a token table using tokens.ts names, framed as the answer t",
+  "requests": [
+   {
+    "owner": "platform",
+    "request": "Add the light set to apps/mobile/src/tokens.ts under the SAME names, values from the token table in docs/design/screens-12-24-ipad-and-editors.md \u00a7 \"The light appearance\": bg #F4F5F7 \u00b7 surface #FFFFFF \u00b7 surfaceRaised #ECEEF2 \u00b7 hairline #D8DDE4 \u00b7 ink #151A21 \u00b7 dim #4A5462 \u00b7 faint #666F7C \u00b7 accent #1C6FD2 \u00b7 accentLight #4A8FE3 \u00b7 onAccent #FFFFFF \u00b7 warning #9A6400 \u00b7 danger #C4392C \u00b7 success #177F55. Tints at the same alphas: accent #1C6FD21A / border #1C6FD24D, warning #9A64001A / #9A64004D, danger #C4392C1A / #C4392C4D, success #177F551A / #177F553D. useTheme() follows prefers-color-scheme. No size, radius, weight or gradient-direction change. The only non-token value that flips is the scrim over scan and PDF imagery: rgba(0,0,0,.42) dark \u2192 rgba(21,26,33,.28) light. Do not lighten `faint` back toward #77808E \u2014 it measures 3.7:1 on the light bg."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "Sidebar 200pt fixed, surface, 1pt hairline right border, padding 18/12/16; nav rows 44pt, radius 11, 19pt icon + 11pt gap + 14.5/500 label; selected row surfaceRaised with accent label at 600. Order Status \u00b7 Log \u00b7 Records \u00b7 Squawks, then an 8pt gap and Ask. A destination with attention shows a count (Space Grotesk 12/700, warning, or danger if anything there is grounding) that REPLACES the shortcut hint on that row; the shortcut still works. Account pinned to the bottom (margin-top:auto), 52pt, 30pt avatar, with a sync line that never says \"queue\": \"Synced 4 min ago\" / \"Syncing\u2026\" / \"Waiting for a connection\". Full values in spec \u00a712."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "The fleet switcher is a popover anchored UNDER the tail, 300pt wide, surface, radius 16, 8pt padding, shadow 0 18 48 rgba(0,0,0,.45) \u2014 using screen 2's picker row idiom exactly (tail Space Grotesk 15/700, type 12 dim, status pill trailing, 52pt rows), a hairline, then \"See the whole fleet\" at 44pt in accent. Not a sheet."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "TwoPane ratios from the frames: Status 40/60, Log 40/60, Documents 40/60, History 40/60, Squawks 40/60. Scans is the exception \u2014 spec \u00a715 draws a 40% page rail plus a right pane itself split 55/45 into scan and entries. Two panes cannot express that; it needs a nested TwoPane or a third arrangement. Your call which, but the composition is load-bearing (it is the review layout the iPad exists for)."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "Shortcuts drawn in the frames and shown beside the sidebar rows: \u23181\u20134 tabs, \u2318K Ask, \u2318N new squawk, \u2318\u2190/\u2318\u2192 page, \u2318\u21a9 confirm. Register through useShortcuts(map)."
+   },
+   {
+    "owner": "review UI",
+    "request": "Field editor (spec \u00a720): the read chip says \"Uncertain read\" (pill.due) or \"Read clearly\" (pill.ok) \u2014 never a percentage, never the word \"confidence\". The raw transcription sits DIRECTLY beneath the chip in a dashed-hairline block on bg, 14pt italic dim, with the doubt stated in words (e.g. '\"3102.8\" \u2014 the last digit could be a 3'). Meter fields are 46pt steppers stepping 0.1 with press-and-hold acceleration; text fields are 46pt inputs at 16pt. One primary (\"Looks right\" / \"Save\") plus ghosts \"Blank it\" and \"Show on scan \u25ce\". At regular width the crop step is dropped and the spotlight on the live scan STAYS LIT while the editor is open."
+   },
+   {
+    "owner": "review UI",
+    "request": "Scans review layout (spec \u00a715): the \u25ce spotlight is a 2pt accent rectangle over the read region with box-shadow 0 0 0 4px tint.accent, 0 0 24px tint.accentBorder. Field cells are 44pt, 2-column; an uncertain field carries tint.warning and its border; the field whose spotlight is lit gets an accent border and its locate button turns accent on tint.accent. Copy: \"Check 1 field\" not \"1 low-confidence field\"; \"Re-read page\" not \"re-extract\"; \"Missed an entry?\" not \"add manual entry\"."
+   },
+   {
+    "owner": "status UI",
+    "request": "Meter-replacement prompt (spec \u00a722a): a 290pt centred alert, fires on BLUR of the meter field, not per keystroke. Title \"Lower than the last reading \u2014 was the tach replaced?\", a delta line (2417.3 \u2192 0.0) in Space Grotesk 20/700, then the plain explanation of what saying yes does. \"Yes \u2014 new meter from today\" is the primary; \"I mistyped it\" is the ghost and the common answer \u2014 it returns focus to the field with the text selected. Foot: \"You can undo a meter swap from the reading list.\""
+   },
+   {
+    "owner": "status UI",
+    "request": "AD compliance sheet (spec \u00a721a): the title is the AD's SUBJECT (\"Seat rail wear\") with the number as a 10pt tag beneath (AD 2011-10-09) \u2014 never a bare AD or FAR number as the title. Four 44pt state chips: Complied \u00b7 Open \u00b7 Doesn't apply \u00b7 Superseded. Item editor (\u00a721) shows the computed next-due BEFORE saving: \"Next due works out to 3 Apr 2027. Change the interval and it moves.\""
+   },
+   {
+    "owner": "records UI",
+    "request": "Conflict screen (spec \u00a724): a full screen at compact width, NOT a sheet \u2014 a sheet invites a swipe-away and this is a decision. Identical fields are shown unhighlighted so the two columns line up; only differing fields get tint.warning + border. \"Decide later\" is always present. Copy: \"Yours\"/\"Theirs\", never \"local\"/\"remote\"; \"Changed in two places\", never \"merge conflict\". At regular width it is a 560pt centred card over the dimmed tab, with column headers reading \"\u00b7 on this iPad\"."
+   },
+   {
+    "owner": "records UI",
+    "request": "Ask (spec \u00a719): every answer ends in source chips naming the entry and page (\"14 Mar 2026 \u00b7 Airframe p.16\"); the monthly allowance line sits on the composer where the cost is incurred (\"Needs a connection \u00b7 14 of 50 questions left this month\"), not in a profile. Never \"AI\", \"model\" or \"tokens\". Document upload (\u00a723): the attach picker's primary NAMES the entry (\"Attach to 14 Mar 2026\") so the tap is unambiguous, with \"No entry \u2014 keep it loose\" as a ghost above it. Documents (\u00a716): the drop target is a 2pt dashed accent border at \u22124pt inset over tint.accent; releasing opens the add sheet with the file already chosen."
+   },
+   {
+    "owner": "lead",
+    "request": "The three design files are committed at docs/design/ in this repo but were NOT pushed to the Claude Design project \u2014 DesignSync returns \"needs design-system authorization (/design-login)\" for every method, which a subagent cannot run. After /design-login the push is: finalize_plan with projectId e6a4308f-b39c-4a63-a85f-9e650c333d0c, localDir = docs/design, writes = the three paths under design_handoff_ios_redesign/, deletes = [], then write_files with localPath for each. The files need no edits first."
+   }
+  ],
+  "blockers": [
+   "DesignSync is unauthorized in this session \u2014 get_project and list_files both return \"DesignSync needs design-system authorization. Run /design-login to authorize it with your claude.ai account\", and a subagent cannot run /design-login. So the finalize_plan \u2192 write_files push to project e6a4308f-b39c-4a63-a85f-9e650c333d0c did not happen. All three files are committed to docs/design on ios-parity-design and are ready to push unchanged; the exact call sequence is in the PR body under Blocker.",
+   "The design-handoff README (design_handoff_ios_redesign/README.md) is only in the Claude Design project, so with DesignSync down I could not read it \u2014 the spec's voice is matched against docs/design/screen-11-scan-pages.md instead (same author, same direction), and the numbering of \"open question #4\" is taken from the stream brief rather than verified against the README. Worth a one-line check when someone next has DesignSync working: if #4 is not the light-appearance question, only the section heading needs renumbering.",
+   "CONTRACT \u00a75 says the light set is owned by the platform stream and that streams \"use token names only\". I therefore specified the light values and did not edit apps/mobile/src/tokens.ts \u2014 the values are under \"Requests for platform\". If platform has already landed a light set with different values, mine should lose, except for `faint`: anything lighter than #666F7C drops 11.5pt metadata below 4.5:1 on the light bg.",
+   "Spec \u00a715 (Scans, regular) needs a three-way split \u2014 a 40% page rail plus a right pane split 55/45 into scan and entries \u2014 which CONTRACT \u00a75's TwoPane cannot express in one call. Flagged to the iPad shell as a nested TwoPane or a third arrangement. It is the one composition in the addendum that the shell's primitives do not already cover."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "iPad, full screen, landscape and portrait: sidebar is 200pt in both, no tab bar anywhere.",
+   "iPad in Split View at ~507pt: falls back to the phone layout (breakpoint 700pt) \u2014 tab bar returns, no half-width two-pane.",
+   "Scans on iPad: page rail, scan and entries all on screen at once; tapping a field lights the \u25ce spotlight over its region on the scan, and the spotlight STAYS LIT while the field editor is open.",
+   "Field editor: the raw transcription and the value are both readable at the default text size and at the largest Dynamic Type step; the editable field is \u226516px; \u2212 and + are \u226544pt.",
+   "Meter-replacement prompt: type a tach below the last reading and leave the field \u2014 the prompt appears exactly once (on blur, not per keystroke). \"I mistyped it\" returns focus with the text selected.",
+   "Conflict screen: force one by editing the same entry on the web while the phone is offline, then reconnect. Only the differing fields are highlighted; \"Decide later\" leaves it unresolved and it comes back.",
+   "Light appearance OUTDOORS in daylight: flip the system to light and read the 11.5pt metadata lines (faint) on Status and on a Log reading row. That is the value the #666F7C tuning was for \u2014 if it is unreadable in sun the palette is wrong, not the screen.",
+   "Colour-blind check: with the system's Colour Filters on, every status still reads \u2014 the words GROUNDED / DUE SOON / AIRWORTHY are present everywhere colour carries meaning.",
+   "Documents drag-and-drop: drag a PDF from Files onto the vault pane \u2014 the dashed drop target appears, and releasing opens the add sheet with the file already chosen.",
+   "Magic Keyboard: \u23181\u20134 switch tabs, \u2318K opens Ask, \u2318N a new squawk, \u2318\u2190/\u2318\u2192 page through scans, \u2318\u21a9 confirms.",
+   "Squawk resolve on device: resolve one with a linked entry, then confirm the resolved row reads \"Cleared <date> \u00b7 <entry>\" and that reopening it from the resolved list works.",
+   "Ask offline: open the pane with no connection and an existing thread \u2014 spec \u00a719 leaves this state undrawn (see open question 3); whatever the build does, check it does not look broken."
+  ],
+  "testsAdded": []
+ },
+ "status-ui": {
+  "stream": "status-ui",
+  "branch": "ios-parity-status-ui",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/195",
+  "summary": "Cherry-picked the rescued WIP commit, corrected three defects in it, and finished airworthiness management on the phone. AllItems (status-screen.tsx) is now a self-contained segmented Inspections \u00b7 Directives \u00b7 Equipment component that takes an aircraft, loads its own rows and needs no onBack, so the iPad shell can drop it straight into the Status right pane; \"Mark done\" renders in place rather than through a callback, so the pane needs no navigation of its own. Inspections get an ItemEditor sheet (mx.upsert/mx.delete), Mark done on every item, and mx.seedStandard for an aircraft tracking nothing. Directives list ad_compliance judged by the same @/lib/compliance the web uses, with a compliance sheet (ad.upsert/ad.delete/ad.track) and AD text from ad_reference when present, degrading to an online-only \"read on the web\" link with no new route. Equipment lists components with install/remove/reinstall/delete sheets linked to an entry and a proposals list with confirm/dismiss; both ad_reference and equipment_proposal degrade to empty until 0058. MeterResetPrompt plus a pure, tested detectBackwardsReading is delivered ready to wire. The two AI scans are online-only Bearer posts to the ex",
+  "requests": [
+   {
+    "owner": "review UI",
+    "request": "Wire MeterResetPrompt into record-screen.tsx where a reading is saved. Before enqueuing reading.create: const { meters } = await computeAirworthiness(aircraft.id); const cur = meter === 'hobbs' ? meters.hobbs : meter === 'airframe' ? meters.airframe : meters.tach; const hit = cur.estimated ? null : detectBackwardsReading([{ date: cur.asOf, value: cur[meter] }], value); if (hit) { setAskReset({ meter, prior: hit.prior, next: value }); return; } \u2014 compare against the CURRENT value, not raw hours_reading, because it already folds in log-entry readings and any earlier meter_reset; never prompt on an estimated value (bridged from the other meter, it cannot tell a swap from the ratio being off). Render <MeterResetPrompt aircraft meter={askReset.meter} prior={askReset.prior} next={askReset.next} date={date} onDecided={async (choice) => { setAskReset(null); if (choice !== 'cancel') await saveReading(); }} />. The reading must save AFTER the decision either way (the reset row has to exist first or the countdowns re-anchor a frame late); 'cancel' saves nothing. Full snippet in the PR body."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "1) Replace the StatusAllItemsSlot placeholder body with `import { AllItems } from './status-screen'` and `return <AllItems aircraft={p.aircraft} onQueued={p.onQueued} />`, passing onQueued={h.onQueued} at the call site. 2) Pass onQueued to Status in both widths: <Status aircraft={aircraft} onComplete={\u2026} onQueued={writeFinished} /> (compact) and onQueued={h.onQueued} (regular primary). Both are optional \u2014 without them AllItems falls back to its own drainActions() step, which works but does not pull, so nothing breaks if this lands late. 3) RecentReadingsSlot is labelled 'status-ui' in the shell but is not in this stream's brief and has not been built \u2014 it is unclaimed."
+   },
+   {
+    "owner": "writes C2",
+    "request": "Two entry links the phone sends that the trust boundary silently discards, though both columns exist. In pickAdFields (compliance.ts) add to AdComplianceFields and to the returned object: reference_entry_id: typeof src.reference_entry_id === 'string' && src.reference_entry_id ? src.reference_entry_id : null. In pickComponentFields (equipment.ts) add the same shape for install_entry_id (markRemoved already accepts entryId for the removal side). Until these land the optimistic patch shows the link and the next pull takes it away. The sheets already send the right key names."
+   }
+  ],
+  "blockers": [
+   "Contract \u00a73 says ad.track takes `{id, reference, ...}` and the note 'the column is `reference`, not `ref`' is correct \u2014 the rescued WIP had `ref` and it is fixed. No contract change needed, but the WIP proves the trap is easy to fall into.",
+   "Schema mismatch, reported per the rules rather than fixed in someone else's file: ad_compliance.reference_entry_id and component.install_entry_id both exist, and both sheets offer 'the logbook entry that records this', but writes-c2's pickAdFields and pickComponentFields drop them at the trust boundary. Sent as a Request for writes C2. Until it lands the optimistic patch shows the link and the next pull removes it \u2014 cosmetic, not data loss.",
+   "Scans (mx.scan / equipment.scan) write server-side, and the phone's pull is owned by App.tsx's sync(); AllItems cannot trigger one without duplicating sync logic. The copy therefore says the results appear after the next sync rather than pretending they are already on the device. If the shell exposes a sync callback later, one line in runScanFor picks it up.",
+   "AllItems' fallback onQueued drains the action queue but does not pull, so a write made from the iPad pane before the shell request lands syncs up but does not refresh down until the next manual sync. Harmless; resolved by the iPad-shell request.",
+   "Branched off origin/ios-parity, which does not yet contain core-sync/writes-c1..c3/ipad-shell. Everything here was built against those branches' real interfaces (read via git show) but compiles against the stubs; MutationType is still `string` in the stub, so the union narrowing was verified by reading lib/sync/mutations.ts on core-sync rather than by the compiler. The proposals.${verb} template literal that would have broken under the real union is already fixed."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "iPhone: Status \u2192 the bottom card ('Clear for now' / 'Everything tracked') \u2192 All items. Three segments; every row and the segment control comfortably tappable; nothing zooms when a field takes focus.",
+   "iPhone: Inspections \u2192 VOR check \u2192 Mark done, with place, bearing error, signature and logbook. The counter must reset immediately (before any sync), and after a sync THE WEB MUST SHOW A NEW LOG ENTRY carrying the place, the bearing error and the signature \u2014 91.171(d), not just a moved date. This is the regression that matters most.",
+   "iPhone: airplane mode \u2192 mark an oil change done \u2192 kill the app \u2192 reopen \u2192 go back online. Exactly ONE entry and one counter reset (the mutation id doubles as the entry id).",
+   "iPhone: Inspections \u2192 + Add an inspection: months only, hours only, both, and neither. Each refusal must read like a sentence. Save one, reopen, edit the interval, delete it \u2014 each change shows on the row before the sync.",
+   "iPhone: an aircraft with no items \u2192 'Set up the standard inspections' \u2192 annual, transponder, pitot-static and ELT appear after the sync.",
+   "iPhone: Directives \u2192 track '2023-04-08' \u2192 appears immediately as Open. Reopen, record compliance with date, hours, method and a linked entry. Sync, then confirm the web's compliance page shows the same record.",
+   "iPhone: Directives offline \u2192 'Read the full directive on the web \u203a' is replaced by 'Reading the full text needs a connection'. An AD whose ad_reference is on the device still shows its title and abstract offline.",
+   "iPhone: Equipment \u2192 record an installation \u2192 mark it removed on a date with a linked entry \u2192 confirm on the web that a directive tied to that equipment flipped to 'does not apply' with the date and reason. Then 'Reinstalled'.",
+   "iPhone: meter-replacement round trip (needs the review-ui wiring): on Log enter a tach below the last reading \u2192 'Lower than the last reading (4158.0)'. Choose 'Meter replaced' \u2192 sync \u2192 every hours countdown on Status still reads the same as before the swap. Repeat choosing 'It's right as typed' \u2192 the reading saves and no meter_reset row appears.",
+   "iPhone: both scan buttons offline \u2192 'Reading your logs needs a connection', disabled. Online \u2192 a summary line, then the new rows after a sync.",
+   "iPhone: a view-only aircraft \u2192 no '+ Add', no 'Mark done', no scan buttons; opening a sheet says why it can't be saved.",
+   "iPad landscape: Status shows the verdict left and All items right with no back chevron. Tap Mark done in the right pane \u2014 it replaces the pane, not the whole screen, and returns to the list.",
+   "iPad half-split (compact): the same screen pushes, with the chevron back.",
+   "iPad: rotate with a sheet open \u2014 it stays open and stays reachable."
+  ],
+  "testsAdded": [
+   "apps/web/test/mobile-status-logic.test.ts \u2014 21 cases over status-logic.ts (apps/mobile has no runner)",
+   "detectBackwardsReading: flags a drop with the value it fell below; picks the latest reading BY DATE not last-in-array; null on empty/absent/NaN; a 0.1 drop still asks",
+   "validateItem: refuses no-interval-on-either-axis, non-whole or non-positive intervals, last-done hours with no date, a blank name, an unknown meter",
+   "numOrNull: blank \u2192 null, junk stays NaN for validation to catch",
+   "adStatusLine: one-time vs open vs recurring; overdue wins over the stored status; hours countdown against current tach; 'next at N h' with no tach; not_applicable carries reason + date; recurring with no interval says so; no ISO date reaches the owner from any branch",
+   "shortDate: drops the year only in the current year"
+  ]
+ },
+ "review-ui": {
+  "stream": "review-ui",
+  "branch": "ios-parity-review-ui",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/194",
+  "summary": "Cherry-picked the rescued WIP from origin/ios-parity-review-ui-partial (it compiled and its 14 tests passed as-is), audited it against the real schema and the finished writes-c1/c2/core-sync branches, fixed three real defects, and finished the two pieces it was missing.\n\nDelivered: ReviewPane (entries on a page as cards, per-field \"Check this\" chip below the 0.75 threshold, \u25ce per located field), SpotlightRing (ring + dim overlay drawn over PageViewer's image, positioned in percentages so it holds at any width/zoom), EntriesDrawer (compact \u2014 swipes up over the page viewer), PageReview (self-loading wrapper, the piece the iPad shell places beside PageViewer), and the EntryEditor sheet (native date picker, the shared Stepper extracted out of record-screen.tsx, page.ocr_text collapsed under the text fields, every editable control >=16px). Pages gains a \"Needs a look \u00b7 N\" filter using @/lib/pageStatus (imported, not copied) plus \"Confirm N clean\" matching the server's isEntryClean. The Log tab gains \"Recent readings\" \u2014 last 30, tap to correct, swipe left to delete. Cmd-left/Cmd-right registered inside PageViewer (CONTRACT \u00a711, the page index is its state) and Cmd-Return in ReviewPane. p",
+  "requests": [
+   {
+    "owner": "iPad shell",
+    "request": "Pass onQueued={writeFinished} to <PageViewer> and <Pages> in App.tsx. Both props are optional; without them a review write sits in the queue until the next scheduled sync instead of draining immediately."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "Regular width: compose the review beside the scan. PageViewer already accepts review=\"external\" (default \"drawer\" = today's phone behaviour), spot?: FieldBox|null and onPage?: (page: Page) => void. Hold the spotlight in the shell: const [spot, setSpot] = useState<{box: FieldBox|null; key: string|null}>({box:null,key:null}); const [shown, setShown] = useState<Page>(sub.pages[sub.index]); then <TwoPane ratio=\"55/45\" primary={<PageViewer \u2026 review=\"external\" spot={spot.box} onPage={(p) => { setShown(p); setSpot({box:null,key:null}); }} onQueued={writeFinished} />} secondary={<PageReview page={shown} onLocate={(box,key) => setSpot({box,key})} activeKey={spot.key} onQueued={writeFinished} />} />. PageReview and the Locate type are exported from ./review-pane."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "After integration, replace the local useChords stand-in in review-pane.tsx with your useShortcuts from ./layout at its two call sites (ReviewPane and PageViewer), then delete useChords. The maps are already ShortcutMap-shaped. shortcuts.ts is vendored here verbatim from your branch (identical blob, merges to one file); useChords deliberately stays off your handler stack so nothing double-fires before the swap."
+   },
+   {
+    "owner": "core sync",
+    "request": "Optional, non-blocking: a seq-preserving patchRow(table, id, patch) on db.ts. review-local.ts writes optimistic patches through applyChanges (INSERT OR REPLACE), which resets the row's seq to 0 until the next pull rewrites it. Only getRows' ORDER BY seq notices and every review screen sorts its own rows, so nothing is broken today."
+   }
+  ],
+  "blockers": [
+   "layout.tsx (iPad shell) is not on this branch, so useShortcuts could not be imported. shortcuts.ts is vendored verbatim from origin/ios-parity-ipad-shell (identical blob \u2014 the add/add merges to one file) and a five-line useChords in review-pane.tsx stands in. It reads chords through the shell's own chordOf, so the \"\u2318\u2190/\u2318\u2192 keep their text meaning inside an input\" rule is honoured, and it deliberately stays OFF the shell's handler stack so nothing fires twice after integration. Swap it out per request 3.",
+   "The iPad shell has not yet wired PageReview as the Pages secondary pane, nor passed onQueued to PageViewer/Pages. Both props are optional so nothing breaks before that lands \u2014 see requests 1 and 2.",
+   "base only works for reading.update / reading.delete once migration 0058 (core sync) is applied: hours_reading has no BEFORE UPDATE updated_at trigger before it. No new migration needed from this stream.",
+   "No agent can run this on a device. Everything gestural (drawer swipe, swipe-to-delete, spotlight accuracy on a real scan, the 16px keyboard-zoom trap) is covered by the device checklist rather than a test.",
+   "Scratchpad collision, resolved: the parallel status-ui agent overwrote the shared scratchpad file between my write and gh reading it, so PR #194 was created with #195's body. Corrected with gh pr edit; both PRs verified to carry their own body now. Worth giving parallel streams distinct scratchpad filenames next run."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "iPhone \u2014 the three-page annual: Pages \u2192 \"Needs a look\" \u2192 open the page-15 scan, swipe the drawer up. Turn to page 16; its first entry must read \"Continues from the previous page\" and offer \"Merge into the entry on the previous page\". Merge 16\u219215 and 17\u219216. Expect one annual entry on page 15, nothing orphaned, and its equipment and AD links still attached (#188).",
+   "iPhone \u2014 confirm all clean: Pages \u2192 \"Needs a look\" \u2192 \"Confirm N clean\". Expect N to drop to just the entries the model was unsure about, the header count to match, and the web reviewer to agree after a sync.",
+   "iPhone \u2014 spotlight on a rotated page: open a page with sideways writing. Expect the warning line above the entries. Tap \u25ce on a date and on a signature \u2014 the ring lands on the right ink, not the corner. Pinch-zoom: the ring stays on the value. A field the model couldn't place has no \u25ce at all.",
+   "iPhone \u2014 editing offline: airplane mode, then edit an entry's tach, add a missed entry, confirm two entries, correct a reading in the Log tab, delete another. Each shows immediately and the note says \"saved on this phone, uploads when connected\". Reconnect and sync: everything lands, nothing duplicates, no edit is lost.",
+   "iPhone \u2014 conflict: edit an entry's description on the web while the phone holds an offline edit of the same entry, then reconnect. Expect the yours/theirs screen, not a silent overwrite in either direction.",
+   "iPhone \u2014 viewer access: sign in with view-only access to a shared aircraft. Expect no Confirm, no Delete, no editor sheet, no \u25ce-triggered writes, and the line \"View-only access \u2014 nothing here can be changed.\"",
+   "iPhone \u2014 meters that aren't yours: Log tab \u2192 Recent readings. A MyFlightBook or ADS-B row must not open the editor and must not reveal Delete on a swipe; it reads \"from MyFlightBook\" / \"from an ADS-B estimate\".",
+   "iPhone \u2014 swipe then tap: swipe a manual reading left to reveal Delete. The same gesture must NOT also open the correction sheet. Tap the revealed row once to close it, tap again to edit.",
+   "iPhone \u2014 keyboard zoom trap: tap into the description field in the entry editor. Expect no zoom and no leftover pan after the keyboard closes.",
+   "iPhone \u2014 read this page: an unextracted page shows \"Read this page \u00b7 N of M left today\". Tap offline \u2192 \"Needs a connection \u2014 will read the page when you're back online\". Online \u2192 entries arrive on the next sync. At the cap the button is disabled and reads \"Daily limit reached (M pages)\".",
+   "iPad \u2014 full screen with a page open: the review sits beside the scan, not in a drawer. Tap \u25ce in the right pane \u2192 the ring appears in the left pane on the same page.",
+   "iPad \u2014 Magic Keyboard: \u2318\u2192 / \u2318\u2190 turn the page and clear the spotlight; \u2318\u21a9 confirms the next entry, and once none remain marks the page reviewed. Inside a text field \u2318\u2190 must still move the caret and NOT turn the page.",
+   "iPad \u2014 Split View at half width (under 700pt): the phone drawer comes back and nothing overlaps the bottom safe area."
+  ],
+  "testsAdded": [
+   "apps/web/test/mobile-review-rules.test.ts \u2014 15 node:test cases against the dependency-free apps/mobile/src/review-rules.ts",
+   "a page needs a look only when extracted AND holding an unconfirmed entry (reuses @/lib/pageStatus)",
+   "confirm-clean picks exactly what the server's confirmClean would (reuses isEntryClean)",
+   "field chips: only a doubtful field gets one, and it is a word not a percentage",
+   "entry badge reads in the owner's words",
+   "entriesOn keeps the order the entries appear on the page",
+   "validateEntry: a good form becomes the typed payload",
+   "validateEntry: the one thing to fix, in plain words (bad date, 2026-02-31 rollover, negative hours, empty description)",
+   "toForm round-trips nulls to empty strings",
+   "validateReading needs a real date and at least one meter",
+   "recent readings: newest first, capped at 30, same-day tie broken by created_at",
+   "allowance: read from the access response, degrade to the plain label",
+   "spotlight: percentages of the image, padded, clamped, and nothing for an unlocated field",
+   "drawer snaps only past the threshold; a wobble stays put",
+   "swipe-to-delete needs a clear leftward drag",
+   "only a hand-entered reading can be corrected on the phone (readingEditable / readingProvenance)"
+  ]
+ },
+ "records-ui": {
+  "stream": "records-ui",
+  "branch": "ios-parity-records-ui",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/196",
+  "summary": "Shipped the records half of iOS parity in 5 commits on ios-parity-records-ui (PR #196 against ios-parity). Document upload: a filesystem-backed offline queue (blob-upload.ts \u2014 base64 bytes and metadata in separate files so listing what's waiting never reads a megabyte) draining JSON+base64 to the documents route writes-c3 made Bearer-capable, fed by a Files/iCloud/Photos picker, the existing VisionKit scanPages, and a drop target; photos downscaled, 25 MB cap enforced on-device. PageManager: sort by filed order/date/tach/AFTT through @/lib/pageSort (never a second copy of the ordering rules), up/down reorder everywhere plus HTML5 drag at regular width, multi-select bulk delete that names how many log entries go with the scans (#185's silent bulk delete), retake via the capture queue, and \"keep this as the filed order\" gated on displayedOrder so a page with no date can't silently renumber fifty others. Squawks gained a detail surface (sheet compact, right pane regular) with resolve + \"which entry cleared it\", reopen, edit and delete, swipe-to-resolve, and an openable Resolved list \u2014 all through enqueue() with the row's updated_at as base. Read-only W&B (with staleWBChanges as a reco",
+  "requests": [
+   {
+    "owner": "review UI",
+    "request": "screens.tsx \u2014 add one optional prop to `Entries`: `filter?: HistoryFilter` defaulting to `NO_FILTER` from ./records-filter, and change one line to `byMonth(filterHistory(buildHistory(rows), filter))`; plus an empty-result message when the filtered list is empty but rows is not. I will then render `<HistoryFilters>` (already exported from records-screen.tsx) above it. I deliberately did NOT ship the control on its own rather than show a filter bar that does nothing."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "App.tsx \u2014 extend the Nav `Sub` union with `{kind:'squawk'; id:string} | {kind:'document'; id:string}` (CONTRACT \u00a711 asked records-ui to name it). Squawks keeps this selection internally today, so it works either way; lift it when you want the detail to survive a tab switch."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "App.tsx \u2014 pass `onChanged={onQueued}` to `<Records>`. The prop is optional so nothing breaks today, but without it a write queued from Records does not trigger a sync."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "App.tsx \u2014 call `drainDocumentUploads()` from ./blob-upload wherever `drainCaptures()` is called. Without it, documents added offline only upload when someone opens Records \u2192 Documents and taps \"Upload now\"."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "Place `AskPane` from ./ask-pane (`{aircraft, onOpenEntry?}`, self-contained) as a secondary pane over any tab at regular width. A compact entry point already exists in Records \u2192 More records."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "document-upload.tsx ships a local `DropZone` with the same enter/leave depth counter as your `useDropFiles`, because the hook is not in this branch's base. At integration, replace DropZone's internals with the hook \u2014 the signature already matches."
+   },
+   {
+    "owner": "iPad shell",
+    "request": "Register `\u2318N` (new squawk, in squawks-screen.tsx) and `\u2318F` (focus the documents search, in documents-screen.tsx) via useShortcuts once shortcuts.ts lands \u2014 one call each. Not done here because shortcuts.ts is not in this branch's base."
+   },
+   {
+    "owner": "core sync",
+    "request": "ask-pane.tsx reads localStorage[\"mytaillog.aiAllowance\"] in a local `allowanceFromCache()`. Replace it with `aiAllowance()` from actions.ts \u2014 same key, same shape. Marked with a `ponytail:` comment."
+   },
+   {
+    "owner": "lead",
+    "request": "apps/mobile/src/capture.ts is in no stream's CONTRACT \u00a78 row. blob-upload.ts's `downscaleImage` is a near-copy of its private `rescale`. Assign the file and the two should be merged into one exported helper."
+   }
+  ],
+  "blockers": [
+   "History filter wiring is blocked on review UI. `Entries` in screens.tsx loads its own rows, so the filter must be applied inside it. The pure helper (records-filter.ts, tested) and the `HistoryFilters` control (exported from records-screen.tsx) are both shipped, but nothing renders the control yet \u2014 I did not ship a filter bar that does nothing. The exact 2-line change is in the PR under \"Requests for review UI\".",
+   "`useDropFiles` and `useShortcuts` are not in origin/ios-parity, only on origin/ios-parity-ipad-shell. Rather than stub the shell's layout.tsx (not my file), document-upload.tsx carries a local `DropZone` with the identical enter/leave depth counter, and \u2318N / \u2318F are not registered. Both are one-line swaps at integration; requests filed.",
+   "`aiAllowance()` is on origin/ios-parity-core-sync, not on this base, so ask-pane.tsx reads the same localStorage key directly in `allowanceFromCache()`. Marked with a ponytail: comment; request filed with core sync.",
+   "apps/mobile/src/capture.ts is owned by no stream in CONTRACT \u00a78, so its private `rescale` could not be exported. blob-upload.ts's `downscaleImage` is a near-duplicate. Lead needs to assign the file.",
+   "Oil consumption is computed with a null TachBridge, because the on-device mirror does not carry one and building it would mean re-running the readings pipeline here. oilConsumption then measures on whichever meter has two usable readings and says which \u2014 correct, just narrower than the web app's bridged series. Marked with a ponytail: comment.",
+   "Document uploads queued offline only drain when the Documents segment is opened and \"Upload now\" is tapped, until the iPad shell adds `drainDocumentUploads()` alongside `drainCaptures()` in App.tsx (request filed).",
+   "The two pre-existing lightbox.tsx TouchList errors named in the brief did not appear \u2014 `npx tsc --noEmit` in apps/mobile is completely clean on this base. Flagging in case that means the base moved from what the brief assumed."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "iPad, Records \u2192 Documents: drag a PDF out of the Files app onto the vault list. Expect a blue outline reading \"Drop it here\", then the Add-a-document sheet with the file staged and its size shown. Pick a type, tap Add \u2192 \"1 added to the vault\"; sync and see the row.",
+   "iPad, Records \u2192 Scans \u2192 Manage: drag one thumbnail onto another in the same logbook. The grid must renumber immediately and the sort chip must snap back to \"Filed order\".",
+   "iPad, Squawks: tap an open squawk. The detail must appear in the RIGHT pane, not as a sheet. Resolve it, naming an entry from the \"which entry cleared it\" picker; check the web app shows that entry as the resolving one.",
+   "iPad, Records \u2192 More records \u2192 Ask the logbooks: ask one question (\"when was the ELT battery last replaced?\"). Expect an answer with the entries it used listed beneath it, and the answers-left-today count in the header.",
+   "iPhone, Squawks, airplane mode ON: swipe an open squawk right past halfway. It must read RELEASE TO RESOLVE, move to Resolved immediately, and appear under \"Waiting to upload\". Turn airplane mode off, sync, and confirm it is resolved on the web app with today's date.",
+   "iPhone, Records \u2192 Scans \u2192 Manage \u2192 Select: tap five pages. The button must read \"Delete 5\" and the confirmation must state how many log entries go with them. Confirm, then verify on the web app that exactly those five pages and their entries are gone.",
+   "iPhone, Records \u2192 Scans \u2192 Manage \u2192 select one page \u2192 Retake this page: shoot a replacement. The old page must disappear at once; the new one arrives after the next sync and extraction.",
+   "iPhone, Records \u2192 Documents, airplane mode ON: add a document with the camera. Expect \"Saved on this device\" and the \"N documents saved on this device\" card. Turn airplane mode off and tap Upload now.",
+   "iPhone, Records \u2192 More records \u2192 Weight & balance, then Oil: both must render with the network off. W&B must list any equipment fitted or removed since the last weighing.",
+   "iPhone, Records \u2192 More records \u2192 Share a summary: the iOS share sheet must open with the tail number in the title. Send it to Notes and check every figure matches the web app's Maintenance summary page for the same aircraft.",
+   "iPhone, every text field on these screens (documents search, history search, squawk description, Ask): focus each one and confirm the page does NOT zoom and is not left horizontally pannable after the keyboard closes."
+  ],
+  "testsAdded": [
+   "apps/web/test/mobile-records-filter.test.ts \u2014 6 tests: category/year/text filters compose; search reads the ORIGINAL logbook text (work_performed, parts, signature) not just our written title; every term must match; undated entries belong to no year",
+   "apps/web/test/mobile-page-select.test.ts \u2014 7 tests: toSortable takes the latest date and highest tach off each page and feeds @/lib/pageSort's real sortPages/movedOrder (nulls last, never crossing logbooks); toggleSelection; entriesOnPages; the bulk-delete warning names the log entries and reads as English in the singular; zero-entry case doesn't claim \"0 log entries\"",
+   "apps/web/test/mobile-document-validate.test.ts \u2014 8 tests: accepted set and 25 MB cap match the documents route exactly; extension fallback when iPadOS hands over an empty or octet-stream type; refusal messages name the file and avoid implementation words; boundary at exactly MAX_DOCUMENT_BYTES; empty file refused"
+  ]
+ },
+ "platform": {
+  "stream": "platform",
+  "branch": "ios-parity-platform",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/197",
+  "summary": "Light appearance: tokens.ts gains a light palette under the same names and hands most values out as CSS custom properties, so a theme switch also reaches the style objects ui.tsx builds once at module load; bg/accent/surfaceRaised stay raw hex (they get string-concatenated with an alpha byte, or handed to an SVG attribute) and come from the active palette through a proxy. The resolution rule and first paint live in tokens.ts \u2014 every screen imports it, and an unpainted var() is an unstyled app \u2014 while theme.ts holds useTheme(), the owner-facing wording and the @capacitor/status-bar style. index.css keeps only the ground colour and adds .hoverable (inset shadow, so it lands over inline row backgrounds). Session moved to the iOS Keychain via @aparajita/capacitor-secure-storage (Capacitor 8, maintained) as a supabase-js auth.storage adapter, whenUnlocked, iCloud sync off, with a one-time local-storage migration so existing testers aren't signed out; no biometric unlock (separate plugin, not worth it \u2014 said so in the code). Push end to end: migration 0059 device_token keyed on the token with a SECURITY DEFINER register function (RLS alone cannot move a token between accounts), POST/DELE",
+  "requests": [
+   {
+    "owner": "iPad shell (App.tsx)",
+    "request": "Four things. (1) Mount the theme hook once \u2014 add `import { useTheme } from \"./theme\";` and call `useTheme();` near the top of App(), so the app follows the phone flipping to dark while it is open; the account menu's own copy only covers the manual toggle. (2) FirstRun's `onAddAircraft` now fires AFTER the aircraft exists and carries its id (the prop widened to `(aircraftId?: string) => void`, so the existing handler still compiles) \u2014 at line ~346 replace `onAddAircraft={() => setCapture(null)}` with something that syncs and opens it, e.g. `onAddAircraft={(id) => { void sync().then(() => id && open(id)); }}`. (3) Pass the aircraft in view to the account menu so 'Run a backup now' and 'Share this aircraft' appear (both hidden without it): add `aircraftId={aircraft?.id}` and optionally `onShare={...}` to the `<AccountMenu>` call. (4) tabbar.tsx line 30's `${color.bg}EB` still works, but note that only bg, accent and surfaceRaised may be string-concatenated now \u2014 every other token is a var()."
+   },
+   {
+    "owner": "lead",
+    "request": "Five things. (1) apps/web/src/lib/database.types.ts: add `device_token` to Tables ({ token: string; user_id: string; platform: string; created_at: string }) and `register_device_token: { Args: { p_token: string; p_platform: string }; Returns: undefined }` to Functions, then delete the two hand-narrowed shims in app/api/push/route.ts and app/api/cron/daily/route.ts that point at this request. (2) apps/web/apphosting.yaml: add APNS_KEY_ID, APNS_TEAM_ID, APNS_KEY, APNS_BUNDLE_ID and APNS_ENV as RUNTIME secrets (exact block in the PR body; secret IDs must match Secret Manager character for character, per the PR #131 lesson). (3) apps/mobile/README.md: the last Notes line ('session persists in WKWebView storage \u2026 moves to the iOS Keychain in a later pass') is now wrong \u2014 replacement text in the PR body, plus theme.ts / push.ts / enroll-sheet.tsx in the module map. (4) apps/mobile/src/ui.tsx lines 12\u201322: `export const accent = color.accent` captures a raw hex, so labels importing `accent` from ./ui (screens.tsx, pending.tsx, complete-screen.tsx) keep the launch palette until relaunch if appearance is flipped mid-session; the fix is for those three files to read `color.accent` from ./tokens at render time. (5) Build the account-deletion web flow at /profile with an anchor id=\"delete-account\" \u2014 the in-app link exists as Apple requires but its destination does not, and that blocks App Store submission."
+   },
+   {
+    "owner": "core sync",
+    "request": "No change requested \u2014 just confirmation. account-menu.tsx reads cacheUsage()/clearCache() from blobs.ts through a dynamic import with a hand-written shape, so the storage row is simply absent on a build without them rather than failing to compile. Once ios-parity-core-sync is merged, the `BlobCache` type in account-menu.tsx can be deleted and the import made static."
+   }
+  ],
+  "blockers": [
+   "aircraft.enroll and backup.run cannot go through enqueue(). CONTRACT \u00a73 and the brief say the enrol sheet writes via enqueue() as an online type, but core-sync's lib/sync/mutations.ts marks those types online:true and validateMutation REFUSES them on /api/sync/push (lib/writes/index.ts line 69: 'Online-only types \u2026 stay on their Bearer routes'). Enqueuing one would park it in the queue with an error forever. Implemented against reality: both post directly to writes-c3's Bearer routes (POST /api/aircraft/enroll, POST /api/aircraft/[id]/backup/run) and say 'needs a connection' when offline. The contract's \u00a73 rows for these two should be corrected to say 'posted directly to the Bearer route, not queued'.",
+   "Account deletion has no server side. apps/web/src/app/profile/actions.ts has no delete action and /profile has no delete UI, so the in-app 'Delete my account' link lands on a page that cannot delete anything \u2014 a rejection under App Store guideline 5.1.1(v). The in-app entry point exists as Apple requires; the destination does not. Fine for TestFlight, blocks App Store submission. Written up in TESTFLIGHT.md \u00a78; needs an anchor id=\"delete-account\" on whatever control gets built.",
+   "The APNs key must be provisioned by the user \u2014 it can only be downloaded once, so no agent should hold it. Until APNS_KEY_ID / APNS_TEAM_ID / APNS_KEY / APNS_BUNDLE_ID / APNS_ENV are in Secret Manager and referenced from apphosting.yaml, the sender logs 'APNs is not configured' and the reminder email goes out alone. Step-by-step in TESTFLIGHT.md \u00a77.",
+   "apps/mobile/node_modules had to be a real npm ci rather than the symlink to the main checkout, so that adding @capacitor/push-notifications and @aparajita/capacitor-secure-storage did not write into the main working copy. package.json and package-lock.json are committed; npx cap sync ios picks up the pods. apps/web stayed symlinked.",
+   "Widget and Siri Shortcut are not implemented \u2014 both need native Swift targets, which Capacitor cannot produce (a widget runs in a process that never loads the web view; an App Intent must be compiled Swift to be indexed). What each would take, the App Group plumbing, and why the Shortcut should wait until it can reach the existing action_queue rather than growing a second one, is documented in apps/mobile/ios-config.md.",
+   "Extraction-done and conflict-waiting pushes were stretch and are not built; due/overdue is. The plumbing (apns.ts + device_token + the register route) takes them with one more call site."
+  ],
+  "migrations": [
+   "supabase/migrations/0059_device_token.sql \u2014 apply to BOTH prod and the test project before merge (the CI e2e check needs it). Creates device_token(token pk, user_id, platform, created_at) with owner-scoped select/delete RLS, plus register_device_token(p_token, p_platform) SECURITY DEFINER because registration cannot be an insert policy: when a phone already holding a row is signed into a second account, RLS hides the old row from the new owner, so neither an insert (PK collision) nor an upsert (its using clause matches nothing) can move it, and the previous owner would keep getting that phone's notifications. Deliberately NOT in the log_change() trigger list and with no updated_at \u2014 the rows are user-scoped rather than aircraft-scoped and nothing syncs this table; the header records that against the 0045 lesson."
+  ],
+  "deviceChecklist": [
+   "iPhone \u2014 Light in a bright room: account menu \u2192 Appearance \u2192 Light, then go outside or under a hangar light. Check Status (verdict pill, countdown ring, tach/hobbs with provenance), Records, the pending list and the capture shutter. Nothing grey-on-grey, the status-bar clock legible (glyphs should flip to dark), GROUNDED / DUE SOON / AIRWORTHY still three obviously different colours.",
+   "iPhone \u2014 Follows the phone: set Appearance \u2192 Match my phone, leave the app open, flip iOS to Dark from Control Centre. The app repaints with no relaunch. Flip back.",
+   "iPhone \u2014 Known gap, not a new bug: after toggling Light\u2194Dark inside the app, a few accent-coloured labels (an entry's date on Records, 'saved on this phone' in Pending, the link on Mark-done) keep the old blue until the next launch. That is the ui.tsx request to the lead.",
+   "iPhone \u2014 Session survives: sign in, force-quit from the app switcher, enable Airplane Mode, relaunch. Expected: straight into the hangar, offline, no sign-in screen. Then install over the previous TestFlight build and relaunch \u2014 still signed in (the local-storage migration).",
+   "iPhone \u2014 Receive one push: fresh install, sign in, accept the prompt, confirm a row appears in device_token, then trigger POST /api/cron/daily with the CRON_SECRET bearer on an account with something genuinely due. Expected within seconds: 'N4321J \u2014 2 items coming due' / 'Annual inspection, Oil change'. Token registers but nothing arrives \u2192 check APNS_ENV (TestFlight = production, Xcode = sandbox).",
+   "iPhone \u2014 No second push: run the cron again the same day; the reminder_log dedupe means nothing is sent twice for the same due cycle.",
+   "iPhone \u2014 Enrol a tail from first run: fresh account with no aircraft \u2192 Add my aircraft \u2192 a real N-number \u2192 FAA make/model/serial/registrant come back \u2192 That's my aircraft \u2192 it lands in the hangar. Repeat with a nonsense tail (N999ZZ): expect the 'add it anyway' path, not a dead end. Repeat in Airplane Mode: expect 'Needs a connection', not a spinner.",
+   "iPhone \u2014 Sign out unregisters: account menu \u2192 Sign out \u2192 the device_token row is gone. Sign back in \u2192 it comes back.",
+   "iPhone \u2014 Storage row: account menu shows 'Storage: N MB held'; Clear cached scans drops it to 'nothing' and a page image still opens when online. (Needs core-sync merged; before that the row is simply absent.)",
+   "iPhone \u2014 Backup now: with a Dropbox destination connected on the website, Run a backup now \u2192 'Backup scheduled \u2014 it runs tonight.' Tap again \u2192 'A backup already ran in the last day.' With no destination \u2192 the message points at the website. (Needs writes-c3 merged.)",
+   "iPhone \u2014 Delete my account opens Safari at /profile#delete-account. Until the web flow exists this lands on the profile page with nothing to click \u2014 do not ship to the App Store in that state.",
+   "iPad \u2014 Hover: with a Magic Keyboard or mouse attached, hover the appearance segments and the account-menu rows; a subtle tint follows the pointer and the corners stay rounded. On the iPhone, tapping a row must NOT leave it looking selected afterwards.",
+   "iPad \u2014 Light appearance in split view, half-width and full-width: the sheet caps at 560pt and stays centred rather than stretching edge to edge."
+  ],
+  "testsAdded": [
+   "apps/web/test/mobile-theme.test.ts \u2014 theme resolution (pinned choice beats the phone's setting, 'match my phone' follows prefers-color-scheme, unparseable storage means system, the tap-through cycle, no 'auto' in the copy) and palette sanity (every role present in both as 6-digit hex, ink \u22657:1 and dim \u22654.5:1 and faint \u22653:1 on both ground and card, every verdict colour \u22654.5:1 in both themes, grounded/due/airworthy never read alike, the surface stack stays distinguishable, onAccent works on the theme-independent gradient, tints are the semantic colour plus an alpha byte, cssVars covers everything and the two themes differ)",
+   "apps/web/test/push-alert.test.ts \u2014 lock-screen copy: one aircraft names what is due, a long list trims to '\u2026and N more' rather than truncating, several aircraft count up and list tails, nothing due sends nothing, and the copy never leaks an ISO date, 'queue' or a bare FAR number"
+  ]
+ },
+ "writes-c1": {
+  "stream": "writes-c1",
+  "branch": "ios-parity-writes-c1",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/189",
+  "summary": "Lifted every C1 write into apps/web/src/lib/writes/entries.ts (create/update/setConfirmed/remove/mergeContinuation/setLinks/confirmClean) and apps/web/src/lib/writes/pages.ts (setReview/reorder/deletePages) with the CONTRACT \u00a74 signature (supabase, ctx, input, base?) \u2192 WriteResult. Each function checks can_edit_aircraft, reads its write back with .select(), returns conflict when base is older than updated_at, and validates phone payloads at the trust boundary (pickEntryFields whitelists editable columns). mergeContinuation keeps the #188 relink (component/ad_compliance/document/squawk re-pointed before the tail is deleted). The three server-action files are now thin wrappers (session \u2192 call \u2192 revalidatePath) with unchanged signatures; meter functions in aircraft/[id]/actions.ts untouched. Extract route swapped to createSyncClient(req). WriteResult/WriteCtx live in entries.ts (no index.ts). Web tsc/lint/596 tests clean; mobile tsc/vite build clean.",
+  "requests": [
+   {
+    "owner": "core sync",
+    "request": "Dispatch table: entry.create\u2192entries.create({id?,logbookId,pageId?,fields}); entry.update\u2192entries.update({entryId,fields},base); entry.confirm\u2192entries.setConfirmed({entryId,confirmed},base); entry.delete\u2192entries.remove({entryId},base); entry.merge\u2192entries.mergeContinuation({tailEntryId},base); entry.setLinks\u2192entries.setLinks({entryId,links},base); entries.confirmClean\u2192entries.confirmClean(); page.review\u2192pages.setReview({pageId,status},base); page.reorder\u2192pages.reorder({logbookId?,orderedIds}); page.delete\u2192pages.deletePages({pageIds}). All from @/lib/writes/entries and @/lib/writes/pages; WriteResult/WriteCtx exported from entries.ts for index.ts to re-export."
+   },
+   {
+    "owner": "core sync",
+    "request": "Enforce 'base missing on an update/delete type \u2192 error' in the push route before dispatch; the lib/writes functions treat an absent base as no-check (the web path)."
+   },
+   {
+    "owner": "lead",
+    "request": "CONTRACT \u00a73 entry.setLinks payload says {entryId, documentIds}; the column is log_entry.reference_links ({label,url}[] external URLs) so the function takes {entryId, links: ReferenceLink[]}. Attaching a document to an entry is document.setEntry (C3). Please reconcile \u00a73."
+   },
+   {
+    "owner": "lead",
+    "request": "Branch naming: ios-parity/<stream> cannot coexist with branch ios-parity (refs/heads/ios-parity is a file, so refs/heads/ios-parity/* is impossible locally and on origin). This stream is on ios-parity-writes-c1; other streams will hit the same wall \u2014 pick a convention (e.g. ios-parity-<stream>)."
+   }
+  ],
+  "blockers": [
+   "Branch ios-parity/writes-c1 cannot be created: git refuses refs/heads/ios-parity/* while refs/heads/ios-parity exists (directory/file ref conflict, local and remote). Branch pushed as ios-parity-writes-c1 instead; PR #189 targets ios-parity.",
+   "The worktree was checked out at main (60c9c87), not ios-parity (07380bd) as stated; branched from origin/ios-parity after fetching.",
+   "CONTRACT \u00a73 entry.setLinks payload (documentIds) does not match the real column (reference_links: {label,url}[]); implemented against the column and flagged for the lead."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "Web, page review: edit an entry and save \u2192 fields persist and the entry shows confirmed; toggle confirm/unconfirm; delete an entry; add a missed entry \u2192 it appears with a new id.",
+   "Web, Review all: 'Confirm all clean' \u2192 count matches, fully-confirmed pages flip to confirmed, disputed pages untouched.",
+   "Web, merge continuation: with a document attached to and a squawk resolved by the tail entry, merge \u2192 both now reference the merged head (#188).",
+   "Web, Pages panel: reorder \u2192 #N labels follow the new order; delete a batch \u2192 entries and images gone.",
+   "Web as a read-only viewer: each of the above returns 'You don't have edit access to this aircraft.' instead of silently doing nothing.",
+   "iPhone (after core sync wires dispatch): edit an entry offline, go online \u2192 change lands; edit the same entry on the web first \u2192 phone shows the yours/theirs screen.",
+   "iPhone, Capture: 'Read this page' on a scanned page \u2192 extraction runs with the app session (Bearer), no sign-in prompt.",
+   "iPad, Review split view: mark a page reviewed on the left \u2192 the list on the right updates."
+  ],
+  "testsAdded": [
+   "apps/web/test/writes-c1.test.ts: pickEntryFields whitelist + type validation, cleanLinks (http(s)-only, trim, 120-char label, 20 max), joinText/unionRefs, mergeEntryFields field-combination rules, pickHead precedence, fullyConfirmedPages, isStale base rule, reorderPlan numbering + duplicate/junk rejection"
+  ]
+ },
+ "ipad-shell": {
+  "stream": "ipad-shell",
+  "branch": "ios-parity-ipad-shell",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/190",
+  "summary": "Cherry-picked the partial branch's three commits (91fe107, 47ec77e, and 2dc31e0 \u2014 the latter holds shortcuts.ts + its test, which layout.tsx already imported; without it the branch did not compile) and finished the shell. shortcuts.ts is the dependency-free half (sizeClassFor/700pt threshold, chordOf with \u2318/Ctrl + \u21a9 \u2192 \u2190 N F 1\u20134, caret-safe \u2318\u2190/\u2192 in text fields, newest-wins registration stack). layout.tsx has the real Sidebar (200pt sticky, sidebar-variant AircraftSwitcher with status pill, four tab rows with \u23181\u20134 titles, Account at bottom, .hoverable + inline hover), RegularFrame, TwoPane (side by side at ratio; secondary pane sticky and scrolls independently; compact renders primary only), PanePlaceholder, useShortcuts, useDropFiles. App.tsx composes existing screens per the plan table at regular width (Status|AllItems slot / CompleteItem, Record|RecentReadings slot, Pages|PageViewer+ReviewPane slot, Documents|PdfViewer or DocumentViewer slot, Entries|EntryDetail, Squawks|SquawkDetail slot) with named slot components and documented prop signatures; \u23181\u20134 tab chords plus \u2318N\u2192Squawks and \u2318F\u2192Records\u203aDocuments fallbacks; aircraft switch keeps the tab; capture/pending/account/lightbox wor",
+  "requests": [
+   {
+    "owner": "status-ui",
+    "request": "status-screen.tsx: export AllItems with onBack optional (hide \u2039 when absent); Status gains onShowAll?: () => void so 'Clear for now' does not swap the primary pane at regular width; provide RecentReadings({ aircraft }) for the Log secondary pane (or hand it to records-ui). Fill StatusAllItemsSlot({ aircraft }) and RecentReadingsSlot({ aircraft }) in App.tsx."
+   },
+   {
+    "owner": "records-ui",
+    "request": "Scan FAB (records-screen.tsx) and squawk FAB (squawks-screen.tsx) use bottom: calc(78px + safe-area + 20px); at useSizeClass()==='regular' use calc(20px + safe-area) \u2014 no tab bar there. Use useDropFiles from ./layout on Pages/Documents. Register \u2318N in Squawks (open composer) and \u2318F in Documents (focus search) via useShortcuts. Fill SquawkDetailSlot({ aircraft }) and DocumentViewerSlot({ aircraft }); tell the shell the Sub shape needed for selection state."
+   },
+   {
+    "owner": "review-ui",
+    "request": "PageViewer owns its index state, so register \u2318\u2192/\u2318\u2190 there with useShortcuts({ 'cmd+right': \u2026, 'cmd+left': \u2026 }); \u2318\u21a9 confirm in the review pane the same way. Fill ReviewPaneSlot({ aircraft, page: Page | undefined }) rendered under <PageViewer> in the 40/60 secondary pane."
+   },
+   {
+    "owner": "platform",
+    "request": "index.css: add `@media (hover: hover) { .hoverable:hover { filter: brightness(1.12); } }` \u2014 sidebar rows already carry className=\"hoverable\"; the inline onMouseEnter tint can then be deleted."
+   }
+  ],
+  "blockers": [
+   "Task brief says AllItems 'exists in status-screen.tsx' as composable \u2014 it exists but is not exported and requires a computed Airworthiness + onBack; the Status secondary pane is a named slot until status-ui exports it (request filed).",
+   "PageViewer keeps its page index in internal state, so the shell cannot drive \u2318\u2190/\u2318\u2192 from Nav; review-ui must register those chords inside PageViewer (request filed).",
+   "Selection state for squawk/document detail panes is not in the Nav Sub union yet; waiting on records-ui to name the shape before adding it."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "iPad full-screen landscape: open an aircraft \u2014 200pt sidebar (tail, type, status pill, Status/Log/Records/Squawks, Account at bottom), no tab bar, two panes; Status verdict left, 'Every tracked item will list here.' right",
+   "iPad full-screen portrait: same layout, narrower panes, no horizontal body scroll",
+   "Records \u203a Scans: tap a page \u2192 opens in the right pane; scroll the left list, the viewer stays put; strip thumbnails change page in place; \u2039 clears the right pane",
+   "Records \u203a History: tap entry \u2192 detail right; switch to Documents \u2192 right pane resets; tap a PDF \u2192 renders right",
+   "Status: Mark done \u2192 completion form on the right, verdict stays left; after save the right pane returns to placeholder; pending banner shows above both panes when offline",
+   "Sidebar tail card \u2192 centred dialog (not bottom sheet); pick another tail \u2192 same tab, right pane cleared; 'See all aircraft' \u2192 fleet centred at phone width",
+   "Capture sheet from Records \u203a Scans \u203a Scan opens over both panes and returns to them on cancel (note the FAB sits 78px too high until records-ui request 1)",
+   "Sidebar Account \u2192 same menu as the phone; Sync now / Download all / Sign out work",
+   "Split View 1/2 (\u2248507pt), Split View 1/3, and Slide Over: exact phone layout (header switcher, bottom tab bar, pushed screens)",
+   "Rotation mid-session with an entry open on the right: landscape\u2194portrait keeps it open; dragging into a 1/2 split makes it the pushed screen with \u2039; back to full-screen it is the right pane again",
+   "Magic Keyboard: \u23181\u20134 switch tabs (sidebar row highlights); \u2318N \u2192 Squawks; \u2318F \u2192 Records \u203a Documents; inside a text field \u2318\u2190/\u2192 move the caret and \u23181 still switches tabs; trackpad hover tints a sidebar row",
+   "iPhone: every screen identical to before \u2014 no sidebar, tab bar, header switcher, pushed sub-screens, left-edge swipe-back"
+  ],
+  "testsAdded": [
+   "apps/web/test/mobile-shell.test.ts \u2014 size-class threshold (iPhone/half-split compact, 700+ regular), chordOf accept/reject matrix, \u2318\u2190/\u2192 suppressed inside text fields, newest-mounted screen wins a contested chord, unregister restores the previous owner"
+  ]
+ },
+ "writes-c3": {
+  "stream": "writes-c3",
+  "branch": "ios-parity-writes-c3",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/191",
+  "summary": "Lifted every C3 write into apps/web/src/lib/writes/{squawks,documents,oil,weightBalance,aircraft}.ts with the CONTRACT \u00a74 signature (can_edit_aircraft check, .select() read-back, base/updated_at conflict rule, no throws). Exports: squawks.{create,resolve,reopen,update,remove,normalizeSeverity,pickSquawkFields}; documents.{update,setEntry,remove,pickDocumentFields}; oil.{addTopOff,deleteTopOff,validateTopOff}; weightBalance.{upsert,remove,validateWB}; aircraft.{enroll,pickEnrollFields}. No index.ts. The five server-action files are thin wrappers with unchanged client signatures (also fixes viewers' silent no-op resolve/reopen/delete). Routes: documents/ask/registry swapped to createSyncClient (Bearer or cookie); documents route also accepts JSON base64 {file,fileName,mimeType,...} like capture; ask already returned buffered JSON so only the auth swap was needed; new POST /api/aircraft/enroll (Bearer, optional client id as idempotency key); new POST /api/aircraft/[id]/backup/run (owner-only, sets next_run_at=now on connected schedules via service RPC so the nightly sweep runs them, once/day cap). Branch has origin/ios-parity-writes-c1 merged in because all modules import WriteResult/",
+  "requests": [
+   {
+    "owner": "core sync",
+    "request": "Add dispatch rows: squawk.create\u2192squawks.create({id,description,severity,reportedAt}); squawk.resolve\u2192squawks.resolve({squawkId,resolvedAt?,resolvedEntryId?,resolutionNotes?},base); squawk.reopen/squawk.delete\u2192squawks.reopen/remove({squawkId},base); squawk.update\u2192squawks.update({squawkId,description?,severity?},base); oil.create\u2192oil.addTopOff({id,date,quarts,tach?,hobbs?,notes?}); oil.delete\u2192oil.deleteTopOff({additionId},base); document.update\u2192documents.update({documentId,fields},base); document.setEntry\u2192documents.setEntry({documentId,entryId},base); document.delete\u2192documents.remove({documentId},base); wb.upsert\u2192weightBalance.upsert({id?,fields},base); wb.delete\u2192weightBalance.remove({wbId},base). Legacy /api/aircraft/[id]/actions `squawk` and `oil` can delegate to squawks.create / oil.addTopOff (reported_at\u2192reportedAt; reporter name is now looked up server-side from profile)."
+   },
+   {
+    "owner": "core sync",
+    "request": "Migration 0058 updated_at audit: `squawk` has updated_at but NO set_updated_at trigger (0043) \u2014 add it, or the conflict check compares against the insert timestamp forever. `oil_addition` has no updated_at column at all (0042)."
+   },
+   {
+    "owner": "lead",
+    "request": "CONTRACT \u00a73 marks `oil.delete (base)` but oil_addition has no updated_at and no update path; oil.deleteTopOff accepts `base` and ignores it. Drop '(base)' from that row or have 0058 add the column+trigger."
+   },
+   {
+    "owner": "lead",
+    "request": "CONTRACT \u00a73 says `aircraft.enroll` 'route made Bearer' but no enroll route existed (server action only). Created POST /api/aircraft/enroll \u2014 confirm writes-C3 ownership or reassign. Also add lib/writes/aircraft.ts to the \u00a78 ownership table."
+   },
+   {
+    "owner": "lead",
+    "request": "POST /api/aircraft/[id]/backup/run semantics are 'runs with tonight's sweep' (pulls next_run_at forward; the archive only builds under the cron's service credentials), not 'runs now'; once per day per destination. Reflect in the plan/help copy."
+   },
+   {
+    "owner": "records UI",
+    "request": "Document upload: POST /api/aircraft/[id]/documents with Content-Type application/json, body {file:<base64>, fileName, mimeType, type?, title?, reference?, document_date?, notes?, log_entry_id?}; max 25 MB decoded; PDF/JPEG/PNG/WebP; response {ok, document}. Back up now: POST /api/aircraft/[id]/backup/run \u2192 400 'Set up a cloud backup in your profile first.', 429 'A backup already ran in the last day.', ok \u2192 show `message`."
+   }
+  ],
+  "blockers": [
+   "Contract/schema mismatch: \u00a73 `oil.delete (base)` \u2014 oil_addition has no updated_at column (0042); base is accepted but cannot be compared. Needs a contract edit or 0058 to add the column.",
+   "squawk has updated_at but no set_updated_at BEFORE UPDATE trigger (0043) \u2014 squawk conflict detection is ineffective until 0058 (core sync) adds it.",
+   "Contract \u00a73 references an 'aircraft.enroll route' that did not exist; created POST /api/aircraft/enroll outside the \u00a78 ownership list \u2014 needs lead confirmation.",
+   "No safe inline backup trigger exists (the runner is the cron sweep under service credentials in api/cron/backup, not lib/backup); backup/run schedules the next sweep instead of building the archive on request.",
+   "Branch is stacked on #189 (origin/ios-parity-writes-c1 merged in) because the shared WriteResult/WriteCtx helpers live in lib/writes/entries.ts; merge #189 first."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "iPhone + iPad as OWNER: Squawks \u2192 report (High) appears open; Resolve sets resolved_at; Reopen clears it; Delete removes. As shared VIEWER: report works, resolve/delete show 'You don't have edit access to this aircraft.' rather than silently succeeding.",
+   "Edit a squawk on the web while the phone holds an offline edit of the same squawk \u2192 on reconnect the yours/theirs screen appears; nothing overwritten either way.",
+   "Records \u2192 add oil top-off 1.5 qt today \u2192 appears in the consumption trend; delete it.",
+   "Records \u2192 Weight & balance \u2192 add revision weight 1500 / arm 40 with no moment \u2192 moment shows 60000; edit; delete.",
+   "Records \u2192 Documents \u2192 upload a PDF and a JPEG from the phone (JSON base64 path) \u2192 both appear in the web Vault with correct size/type; attach one to an entry, detach, delete.",
+   "Ask your logbook from the phone \u2192 buffered answer with citations; in airplane mode \u2192 'Needs a connection'.",
+   "Enroll a new aircraft from the phone \u2192 appears in the hangar with the four standard logbooks; double-tap Enroll \u2192 one aircraft, not two.",
+   "Back up now with Dropbox/Drive connected \u2192 'Your backup will run tonight.'; no destination \u2192 'Set up a cloud backup in your profile first.'; after the sweep has run \u2192 'A backup already ran in the last day.'",
+   "Web regression on the ios-parity\u2192main PR: e2e squawks, documents, oil-analysis, weight-balance, ask, smoke (enroll) pass."
+  ],
+  "testsAdded": [
+   "apps/web/test/writes-c3.test.ts: severity fallback; squawk patch validation; document field validation (type whitelist, date format, unknown keys dropped); top-off validation (quarts>0, full date, non-negative meters); W&B derivation of missing weight/arm/moment + validation messages; enrollment normalisation from form strings and JSON (tail uppercase, CSV/array serial lists, integer year)"
+  ]
+ },
+ "writes-c2": {
+  "stream": "writes-c2",
+  "branch": "ios-parity-writes-c2",
+  "prUrl": "https://github.com/iiamit/MyTailLog/pull/192",
+  "summary": "Lifted every C2 write into apps/web/src/lib/writes/{meters,maintenance,compliance,equipment}.ts with the CONTRACT \u00a74 signature (supabase, ctx, input, base?) \u2192 WriteResult, importing Db/WriteCtx/WriteResult/canEdit/isStale/failMessage from writes-c1's entries.ts (origin/ios-parity-writes-c1 merged into this branch as its first commit so it compiles standalone; the diff collapses to C2 files once #189 merges). Exports \u2014 meters: addReading, updateReading, deleteReading, addReset, deleteReset, updateEnrollmentMeters, setAdsbEnabled, dismissAdsbFlights, acceptAdsbEstimate (+ pure pickReading, pickReset, validNumber, isIsoDate). maintenance: upsert, remove, markDone, seedStandard (+ pure pickMaintenanceFields, markDonePlan; types MaintenanceItemFields, MarkDoneInput). compliance: upsert, remove, track, saveAdReference, enrichViaDRS (+ pure pickAdFields, trackPlan; types AdComplianceFields, TrackInput). equipment: upsert, remove, markRemoved, reinstall, confirmProposals, dismissProposals (+ pure pickComponentFields, proposalKey; type ComponentFields). maintenance.markDone folds in the legacy route's applyMxComplete (counter reset + 91.171(d) log_entry keyed by entryId) and applies the \u00a72 ",
+  "requests": [
+   {
+    "owner": "core sync",
+    "request": "apps/web/src/app/api/aircraft/[id]/actions/route.ts: replace applyReading with meters.addReading(supabase, {aircraftId, userId: user.id}, { id, date: str(a.date) ?? undefined, hobbs: num(a.hobbs), tach: num(a.tach) }) and applyMxComplete with maintenance.markDone(supabase, ctx, { itemId: str(a.item_id) ?? \"\", date: str(a.date) ?? undefined, hours: num(a.hours), logbookId: str(a.logbook_id), description: str(a.description), workPerformed: str(a.work_performed), signature: str(a.signature_name), tach: num(a.tach), hobbs: num(a.hobbs), entryId: id }, str(a.base) ?? undefined); throw new Error(r.message) when r.status !== \"ok\". Delete applyReading/applyMxComplete and the maintenanceNextDue import. Exact code in the PR body."
+   },
+   {
+    "owner": "core sync",
+    "request": "POST /api/sync/push dispatch table rows for the 18 C2 types (reading.create/update/delete, meterReset.create/delete, mx.upsert/delete/complete/seedStandard, ad.upsert/delete/track, component.upsert/delete/remove/reinstall, proposals.confirm/dismiss) \u2014 the exact payload\u2192function mapping is in the PR body; inserts get the mutation id spread in as `id`, mx.complete gets it as `entryId`."
+   },
+   {
+    "owner": "lead",
+    "request": "CONTRACT \u00a73: ad.track payload `{id, ref, ...}` \u2192 `{id, reference, kind?, title?, applicability?, recurring?, intervalHours?, intervalMonths?, nextDueDate?, nextDueHours?}` (column is `reference`)."
+   },
+   {
+    "owner": "lead",
+    "request": "CONTRACT \u00a73: mx.complete payload `{itemId, date, hours?, notes?, signature?, logbookId?}` \u2192 `{itemId, date?, hours?, logbookId?, description?, workPerformed?, signature?, tach?, hobbs?}` \u2014 `notes` is not a log_entry column; the 91.171(d) record needs description + workPerformed (+ meters), which the phone already builds."
+   },
+   {
+    "owner": "lead",
+    "request": "CONTRACT \u00a73: component.remove payload `date` is optional in the implementation (absent \u21d2 today, matching the web)."
+   },
+   {
+    "owner": "lead",
+    "request": "CONTRACT \u00a73: mx.upsert / ad.upsert / component.upsert inserts carry no id (\"base when id present\" \u21d2 id means update), so a phone retry after a lost response can double-insert. Decide whether to change to \"id always present; base present \u21d2 update\"."
+   }
+  ],
+  "blockers": [
+   "Contract/schema mismatch: \u00a73 ad.track names the field `ref`; the real column and existing actions use `reference` \u2014 implemented as `reference`.",
+   "Contract/schema mismatch: \u00a73 mx.complete carries `notes`, which is not a log_entry column; the 91.171(d) record needs `description` + `workPerformed` (+ `tach`/`hobbs`) \u2014 implemented with those names (MarkDoneInput).",
+   "This branch includes origin/ios-parity-writes-c1 (PR #189) as a merge commit because lib/writes imports the shared types/helpers from entries.ts; merge #189 first or the PR diff shows C1's files too.",
+   "Legacy /api/aircraft/[id]/actions route and the push dispatch table are owned by core sync and were not edited; until they delegate, the phone's reading/mx_complete still run the route's own copies (behaviourally identical today)."
+  ],
+  "migrations": [],
+  "deviceChecklist": [
+   "Web, Meters page: add a reading with only airframe \u2192 appears; delete it \u2192 gone. Add a meter replacement \u2192 hour countdowns don't run backwards; delete it. Edit enrollment meters and clear hobbs \u2192 hobbs disappears from Status.",
+   "Web, Meters page: turn ADS-B on with hex 'ZZZ' \u2192 'A Mode S address is six hex characters'; with 'A12239' \u2192 'Watching A12239'. Accept a suggested reading \u2192 banner clears.",
+   "Web, Maintenance page: 'Add standard Part 91 items' \u2192 4 items; edit one; mark one done with a date \u2192 next-due updates; delete one.",
+   "Web, Compliance page: add an AD; look up its Federal Register reference; track an untracked ref from the logs; delete one. Explore: track a candidate as recurring 100 h \u2192 record shows the interval with the FR reference linked.",
+   "Web, Equipment page: add a component; remove it on a date with a linked AD \u2192 the AD reads 'not applicable \u2014 Equipment removed: \u2026'; reinstall; delete. Run 'Scan the logs', confirm some proposals and dismiss the rest.",
+   "Web, read-only viewer: every action above returns 'You don't have edit access to this aircraft.' instead of silently doing nothing.",
+   "iPhone (after core sync's push route): Status tab \u2192 mark a VOR check done with place + bearing error while offline; go online \u2192 next-due moves 30 days on and the entry shows in Records with the signature.",
+   "iPhone + web: edit a maintenance item on the web, then mark it done on a phone that synced before the edit \u2192 the phone shows the yours/theirs screen; nothing overwritten.",
+   "iPhone/iPad: run the maintenance scan and the equipment scan from the phone \u2192 200 with the same counts as the web; as a viewer \u2192 403."
+  ],
+  "testsAdded": [
+   "apps/web/test/writes-c2.test.ts: validNumber / isIsoDate guard the trust boundary",
+   "apps/web/test/writes-c2.test.ts: pickReading (at least one meter, nothing negative, date defaults to today)",
+   "apps/web/test/writes-c2.test.ts: pickReset (known meter, date, non-negative readings, trimmed notes)",
+   "apps/web/test/writes-c2.test.ts: pickMaintenanceFields (label required, meter known, numbers sane, unknown keys dropped, kind defaults to other)",
+   "apps/web/test/writes-c2.test.ts: markDonePlan without a base applies as today (VOR 30-day rule via shared maintenanceNextDue)",
+   "apps/web/test/writes-c2.test.ts: markDonePlan \u00a72 conflict rule \u2014 older base conflicts, equal/newer base applies",
+   "apps/web/test/writes-c2.test.ts: markDonePlan date absent = today, null clears, bad input is an error",
+   "apps/web/test/writes-c2.test.ts: pickAdFields (reference/kind/status required, unknown keys dropped)",
+   "apps/web/test/writes-c2.test.ts: trackPlan (one-time default, recurring needs interval, bounds, id passthrough)",
+   "apps/web/test/writes-c2.test.ts: pickComponentFields (name required, life limit typed, is_installed dropped)",
+   "apps/web/test/writes-c2.test.ts: proposalKey matches on P/N+S/N else name"
+  ]
+ },
+ "core-sync": {
+  "stream": "core-sync",
+  "branch": "ios-parity-core-sync",
+  "prUrl": "",
+  "summary": "Agent died on the session limit AFTER pushing 3 commits; no self-report. Files: apps/web/src/app/api/sync/push/route.ts, lib/sync/{push,mutations,changes}.ts, lib/writes/{_stubs,index}.ts, api/aircraft/[id]/actions/route.ts (legacy delegation), api/sync/access/route.ts (+allowance), e2e/sync-push.spec.ts, test/{sync-mutations,mobile-sync-apply,mobile-sync-policy}.test.ts, apps/mobile/src/{mutations,actions,db,pending,sync-apply,sync-policy,blobs}.ts* (queue v2: base, conflict state, backoff, yours/theirs screen, blob ceiling), and supabase/migrations/0058_sync_updated_at_audit.sql. VERIFY ITS SUITES YOURSELF \u2014 it never reported a green run.",
+  "requests": [],
+  "blockers": [
+   "No self-report: the agent was killed after pushing. Read the diff to learn its exports; do not assume its tests pass."
+  ],
+  "migrations": [
+   "supabase/migrations/0058_sync_updated_at_audit.sql \u2014 updated_at audit + ad_reference/equipment_proposal into the change feed with backfill; apply to prod AND test."
+  ],
+  "deviceChecklist": [
+   "iPhone: make an edit offline, reconnect, confirm it lands.",
+   "iPhone: edit the same row on the web first, then sync \u2014 the yours/theirs screen appears and both buttons behave.",
+   "iPhone: fill the blob cache past the ceiling and confirm old scans are purged, not new ones."
+  ],
+  "testsAdded": [
+   "apps/web/test/sync-mutations.test.ts",
+   "apps/web/e2e/sync-push.spec.ts"
+  ]
+ }
+}
