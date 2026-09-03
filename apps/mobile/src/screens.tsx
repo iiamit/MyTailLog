@@ -8,7 +8,8 @@ import { enqueue } from "./mutations";
 import { canEdit } from "./actions";
 import { patchLocalMany } from "./review-local";
 import { pageNeedsLook, cleanUnconfirmed, type ReviewEntry } from "./review-rules";
-import { PageReview, SpotlightRing, EntriesDrawer, useChords, type Locate } from "./review-pane";
+import { PageReview, SpotlightRing, EntriesDrawer, type Locate } from "./review-pane";
+import { useShortcuts } from "./layout";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
@@ -419,7 +420,7 @@ export function PageViewer({
   // The page index lives here, so the page chords are registered here too
   // (CONTRACT §11). chordOf already leaves ⌘←/⌘→ alone inside a text field.
   const turn = (d: 1 | -1) => setI((n) => Math.min(pages.length - 1, Math.max(0, n + d)));
-  useChords({ "cmd+right": () => turn(1), "cmd+left": () => turn(-1) });
+  useShortcuts({ "cmd+right": () => turn(1), "cmd+left": () => turn(-1) });
 
   useEffect(() => {
     let live = true;

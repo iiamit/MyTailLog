@@ -8,6 +8,7 @@ import { recentReadings, validateReading, swipeReveals, readingEditable, reading
 import { shortDate } from "./airworthiness";
 import type { Aircraft } from "./types";
 import { color, text, radius, hit, accentGradient, tabular, display, tint } from "./tokens";
+import { useSizeClass } from "./layout";
 
 // Log a flight — tab 2.
 //
@@ -43,6 +44,7 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
   const [saving, setSaving] = useState(false);
   const [readings, setReadings] = useState<ReadingRow[]>([]);
   const editable = canEdit(aircraft.id);
+  const compact = useSizeClass() === "compact";
 
   const loadReadings = () =>
     getByAircraft<ReadingRow>("hours_reading", aircraft.id).then((rows) => setReadings(recentReadings(rows)));
@@ -223,13 +225,36 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
         {saved ?? "Saves immediately when connected · safely queues offline"}
       </p>
 
-      <RecentReadings
-        aircraft={aircraft}
-        rows={readings}
-        editable={editable}
-        onChanged={async () => { await loadReadings(); await onQueued(); }}
-      />
+      {/* At regular width the shell gives the readings their own pane beside
+          the form (RecentReadingsPane), so the inline copy would be a second one. */}
+      {compact && (
+        <RecentReadings
+          aircraft={aircraft}
+          rows={readings}
+          editable={editable}
+          onChanged={async () => { await loadReadings(); await onQueued(); }}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * The same list, standalone: the Log tab's secondary pane at regular width.
+ * Loads its own rows so the shell can drop it in with just the aircraft.
+ */
+export function RecentReadingsPane({ aircraft, onQueued }: { aircraft: Aircraft; onQueued?: () => Promise<"synced" | "pending"> }) {
+  const [rows, setRows] = useState<ReadingRow[]>([]);
+  const load = () => getByAircraft<ReadingRow>("hours_reading", aircraft.id).then((r) => setRows(recentReadings(r)));
+  useEffect(() => { load(); }, [aircraft.id]);
+  if (rows.length === 0) return null;
+  return (
+    <RecentReadings
+      aircraft={aircraft}
+      rows={rows}
+      editable={canEdit(aircraft.id)}
+      onChanged={async () => { await load(); await onQueued?.(); }}
+    />
   );
 }
 

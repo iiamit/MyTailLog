@@ -15,11 +15,13 @@ import { Records } from "./records-screen";
 import { TabBar, TABS, type Tab } from "./tabbar";
 import { AircraftSwitcher } from "./switcher";
 import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useShortcuts } from "./layout";
+import { PageReview } from "./review-pane";
+import type { FieldBox } from "@/lib/extraction/schema";
 import type { ShortcutMap } from "./shortcuts";
 import { Status } from "./status-screen";
 import { Documents } from "./documents-screen";
 import { PdfViewer } from "./pdf-screen";
-import { Record } from "./record-screen";
+import { Record, RecentReadingsPane } from "./record-screen";
 import { Squawks } from "./squawks-screen";
 import { CompleteItem } from "./complete-screen";
 import { CaptureScreen } from "./capture-screen";
@@ -470,7 +472,7 @@ function Shell({ session }: { session: Session }) {
             {nav.sub?.kind === "entry" ? (
               <EntryDetail entry={nav.sub.entry} tail={nav.aircraft.tail_number} onBack={back} onZoom={setZoom} />
             ) : nav.sub?.kind === "page" ? (
-              <PageViewer pages={nav.sub.pages} index={nav.sub.index} onBack={back} onZoom={setZoom} />
+              <PageViewer pages={nav.sub.pages} index={nav.sub.index} onBack={back} onZoom={setZoom} onQueued={writeFinished} />
             ) : nav.sub?.kind === "complete" ? (
               <CompleteItem aircraft={nav.aircraft} item={nav.sub.item} onBack={back} onQueued={writeFinished} />
             ) : nav.sub?.kind === "pdf" ? (
@@ -541,7 +543,7 @@ function aircraftPanes(
     return {
       ratio: "55/45",
       primary: <Record aircraft={aircraft} onQueued={h.onQueued} />,
-      secondary: <RecentReadingsSlot aircraft={aircraft} />,
+      secondary: <RecentReadingsPane aircraft={aircraft} onQueued={h.onQueued} />,
     };
   }
 
@@ -574,10 +576,7 @@ function aircraftPanes(
       primary,
       secondary:
         sub?.kind === "page" ? (
-          <>
-            <PageViewer pages={sub.pages} index={sub.index} onBack={h.back} onZoom={h.onZoom} />
-            <ReviewPaneSlot aircraft={aircraft} page={sub.pages[sub.index]} />
-          </>
+          <ScansPane pages={sub.pages} index={sub.index} onBack={h.back} onZoom={h.onZoom} onQueued={h.onQueued} />
         ) : (
           <PanePlaceholder>Pick a page to read it here.</PanePlaceholder>
         ),
@@ -619,11 +618,6 @@ function StatusAllItemsSlot(_p: { aircraft: Aircraft }) {
   return <PanePlaceholder>Every tracked item will list here.</PanePlaceholder>;
 }
 
-/** status-ui — the last few tach/hobbs readings beside the Log form. */
-function RecentReadingsSlot(_p: { aircraft: Aircraft }) {
-  return <PanePlaceholder>Recent readings will show here.</PanePlaceholder>;
-}
-
 /** records-ui — the open squawk's detail, or the composer. */
 function SquawkDetailSlot(_p: { aircraft: Aircraft }) {
   return <PanePlaceholder>Pick a squawk to read it here.</PanePlaceholder>;
@@ -634,7 +628,51 @@ function DocumentViewerSlot(_p: { aircraft: Aircraft }) {
   return <PanePlaceholder>Pick a document to read it here.</PanePlaceholder>;
 }
 
-/** review-ui — the review pane for the page shown above it. */
-function ReviewPaneSlot(_p: { aircraft: Aircraft; page: Page | undefined }) {
-  return null;
+/**
+ * Scans at regular width: the page rail is the 40% primary, and this is the
+ * 60% secondary — itself split 55/45 into the scan and the review beside it
+ * (the three-way layout of design spec §15, which one TwoPane cannot express).
+ *
+ * The spotlight lives here because it spans both halves: the review pane says
+ * which field to light, the scan draws the ring. Turning the page clears it.
+ */
+function ScansPane({
+  pages, index, onBack, onZoom, onQueued,
+}: {
+  pages: Page[];
+  index: number;
+  onBack: () => void;
+  onZoom: (src: string) => void;
+  onQueued: () => Promise<"synced" | "pending">;
+}) {
+  const [spot, setSpot] = useState<{ box: FieldBox | null; key: string | null }>({ box: null, key: null });
+  const [shown, setShown] = useState<Page>(pages[index]);
+  return (
+    <TwoPane
+      ratio="55/45"
+      primary={
+        <PageViewer
+          pages={pages}
+          index={index}
+          onBack={onBack}
+          onZoom={onZoom}
+          onQueued={onQueued}
+          review="external"
+          spot={spot.box}
+          onPage={(p) => {
+            setShown(p);
+            setSpot({ box: null, key: null });
+          }}
+        />
+      }
+      secondary={
+        <PageReview
+          page={shown}
+          onLocate={(box, key) => setSpot({ box, key })}
+          activeKey={spot.key}
+          onQueued={onQueued}
+        />
+      }
+    />
+  );
 }

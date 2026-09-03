@@ -5,13 +5,13 @@ import { getByAircraft } from "./db";
 import { enqueue } from "./mutations";
 import { canEdit } from "./actions";
 import { patchLocal, deleteLocal } from "./review-local";
+import { useShortcuts } from "./layout";
 import { shortDate } from "./airworthiness";
 import { EntryEditor, CheckChip } from "./entry-editor";
 import {
   entriesOn, entryBadge, fieldChip, readAllowance, extractLabel, spotlightStyle, drawerSnap,
   type ReviewPage, type ReviewEntry, type EntryForm, type Allowance,
 } from "./review-rules";
-import { chordOf, type ShortcutMap } from "./shortcuts";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { Page } from "./types";
 import { color, text, radius, hit, tint, accentGradient, tabular } from "./tokens";
@@ -106,7 +106,7 @@ export function ReviewPane({
   // ⌘↩ on a keyboard: confirm the next entry that still needs it, then mark the
   // page reviewed. Registered here, not in the shell, because the entries are
   // this component's state (CONTRACT §11).
-  useChords({
+  useShortcuts({
     "cmd+enter":
       !editable || editing
         ? undefined
@@ -165,7 +165,7 @@ export function ReviewPane({
 
       {editable && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-          <button onClick={() => setEditing({ entry: null })} style={ghostBtn}>+ Add an entry the extractor missed</button>
+          <button onClick={() => setEditing({ entry: null })} style={ghostBtn}>Missed an entry?</button>
           {page.extraction_status === "extracted" && (
             <div style={{ display: "flex", gap: 8 }}>
               {page.review_status === "confirmed" ? (
@@ -398,32 +398,3 @@ const ghostBtn: React.CSSProperties = {
   fontFamily: text.button.fontFamily, fontSize: 14, fontWeight: 500, cursor: "pointer",
 };
 
-// --- Keyboard --------------------------------------------------------------------
-
-/**
- * The chords this screen answers to while it is mounted.
- *
- * ponytail: a self-contained listener rather than the shell's `useShortcuts`,
- * which lives in layout.tsx — a file this branch does not carry (see the PR's
- * blockers). It reads chords with the SAME `chordOf` the shell uses, including
- * the rule that Cmd-left/right keep their text meaning inside an input, and
- * deliberately stays OFF the shell's handler stack so nothing fires twice after
- * integration. Swap the two call sites to `useShortcuts` from ./layout once
- * both are on one branch, and delete this.
- */
-export function useChords(map: ShortcutMap): void {
-  const ref = useRef(map);
-  ref.current = map;
-  useEffect(() => {
-    const on = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      const chord = chordOf(e, tag === "INPUT" || tag === "TEXTAREA");
-      const fn = chord ? ref.current[chord] : undefined;
-      if (!fn) return;
-      e.preventDefault();
-      fn();
-    };
-    window.addEventListener("keydown", on);
-    return () => window.removeEventListener("keydown", on);
-  }, []);
-}
