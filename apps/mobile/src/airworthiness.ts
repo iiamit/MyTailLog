@@ -253,11 +253,15 @@ export async function loadAirworthinessRows(aircraftId: string): Promise<Airwort
 }
 
 /**
- * Optimistic local patch after enqueue(): the mirror shows the change now, and
- * the next pull replaces the row with the server's version (same primary key).
- * `row: null` removes it. seq 0 only affects getRows() ordering.
+ * Optimistic local WHOLE-row write after enqueue(): the mirror shows the change
+ * now, and the next pull replaces the row with the server's version (same
+ * primary key). `row: null` removes it. seq 0 only affects getRows() ordering.
+ *
+ * Not `patchLocal` — review-local.ts owns that name for the merge-a-patch form,
+ * and two same-named helpers with different signatures is one import away from
+ * writing a partial row over a whole one.
  */
-export async function patchLocal(table: string, id: string, row: Record<string, unknown> | null): Promise<void> {
+export async function replaceLocal(table: string, id: string, row: Record<string, unknown> | null): Promise<void> {
   await applyChanges([row ? { table, op: "upsert", id, seq: 0, row } : { table, op: "delete", id, seq: 0 }]);
 }
 

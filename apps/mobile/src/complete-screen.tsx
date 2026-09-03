@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getByAircraft } from "./db";
 import { canEdit } from "./actions";
 import { enqueue } from "./mutations";
-import { computeAirworthiness, patchLocal, shortDate } from "./airworthiness";
+import { computeAirworthiness, replaceLocal, shortDate } from "./airworthiness";
 import { maintenanceNextDue } from "@/lib/maintenance";
 import { logbookLabel } from "@/lib/logbooks";
 import type { LogbookType, MaintenanceItem } from "@/lib/database.types";
@@ -120,7 +120,7 @@ export function CompleteItem({
       // Show the reset counter now; the next pull replaces the row with the
       // server's version.
       if (row) {
-        await patchLocal("maintenance_item", row.id, {
+        await replaceLocal("maintenance_item", row.id, {
           ...row,
           last_done_date: date,
           last_done_hours: value,

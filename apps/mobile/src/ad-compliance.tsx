@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { enqueue } from "./mutations";
-import { patchLocal, shortDate } from "./airworthiness";
+import { replaceLocal, shortDate } from "./airworthiness";
 import { adStatusLine, numOrNull } from "./status-logic";
 import { API_BASE } from "./supabase";
 import { computeNextDue, AD_STATUS_LABEL } from "@/lib/compliance";
@@ -149,13 +149,13 @@ export function AdSheet({
       };
       if (record) {
         await enqueue("ad.upsert", aircraft.id, { id: record.id, record: fields }, { base: record.updated_at, label: `${kind.toUpperCase()} ${fields.reference} updated` });
-        await patchLocal("ad_compliance", record.id, { ...record, ...fields, ...computeNextDue(fields) });
+        await replaceLocal("ad_compliance", record.id, { ...record, ...fields, ...computeNextDue(fields) });
       } else if (status === "open" && !method.trim() && !entryId) {
         // Nothing but the number: just start tracking it. The id is ours, so the
         // row can show up on the phone before it has synced.
         const id = crypto.randomUUID();
         await enqueue("ad.track", aircraft.id, { id, reference: fields.reference, kind }, { id, label: `${kind.toUpperCase()} ${fields.reference} tracked` });
-        await patchLocal("ad_compliance", id, {
+        await replaceLocal("ad_compliance", id, {
           ...fields, id, aircraft_id: aircraft.id, next_due_date: null, next_due_hours: null,
           ad_reference_id: null, verified_report_page_id: null, verified_at: null,
           created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
@@ -177,7 +177,7 @@ export function AdSheet({
     try {
       // Nothing references ad_compliance(id) — the row simply goes.
       await enqueue("ad.delete", aircraft.id, { recordId: record.id }, { base: record.updated_at, label: `${record.kind.toUpperCase()} ${record.reference} removed` });
-      await patchLocal("ad_compliance", record.id, null);
+      await replaceLocal("ad_compliance", record.id, null);
       onChanged();
       onClose();
       await onQueued();

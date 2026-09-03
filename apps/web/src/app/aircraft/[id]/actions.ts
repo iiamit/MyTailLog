@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import * as pages from "@/lib/writes/pages";
-import { failMessage } from "@/lib/writes/entries";
+import { canEdit, failMessage } from "@/lib/writes/entries";
 import { METERS, type Meter } from "@/lib/hobbsTach";
 
 // Page ops are thin wrappers over lib/writes/pages (CONTRACT §4): resolve the
@@ -72,12 +72,18 @@ async function updateReading(
   const supabase = await createClient();
   const table = source === "entry" ? "log_entry" : "mfb" === source ? "hours_reading" : null;
   if (table !== "log_entry" && table !== "hours_reading") return { error: "Unknown reading source." };
+  // CONTRACT rule 7: a viewer's UPDATE matches zero rows under RLS and comes
+  // back with no error, so all three callers used to report success and change
+  // nothing. Ask the same function RLS asks, then read the write back.
+  if (!(await canEdit(supabase, aircraftId))) return { error: "You don't have permission to edit this aircraft." };
   const q =
     table === "log_entry"
       ? supabase.from("log_entry").update(patch)
       : supabase.from("hours_reading").update(patch);
-  const { error } = await q.eq("id", readingId).eq("aircraft_id", aircraftId);
-  return error ? { error: error.message } : null;
+  const { data, error } = await q.eq("id", readingId).eq("aircraft_id", aircraftId).select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That reading is no longer there." };
+  return null;
 }
 
 /**

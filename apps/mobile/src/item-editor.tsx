@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { enqueue } from "./mutations";
 import { getByAircraft } from "./db";
-import { patchLocal, shortDate } from "./airworthiness";
+import { replaceLocal, shortDate } from "./airworthiness";
 import { validateItem, numOrNull, type ItemFields } from "./status-logic";
 import { STANDARD_ITEMS, maintenanceNextDue } from "@/lib/maintenance";
 import type { MaintenanceItem } from "@/lib/database.types";
@@ -71,7 +71,7 @@ export function ItemEditor({
       const payload = { ...fields, label: fields.label.trim() };
       if (item) {
         await enqueue("mx.upsert", aircraft.id, { id: item.id, item: payload }, { base: item.updated_at, label: `${payload.label} edited` });
-        await patchLocal("maintenance_item", item.id, { ...item, ...payload, ...maintenanceNextDue(payload) });
+        await replaceLocal("maintenance_item", item.id, { ...item, ...payload, ...maintenanceNextDue(payload) });
       } else {
         // No local row until the server assigns the id — it appears after the
         // next sync, like a squawk added offline.
@@ -91,7 +91,7 @@ export function ItemEditor({
     try {
       // No table references maintenance_item(id) — nothing to relink.
       await enqueue("mx.delete", aircraft.id, { itemId: item.id }, { base: item.updated_at, label: `${item.label} deleted` });
-      await patchLocal("maintenance_item", item.id, null);
+      await replaceLocal("maintenance_item", item.id, null);
       onChanged();
       onClose();
       await onQueued();

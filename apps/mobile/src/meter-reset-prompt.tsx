@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { enqueue } from "./mutations";
-import { patchLocal } from "./airworthiness";
+import { replaceLocal } from "./airworthiness";
 import type { Meter } from "@/lib/hobbsTach";
 import type { Aircraft } from "./types";
 import { color, text, display, tabular } from "./tokens";
@@ -38,7 +38,7 @@ export function MeterResetPrompt({
       await enqueue("meterReset.create", aircraft.id, { id, meter, date, prior, next }, { id, label: `${label} meter replaced at ${prior.toFixed(1)}` });
       // Our id, so the mirror can hold the row now and the countdowns re-anchor
       // before the sync.
-      await patchLocal("meter_reset", id, {
+      await replaceLocal("meter_reset", id, {
         id, aircraft_id: aircraft.id, meter, reset_date: date, prior_value: prior, new_value: next,
         notes: notes.trim() || null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       });

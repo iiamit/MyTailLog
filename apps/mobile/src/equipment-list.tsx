@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { enqueue } from "./mutations";
-import { patchLocal, shortDate } from "./airworthiness";
+import { replaceLocal, shortDate } from "./airworthiness";
 import { numOrNull } from "./status-logic";
 import type { Component, EquipmentProposal } from "@/lib/database.types";
 import type { Aircraft } from "./types";
@@ -35,7 +35,7 @@ export function EquipmentList({
     try {
       await enqueue(verb === "confirm" ? "proposals.confirm" : "proposals.dismiss", aircraft.id, { proposalIds: [p.id] }, { label: `${p.name} ${verb === "confirm" ? "added to equipment" : "not added"}` });
       // The proposal row goes either way; the component it becomes arrives on sync.
-      await patchLocal("equipment_proposal", p.id, null);
+      await replaceLocal("equipment_proposal", p.id, null);
       onChanged();
       await onQueued();
     } finally {
@@ -47,7 +47,7 @@ export function EquipmentList({
     setBusy(c.id);
     try {
       await enqueue("component.reinstall", aircraft.id, { componentId: c.id }, { base: c.updated_at, label: `${c.name} reinstalled` });
-      await patchLocal("component", c.id, { ...c, is_installed: true, removal_date: null, removal_entry_id: null });
+      await replaceLocal("component", c.id, { ...c, is_installed: true, removal_date: null, removal_entry_id: null });
       onChanged();
       await onQueued();
     } finally {
@@ -171,7 +171,7 @@ function ComponentSheet({
       };
       if (c) {
         await enqueue("component.upsert", aircraft.id, { id: c.id, component: fields }, { base: c.updated_at, label: `${fields.name} edited` });
-        await patchLocal("component", c.id, { ...c, ...fields });
+        await replaceLocal("component", c.id, { ...c, ...fields });
       } else {
         await enqueue("component.upsert", aircraft.id, { component: fields }, { label: `${fields.name} installed` });
       }
@@ -192,7 +192,7 @@ function ComponentSheet({
       // SET NULL — those records survive, unlinked. Use "Removed" to keep the
       // history; delete is for a component that was never on this aircraft.
       await enqueue("component.delete", aircraft.id, { componentId: c.id }, { base: c.updated_at, label: `${c.name} deleted` });
-      await patchLocal("component", c.id, null);
+      await replaceLocal("component", c.id, null);
       onChanged();
       onClose();
       await onQueued();
@@ -255,7 +255,7 @@ function RemoveSheet({ aircraft, component: c, onClose, onQueued, onChanged }: {
     setBusy(true);
     try {
       await enqueue("component.remove", aircraft.id, { componentId: c.id, date, entryId: entryId || undefined }, { base: c.updated_at, label: `${c.name} removed` });
-      await patchLocal("component", c.id, { ...c, is_installed: false, removal_date: date, removal_entry_id: entryId || null });
+      await replaceLocal("component", c.id, { ...c, is_installed: false, removal_date: date, removal_entry_id: entryId || null });
       onChanged();
       onClose();
       await onQueued();
