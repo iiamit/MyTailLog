@@ -7,6 +7,10 @@ import * as meters from "./meters";
 import * as maintenance from "./maintenance";
 import * as compliance from "./compliance";
 import * as equipment from "./equipment";
+import * as squawks from "./squawks";
+import * as documents from "./documents";
+import * as oil from "./oil";
+import * as weightBalance from "./weightBalance";
 
 export type { Db, WriteCtx, WriteResult, WriteFn } from "./_stubs";
 
@@ -54,4 +58,18 @@ export const writes: Record<MutationType, WriteFn> = {
   "component.reinstall": equipment.reinstall,
   "proposals.confirm": equipment.confirmProposals,
   "proposals.dismiss": equipment.dismissProposals,
+
+  // writes-c3
+  "squawk.create": squawks.create,
+  "squawk.resolve": squawks.resolve,
+  "squawk.reopen": squawks.reopen,
+  "squawk.update": squawks.update,
+  "squawk.delete": squawks.remove,
+  "oil.create": oil.addTopOff,
+  "oil.delete": oil.deleteTopOff,
+  "document.update": documents.update,
+  "document.setEntry": documents.setEntry,
+  "document.delete": documents.remove,
+  "wb.upsert": weightBalance.upsert,
+  "wb.delete": weightBalance.remove,
 };
