@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getByAircraft, listActions } from "./db";
-import { queueAction, canEdit } from "./actions";
+import { enqueue } from "./mutations";
+import { canEdit } from "./actions";
 import { shortDate } from "./airworthiness";
-import type { Aircraft } from "./types";
+import { TwoPane, useSizeClass } from "./layout";
+import { SquawkDetail, SEVERITY, SEVERITY_ORDER, type SquawkRow } from "./squawk-detail";
+import type { Aircraft, LogEntry } from "./types";
 import { color, text, radius, hit, accentGradient, tint } from "./tokens";
 import { ChevronRightIcon } from "./icons";
 
@@ -11,47 +14,67 @@ import { ChevronRightIcon } from "./icons";
 // The list leads and the composer is a sheet. It used to sit at the top of the
 // screen, so opening the keyboard covered the squawks you were checking, and a
 // half-typed one sat above the two you'd already filed.
+//
+// Resolving used to be "do it on the web app". It is the other half of the
+// feature and it happens in the hangar, next to the aircraft, with the mechanic
+// standing there — so it happens here, offline, like everything else.
 
-type SquawkRow = {
-  id: string;
-  description: string;
-  severity: "low" | "medium" | "high";
-  status: "open" | "resolved";
-  reporter_name: string | null;
-  reported_at: string | null;
-  resolution_notes: string | null;
-};
-
-/**
- * Severity is renamed at the presentation layer only — the stored enum stays
- * low|medium|high. "High" doesn't tell a pilot whether the aircraft is flyable;
- * "Ground" does.
- */
-const SEVERITY: Record<SquawkRow["severity"], { label: string; color: string }> = {
-  low: { label: "Low", color: color.accent },
-  medium: { label: "Watch", color: color.warning },
-  high: { label: "Ground", color: color.danger },
-};
-const ORDER: SquawkRow["severity"][] = ["low", "medium", "high"];
+/** How far a card has to travel before the swipe counts as "resolve it". */
+const SWIPE_TO_RESOLVE = 96;
 
 export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: () => Promise<"synced" | "pending"> }) {
   const [rows, setRows] = useState<SquawkRow[] | null>(null);
+  const [entries, setEntries] = useState<LogEntry[]>([]);
   const [pending, setPending] = useState<{ id: string; label: string }[]>([]);
   const [composing, setComposing] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [showResolved, setShowResolved] = useState(false);
   const editable = canEdit(aircraft.id);
+  const size = useSizeClass();
 
   async function reload() {
     setRows(await getByAircraft<SquawkRow>("squawk", aircraft.id));
     const queued = await listActions(aircraft.id);
-    setPending(queued.filter((a) => a.type === "squawk").map((a) => ({ id: a.id, label: a.label })));
+    setPending(
+      queued
+        .filter((a) => a.type === "squawk.create" || a.type === "squawk")
+        .map((a) => ({ id: a.id, label: a.label })),
+    );
   }
-  useEffect(() => { reload(); }, [aircraft.id]);
+  useEffect(() => {
+    reload();
+    getByAircraft<LogEntry>("log_entry", aircraft.id).then(setEntries);
+  }, [aircraft.id]);
 
-  const open = (rows ?? []).filter((s) => s.status === "open");
-  const resolved = (rows ?? []).filter((s) => s.status !== "open");
+  const all = rows ?? [];
+  const open = all.filter((s) => s.status === "open");
+  const resolved = all.filter((s) => s.status !== "open");
   const newest = (a: SquawkRow, b: SquawkRow) => (b.reported_at ?? "").localeCompare(a.reported_at ?? "");
+  const selected = all.find((s) => s.id === openId) ?? null;
 
-  return (
+  /** Patch the row in place after a write is queued — nothing waits for a sync. */
+  async function applyLocal(next: SquawkRow | null, id: string) {
+    setRows((cur) => {
+      const list = cur ?? [];
+      return next === null ? list.filter((s) => s.id !== id) : list.map((s) => (s.id === id ? next : s));
+    });
+    if (next === null) setOpenId(null);
+    await onQueued();
+  }
+
+  /** The swipe shortcut: resolved today, no entry named. The sheet is where the
+   *  entry that cleared it gets recorded, when there is one. */
+  async function quickResolve(s: SquawkRow) {
+    await enqueue(
+      "squawk.resolve",
+      aircraft.id,
+      { squawkId: s.id, resolvedAt: new Date().toISOString().slice(0, 10), resolvedEntryId: null },
+      { base: s.updated_at },
+    );
+    await applyLocal({ ...s, status: "resolved", resolved_at: new Date().toISOString() }, s.id);
+  }
+
+  const list = (
     <>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 20 }}>
         <h1 style={{ ...text.screenTitle, color: color.ink, margin: 0 }}>Squawks</h1>
@@ -77,20 +100,51 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
       </div>
       {open.length === 0 && <p style={{ ...text.secondary, color: color.faint }}>Nothing open.</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {[...open].sort(newest).map((s) => <SquawkCard key={s.id} squawk={s} />)}
+        {[...open].sort(newest).map((s) => (
+          <SquawkCard
+            key={s.id}
+            squawk={s}
+            active={s.id === openId}
+            swipeable={editable}
+            onOpen={() => setOpenId(s.id)}
+            onSwipeResolve={() => quickResolve(s)}
+          />
+        ))}
       </div>
 
       {resolved.length > 0 && (
-        <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: "12px 14px", marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ ...text.rowTitle, fontWeight: 500, color: color.dim }}>Resolved</span>
-          <span style={{ ...text.countdown, color: color.faint, marginLeft: "auto" }}>{resolved.length}</span>
-          <ChevronRightIcon size={14} color={color.faint} />
-        </div>
-      )}
+        <>
+          <button
+            onClick={() => setShowResolved((v) => !v)}
+            aria-expanded={showResolved}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: hit.min,
+              background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.row,
+              padding: "12px 14px", marginTop: 12, cursor: "pointer", textAlign: "left",
+            }}
+          >
+            <span style={{ ...text.rowTitle, fontWeight: 500, color: color.dim }}>Resolved</span>
+            <span style={{ ...text.countdown, color: color.faint, marginLeft: "auto" }}>{resolved.length}</span>
+            <span style={{ transform: showResolved ? "rotate(90deg)" : "none", display: "inline-flex" }}>
+              <ChevronRightIcon size={14} color={color.faint} />
+            </span>
+          </button>
 
-      {/* Resolution stays on the web, matching the current build. */}
-      {resolved.length > 0 && (
-        <p style={{ ...text.meta, color: color.faint, marginTop: 8 }}>Resolve a squawk on the web app.</p>
+          {showResolved && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+              {[...resolved].sort(newest).map((s) => (
+                <SquawkCard
+                  key={s.id}
+                  squawk={s}
+                  active={s.id === openId}
+                  swipeable={false}
+                  onOpen={() => setOpenId(s.id)}
+                  onSwipeResolve={() => {}}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {editable && (
@@ -107,17 +161,54 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
           + New squawk
         </button>
       )}
+    </>
+  );
+
+  return (
+    <>
+      <TwoPane
+        primary={list}
+        ratio="55/45"
+        secondary={
+          selected ? (
+            <SquawkDetail
+              squawk={selected}
+              entries={entries}
+              editable={editable}
+              variant="pane"
+              onClose={() => setOpenId(null)}
+              onChanged={(next) => applyLocal(next, selected.id)}
+            />
+          ) : null
+        }
+      />
+
+      {/* Compact: the same detail as a sheet, because TwoPane shows only the list. */}
+      {size === "compact" && selected && (
+        <SquawkDetail
+          squawk={selected}
+          entries={entries}
+          editable={editable}
+          variant="sheet"
+          onClose={() => setOpenId(null)}
+          onChanged={(next) => applyLocal(next, selected.id)}
+        />
+      )}
 
       {composing && (
         <Composer
           onClose={() => setComposing(false)}
           onSave={async (description, severity) => {
-            await queueAction({
-              aircraftId: aircraft.id,
-              type: "squawk",
-              label: description.length > 48 ? `${description.slice(0, 48)}…` : description,
-              payload: { description, severity, reported_at: new Date().toISOString() },
-            });
+            // The id is generated here and used twice: as the queue's
+            // idempotency key AND as the row's own id, so a drain that lands but
+            // loses its response can't file the squawk a second time.
+            const id = crypto.randomUUID();
+            await enqueue(
+              "squawk.create",
+              aircraft.id,
+              { id, description, severity, reportedAt: new Date().toISOString() },
+              { id, label: description.length > 48 ? `${description.slice(0, 48)}…` : description },
+            );
             setComposing(false);
             await onQueued();
             await reload();
@@ -128,18 +219,86 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
   );
 }
 
-function SquawkCard({ squawk: s }: { squawk: SquawkRow }) {
+function SquawkCard({
+  squawk: s,
+  active,
+  swipeable,
+  onOpen,
+  onSwipeResolve,
+}: {
+  squawk: SquawkRow;
+  active: boolean;
+  swipeable: boolean;
+  onOpen: () => void;
+  onSwipeResolve: () => void;
+}) {
   const sev = SEVERITY[s.severity] ?? SEVERITY.low;
+  const [dx, setDx] = useState(0);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const horizontal = useRef(false);
+
   return (
-    <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", gap: 10 }}>
-        <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: sev.color, flex: "0 0 auto", marginTop: 6 }} />
-        {/* Never truncated — this is the only place the defect is written down. */}
-        <span style={{ ...text.rowTitle, fontWeight: 500, color: color.ink, textWrap: "pretty" }}>{s.description}</span>
-      </div>
-      <div style={{ ...text.meta, color: color.faint, paddingLeft: 18 }}>
-        {sev.label} · {relative(s.reported_at)}
-        {s.reporter_name ? ` · ${s.reporter_name}` : ""}
+    <div style={{ position: "relative", overflow: "hidden", borderRadius: radius.row }}>
+      {/* What the swipe is going to do, revealed underneath the card. */}
+      {dx > 0 && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute", inset: 0, display: "flex", alignItems: "center", paddingLeft: 16,
+            background: tint.success, ...text.chip, color: color.success,
+          }}
+        >
+          {dx >= SWIPE_TO_RESOLVE ? "RELEASE TO RESOLVE" : "SLIDE TO RESOLVE"}
+        </div>
+      )}
+
+      <div
+        onClick={() => { if (Math.abs(dx) < 6) onOpen(); }}
+        onTouchStart={(e) => {
+          if (!swipeable) return;
+          const t = e.touches[0];
+          start.current = { x: t.clientX, y: t.clientY };
+          horizontal.current = false;
+        }}
+        onTouchMove={(e) => {
+          if (!swipeable || !start.current) return;
+          const t = e.touches[0];
+          const mx = t.clientX - start.current.x;
+          const my = t.clientY - start.current.y;
+          // Decide once: a vertical drag is the page scrolling, not a swipe.
+          if (!horizontal.current && Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my)) horizontal.current = true;
+          if (horizontal.current) setDx(Math.max(0, Math.min(mx, 140)));
+        }}
+        onTouchEnd={() => {
+          if (dx >= SWIPE_TO_RESOLVE) onSwipeResolve();
+          setDx(0);
+          start.current = null;
+        }}
+        style={{
+          position: "relative",
+          transform: `translateX(${dx}px)`,
+          transition: dx === 0 ? "transform .16s" : "none",
+          background: color.surface,
+          border: `1px solid ${active ? color.accent : color.hairline}`,
+          borderRadius: radius.row,
+          padding: 12,
+          minHeight: hit.min,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          cursor: "pointer",
+        }}
+      >
+        <div style={{ display: "flex", gap: 10 }}>
+          <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: sev.color, flex: "0 0 auto", marginTop: 6 }} />
+          {/* Never truncated — this is the only place the defect is written down. */}
+          <span style={{ ...text.rowTitle, fontWeight: 500, color: color.ink, textWrap: "pretty" }}>{s.description}</span>
+        </div>
+        <div style={{ ...text.meta, color: color.faint, paddingLeft: 18 }}>
+          {sev.label} · {relative(s.status === "open" ? s.reported_at : s.resolved_at)}
+          {s.status !== "open" ? " · resolved" : ""}
+          {s.reporter_name ? ` · ${s.reporter_name}` : ""}
+        </div>
       </div>
     </div>
   );
@@ -190,7 +349,7 @@ function Composer({
           }}
         />
         <div style={{ display: "flex", gap: 8 }}>
-          {ORDER.map((k) => {
+          {SEVERITY_ORDER.map((k) => {
             const on = severity === k;
             const sev = SEVERITY[k];
             return (
@@ -198,7 +357,7 @@ function Composer({
                 key={k}
                 onClick={() => setSeverity(k)}
                 style={{
-                  flex: 1, minHeight: 40, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  flex: 1, minHeight: hit.min, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   background: on ? tint.accent : color.surfaceRaised,
                   border: `1px solid ${on ? color.accent : color.hairline}`,
                   borderRadius: radius.control, color: on ? color.ink : color.dim,
@@ -226,7 +385,7 @@ function Composer({
         >
           {saving ? "Saving…" : "Add squawk"}
         </button>
-        <button onClick={onClose} style={{ minHeight: 40, background: "transparent", border: "none", color: color.faint, fontFamily: text.rowTitle.fontFamily, fontSize: 13.5, cursor: "pointer" }}>
+        <button onClick={onClose} style={{ minHeight: hit.min, background: "transparent", border: "none", color: color.faint, fontFamily: text.rowTitle.fontFamily, fontSize: 13.5, cursor: "pointer" }}>
           Cancel
         </button>
       </div>
