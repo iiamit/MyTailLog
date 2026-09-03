@@ -1,22 +1,14 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/database.types";
 import { MUTATION_TYPES, type MutationType } from "@/lib/sync/mutations";
 
 // One placeholder per CONTRACT §3 type so the push route dispatches every type
 // from day one. Each domain stream replaces its rows in index.ts with the real
 // module; anything still pointing here answers "not lifted yet".
 //
-// The result/ctx shapes below are structurally identical to the ones
-// lib/writes/entries.ts (writes-c1) exports — same three variants, same
-// fields — so either import works at every call site. Integration may switch
-// index.ts to re-export them from ./entries and delete these aliases.
 
-export type Db = SupabaseClient<Database>;
-export type WriteCtx = { aircraftId: string; userId: string };
-export type WriteResult =
-  | { status: "ok"; row: Record<string, unknown> | null }
-  | { status: "conflict"; row: Record<string, unknown> }
-  | { status: "error"; message: string; httpStatus?: number };
+// ONE definition of the shared shapes, in entries.ts (writes-c1). Re-exported
+// here so every call site can keep importing them from @/lib/writes.
+export type { Db, WriteCtx, WriteResult } from "./entries";
+import type { Db, WriteCtx, WriteResult } from "./entries";
 
 /** The §4 signature. `input: never` so a function typed for its own payload
  *  (`{ entryId: string; ... }`) is assignable; the route casts the validated
