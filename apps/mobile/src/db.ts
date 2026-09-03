@@ -1,6 +1,6 @@
 import { CapacitorSQLite, SQLiteConnection, type SQLiteDBConnection } from "@capacitor-community/sqlite";
 import type { SyncChange } from "./sync";
-import { changeStatements, resetStatements } from "./sync-apply";
+import { changeStatements, resetStatements, queueUpgradeStatements, QUEUE_VERSION } from "./sync-apply";
 
 // On-device mirror of the synced data. Schema-agnostic: every pulled row is
 // stored as JSON in one `records` table keyed by (table_name, id), so the client
@@ -41,10 +41,14 @@ export async function initDb(): Promise<void> {
       image          TEXT NOT NULL,
       thumbnail      TEXT
     );
-    -- Offline writes waiting to reach the server. \`payload\` is the JSON action
-    -- body; \`id\` is the client-generated UUID that also becomes the server row's
-    -- key, so draining twice can't write twice. \`error\` holds the last failure so
-    -- the UI can show WHY something is stuck instead of silently retrying.
+    -- Offline writes waiting to reach the server (CONTRACT §2). \`payload\` is the
+    -- JSON mutation payload; \`id\` is the client-generated UUID that also becomes
+    -- the server row's key, so draining twice can't write twice. \`base\` is the
+    -- row's updated_at as the phone last saw it (update/delete types). \`status\`:
+    -- pending (waiting for signal or a retry), conflict (the server's row moved
+    -- on — \`server_row\` holds it for the yours/theirs screen), failed (refused;
+    -- \`error\` says why). \`retry_after\` gates retries after an online failure.
+    -- Columns added after v1 also live in queueUpgradeStatements (sync-apply.ts).
     CREATE TABLE IF NOT EXISTS action_queue (
       id          TEXT PRIMARY KEY,
       aircraft_id TEXT NOT NULL,
@@ -53,9 +57,35 @@ export async function initDb(): Promise<void> {
       payload     TEXT NOT NULL,
       created_at  TEXT NOT NULL,
       attempts    INTEGER NOT NULL DEFAULT 0,
-      error       TEXT
+      error       TEXT,
+      base        TEXT,
+      status      TEXT NOT NULL DEFAULT 'pending',
+      server_row  TEXT,
+      retry_after TEXT
     );
   `);
+  await upgradeQueue();
+}
+
+/**
+ * Bring an existing action_queue up to QUEUE_VERSION. CREATE TABLE IF NOT
+ * EXISTS leaves a v1 table untouched, so each missing column is ALTERed in.
+ * "duplicate column" means that step already ran (or the table was created at
+ * this version) — fine either way.
+ */
+async function upgradeQueue(): Promise<void> {
+  if (!db) return;
+  const res = await db.query("SELECT value FROM sync_state WHERE key='queue_version'");
+  const at = Number(res.values?.[0]?.value ?? 1);
+  if (at >= QUEUE_VERSION) return;
+  for (const stmt of queueUpgradeStatements(at)) {
+    try {
+      await db.execute(stmt);
+    } catch (e) {
+      if (!/duplicate column/i.test(e instanceof Error ? e.message : String(e))) throw e;
+    }
+  }
+  await db.run("INSERT OR REPLACE INTO sync_state (key,value) VALUES ('queue_version',?)", [String(QUEUE_VERSION)]);
 }
 
 export type QueuedCapture = {
@@ -94,6 +124,8 @@ export async function captureCount(): Promise<number> {
   return Number((res.values?.[0] as { n: number } | undefined)?.n ?? 0);
 }
 
+export type ActionStatus = "pending" | "conflict" | "failed";
+
 export type QueuedAction = {
   id: string;
   aircraft_id: string;
@@ -104,13 +136,22 @@ export type QueuedAction = {
   created_at: string;
   attempts: number;
   error: string | null;
+  /** ISO updated_at of the row being changed, as last seen (update/delete types). */
+  base: string | null;
+  status: ActionStatus;
+  /** The server's current row, JSON, while status is 'conflict'. */
+  server_row: string | null;
+  /** Don't retry before this ISO time (backoff after an online failure). */
+  retry_after: string | null;
 };
 
-export async function enqueueAction(a: Omit<QueuedAction, "attempts" | "error">): Promise<void> {
+export async function enqueueAction(
+  a: Pick<QueuedAction, "id" | "aircraft_id" | "type" | "label" | "payload" | "created_at"> & { base?: string | null },
+): Promise<void> {
   if (!db) return;
   await db.run(
-    "INSERT OR REPLACE INTO action_queue (id,aircraft_id,type,label,payload,created_at,attempts,error) VALUES (?,?,?,?,?,?,0,NULL)",
-    [a.id, a.aircraft_id, a.type, a.label, a.payload, a.created_at],
+    "INSERT OR REPLACE INTO action_queue (id,aircraft_id,type,label,payload,created_at,attempts,error,base,status,server_row,retry_after) VALUES (?,?,?,?,?,?,0,NULL,?,'pending',NULL,NULL)",
+    [a.id, a.aircraft_id, a.type, a.label, a.payload, a.created_at, a.base ?? null],
   );
 }
 
@@ -123,15 +164,49 @@ export async function listActions(aircraftId?: string): Promise<QueuedAction[]> 
   return (res.values ?? []) as QueuedAction[];
 }
 
+/** What a drain may send now: pending, and past its backoff gate. */
+export async function listDrainable(now = new Date().toISOString()): Promise<QueuedAction[]> {
+  if (!db) return [];
+  const res = await db.query(
+    "SELECT * FROM action_queue WHERE status='pending' AND (retry_after IS NULL OR retry_after<=?) ORDER BY created_at",
+    [now],
+  );
+  return (res.values ?? []) as QueuedAction[];
+}
+
 export async function removeAction(id: string): Promise<void> {
   if (!db) return;
   await db.run("DELETE FROM action_queue WHERE id=?", [id]);
 }
 
-/** Record a failed attempt so the pending list can explain itself. */
+/** The server refused it. Stays visible with the reason until the owner discards it. */
 export async function markActionFailed(id: string, error: string): Promise<void> {
   if (!db) return;
-  await db.run("UPDATE action_queue SET attempts=attempts+1, error=? WHERE id=?", [error, id]);
+  await db.run("UPDATE action_queue SET attempts=attempts+1, status='failed', error=? WHERE id=?", [error, id]);
+}
+
+/** Couldn't reach the server while online: count the try and gate the next one. */
+export async function markActionRetry(id: string, error: string, retryAfter: string): Promise<void> {
+  if (!db) return;
+  await db.run("UPDATE action_queue SET attempts=attempts+1, error=?, retry_after=? WHERE id=?", [error, retryAfter, id]);
+}
+
+/** The row moved on since the phone saw it; park it with the server's version. */
+export async function markActionConflict(id: string, serverRow: Record<string, unknown>): Promise<void> {
+  if (!db) return;
+  await db.run("UPDATE action_queue SET status='conflict', server_row=?, error=NULL WHERE id=?", [
+    JSON.stringify(serverRow),
+    id,
+  ]);
+}
+
+/** "Keep mine": re-queue against the server's current version. */
+export async function resubmitAction(id: string, base: string): Promise<void> {
+  if (!db) return;
+  await db.run(
+    "UPDATE action_queue SET status='pending', base=?, server_row=NULL, error=NULL, attempts=0, retry_after=NULL WHERE id=?",
+    [base, id],
+  );
 }
 
 export async function actionCount(): Promise<number> {
