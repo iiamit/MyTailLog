@@ -3,7 +3,7 @@ import { enqueue } from "./mutations";
 import { patchLocal } from "./airworthiness";
 import type { Meter } from "@/lib/hobbsTach";
 import type { Aircraft } from "./types";
-import { color, text } from "./tokens";
+import { color, text, display, tabular } from "./tokens";
 import { Sheet, Field, Problem, SheetButtons, field } from "./item-editor";
 
 // A reading below the last one is either a mis-key or a replaced meter. Only the
@@ -49,22 +49,44 @@ export function MeterResetPrompt({
   }
 
   return (
-    <Sheet title={`Lower than the last reading (${prior.toFixed(1)})`} onClose={busy ? undefined : () => onDecided("cancel")}>
+    <Sheet
+      title={`Lower than the last reading — was the ${label.toLowerCase()} replaced?`}
+      onClose={busy ? undefined : () => onDecided("cancel")}
+    >
+      {/* The delta is the number that decides it, so it is read first. */}
+      <div style={{ fontFamily: display, fontSize: 20, fontWeight: 700, color: color.ink, ...tabular }}>
+        {prior.toFixed(1)} → {next.toFixed(1)}
+      </div>
       <p style={{ ...text.secondary, color: color.dim, margin: 0, lineHeight: 1.5 }}>
-        The {label.toLowerCase()} read {prior.toFixed(1)} last time and {next.toFixed(1)} now. Was the meter replaced?
-        If so, the hours before the swap stay on every countdown; if it just rolled over or a digit slipped, say so.
+        If the meter was replaced, the hours before the swap stay on every countdown — nothing you
+        have already flown is lost. If it just rolled over or a digit slipped, say so instead.
       </p>
       <Field label="Notes (optional)">
         <input style={field} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. New Hobbs fitted at annual" />
       </Field>
       {!Number.isFinite(next) && <Problem>That reading isn&apos;t a number.</Problem>}
-      <SheetButtons primary={busy ? "Saving…" : "Meter replaced — start it here"} onPrimary={replaced} disabled={busy} />
-      <button onClick={() => onDecided("reading")} disabled={busy} style={{
-        minHeight: 44, background: "transparent", border: "none", color: color.accent,
-        fontFamily: text.button.fontFamily, fontSize: 15, fontWeight: 600, cursor: "pointer",
-      }}>
+      <SheetButtons primary={busy ? "Saving…" : "Yes — new meter from today"} onPrimary={replaced} disabled={busy} />
+      {/* The common answer: back to the field, nothing saved. */}
+      <button onClick={() => onDecided("cancel")} disabled={busy} style={ghost}>
+        I mistyped it
+      </button>
+      <button onClick={() => onDecided("reading")} disabled={busy} style={ghost}>
         It&apos;s right as typed — save the reading
       </button>
+      <p style={{ ...text.meta, color: color.faint, margin: 0, textAlign: "center" }}>
+        You can undo a meter swap from the reading list.
+      </p>
     </Sheet>
   );
 }
+
+const ghost = {
+  minHeight: 44,
+  background: "transparent",
+  border: "none",
+  color: color.accent,
+  fontFamily: text.button.fontFamily,
+  fontSize: 15,
+  fontWeight: 600,
+  cursor: "pointer",
+} as const;

@@ -140,7 +140,7 @@ the `lib/writes` function. **(base)** = update/delete, carries `base`.
 | C2 | `ad.track` | `{id, reference, ...}` — the column is `reference`, not `ref` | `compliance.track` |
 | C2 | `component.upsert` (base when id present) | `{id?, component: ComponentFields}` | `equipment.upsert` |
 | C2 | `component.delete` (base) | `{componentId}` | `equipment.remove` |
-| C2 | `component.remove` (base) | `{componentId, date, entryId?}` | `equipment.markRemoved` |
+| C2 | `component.remove` (base) | `{componentId, date?, entryId?}` — `date` absent ⇒ today, matching the web | `equipment.markRemoved` |
 | C2 | `component.reinstall` (base) | `{componentId}` | `equipment.reinstall` |
 | C2 | `proposals.confirm` | `{proposalIds: string[]}` | `equipment.confirmProposals` |
 | C2 | `proposals.dismiss` | `{proposalIds: string[]}` | `equipment.dismissProposals` |
@@ -151,15 +151,15 @@ the `lib/writes` function. **(base)** = update/delete, carries `base`.
 | C3 | `squawk.update` (base) | `{squawkId, description?, severity?}` | `squawks.update` |
 | C3 | `squawk.delete` (base) | `{squawkId}` | `squawks.remove` |
 | C3 | `oil.create` | `{id, date, quarts, tach?, hobbs?}` | `oil.addTopOff` (today's `oil`) |
-| C3 | `oil.delete` (base) | `{additionId}` | `oil.deleteTopOff` |
+| C3 | `oil.delete` (base) | `{additionId}` — `base` works because 0058 adds `oil_addition.updated_at` | `oil.deleteTopOff` |
 | C3 | `document.update` (base) | `{documentId, fields}` | `documents.update` |
 | C3 | `document.setEntry` (base) | `{documentId, entryId: string\|null}` | `documents.setEntry` |
 | C3 | `document.delete` (base) | `{documentId}` | `documents.remove` |
 | C3 | `document.upload` (online) | blob — via `POST /api/aircraft/[id]/documents` made Bearer, JSON base64 like capture; queued in the blob queue, not `action_queue` | — |
 | C3 | `wb.upsert` (base when id present) | `{id?, fields}` | `weightBalance.upsert` |
 | C3 | `wb.delete` (base) | `{wbId}` | `weightBalance.remove` |
-| C3 | `aircraft.enroll` (online) | `{tail, ...}` | `POST /api/registry` + `aircraft.enroll` route made Bearer |
-| C3 | `backup.run` (online) | `{}` | route made Bearer |
+| C3 | `aircraft.enroll` (online) | `{tail, ...}` | `POST /api/registry` + **new** `POST /api/aircraft/enroll` (Bearer). NOT queued — `validateMutation` refuses online-only types, so the enrol sheet posts to the route directly and says "needs a connection" offline |
+| C3 | `backup.run` (online) | `{}` | `POST /api/aircraft/[id]/backup/run`, Bearer. NOT queued (as above). It pulls the next sweep forward — the copy is "Backup scheduled", never "Backup created" |
 | C3 | `ask` (online, streaming) | — | route `POST /api/aircraft/[id]/ask` made Bearer; buffered response |
 
 `EntryFields`, `MaintenanceItemFields`, `AdComplianceFields`, `ComponentFields`
@@ -254,6 +254,9 @@ the lead in your PR; do not fork the API.
 | 0059 | platform | `device_token` (user_id, token, platform, created_at) for push, RLS owner-scoped |
 | 0060 | spare | ask the lead |
 
+Both 0058 and 0059 are written and must be applied to **prod and the test project**
+before the `e2e` check on the PR to `main` can pass.
+
 ## 8. File ownership
 
 | owner | files |
@@ -261,14 +264,14 @@ the lead in your PR; do not fork the API.
 | core sync | `apps/mobile/src/{db,sync,sync-apply,sync-policy,actions,mutations,pending}.ts*`, `apps/web/src/app/api/sync/push/**`, `apps/web/src/app/api/aircraft/[id]/actions/route.ts`, `apps/web/src/lib/sync/**`, migration 0058 |
 | writes C1 | `apps/web/src/lib/writes/{entries,pages}.ts`, `apps/web/src/app/aircraft/[id]/pages/[pageId]/review/actions.ts`, `apps/web/src/app/aircraft/[id]/review/actions.ts`, `apps/web/src/app/aircraft/[id]/actions.ts` (page ops), extract route Bearer swap |
 | writes C2 | `apps/web/src/lib/writes/{meters,maintenance,compliance,equipment}.ts`, the four matching `actions.ts`, scan routes Bearer swap |
-| writes C3 | `apps/web/src/lib/writes/{squawks,documents,oil,weightBalance}.ts`, the matching `actions.ts`, documents/registry/enroll/ask/backup routes Bearer swap |
+| writes C3 | `apps/web/src/lib/writes/{squawks,documents,oil,weightBalance,aircraft}.ts`, the matching `actions.ts`, documents/registry/enroll/ask/backup routes Bearer swap, `apps/web/src/app/api/aircraft/enroll/route.ts`, `apps/web/src/app/api/aircraft/[id]/backup/run/route.ts` |
 | iPad shell | `apps/mobile/src/{App,layout,tabbar,switcher}.tsx`, `apps/mobile/src/shortcuts.ts` |
-| review UI | `apps/mobile/src/{screens,record-screen,lightbox}.tsx`, new `apps/mobile/src/review-*.tsx`, `apps/mobile/src/entry-editor.tsx` |
-| status UI | `apps/mobile/src/{status-screen,complete-screen,airworthiness}.ts*`, new `apps/mobile/src/{item-editor,ad-*,equipment-*}.tsx` |
-| records UI | `apps/mobile/src/{records-screen,documents-screen,pdf-screen,squawks-screen,capture-screen,documents-search}.ts*`, new `apps/mobile/src/{document-upload,wb-,oil-,ask-,squawk-detail}*.tsx`, `apps/mobile/src/blobs.ts` upload half |
-| platform | `apps/mobile/src/{tokens,index.css,supabase,account-menu,first-run,theme,push}.ts*`, `apps/mobile/ios/App/App/Info.plist`, `apps/mobile/TESTFLIGHT.md`, migration 0059, the cron sender for push |
+| review UI | `apps/mobile/src/{screens,record-screen,lightbox}.tsx`, new `apps/mobile/src/review-*.ts*`, `apps/mobile/src/entry-editor.tsx` |
+| status UI | `apps/mobile/src/{status-screen,complete-screen,airworthiness,status-logic}.ts*`, new `apps/mobile/src/{item-editor,ad-*,equipment-*,meter-reset-prompt}.tsx` |
+| records UI | `apps/mobile/src/{records-screen,documents-screen,pdf-screen,squawks-screen,capture-screen,capture,documents-search}.ts*`, new `apps/mobile/src/{document-upload,wb-,oil-,ask-,squawk-detail,page-manager,page-select,records-filter,document-validate,blob-upload}*.ts*`, `apps/mobile/src/blobs.ts` upload half |
+| platform | `apps/mobile/src/{tokens,index.css,supabase,account-menu,first-run,theme,push,enroll-sheet,ui}.ts*`, `apps/mobile/ios/App/App/Info.plist`, `apps/mobile/{TESTFLIGHT,ios-config}.md`, migration 0059, `apps/web/src/app/api/push/**`, the cron sender for push |
 | design | the Claude Design project (DesignSync) — screens 12–24 |
-| lead | this file, `CHANGELOG.md`, `apps/web/src/app/help/page.tsx`, `apps/mobile/README.md`, `docs/mobile-and-sync.md` |
+| lead | this file, `CHANGELOG.md`, `apps/web/src/app/help/page.tsx`, `apps/mobile/README.md`, `docs/mobile-and-sync.md`, `apps/web/src/lib/database.types.ts`, `apps/web/apphosting.yaml` |
 
 Files not listed: ask the lead before touching.
 
@@ -335,3 +338,65 @@ the integration order already merges c1 first, so this resolves itself.
 **If the contract still disagrees with the real schema, the schema wins** —
 implement against the column and report it. Two rows above were wrong; assume
 more may be.
+
+## 12. What integration settled (run 3 — the ten branches are merged)
+
+All ten streams are merged into `ios-parity` in the order of §9. What the
+integration had to decide, so nobody re-litigates it:
+
+**Ownership that changed in practice** (§8 is updated to match):
+- `apps/mobile/src/capture.ts` belonged to no stream. It is **records UI's**.
+  Its private `rescale` is gone: both queues downscale through
+  `blob-upload.ts`'s `downscaleImage`, which was a near-copy of it.
+- `apps/mobile/src/ui.tsx` is **platform's** — it re-exports palette values, so
+  it is part of the appearance surface, not a screen.
+- `apps/web/src/lib/database.types.ts` and `apps/web/apphosting.yaml` are the
+  **lead's**: every stream needs a row in them and none may edit them.
+- `lib/writes/aircraft.ts`, `POST /api/aircraft/enroll` and
+  `POST /api/aircraft/[id]/backup/run` are **writes C3's** (confirmed).
+- `RecentReadings` (the Log tab's second pane) is **review UI's**, in
+  `record-screen.tsx`, exported as `RecentReadingsPane`. ipad-shell asked
+  status-ui for it and status-ui reported it out of brief; review UI had
+  already built the list.
+
+**Decisions:**
+- `lib/writes/index.ts` is `{ ...stubs, <explicit rows> }`. Spreading the domain
+  modules would not work — their export names (`entries.create`) are not
+  `MutationType` keys (`"entry.create"`). Any type nobody lifted still answers
+  "not lifted yet" instead of crashing the batch.
+- `WriteResult` / `WriteCtx` / `Db` are declared **once**, in
+  `lib/writes/entries.ts`; `_stubs.ts` re-exports them.
+- `aircraft.enroll` and `backup.run` are NOT queued (§3 rows corrected).
+  `validateMutation` refuses online-only types, so enqueuing one would park it
+  forever.
+- The Squawks tab draws its own 55/45 split, so the shell hands it the whole
+  width: `aircraftPanes` returns `secondary: null` and `App` renders the primary
+  alone. Nesting `TwoPane` inside `TwoPane` left the list a sliver wide.
+- Scans at regular width is a `TwoPane` inside a `TwoPane` — 40% page rail, then
+  55/45 scan-and-review — because design §15's three-way split cannot be one
+  call. It lives in `App.tsx`'s `ScansPane`, which also holds the spotlight,
+  since the ring spans both halves.
+- Ask is a pane over any tab (`Sub = {kind:'ask'}`), reached from a sidebar Ask
+  row and ⌘K — not a fifth tab. ⌘K is registered at regular width only.
+- `ui.tsx` no longer re-exports `bg`, `accent` or `panel2`. Those three are RAW
+  hex read through the tokens `Proxy`, so a module-load `const` snapshotted the
+  launch palette; callers read `color.*` at render time.
+- `pickAdFields` / `pickComponentFields` carry `reference_entry_id` /
+  `install_entry_id` as **optional** keys, written only when the payload has
+  them. Required-with-null would have let a web edit clear a link the phone made.
+
+**Still open, and why:**
+- **Account deletion has no server side.** `/profile` has no delete action and
+  no `id="delete-account"` anchor, so the in-app link Apple requires lands on a
+  page that cannot delete anything. Fine for TestFlight; it blocks App Store
+  submission (guideline 5.1.1(v)). It is a destructive, irreversible flow and
+  wants its own PR and review — not a line in an integration merge.
+  Written up in `apps/mobile/TESTFLIGHT.md` §8.
+- **APNs is not configured.** The five `APNS_*` secrets are declared in
+  `apphosting.yaml` but the `.p8` key can only be downloaded once, so the user
+  must provision them. Until then the sender logs "APNs is not configured" and
+  the reminder email goes out alone. `TESTFLIGHT.md` §7.
+- **The design files are not in the Claude Design project.** DesignSync needs
+  `/design-login`, which no agent can run. All three files are committed under
+  `docs/design/` and need no edits; the exact `finalize_plan` → `write_files`
+  call sequence is in the design stream's report in `stream-reports.json`.

@@ -146,7 +146,14 @@ export function ItemEditor({
 
 // --- Form kit -------------------------------------------------------------------
 
-export function Sheet({ title, onClose, children }: { title: string; onClose?: () => void; children: ReactNode }) {
+export function Sheet({ title, tag, onClose, children }: {
+  title: string;
+  /** A small identifier under the title — an AD number, a part number. Never
+   *  the title itself: a bare number tells the owner nothing (Rule 6). */
+  tag?: string;
+  onClose?: () => void;
+  children: ReactNode;
+}) {
   return (
     <div
       onClick={onClose}
@@ -166,6 +173,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose?: (
       >
         <div style={{ width: 36, height: 4, borderRadius: 2, background: color.hairline, margin: "0 auto 2px" }} />
         <div style={{ ...text.verdict, color: color.ink }}>{title}</div>
+        {tag && <div style={{ ...text.meta, fontSize: 10, color: color.faint, marginTop: -8 }}>{tag}</div>}
         {children}
       </div>
     </div>

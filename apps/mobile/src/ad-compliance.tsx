@@ -189,7 +189,13 @@ export function AdSheet({
   const webUrl = `${API_BASE}/aircraft/${aircraft.id}/compliance`;
 
   return (
-    <Sheet title={record ? `${record.kind.toUpperCase()} ${record.reference}` : "Track a directive"} onClose={busy ? undefined : onClose}>
+    <Sheet
+      // What it is about, not its number — "Seat rail wear", with
+      // "AD 2011-10-09" as the tag beneath (design §21a).
+      title={record ? record.title || `${record.kind.toUpperCase()} ${record.reference}` : "Track a directive"}
+      tag={record?.title ? `${record.kind.toUpperCase()} ${record.reference}` : undefined}
+      onClose={busy ? undefined : onClose}
+    >
       {record && (
         <div style={{ background: color.surfaceRaised, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: "11px 13px", display: "flex", flexDirection: "column", gap: 5 }}>
           {reference ? (
