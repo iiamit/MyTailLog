@@ -28,10 +28,14 @@ export function Status({
   aircraft,
   onComplete,
   onQueued,
+  onShowAll,
 }: {
   aircraft: Aircraft;
   onComplete: (item: StatusItem) => void;
   onQueued?: Queued;
+  /** Regular width only: the shell already shows AllItems beside this, so the
+   *  summary row asks it to come back rather than swapping the primary pane. */
+  onShowAll?: () => void;
 }) {
   const [data, setData] = useState<Airworthiness | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +92,7 @@ export function Status({
         </>
       )}
 
-      <button onClick={() => setShowAll(true)} style={{
+      <button onClick={() => (onShowAll ? onShowAll() : setShowAll(true))} style={{
           width: "100%", display: "flex", alignItems: "center", gap: 12, textAlign: "left",
           background: color.surface, border: `1px solid ${color.hairline}`,
           borderRadius: radius.card, padding: "12px 15px", cursor: "pointer", minHeight: 44,

@@ -18,7 +18,7 @@ import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useShort
 import { PageReview } from "./review-pane";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { ShortcutMap } from "./shortcuts";
-import { Status } from "./status-screen";
+import { Status, AllItems } from "./status-screen";
 import { Documents } from "./documents-screen";
 import { PdfViewer } from "./pdf-screen";
 import { Record, RecentReadingsPane } from "./record-screen";
@@ -481,6 +481,7 @@ function Shell({ session }: { session: Session }) {
               <Status
                 aircraft={nav.aircraft}
                 onComplete={(item) => setNav({ ...nav, sub: { kind: "complete", item } })}
+                onQueued={writeFinished}
               />
             ) : nav.tab === "log" ? (
               <Record aircraft={nav.aircraft} onQueued={writeFinished} />
@@ -529,12 +530,19 @@ function aircraftPanes(
   if (nav.tab === "status") {
     return {
       ratio: "55/45",
-      primary: <Status aircraft={aircraft} onComplete={(item) => h.setNav({ ...nav, sub: { kind: "complete", item } })} />,
+      primary: (
+        <Status
+          aircraft={aircraft}
+          onComplete={(item) => h.setNav({ ...nav, sub: { kind: "complete", item } })}
+          onQueued={h.onQueued}
+          onShowAll={() => h.setNav({ ...nav, sub: null })}
+        />
+      ),
       secondary:
         sub?.kind === "complete" ? (
           <CompleteItem aircraft={aircraft} item={sub.item} onBack={h.back} onQueued={h.onQueued} />
         ) : (
-          <StatusAllItemsSlot aircraft={aircraft} />
+          <AllItems aircraft={aircraft} onQueued={h.onQueued} />
         ),
     };
   }
@@ -612,11 +620,6 @@ function aircraftPanes(
 // Secondary panes other streams are building in parallel. Each slot names its
 // owner and the exact props the shell passes; the owner replaces the body (or
 // the shell swaps in their export at integration) and keeps the signature.
-
-/** status-ui — every tracked item (today's AllItems, without a back button). */
-function StatusAllItemsSlot(_p: { aircraft: Aircraft }) {
-  return <PanePlaceholder>Every tracked item will list here.</PanePlaceholder>;
-}
 
 /** records-ui — the open squawk's detail, or the composer. */
 function SquawkDetailSlot(_p: { aircraft: Aircraft }) {

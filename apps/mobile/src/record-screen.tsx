@@ -5,6 +5,10 @@ import { enqueue } from "./mutations";
 import { getByAircraft } from "./db";
 import { patchLocal, deleteLocal } from "./review-local";
 import { recentReadings, validateReading, swipeReveals, readingEditable, readingProvenance, type ReadingRow } from "./review-rules";
+import { detectBackwardsReading } from "./status-logic";
+import { MeterResetPrompt } from "./meter-reset-prompt";
+import type { CurrentMeters } from "@/lib/aircraftHours";
+import type { Meter } from "@/lib/hobbsTach";
 import { shortDate } from "./airworthiness";
 import type { Aircraft } from "./types";
 import { color, text, radius, hit, accentGradient, tabular, display, tint } from "./tokens";
@@ -31,6 +35,11 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: () => Promise<"synced" | "pending"> }) {
   const [prev, setPrev] = useState<{ tach: number | null; hobbs: number | null } | null>(null);
+  // The current meters as computed (log-entry readings and any earlier reset
+  // folded in), so a backwards reading is judged against what the meter really
+  // shows — not against the raw hours_reading rows.
+  const [current, setCurrent] = useState<CurrentMeters | null>(null);
+  const [askReset, setAskReset] = useState<{ meter: Meter; prior: number; next: number } | null>(null);
   const [tach, setTach] = useState<number | null>(null);
   const [hobbs, setHobbs] = useState<number | null>(null);
   const [oil, setOil] = useState(0);
@@ -55,6 +64,7 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
       .then((d) => {
         const t = d.meters.tach.tach;
         const h = d.meters.hobbs.hobbs;
+        setCurrent(d.meters);
         setPrev({ tach: t, hobbs: h });
         // Start AT the last reading — you're correcting digits, not typing a
         // number from scratch, and the delta stays visible as you move.
@@ -75,7 +85,35 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
     (sendHobbs == null || sendHobbs === prev?.hobbs) &&
     !(oilQuarts > 0);
 
+  /**
+   * A reading below what the meter currently shows is either a mis-key or a
+   * replaced meter, and only the owner knows which — so ask before saving
+   * (status-ui's MeterResetPrompt). Never on an estimated value: bridged from
+   * the other meter, it cannot tell a swap from the ratio being off.
+   */
+  function backwards(): { meter: Meter; prior: number; next: number } | null {
+    if (!current) return null;
+    for (const meter of ["tach", "hobbs"] as const) {
+      const value = meter === "tach" ? sendTach : sendHobbs;
+      const cur = meter === "tach" ? current.tach : current.hobbs;
+      if (value == null || cur.estimated) continue;
+      const shows = meter === "tach" ? current.tach.tach : current.hobbs.hobbs;
+      const hit = detectBackwardsReading([{ date: cur.asOf, value: shows }], value);
+      if (hit) return { meter, prior: hit.prior, next: value };
+    }
+    return null;
+  }
+
   async function save() {
+    if (!editable || saving) return;
+    const hit = backwards();
+    // The reset row has to exist before the reading, or every hour countdown
+    // re-anchors a frame late — so the reading waits for the answer.
+    if (hit) return setAskReset(hit);
+    await saveReading();
+  }
+
+  async function saveReading() {
     if (!editable || saving) return;
     setSaving(true);
     try {
@@ -224,6 +262,20 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
       <p style={{ ...text.meta, color: color.faint, textAlign: "center", marginTop: 8 }}>
         {saved ?? "Saves immediately when connected · safely queues offline"}
       </p>
+
+      {askReset && (
+        <MeterResetPrompt
+          aircraft={aircraft}
+          meter={askReset.meter}
+          prior={askReset.prior}
+          next={askReset.next}
+          date={todayIso()}
+          onDecided={async (choice) => {
+            setAskReset(null);
+            if (choice !== "cancel") await saveReading();
+          }}
+        />
+      )}
 
       {/* At regular width the shell gives the readings their own pane beside
           the form (RecentReadingsPane), so the inline copy would be a second one. */}
