@@ -22,6 +22,10 @@ export type ComponentFields = {
   life_limit_value: number | null;
   life_limit_unit: "hours" | "months" | "cycles" | null;
   notes: string | null;
+  // The logbook entry that records the installation, if the owner linked one.
+  // Optional: absent means "leave whatever is there" — the web form does not
+  // offer the link, so a web edit must not clear one the phone made.
+  install_entry_id?: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -52,6 +56,9 @@ export function pickComponentFields(input: unknown): { fields: ComponentFields }
       life_limit_value: (src.life_limit_value as number | null | undefined) ?? null,
       life_limit_unit: (src.life_limit_unit as ComponentFields["life_limit_unit"] | undefined) ?? null,
       notes: str(src.notes),
+      ...("install_entry_id" in src
+        ? { install_entry_id: typeof src.install_entry_id === "string" && src.install_entry_id ? src.install_entry_id : null }
+        : {}),
     },
   };
 }

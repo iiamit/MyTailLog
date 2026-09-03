@@ -167,7 +167,7 @@ export function translateLegacy(aircraftId: string, a: Record<string, unknown>):
             itemId: a.item_id,
             date: a.date,
             hours: a.hours,
-            notes: a.description,
+            description: a.description,
             signature: a.signature_name,
             logbookId: a.logbook_id,
             // Beyond the §3 shape: what the old build records for the 91.171(d)

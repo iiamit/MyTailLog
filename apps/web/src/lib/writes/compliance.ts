@@ -33,6 +33,10 @@ export type AdComplianceFields = {
   status_changed_on: string | null;
   // The installed component this AD concerns, if any (removing it retires the AD).
   component_id: string | null;
+  // The logbook entry that records the compliance, if the owner linked one.
+  // Optional: absent means "leave whatever is there" — the web form does not
+  // offer the link, so a web edit must not clear one the phone made.
+  reference_entry_id?: string | null;
 };
 
 /** How the owner wants a found AD tracked: one-time, or recurring on hours, calendar, or both. */
@@ -86,6 +90,9 @@ export function pickAdFields(input: unknown): { fields: AdComplianceFields } | {
       reason: str(src.reason),
       status_changed_on: (src.status_changed_on as string | null | undefined) ?? null,
       component_id: typeof src.component_id === "string" && src.component_id ? src.component_id : null,
+      ...("reference_entry_id" in src
+        ? { reference_entry_id: typeof src.reference_entry_id === "string" && src.reference_entry_id ? src.reference_entry_id : null }
+        : {}),
     },
   };
 }
