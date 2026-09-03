@@ -5,7 +5,9 @@ import {
   registerShortcuts,
   resolveShortcut,
   sizeClassFor,
+  showsSidebar,
   REGULAR_MIN_WIDTH,
+  SIDEBAR_MIN_WIDTH,
   type ShortcutMap,
 } from "../../mobile/src/shortcuts";
 
@@ -18,13 +20,27 @@ const key = (key: string, mods: Partial<{ metaKey: boolean; ctrlKey: boolean; al
   ...mods,
 });
 
-test("size class: iPad half-split (≈ 507pt) stays compact, full-screen is regular", () => {
+test("size class: the content splits only where two panes are wider than a phone", () => {
   assert.equal(sizeClassFor(390), "compact"); // iPhone
   assert.equal(sizeClassFor(507), "compact"); // iPad 11\" half Split View
   assert.equal(sizeClassFor(REGULAR_MIN_WIDTH - 1), "compact");
   assert.equal(sizeClassFor(REGULAR_MIN_WIDTH), "regular");
-  assert.equal(sizeClassFor(834), "regular"); // iPad 11\" portrait
+  // Portrait would leave two ~300pt columns once the sidebar is taken out —
+  // narrower than the phone the content was drawn for, which is what made a
+  // scan scroll sideways inside its own pane. It waits for the turn.
+  assert.equal(sizeClassFor(834), "compact"); // iPad 11\" portrait
   assert.equal(sizeClassFor(1194), "regular"); // landscape
+});
+
+test("the sidebar arrives before the second pane does", () => {
+  assert.ok(SIDEBAR_MIN_WIDTH < REGULAR_MIN_WIDTH);
+  assert.equal(showsSidebar(390), false); // iPhone keeps the tab bar
+  assert.equal(showsSidebar(507), false); // beside ForeFlight, still a phone
+  assert.equal(showsSidebar(SIDEBAR_MIN_WIDTH), true);
+  // Portrait: sidebar instead of the tab bar, and ONE pane that pushes.
+  assert.equal(showsSidebar(834), true);
+  assert.equal(sizeClassFor(834), "compact");
+  assert.equal(showsSidebar(1194), true);
 });
 
 test("chords: ⌘ (or Ctrl) plus the known keys, nothing else", () => {

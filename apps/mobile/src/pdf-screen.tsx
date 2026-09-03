@@ -63,9 +63,14 @@ export function PdfViewer({
   const [page, setPage] = useState(1);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "broken">("loading");
 
-  // Load the document once.
+  // Load the document, and re-load it when a different one is selected.
   useEffect(() => {
     let live = true;
+    // Back to "loading" FIRST. The page is drawn by the effect below, which
+    // watches [page, state] — and switching from one ready document on page 1
+    // to another ready document on page 1 changes neither, so it never re-ran
+    // and the canvas kept the previous document while the title said otherwise.
+    setState("loading");
     (async () => {
       const bytes = await localFileBytes("document", documentId);
       if (!live) return;

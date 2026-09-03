@@ -3,7 +3,7 @@ import type { Aircraft } from "./types";
 import { TABS, type Tab } from "./tabbar";
 import { AircraftSwitcher } from "./switcher";
 import { color, text, radius, hit, SCREEN_X, body } from "./tokens";
-import { chordOf, registerShortcuts, resolveShortcut, REGULAR_MIN_WIDTH, type ShortcutMap, type SizeClass } from "./shortcuts";
+import { chordOf, registerShortcuts, resolveShortcut, REGULAR_MIN_WIDTH, SIDEBAR_MIN_WIDTH, type ShortcutMap, type SizeClass } from "./shortcuts";
 import type { Urgency } from "@/lib/compliance";
 
 // Layout primitives. See docs/ios-parity/CONTRACT.md §5.
@@ -14,18 +14,32 @@ import type { Urgency } from "@/lib/compliance";
 
 export type { SizeClass } from "./shortcuts";
 
-export function useSizeClass(): SizeClass {
-  const query = `(min-width: ${REGULAR_MIN_WIDTH}px)`;
-  const [regular, setRegular] = useState<boolean>(() =>
+function useMinWidth(px: number): boolean {
+  const query = `(min-width: ${px}px)`;
+  const [matches, setMatches] = useState<boolean>(() =>
     typeof window !== "undefined" && window.matchMedia(query).matches,
   );
   useEffect(() => {
     const mq = window.matchMedia(query);
-    const on = (e: MediaQueryListEvent) => setRegular(e.matches);
+    const on = (e: MediaQueryListEvent) => setMatches(e.matches);
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, [query]);
-  return regular ? "regular" : "compact";
+  return matches;
+}
+
+/** How much room the CONTENT has: "regular" is the only one that splits. */
+export function useSizeClass(): SizeClass {
+  return useMinWidth(REGULAR_MIN_WIDTH) ? "regular" : "compact";
+}
+
+/**
+ * Whether the sidebar stands in for the tab bar. Deliberately a lower bar than
+ * useSizeClass: a portrait iPad has room for the sidebar but not for a second
+ * pane, so it gets the sidebar and one full-width pane that pushes.
+ */
+export function useSidebar(): boolean {
+  return useMinWidth(SIDEBAR_MIN_WIDTH);
 }
 
 export const SIDEBAR_WIDTH = 200;
@@ -82,9 +96,12 @@ export function Sidebar({
       style={{
         flex: `0 0 ${SIDEBAR_WIDTH}px`,
         width: SIDEBAR_WIDTH,
-        position: "sticky",
-        top: 0,
-        height: "100vh",
+        // Not sticky: the frame is a fixed-height viewport and this is a
+        // full-height column inside it, so there is no page scroll to stick
+        // against. Sticky held only while its own box was on screen, which is
+        // why scrolling a long list used to carry the sidebar away with it.
+        height: "100%",
+        overflowY: "auto",
         display: "flex",
         flexDirection: "column",
         gap: 4,
@@ -174,14 +191,42 @@ export function Sidebar({
 }
 
 /** The regular-width root: sidebar on the left, content beside it. */
+/**
+ * The regular-width root: sidebar on the left, content beside it.
+ *
+ * The window itself does NOT scroll — this is a fixed-height viewport and each
+ * region scrolls inside it. When the page scrolled instead, scrolling the
+ * middle pane took the sidebar and the viewer with it: the list you were
+ * reading stayed put while everything you were reading it against left the
+ * screen, which is the opposite of what a split view is for.
+ */
 export function RegularFrame({ sidebar, children }: { sidebar: ReactNode; children: ReactNode }): ReactElement {
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: color.bg, color: color.ink, fontFamily: body }}>
+    <div
+      style={{
+        display: "flex",
+        // dvh, not vh: vh is the tallest the window ever gets, so on iPadOS it
+        // hides the bottom of the frame behind the home indicator.
+        height: "100dvh",
+        overflow: "hidden",
+        background: color.bg,
+        color: color.ink,
+        fontFamily: body,
+      }}
+    >
       {sidebar}
       <div
+        className="noshrink"
         style={{
           flex: 1,
           minWidth: 0,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          // Screens that draw no split scroll here as one page. A TwoPane
+          // claims the height instead (flex: 1) and scrolls per pane, so this
+          // never scrolls under it.
+          overflowY: "auto",
           padding: `max(20px, env(safe-area-inset-top)) max(${SCREEN_X}px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) ${SCREEN_X}px`,
         }}
       >
@@ -218,19 +263,34 @@ export function TwoPane({
   const size = useSizeClass();
   if (size === "compact") return <>{primary}</>;
   const [a, b] = RATIO[ratio];
+  // Each pane is its own scroller and its own flex column: scrolling the list
+  // leaves the viewer beside it exactly where it was, and a pane that itself
+  // holds a TwoPane (the three-way scans layout) gets a definite height to
+  // divide rather than growing the page.
   const pane = (grow: number): React.CSSProperties => ({
     flex: `${grow} 1 0`,
     minWidth: 0,
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflowY: "auto",
     padding: `0 ${SCREEN_X}px`,
   });
   return (
-    <div style={{ display: "flex", margin: `0 -${SCREEN_X}px`, alignItems: "stretch" }}>
-      <div style={pane(a)}>{primary}</div>
-      <div style={{ ...pane(b), borderLeft: `1px solid ${color.hairline}` }}>
-        {/* The viewer stays put while the list beside it scrolls: it sticks to
-            the top and scrolls on its own once taller than the window. */}
-        <div style={{ position: "sticky", top: 0, maxHeight: "100vh", overflowY: "auto" }}>{secondary}</div>
-      </div>
+    <div
+      className="noshrink"
+      style={{
+        display: "flex",
+        margin: `0 -${SCREEN_X}px`,
+        alignItems: "stretch",
+        // Claim the frame's remaining height instead of growing with the
+        // content, so the panes have something definite to scroll within.
+        flex: "1 1 auto",
+        minHeight: 0,
+      }}
+    >
+      <div className="noshrink" style={pane(a)}>{primary}</div>
+      <div className="noshrink" style={{ ...pane(b), borderLeft: `1px solid ${color.hairline}` }}>{secondary}</div>
     </div>
   );
 }
