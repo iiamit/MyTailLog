@@ -5,10 +5,12 @@ read all of it before touching code. Plan of record:
 https://claude.ai/code/artifact/239f484e-ae33-455a-912f-8e72e6250fd8
 
 Safe point: tag `pre-ios-parity` (main @ 60c9c87). Integration branch: `ios-parity`.
-Each stream works on `ios-parity/<stream>` in its own worktree and pushes it.
+Each stream works on `ios-parity-<stream>` (hyphen — git refuses `ios-parity/<stream>` while the branch `ios-parity` exists) in its own worktree, branched from `origin/ios-parity`, and pushes it.
 Nothing merges to `main` from inside the build.
 
 ## 1. Rules that apply to every stream
+
+0. **Start from the contract commit, not from wherever the worktree opened.** A fresh worktree may be checked out at `main`. First: `git fetch origin && git checkout -B ios-parity-<stream> origin/ios-parity`.
 
 1. **UI code never calls Supabase and never calls a server action.** On the
    phone, every write goes through `enqueue()` in `apps/mobile/src/mutations.ts`
@@ -118,7 +120,7 @@ the `lib/writes` function. **(base)** = update/delete, carries `base`.
 | C1 | `entry.confirm` (base) | `{entryId, confirmed: boolean}` | `entries.setConfirmed` |
 | C1 | `entry.delete` (base) | `{entryId}` | `entries.remove` |
 | C1 | `entry.merge` (base of tail) | `{tailEntryId}` | `entries.mergeContinuation` (#188 relink included) |
-| C1 | `entry.setLinks` (base) | `{entryId, documentIds: string[]}` | `entries.setLinks` |
+| C1 | `entry.setLinks` (base) | `{entryId, links: {label: string, url: string}[]}` — the column is `log_entry.reference_links`; document↔entry attachment is `document.setEntry` (C3) | `entries.setLinks` |
 | C1 | `entries.confirmClean` | `{}` | `entries.confirmClean` |
 | C1 | `page.review` (base) | `{pageId, status: "unreviewed"\|"confirmed"\|"disputed"}` | `pages.setReview` |
 | C1 | `page.reorder` | `{logbookId, orderedIds: string[]}` | `pages.reorder` |
@@ -279,7 +281,7 @@ from `ios-parity` to `main` and needs 0058/0059 applied to the test project.
 
 ## 10. Definition of done, per stream
 
-- Branch `ios-parity/<stream>` pushed; PR opened against `ios-parity`.
+- Branch `ios-parity-<stream>` pushed; PR opened against `ios-parity`.
 - `cd apps/web && npx tsc --noEmit && npm run lint` clean;
   `cd apps/mobile && npx tsc --noEmit && npx vite build` clean.
 - New pure logic has tests in `apps/web/test/`, and the full suite passes.
