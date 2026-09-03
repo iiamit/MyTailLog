@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { getByAircraft } from "./db";
-import { queueAction, canEdit } from "./actions";
-import { computeAirworthiness } from "./airworthiness";
+import { canEdit } from "./actions";
+import { enqueue } from "./mutations";
+import { computeAirworthiness, replaceLocal, shortDate } from "./airworthiness";
+import { maintenanceNextDue } from "@/lib/maintenance";
 import { logbookLabel } from "@/lib/logbooks";
-import type { LogbookType } from "@/lib/database.types";
+import type { LogbookType, MaintenanceItem } from "@/lib/database.types";
 import type { StatusItem } from "@/lib/status";
 import type { Aircraft } from "./types";
-import { TopBar, dim, faint, mono, panel, line, accent, amber, input, primary } from "./ui";
+import { TopBar, dim, faint, mono, panel, line, amber, input, primary } from "./ui";
+import { color } from "./tokens";
 
 // Mark a recurring item done and reset its counter.
 //
@@ -46,9 +49,17 @@ export function CompleteItem({
   const [logbookId, setLogbookId] = useState("");
   const [done, setDone] = useState<"synced" | "pending" | null>(null);
   const [saving, setSaving] = useState(false);
+  // The stored row's updated_at. Every mx.complete carries the version it was
+  // based on, so two people marking the same item done can't quietly overwrite
+  // each other (CONTRACT §2).
+  const [row, setRow] = useState<MaintenanceItem | null | undefined>(undefined);
+  const base = row === undefined ? undefined : row?.updated_at ?? null;
   const editable = canEdit(aircraft.id);
 
   useEffect(() => {
+    getByAircraft<MaintenanceItem>("maintenance_item", aircraft.id).then((rows) =>
+      setRow(rows.find((r) => r.id === item.id) ?? null),
+    );
     getByAircraft<LogbookRow>("logbook", aircraft.id).then((rows) => {
       setLogbooks(rows);
       // A VOR check belongs in the aircraft (airframe) log; fall back to
@@ -65,9 +76,12 @@ export function CompleteItem({
         if (v != null) setHours(v.toFixed(1));
       })
       .catch(() => {});
-  }, [aircraft.id, item.meter]);
+  }, [aircraft.id, item.id, item.meter]);
 
   const missing = isVor && (!place.trim() || !error.trim() || !signature.trim() || !logbookId);
+  // Nothing to base the change on: this item isn't on the device (an AD, or a
+  // mirror that hasn't caught up). Saving it would be rejected, so don't offer it.
+  const noItem = base === null;
 
   async function save() {
     if (saving) return;
@@ -81,23 +95,38 @@ export function CompleteItem({
       ? `VOR receiver accuracy check performed per 14 CFR 91.171. Place: ${place.trim()}. Bearing error: ${error.trim()}.${notes.trim() ? ` ${notes.trim()}` : ""}`
       : notes.trim() || null;
 
+    const value = hours.trim() === "" ? null : Number(hours);
+    // One id for the change AND for the log entry it writes, so a retry after a
+    // lost response can never record the 91.171(d) check twice.
+    const id = crypto.randomUUID();
     try {
-      await queueAction({
-        aircraftId: aircraft.id,
-        type: "mx_complete",
-        label: `${item.label} done ${date}`,
-        payload: {
-          item_id: item.id,
+      await enqueue(
+        "mx.complete",
+        aircraft.id,
+        {
+          itemId: item.id,
+          entryId: id,
           date,
-          hours: hours.trim() === "" ? null : Number(hours),
+          hours: value,
           // Only send the entry fields when we actually have a record to write.
-          logbook_id: isVor || notes.trim() ? logbookId : null,
+          logbookId: isVor || notes.trim() ? logbookId : null,
           description: isVor || notes.trim() ? description : null,
-          work_performed: workPerformed,
-          signature_name: signature.trim() || null,
-          [item.meter === "hobbs" ? "hobbs" : "tach"]: hours.trim() === "" ? null : Number(hours),
+          workPerformed,
+          signature: signature.trim() || null,
+          [item.meter === "hobbs" ? "hobbs" : "tach"]: value,
         },
-      });
+        { id, base: base ?? undefined, label: `${item.label} marked done` },
+      );
+      // Show the reset counter now; the next pull replaces the row with the
+      // server's version.
+      if (row) {
+        await replaceLocal("maintenance_item", row.id, {
+          ...row,
+          last_done_date: date,
+          last_done_hours: value,
+          ...maintenanceNextDue({ ...row, last_done_date: date, last_done_hours: value }),
+        });
+      }
       setDone(await onQueued());
     } finally {
       setSaving(false);
@@ -108,8 +137,8 @@ export function CompleteItem({
     return (
       <>
         <TopBar title="Saved" onBack={onBack} />
-        <p style={{ color: accent, fontSize: 14, marginTop: 16 }}>
-          {item.label} marked done {date}. {done === "synced" ? "Synced." : "Waiting for a connection."}
+        <p style={{ color: color.accent, fontSize: 14, marginTop: 16 }}>
+          {item.label} marked done {shortDate(date)}. {done === "synced" ? "Synced." : "Waiting for a connection."}
         </p>
         {isVor && (
           <p style={{ color: faint, fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>
@@ -127,7 +156,7 @@ export function CompleteItem({
         <div style={{ fontSize: 16, fontWeight: 700 }}>{item.label}</div>
         <div style={{ ...mono, color: faint, fontSize: 11, marginTop: 3 }}>
           {item.regulatory ? "REQUIRED" : "ADVISORY"}
-          {item.lastDoneDate ? ` · last done ${item.lastDoneDate}` : " · never recorded"}
+          {item.lastDoneDate ? ` · last done ${shortDate(item.lastDoneDate)}` : " · never recorded"}
         </div>
       </div>
 
@@ -217,10 +246,16 @@ export function CompleteItem({
         </p>
       )}
 
+      {noItem && (
+        <p style={{ color: amber, fontSize: 13, marginTop: 12, lineHeight: 1.5 }}>
+          This item isn&apos;t on the phone yet. Sync, then mark it done.
+        </p>
+      )}
+
       <button
         onClick={save}
-        disabled={saving || !editable || missing}
-        style={{ ...primary, width: "100%", marginTop: 12, opacity: saving || !editable || missing ? 0.4 : 1 }}
+        disabled={saving || !editable || missing || base == null}
+        style={{ ...primary, width: "100%", marginTop: 12, opacity: saving || !editable || missing || base == null ? 0.4 : 1 }}
       >
         {saving ? "Saving…" : <>Mark done &amp; reset the counter</>}
       </button>

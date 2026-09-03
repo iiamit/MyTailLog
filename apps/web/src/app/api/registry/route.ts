@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { lookupRegistration } from "@/lib/faa/registry";
 
 export const runtime = "nodejs";
 
 // Look up an aircraft registration by tail number from the FAA registry, to
 // prefill enrollment / aircraft details. Requires a signed-in user (this fetches
-// an external site server-side; don't make it an open proxy).
+// an external site server-side; don't make it an open proxy). Bearer (native
+// app) or cookie (browser).
 export async function GET(req: Request) {
-  const supabase = await createClient();
+  const supabase = await createSyncClient(req);
   const {
     data: { user },
   } = await supabase.auth.getUser();

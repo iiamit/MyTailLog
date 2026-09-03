@@ -1,0 +1,730 @@
+<meta charset="utf-8">
+<title>MyTailLog iOS Redesign — Screens 12–18, iPad regular width</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:#0F1216; --surface:#191D24; --raised:#212630; --hairline:#2B313C;
+    --ink:#ECEFF4; --dim:#9AA3B0; --faint:#6B7482;
+    --accent:#5AA9FF; --accentLight:#8EC8FF; --onAccent:#0B1017;
+    --warning:#F2B544; --danger:#FF7060; --success:#4ED69A;
+    --tintAccent:#5AA9FF24; --tintAccentBorder:#5AA9FF4D;
+    --tintWarning:#F2B5441F; --tintWarningBorder:#F2B5444D;
+    --tintDanger:#FF70601F; --tintDangerBorder:#FF70604D;
+    --tintSuccess:#4ED69A1F; --tintSuccessBorder:#4ED69A3D;
+    --grotesk:"Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --sans:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  /* Screen 13L — the light set (open question #4). Same names, light values. */
+  .light {
+    --bg:#F4F5F7; --surface:#FFFFFF; --raised:#ECEEF2; --hairline:#D8DDE4;
+    --ink:#151A21; --dim:#4A5462; --faint:#666F7C;
+    --accent:#1C6FD2; --accentLight:#4A8FE3; --onAccent:#FFFFFF;
+    --warning:#9A6400; --danger:#C4392C; --success:#177F55;
+    --tintAccent:#1C6FD21A; --tintAccentBorder:#1C6FD24D;
+    --tintWarning:#9A64001A; --tintWarningBorder:#9A64004D;
+    --tintDanger:#C4392C1A; --tintDangerBorder:#C4392C4D;
+    --tintSuccess:#177F551A; --tintSuccessBorder:#177F553D;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#0A0C0F; color:var(--ink); font-family:var(--sans); padding:40px 28px 64px; -webkit-font-smoothing:antialiased; }
+  .head { max-width:1194px; margin:0 auto 34px; }
+  .head h1 { font-family:var(--grotesk); font-size:24px; font-weight:700; letter-spacing:-.02em; }
+  .head p { color:var(--dim); font-size:14px; line-height:1.55; margin-top:8px; max-width:70ch; }
+  .frames { display:flex; flex-direction:column; gap:44px; align-items:center; }
+  .cap { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-bottom:10px; }
+
+  /* The frame: 1194 × 834, an 11" iPad in landscape, every value at 390pt logical scale. */
+  .ipad { width:1194px; height:834px; background:var(--bg); border:1px solid var(--hairline); border-radius:18px;
+          overflow:hidden; position:relative; display:grid; grid-template-columns:200px 1fr; grid-template-rows:minmax(0,1fr); color:var(--ink); font-family:var(--sans); }
+
+  /* ---- Sidebar (screen 12) ------------------------------------------------ */
+  .side { background:var(--surface); border-right:1px solid var(--hairline); padding:18px 12px 16px; display:flex; flex-direction:column; }
+  .fleet { display:flex; align-items:center; gap:8px; padding:10px 12px; min-height:52px; background:var(--raised); border:1px solid var(--hairline); border-radius:12px; }
+  .fleet .tail { font-family:var(--grotesk); font-size:17px; font-weight:700; letter-spacing:.01em; }
+  .fleet .type { font-size:11.5px; color:var(--dim); margin-top:1px; }
+  .fleet .chev { margin-left:auto; color:var(--faint); font-size:12px; }
+  .nav { margin-top:18px; display:flex; flex-direction:column; gap:4px; }
+  .nav div { display:flex; align-items:center; gap:11px; height:44px; padding:0 12px; border-radius:11px; font-size:14.5px; font-weight:500; color:var(--dim); }
+  .nav div.on { background:var(--raised); color:var(--accent); font-weight:600; }
+  .nav svg { width:19px; height:19px; flex:none; }
+  .nav .badge { margin-left:auto; font-family:var(--grotesk); font-size:12px; font-weight:700; color:var(--warning); }
+  .nav .badge.bad { color:var(--danger); }
+  .kbd { margin-left:auto; font-size:10.5px; color:var(--faint); font-variant-numeric:tabular-nums; }
+  .nav .on .kbd, .nav .badge + .kbd { display:none; }
+  .account { margin-top:auto; display:flex; align-items:center; gap:10px; height:52px; padding:0 8px; border-radius:11px; }
+  .account .av { width:30px; height:30px; border-radius:15px; background:var(--raised); border:1px solid var(--hairline); display:grid; place-items:center; font-family:var(--grotesk); font-size:12px; font-weight:700; color:var(--dim); }
+  .account .nm { font-size:13.5px; font-weight:600; }
+  .account .em { font-size:11px; color:var(--faint); margin-top:1px; }
+
+  /* ---- Main + panes -------------------------------------------------------- */
+  .main { padding:20px; display:flex; flex-direction:column; min-width:0; }
+  .title { display:flex; align-items:baseline; gap:12px; margin-bottom:16px; }
+  .title h2 { font-family:var(--grotesk); font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .title .meta { font-size:12.5px; color:var(--faint); }
+  .title .right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .panes { display:grid; gap:16px; flex:1; min-height:0; grid-template-rows:minmax(0,1fr); }
+  .r4060 { grid-template-columns:40fr 60fr; }
+  .r5050 { grid-template-columns:1fr 1fr; }
+  .r5545 { grid-template-columns:55fr 45fr; }
+  .pane { min-width:0; min-height:0; display:flex; flex-direction:column; gap:12px; overflow:hidden; position:relative; }
+  .pane.card { background:var(--surface); border:1px solid var(--hairline); border-radius:18px; padding:16px; }
+  .ph { display:flex; align-items:baseline; gap:10px; }
+  .ph h3 { font-family:var(--grotesk); font-size:19px; font-weight:700; }
+  .ph .meta { font-size:12px; color:var(--faint); margin-left:auto; }
+
+  .label { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); }
+  .seg { display:flex; gap:3px; background:var(--surface); border:1px solid var(--hairline); border-radius:12px; padding:3px; }
+  .seg span { flex:1; text-align:center; padding:8px 0; font-size:13.5px; color:var(--dim); border-radius:9px; min-height:38px; }
+  .seg span.on { background:var(--raised); color:var(--ink); font-weight:600; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; }
+  .chip { border-radius:9px; padding:7px 12px; font-size:12px; font-weight:600; background:var(--surface); border:1px solid var(--hairline); color:var(--dim); min-height:36px; display:inline-flex; align-items:center; }
+  .chip.on { background:var(--accent); border-color:var(--accent); color:var(--onAccent); }
+  .tag { font-size:10px; font-weight:600; color:var(--dim); background:var(--raised); border-radius:5px; padding:2px 6px; }
+  .pill { font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; border-radius:6px; padding:4px 8px; white-space:nowrap; }
+  .pill.due { color:var(--warning); background:var(--tintWarning); border:1px solid var(--tintWarningBorder); }
+  .pill.bad { color:var(--danger); background:var(--tintDanger); border:1px solid var(--tintDangerBorder); }
+  .pill.ok  { color:var(--success); background:var(--tintSuccess); border:1px solid var(--tintSuccessBorder); }
+  .pill.ac  { color:var(--accent); background:var(--tintAccent); border:1px solid var(--tintAccentBorder); }
+  .num { font-variant-numeric:tabular-nums; }
+
+  .row { background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:7px; }
+  .row.sel { border-color:var(--tintAccentBorder); background:var(--tintAccent); }
+  .row.due { border-color:var(--tintWarningBorder); }
+  .row.bad { border-color:var(--tintDangerBorder); }
+  .row .t { display:flex; align-items:baseline; gap:10px; font-size:14.5px; font-weight:600; }
+  .row .t .rt { margin-left:auto; font-family:var(--grotesk); font-size:13px; font-weight:700; white-space:nowrap; }
+  .row .bar { height:4px; border-radius:2px; background:var(--raised); overflow:hidden; }
+  .row .bar i { display:block; height:100%; background:var(--accent); }
+  .row .m { font-size:11.5px; color:var(--faint); }
+  .row .d { font-size:13px; color:var(--dim); line-height:1.45; }
+  .list { display:flex; flex-direction:column; gap:8px; overflow:hidden; flex:1; min-height:0; }
+
+  .primary { display:flex; align-items:center; justify-content:center; gap:9px; height:52px; border-radius:15px;
+             background:linear-gradient(135deg,var(--accent),var(--accentLight)); color:var(--onAccent); font-size:16px; font-weight:600; }
+  .primary.sm { height:44px; font-size:15px; border-radius:12px; }
+  .secondary { display:flex; align-items:center; justify-content:center; height:46px; border-radius:13px; background:var(--raised); border:1px solid var(--hairline); color:var(--accent); font-size:14px; font-weight:600; }
+  .ghost { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:0 12px; border-radius:9px; border:1px solid var(--hairline); color:var(--dim); font-size:13px; font-weight:500; white-space:nowrap; }
+  .ghost.danger { color:var(--danger); border-color:var(--tintDangerBorder); }
+  .fab { position:absolute; right:0; bottom:0; width:56px; height:56px; border-radius:18px; background:linear-gradient(135deg,var(--accent),var(--accentLight)); display:grid; place-items:center; }
+
+  /* Status pieces (from screen 1, unchanged) */
+  .ring { width:120px; height:120px; border-radius:50%; border:2px solid color-mix(in srgb, var(--warning) 28%, transparent);
+          background:radial-gradient(closest-side, color-mix(in srgb, var(--warning) 9%, transparent), transparent); display:grid; place-items:center; position:relative; margin:6px auto 0; }
+  .ring svg { position:absolute; inset:0; transform:rotate(-90deg); }
+  .ring .v { font-family:var(--grotesk); font-size:28px; font-weight:700; line-height:1; text-align:center; }
+  .ring .u { font-size:10.5px; color:var(--dim); margin-top:2px; text-align:center; }
+  .verdict { font-family:var(--grotesk); font-size:19px; font-weight:700; text-align:center; color:var(--warning); }
+  .vd { font-size:13px; color:var(--dim); text-align:center; max-width:250px; margin:0 auto; }
+  .meters { display:flex; gap:10px; }
+  .meter { flex:1; background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:11px 13px; }
+  .meter .l { font-size:10.5px; font-weight:600; letter-spacing:.09em; color:var(--faint); }
+  .meter .n { font-family:var(--grotesk); font-size:21px; font-weight:700; letter-spacing:-.01em; margin-top:3px; }
+  .meter .m { font-size:11.5px; color:var(--faint); margin-top:3px; }
+  .attn { background:var(--surface); border:1px solid var(--tintWarningBorder); border-radius:16px; padding:13px 15px; display:flex; flex-direction:column; gap:9px; }
+  .attn .t { display:flex; align-items:center; gap:8px; font-size:15.5px; font-weight:600; }
+  .attn .due { font-size:13px; font-weight:500; color:var(--warning); }
+  .attn .m { font-size:11.5px; color:var(--faint); }
+  .clear { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:12px 15px; min-height:44px; }
+  .clear .t { font-size:14.5px; font-weight:600; }
+  .clear .m { font-size:11.5px; color:var(--faint); margin-top:2px; }
+  .clear .n { margin-left:auto; font-family:var(--grotesk); font-size:14px; font-weight:700; color:var(--success); }
+  .foot { font-size:11.5px; color:var(--faint); line-height:1.5; }
+
+  /* Log pieces (screen 4) */
+  .panel { background:var(--surface); border:1px solid var(--hairline); border-radius:18px; padding:18px 16px; display:flex; flex-direction:column; gap:14px; }
+  .stepper { display:flex; align-items:center; gap:10px; }
+  .stepper .l { width:64px; font-size:10.5px; font-weight:600; letter-spacing:.09em; color:var(--faint); }
+  .stepper .b { width:46px; height:46px; border-radius:13px; background:var(--raised); border:1px solid var(--hairline); display:grid; place-items:center; font-size:20px; color:var(--ink); }
+  .stepper .val { flex:1; height:46px; border-radius:13px; background:var(--bg); border:1px solid var(--hairline); display:grid; place-items:center; font-family:var(--grotesk); font-size:20px; font-weight:700; }
+  .stepper .was { width:74px; font-size:11.5px; color:var(--faint); text-align:right; }
+  .stepper .was b { color:var(--success); font-weight:600; }
+  .hr { height:1px; background:var(--hairline); }
+  .oil { display:flex; gap:8px; }
+  .oil span { flex:1; min-height:44px; border-radius:12px; background:var(--raised); border:1px solid var(--hairline); color:var(--dim); font-size:14px; display:grid; place-items:center; }
+  .oil span.on { background:var(--tintAccent); border-color:var(--accent); color:var(--accent); font-weight:600; }
+  .reading { display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:0 14px; min-height:52px; }
+  .reading .dt { width:86px; font-size:13px; color:var(--dim); }
+  .reading .n { font-family:var(--grotesk); font-size:15px; font-weight:700; width:90px; }
+  .reading .n small { display:block; font-family:var(--sans); font-size:10px; font-weight:600; letter-spacing:.08em; color:var(--faint); }
+  .reading .src { margin-left:auto; font-size:11.5px; color:var(--faint); }
+  .reading .acts { display:none; gap:6px; }
+  .reading.hover { background:var(--raised); }
+  .reading.hover .src { display:none; }
+  .reading.hover .acts { display:flex; margin-left:auto; }
+  .reading.swipe { transform:translateX(-96px); position:relative; }
+  .swipewrap { position:relative; overflow:hidden; border-radius:14px; }
+  .swipewrap .del { position:absolute; right:0; top:0; bottom:0; width:96px; background:var(--danger); color:#fff; display:grid; place-items:center; font-size:13px; font-weight:600; border-radius:0 14px 14px 0; }
+
+  /* Scans pieces (screen 7 + 15) */
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; }
+  .grid .pg { aspect-ratio:3/4; border-radius:9px; border:1px solid var(--hairline); background:linear-gradient(160deg,#2A303A,#1C212A); position:relative; }
+  .light .grid .pg, .light .scan { background:linear-gradient(160deg,#E4E7EC,#F1F3F6); }
+  .grid .pg.on { outline:2px solid var(--accent); outline-offset:1px; }
+  .grid .pg .n { position:absolute; left:6px; bottom:5px; font-family:var(--grotesk); font-size:11px; font-weight:700; color:var(--dim); }
+  .grid .pg .dot { position:absolute; right:6px; top:6px; width:8px; height:8px; border-radius:4px; background:var(--warning); }
+  .scan { background:linear-gradient(160deg,#2E3440,#1C212A); border:1px solid var(--hairline); border-radius:10px; flex:1; min-height:0; position:relative; overflow:hidden; }
+  .scan .line { position:absolute; left:8%; right:8%; height:2px; background:var(--hairline); opacity:.9; }
+  .scan .scrim { position:absolute; inset:0; background:rgba(0,0,0,.42); }
+  .light .scan .scrim { background:rgba(21,26,33,.28); }
+  .scan .box { position:absolute; border:2px solid var(--accent); border-radius:5px; box-shadow:0 0 0 4px var(--tintAccent), 0 0 24px var(--tintAccentBorder); }
+  .scan .hint { position:absolute; left:0; right:0; bottom:10px; text-align:center; font-size:11.5px; color:var(--dim); }
+  .entry { background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:13px 14px; display:flex; flex-direction:column; gap:9px; }
+  .entry.sel { border-color:var(--tintAccentBorder); }
+  .entry .h { display:flex; align-items:center; gap:8px; }
+  .entry .h .dt { font-family:var(--grotesk); font-size:14px; font-weight:700; }
+  .entry .h .pill { margin-left:auto; }
+  .entry .desc { font-size:13.5px; line-height:1.5; color:var(--ink); }
+  .fields { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .field { border:1px solid var(--hairline); border-radius:10px; padding:7px 9px; display:flex; align-items:center; gap:7px; min-height:44px; }
+  .field.unsure { border-color:var(--tintWarningBorder); background:var(--tintWarning); }
+  .field.lit { border-color:var(--accent); }
+  .field .k { font-size:10px; font-weight:600; letter-spacing:.08em; color:var(--faint); text-transform:uppercase; }
+  .field .v { font-family:var(--grotesk); font-size:14px; font-weight:700; }
+  .field .v.txt { font-family:var(--sans); font-size:13px; font-weight:500; }
+  .field .loc { margin-left:auto; width:26px; height:26px; border-radius:13px; display:grid; place-items:center; color:var(--faint); font-size:15px; }
+  .field .loc.on { color:var(--accent); background:var(--tintAccent); }
+  .entry .acts { display:flex; gap:8px; }
+
+  /* Documents (screen 16) */
+  .search { display:flex; align-items:center; gap:8px; height:44px; border-radius:12px; background:var(--surface); border:1px solid var(--hairline); padding:0 12px; color:var(--faint); font-size:16px; }
+  .arow { background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:12px 14px; }
+  .arow .t { display:flex; align-items:center; gap:8px; font-size:14.5px; font-weight:600; }
+  .arow .t .pill { margin-left:auto; }
+  .arow .m { font-size:11.5px; color:var(--faint); margin-top:2px; }
+  .arow .slots { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:10px; }
+  .arow .slot { border:1px solid var(--hairline); border-radius:10px; padding:8px 10px; font-size:12.5px; }
+  .arow .slot .s { font-size:10.5px; color:var(--success); font-weight:600; }
+  .doc { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:0 14px; min-height:56px; }
+  .doc.sel { border-color:var(--tintAccentBorder); background:var(--tintAccent); }
+  .doc .ic { width:32px; height:40px; border-radius:5px; background:var(--raised); border:1px solid var(--hairline); flex:none; display:grid; place-items:center; font-size:9px; font-weight:700; color:var(--faint); }
+  .doc .t { font-size:14px; font-weight:600; }
+  .doc .m { font-size:11.5px; color:var(--faint); margin-top:2px; }
+  .drop { position:absolute; inset:-4px; border:2px dashed var(--accent); border-radius:20px; background:var(--tintAccent); display:grid; place-items:center; }
+  .drop div { background:var(--surface); border:1px solid var(--tintAccentBorder); border-radius:14px; padding:14px 18px; text-align:center; }
+  .drop .t { font-size:15px; font-weight:600; color:var(--accent); }
+  .drop .m { font-size:12px; color:var(--dim); margin-top:3px; }
+  .pdf { flex:1; background:#fff; border-radius:10px; border:1px solid var(--hairline); position:relative; overflow:hidden; }
+  .pdf .pl { position:absolute; left:10%; right:10%; height:6px; background:#D8DDE4; border-radius:3px; }
+  .pdf .pn { position:absolute; bottom:12px; left:0; right:0; text-align:center; font-size:12px; color:#4A5462; }
+
+  /* History (screen 17) */
+  .month { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-top:4px; }
+  .tl { display:flex; gap:12px; background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:11px 14px; align-items:flex-start; }
+  .tl.sel { border-color:var(--tintAccentBorder); background:var(--tintAccent); }
+  .tl .g { width:22px; height:22px; border-radius:11px; display:grid; place-items:center; font-size:12px; flex:none; margin-top:1px; }
+  .tl .g.ins { color:var(--success); background:var(--tintSuccess); }
+  .tl .g.oil { color:var(--warning); background:var(--tintWarning); }
+  .tl .g.av { color:var(--accent); background:var(--tintAccent); }
+  .tl .dt { font-family:var(--grotesk); font-size:13px; font-weight:700; }
+  .tl .d { font-size:13px; color:var(--dim); margin-top:2px; line-height:1.4; }
+  .block { display:flex; flex-direction:column; gap:4px; }
+  .block .k { font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); }
+  .block .v { font-size:13.5px; line-height:1.5; }
+  .kv { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--hairline); font-size:13px; }
+  .kv span:first-child { color:var(--dim); }
+  .kv span:last-child { font-weight:600; text-align:right; }
+
+  /* Squawks (screen 18) */
+  .sq { display:flex; gap:12px; align-items:flex-start; background:var(--surface); border:1px solid var(--hairline); border-radius:14px; padding:12px 14px; }
+  .sq.sel { border-color:var(--tintAccentBorder); background:var(--tintAccent); }
+  .sq .sev { width:8px; height:8px; border-radius:4px; margin-top:7px; flex:none; }
+  .sq .t { font-size:14px; font-weight:600; line-height:1.4; }
+  .sq .m { font-size:11.5px; color:var(--faint); margin-top:3px; }
+  .picker { display:flex; align-items:center; gap:12px; background:var(--bg); border:1px solid var(--hairline); border-radius:12px; padding:0 14px; min-height:52px; }
+  .picker .t { font-size:14px; font-weight:600; }
+  .picker .m { font-size:11.5px; color:var(--faint); margin-top:2px; }
+  .picker .chev { margin-left:auto; color:var(--faint); }
+
+  .designnote { max-width:1194px; margin:38px auto 0; border-top:1px solid var(--hairline); padding-top:20px; }
+  .designnote h3 { font-family:var(--grotesk); font-size:15px; font-weight:700; margin-bottom:10px; }
+  .designnote p { color:var(--dim); font-size:13.5px; line-height:1.6; margin-bottom:10px; max-width:78ch; }
+  .designnote b { color:var(--ink); font-weight:600; }
+  .designnote code { font-family:ui-monospace,monospace; font-size:12.5px; color:var(--faint); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 16l4-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5a1.5 1.5 0 0 1 1.5-1.5h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 20V5m0 0h11l-2.5 3.5L17 12H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6zM18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" fill="currentColor"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M3.5 8.8A1.5 1.5 0 0 1 5 7.3h2.2l1.1-1.8h7.4l1.1 1.8H19a1.5 1.5 0 0 1 1.5 1.5v8.4A1.5 1.5 0 0 1 19 18.7H5a1.5 1.5 0 0 1-1.5-1.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+</svg>
+
+<div class="head">
+  <h1>Screens 12–18 — iPad, regular width</h1>
+  <p>The approved direction was authored at 390 pt and holds unchanged. At regular width (700 pt and up: full-screen
+     iPad, either orientation) the tab bar becomes a 200 pt sidebar and every tab becomes two panes that <b>compose</b>
+     the phone's existing pieces — nothing is redrawn. Under 700 pt (Split View beside ForeFlight, Slide Over) the
+     phone layout is used as-is. Frames are 1194 × 834, an 11" iPad in landscape, at 390pt-scale values.</p>
+</div>
+
+<div class="frames">
+
+<!-- ===================== 12 · Sidebar ===================== -->
+<div>
+  <div class="cap">12 · Sidebar, with the fleet switcher open</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet" style="border-color:var(--accent)">
+        <div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div>
+        <span class="chev">▲</span>
+      </div>
+      <!-- Switcher popover: the same row idiom as screen 2's picker, anchored under the tail. -->
+      <div style="position:absolute; left:212px; top:18px; width:300px; background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:8px; box-shadow:0 18px 48px rgba(0,0,0,.45); z-index:2">
+        <div class="label" style="padding:8px 10px 6px">Your fleet</div>
+        <div style="display:flex; align-items:center; gap:10px; padding:0 10px; min-height:52px; border-radius:11px; background:var(--raised)">
+          <span style="font-family:var(--grotesk); font-size:15px; font-weight:700">N9363V</span>
+          <span style="font-size:12px; color:var(--dim)">Cessna 172M</span>
+          <span class="pill due" style="margin-left:auto">Due soon</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:0 10px; min-height:52px; border-radius:11px">
+          <span style="font-family:var(--grotesk); font-size:15px; font-weight:700">N2154Q</span>
+          <span style="font-size:12px; color:var(--dim)">Piper Archer</span>
+          <span class="pill ok" style="margin-left:auto">Airworthy</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; padding:0 10px; min-height:52px; border-radius:11px">
+          <span style="font-family:var(--grotesk); font-size:15px; font-weight:700">N731CD</span>
+          <span style="font-size:12px; color:var(--dim)">Cirrus SR22</span>
+          <span class="pill bad" style="margin-left:auto">Grounded</span>
+        </div>
+        <div style="height:1px; background:var(--hairline); margin:6px 4px"></div>
+        <div style="display:flex; align-items:center; padding:0 10px; min-height:44px; font-size:13.5px; color:var(--accent); font-weight:600">See the whole fleet</div>
+      </div>
+      <div class="nav">
+        <div class="on"><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div><svg><use href="#i-plus"/></svg>Log<span class="kbd">⌘2</span></div>
+        <div><svg><use href="#i-folder"/></svg>Records<span class="kbd">⌘3</span></div>
+        <div><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account">
+        <div class="av">IA</div>
+        <div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div>
+      </div>
+    </div>
+    <div class="main" style="opacity:.55; filter:saturate(.8)">
+      <div class="title"><h2>Status</h2><span class="meta">N9363V · Cessna 172M</span></div>
+      <div class="panes r4060">
+        <div class="pane">
+          <div class="ring"><div><div class="v num">26</div><div class="u">days</div></div></div>
+          <div class="verdict">Annual due in 26 days</div>
+          <div class="meters"><div class="meter"><div class="l">TACH</div><div class="n num">2417.3</div></div><div class="meter"><div class="l">HOBBS</div><div class="n num">3102.8</div></div></div>
+        </div>
+        <div class="pane card"><div class="ph"><h3>All items</h3></div><div class="seg"><span class="on">Inspections</span><span>ADs</span><span>Equipment</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 13 · Status ===================== -->
+<div>
+  <div class="cap">13 · Status — verdict, meters and attention left · all items right</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div><span class="chev">▼</span></div>
+      <div class="nav">
+        <div class="on"><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div><svg><use href="#i-plus"/></svg>Log<span class="kbd">⌘2</span></div>
+        <div><svg><use href="#i-folder"/></svg>Records<span class="kbd">⌘3</span></div>
+        <div><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account"><div class="av">IA</div><div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div></div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Status</h2><span class="meta">N9363V · Cessna 172M</span></div>
+      <div class="panes r4060">
+        <div class="pane" style="gap:14px">
+          <div class="ring">
+            <svg width="120" height="120"><circle cx="60" cy="60" r="46" fill="none" stroke="var(--raised)" stroke-width="5"/><circle cx="60" cy="60" r="46" fill="none" stroke="var(--warning)" stroke-width="5" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="62"/></svg>
+            <div style="position:relative"><div class="v num">26</div><div class="u">days</div></div>
+          </div>
+          <div><div class="verdict">Annual due in 26 days</div><div class="vd" style="margin-top:6px">Everything else is clear. Book the annual before 28 Sep.</div></div>
+          <div class="meters">
+            <div class="meter"><div class="l">TACH</div><div class="n num">2417.3</div><div class="m">5 days ago · logged by you</div></div>
+            <div class="meter"><div class="l">HOBBS</div><div class="n num">3102.8</div><div class="m">5 days ago · logged by you</div></div>
+          </div>
+          <div class="label">Needs attention</div>
+          <div class="attn">
+            <div class="t">Annual inspection <span class="tag">91.409</span></div>
+            <div class="due">Due in 26 days — 28 Sep 2026</div>
+            <div class="m">Every 12 months · last done 28 Sep 2025</div>
+            <div class="primary sm">Mark done</div>
+          </div>
+          <div class="clear"><div><div class="t">Clear for now</div><div class="m">ELT battery, Transponder check, Pitot-static, Oil change, VOR check, 100-hour</div></div><span class="n">6</span><span style="color:var(--faint)">›</span></div>
+          <div class="foot">Worked out on this iPad from your last sync. It mirrors your records — it isn't the logbook, and the PIC is still responsible for airworthiness under 91.7.</div>
+        </div>
+        <div class="pane card">
+          <div class="ph"><h3>All items</h3><span class="meta">7 tracked</span></div>
+          <div class="seg"><span class="on">Inspections</span><span>ADs</span><span>Equipment</span></div>
+          <div class="chips"><span class="chip on">All 7</span><span class="chip">Required 5</span><span class="chip">Advisory 2</span></div>
+          <div class="list">
+            <div class="row due"><div class="t">Annual inspection<span class="rt num" style="color:var(--warning)">26 days</span></div><div class="bar"><i style="width:93%; background:var(--warning)"></i></div><div class="m">Required · every 12 mo · 28 Sep 2026</div></div>
+            <div class="row"><div class="t">Transponder check<span class="rt num" style="color:var(--dim)">4 months</span></div><div class="bar"><i style="width:82%"></i></div><div class="m">Required · every 24 mo · 14 Jan 2027</div></div>
+            <div class="row"><div class="t">ELT battery<span class="rt num" style="color:var(--dim)">7 months</span></div><div class="bar"><i style="width:40%"></i></div><div class="m">Required · every 12 mo · 3 Apr 2027</div></div>
+            <div class="row"><div class="t">Pitot-static &amp; altimeter<span class="rt num" style="color:var(--dim)">9 months</span></div><div class="bar"><i style="width:62%"></i></div><div class="m">Required · every 24 mo · 2 Jun 2027</div></div>
+            <div class="row"><div class="t">Oil change<span class="rt num" style="color:var(--dim)">31 hrs</span></div><div class="bar"><i style="width:38%; background:var(--faint)"></i></div><div class="m">Advisory · every 50 h tach · around 2448</div></div>
+            <div class="row"><div class="t">VOR check<span class="rt num" style="color:var(--dim)">19 days</span></div><div class="bar"><i style="width:37%"></i></div><div class="m">Required · every 30 days · 21 Sep 2026</div></div>
+            <div class="row"><div class="t">100-hour inspection<span class="rt num" style="color:var(--dim)">83 hrs</span></div><div class="bar"><i style="width:17%; background:var(--faint)"></i></div><div class="m">Advisory · every 100 h tach · around 2500</div></div>
+          </div>
+          <div class="secondary" style="margin-top:auto">Add an item</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 13L · Status, light ===================== -->
+<div>
+  <div class="cap">13L · The same screen in the light appearance (open question #4)</div>
+  <div class="ipad light">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div><span class="chev">▼</span></div>
+      <div class="nav">
+        <div class="on"><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div><svg><use href="#i-plus"/></svg>Log<span class="kbd">⌘2</span></div>
+        <div><svg><use href="#i-folder"/></svg>Records<span class="kbd">⌘3</span></div>
+        <div><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account"><div class="av">IA</div><div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div></div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Status</h2><span class="meta">N9363V · Cessna 172M</span></div>
+      <div class="panes r4060">
+        <div class="pane" style="gap:14px">
+          <div class="ring">
+            <svg width="120" height="120"><circle cx="60" cy="60" r="46" fill="none" stroke="var(--raised)" stroke-width="5"/><circle cx="60" cy="60" r="46" fill="none" stroke="var(--warning)" stroke-width="5" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="62"/></svg>
+            <div style="position:relative"><div class="v num">26</div><div class="u">days</div></div>
+          </div>
+          <div><div class="verdict">Annual due in 26 days</div><div class="vd" style="margin-top:6px">Everything else is clear. Book the annual before 28 Sep.</div></div>
+          <div class="meters">
+            <div class="meter"><div class="l">TACH</div><div class="n num">2417.3</div><div class="m">5 days ago · logged by you</div></div>
+            <div class="meter"><div class="l">HOBBS</div><div class="n num">3102.8</div><div class="m">5 days ago · logged by you</div></div>
+          </div>
+          <div class="label">Needs attention</div>
+          <div class="attn">
+            <div class="t">Annual inspection <span class="tag">91.409</span></div>
+            <div class="due">Due in 26 days — 28 Sep 2026</div>
+            <div class="m">Every 12 months · last done 28 Sep 2025</div>
+            <div class="primary sm">Mark done</div>
+          </div>
+          <div class="clear"><div><div class="t">Clear for now</div><div class="m">ELT battery, Transponder check, Pitot-static, Oil change, VOR check, 100-hour</div></div><span class="n">6</span><span style="color:var(--faint)">›</span></div>
+        </div>
+        <div class="pane card">
+          <div class="ph"><h3>All items</h3><span class="meta">7 tracked</span></div>
+          <div class="seg"><span class="on">Inspections</span><span>ADs</span><span>Equipment</span></div>
+          <div class="chips"><span class="chip on">All 7</span><span class="chip">Required 5</span><span class="chip">Advisory 2</span></div>
+          <div class="list">
+            <div class="row due"><div class="t">Annual inspection<span class="rt num" style="color:var(--warning)">26 days</span></div><div class="bar"><i style="width:93%; background:var(--warning)"></i></div><div class="m">Required · every 12 mo · 28 Sep 2026</div></div>
+            <div class="row"><div class="t">Transponder check<span class="rt num" style="color:var(--dim)">4 months</span></div><div class="bar"><i style="width:82%"></i></div><div class="m">Required · every 24 mo · 14 Jan 2027</div></div>
+            <div class="row"><div class="t">ELT battery<span class="rt num" style="color:var(--dim)">7 months</span></div><div class="bar"><i style="width:40%"></i></div><div class="m">Required · every 12 mo · 3 Apr 2027</div></div>
+            <div class="row"><div class="t">Oil change<span class="rt num" style="color:var(--dim)">31 hrs</span></div><div class="bar"><i style="width:38%; background:var(--faint)"></i></div><div class="m">Advisory · every 50 h tach · around 2448</div></div>
+          </div>
+          <div class="secondary" style="margin-top:auto">Add an item</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 14 · Log ===================== -->
+<div>
+  <div class="cap">14 · Log — meters and oil at a sane width left · recent readings right (one hovered, one swiped)</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div><span class="chev">▼</span></div>
+      <div class="nav">
+        <div><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div class="on"><svg><use href="#i-plus"/></svg>Log</div>
+        <div><svg><use href="#i-folder"/></svg>Records<span class="kbd">⌘3</span></div>
+        <div><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account"><div class="av">IA</div><div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div></div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Log a flight</h2><span class="meta">Today · 2 Sep 2026</span><span class="meta" style="margin-left:auto">N9363V</span></div>
+      <div class="panes r5050">
+        <div class="pane" style="gap:14px">
+          <div class="panel">
+            <div class="stepper"><span class="l">TACH</span><span class="b">−</span><span class="val num">2418.6</span><span class="b">+</span><span class="was num">was 2417.3<br><b>+1.3</b></span></div>
+            <div class="hr"></div>
+            <div class="stepper"><span class="l">HOBBS</span><span class="b">−</span><span class="val num">3104.3</span><span class="b">+</span><span class="was num">was 3102.8<br>+1.5</span></div>
+          </div>
+          <div class="panel" style="gap:10px">
+            <div style="display:flex; align-items:baseline; gap:8px"><span style="font-size:14.5px; font-weight:600">Oil added</span><span style="font-size:11.5px; color:var(--faint); margin-left:auto">optional</span></div>
+            <div class="oil"><span>None</span><span class="on">½ qt</span><span>1 qt</span><span>Other</span></div>
+            <div class="foot">Any amount — half a quart counts. Tracked against the meters you recorded, so it shows up on your consumption trend.</div>
+          </div>
+          <div class="primary">Save to logbook</div>
+          <div class="foot" style="text-align:center">Saves immediately when connected · kept on this iPad until it can</div>
+        </div>
+        <div class="pane card">
+          <div class="ph"><h3>Recent readings</h3><span class="meta">last 30</span></div>
+          <div class="list">
+            <div class="reading hover"><span class="dt">28 Aug</span><span class="n num"><small>TACH</small>2417.3</span><span class="n num"><small>HOBBS</small>3102.8</span><span class="acts"><span class="ghost">Edit</span><span class="ghost danger">Delete</span></span></div>
+            <div class="reading"><span class="dt">21 Aug</span><span class="n num"><small>TACH</small>2415.1</span><span class="n num"><small>HOBBS</small>3100.4</span><span class="src">logged by you</span></div>
+            <div class="swipewrap"><div class="del">Delete</div><div class="reading swipe"><span class="dt">14 Aug</span><span class="n num"><small>TACH</small>2412.9</span><span class="n num"><small>HOBBS</small>3097.9</span><span class="src">logged by you</span></div></div>
+            <div class="reading"><span class="dt">9 Aug</span><span class="n num"><small>TACH</small>2410.2</span><span class="n num"><small>HOBBS</small>3095.0</span><span class="src">from a log entry</span></div>
+            <div class="reading"><span class="dt">2 Aug</span><span class="n num"><small>TACH</small>2408.8</span><span class="n num"><small>HOBBS</small>3093.4</span><span class="src">logged by you</span></div>
+            <div class="reading"><span class="dt">26 Jul</span><span class="n num"><small>TACH</small>2406.0</span><span class="n num"><small>HOBBS</small>3090.3</span><span class="src">ADS-B</span></div>
+            <div class="reading"><span class="dt">19 Jul</span><span class="n num"><small>TACH</small>2404.4</span><span class="n num"><small>HOBBS</small>3088.5</span><span class="src">logged by you</span></div>
+            <div class="reading"><span class="dt">12 Jul</span><span class="n num"><small>TACH</small>2401.7</span><span class="n num"><small>HOBBS</small>3085.4</span><span class="src">logged by you</span></div>
+            <div class="reading" style="border-color:var(--tintWarningBorder)"><span class="dt">4 Jul</span><span class="n num"><small>TACH</small>2399.9</span><span class="n num"><small>HOBBS</small>3083.2</span><span class="src" style="color:var(--warning)">Hobbs below the reading before it</span></div>
+            <div class="reading"><span class="dt">27 Jun</span><span class="n num"><small>TACH</small>2398.1</span><span class="n num"><small>HOBBS</small>3084.0</span><span class="src">logged by you</span></div>
+          </div>
+          <div class="foot">Tap a reading to correct it. A reading that is lower than the one before it is flagged, not hidden — that is usually a slipped digit.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 15 · Records › Scans ===================== -->
+<div>
+  <div class="cap">15 · Records › Scans — page rail left · scan and its entries side by side right, ◎ spotlight on Tach</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div><span class="chev">▼</span></div>
+      <div class="nav">
+        <div><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div><svg><use href="#i-plus"/></svg>Log<span class="kbd">⌘2</span></div>
+        <div class="on"><svg><use href="#i-folder"/></svg>Records</div>
+        <div><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account"><div class="av">IA</div><div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div></div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Records</h2><div class="seg" style="width:330px; margin-left:8px"><span>Documents</span><span class="on">Scans</span><span>History</span></div><span class="meta" style="margin-left:auto">N9363V</span></div>
+      <div class="panes" style="grid-template-columns:250px 1fr">
+        <div class="pane" style="gap:10px">
+          <div class="chips"><span class="chip on">Needs review 4</span><span class="chip">All 97</span></div>
+          <div class="label">Airframe · 61 pages</div>
+          <div class="grid">
+            <div class="pg"><span class="n">14</span></div>
+            <div class="pg"><span class="n">15</span></div>
+            <div class="pg on"><span class="n">16</span><span class="dot"></span></div>
+            <div class="pg"><span class="n">17</span><span class="dot"></span></div>
+            <div class="pg"><span class="n">18</span></div>
+            <div class="pg"><span class="n">19</span></div>
+          </div>
+          <div class="label">Engine · 36 pages</div>
+          <div class="grid">
+            <div class="pg"><span class="n">1</span><span class="dot"></span></div>
+            <div class="pg"><span class="n">2</span></div>
+          </div>
+          <div class="fab"><svg width="22" height="22" style="color:var(--onAccent)"><use href="#i-cam"/></svg></div>
+        </div>
+        <div class="pane" style="gap:0">
+          <div class="panes r5545" style="height:100%">
+            <div class="pane" style="gap:8px">
+              <div class="ph"><h3 style="font-size:15px">Page 16 of 97</h3><span class="tag">Airframe</span><span class="meta">⌘← ⌘→</span></div>
+              <div class="scan">
+                <div class="line" style="top:12%"></div><div class="line" style="top:20%"></div><div class="line" style="top:28%"></div><div class="line" style="top:36%"></div><div class="line" style="top:44%"></div><div class="line" style="top:52%"></div><div class="line" style="top:60%"></div><div class="line" style="top:68%"></div><div class="line" style="top:76%"></div>
+                <div class="scrim"></div>
+                <div class="box" style="left:14%; top:22%; width:22%; height:7%"></div>
+                <div class="hint">Tach — read from here. Tap the page to magnify.</div>
+              </div>
+              <div style="display:flex; gap:8px"><span class="ghost">Re-read page</span><span class="ghost">Missed an entry?</span><span class="ghost" style="margin-left:auto">Reviewed</span></div>
+            </div>
+            <div class="pane" style="gap:8px">
+              <div class="ph"><h3 style="font-size:15px">Entries on this page</h3><span class="meta">2 · 1 to check</span></div>
+              <div class="entry sel">
+                <div class="h"><span class="dt">14 Mar 2026</span><span class="tag">Inspection</span><span class="pill due">Check 1 field</span></div>
+                <div class="desc">Annual inspection completed IAW Cessna 172M service manual and FAR 43 App. D. Aircraft airworthy.</div>
+                <div class="fields">
+                  <div class="field lit"><div><div class="k">Tach</div><div class="v num">2417.3</div></div><span class="loc on">◎</span></div>
+                  <div class="field unsure"><div><div class="k">Hobbs</div><div class="v num">3102.8</div></div><span class="loc">◎</span></div>
+                  <div class="field"><div><div class="k">Signed</div><div class="v txt">R. Brock · A&amp;P 3311209 IA</div></div><span class="loc">◎</span></div>
+                  <div class="field"><div><div class="k">AD / SB</div><div class="v txt">2011-10-09</div></div><span class="loc">◎</span></div>
+                </div>
+                <div class="acts"><span class="primary sm" style="flex:1">Confirm ⌘↩</span><span class="ghost">Dispute</span></div>
+              </div>
+              <div class="entry">
+                <div class="h"><span class="dt">14 Mar 2026</span><span class="tag">AD</span><span class="pill ok">Confirmed</span></div>
+                <div class="desc">AD 2011-10-09 seat rail inspection complied with. No wear beyond limits.</div>
+              </div>
+              <div class="secondary" style="margin-top:auto">Confirm all that look right</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 16 · Records › Documents ===================== -->
+<div>
+  <div class="cap">16 · Records › Documents — vault left · the document right · a file being dragged in from Files</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div><span class="chev">▼</span></div>
+      <div class="nav">
+        <div><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div><svg><use href="#i-plus"/></svg>Log<span class="kbd">⌘2</span></div>
+        <div class="on"><svg><use href="#i-folder"/></svg>Records</div>
+        <div><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account"><div class="av">IA</div><div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div></div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Records</h2><div class="seg" style="width:330px; margin-left:8px"><span class="on">Documents</span><span>Scans</span><span>History</span></div><span class="meta" style="margin-left:auto">N9363V</span></div>
+      <div class="panes r4060">
+        <div class="pane" style="gap:10px">
+          <div class="search">Search documents <span style="margin-left:auto; font-size:11px">⌘F</span></div>
+          <div class="arow">
+            <div class="t">Carry aboard <span class="pill ok">All present</span></div>
+            <div class="m">AROW — required on every flight</div>
+            <div class="slots">
+              <div class="slot">Airworthiness cert.<div class="s">In the vault</div></div>
+              <div class="slot">Registration<div class="s">In the vault</div></div>
+              <div class="slot">Operating limits<div class="s">In the vault</div></div>
+              <div class="slot">Weight &amp; balance<div class="s">In the vault</div></div>
+            </div>
+          </div>
+          <div class="label">Everything else · 9</div>
+          <div class="list" style="position:relative; flex:1">
+            <div class="doc sel"><div class="ic">PDF</div><div><div class="t">Form 337 — Garmin GTN 650 install</div><div class="m">12 Nov 2024 · linked to an entry</div></div></div>
+            <div class="doc"><div class="ic">PDF</div><div><div class="t">STC SA01798AT — GTN series</div><div class="m">12 Nov 2024</div></div></div>
+            <div class="doc"><div class="ic">PDF</div><div><div class="t">8130-3 — Overhauled magneto</div><div class="m">3 May 2025 · linked to an entry</div></div></div>
+            <div class="doc"><div class="ic">JPG</div><div><div class="t">Prop strike report</div><div class="m">19 Aug 2023</div></div></div>
+            <div class="doc"><div class="ic">PDF</div><div><div class="t">ICA — Sensorcon CO detector</div><div class="m">2 Feb 2025</div></div></div>
+            <div class="drop"><div><div class="t">Drop to add to the vault</div><div class="m">PDF or photo · you'll name it next</div></div></div>
+          </div>
+          <div class="secondary">Add a document</div>
+        </div>
+        <div class="pane card" style="gap:10px">
+          <div class="ph"><h3 style="font-size:16px">Form 337 — Garmin GTN 650 install</h3><span class="meta">12 Nov 2024</span></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap"><span class="chip">Form 337</span><span class="chip">Attached to: 12 Nov 2024 · Avionics install</span><span class="ghost" style="margin-left:auto">Share</span><span class="ghost">Edit</span></div>
+          <div class="pdf">
+            <div class="pl" style="top:9%; width:38%; left:10%; height:12px"></div>
+            <div class="pl" style="top:17%"></div><div class="pl" style="top:21%"></div><div class="pl" style="top:25%; right:30%"></div>
+            <div class="pl" style="top:34%"></div><div class="pl" style="top:38%"></div><div class="pl" style="top:42%"></div><div class="pl" style="top:46%; right:45%"></div>
+            <div class="pl" style="top:56%"></div><div class="pl" style="top:60%"></div><div class="pl" style="top:64%; right:20%"></div>
+            <div class="pn">Page 1 of 2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 17 · Records › History ===================== -->
+<div>
+  <div class="cap">17 · Records › History — timeline left · the entry with its scan right</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div><span class="chev">▼</span></div>
+      <div class="nav">
+        <div><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div><svg><use href="#i-plus"/></svg>Log<span class="kbd">⌘2</span></div>
+        <div class="on"><svg><use href="#i-folder"/></svg>Records</div>
+        <div><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account"><div class="av">IA</div><div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div></div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Records</h2><div class="seg" style="width:330px; margin-left:8px"><span>Documents</span><span>Scans</span><span class="on">History</span></div><span class="meta" style="margin-left:auto">N9363V</span></div>
+      <div class="panes r4060">
+        <div class="pane" style="gap:8px">
+          <div class="search">Search entries <span style="margin-left:auto; font-size:11px">⌘F</span></div>
+          <div class="chips"><span class="chip on">All</span><span class="chip">Inspections</span><span class="chip">ADs</span><span class="chip">Oil</span><span class="chip">Avionics</span></div>
+          <div class="month">March 2026</div>
+          <div class="tl sel"><span class="g ins">✓</span><div><div class="dt">14 Mar 2026 · tach 2417.3</div><div class="d">Annual inspection completed IAW Cessna 172M service manual…</div></div></div>
+          <div class="tl"><span class="g av">◎</span><div><div class="dt">14 Mar 2026</div><div class="d">AD 2011-10-09 seat rail inspection complied with.</div></div></div>
+          <div class="month">January 2026</div>
+          <div class="tl"><span class="g oil">◍</span><div><div class="dt">22 Jan 2026 · tach 2389.0</div><div class="d">Oil and filter changed, Phillips 20W-50, 7 qts.</div></div></div>
+          <div class="tl"><span class="g ins">✓</span><div><div class="dt">9 Jan 2026 · tach 2385.4</div><div class="d">Transponder and encoder tested IAW 91.413.</div></div></div>
+          <div class="month">November 2025</div>
+          <div class="tl"><span class="g av">◎</span><div><div class="dt">12 Nov 2025 · tach 2361.2</div><div class="d">Installed Garmin GTN 650 per STC SA01798AT. Form 337 filed.</div></div></div>
+          <div class="tl"><span class="g oil">◍</span><div><div class="dt">2 Nov 2025 · tach 2340.7</div><div class="d">Oil and filter changed.</div></div></div>
+        </div>
+        <div class="pane card" style="gap:12px">
+          <div class="ph"><h3 style="font-size:16px">14 Mar 2026</h3><span class="tag">Inspection</span><span class="pill ok">Confirmed</span><span class="meta">Airframe · page 16</span></div>
+          <div class="block"><div class="k">Entry</div><div class="v">Annual inspection completed IAW Cessna 172M service manual and FAR 43 Appendix D. Compressions 76/78/75/77 over 80. Aircraft found airworthy and returned to service.</div></div>
+          <div class="block"><div class="k">Work performed</div><div class="v">Replaced vacuum pump (Rapco RA215CC), serviced brakes, lubricated controls.</div></div>
+          <div><div class="kv"><span>Meters</span><span class="num">tach 2417.3 · hobbs 3102.8</span></div><div class="kv"><span>Signed</span><span>R. Brock · A&amp;P 3311209 IA</span></div><div class="kv"><span>AD / SB</span><span>2011-10-09</span></div><div class="kv"><span>Attached</span><span style="color:var(--accent)">8130-3 — Vacuum pump</span></div></div>
+          <div class="scan" style="min-height:150px">
+            <div class="line" style="top:20%"></div><div class="line" style="top:40%"></div><div class="line" style="top:60%"></div><div class="line" style="top:80%"></div>
+            <div class="hint">Signed page · tap to zoom</div>
+          </div>
+          <div style="display:flex; gap:8px"><span class="ghost">Edit</span><span class="ghost">Attach a document</span><span class="ghost" style="margin-left:auto">Open on Scans</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 18 · Squawks ===================== -->
+<div>
+  <div class="cap">18 · Squawks — open and resolved left · the squawk, resolve and which entry cleared it right</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div><span class="chev">▼</span></div>
+      <div class="nav">
+        <div><svg><use href="#i-gauge"/></svg>Status<span class="badge">1</span></div>
+        <div><svg><use href="#i-plus"/></svg>Log<span class="kbd">⌘2</span></div>
+        <div><svg><use href="#i-folder"/></svg>Records<span class="kbd">⌘3</span></div>
+        <div class="on"><svg><use href="#i-flag"/></svg>Squawks<span class="badge">2</span></div>
+        <div style="margin-top:8px"><svg><use href="#i-spark"/></svg>Ask<span class="kbd">⌘K</span></div>
+      </div>
+      <div class="account"><div class="av">IA</div><div><div class="nm">Ian Amit</div><div class="em">Synced 4 min ago</div></div></div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Squawks</h2><span class="meta">N9363V</span><div class="right"><span class="ghost">New squawk ⌘N</span></div></div>
+      <div class="panes r4060">
+        <div class="pane" style="gap:8px">
+          <div class="label">Open · 2</div>
+          <div class="sq sel"><span class="sev" style="background:var(--danger)"></span><div><div class="t">#3 CHT reads intermittently, drops to zero in cruise</div><div class="m">Grounding · noticed 30 Aug 2026 · by you</div></div></div>
+          <div class="sq"><span class="sev" style="background:var(--warning)"></span><div><div class="t">Left brake soft after the first stop</div><div class="m">Watch it · noticed 21 Aug 2026 · by you</div></div></div>
+          <div class="label" style="margin-top:8px">Resolved · 5</div>
+          <div class="sq"><span class="sev" style="background:var(--faint)"></span><div><div class="t">Nav light out, left wing</div><div class="m">Cleared 14 Mar 2026 · with the annual</div></div></div>
+          <div class="sq"><span class="sev" style="background:var(--faint)"></span><div><div class="t">Vacuum gauge sits low at idle</div><div class="m">Cleared 14 Mar 2026 · vacuum pump replaced</div></div></div>
+          <div class="sq"><span class="sev" style="background:var(--faint)"></span><div><div class="t">Transponder squawks 1200 on power-up</div><div class="m">Cleared 9 Jan 2026 · transponder check</div></div></div>
+          <div class="sq"><span class="sev" style="background:var(--faint)"></span><div><div class="t">Oil drip at the nose gear</div><div class="m">Cleared 2 Nov 2025 · oil change</div></div></div>
+        </div>
+        <div class="pane card" style="gap:14px">
+          <div class="ph"><h3 style="font-size:16px">#3 CHT reads intermittently</h3><span class="pill bad">Grounding</span></div>
+          <div class="block"><div class="k">What you noticed</div><div class="v">#3 CHT reads intermittently, drops to zero in cruise, comes back after a few minutes. Started on the 30 Aug flight. Other cylinders normal.</div></div>
+          <div><div class="kv"><span>Noticed</span><span>30 Aug 2026 · tach 2417.3</span></div><div class="kv"><span>Reported by</span><span>Ian Amit</span></div><div class="kv"><span>How serious</span><span style="color:var(--danger)">Grounding — don't fly until cleared</span></div></div>
+          <div class="label">Resolve</div>
+          <div class="picker"><div><div class="t">Which entry cleared it?</div><div class="m">Optional — link the log entry so the fix has a signature</div></div><span class="chev">›</span></div>
+          <div class="picker"><div><div class="t">Resolved on</div><div class="m">Today · 2 Sep 2026</div></div><span class="chev">›</span></div>
+          <div class="primary">Mark resolved</div>
+          <div style="display:flex; gap:8px"><span class="ghost">Edit</span><span class="ghost">Change severity</span><span class="ghost danger" style="margin-left:auto">Delete</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="designnote">
+  <h3>What this fixes</h3>
+  <p>The current app treats the iPad as a <b>large phone</b>: one column, a tab bar, and a Status screen that stretches
+     four items across 1194 points. Pilots live on the iPad — it is in every flight bag and on every hangar bench —
+     and the desk work MyTailLog exists for (reviewing an annual against the scan, walking an inspector through the
+     ADs) is exactly what a tablet is for.</p>
+  <p>Every composition here is the phone's own pieces placed side by side. The verdict ring, the meter tiles, the
+     attention card, the All-items rows, the page grid, the entry cards, the vault list — none is redrawn. That is what
+     makes regular width a <b>layout</b> workstream: <code>Sidebar</code> and <code>TwoPane</code> compose, the screen
+     components do not change.</p>
+  <p>The <b>sidebar</b> keeps the four destinations, adds Ask, and puts the fleet switcher where the header's tail
+     number was on the phone — you still switch aircraft in place, you still keep the tab you were on. Keyboard
+     shortcuts are shown beside the rows because a Magic Keyboard is common; nothing requires them.</p>
+  <p><b>Scans</b> is the screen the iPad is for: page rail, scan, and entries all on screen, with ◎ ringing the read
+     field on the scan. This is the web's proven review layout, not a new idea. <b>Log</b> gains the sanity check the
+     phone never had room for — the last thirty readings beside the steppers, with edit and delete. <b>Squawks</b> gets
+     resolution in-app, with "which entry cleared it" so the fix carries a signature.</p>
+  <p>The <b>light appearance</b> (13L) answers the handoff's open question #4: hangars are bright. Same token names,
+     lighter values, every semantic colour still paired with its word. See the token table in the spec.</p>
+</div>

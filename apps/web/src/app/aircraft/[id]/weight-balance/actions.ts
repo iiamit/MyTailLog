@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { completeWB } from "@/lib/weightBalance";
+import { failMessage, type WriteResult } from "@/lib/writes/entries";
+import * as weightBalance from "@/lib/writes/weightBalance";
+
+// Thin wrappers over lib/writes/weightBalance (CONTRACT §4).
 
 export type WBInput = {
   id?: string;
@@ -18,49 +21,28 @@ export type WBInput = {
 };
 
 type Result = { ok: true } | { error: string };
-const wbPath = (id: string) => `/aircraft/${id}/weight-balance`;
 
-export async function upsertWeightBalance(
+async function run(
   aircraftId: string,
-  input: WBInput,
+  fn: (supabase: Awaited<ReturnType<typeof createClient>>, userId: string) => Promise<WriteResult>,
 ): Promise<Result> {
-  if (!input.revision_date) return { error: "Revision date is required." };
-  // Derive the missing one of weight/arm/moment so stored rows are consistent.
-  const { weight, arm, moment } = completeWB({
-    weight: input.empty_weight,
-    arm: input.empty_weight_arm,
-    moment: input.empty_weight_moment,
-  });
   const supabase = await createClient();
-  const row = {
-    aircraft_id: aircraftId,
-    revision_date: input.revision_date,
-    empty_weight: weight,
-    empty_weight_arm: arm,
-    empty_weight_moment: moment,
-    max_gross_weight: input.max_gross_weight,
-    method: input.method,
-    reference: input.reference,
-    reason: input.reason,
-    notes: input.notes,
-  };
-  const { error } = input.id
-    ? await supabase.from("weight_balance").update(row).eq("id", input.id)
-    : await supabase.from("weight_balance").insert(row);
-  if (error) return { error: error.message };
-  revalidatePath(wbPath(aircraftId));
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+  const r = await fn(supabase, user.id);
+  if (r.status !== "ok") return { error: failMessage(r) };
+  revalidatePath(`/aircraft/${aircraftId}/weight-balance`);
   revalidatePath(`/aircraft/${aircraftId}`);
   return { ok: true };
 }
 
-export async function deleteWeightBalance(
-  aircraftId: string,
-  id: string,
-): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("weight_balance").delete().eq("id", id);
-  if (error) return { error: error.message };
-  revalidatePath(wbPath(aircraftId));
-  revalidatePath(`/aircraft/${aircraftId}`);
-  return { ok: true };
+export async function upsertWeightBalance(aircraftId: string, input: WBInput): Promise<Result> {
+  const { id, ...fields } = input;
+  return run(aircraftId, (supabase, userId) => weightBalance.upsert(supabase, { aircraftId, userId }, { id, fields }));
+}
+
+export async function deleteWeightBalance(aircraftId: string, id: string): Promise<Result> {
+  return run(aircraftId, (supabase, userId) => weightBalance.remove(supabase, { aircraftId, userId }, { wbId: id }));
 }

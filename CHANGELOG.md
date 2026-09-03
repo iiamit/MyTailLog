@@ -6,6 +6,86 @@ the git log.
 
 ## 2026.08
 
+### Added — the phone does the work now, not just the reading
+
+- The iPhone/iPad app could show you an aircraft and record a handful of things; anything
+  that needed *correcting* sent you back to a laptop. It doesn't any more. **Every screen
+  that shows you a number now lets you fix it**, offline, with the change visible before
+  anything reaches the server.
+- **Review a scanned page on the phone.** Entries appear beside the scan (in a drawer you
+  swipe up on the phone, in the pane beside it on an iPad). Fields the extractor was unsure
+  of carry a **Check this** chip; tap the **◎** beside a value and a ring lights the exact
+  ink it was read from, and stays lit while you edit. **Confirm N clean** accepts everything
+  the model was confident about in one tap, the same rule the web reviewer uses. Entries the
+  extractor missed can be keyed in, and an entry that runs onto the next page can be merged
+  into the one before it — with the equipment, AD and document links following it across.
+- **Inspections, directives and equipment are managed, not just listed.** Add an inspection
+  or edit its interval, mark any item done, or set up the standard Part 91 items on an
+  aircraft that tracks nothing. Track an AD and record compliance against it with the date,
+  hours, method and the entry that proves it. Record an installation, mark a component
+  removed on a date — and the directive that only applied because of that component turns
+  itself off, with the reason written down.
+- **A VOR check still writes a real 91.171(d) entry**, and a marked-done item's counter
+  resets before the sync, not after.
+- **Documents go in from the phone** — from Files, iCloud, the camera, or by dragging a PDF
+  out of the Files app onto an iPad. They queue on the device if there's no signal, cap at
+  25 MB each, and can be attached to the log entry they belong with.
+- **Squawks are resolved where you find them.** Swipe one right to resolve it, name the
+  entry that cleared it, reopen it, edit it, or delete it. Resolved squawks keep their own
+  openable list.
+- **Ask your logbook** works from the phone and the iPad, with the entries the answer came
+  from listed beneath it and the day's remaining answers on the composer.
+- **Add an aircraft from the phone.** A tail number brings back make, model, serial and
+  registrant from the FAA registry; a tail the registry doesn't know can still be added by
+  hand rather than dead-ending.
+
+### Added — the iPad stops pretending to be a large phone
+
+- Full screen, an iPad now shows a **200pt sidebar** — tail, type, current status, the four
+  tabs, Ask and Account — and **two panes**: the verdict beside every tracked item, a page
+  beside its entries, a squawk beside its detail. Scans splits three ways, with the page
+  rail, the scan and the entries all readable at once.
+- **A Magic Keyboard drives it**: ⌘1–4 for tabs, ⌘K for Ask, ⌘N for a new squawk, ⌘←/⌘→ to
+  turn pages, ⌘↩ to confirm. Inside a text field ⌘← still moves the caret.
+- **Split View falls back to the phone layout** below 700pt, so an iPad beside ForeFlight is
+  the app you already know rather than two slivers.
+
+### Added — light appearance, and a sign-in that survives a relaunch
+
+- The app was dark only, which is wrong on a ramp in daylight. **Appearance** in the account
+  menu offers Light, Dark, or Match my phone — and it repaints while the app is open rather
+  than waiting for a relaunch.
+- **Your session now lives in the iOS Keychain** rather than webview storage. Force-quitting,
+  installing a new TestFlight build, or opening the app in airplane mode no longer drops you
+  at a sign-in screen you can't complete without signal. Existing testers are moved across
+  once, silently.
+- **Signing out now clears the device.** The local copy of your records, the sync position
+  and anything still queued go with it, so a shared iPad doesn't open onto the previous
+  owner's fleet.
+
+### Added — due and overdue arrive as a notification
+
+- The daily check that emails you before something comes due now also sends it to the phone,
+  grouped per aircraft the same way the digest is: *"N4321J — 2 items coming due"*. It's the
+  same once-per-due-cycle rule, so running the check twice in a day sends nothing twice.
+- Turning notifications off in the app removes the device, and says so if it couldn't.
+
+### Fixed — a change made in two places no longer picks a winner quietly
+
+- The phone's writes now carry the version of the row they were made against. If someone
+  edited the same entry, reading, squawk or maintenance item on the web while your phone was
+  offline, the upload **stops and shows you both versions** — yours and theirs, with the
+  differing lines marked — instead of one silently overwriting the other. **Decide later**
+  leaves it queued rather than forcing a choice on the ramp.
+- Anything the server refused keeps its reason in **Waiting to upload** until you deal with
+  it. Documents still on the device are counted there too, so the screen can no longer claim
+  everything has reached the server while a POH sits in the queue.
+- A viewer's edit used to report itself saved and change nothing. Every write now reads its
+  own effect back and says *"You don't have edit access to this aircraft"* when it has none.
+- Correcting a reading, marking an item done, or resolving a squawk went through one code
+  path on the web and another on the phone. There is now **one** implementation per write,
+  which is why the two agree.
+
 ### Fixed — inspections due on airframe hours now count down
 
 - An item due on airframe time showed no hours countdown unless someone had written an

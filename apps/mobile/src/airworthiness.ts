@@ -1,4 +1,7 @@
-import { getByAircraft, getRows } from "./db";
+import { CapacitorHttp } from "@capacitor/core";
+import { getByAircraft, getRows, applyChanges } from "./db";
+import { API_BASE, supabase } from "./supabase";
+import type { AdCompliance, AdReference, Component, EquipmentProposal, MaintenanceItem } from "@/lib/database.types";
 import {
   toReadings,
   currentMetersFrom,
@@ -11,6 +14,9 @@ import { dueText, type Urgency } from "@/lib/compliance";
 import { projectDueDate, projectionLabel } from "@/lib/utilization";
 import type { Meter, MeterReset } from "@/lib/hobbsTach";
 import { semanticOf, type Semantic } from "./tokens";
+import { shortDate } from "./status-logic";
+
+export { shortDate };
 
 // ===========================================================================
 // "Am I legal right now?" — computed ON DEVICE, offline, from the synced mirror.
@@ -147,18 +153,6 @@ function daysUntil(iso: string | null): number | null {
   return Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) / DAY);
 }
 
-/** Short human date — "12 Sep", or "12 Sep 2027" when it isn't this year. */
-export function shortDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(`${iso}T00:00:00Z`);
-  const sameYear = d.getUTCFullYear() === new Date().getUTCFullYear();
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: sameYear ? undefined : "numeric",
-    timeZone: "UTC",
-  });
-}
 
 /**
  * How far through its interval an item is, 0–1. The ring fills as the deadline
@@ -233,4 +227,72 @@ export function buildVerdict(lines: StatusLine[]): Verdict {
       : `${item.label.replace(/\s*\(.*\)\s*/, "")}${when}.${others > 0 ? " Everything else is clear." : ""}`;
 
   return { semantic: sem, headline, detail, value, unit, progress: elapsedFraction(item), item };
+}
+
+// --- Raw rows for the management screens -------------------------------------
+
+export type AirworthinessRows = {
+  items: MaintenanceItem[];
+  ads: AdCompliance[];
+  /** Official AD text/links. Empty until ad_reference syncs (migration 0058). */
+  refs: AdReference[];
+  components: Component[];
+  /** Empty until equipment_proposal syncs (migration 0058). */
+  proposals: EquipmentProposal[];
+};
+
+export async function loadAirworthinessRows(aircraftId: string): Promise<AirworthinessRows> {
+  const [items, ads, refs, components, proposals] = await Promise.all([
+    getByAircraft<MaintenanceItem>("maintenance_item", aircraftId),
+    getByAircraft<AdCompliance>("ad_compliance", aircraftId),
+    getRows<AdReference>("ad_reference"),
+    getByAircraft<Component>("component", aircraftId),
+    getByAircraft<EquipmentProposal>("equipment_proposal", aircraftId),
+  ]);
+  return { items, ads, refs, components, proposals };
+}
+
+/**
+ * Optimistic local WHOLE-row write after enqueue(): the mirror shows the change
+ * now, and the next pull replaces the row with the server's version (same
+ * primary key). `row: null` removes it. seq 0 only affects getRows() ordering.
+ *
+ * Not `patchLocal` — review-local.ts owns that name for the merge-a-patch form,
+ * and two same-named helpers with different signatures is one import away from
+ * writing a partial row over a whole one.
+ */
+export async function replaceLocal(table: string, id: string, row: Record<string, unknown> | null): Promise<void> {
+  await applyChanges([row ? { table, op: "upsert", id, seq: 0, row } : { table, op: "delete", id, seq: 0 }]);
+}
+
+// --- AI scans (online only) ----------------------------------------------------
+
+export type ScanKind = "maintenance" | "equipment";
+
+/** POST one of the two scan routes with the session's Bearer token. */
+export async function runScan(aircraftId: string, kind: ScanKind): Promise<{ ok: true; summary: string } | { error: string }> {
+  if (!navigator.onLine) return { error: "Scanning the logs needs a connection." };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { error: "Sign in again to scan." };
+  try {
+    const res = await CapacitorHttp.post({
+      url: `${API_BASE}/api/aircraft/${aircraftId}/${kind}/scan`,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      data: {},
+    });
+    if (res.status < 200 || res.status >= 300) {
+      return { error: typeof res.data?.error === "string" ? res.data.error : `The server answered ${res.status}.` };
+    }
+    const d = (res.data ?? {}) as { updated?: number; proposed?: number; entryCount?: number };
+    const n = (kind === "maintenance" ? d.updated : d.proposed) ?? 0;
+    return {
+      ok: true,
+      summary: kind === "maintenance"
+        ? `Read ${d.entryCount ?? 0} confirmed entries · ${n} item${n === 1 ? "" : "s"} brought up to date`
+        : `${n} piece${n === 1 ? "" : "s"} of equipment proposed`,
+    };
+  } catch {
+    return { error: "Scanning the logs needs a connection." };
+  }
 }

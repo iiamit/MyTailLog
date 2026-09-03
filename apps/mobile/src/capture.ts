@@ -2,6 +2,9 @@ import { DocumentScanner, ResponseType } from "@capgo/capacitor-document-scanner
 import { CapacitorHttp } from "@capacitor/core";
 import { API_BASE, supabase } from "./supabase";
 import { listCaptures, removeCapture } from "./db";
+// One downscaler for the whole app: this file and the document queue had a
+// near-identical private copy each (lead call — capture.ts is records-UI's, §8).
+import { downscaleImage } from "./blob-upload";
 
 // Offline capture: scan logbook pages → downscale + thumbnail in the webview →
 // queue in SQLite → drain to /api/aircraft/[id]/capture (JSON base64, Bearer)
@@ -46,32 +49,11 @@ export async function scanPages(): Promise<Photo[]> {
     const base64 = raw.includes(",") ? raw.slice(raw.indexOf(",") + 1) : raw;
     if (!base64) continue;
     out.push({
-      image: await rescale(base64, 2000, 0.85),
-      thumbnail: await rescale(base64, 400, 0.7),
+      image: await downscaleImage(base64, "image/jpeg", 2000, 0.85),
+      thumbnail: await downscaleImage(base64, "image/jpeg", 400, 0.7),
     });
   }
   return out;
-}
-
-/** Draw to a canvas at a bounded long-edge and re-encode JPEG → base64 (no prefix). */
-function rescale(base64: string, maxEdge: number, quality: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
-      const w = Math.max(1, Math.round(img.width * scale));
-      const h = Math.max(1, Math.round(img.height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("no 2d context"));
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL("image/jpeg", quality).split(",")[1]);
-    };
-    img.onerror = () => reject(new Error("bad image"));
-    img.src = `data:image/jpeg;base64,${base64}`;
-  });
 }
 
 /** Upload every queued capture; each success clears its row. Returns a tally. */

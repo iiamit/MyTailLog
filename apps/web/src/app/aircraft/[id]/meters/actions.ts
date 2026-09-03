@@ -2,254 +2,122 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { METERS, type Meter } from "@/lib/hobbsTach";
-import { normalizeIcao24, resolveIcao24 } from "@/lib/adsb/icao24";
+import type { Meter } from "@/lib/hobbsTach";
+import { failMessage, type WriteCtx, type WriteResult } from "@/lib/writes/entries";
+import * as meters from "@/lib/writes/meters";
+
+// Thin wrappers over lib/writes/meters (CONTRACT §4): session, the write, then
+// revalidate. The rules and the validation live in the lib module.
 
 type Result = { ok: true } | { error: string };
-
-const path = (aircraftId: string) => `/aircraft/${aircraftId}/meters`;
 
 // Every hour countdown in the app reads these, so a change invalidates the
 // airworthiness surfaces too, not just this page.
 function revalidateHours(aircraftId: string) {
-  revalidatePath(path(aircraftId));
+  revalidatePath(`/aircraft/${aircraftId}/meters`);
   revalidatePath(`/aircraft/${aircraftId}`);
   revalidatePath(`/aircraft/${aircraftId}/status`);
   revalidatePath(`/aircraft/${aircraftId}/maintenance`);
 }
 
-/**
- * Correct the enrollment meter readings — the baseline captured when the
- * aircraft was first added.
- *
- * These were previously WRITE-ONCE: set by the enroll form, read by eight
- * surfaces, and editable nowhere. An owner who typed an airframe total into the
- * Hobbs box (easy to do — reported) had a wrong number on every hours countdown
- * with no way to reach it. Passing null CLEARS a meter, which is how an
- * owner who tracks tach only removes hobbs from the app entirely.
- *
- * Editors only — the write is RLS-scoped, and we check the row actually changed
- * rather than trusting a silent no-op.
- */
-export async function updateEnrollmentMeters(
-  aircraftId: string,
-  input: { hobbs: number | null; tach: number | null; airframe: number | null },
-): Promise<Result> {
-  const bad = (n: number | null) => n != null && (!Number.isFinite(n) || n < 0);
-  if (bad(input.hobbs) || bad(input.tach) || bad(input.airframe)) {
-    return { error: "Readings must be zero or a positive number — leave blank to clear." };
-  }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("aircraft")
-    .update({
-      enrollment_hobbs: input.hobbs,
-      enrollment_tach: input.tach,
-      enrollment_airframe: input.airframe,
-    })
-    .eq("id", aircraftId)
-    .select("id");
-  if (error) return { error: error.message };
-  // RLS makes a non-editor's UPDATE match zero rows rather than fail, so an
-  // empty result is a permission problem, not success.
-  if (!data || data.length === 0) return { error: "You don't have permission to edit this aircraft." };
-
-  revalidateHours(aircraftId);
-  return { ok: true };
-}
-
-/**
- * Record a meter replacement: the old meter's final reading and what the new one
- * started at. The app stitches history across it so hour-based items keep
- * counting instead of seeing time run backwards. Editors only (RLS).
- */
-export async function addMeterReset(
-  aircraftId: string,
-  input: { meter: Meter; reset_date: string; prior_value: number | null; new_value: number; notes: string | null },
-): Promise<Result> {
-  if (!METERS.includes(input.meter)) return { error: "Pick a meter." };
-  if (!input.reset_date) return { error: "When did the new meter go in?" };
-  const bad = (n: number | null) => n != null && (!Number.isFinite(n) || n < 0);
-  if (bad(input.prior_value) || bad(input.new_value))
-    return { error: "Readings must be zero or a positive number." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("meter_reset").insert({
-    aircraft_id: aircraftId,
-    meter: input.meter,
-    reset_date: input.reset_date,
-    prior_value: input.prior_value,
-    new_value: input.new_value ?? 0,
-    notes: input.notes?.trim() || null,
-  });
-  if (error) return { error: error.message };
-  revalidateHours(aircraftId);
-  return { ok: true };
-}
-
-export async function deleteMeterReset(aircraftId: string, id: string): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("meter_reset").delete().eq("id", id);
-  if (error) return { error: error.message };
-  revalidateHours(aircraftId);
-  return { ok: true };
-}
-
-/**
- * Record a meter reading by hand. The normal path is a scanned logbook page or a
- * MyFlightBook sync, but airframe time (a glider's only meter) comes from neither
- * — this is how it gets in. Stored as a `manual` hours_reading.
- */
-export async function addMeterReading(
-  aircraftId: string,
-  input: { reading_date: string; hobbs: number | null; tach: number | null; airframe: number | null },
-): Promise<Result> {
-  if (!input.reading_date) return { error: "Pick a date." };
-  const values = [input.hobbs, input.tach, input.airframe];
-  if (values.every((v) => v == null)) return { error: "Enter at least one reading." };
-  if (values.some((v) => v != null && (!Number.isFinite(v) || v < 0)))
-    return { error: "Readings must be zero or a positive number." };
-
+async function session(aircraftId: string) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { error } = await supabase.from("hours_reading").insert({
-    aircraft_id: aircraftId,
-    reading_date: input.reading_date,
-    hobbs: input.hobbs,
-    tach: input.tach,
-    airframe: input.airframe,
-    source: "manual",
-    synced_by: user?.id ?? null,
-  });
-  if (error) return { error: error.message };
+  return { supabase, ctx: { aircraftId, userId: user?.id ?? "" } as WriteCtx };
+}
+
+function finish(aircraftId: string, r: WriteResult): Result {
+  if (r.status !== "ok") return { error: failMessage(r) };
   revalidateHours(aircraftId);
   return { ok: true };
 }
 
+/** Correct the enrollment meter readings — the baseline captured at enrollment.
+ *  Passing null CLEARS a meter. */
+export async function updateEnrollmentMeters(
+  aircraftId: string,
+  input: { hobbs: number | null; tach: number | null; airframe: number | null },
+): Promise<Result> {
+  const { supabase, ctx } = await session(aircraftId);
+  return finish(aircraftId, await meters.updateEnrollmentMeters(supabase, ctx, input));
+}
+
+/** Record a meter replacement: the old meter's final reading and the new one's start. */
+export async function addMeterReset(
+  aircraftId: string,
+  input: { meter: Meter; reset_date: string; prior_value: number | null; new_value: number; notes: string | null },
+): Promise<Result> {
+  const { supabase, ctx } = await session(aircraftId);
+  return finish(
+    aircraftId,
+    await meters.addReset(supabase, ctx, {
+      meter: input.meter,
+      date: input.reset_date,
+      prior: input.prior_value,
+      next: input.new_value,
+      notes: input.notes,
+    }),
+  );
+}
+
+export async function deleteMeterReset(aircraftId: string, id: string): Promise<Result> {
+  const { supabase, ctx } = await session(aircraftId);
+  return finish(aircraftId, await meters.deleteReset(supabase, ctx, { resetId: id }));
+}
+
+/** Record a meter reading by hand (stored as a `manual` hours_reading). */
+export async function addMeterReading(
+  aircraftId: string,
+  input: { reading_date: string; hobbs: number | null; tach: number | null; airframe: number | null },
+): Promise<Result> {
+  const { supabase, ctx } = await session(aircraftId);
+  return finish(
+    aircraftId,
+    await meters.addReading(supabase, ctx, {
+      date: input.reading_date,
+      hobbs: input.hobbs,
+      tach: input.tach,
+      airframe: input.airframe,
+    }),
+  );
+}
+
+export async function deleteMeterReading(aircraftId: string, id: string): Promise<Result> {
+  const { supabase, ctx } = await session(aircraftId);
+  return finish(aircraftId, await meters.deleteReading(supabase, ctx, { readingId: id }));
+}
+
 // --- ADS-B (passive hours) --------------------------------------------------
 
-/**
- * Turn the ADS-B fallback observer on or off for this aircraft. Opt-in, off by
- * default: this is position data about someone's aircraft and nobody gets
- * enrolled silently.
- *
- * Turning it on resolves the Mode S hex once and caches it, so the daily sweep
- * never re-resolves. `hexInput` is the manual escape hatch for when neither the
- * FAA registry nor adsbdb knows the aircraft.
- */
+/** Turn the ADS-B fallback observer on or off; `hexInput` overrides the resolved Mode S hex. */
 export async function setAdsbEnabled(
   aircraftId: string,
   enabled: boolean,
   hexInput?: string | null,
 ): Promise<{ ok: true; icao24: string | null } | { error: string }> {
-  const supabase = await createClient();
-
-  const { data: aircraft } = await supabase
-    .from("aircraft")
-    .select("tail_number, icao24")
-    .eq("id", aircraftId)
-    .single();
-  if (!aircraft) return { error: "Aircraft not found." };
-
-  let icao24 = aircraft.icao24;
-  if (hexInput != null && hexInput.trim() !== "") {
-    icao24 = normalizeIcao24(hexInput);
-    if (!icao24) return { error: "A Mode S address is six hex characters, e.g. A12239." };
-  } else if (enabled && !icao24) {
-    icao24 = await resolveIcao24(aircraft.tail_number);
-    if (!icao24) {
-      return {
-        error:
-          "Couldn't find this aircraft's Mode S address in the FAA registry or adsbdb. Enter it by hand — it's on your registration.",
-      };
-    }
-  }
-
-  const { error } = await supabase
-    .from("aircraft")
-    .update({ adsb_enabled: enabled, icao24 })
-    .eq("id", aircraftId);
-  if (error) return { error: error.message };
+  const { supabase, ctx } = await session(aircraftId);
+  const r = await meters.setAdsbEnabled(supabase, ctx, { enabled, hexInput });
+  if (r.status !== "ok") return { error: failMessage(r) };
   revalidateHours(aircraftId);
-  return { ok: true, icao24 };
+  return { ok: true, icao24: (r.row?.icao24 as string | null) ?? null };
 }
 
-/**
- * Dismiss the current suggestion: mark every undismissed observed flight as
- * seen so it stops being counted. The rows stay — dismissing is "I know, and my
- * records are right", not "delete the observation".
- */
+/** Dismiss the current ADS-B suggestion (the observations stay). */
 export async function dismissAdsbFlights(aircraftId: string): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("adsb_flight")
-    .update({ dismissed_at: new Date().toISOString() })
-    .eq("aircraft_id", aircraftId)
-    .is("dismissed_at", null);
-  if (error) return { error: error.message };
-  revalidateHours(aircraftId);
-  return { ok: true };
+  const { supabase, ctx } = await session(aircraftId);
+  return finish(aircraftId, await meters.dismissAdsbFlights(supabase, ctx));
 }
 
-/**
- * Accept an ADS-B suggestion: write ONE hours_reading with source
- * `adsb_estimate`, at the value the USER confirmed (pre-filled, fully editable).
- * Never auto-written — this action only ever runs from an explicit click.
- *
- * The row is deliberately marked `adsb_estimate` and not `manual`: it is never
- * authoritative for compliance and must never feed a utilization-rate
- * calculation, which would be circular. `external_ref` keys it to the date so a
- * double-click can't create a second row.
- */
+/** Accept an ADS-B suggestion at the value the user confirmed. */
 export async function acceptAdsbEstimate(
   aircraftId: string,
   input: { reading_date: string; tach: number | null; hobbs: number | null },
 ): Promise<Result> {
-  if (!input.reading_date) return { error: "Pick a date." };
-  const values = [input.tach, input.hobbs];
-  if (values.every((v) => v == null)) return { error: "Enter at least one reading." };
-  if (values.some((v) => v != null && (!Number.isFinite(v) || v < 0)))
-    return { error: "Readings must be zero or a positive number." };
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { error } = await supabase.from("hours_reading").upsert(
-    {
-      aircraft_id: aircraftId,
-      reading_date: input.reading_date,
-      tach: input.tach,
-      hobbs: input.hobbs,
-      source: "adsb_estimate",
-      synced_by: user?.id ?? null,
-      external_ref: input.reading_date,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "aircraft_id,source,external_ref" },
+  const { supabase, ctx } = await session(aircraftId);
+  return finish(
+    aircraftId,
+    await meters.acceptAdsbEstimate(supabase, ctx, { date: input.reading_date, tach: input.tach, hobbs: input.hobbs }),
   );
-  if (error) return { error: error.message };
-  // The accepted reading becomes the new cutoff, so the observed flights behind
-  // it are now accounted for — clear them so the banner doesn't re-fire.
-  await dismissAdsbFlights(aircraftId);
-  revalidateHours(aircraftId);
-  return { ok: true };
-}
-
-export async function deleteMeterReading(aircraftId: string, id: string): Promise<Result> {
-  const supabase = await createClient();
-  // Scoped to manual rows: a synced MyFlightBook reading is deleted by re-syncing,
-  // and a logbook entry's hours belong to the entry, not to this page.
-  const { error } = await supabase
-    .from("hours_reading")
-    .delete()
-    .eq("id", id)
-    .eq("aircraft_id", aircraftId)
-    .eq("source", "manual");
-  if (error) return { error: error.message };
-  revalidateHours(aircraftId);
-  return { ok: true };
 }

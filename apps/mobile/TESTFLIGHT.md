@@ -141,6 +141,124 @@ reset counter **and** a log entry containing the place and bearing error. Tap
 Finally, while already online, record another meter change and scan another page.
 Each should sync without entering the pending list or requiring the Sync button.
 
+**The platform pass.** Four more, all of which fail silently if they're wrong:
+
+- **Session in the Keychain.** Sign in, force-quit the app (swipe up), turn on
+  Airplane Mode, relaunch. It should open straight into the hangar — not the
+  sign-in screen. Upgrading over an older build must not sign you out either.
+- **Light appearance.** Account menu → *Appearance* → **Light**, then take the
+  phone outside. Nothing should be grey-on-grey, the status-bar clock must stay
+  readable, and *GROUNDED* / *DUE SOON* / *AIRWORTHY* must still be three
+  obviously different colours. Switch to **Match my phone** and flip iOS
+  Settings → Display & Brightness; the app follows without a relaunch.
+- **A push arrives.** Accept the prompt after signing in, then trigger the daily
+  cron with something due (section 7e). If the token registers but nothing
+  arrives, it is nearly always `APNS_ENV`.
+- **Add my aircraft.** On a fresh account, first run → *Add my aircraft* → type
+  a real tail → the FAA's make/model/serial come back → confirm → the aircraft
+  appears in the hangar.
+
+## 7. Push notifications — the APNs key (one time)
+
+The app registers its device token after sign-in; the daily cron sends the same
+"coming due" reminder the email carries. Nothing arrives until this is done, and
+nothing breaks either — an unconfigured sender logs one line and skips.
+
+**a. Turn the capability on.** Xcode → the `App` target → *Signing &
+Capabilities* → **+ Capability** → **Push Notifications**. That writes
+`aps-environment` into the entitlements. Xcode sets it to `development` for a
+run from Xcode and `production` for an archive — which is why the same phone
+needs a different `APNS_ENV` depending on how the build got there.
+
+**b. Register the App ID for push.** developer.apple.com → *Certificates, IDs &
+Profiles → Identifiers → com.mytaillog.app* → tick **Push Notifications** →
+Save. (Automatic signing regenerates the profile on the next build.)
+
+**c. Create the APNs key.** *Keys → +* → name it `MyTailLog APNs` → tick **Apple
+Push Notifications service (APNs)** → Continue → Register → **Download** the
+`AuthKey_XXXXXXXXXX.p8`. **It can only be downloaded once.** Note the 10-character
+**Key ID** on that page and your **Team ID** (top right of the developer portal).
+
+**d. Put it in Secret Manager.** One key serves every app on the team, and it
+never expires.
+
+```bash
+firebase apphosting:secrets:set APNS_KEY_ID      # the 10-character key id
+firebase apphosting:secrets:set APNS_TEAM_ID     # the 10-character team id
+firebase apphosting:secrets:set APNS_BUNDLE_ID   # com.mytaillog.app
+firebase apphosting:secrets:set APNS_ENV         # production  (see below)
+firebase apphosting:secrets:set APNS_KEY < ~/private_keys/AuthKey_XXXXXXXXXX.p8
+```
+
+The secret **ID must match `apps/web/apphosting.yaml` character for character** —
+PR #131 was a deploy that failed for exactly that reason.
+
+`APNS_ENV` is `production` for anything installed through TestFlight or the App
+Store, and `sandbox` **only** for a build run onto a cable-attached device from
+Xcode. A sandbox token on the production host answers `400 BadDeviceToken`, the
+cron treats that as a dead device and deletes the row — so if you are testing
+from Xcode, set it to `sandbox` and set it back before shipping.
+
+**e. Check it.** Sign in on the device, accept the prompt, then in Supabase:
+`select platform, created_at from device_token;` should show a row. Trigger the
+cron (`POST /api/cron/daily` with the `CRON_SECRET` bearer) with something
+genuinely due and the alert should arrive within seconds.
+
+## 8. App Store submission — the answers
+
+### Privacy labels ("App Privacy" in App Store Connect)
+
+Answer **Yes** to "Does this app collect data?" and declare exactly these. All of
+them are **linked to the user's identity** and **none** are used for tracking, so
+answer **No** to the tracking question and leave the *Third-Party Advertising* /
+*Analytics* sections empty.
+
+| Data type | Purpose | Linked | Tracking |
+| --- | --- | --- | --- |
+| **Contact Info → Email Address** | App Functionality (the account, and the reminder emails) | Yes | No |
+| **User Content → Photos or Videos** | App Functionality (scanned logbook pages) | Yes | No |
+| **User Content → Other User Content** | App Functionality (log entries, maintenance records, squawks) | Yes | No |
+| **Identifiers → User ID** | App Functionality (the account id the records hang off) | Yes | No |
+| **Diagnostics → Crash Data** | *only if* a crash reporter is ever added — today: **do not declare** | — | — |
+
+Not collected, and worth being able to say so: no location (the aircraft's home
+base is typed, not sensed), no contacts, no health, no purchases, no advertising
+data, no identifiers beyond the account. The APNs device token is not a declared
+data type — it is a delivery address, not collected data — but the notifications
+it carries are why *Email Address* is declared under App Functionality.
+
+### Account deletion (Guideline 5.1.1(v)) — REQUIRED, and not finished
+
+Any app with account creation must offer account **deletion** initiated from
+inside the app. The account menu has **Delete my account**, which opens
+`mytaillog.com/profile#delete-account` in Safari.
+
+> **That page does not exist yet.** A link to a page without a working deletion
+> flow is a rejection, not a compliance answer. The web flow — confirm, then
+> delete the auth user and every record it cascades to — must ship before the
+> first App Store submission. It is not needed for TestFlight.
+
+Apple accepts a web link only where it leads *directly* to the deletion, so the
+anchor must land on the control itself, not on the top of a settings page.
+
+### Other answers Apple asks for
+
+- **Export compliance**: `ITSAppUsesNonExemptEncryption = NO` in Info.plist
+  (see `ios-config.md`) answers this automatically on every upload.
+- **Sign in with Apple**: not required — the app has no third-party social login,
+  only email/password. Adding Google sign-in later would make it mandatory.
+- **Content rights**: the app displays the owner's own documents; nothing
+  licensed. FAA registry and AD data are US government works.
+- **Demo account for review**: give the reviewer a real signed-in account with a
+  populated aircraft. "Look around with a demo aircraft" on first run is not
+  enough — a reviewer will test sync and capture.
+- **Age rating**: 4+.
+
+### Widget and Siri Shortcut
+
+Both need native Swift targets and are deliberately **not** in this build. What
+each would take is written down in `ios-config.md`.
+
 ## Updating an existing build
 
 If the command-line upload is unavailable, the manual fallback is:

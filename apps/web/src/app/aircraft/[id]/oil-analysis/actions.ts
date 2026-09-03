@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { failMessage, type WriteResult } from "@/lib/writes/entries";
+import * as oil from "@/lib/writes/oil";
+
+// Thin wrappers over lib/writes/oil (CONTRACT §4).
 
 export type OilTopOffInput = {
   added_date: string;
@@ -13,31 +17,27 @@ export type OilTopOffInput = {
 
 type Result = { ok: true } | { error: string };
 
-export async function addOilTopOff(aircraftId: string, input: OilTopOffInput): Promise<Result> {
-  if (!(input.quarts > 0)) return { error: "Enter how many quarts were added." };
-  if (!input.added_date) return { error: "Pick a date." };
+async function run(
+  aircraftId: string,
+  fn: (supabase: Awaited<ReturnType<typeof createClient>>, userId: string) => Promise<WriteResult>,
+): Promise<Result> {
   const supabase = await createClient();
-  // RLS (can_edit_aircraft) also enforces this; the check gives a clean message.
-  const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: aircraftId });
-  if (!canEdit) return { error: "You don't have edit access to this aircraft." };
-
-  const { error } = await supabase.from("oil_addition").insert({
-    aircraft_id: aircraftId,
-    added_date: input.added_date,
-    quarts: input.quarts,
-    hobbs: input.hobbs,
-    tach: input.tach,
-    notes: input.notes,
-  });
-  if (error) return { error: error.message };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+  const r = await fn(supabase, user.id);
+  if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(`/aircraft/${aircraftId}/oil-analysis`);
   return { ok: true };
 }
 
+export async function addOilTopOff(aircraftId: string, input: OilTopOffInput): Promise<Result> {
+  return run(aircraftId, (supabase, userId) =>
+    oil.addTopOff(supabase, { aircraftId, userId }, { ...input, date: input.added_date }),
+  );
+}
+
 export async function deleteOilTopOff(aircraftId: string, id: string): Promise<Result> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("oil_addition").delete().eq("id", id);
-  if (error) return { error: error.message };
-  revalidatePath(`/aircraft/${aircraftId}/oil-analysis`);
-  return { ok: true };
+  return run(aircraftId, (supabase, userId) => oil.deleteTopOff(supabase, { aircraftId, userId }, { additionId: id }));
 }

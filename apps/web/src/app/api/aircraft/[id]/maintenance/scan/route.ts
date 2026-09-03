@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import type { MaintenanceEntryInput } from "@/lib/extraction/maintenance";
 import { applyMaintenanceFromEntries } from "@/lib/extraction/maintenanceUpdates";
 import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
@@ -14,12 +14,13 @@ export const maxDuration = 300;
 // Full-history pass: scan all entries and advance the maintenance forecast's
 // last-done data from the logs. RLS scopes everything to the owner.
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  // Bearer (native app) or cookie (browser) — createSyncClient does both.
+  const supabase = await createSyncClient(req);
   const {
     data: { user },
   } = await supabase.auth.getUser();

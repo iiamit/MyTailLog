@@ -4,19 +4,20 @@
 // the redesign's palette, so the whole app moves together rather than living in
 // two colour systems while screens are migrated one at a time.
 
-import { color, tint, text, display, body, tabular, radius, accentGradient } from "./tokens";
+import { color, tint, text, display, body, tabular, radius, accentGradient, alpha } from "./tokens";
 
 export { color, tint, text, display, body, tabular, radius, accentGradient };
 
 // --- Palette (redesign values) ---------------------------------------------
-export const bg = color.bg;
+// Every name here is a `var(--c-*)` string, so it follows the theme by itself.
+// bg, accent and surfaceRaised are deliberately not re-exported — read them as
+// `color.bg` / `color.accent` / `color.surfaceRaised`, and put them through
+// `alpha()` when an alpha suffix is wanted (tokens.ts).
 export const panel = color.surface;
-export const panel2 = color.surfaceRaised;
 export const line = color.hairline;
 export const ink = color.ink;
 export const dim = color.dim;
 export const faint = color.faint;
-export const accent = color.accent;
 export const amber = color.warning;
 export const red = color.danger;
 export const green = color.success;
@@ -135,8 +136,8 @@ export function Pill({ tone, children }: { tone: string; children: React.ReactNo
       style={{
         ...text.chip,
         color: c,
-        border: `1px solid ${c}4D`,
-        background: `${c}1F`,
+        border: `1px solid ${alpha(c, "4D")}`,
+        background: `${alpha(c, "1F")}`,
         borderRadius: 6,
         padding: "4px 8px",
         whiteSpace: "nowrap",

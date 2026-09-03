@@ -1,31 +1,39 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
 import { deliveryDecision } from "./sync-policy";
-import { initDb, applyChanges, resetLocal, healMirrorIfStale, getCursor, setCursor, actionCount, captureCount, getRows } from "./db";
+import { initDb, applyChanges, resetLocal, wipeForSignOut, healMirrorIfStale, getCursor, setCursor, actionCount, captureCount, getRows } from "./db";
 import { computeAirworthiness, buildVerdict } from "./airworthiness";
 import type { Urgency } from "@/lib/compliance";
 import { drainActions, refreshEditable } from "./actions";
 import { drainCaptures } from "./capture";
-import { prefetchAll } from "./blobs";
+import { drainDocumentUploads, documentUploadCount, clearDocumentUploads } from "./blob-upload";
+import { prefetchAll, clearCache } from "./blobs";
 import { Hangar, EntryDetail, PageViewer } from "./screens";
 import { Records } from "./records-screen";
-import { TabBar, type Tab } from "./tabbar";
+import { TabBar, TABS, type Tab } from "./tabbar";
 import { AircraftSwitcher } from "./switcher";
-import { Status } from "./status-screen";
+import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useShortcuts } from "./layout";
+import { useTheme } from "./theme";
+import { PageReview } from "./review-pane";
+import type { FieldBox } from "@/lib/extraction/schema";
+import type { ShortcutMap } from "./shortcuts";
+import { Status, AllItems } from "./status-screen";
 import { Documents } from "./documents-screen";
 import { PdfViewer } from "./pdf-screen";
-import { Record } from "./record-screen";
+import { Record, RecentReadingsPane } from "./record-screen";
 import { Squawks } from "./squawks-screen";
+import { AskPane } from "./ask-pane";
 import { CompleteItem } from "./complete-screen";
 import { CaptureScreen } from "./capture-screen";
 import { Pending, PendingBanner } from "./pending";
 import { Lightbox } from "./lightbox";
 import type { StatusItem } from "@/lib/status";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Screen, Brand, input, primary, dim, amber, faint, line, panel2, text, display } from "./ui";
+import { Screen, Brand, input, primary, dim, amber, faint, line, text, display } from "./ui";
+import { color } from "./tokens";
 import { AccountMenu } from "./account-menu";
 import { FirstRun } from "./first-run";
 
@@ -86,7 +94,13 @@ type Sub =
   | { kind: "entry"; entry: LogEntry }
   | { kind: "page"; pages: Page[]; index: number }
   | { kind: "complete"; item: StatusItem }
-  | { kind: "pdf"; doc: { id: string; title: string } };
+  | { kind: "pdf"; doc: { id: string; title: string } }
+  // Named by records-ui (CONTRACT §11). Squawks and Documents still hold their
+  // own selection today; these let it survive a tab switch when they lift it.
+  | { kind: "squawk"; id: string }
+  | { kind: "document"; id: string }
+  // Ask is a pane over whatever tab is open, not a tab of its own.
+  | { kind: "ask" };
 
 // The Back-stack is gone: instead of a screen per node, there is a fleet list,
 // and an aircraft context that holds a tab, a Records segment, and whatever is
@@ -117,6 +131,26 @@ function Shell({ session }: { session: Session }) {
   const syncTask = useRef<Promise<void> | null>(null);
   const syncLatest = useRef<(() => Promise<void>) | null>(null);
   zoomRef.current = zoom;
+  // Follows the phone flipping to dark (or light) while the app is open.
+  useTheme();
+  const regular = useSizeClass() === "regular";
+
+  // ⌘1–4 switch tabs from anywhere in an aircraft. Screens claim the other
+  // chords (⌘↩ ⌘→ ⌘← ⌘N ⌘F) themselves and win over these when mounted; until
+  // they do, ⌘N and ⌘F at least land on the tab where the squawk composer and
+  // the document search live.
+  const tabChords: ShortcutMap = {};
+  if (nav.screen === "aircraft") {
+    const a = nav;
+    TABS.forEach(({ id }, i) => {
+      tabChords[`cmd+${i + 1}` as keyof ShortcutMap] = () => setNav({ ...a, tab: id, sub: null });
+    });
+    // Ask is a pane, so it only exists where there is a second pane.
+    if (regular) tabChords["cmd+k"] = () => setNav({ ...a, sub: { kind: "ask" } });
+    tabChords["cmd+n"] = () => setNav({ ...a, tab: "squawks", sub: null });
+    tabChords["cmd+f"] = () => setNav({ ...a, tab: "records", segment: "documents", sub: null });
+  }
+  useShortcuts(tabChords);
 
   useEffect(() => {
     if (!NATIVE) return;
@@ -197,8 +231,8 @@ function Shell({ session }: { session: Session }) {
   }
 
   async function updatePending(): Promise<number> {
-    const [actions, captures] = await Promise.all([actionCount(), captureCount()]);
-    const total = actions + captures;
+    const [actions, captures, docs] = await Promise.all([actionCount(), captureCount(), documentUploadCount()]);
+    const total = actions + captures + docs;
     setPending(total);
     return total;
   }
@@ -241,6 +275,22 @@ function Shell({ session }: { session: Session }) {
     await sync();
   }
 
+  // Signing out has to take the on-device copy with it. The Keychain session
+  // goes, but records/, the cursor and both queues persist across a sign-in by
+  // a DIFFERENT account on the same phone — Shell just remounts on the same
+  // SQLite file — so the next owner would open the app onto the last owner's
+  // fleet, and the forward-only feed (`seq > cursor`) would never retract it.
+  // The two file stores go with it: cached scans and PDFs under blobs/, and
+  // documents queued offline under uploads/.
+  async function signOut() {
+    try {
+      await Promise.all([wipeForSignOut(), clearCache(), clearDocumentUploads()]);
+      setCur(0);
+    } finally {
+      await supabase.auth.signOut();
+    }
+  }
+
   async function performSync() {
     setSyncing("Syncing…");
     setError(null);
@@ -253,12 +303,17 @@ function Shell({ session }: { session: Session }) {
       setSyncing("Uploading…");
       const drained = await drainActions();
       const captures = await drainCaptures((done, total) => setSyncing(`Uploading pages… ${done} of ${total}`));
+      // Documents added offline ride the same drain, or they would wait until
+      // someone opened Records › Documents and tapped "Upload now".
+      const uploaded = await drainDocumentUploads();
       await updatePending();
       await loadFleet();
       if (drained.failed > 0) {
         setError(`${drained.failed} queued change${drained.failed === 1 ? "" : "s"} was refused — see the pending list.`);
       } else if (captures.failed > 0 && !drained.offline) {
         setError(`${captures.failed} scanned page${captures.failed === 1 ? "" : "s"} is still waiting to upload.`);
+      } else if (uploaded.failed > 0 && !drained.offline) {
+        setError(`${uploaded.failed} document${uploaded.failed === 1 ? "" : "s"} is still waiting to upload.`);
       }
 
       const from = await getCursor();
@@ -313,16 +368,89 @@ function Shell({ session }: { session: Session }) {
   }
 
   // The bar is part of the aircraft context, and only shows with nothing pushed
-  // on top — a pushed viewer owns the whole screen.
+  // on top — a pushed viewer owns the whole screen. At regular width the
+  // sidebar takes its place and nothing is ever pushed: what the phone pushes,
+  // the iPad shows in the second pane.
   const tabBar =
-    nav.screen === "aircraft" && !nav.sub ? (
+    !regular && nav.screen === "aircraft" && !nav.sub ? (
       <TabBar active={nav.tab} onChange={(tab) => setNav({ ...nav, tab, sub: null })} />
     ) : null;
+
+  const accountMenu = menu && (
+    <AccountMenu
+      email={session.user.email ?? ""}
+      aircraftId={nav.screen === "aircraft" ? nav.aircraft.id : undefined}
+      onClose={() => setMenu(false)}
+      onSync={() => { setMenu(false); sync(); }}
+      onDownloadAll={() => { setMenu(false); downloadAll(); }}
+      dl={dl}
+      onRebuild={() => { setMenu(false); rebuild(); }}
+      onSignOut={signOut}
+    />
+  );
+
+  const overlays = (
+    <>
+      {capture !== undefined && (
+        <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onChanged={writeFinished} />
+      )}
+      {nav.screen === "pending" && (
+        <div style={regular ? { maxWidth: 640, margin: "0 auto" } : undefined}>
+          <Pending onBack={back} onChanged={updatePending} />
+        </div>
+      )}
+      {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      {accountMenu}
+    </>
+  );
+
+  if (regular && nav.screen === "aircraft") {
+    const a = nav;
+    const panes = aircraftPanes(a, {
+      setNav,
+      back,
+      onZoom: setZoom,
+      onQueued: writeFinished,
+      onCapture: () => setCapture(a.aircraft),
+    });
+    return (
+      <RegularFrame
+        sidebar={
+          <Sidebar
+            aircraft={a.aircraft}
+            fleet={fleet}
+            worst={worst}
+            active={a.tab}
+            onTab={(tab) => setNav({ ...a, tab, sub: null })}
+            onSwitch={(x) => setNav({ ...a, aircraft: x, sub: null })}
+            onSeeAll={() => setNav({ screen: "hangar" })}
+            onAccount={() => setMenu(true)}
+            onAsk={() => setNav({ ...a, sub: { kind: "ask" } })}
+            askOn={a.sub?.kind === "ask"}
+          />
+        }
+      >
+        <div style={{ marginBottom: pending > 0 ? 18 : 0 }}>
+          <PendingBanner count={pending} onOpen={() => setNav({ screen: "pending" })} />
+        </div>
+        {/* A tab that draws its own split (Squawks) asks for no second pane and
+            gets the whole width, rather than a nested one a sliver wide. */}
+        {panes.secondary === null ? (
+          panes.primary
+        ) : (
+          <TwoPane primary={panes.primary} secondary={panes.secondary} ratio={panes.ratio} />
+        )}
+        {overlays}
+      </RegularFrame>
+    );
+  }
 
   return (
     <Screen tabBar={tabBar}>
       {nav.screen === "hangar" && (
-        <>
+        // On an iPad the fleet list is read at a phone's width, centred, rather
+        // than stretched across the whole screen.
+        <div style={regular ? { maxWidth: 640, margin: "0 auto" } : undefined}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
             <Brand small />
             {/* Sign out lives in here — it must not be a top-level button. */}
@@ -331,7 +459,7 @@ function Shell({ session }: { session: Session }) {
               aria-label="Account"
               style={{
                 marginLeft: "auto", width: 34, height: 34, borderRadius: "50%",
-                background: panel2, border: `1px solid ${line}`, color: dim,
+                background: color.surfaceRaised, border: `1px solid ${line}`, color: dim,
                 fontFamily: display, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
               }}
             >
@@ -343,7 +471,13 @@ function Shell({ session }: { session: Session }) {
 
           {fleet.length === 0 && cursor > 0 ? (
             <FirstRun
-              onAddAircraft={() => setCapture(null)}
+              onAddAircraft={(id) => {
+                void sync().then(() => {
+                  const a = id ? fleet.find((f) => f.id === id) : undefined;
+                  if (a) setNav({ screen: "aircraft", aircraft: a, tab: "status", segment: "documents", sub: null });
+                  else setCapture(null);
+                });
+              }}
               onDemo={sync}
               onSignIn={() => setMenu(true)}
             />
@@ -369,19 +503,7 @@ function Shell({ session }: { session: Session }) {
           >
             + Add pages to an aircraft
           </button>
-
-          {menu && (
-            <AccountMenu
-              email={session.user.email ?? ""}
-              onClose={() => setMenu(false)}
-              onSync={() => { setMenu(false); sync(); }}
-              onDownloadAll={() => { setMenu(false); downloadAll(); }}
-              dl={dl}
-              onRebuild={() => { setMenu(false); rebuild(); }}
-              onSignOut={() => supabase.auth.signOut()}
-            />
-          )}
-        </>
+        </div>
       )}
 
       {nav.screen === "aircraft" && (
@@ -400,7 +522,7 @@ function Shell({ session }: { session: Session }) {
             {nav.sub?.kind === "entry" ? (
               <EntryDetail entry={nav.sub.entry} tail={nav.aircraft.tail_number} onBack={back} onZoom={setZoom} />
             ) : nav.sub?.kind === "page" ? (
-              <PageViewer pages={nav.sub.pages} index={nav.sub.index} onBack={back} onZoom={setZoom} />
+              <PageViewer pages={nav.sub.pages} index={nav.sub.index} onBack={back} onZoom={setZoom} onQueued={writeFinished} />
             ) : nav.sub?.kind === "complete" ? (
               <CompleteItem aircraft={nav.aircraft} item={nav.sub.item} onBack={back} onQueued={writeFinished} />
             ) : nav.sub?.kind === "pdf" ? (
@@ -409,6 +531,7 @@ function Shell({ session }: { session: Session }) {
               <Status
                 aircraft={nav.aircraft}
                 onComplete={(item) => setNav({ ...nav, sub: { kind: "complete", item } })}
+                onQueued={writeFinished}
               />
             ) : nav.tab === "log" ? (
               <Record aircraft={nav.aircraft} onQueued={writeFinished} />
@@ -430,13 +553,182 @@ function Shell({ session }: { session: Session }) {
         </>
       )}
 
-      {capture !== undefined && (
-        <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onChanged={writeFinished} />
-      )}
-
-      {nav.screen === "pending" && <Pending onBack={back} onChanged={updatePending} />}
-
-      {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      {overlays}
     </Screen>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Regular width: what each tab becomes. The primary pane is the phone's tab
+// root, unchanged; the secondary pane is what the phone would have pushed.
+// ---------------------------------------------------------------------------
+
+type AircraftNav = Extract<Nav, { screen: "aircraft" }>;
+
+function aircraftPanes(
+  nav: AircraftNav,
+  h: {
+    setNav: (n: Nav) => void;
+    back: () => void;
+    onZoom: (src: string) => void;
+    onQueued: () => Promise<"synced" | "pending">;
+    onCapture: () => void;
+  },
+): { primary: ReactNode; secondary: ReactNode; ratio: "50/50" | "55/45" | "40/60" } {
+  const { aircraft, sub } = nav;
+
+  // Ask is a pane over any tab (records-ui request 5), reached with ⌘K.
+  if (sub?.kind === "ask") {
+    return {
+      ratio: "55/45",
+      primary: aircraftPanes({ ...nav, sub: null }, h).primary,
+      secondary: <AskPane aircraft={aircraft} />,
+    };
+  }
+
+  if (nav.tab === "status") {
+    return {
+      ratio: "55/45",
+      primary: (
+        <Status
+          aircraft={aircraft}
+          onComplete={(item) => h.setNav({ ...nav, sub: { kind: "complete", item } })}
+          onQueued={h.onQueued}
+          onShowAll={() => h.setNav({ ...nav, sub: null })}
+        />
+      ),
+      secondary:
+        sub?.kind === "complete" ? (
+          <CompleteItem aircraft={aircraft} item={sub.item} onBack={h.back} onQueued={h.onQueued} />
+        ) : (
+          <AllItems aircraft={aircraft} onQueued={h.onQueued} />
+        ),
+    };
+  }
+
+  if (nav.tab === "log") {
+    return {
+      ratio: "55/45",
+      primary: <Record aircraft={aircraft} onQueued={h.onQueued} />,
+      secondary: <RecentReadingsPane aircraft={aircraft} onQueued={h.onQueued} />,
+    };
+  }
+
+  if (nav.tab === "squawks") {
+    // Squawks holds its own selection and draws its own 55/45 split, so the
+    // shell hands it the whole width rather than nesting a second TwoPane.
+    return { ratio: "50/50", primary: <Squawks aircraft={aircraft} onQueued={h.onQueued} />, secondary: null };
+  }
+
+  // Records: the segmented control stays in the primary pane; the secondary
+  // follows the segment. Changing segment drops whatever the old one had open.
+  const primary = (
+    <Records
+      aircraft={aircraft}
+      segment={nav.segment}
+      onSegment={(segment) => h.setNav({ ...nav, segment, sub: null })}
+      onOpenEntry={(entry) => h.setNav({ ...nav, sub: { kind: "entry", entry } })}
+      onOpenPage={(pages, index) => h.setNav({ ...nav, sub: { kind: "page", pages, index } })}
+      onOpenPdf={(doc) => h.setNav({ ...nav, sub: { kind: "pdf", doc } })}
+      onCapture={h.onCapture}
+      onZoom={h.onZoom}
+      onChanged={() => { void h.onQueued(); }}
+    />
+  );
+
+  if (nav.segment === "scans") {
+    return {
+      ratio: "40/60",
+      primary,
+      secondary:
+        sub?.kind === "page" ? (
+          <ScansPane pages={sub.pages} index={sub.index} onBack={h.back} onZoom={h.onZoom} onQueued={h.onQueued} />
+        ) : (
+          <PanePlaceholder>Pick a page to read it here.</PanePlaceholder>
+        ),
+    };
+  }
+
+  if (nav.segment === "documents") {
+    return {
+      ratio: "40/60",
+      primary,
+      secondary:
+        sub?.kind === "pdf" ? (
+          <PdfViewer documentId={sub.doc.id} title={sub.doc.title} onBack={h.back} onZoom={h.onZoom} />
+        ) : (
+          <DocumentViewerSlot aircraft={aircraft} />
+        ),
+    };
+  }
+
+  return {
+    ratio: "40/60",
+    primary,
+    secondary:
+      sub?.kind === "entry" ? (
+        <EntryDetail entry={sub.entry} tail={aircraft.tail_number} onBack={h.back} onZoom={h.onZoom} />
+      ) : (
+        <PanePlaceholder>Pick an entry to read it here.</PanePlaceholder>
+      ),
+  };
+}
+
+// ---- Slots ------------------------------------------------------------------
+// Secondary panes other streams are building in parallel. Each slot names its
+// owner and the exact props the shell passes; the owner replaces the body (or
+// the shell swaps in their export at integration) and keeps the signature.
+
+/** records-ui — an image or PDF document viewer. */
+function DocumentViewerSlot(_p: { aircraft: Aircraft }) {
+  return <PanePlaceholder>Pick a document to read it here.</PanePlaceholder>;
+}
+
+/**
+ * Scans at regular width: the page rail is the 40% primary, and this is the
+ * 60% secondary — itself split 55/45 into the scan and the review beside it
+ * (the three-way layout of design spec §15, which one TwoPane cannot express).
+ *
+ * The spotlight lives here because it spans both halves: the review pane says
+ * which field to light, the scan draws the ring. Turning the page clears it.
+ */
+function ScansPane({
+  pages, index, onBack, onZoom, onQueued,
+}: {
+  pages: Page[];
+  index: number;
+  onBack: () => void;
+  onZoom: (src: string) => void;
+  onQueued: () => Promise<"synced" | "pending">;
+}) {
+  const [spot, setSpot] = useState<{ box: FieldBox | null; key: string | null }>({ box: null, key: null });
+  const [shown, setShown] = useState<Page>(pages[index]);
+  return (
+    <TwoPane
+      ratio="55/45"
+      primary={
+        <PageViewer
+          pages={pages}
+          index={index}
+          onBack={onBack}
+          onZoom={onZoom}
+          onQueued={onQueued}
+          review="external"
+          spot={spot.box}
+          onPage={(p) => {
+            setShown(p);
+            setSpot({ box: null, key: null });
+          }}
+        />
+      }
+      secondary={
+        <PageReview
+          page={shown}
+          onLocate={(box, key) => setSpot({ box, key })}
+          activeKey={spot.key}
+          onQueued={onQueued}
+        />
+      }
+    />
   );
 }

@@ -15,7 +15,10 @@ const svg = (size: number, color: string) => ({
   height: size,
   viewBox: "0 0 24 24",
   fill: "none",
-  stroke: color,
+  // A var() is not substituted in an SVG presentation attribute, and every
+  // token is one. Paint the CSS `color` property and stroke with currentColor.
+  stroke: "currentColor",
+  style: { color },
   strokeWidth: 1.6,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
@@ -26,7 +29,7 @@ export function GaugeIcon({ size = 21, color = "currentColor" }: IconProps) {
     <svg {...svg(size, color)} aria-hidden="true">
       <path d="M3.5 15a8.5 8.5 0 1 1 17 0" />
       <path d="M12 15l4-4.5" />
-      <circle cx="12" cy="15" r="1.4" fill={color} stroke="none" />
+      <circle cx="12" cy="15" r="1.4" fill="currentColor" stroke="none" />
     </svg>
   );
 }

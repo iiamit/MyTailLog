@@ -1,4 +1,4 @@
-import { color, text } from "./tokens";
+import { color, text, alpha } from "./tokens";
 import { GaugeIcon, PlusCircleIcon, FolderIcon, FlagIcon } from "./icons";
 
 // The persistent tab bar that replaces the Back-stack.
@@ -10,7 +10,8 @@ import { GaugeIcon, PlusCircleIcon, FolderIcon, FlagIcon } from "./icons";
 
 export type Tab = "status" | "log" | "records" | "squawks";
 
-const TABS: { id: Tab; label: string; Icon: typeof GaugeIcon }[] = [
+/** Shared with the iPad sidebar so both list the same four, in the same order. */
+export const TABS: { id: Tab; label: string; Icon: typeof GaugeIcon }[] = [
   { id: "status", label: "Status", Icon: GaugeIcon },
   { id: "log", label: "Log", Icon: PlusCircleIcon },
   { id: "records", label: "Records", Icon: FolderIcon },
@@ -27,7 +28,7 @@ export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) =
         bottom: 0,
         display: "flex",
         // Labels are always visible — an icon-only bar makes people guess.
-        background: `${color.bg}EB`, // 92%
+        background: `${alpha(color.bg, "EB")}`, // 92%
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: `1px solid ${color.hairline}`,

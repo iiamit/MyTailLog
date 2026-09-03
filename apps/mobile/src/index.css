@@ -1,14 +1,25 @@
-/* Global reset — the app is edge-to-edge dark; without this the default white
-   body shows as a frame around the content and behind the safe areas / overscroll. */
+/* Global reset — the app is edge-to-edge; without this the default white body
+   shows as a frame around the content and behind the safe areas / overscroll.
+
+   The ground below is the only colour written in CSS. Everything else comes from
+   the --c-* / --t-* custom properties that tokens.ts paint()s onto <html> before
+   the first render; this file only has to cover the instant between the document
+   painting and the module running, which is the empty ground and nothing else.
+   Dark is the default because the design is authored dark and the app shipped
+   dark — an unset data-theme must look like the build people already have. */
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
+  --ground: #090c12;
+}
+:root[data-theme="light"] {
+  --ground: #e7ecf3;
 }
 html,
 body,
 #root {
   margin: 0;
   padding: 0;
-  background: #090c12;
+  background: var(--ground);
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -35,4 +46,21 @@ input,
 textarea {
   -webkit-user-select: text;
   user-select: text;
+}
+
+/* Pointer affordance for the iPad shell. On a touch-only iPhone this does
+   nothing at all — a :hover rule there sticks after a tap and leaves a row
+   looking selected. The tint is drawn as a huge inset shadow rather than a
+   background so it sits ON TOP of whatever inline background the row already
+   has (every row here styles itself inline) and still follows the radius. */
+.hoverable {
+  transition: box-shadow 0.12s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hoverable:hover {
+    box-shadow: inset 0 0 0 999px var(--t-accent);
+  }
+  .hoverable:active {
+    box-shadow: inset 0 0 0 999px var(--t-accentBorder);
+  }
 }
