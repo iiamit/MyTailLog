@@ -12,6 +12,7 @@ import {
   itemKey,
 } from "@/lib/reminders";
 import { json, cronDenied } from "@/lib/cronAuth";
+import { pushAlert, sendPush } from "../../push/apns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Preferences } from "@/lib/database.types";
 
@@ -37,7 +38,8 @@ const SITE = "https://mytaillog.com";
  * Daily scheduled job (Cloud Scheduler → Bearer CRON_SECRET). Two best-effort
  * passes over all users via the service-role client:
  *   1. Sync MyFlightBook hours for each connected user, at most once/day.
- *   2. Email due-maintenance/AD reminders, deduped per due-cycle via reminder_log.
+ *   2. Email due-maintenance/AD reminders, deduped per due-cycle via reminder_log,
+ *      and send the same reminder to any registered device (see pushReminder).
  * One user's failure never aborts the run.
  *
  * The ADS-B sweep used to be a third pass here. It moved to GitHub Actions
@@ -194,7 +196,53 @@ async function remindUser(
       due_signature: t.due_signature,
     })),
   );
+
+  await pushReminder(supabase, userId, groups);
   return true;
+}
+
+// --- Push pass -------------------------------------------------------------
+//
+// The same reminder, on the lock screen. It rides on the email deliberately:
+// one due-cycle computation, one reminder_log, one decision about what counts as
+// due — a second schedule would eventually disagree with the email and nobody
+// would know which one to trust. So a user gets at most one push per item per
+// due cycle, and only when the email for it actually went out.
+//
+// The master switch is the same profile.preferences.notify_due the email obeys;
+// beyond that, turning notifications off for the app in iOS Settings is the
+// per-channel control, and it is the one people already know how to use.
+
+// device_token (0059) is not in the generated Database types yet — see the PR's
+// "Requests for lead". Narrowed by hand rather than widening the client.
+type DeviceTokenClient = {
+  from(table: "device_token"): {
+    select(columns: "token"): {
+      eq(column: "user_id", value: string): PromiseLike<{ data: { token: string }[] | null }>;
+    };
+    delete(): { in(column: "token", values: string[]): PromiseLike<{ error: unknown }> };
+  };
+};
+
+/** Best-effort: a failed push never fails the reminder that already went out. */
+async function pushReminder(supabase: Service, userId: string, groups: AircraftGroup[]): Promise<void> {
+  const alert = pushAlert(groups.map((g) => ({ tail: g.tail, labels: g.rows.map((r) => r.item.label) })));
+  if (!alert) return;
+
+  const db = supabase as unknown as DeviceTokenClient;
+  try {
+    const { data } = await db.from("device_token").select("token").eq("user_id", userId);
+    const tokens = (data ?? []).map((d) => d.token);
+    if (tokens.length === 0) return;
+
+    const result = await sendPush(tokens, alert);
+    if (result.error) console.error(`[cron] push for user ${userId}: ${result.error}`);
+    // A device that was deleted, restored, or reinstalled hands back a token
+    // Apple will never accept again. Drop it or it is retried every night.
+    if (result.dead.length) await db.from("device_token").delete().in("token", result.dead);
+  } catch (e) {
+    console.error(`[cron] push failed for user ${userId}: ${(e as Error).message}`);
+  }
 }
 
 // --- Shared helpers --------------------------------------------------------
