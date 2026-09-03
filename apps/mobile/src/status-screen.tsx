@@ -1,10 +1,20 @@
-import { useEffect, useState } from "react";
-import { computeAirworthiness, buildVerdict, shortDate, type Airworthiness, type Verdict } from "./airworthiness";
-import { canEdit } from "./actions";
+import { useCallback, useEffect, useState } from "react";
+import {
+  computeAirworthiness, buildVerdict, shortDate, loadAirworthinessRows, runScan,
+  type Airworthiness, type AirworthinessRows, type ScanKind, type StatusLine, type Verdict,
+} from "./airworthiness";
+import { canEdit, drainActions } from "./actions";
+import { actionCount } from "./db";
+import { enqueue } from "./mutations";
+import { ItemEditor, type Queued } from "./item-editor";
+import { AdList } from "./ad-compliance";
+import { EquipmentList } from "./equipment-list";
+import { CompleteItem } from "./complete-screen";
 import { READING_SOURCE_LABEL } from "@/lib/hobbsTach";
+import type { MaintenanceItem } from "@/lib/database.types";
 import type { StatusItem } from "@/lib/status";
 import type { Aircraft } from "./types";
-import { color, text, radius, semantic, accentGradient, tabular } from "./tokens";
+import { color, text, radius, hit, tint, semantic, accentGradient, tabular } from "./tokens";
 import { ChevronRightIcon } from "./icons";
 
 // Status — the default screen after choosing an aircraft.
@@ -17,9 +27,11 @@ import { ChevronRightIcon } from "./icons";
 export function Status({
   aircraft,
   onComplete,
+  onQueued,
 }: {
   aircraft: Aircraft;
   onComplete: (item: StatusItem) => void;
+  onQueued?: Queued;
 }) {
   const [data, setData] = useState<Airworthiness | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +54,7 @@ export function Status({
   const attention = data.lines.filter((l) => l.urgency === "overdue" || l.urgency === "due_soon");
   const clear = data.lines.filter((l) => l.urgency !== "overdue" && l.urgency !== "due_soon");
 
-  if (showAll) return <AllItems data={data} tail={aircraft.tail_number} onBack={() => setShowAll(false)} />;
+  if (showAll) return <AllItems aircraft={aircraft} data={data} onBack={() => setShowAll(false)} onQueued={onQueued} />;
 
   return (
     <div style={{ position: "relative" }}>
@@ -76,25 +88,25 @@ export function Status({
         </>
       )}
 
-      {clear.length > 0 && (
-        <button onClick={() => setShowAll(true)} style={{
+      <button onClick={() => setShowAll(true)} style={{
           width: "100%", display: "flex", alignItems: "center", gap: 12, textAlign: "left",
           background: color.surface, border: `1px solid ${color.hairline}`,
           borderRadius: radius.card, padding: "12px 15px", cursor: "pointer", minHeight: 44,
         }}>
           <span style={{ minWidth: 0, flex: 1 }}>
             <span style={{ ...text.rowTitle, color: color.ink, display: "block" }}>
-              {attention.length > 0 ? "Clear for now" : "Everything is clear"}
+              {clear.length === 0 ? "Everything tracked" : attention.length > 0 ? "Clear for now" : "Everything is clear"}
             </span>
             {/* Plain English, not a count of opaque rows. */}
             <span style={{ ...text.meta, color: color.faint, display: "block", marginTop: 2 }}>
-              {clear.map((l) => l.item.label.replace(/\s*\(.*\)\s*/, "")).join(", ")}
+              {clear.length > 0
+                ? clear.map((l) => l.item.label.replace(/\s*\(.*\)\s*/, "")).join(", ")
+                : "Inspections, directives and equipment"}
             </span>
           </span>
-          <span style={{ ...text.countdown, color: color.success, fontSize: 14 }}>{clear.length}</span>
+          {clear.length > 0 && <span style={{ ...text.countdown, color: color.success, fontSize: 14 }}>{clear.length}</span>}
           <ChevronRightIcon size={14} color={color.faint} />
         </button>
-      )}
 
       <p style={{ ...text.meta, color: color.faint, marginTop: 16, lineHeight: 1.5 }}>
         Worked out on this phone from your last sync. It mirrors your records — it isn&apos;t the
@@ -210,67 +222,282 @@ function AttentionCard({ line, editable, onComplete }: {
 
 // --- All items (pushed from "Clear for now") -------------------------------
 
-type Filter = "all" | "required" | "advisory";
+// --- All items -------------------------------------------------------------
+//
+// Everything the aircraft is judged on, and the only place to change it:
+// inspections, directives and installed equipment. On the phone it is pushed
+// from "Everything else"; on iPad the shell renders it as the Status right
+// pane, so it takes its own props, loads its own rows and needs no back button.
 
-function AllItems({ data, tail, onBack }: { data: Airworthiness; tail: string; onBack: () => void }) {
+type Filter = "all" | "required" | "advisory";
+type Segment = "inspections" | "ads" | "equipment";
+
+const SEGMENTS: [Segment, string][] = [
+  ["inspections", "Inspections"],
+  ["ads", "Directives"],
+  ["equipment", "Equipment"],
+];
+
+export function AllItems({ aircraft, data: seed, onBack, onQueued }: {
+  aircraft: Aircraft;
+  /** Already computed by Status — avoids a blank frame on the push. */
+  data?: Airworthiness;
+  /** Compact only; the iPad pane has nothing to go back to. */
+  onBack?: () => void;
+  onQueued?: Queued;
+}) {
+  const [data, setData] = useState<Airworthiness | null>(seed ?? null);
+  const [rows, setRows] = useState<AirworthinessRows | null>(null);
+  const [segment, setSegment] = useState<Segment>("inspections");
   const [filter, setFilter] = useState<Filter>("all");
-  const shown = data.lines.filter((l) =>
+  const [editing, setEditing] = useState<MaintenanceItem | "new" | null>(null);
+  const [completing, setCompleting] = useState<StatusItem | null>(null);
+  const [scan, setScan] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const editable = canEdit(aircraft.id);
+  const queued = onQueued ?? whenQueued;
+
+  const reload = useCallback(async () => {
+    const [d, r] = await Promise.all([
+      computeAirworthiness(aircraft.id),
+      loadAirworthinessRows(aircraft.id),
+    ]);
+    setData(d);
+    setRows(r);
+  }, [aircraft.id]);
+
+  useEffect(() => { void reload(); }, [reload]);
+
+  if (completing) {
+    return (
+      <CompleteItem
+        aircraft={aircraft}
+        item={completing}
+        onBack={() => { setCompleting(null); void reload(); }}
+        onQueued={queued}
+      />
+    );
+  }
+
+  const lines = data?.lines ?? [];
+  const inspections = lines.filter((l) => l.item.source === "maintenance");
+  const shown = inspections.filter((l) =>
     filter === "all" ? true : filter === "required" ? l.item.regulatory : !l.item.regulatory);
   const counts = {
-    all: data.lines.length,
-    required: data.lines.filter((l) => l.item.regulatory).length,
-    advisory: data.lines.filter((l) => !l.item.regulatory).length,
+    all: inspections.length,
+    required: inspections.filter((l) => l.item.regulatory).length,
+    advisory: inspections.filter((l) => !l.item.regulatory).length,
   };
+  const itemById = new Map((rows?.items ?? []).map((i) => [i.id, i]));
+
+  async function runScanFor(kind: ScanKind) {
+    setBusy(true);
+    setScan(null);
+    try {
+      const r = await runScan(aircraft.id, kind);
+      // The rows land on the server; they reach the phone on the next sync.
+      setScan("ok" in r ? `${r.summary}. They'll show here after the next sync.` : r.error);
+      await reload();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function seedStandard() {
+    setBusy(true);
+    try {
+      await enqueue("mx.seedStandard", aircraft.id, {}, { label: "Standard inspections set up" });
+      await queued();
+      await reload();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <button onClick={onBack} aria-label="Back" style={{ background: "none", border: "none", color: color.accent, fontSize: 18, cursor: "pointer", padding: "4px 8px 4px 0", minHeight: 44 }}>‹</button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        {onBack && (
+          <button onClick={onBack} aria-label="Back" style={{ background: "none", border: "none", color: color.accent, fontSize: 18, cursor: "pointer", padding: "4px 8px 4px 0", minHeight: 44 }}>‹</button>
+        )}
         <span style={{ ...text.verdict, color: color.ink }}>All items</span>
-        <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>{tail}</span>
+        <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>{aircraft.tail_number}</span>
       </div>
 
-      {/* Required vs advisory becomes a filter, not grey metadata. */}
-      <div style={{ display: "flex", gap: 7, marginBottom: 16, flexWrap: "wrap" }}>
-        {([["all", "All"], ["required", "Required"], ["advisory", "Advisory"]] as const).map(([id, label]) => {
-          const on = filter === id;
-          return (
-            <button key={id} onClick={() => setFilter(id)} style={{
-              background: on ? color.accent : color.surface, color: on ? color.onAccent : color.dim,
-              border: `1px solid ${on ? color.accent : color.hairline}`, borderRadius: radius.chip,
-              padding: "7px 12px", minHeight: 36, fontFamily: text.rowTitle.fontFamily,
-              fontSize: 12, fontWeight: 600, cursor: "pointer",
-            }}>{label} {counts[id]}</button>
-          );
-        })}
+      <div style={{ display: "flex", gap: 7, marginBottom: 14 }}>
+        {SEGMENTS.map(([id, label]) => (
+          <SegButton key={id} on={segment === id} onClick={() => setSegment(id)}>{label}</SegButton>
+        ))}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {shown.map((l) => {
-          const sem = l.urgency === "overdue" ? semantic.grounded : l.urgency === "due_soon" ? semantic.due : null;
-          const i = l.item;
-          return (
-            <div key={`${i.source}:${i.id}`} style={{ background: color.surface, border: `1px solid ${sem ? sem.border : color.hairline}`, borderRadius: radius.row, padding: "13px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                <span style={{ ...text.rowTitle, color: color.ink, minWidth: 0, flex: 1 }}>{i.label.replace(/\s*\(.*\)\s*/, "")}</span>
-                <span style={{ ...text.countdown, ...tabular, color: sem ? sem.color : color.dim, whiteSpace: "nowrap" }}>{shortRemaining(l)}</span>
-              </div>
-              <div style={{ height: 4, borderRadius: 2, background: color.surfaceRaised, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.round(fraction(i) * 100)}%`, background: sem ? sem.color : i.regulatory ? color.accent : color.faint }} />
-              </div>
-              <div style={{ ...text.meta, color: color.faint }}>
-                {i.regulatory ? "Required" : "Advisory"}
-                {i.intervalMonths ? ` · every ${i.intervalMonths} mo` : ""}
-                {i.intervalHours ? ` · every ${i.intervalHours} h ${i.meter}` : ""}
-                {i.nextDueDate ? ` · ${shortDate(i.nextDueDate)}` : l.projection ? ` · around ${l.projection.replace(/^≈\s*/, "").replace(/\s*\(.*\)$/, "")}` : ""}
-              </div>
+      {scan && <p style={{ ...text.secondary, color: color.dim, lineHeight: 1.45, marginTop: 0 }}>{scan}</p>}
+
+      {segment === "inspections" && (
+        <>
+          {editable && (
+            <button onClick={() => setEditing("new")} style={addButton}>+ Add an inspection or overhaul</button>
+          )}
+
+          {/* Required vs advisory is a filter, not grey metadata. */}
+          {inspections.length > 0 && (
+            <div style={{ display: "flex", gap: 7, marginBottom: 14, flexWrap: "wrap" }}>
+              {([["all", "All"], ["required", "Required"], ["advisory", "Advisory"]] as const).map(([id, label]) => (
+                <SegButton key={id} small on={filter === id} onClick={() => setFilter(id)}>{`${label} ${counts[id]}`}</SegButton>
+              ))}
             </div>
-          );
-        })}
-      </div>
+          )}
+
+          {inspections.length === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <p style={{ ...text.secondary, color: color.faint, lineHeight: 1.5, margin: 0 }}>
+                Nothing is being tracked yet. Start with the inspections every aircraft needs — the annual,
+                transponder, pitot-static and ELT — then add your own.
+              </p>
+              {editable && (
+                <button onClick={seedStandard} disabled={busy} style={{ ...addButton, marginBottom: 0, opacity: busy ? 0.5 : 1 }}>
+                  Set up the standard inspections
+                </button>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {shown.map((l) => (
+              <ItemRow
+                key={l.item.id}
+                line={l}
+                editable={editable}
+                onEdit={() => { const row = itemById.get(l.item.id); if (row) setEditing(row); }}
+                onComplete={() => setCompleting(l.item)}
+              />
+            ))}
+          </div>
+
+          {editable && inspections.length > 0 && (
+            <ScanButton busy={busy} onClick={() => runScanFor("maintenance")}>
+              Scan the logs for completions
+            </ScanButton>
+          )}
+        </>
+      )}
+
+      {segment === "ads" && rows && (
+        <AdList
+          aircraft={aircraft}
+          ads={rows.ads}
+          refs={rows.refs}
+          components={rows.components}
+          currentTach={data?.meters.tach.tach ?? null}
+          editable={editable}
+          onQueued={queued}
+          onChanged={reload}
+        />
+      )}
+
+      {segment === "equipment" && rows && (
+        <>
+          <EquipmentList
+            aircraft={aircraft}
+            components={rows.components}
+            proposals={rows.proposals}
+            editable={editable}
+            onQueued={queued}
+            onChanged={reload}
+          />
+          {editable && (
+            <ScanButton busy={busy} onClick={() => runScanFor("equipment")}>
+              Find equipment in the logs
+            </ScanButton>
+          )}
+        </>
+      )}
+
+      {editing && (
+        <ItemEditor
+          aircraft={aircraft}
+          item={editing === "new" ? null : editing}
+          onClose={() => setEditing(null)}
+          onQueued={queued}
+          onChanged={reload}
+        />
+      )}
     </>
   );
 }
+
+/** After a write, when the shell hasn't handed us its own sync step. */
+async function whenQueued(): Promise<"synced" | "pending"> {
+  if (!navigator.onLine) return "pending";
+  await drainActions();
+  return (await actionCount()) === 0 ? "synced" : "pending";
+}
+
+function SegButton({ on, small, onClick, children }: {
+  on: boolean; small?: boolean; onClick: () => void; children: React.ReactNode;
+}) {
+  return (
+    <button onClick={onClick} style={{
+      flex: small ? "none" : 1, background: on ? color.accent : color.surface,
+      color: on ? color.onAccent : color.dim,
+      border: `1px solid ${on ? color.accent : color.hairline}`, borderRadius: radius.chip,
+      padding: "7px 12px", minHeight: small ? 36 : 40, fontFamily: text.rowTitle.fontFamily,
+      fontSize: small ? 12 : 13.5, fontWeight: 600, cursor: "pointer",
+    }}>{children}</button>
+  );
+}
+
+/** Costs an AI call and needs a live connection — say so instead of failing. */
+function ScanButton({ busy, onClick, children }: { busy: boolean; onClick: () => void; children: React.ReactNode }) {
+  const online = navigator.onLine;
+  return (
+    <button onClick={onClick} disabled={busy || !online} style={{
+      width: "100%", minHeight: hit.min, marginTop: 14, borderRadius: radius.control,
+      background: "transparent", border: `1px solid ${color.hairline}`,
+      color: online ? color.dim : color.faint,
+      fontFamily: text.button.fontFamily, fontSize: 14, fontWeight: 600,
+      cursor: online ? "pointer" : "default", opacity: busy ? 0.5 : 1,
+    }}>{busy ? "Reading your logs…" : online ? children : "Reading your logs needs a connection"}</button>
+  );
+}
+
+function ItemRow({ line: l, editable, onEdit, onComplete }: {
+  line: StatusLine; editable: boolean; onEdit: () => void; onComplete: () => void;
+}) {
+  const i = l.item;
+  const sem = l.urgency === "overdue" ? semantic.grounded : l.urgency === "due_soon" ? semantic.due : null;
+  return (
+    <div style={{ background: color.surface, border: `1px solid ${sem ? sem.border : color.hairline}`, borderRadius: radius.row, padding: "13px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <button onClick={onEdit} disabled={!editable} style={{ all: "unset", cursor: editable ? "pointer" : "default", display: "flex", flexDirection: "column", gap: 8, minHeight: editable ? 44 : undefined, justifyContent: "center" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <span style={{ ...text.rowTitle, color: color.ink, minWidth: 0, flex: 1 }}>{i.label.replace(/\s*\(.*\)\s*/, "")}</span>
+          <span style={{ ...text.countdown, ...tabular, color: sem ? sem.color : color.dim, whiteSpace: "nowrap" }}>{shortRemaining(l)}</span>
+        </div>
+        <div style={{ height: 4, borderRadius: 2, background: color.surfaceRaised, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${Math.round(fraction(i) * 100)}%`, background: sem ? sem.color : i.regulatory ? color.accent : color.faint }} />
+        </div>
+        <div style={{ ...text.meta, color: color.faint }}>
+          {i.regulatory ? "Required" : "Advisory"}
+          {i.intervalMonths ? ` · every ${i.intervalMonths} mo` : ""}
+          {i.intervalHours ? ` · every ${i.intervalHours} h ${i.meter}` : ""}
+          {i.nextDueDate ? ` · ${shortDate(i.nextDueDate)}` : l.projection ? ` · around ${l.projection.replace(/^≈\s*/, "").replace(/\s*\(.*\)$/, "")}` : ""}
+        </div>
+      </button>
+      {editable && (
+        <button onClick={onComplete} style={{
+          minHeight: hit.min, borderRadius: radius.control, background: tint.accent,
+          border: `1px solid ${tint.accentBorder}`, color: color.accent,
+          fontFamily: text.button.fontFamily, fontSize: 14, fontWeight: 600, cursor: "pointer",
+        }}>Mark done</button>
+      )}
+    </div>
+  );
+}
+
+const addButton: React.CSSProperties = {
+  width: "100%", minHeight: hit.min, marginBottom: 12, borderRadius: radius.control,
+  background: tint.accent, border: `1px solid ${tint.accentBorder}`, color: color.accent,
+  fontFamily: text.button.fontFamily, fontSize: 15, fontWeight: 600, cursor: "pointer",
+};
 
 function fraction(i: StatusItem): number {
   if (i.nextDueForItem != null && i.currentForItem != null && i.intervalHours) {
