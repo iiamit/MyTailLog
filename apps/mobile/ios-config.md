@@ -49,6 +49,48 @@ point at it (Build Settings → Code Signing Entitlements, Release row only).
 `production` for TestFlight and the App Store. Check the shipped value with
 `codesign -d --entitlements :- <App.app>` on the archive, never the source file.
 
+## `ios/App/App/AppDelegate.swift` — the two APNs forwards
+
+**Without these, push registration fails silently and nothing says why.**
+
+APNs hands the device token to the *application*, not to the plugin. Capacitor's
+`PushNotifications` plugin listens on `NotificationCenter`, so unless the
+AppDelegate posts to it, neither the `registration` nor the `registrationError`
+event ever fires: `register()` goes quiet, the caller times out, and the device
+console logs nothing because nothing failed.
+
+`npx cap add ios` does **not** generate these. The Capacitor docs expect you to
+paste them in, and `ios/` is gitignored — so a fresh clone loses them. Add both
+to `AppDelegate`:
+
+```swift
+func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+) {
+    NotificationCenter.default.post(
+        name: .capacitorDidRegisterForRemoteNotifications,
+        object: deviceToken
+    )
+}
+
+func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+) {
+    NotificationCenter.default.post(
+        name: .capacitorDidFailToRegisterForRemoteNotifications,
+        object: error
+    )
+}
+```
+
+Symptom if they are missing: the permission prompt appears and is accepted, the
+account menu reports *"APNs did not answer in 10s"*, and `device_token` stays
+empty. That is the app never receiving a token — not a certificate, an
+entitlement, or a key problem, all of which produce a fast `registrationError`
+instead.
+
 ## Capabilities (Signing & Capabilities tab)
 
 | Capability | Needed by | Notes |
