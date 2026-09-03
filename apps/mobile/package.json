@@ -14,11 +14,13 @@
     "testflight": "./scripts/testflight.sh"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@capacitor-community/sqlite": "^8.1.1",
     "@capacitor/camera": "^8.2.2",
     "@capacitor/core": "^8.5.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/ios": "^8.5.0",
+    "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/status-bar": "^8.0.3",
     "@capgo/capacitor-document-scanner": "^8.4.2",
     "@fontsource/instrument-sans": "^5.3.0",
