@@ -1,14 +1,13 @@
 import { enqueueAction } from "./db";
+import type { MutationType } from "@/lib/sync/mutations";
 
 // The ONE way UI code writes anything. See docs/ios-parity/CONTRACT.md §2–3.
 //
-// STUB — owned by the core-sync stream, which replaces the internals (a real
-// `base` column, the conflict state, draining to POST /api/sync/push). The
-// signature is the contract and does not change. Until then this rides on the
-// existing action_queue so every UI stream compiles and drains through today's
-// /actions route for the four legacy types.
+// Every write lands in the on-device action_queue first (SQLite), then
+// drainActions() in actions.ts posts it to POST /api/sync/push. The signature
+// is the contract and does not change.
 
-export type MutationType = string; // narrowed to the §3 union by core sync
+export type { MutationType };
 
 export type Enqueued = { id: string };
 
@@ -23,21 +22,33 @@ export async function enqueue(
   payload: Record<string, unknown>,
   opts: { id?: string; base?: string; label?: string } = {},
 ): Promise<Enqueued> {
-  const id = opts.id ?? crypto.randomUUID();
+  const id = opts.id ?? uuid();
   await enqueueAction({
     id,
     aircraft_id: aircraftId,
     type,
     label: opts.label ?? labelFor(type, payload),
-    // ponytail: base rides inside the payload until core sync adds the column.
-    payload: JSON.stringify(opts.base ? { ...payload, __base: opts.base } : payload),
+    payload: JSON.stringify(payload),
+    base: opts.base ?? null,
     created_at: new Date().toISOString(),
   });
   return { id };
 }
 
+export function uuid(): string {
+  // crypto.randomUUID exists in WKWebView on iOS 15.4+; the fallback keeps the
+  // queue working rather than throwing on an older device.
+  const c = globalThis.crypto;
+  if (c && "randomUUID" in c) return c.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (ch) => {
+    const r = (Math.random() * 16) | 0;
+    const v = ch === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /** Human wording for the pending list. Owners read this, so no type names. */
-function labelFor(type: string, p: Record<string, unknown>): string {
+export function labelFor(type: string, p: Record<string, unknown>): string {
   const [domain, verb] = type.split(".");
   const noun: Record<string, string> = {
     entry: "Log entry", entries: "Log entries", page: "Page", reading: "Meter reading",
@@ -51,6 +62,7 @@ function labelFor(type: string, p: Record<string, unknown>): string {
     merge: "merged", resolve: "resolved", reopen: "reopened", complete: "marked done",
     upsert: "saved", review: "reviewed", reorder: "reordered", remove: "removed",
     reinstall: "reinstalled", setEntry: "attached", setLinks: "linked",
+    confirmClean: "confirmed", seedStandard: "set up", track: "tracked", dismiss: "dismissed",
   };
   const desc = typeof p.description === "string" ? ` · ${p.description.slice(0, 40)}` : "";
   return `${what} ${how[verb ?? ""] ?? verb ?? ""}${desc}`.trim();

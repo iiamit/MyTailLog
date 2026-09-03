@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { changeStatements, resetStatements } from "../../mobile/src/sync-apply";
+import { changeStatements, resetStatements, queueUpgradeStatements, QUEUE_VERSION } from "../../mobile/src/sync-apply";
 
 // The offline client's apply path, tested here because apps/mobile has no runner
 // of its own. Only the statement building is covered — executing them needs a
@@ -53,4 +53,23 @@ test("resetting a stale mirror preserves queued offline work", () => {
     ["DELETE FROM records", "DELETE FROM sync_state WHERE key='cursor'"],
   );
   assert.ok(set.every((s) => !/action_queue|capture_queue/.test(s.statement)));
+});
+
+// --- action_queue schema upgrades ---------------------------------------------
+
+test("a v1 queue gains every v2 column, in order, and a current queue gains nothing", () => {
+  const v1 = queueUpgradeStatements(1);
+  assert.equal(v1.length, 4);
+  assert.ok(v1.every((s) => s.startsWith("ALTER TABLE action_queue ADD COLUMN ")));
+  assert.deepEqual(
+    v1.map((s) => s.split(" ")[5]),
+    ["base", "status", "server_row", "retry_after"],
+  );
+  assert.deepEqual(queueUpgradeStatements(QUEUE_VERSION), [], "already current");
+  assert.deepEqual(queueUpgradeStatements(0), v1, "no recorded version means v1 (the CREATE TABLE era)");
+});
+
+test("the status column defaults to pending so existing queued rows keep draining", () => {
+  const status = queueUpgradeStatements(1).find((s) => /ADD COLUMN status/.test(s));
+  assert.match(status!, /DEFAULT 'pending'/);
 });
