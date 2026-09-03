@@ -316,3 +316,29 @@ export const radius = {
 
 /** No interactive element below 44. Steppers 46, primary buttons 52, keys 56. */
 export const hit = { min: 44, stepper: 46, primary: 52, key: 56 } as const;
+
+// ---------------------------------------------------------------------------
+// The owner-facing half of the appearance setting.
+//
+// These live here rather than in theme.ts because theme.ts imports React and
+// (dynamically) Capacitor, and anything a web test imports is compiled by the
+// web typecheck — where neither resolves, since Node resolves from the
+// IMPORTING file and apps/web/node_modules is never on that path. tokens.ts is
+// the module with no imports at all, so it is the safe home. theme.ts
+// re-exports all three, so app code is unchanged.
+// ---------------------------------------------------------------------------
+
+export const THEME_CHOICES: ThemeChoice[] = ["system", "light", "dark"];
+
+/** What the owner sees. Never "auto" — nobody calls it that. */
+export const THEME_LABEL: Record<ThemeChoice, string> = {
+  system: "Match my phone",
+  light: "Light",
+  dark: "Dark",
+};
+
+/** Cycle order for a tap-through control: system → light → dark → system. */
+export function nextChoice(choice: ThemeChoice): ThemeChoice {
+  const i = THEME_CHOICES.indexOf(choice);
+  return THEME_CHOICES[(i + 1) % THEME_CHOICES.length];
+}

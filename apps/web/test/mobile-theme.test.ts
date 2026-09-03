@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { palettes, tintsFor, cssVars, parseChoice, resolveTheme, alpha, color, paint, type Palette } from "../../mobile/src/tokens";
-import { nextChoice, THEME_CHOICES, THEME_LABEL } from "../../mobile/src/theme";
+// theme.ts is NOT imported here: it pulls React and Capacitor, which the web
+// typecheck cannot resolve. The pure half lives in tokens.ts.
+import { palettes, tintsFor, cssVars, parseChoice, resolveTheme, alpha, color, paint, nextChoice, THEME_CHOICES, THEME_LABEL, type Palette } from "../../mobile/src/tokens";
 
 // The iOS app's light appearance, checked here because apps/mobile has no
 // runner. Two things are worth covering and both are silent when wrong: which

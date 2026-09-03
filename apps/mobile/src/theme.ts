@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  nextChoice,
   paint,
   resolveTheme,
   saveChoice,
   storedChoice,
   systemPrefersDark,
+  THEME_CHOICES,
+  THEME_LABEL,
   type ThemeChoice,
   type ThemeName,
 } from "./tokens";
@@ -27,22 +30,7 @@ import {
 // ===========================================================================
 
 export type { ThemeChoice, ThemeName };
-export { resolveTheme };
-
-export const THEME_CHOICES: ThemeChoice[] = ["system", "light", "dark"];
-
-/** What the owner sees. Never "auto" — nobody calls it that. */
-export const THEME_LABEL: Record<ThemeChoice, string> = {
-  system: "Match my phone",
-  light: "Light",
-  dark: "Dark",
-};
-
-/** Cycle order for a tap-through control: system → light → dark → system. */
-export function nextChoice(choice: ThemeChoice): ThemeChoice {
-  const i = THEME_CHOICES.indexOf(choice);
-  return THEME_CHOICES[(i + 1) % THEME_CHOICES.length];
-}
+export { resolveTheme, THEME_CHOICES, THEME_LABEL, nextChoice };
 
 /** Status-bar glyphs are the inverse of the ground behind them. */
 async function statusBarFor(theme: ThemeName): Promise<void> {
