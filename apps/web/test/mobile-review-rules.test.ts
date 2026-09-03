@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   pageNeedsLook, cleanUnconfirmed, fieldChip, entryBadge, toForm, validateEntry, validateReading,
   recentReadings, readAllowance, extractLabel, spotlightStyle, drawerSnap, swipeReveals, entriesOn,
+  readingEditable, readingProvenance,
   type ReviewEntry,
 } from "../../mobile/src/review-rules";
 
@@ -107,6 +108,20 @@ test("recent readings: newest first, capped at 30", () => {
   // Same day: the later save wins the top spot.
   const same = recentReadings([R("old", "2026-05-01", "2026-05-01T08:00:00Z"), R("new", "2026-05-01", "2026-05-01T18:00:00Z")]);
   assert.deepEqual(same.map((r) => r.id), ["new", "old"]);
+});
+
+test("only a hand-entered reading can be corrected on the phone", () => {
+  // meters.updateReading and deleteReading both scope the write to
+  // source='manual'. Offering the editor on anything else would queue a write
+  // that comes back "Reading not found" AFTER the optimistic edit is on screen.
+  assert.equal(readingEditable({ source: "manual" }), true);
+  assert.equal(readingProvenance({ source: "manual" }), null);
+  for (const s of ["myflightbook", "hobbs_estimate", "enrollment"]) {
+    assert.equal(readingEditable({ source: s }), false, s);
+    assert.match(String(readingProvenance({ source: s })), /^from /);
+  }
+  // The owner's words for where it came from, not the column value.
+  assert.equal(readingProvenance({ source: "hobbs_estimate" }), "from an ADS-B estimate");
 });
 
 test("allowance: read from the access response, degrade to the plain label", () => {

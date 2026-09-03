@@ -4,7 +4,7 @@ import { queueAction, canEdit } from "./actions";
 import { enqueue } from "./mutations";
 import { getByAircraft } from "./db";
 import { patchLocal, deleteLocal } from "./review-local";
-import { recentReadings, validateReading, swipeReveals, type ReadingRow } from "./review-rules";
+import { recentReadings, validateReading, swipeReveals, readingEditable, readingProvenance, type ReadingRow } from "./review-rules";
 import { shortDate } from "./airworthiness";
 import type { Aircraft } from "./types";
 import { color, text, radius, hit, accentGradient, tabular, display, tint } from "./tokens";
@@ -246,6 +246,9 @@ function RecentReadings({
   const [editing, setEditing] = useState<ReadingRow | null>(null);
   const [revealed, setRevealed] = useState<string | null>(null);
   const touch = useRef<{ x: number; y: number } | null>(null);
+  // iOS fires a click right after touchend, so a swipe would also open the
+  // editor. The gesture that moved the row swallows the click that follows it.
+  const swiped = useRef(false);
 
   if (rows.length === 0) return null;
 
@@ -262,9 +265,14 @@ function RecentReadings({
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {rows.map((r) => {
           const open = revealed === r.id;
+          // Only a hand-entered reading can be changed — the server scopes both
+          // writes to source='manual', so offering it elsewhere would show an
+          // edit that quietly comes back "not found".
+          const mine = editable && readingEditable(r);
+          const from = readingProvenance(r);
           return (
             <div key={r.id} style={{ position: "relative", borderRadius: radius.row, overflow: "hidden" }}>
-              {editable && (
+              {mine && (
                 <button
                   onClick={() => remove(r)}
                   aria-label="Delete this reading"
@@ -278,27 +286,34 @@ function RecentReadings({
                 </button>
               )}
               <div
-                onTouchStart={(e) => { const t = e.touches[0]; touch.current = t ? { x: t.clientX, y: t.clientY } : null; }}
+                onTouchStart={(e) => { const t = e.touches[0]; touch.current = t ? { x: t.clientX, y: t.clientY } : null; swiped.current = false; }}
                 onTouchEnd={(e) => {
                   const t = e.changedTouches[0];
-                  if (!touch.current || !t || !editable) return;
+                  if (!touch.current || !t || !mine) return;
                   const dx = t.clientX - touch.current.x, dy = t.clientY - touch.current.y;
-                  if (swipeReveals(dx, dy)) setRevealed(r.id);
-                  else if (dx > 30) setRevealed(null);
+                  if (swipeReveals(dx, dy)) { setRevealed(r.id); swiped.current = true; }
+                  else if (dx > 30 && open) { setRevealed(null); swiped.current = true; }
                   touch.current = null;
                 }}
-                onClick={() => { if (open) setRevealed(null); else if (editable) setEditing(r); }}
+                onClick={() => {
+                  if (swiped.current) { swiped.current = false; return; }
+                  if (open) setRevealed(null);
+                  else if (mine) setEditing(r);
+                }}
                 style={{
                   position: "relative", background: color.surface, border: `1px solid ${color.hairline}`,
                   borderRadius: radius.row, padding: "11px 14px", minHeight: hit.min, boxSizing: "border-box",
-                  display: "flex", alignItems: "center", gap: 12, cursor: editable ? "pointer" : "default",
+                  display: "flex", alignItems: "center", gap: 12, cursor: mine ? "pointer" : "default",
                   transform: open ? "translateX(-96px)" : "none", transition: "transform .18s ease",
                 }}
               >
                 <span style={{ ...text.rowTitle, color: color.ink, ...tabular }}>
                   {[r.tach != null ? `Tach ${r.tach.toFixed(1)}` : null, r.hobbs != null ? `Hobbs ${r.hobbs.toFixed(1)}` : null].filter(Boolean).join(" · ") || "No meters"}
                 </span>
-                <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>{shortDate(r.reading_date)}</span>
+                <span style={{ ...text.meta, color: color.faint, marginLeft: "auto", textAlign: "right" }}>
+                  {shortDate(r.reading_date)}
+                  {from && <span style={{ display: "block" }}>{from}</span>}
+                </span>
               </div>
             </div>
           );
