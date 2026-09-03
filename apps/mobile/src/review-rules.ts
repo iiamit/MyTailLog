@@ -1,5 +1,6 @@
 import { pageNeedsReview } from "@/lib/pageStatus";
 import { CONFIDENCE_THRESHOLD, isEntryClean, type FieldBox } from "@/lib/extraction/schema";
+import { READING_SOURCE_LABEL, readingSourceOf } from "@/lib/hobbsTach";
 
 // Review rules — every branch the phone's review screens rely on, kept free of
 // Capacitor and React so apps/web/test/mobile-review-rules.test.ts can load it.
@@ -16,6 +17,8 @@ export type ReviewPage = {
   ocr_text: string | null;
   review_status: "unreviewed" | "confirmed" | "disputed";
   extraction_status: string;
+  /** 0052: rotated writing was visible on the scan but never fully read. */
+  unread_rotated_content?: boolean;
   updated_at: string;
 };
 
@@ -189,6 +192,21 @@ export function validateReading(f: ReadingForm): { error: string } | { payload: 
   if (f.tach == null && f.hobbs == null) return { error: "Record at least one meter." };
   for (const v of [f.tach, f.hobbs]) if (v != null && (!Number.isFinite(v) || v < 0)) return { error: "Hours can't be negative." };
   return { payload: { date: f.date, tach: f.tach, hobbs: f.hobbs } };
+}
+
+/**
+ * Only a hand-entered reading can be corrected here. `meters.updateReading` and
+ * `deleteReading` both scope their write to `source = 'manual'`, so offering the
+ * editor on a synced or entry-derived row would queue a write that comes back
+ * "Reading not found" after the optimistic edit had already shown on screen.
+ */
+export function readingEditable(r: Pick<ReadingRow, "source">): boolean {
+  return r.source === "manual";
+}
+
+/** Where a reading that can't be corrected came from, in the owner's words. */
+export function readingProvenance(r: Pick<ReadingRow, "source">): string | null {
+  return readingEditable(r) ? null : `from ${READING_SOURCE_LABEL[readingSourceOf(r.source)]}`;
 }
 
 /** Newest first, the last `limit` readings. */

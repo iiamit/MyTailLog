@@ -11,6 +11,7 @@ import {
   entriesOn, entryBadge, fieldChip, readAllowance, extractLabel, spotlightStyle, drawerSnap,
   type ReviewPage, type ReviewEntry, type EntryForm, type Allowance,
 } from "./review-rules";
+import { chordOf, type ShortcutMap } from "./shortcuts";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { Page } from "./types";
 import { color, text, radius, hit, tint, accentGradient, tabular } from "./tokens";
@@ -98,7 +99,23 @@ export function ReviewPane({
   }
 
   const ext = extractLabel(allowance);
-  const unreviewed = entries.filter((e) => !e.owner_confirmed).length;
+  const unconfirmed = entries.filter((e) => !e.owner_confirmed);
+  const unreviewed = unconfirmed.length;
+  const next = unconfirmed[0];
+
+  // ⌘↩ on a keyboard: confirm the next entry that still needs it, then mark the
+  // page reviewed. Registered here, not in the shell, because the entries are
+  // this component's state (CONTRACT §11).
+  useChords({
+    "cmd+enter":
+      !editable || editing
+        ? undefined
+        : next
+          ? () => { void confirm(next, true); }
+          : page.extraction_status === "extracted" && page.review_status !== "confirmed"
+            ? () => { void review("confirmed"); }
+            : undefined,
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -110,6 +127,14 @@ export function ReviewPane({
           {page.review_status === "disputed" ? "Flagged" : page.review_status === "confirmed" ? "Reviewed" : unreviewed ? `${unreviewed} to check` : "Nothing to check"}
         </span>
       </div>
+
+      {/* 0052: the scan had sideways writing the reader could not finish. A
+          missed entry has nothing to review against, so say so out loud. */}
+      {page.unread_rotated_content === true && (
+        <p style={{ ...text.meta, color: color.warning, margin: 0, lineHeight: 1.45 }}>
+          Some writing on this page runs sideways and wasn&apos;t fully read. Check the scan for anything missing.
+        </p>
+      )}
 
       {page.extraction_status !== "extracted" && (
         <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -372,3 +397,33 @@ const ghostBtn: React.CSSProperties = {
   background: color.surfaceRaised, border: `1px solid ${color.hairline}`, color: color.dim,
   fontFamily: text.button.fontFamily, fontSize: 14, fontWeight: 500, cursor: "pointer",
 };
+
+// --- Keyboard --------------------------------------------------------------------
+
+/**
+ * The chords this screen answers to while it is mounted.
+ *
+ * ponytail: a self-contained listener rather than the shell's `useShortcuts`,
+ * which lives in layout.tsx — a file this branch does not carry (see the PR's
+ * blockers). It reads chords with the SAME `chordOf` the shell uses, including
+ * the rule that Cmd-left/right keep their text meaning inside an input, and
+ * deliberately stays OFF the shell's handler stack so nothing fires twice after
+ * integration. Swap the two call sites to `useShortcuts` from ./layout once
+ * both are on one branch, and delete this.
+ */
+export function useChords(map: ShortcutMap): void {
+  const ref = useRef(map);
+  ref.current = map;
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      const chord = chordOf(e, tag === "INPUT" || tag === "TEXTAREA");
+      const fn = chord ? ref.current[chord] : undefined;
+      if (!fn) return;
+      e.preventDefault();
+      fn();
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, []);
+}
