@@ -1,0 +1,562 @@
+<meta charset="utf-8">
+<title>MyTailLog iOS Redesign — Screens 19–24, sheets, overlays, Ask and conflicts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:#0F1216; --surface:#191D24; --raised:#212630; --hairline:#2B313C;
+    --ink:#ECEFF4; --dim:#9AA3B0; --faint:#6B7482;
+    --accent:#5AA9FF; --accentLight:#8EC8FF; --onAccent:#0B1017;
+    --warning:#F2B544; --danger:#FF7060; --success:#4ED69A;
+    --tintAccent:#5AA9FF24; --tintAccentBorder:#5AA9FF4D;
+    --tintWarning:#F2B5441F; --tintWarningBorder:#F2B5444D;
+    --tintDanger:#FF70601F; --tintDangerBorder:#FF70604D;
+    --tintSuccess:#4ED69A1F; --tintSuccessBorder:#4ED69A3D;
+    --grotesk:"Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --sans:"Instrument Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#0A0C0F; color:var(--ink); font-family:var(--sans); padding:40px 28px 64px; -webkit-font-smoothing:antialiased; }
+  .head { max-width:1194px; margin:0 auto 34px; }
+  .head h1 { font-family:var(--grotesk); font-size:24px; font-weight:700; letter-spacing:-.02em; }
+  .head p { color:var(--dim); font-size:14px; line-height:1.55; margin-top:8px; max-width:70ch; }
+  .frames { display:flex; gap:36px; flex-wrap:wrap; justify-content:center; max-width:1194px; margin:0 auto; }
+  .col { width:340px; }
+  .wide { width:1194px; }
+  .cap { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-bottom:10px; }
+
+  /* Phone frame: 340 × 718 at 390pt scale. iPad frame: 1194 × 834. */
+  .frame { width:340px; height:718px; background:var(--bg); border:1px solid var(--hairline); border-radius:26px; overflow:hidden; position:relative; }
+  .ipad { width:1194px; height:834px; background:var(--bg); border:1px solid var(--hairline); border-radius:18px; overflow:hidden; position:relative; display:grid; grid-template-columns:200px 1fr; grid-template-rows:minmax(0,1fr); }
+  .panes { grid-template-rows:minmax(0,1fr); }
+  .side { background:var(--surface); border-right:1px solid var(--hairline); padding:18px 12px 16px; display:flex; flex-direction:column; gap:4px; }
+  .side .fleet { display:flex; align-items:center; gap:8px; padding:10px 12px; min-height:52px; background:var(--raised); border:1px solid var(--hairline); border-radius:12px; margin-bottom:14px; }
+  .side .tail { font-family:var(--grotesk); font-size:17px; font-weight:700; }
+  .side .type { font-size:11.5px; color:var(--dim); }
+  .side .nav { display:flex; align-items:center; height:44px; padding:0 12px; border-radius:11px; font-size:14.5px; color:var(--dim); font-weight:500; }
+  .side .nav.on { background:var(--raised); color:var(--accent); font-weight:600; }
+  .main { padding:20px; display:flex; flex-direction:column; min-width:0; position:relative; }
+  .title { display:flex; align-items:baseline; gap:12px; margin-bottom:16px; }
+  .title h2 { font-family:var(--grotesk); font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .title .meta { font-size:12.5px; color:var(--faint); }
+  .panes { display:grid; gap:16px; flex:1; min-height:0; grid-template-columns:40fr 60fr; }
+  .pane { min-width:0; display:flex; flex-direction:column; gap:12px; overflow:hidden; position:relative; }
+  .pane.card { background:var(--surface); border:1px solid var(--hairline); border-radius:18px; padding:16px; }
+  .dimmed { opacity:.5; }
+
+  /* Phone: content behind + scrim + sheet */
+  .behind { padding:16px 20px 0; }
+  .behind .t { font-family:var(--grotesk); font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .behind .sub { font-size:13px; color:var(--dim); margin-top:4px; }
+  .scrim { position:absolute; inset:0; background:rgba(0,0,0,.5); }
+  .sheet { position:absolute; left:0; right:0; bottom:0; background:var(--surface); border:1px solid var(--hairline); border-bottom:none; border-radius:20px 20px 0 0; padding:10px 20px 22px; display:flex; flex-direction:column; gap:12px; }
+  .grab { width:36px; height:4px; border-radius:2px; background:var(--hairline); margin:0 auto 2px; }
+  .titlerow { display:flex; align-items:baseline; gap:10px; }
+  .titlerow h2 { font-family:var(--grotesk); font-size:19px; font-weight:700; }
+  .titlerow .tail { margin-left:auto; font-size:12.5px; color:var(--faint); }
+  .titlerow .x { margin-left:auto; color:var(--accent); font-size:14px; font-weight:600; }
+
+  /* Overlay on the right pane (regular) */
+  .overlay { position:absolute; top:0; right:0; bottom:0; width:420px; background:var(--surface); border-left:1px solid var(--hairline); border-radius:18px 0 0 18px; padding:20px; display:flex; flex-direction:column; gap:12px; box-shadow:-24px 0 60px rgba(0,0,0,.45); }
+  .overlay.center { position:absolute; inset:0; width:auto; border:none; border-radius:0; background:rgba(0,0,0,.5); box-shadow:none; display:grid; place-items:center; padding:0; }
+  .overlay.center > div { width:560px; background:var(--surface); border:1px solid var(--hairline); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+
+  .label { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); }
+  .num { font-variant-numeric:tabular-nums; }
+  .tag { font-size:10px; font-weight:600; color:var(--dim); background:var(--raised); border-radius:5px; padding:2px 6px; white-space:nowrap; }
+  .pill { font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; border-radius:6px; padding:4px 8px; white-space:nowrap; display:inline-block; }
+  .pill.due { color:var(--warning); background:var(--tintWarning); border:1px solid var(--tintWarningBorder); }
+  .pill.bad { color:var(--danger); background:var(--tintDanger); border:1px solid var(--tintDangerBorder); }
+  .pill.ok  { color:var(--success); background:var(--tintSuccess); border:1px solid var(--tintSuccessBorder); }
+  .pill.ac  { color:var(--accent); background:var(--tintAccent); border:1px solid var(--tintAccentBorder); }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; }
+  .chip { border-radius:9px; padding:7px 12px; font-size:12px; font-weight:600; background:var(--surface); border:1px solid var(--hairline); color:var(--dim); min-height:36px; display:inline-flex; align-items:center; }
+  .chip.on { background:var(--accent); border-color:var(--accent); color:var(--onAccent); }
+  .seg { display:flex; gap:3px; background:var(--bg); border:1px solid var(--hairline); border-radius:12px; padding:3px; }
+  .seg span { flex:1; text-align:center; padding:8px 0; font-size:13px; color:var(--dim); border-radius:9px; min-height:38px; }
+  .seg span.on { background:var(--raised); color:var(--ink); font-weight:600; }
+
+  .f { display:flex; flex-direction:column; gap:5px; }
+  .f .k { font-size:12px; font-weight:600; color:var(--dim); }
+  .input { min-height:46px; border-radius:12px; background:var(--bg); border:1px solid var(--hairline); padding:12px 14px; font-size:16px; color:var(--ink); display:flex; align-items:center; }
+  .input.ph { color:var(--faint); }
+  .input.area { min-height:74px; align-items:flex-start; line-height:1.45; }
+  .input.focus { border-color:var(--accent); }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stepper { display:flex; align-items:center; gap:10px; }
+  .stepper .b { width:46px; height:46px; border-radius:13px; background:var(--raised); border:1px solid var(--hairline); display:grid; place-items:center; font-size:20px; flex:none; }
+  .stepper .val { flex:1; height:46px; border-radius:13px; background:var(--bg); border:1px solid var(--accent); display:grid; place-items:center; font-family:var(--grotesk); font-size:20px; font-weight:700; }
+  .raw { background:var(--bg); border:1px dashed var(--hairline); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:4px; }
+  .raw .k { font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); }
+  .raw .v { font-size:14px; color:var(--dim); font-style:italic; }
+  .crop { height:56px; border-radius:8px; border:1px solid var(--hairline); background:linear-gradient(160deg,#2E3440,#1C212A); position:relative; overflow:hidden; }
+  .crop .box { position:absolute; left:22%; top:28%; width:34%; height:44%; border:2px solid var(--accent); border-radius:4px; box-shadow:0 0 0 3px var(--tintAccent); }
+  .toggle { display:flex; align-items:center; gap:14px; background:var(--bg); border:1px solid var(--hairline); border-radius:12px; padding:11px 14px; min-height:52px; }
+  .toggle .t { font-size:14.5px; font-weight:600; }
+  .toggle .d { font-size:12px; color:var(--faint); margin-top:2px; line-height:1.4; }
+  .sw { flex:none; margin-left:auto; width:42px; height:26px; border-radius:13px; background:var(--accent); position:relative; }
+  .sw::after { content:""; position:absolute; top:3px; left:19px; width:20px; height:20px; border-radius:10px; background:#fff; }
+  .sw.off { background:var(--raised); } .sw.off::after { left:3px; }
+  .picker { display:flex; align-items:center; gap:12px; background:var(--bg); border:1px solid var(--hairline); border-radius:12px; padding:0 14px; min-height:52px; }
+  .picker .t { font-size:14.5px; font-weight:600; } .picker .d { font-size:12px; color:var(--faint); margin-top:2px; }
+  .picker .chev { margin-left:auto; color:var(--faint); }
+  .primary { display:flex; align-items:center; justify-content:center; gap:9px; height:52px; border-radius:15px; background:linear-gradient(135deg,var(--accent),var(--accentLight)); color:var(--onAccent); font-size:16px; font-weight:600; flex:none; }
+  .primary.sm { height:44px; font-size:15px; border-radius:12px; }
+  .secondary { display:flex; align-items:center; justify-content:center; height:46px; border-radius:13px; background:var(--raised); border:1px solid var(--hairline); color:var(--accent); font-size:14px; font-weight:600; flex:none; }
+  .secondary.danger { color:var(--danger); border-color:var(--tintDangerBorder); background:transparent; }
+  .ghost { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:0 12px; border-radius:9px; border:1px solid var(--hairline); color:var(--dim); font-size:13px; font-weight:500; }
+  .note { font-size:12px; color:var(--faint); line-height:1.45; }
+  .row2 { display:flex; gap:8px; }
+  .big { display:flex; align-items:center; gap:14px; background:var(--bg); border:1px solid var(--hairline); border-radius:14px; padding:14px 15px; min-height:64px; }
+  .big .ic { width:36px; height:36px; border-radius:10px; background:var(--tintAccent); color:var(--accent); display:grid; place-items:center; flex:none; }
+  .big .t { font-size:14.5px; font-weight:600; } .big .d { font-size:12px; color:var(--faint); margin-top:2px; }
+
+  /* Entries list in a picker */
+  .erow { display:flex; align-items:center; gap:12px; background:var(--bg); border:1px solid var(--hairline); border-radius:12px; padding:10px 12px; min-height:52px; }
+  .erow.sel { border-color:var(--accent); background:var(--tintAccent); }
+  .erow .dt { font-family:var(--grotesk); font-size:13px; font-weight:700; width:84px; flex:none; }
+  .erow .d { font-size:12.5px; color:var(--dim); line-height:1.35; }
+  .erow .ck { margin-left:auto; color:var(--accent); font-weight:700; }
+
+  /* Ask */
+  .ask { display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; }
+  .msg { max-width:88%; border-radius:14px; padding:10px 13px; font-size:14px; line-height:1.5; }
+  .msg.me { align-self:flex-end; background:var(--tintAccent); border:1px solid var(--tintAccentBorder); color:var(--ink); }
+  .msg.ai { align-self:flex-start; background:var(--bg); border:1px solid var(--hairline); }
+  .msg .src { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .msg .src span { font-size:11px; font-weight:600; color:var(--accent); background:var(--tintAccent); border:1px solid var(--tintAccentBorder); border-radius:6px; padding:3px 7px; }
+  .compose { display:flex; gap:8px; margin-top:auto; }
+  .compose .input { flex:1; }
+  .compose .send { width:46px; height:46px; border-radius:13px; background:linear-gradient(135deg,var(--accent),var(--accentLight)); color:var(--onAccent); display:grid; place-items:center; font-weight:700; flex:none; }
+  .sugg { display:flex; gap:7px; flex-wrap:wrap; }
+
+  /* Conflict */
+  .vs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .vs .side2 { background:var(--bg); border:1px solid var(--hairline); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .vs .h { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); }
+  .vs .h b { color:var(--ink); }
+  .vs .kv { display:flex; flex-direction:column; gap:2px; padding:7px 8px; border-radius:8px; }
+  .vs .kv.ch { background:var(--tintWarning); border:1px solid var(--tintWarningBorder); }
+  .vs .kv .k { font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); }
+  .vs .kv .v { font-size:13.5px; font-weight:500; }
+  .banner { display:flex; gap:12px; align-items:flex-start; background:var(--tintWarning); border:1px solid var(--tintWarningBorder); border-radius:14px; padding:12px 14px; }
+  .banner .t { font-size:14.5px; font-weight:600; } .banner .d { font-size:12.5px; color:var(--dim); margin-top:3px; line-height:1.45; }
+
+  /* Alert */
+  .alert { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:290px; background:var(--surface); border:1px solid var(--hairline); border-radius:20px; padding:20px 18px 14px; display:flex; flex-direction:column; gap:10px; box-shadow:0 24px 60px rgba(0,0,0,.5); }
+  .alert h3 { font-family:var(--grotesk); font-size:17px; font-weight:700; line-height:1.3; }
+  .alert p { font-size:13px; color:var(--dim); line-height:1.5; }
+  .alert .delta { display:flex; align-items:center; justify-content:center; gap:10px; font-family:var(--grotesk); font-size:20px; font-weight:700; padding:8px 0; }
+  .alert .delta span { color:var(--faint); font-size:15px; }
+
+  .designnote { max-width:1194px; margin:38px auto 0; border-top:1px solid var(--hairline); padding-top:20px; }
+  .designnote h3 { font-family:var(--grotesk); font-size:15px; font-weight:700; margin-bottom:10px; }
+  .designnote p { color:var(--dim); font-size:13.5px; line-height:1.6; margin-bottom:10px; max-width:78ch; }
+  .designnote b { color:var(--ink); font-weight:600; }
+  .designnote code { font-family:ui-monospace,monospace; font-size:12.5px; color:var(--faint); }
+</style>
+
+<div class="head">
+  <h1>Screens 19–24 — Ask, editors, sheets and the conflict screen</h1>
+  <p>The surfaces the parity plan adds. Each is a <b>sheet</b> at compact width (phone, or iPad in Split View) and an
+     <b>overlay on the right pane</b> at regular width — same content, same tokens, one composition per width. Every
+     editable control is 16 px or larger; every target is 44 pt or more. Exactly one primary button per surface.</p>
+</div>
+
+<div class="frames">
+
+<!-- ===================== 19 · Ask ===================== -->
+<div class="wide">
+  <div class="cap">19 · Ask — a pane over any tab at regular width (here, over Records › History)</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div></div>
+      <div class="nav">Status</div><div class="nav">Log</div><div class="nav on">Records</div><div class="nav">Squawks</div>
+      <div class="nav on" style="margin-top:8px; background:var(--tintAccent)">Ask</div>
+    </div>
+    <div class="main">
+      <div class="title dimmed"><h2>Records</h2><span class="meta">History · N9363V</span></div>
+      <div class="panes dimmed">
+        <div class="pane">
+          <div class="picker"><div><div class="t">14 Mar 2026 · tach 2417.3</div><div class="d">Annual inspection completed IAW Cessna 172M…</div></div></div>
+          <div class="picker"><div><div class="t">14 Mar 2026</div><div class="d">AD 2011-10-09 seat rail inspection complied with.</div></div></div>
+          <div class="picker"><div><div class="t">22 Jan 2026 · tach 2389.0</div><div class="d">Oil and filter changed, Phillips 20W-50, 7 qts.</div></div></div>
+          <div class="picker"><div><div class="t">9 Jan 2026 · tach 2385.4</div><div class="d">Transponder and encoder tested IAW 91.413.</div></div></div>
+        </div>
+        <div class="pane card"></div>
+      </div>
+      <div class="overlay" style="width:440px">
+        <div class="titlerow"><h2>Ask about N9363V</h2><span class="x">Done</span></div>
+        <div class="note">Answers come from this aircraft's records only, with the entry they came from. It is not an inspector.</div>
+        <div class="ask">
+          <div class="msg me">When was the last mag timing?</div>
+          <div class="msg ai">The magnetos were last timed on <b>14 Mar 2026</b> during the annual, at tach 2417.3 — "mags timed to 25° BTDC, both". Before that, 12 Nov 2025 with the GTN install.
+            <div class="src"><span>14 Mar 2026 · Airframe p.16</span><span>12 Nov 2025 · Engine p.9</span></div>
+          </div>
+          <div class="msg me">And the 500-hour mag inspection?</div>
+          <div class="msg ai">I can't find a 500-hour magneto inspection in the engine log. The magnetos were overhauled on 3 May 2025 (8130-3 in the vault), so the next 500-hour would fall around tach 2690.
+            <div class="src"><span>3 May 2025 · Engine p.7</span><span>8130-3 — Overhauled magneto</span></div>
+          </div>
+          <div class="sugg"><span class="chip">Open the 14 Mar entry</span><span class="chip">Track it as an item</span></div>
+          <div class="compose"><div class="input ph">Ask about this aircraft…</div><div class="send">↑</div></div>
+          <div class="note" style="text-align:center">Needs a connection · 14 of 50 questions left this month</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="cap">19a · Ask, compact</div>
+  <div class="frame">
+    <div class="behind" style="height:100%; display:flex; flex-direction:column; padding-bottom:22px">
+      <div class="titlerow" style="margin-bottom:4px"><h2 style="font-size:22px">Ask</h2><span class="tail">N9363V</span></div>
+      <div class="note" style="margin-bottom:12px">Answers come from this aircraft's records only, with the entry they came from.</div>
+      <div class="ask">
+        <div class="msg me">When was the last mag timing?</div>
+        <div class="msg ai">The magnetos were last timed on <b>14 Mar 2026</b> during the annual, at tach 2417.3. Before that, 12 Nov 2025 with the GTN install.
+          <div class="src"><span>14 Mar 2026 · p.16</span><span>12 Nov 2025 · p.9</span></div>
+        </div>
+        <div class="sugg"><span class="chip">Open the 14 Mar entry</span></div>
+        <div class="compose"><div class="input ph">Ask about this aircraft…</div><div class="send">↑</div></div>
+        <div class="note" style="text-align:center">Needs a connection · 14 of 50 left this month</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 20 · Field editor ===================== -->
+<div class="col">
+  <div class="cap">20 · Field editor — compact sheet, a meter field</div>
+  <div class="frame">
+    <div class="behind">
+      <div class="t">Page 16</div>
+      <div class="sub">Airframe · 2 entries · 1 to check</div>
+    </div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Hobbs</h2><span class="pill due" style="margin-left:8px">Uncertain read</span><span class="tail">14 Mar 2026</span></div>
+      <div class="crop"><div class="box"></div></div>
+      <div class="raw"><div class="k">As read from the page</div><div class="v">"3102.8" — the last digit could be a 3</div></div>
+      <div class="stepper"><span class="b">−</span><span class="val num">3102.8</span><span class="b">+</span></div>
+      <div class="note">Steps by 0.1. Hold to move faster. The reading before this entry was 3097.9.</div>
+      <div class="row2"><span class="secondary" style="flex:1">Blank it</span><span class="secondary" style="flex:1">Show on scan ◎</span></div>
+      <div class="primary">Looks right</div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="cap">20a · Field editor — a text field, clearly read</div>
+  <div class="frame">
+    <div class="behind">
+      <div class="t">Page 16</div>
+      <div class="sub">Airframe · 2 entries · 1 to check</div>
+    </div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Signed by</h2><span class="pill ok" style="margin-left:8px">Read clearly</span><span class="tail">14 Mar 2026</span></div>
+      <div class="crop"><div class="box" style="left:8%; width:70%"></div></div>
+      <div class="raw"><div class="k">As read from the page</div><div class="v">"R. Brock A&amp;P 3311209 IA"</div></div>
+      <div class="f"><div class="k">Name</div><div class="input focus">R. Brock</div></div>
+      <div class="f"><div class="k">Certificate</div><div class="input">A&amp;P 3311209 IA</div></div>
+      <div class="note">Fix what the page says, not what should have happened — the scan stays the record.</div>
+      <div class="primary">Save</div>
+    </div>
+  </div>
+</div>
+
+<div class="wide">
+  <div class="cap">20b · Field editor — overlay on the right pane at regular width</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div></div>
+      <div class="nav">Status</div><div class="nav">Log</div><div class="nav on">Records</div><div class="nav">Squawks</div><div class="nav" style="margin-top:8px">Ask</div>
+    </div>
+    <div class="main">
+      <div class="title"><h2>Records</h2><span class="meta">Scans · Page 16 of 97 · N9363V</span></div>
+      <div class="panes" style="grid-template-columns:250px 1fr">
+        <div class="pane dimmed"><div class="chips"><span class="chip on">Needs review 4</span><span class="chip">All 97</span></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:9px"><i style="aspect-ratio:3/4; border-radius:9px; border:1px solid var(--hairline); background:linear-gradient(160deg,#2A303A,#1C212A)"></i><i style="aspect-ratio:3/4; border-radius:9px; outline:2px solid var(--accent); background:linear-gradient(160deg,#2A303A,#1C212A)"></i><i style="aspect-ratio:3/4; border-radius:9px; border:1px solid var(--hairline); background:linear-gradient(160deg,#2A303A,#1C212A)"></i><i style="aspect-ratio:3/4; border-radius:9px; border:1px solid var(--hairline); background:linear-gradient(160deg,#2A303A,#1C212A)"></i></div>
+        </div>
+        <div class="pane">
+          <div style="flex:1; border-radius:10px; border:1px solid var(--hairline); background:linear-gradient(160deg,#2E3440,#1C212A); position:relative; overflow:hidden">
+            <div style="position:absolute; inset:0; background:rgba(0,0,0,.42)"></div>
+            <div style="position:absolute; left:14%; top:22%; width:22%; height:7%; border:2px solid var(--accent); border-radius:5px; box-shadow:0 0 0 4px var(--tintAccent), 0 0 24px var(--tintAccentBorder)"></div>
+            <div style="position:absolute; left:0; right:0; bottom:10px; text-align:center; font-size:11.5px; color:var(--dim)">Hobbs — read from here</div>
+          </div>
+        </div>
+      </div>
+      <div class="overlay">
+        <div class="titlerow"><h2>Hobbs</h2><span class="pill due" style="margin-left:8px">Uncertain read</span><span class="x">Cancel</span></div>
+        <div class="note">14 Mar 2026 · Annual inspection · Airframe page 16</div>
+        <div class="raw"><div class="k">As read from the page</div><div class="v">"3102.8" — the last digit could be a 3</div></div>
+        <div class="stepper"><span class="b">−</span><span class="val num">3102.8</span><span class="b">+</span></div>
+        <div class="note">Steps by 0.1. The reading before this entry was 3097.9. The box on the scan is where this was read — it stays lit while this is open.</div>
+        <div class="row2"><span class="secondary" style="flex:1">Blank it</span></div>
+        <div class="primary" style="margin-top:auto">Looks right ⌘↩</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 21 · Item editor + AD compliance ===================== -->
+<div class="col">
+  <div class="cap">21 · Item editor — maintenance</div>
+  <div class="frame">
+    <div class="behind"><div class="t">Status</div><div class="sub">N9363V · All items</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="gap:10px">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Edit item</h2><span class="tail">N9363V</span></div>
+      <div class="f"><div class="k">What is it</div><div class="input">ELT battery</div></div>
+      <div class="seg"><span class="on">Required</span><span>Advisory</span></div>
+      <div class="f"><div class="k">How often</div>
+        <div class="two"><div class="input"><span class="num">12</span><span style="color:var(--faint); margin-left:auto">months</span></div><div class="input ph">— <span style="margin-left:auto">hours on tach</span></div></div>
+      </div>
+      <div class="f"><div class="k">Last done</div>
+        <div class="two"><div class="input">3 Apr 2026</div><div class="input ph">hours (optional)</div></div>
+      </div>
+      <div class="f"><div class="k">Notes</div><div class="input ph area">Anything else worth recording</div></div>
+      <div class="note">Next due works out to <b style="color:var(--ink)">3 Apr 2027</b>. Change the interval and it moves.</div>
+      <div class="primary">Save</div>
+      <div class="secondary danger">Stop tracking this item</div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="cap">21a · AD compliance sheet</div>
+  <div class="frame">
+    <div class="behind"><div class="t">Status</div><div class="sub">N9363V · ADs</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="gap:10px">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Seat rail wear</h2><span class="tail">N9363V</span></div>
+      <div style="display:flex; gap:6px; align-items:center"><span class="tag">AD 2011-10-09</span><span class="tag">Every 100 h</span><span class="note" style="margin-left:auto">Cessna 172 series</span></div>
+      <div class="f"><div class="k">Where it stands</div>
+        <div class="chips"><span class="chip on">Complied</span><span class="chip">Open</span><span class="chip">Doesn't apply</span><span class="chip">Superseded</span></div>
+      </div>
+      <div class="f"><div class="k">Complied on</div>
+        <div class="two"><div class="input">14 Mar 2026</div><div class="input num">2417.3 <span style="color:var(--faint); margin-left:auto">tach</span></div></div>
+      </div>
+      <div class="f"><div class="k">How</div><div class="input">Inspected IAW AD para (g); no wear beyond limits</div></div>
+      <div class="picker"><div><div class="t">Shown in the entry of 14 Mar 2026</div><div class="d">Airframe page 16 · tap to change</div></div><span class="chev">›</span></div>
+      <div class="note">Next due at tach <b style="color:var(--ink)">2517.3</b>. The AD text is on this phone — open it from the tag.</div>
+      <div class="primary">Save</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 22 · Equipment + meter replacement ===================== -->
+<div class="col">
+  <div class="cap">22 · Equipment — install / remove</div>
+  <div class="frame">
+    <div class="behind"><div class="t">Status</div><div class="sub">N9363V · Equipment</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="gap:10px">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Vacuum pump</h2><span class="pill ok" style="margin-left:8px">Installed</span><span class="tail">N9363V</span></div>
+      <div class="two">
+        <div class="f"><div class="k">Make</div><div class="input">Rapco</div></div>
+        <div class="f"><div class="k">Part number</div><div class="input">RA215CC</div></div>
+      </div>
+      <div class="two">
+        <div class="f"><div class="k">Serial</div><div class="input">R-118842</div></div>
+        <div class="f"><div class="k">Installed</div><div class="input">14 Mar 2026</div></div>
+      </div>
+      <div class="f"><div class="k">Life limit</div>
+        <div class="two"><div class="input num">500 <span style="color:var(--faint); margin-left:auto">hours</span></div><div class="input ph">or months</div></div>
+      </div>
+      <div class="picker"><div><div class="t">Installed in the entry of 14 Mar 2026</div><div class="d">Airframe page 16</div></div><span class="chev">›</span></div>
+      <div class="primary">Save</div>
+      <div class="label" style="margin-top:4px">Coming off the aircraft?</div>
+      <div class="row2"><div class="input" style="flex:1">2 Sep 2026</div><span class="secondary danger" style="flex:1">Remove it</span></div>
+      <div class="note">Removing keeps its history. Link the entry that removed it when it's written up.</div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="cap">22a · Meter-replacement prompt, over Log a flight</div>
+  <div class="frame">
+    <div class="behind" style="opacity:.6">
+      <div class="t">Log a flight</div><div class="sub">Today · 2 Sep 2026</div>
+      <div style="margin-top:22px; background:var(--surface); border:1px solid var(--hairline); border-radius:18px; padding:18px 16px; display:flex; flex-direction:column; gap:14px">
+        <div class="stepper"><span style="width:52px; font-size:10.5px; font-weight:600; letter-spacing:.09em; color:var(--faint)">TACH</span><span class="b">−</span><span class="val num" style="border-color:var(--warning)">0.0</span><span class="b">+</span></div>
+        <div style="height:1px; background:var(--hairline)"></div>
+        <div class="stepper"><span style="width:52px; font-size:10.5px; font-weight:600; letter-spacing:.09em; color:var(--faint)">HOBBS</span><span class="b">−</span><span class="val num" style="border-color:var(--hairline)">3104.3</span><span class="b">+</span></div>
+      </div>
+    </div>
+    <div class="scrim"></div>
+    <div class="alert">
+      <h3>Lower than the last reading — was the tach replaced?</h3>
+      <div class="delta num">2417.3 <span>→</span> 0.0</div>
+      <p>If the meter was swapped, we'll remember the old one stopped at 2417.3 so your totals and hour-based items keep counting from where they were.</p>
+      <div class="primary sm">Yes — new meter from today</div>
+      <div class="secondary">I mistyped it</div>
+      <div class="note" style="text-align:center">You can undo a meter swap from the reading list.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 23 · Document upload · attach picker · squawk resolve ===================== -->
+<div class="col">
+  <div class="cap">23 · Add a document</div>
+  <div class="frame">
+    <div class="behind"><div class="t">Records</div><div class="sub">Documents · N9363V</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="gap:10px">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Add a document</h2><span class="tail">N9363V</span></div>
+      <div class="big"><div class="ic">▤</div><div><div class="t">Choose from Files</div><div class="d">PDF or photo, up to 25 MB</div></div><span class="chev" style="margin-left:auto; color:var(--faint)">›</span></div>
+      <div class="big"><div class="ic">◉</div><div><div class="t">Scan with the camera</div><div class="d">Apple's scanner finds the edges</div></div><span class="chev" style="margin-left:auto; color:var(--faint)">›</span></div>
+      <div class="label" style="margin-top:4px">What is it</div>
+      <div class="chips"><span class="chip on">Form 337</span><span class="chip">8130-3</span><span class="chip">STC</span><span class="chip">ICA</span><span class="chip">Weight &amp; balance</span><span class="chip">Something else</span></div>
+      <div class="f"><div class="k">Title</div><div class="input">Form 337 — Vacuum pump</div></div>
+      <div class="two">
+        <div class="f"><div class="k">Dated</div><div class="input">14 Mar 2026</div></div>
+        <div class="f"><div class="k">Form or STC no.</div><div class="input ph">optional</div></div>
+      </div>
+      <div class="picker"><div><div class="t">Attach to an entry</div><div class="d">Optional — 14 Mar 2026 · Annual inspection</div></div><span class="chev">›</span></div>
+      <div class="primary">Add to the vault</div>
+      <div class="note" style="text-align:center">Kept on this phone until it can upload — it needs a connection to reach the vault.</div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="cap">23a · Attach to an entry — the picker</div>
+  <div class="frame">
+    <div class="behind"><div class="t">Records</div><div class="sub">Documents · N9363V</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="gap:10px; top:64px">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Which entry does this belong to?</h2></div>
+      <div class="input ph">Search entries — a date, a part, a name</div>
+      <div class="label">Airframe</div>
+      <div class="erow sel"><span class="dt">14 Mar 2026</span><span class="d">Annual inspection completed IAW Cessna 172M service manual…</span><span class="ck">✓</span></div>
+      <div class="erow"><span class="dt">14 Mar 2026</span><span class="d">AD 2011-10-09 seat rail inspection complied with.</span></div>
+      <div class="erow"><span class="dt">12 Nov 2025</span><span class="d">Installed Garmin GTN 650 per STC SA01798AT.</span></div>
+      <div class="label">Engine</div>
+      <div class="erow"><span class="dt">22 Jan 2026</span><span class="d">Oil and filter changed, Phillips 20W-50, 7 qts.</span></div>
+      <div class="erow"><span class="dt">3 May 2025</span><span class="d">Magnetos overhauled, 8130-3 attached.</span></div>
+      <div class="secondary">No entry — keep it loose</div>
+      <div class="primary">Attach to 14 Mar 2026</div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="cap">23b · Resolve a squawk</div>
+  <div class="frame">
+    <div class="behind"><div class="t">Squawks</div><div class="sub">N9363V · 2 open</div></div>
+    <div class="scrim"></div>
+    <div class="sheet" style="gap:10px">
+      <div class="grab"></div>
+      <div class="titlerow"><h2>Resolve</h2><span class="tail">N9363V</span></div>
+      <div class="banner" style="background:var(--bg); border-color:var(--hairline)"><span style="width:8px; height:8px; border-radius:4px; background:var(--danger); margin-top:7px; flex:none"></span><div><div class="t">#3 CHT reads intermittently</div><div class="d">Grounding · noticed 30 Aug 2026</div></div></div>
+      <div class="f"><div class="k">Resolved on</div><div class="input">2 Sep 2026</div></div>
+      <div class="picker"><div><div class="t">Which entry cleared it?</div><div class="d">Optional — gives the fix a signature</div></div><span class="chev">›</span></div>
+      <div class="f"><div class="k">What was done</div><div class="input area">Replaced #3 CHT probe (Alcor 86255). Reads steady on run-up.</div></div>
+      <div class="primary">Mark resolved</div>
+      <div class="note" style="text-align:center">Reopen it any time from the resolved list if it comes back.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 24 · Conflict ===================== -->
+<div class="col">
+  <div class="cap">24 · Conflict — yours / theirs, compact</div>
+  <div class="frame">
+    <div class="behind" style="height:100%; display:flex; flex-direction:column; gap:10px; padding-bottom:22px">
+      <div class="titlerow" style="margin-bottom:2px"><h2 style="font-size:20px">Changed in two places</h2><span class="tail">1 of 2</span></div>
+      <div class="banner"><div><div class="t">Edited on the web while your change was waiting to upload.</div><div class="d">14 Mar 2026 · Annual inspection · Airframe page 16. Nothing has been overwritten.</div></div></div>
+      <div class="vs">
+        <div class="side2">
+          <div class="h"><b>Yours</b> · phone</div>
+          <div class="kv"><span class="k">Date</span><span class="v">14 Mar 2026</span></div>
+          <div class="kv ch"><span class="k">Hobbs</span><span class="v num">3102.8</span></div>
+          <div class="kv"><span class="k">Tach</span><span class="v num">2417.3</span></div>
+          <div class="kv ch"><span class="k">Signed</span><span class="v">R. Brock · 3311209</span></div>
+        </div>
+        <div class="side2">
+          <div class="h"><b>Theirs</b> · web, 2 h ago</div>
+          <div class="kv"><span class="k">Date</span><span class="v">14 Mar 2026</span></div>
+          <div class="kv ch"><span class="k">Hobbs</span><span class="v num">3102.3</span></div>
+          <div class="kv"><span class="k">Tach</span><span class="v num">2417.3</span></div>
+          <div class="kv ch"><span class="k">Signed</span><span class="v">R. Brock · 3311209 IA</span></div>
+        </div>
+      </div>
+      <div class="note">Highlighted fields differ. Keeping yours replaces theirs; taking theirs drops your change. The scan is still the record either way.</div>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px">
+        <div class="primary">Take theirs</div>
+        <div class="secondary">Keep mine</div>
+        <div class="note" style="text-align:center; color:var(--accent); font-weight:600">Decide later</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wide">
+  <div class="cap">24a · Conflict at regular width — centred over the tab, 560 pt</div>
+  <div class="ipad">
+    <div class="side">
+      <div class="fleet"><div><div class="tail">N9363V</div><div class="type">Cessna 172M</div></div></div>
+      <div class="nav">Status</div><div class="nav">Log</div><div class="nav on">Records</div><div class="nav">Squawks</div><div class="nav" style="margin-top:8px">Ask</div>
+    </div>
+    <div class="main">
+      <div class="title dimmed"><h2>Records</h2><span class="meta">Scans · N9363V</span></div>
+      <div class="panes dimmed" style="grid-template-columns:250px 1fr"><div class="pane"></div><div class="pane card"></div></div>
+      <div class="overlay center">
+        <div>
+          <div class="titlerow"><h2>Changed in two places</h2><span class="x">Decide later</span></div>
+          <div class="banner"><div><div class="t">This entry was edited on the web while your change was waiting to upload.</div><div class="d">14 Mar 2026 · Annual inspection · Airframe page 16. Two fields differ; nothing has been overwritten.</div></div></div>
+          <div class="vs">
+            <div class="side2">
+              <div class="h"><b>Yours</b> · on this iPad</div>
+              <div class="kv"><span class="k">Date</span><span class="v">14 Mar 2026</span></div>
+              <div class="kv ch"><span class="k">Hobbs</span><span class="v num">3102.8</span></div>
+              <div class="kv"><span class="k">Tach</span><span class="v num">2417.3</span></div>
+              <div class="kv ch"><span class="k">Signed</span><span class="v">R. Brock · 3311209</span></div>
+            </div>
+            <div class="side2">
+              <div class="h"><b>Theirs</b> · web, 2 h ago</div>
+              <div class="kv"><span class="k">Date</span><span class="v">14 Mar 2026</span></div>
+              <div class="kv ch"><span class="k">Hobbs</span><span class="v num">3102.3</span></div>
+              <div class="kv"><span class="k">Tach</span><span class="v num">2417.3</span></div>
+              <div class="kv ch"><span class="k">Signed</span><span class="v">R. Brock · 3311209 IA</span></div>
+            </div>
+          </div>
+          <div class="row2"><span class="secondary" style="flex:1">Keep mine</span><span class="primary" style="flex:1">Take theirs</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="designnote">
+  <h3>What this fixes</h3>
+  <p>The current app can add a reading, an oil top-up, a squawk and a mark-done — and nothing else. Every edit,
+     every correction, every resolution sends the owner to the web. These surfaces close that gap without inventing a
+     second design language: each is the sheet idiom from screens 5 and 11 at compact width and an overlay on the
+     right pane at regular width.</p>
+  <p>The <b>field editor</b> shows the raw transcription and the crop beneath the value, so the owner corrects
+     against the page rather than from memory. The chip says <b>Uncertain read</b> or <b>Read clearly</b> — never a
+     percentage and never the word "confidence", which is ours. Meters get steppers; the step is 0.1 because that is
+     the resolution of the instrument.</p>
+  <p>The <b>meter-replacement prompt</b> catches the one entry that breaks every hour-based countdown: a reading lower
+     than the last. It asks the question in the owner's words and explains what saying yes does. "I mistyped it" is the
+     more common answer and is one tap.</p>
+  <p><b>Conflicts get a screen, not a toast.</b> Silent last-write-wins is how a logbook loses a signature. Yours and
+     theirs sit side by side with only the differing fields highlighted, and "Decide later" is always available — a
+     conflict is never resolved by dismissing it.</p>
+  <p><b>Ask</b> at regular width is a pane over any tab, because "ask while looking at the book" is the iPad-only
+     value. Every answer cites the entry it came from, and the allowance is on the composer, not buried in a profile.</p>
+</div>
