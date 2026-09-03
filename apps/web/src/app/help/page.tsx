@@ -80,8 +80,8 @@ const SECTIONS: Section[] = [
         </li>
         <li>
           <strong>Enroll an aircraft</strong> — the FAA registry lookup fills make/model/serial
-          from the tail number. Five logbooks are created automatically: airframe, engine, prop,
-          avionics, and <strong>Other</strong>.
+          from the tail number, here or in the <L href="#mobile">mobile app</L>. Five logbooks are
+          created automatically: airframe, engine, prop, avionics, and <strong>Other</strong>.
         </li>
         <li>
           <strong>Capture or upload</strong> your logbook pages (and A&amp;P documents into Other).
@@ -130,15 +130,57 @@ const SECTIONS: Section[] = [
           anything the server refused — nothing you record disappears quietly.
         </p>
         <p>
+          <strong>Review</strong> happens on the phone now, not only on the web. Entries sit beside
+          the scan — in a drawer you swipe up on an iPhone, in the pane next to it on an iPad — with
+          a <strong>Check this</strong> chip on any field the extractor was unsure of. Tap the{" "}
+          <strong>◎</strong> beside a value to light a ring on the exact ink it was read from, and it
+          stays lit while you edit. <strong>Confirm N clean</strong> accepts every confident entry in
+          one tap, on the same rule the web reviewer uses; entries the extractor missed can be keyed
+          in, and one that runs onto the next page can be merged into the one before it.
+        </p>
+        <p>
+          <strong>Inspections, ADs and equipment are managed, not just read.</strong> Add an
+          inspection or edit its interval, mark any item done, seed the standard Part 91 items, track
+          an AD and record compliance against it, or record an installation and a removal — the
+          directive that only applied because of that component turns itself off, with the reason
+          written down. <strong>Squawks</strong> are resolved on the device (naming the entry that
+          cleared them), reopened, edited or deleted, and{" "}
+          <strong><L href="#ask">Ask your logbook</L></strong> answers from the phone with the entries
+          it used listed underneath.
+        </p>
+        <p>
           <strong>Documents</strong> keeps your AROW paperwork to hand — airworthiness certificate,
           registration, POH/AFM and weight &amp; balance — for a ramp check with no signal.{" "}
           <strong>PDFs open in the app</strong>, page by page, which matters because a registration
-          or airworthiness certificate usually is one.
+          or airworthiness certificate usually is one. Documents also go <em>in</em> from the phone —
+          from Files, iCloud, the camera, or by dragging a PDF onto an iPad — queued on the device
+          with no signal, and attachable to the log entry they belong with.
+        </p>
+        <p>
+          <strong>On an iPad</strong>, full screen, the app shows a sidebar and two panes: the verdict
+          beside every tracked item, a page beside its entries, a squawk beside its detail. A Magic
+          Keyboard drives it — ⌘1–4 for tabs, ⌘K for Ask, ⌘N for a new squawk, ⌘←/⌘→ to turn pages,
+          ⌘↩ to confirm. In Split View below about half an iPad&apos;s width it falls back to the
+          phone layout on purpose, so the app beside ForeFlight is the one you already know.
+        </p>
+        <p>
+          <strong>Appearance</strong> in the account menu is Light, Dark, or Match my phone, and it
+          repaints while the app is open. Your session lives in the <strong>iOS Keychain</strong>, so
+          force-quitting, updating the build, or launching in airplane mode doesn&apos;t drop you at a
+          sign-in screen you can&apos;t complete without signal. Signing out clears the device copy of
+          your records with it.
+        </p>
+        <p>
+          <strong>Adding an aircraft</strong> works from the phone: a tail number brings back make,
+          model, serial and registrant from the FAA registry, and a tail the registry doesn&apos;t know
+          can still be added by hand.
         </p>
         <Effects>
-          Browse, check status, and record readings/squawks/oil/completions offline. Editing existing
-          entries, resolving squawks, and reviewing extractions are still done on the web. Viewers see
-          everything read-only. It&apos;s rolling out through TestFlight — more soon.
+          Browse, check status, review pages, correct entries, manage inspections/ADs/equipment,
+          resolve squawks and add documents — all offline, saved on the device and uploaded on the next
+          sync. If someone changed the same row on the web meanwhile, the phone shows you both versions
+          rather than picking a winner. Viewers see everything read-only. It&apos;s rolling out through
+          TestFlight — more soon.
         </Effects>
       </>
     ),
@@ -261,7 +303,10 @@ const SECTIONS: Section[] = [
           Tap the <strong>◎</strong> beside a field to spotlight exactly where on the scan that
           value was read from (spotlights appear once a page is extracted under the current model;
           re-extract older pages to get them), and click the image itself to magnify it. Editing an
-          entry marks it confirmed.
+          entry marks it confirmed. The same review — the scan, the ◎ spotlight, the low-confidence
+          chips, <strong>Confirm N clean</strong> and the page-spanning merge — now runs in the{" "}
+          <L href="#mobile">mobile app</L> as well, offline, so a page can be checked against the
+          paper book while the book is in your hands.
         </p>
         <p className="mt-3">
           <strong>Stickers at odd angles.</strong> Shops stick labels wherever there&apos;s room, so
@@ -772,7 +817,7 @@ const SECTIONS: Section[] = [
   {
     id: "notifications",
     icon: <AlertIcon />,
-    title: "Notifications (reminder emails)",
+    title: "Notifications (email & push)",
     body: (
       <>
         <p>
@@ -797,6 +842,13 @@ const SECTIONS: Section[] = [
             the reminder.
           </li>
         </ul>
+        <p className="mt-2">
+          If you&apos;ve allowed notifications in the <L href="#mobile">mobile app</L>, the same daily
+          check also sends a <strong>push notification</strong> to your phone, grouped per aircraft the
+          way the digest is (&ldquo;N4321J — 2 items coming due&rdquo;). It follows the same lead times
+          and the same once-per-due-cycle rule as the email, so you aren&apos;t told twice. Turning
+          notifications off in the app removes that device.
+        </p>
         <p className="mt-2">
           Reminders are grouped into <strong>one digest email per day</strong>, organized by
           aircraft, each item linking to its Status page. You&apos;re reminded once per due-cycle:
