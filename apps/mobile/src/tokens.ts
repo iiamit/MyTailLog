@@ -15,49 +15,217 @@
 // The VISUAL result is what has to match, not the mechanism.
 // ===========================================================================
 
-export const color = {
+// --- Palettes ---------------------------------------------------------------
+//
+// The design is authored dark. The light set is the same ramp inverted — same
+// hues, same roles — with the semantic colours darkened, because a #FF7060 or a
+// #5AA9FF that reads perfectly on #0F1216 is unreadable on white. Contrast is
+// checked in apps/web/test/mobile-theme.test.ts, not by eye.
+//
+// HOW A COLOUR REACHES THE SCREEN. Most token values are CSS custom properties
+// (`var(--c-ink)`), written onto <html> by applyTheme() in theme.ts. That is
+// what makes a theme switch reach style objects built once at module load
+// (ui.tsx's `input`, `ghost`, …) — a plain string captured there would stay dark
+// forever. Three keys are RAW hex instead, because a var() cannot be used where
+// they are used:
+//   bg, accent      — concatenated with an alpha suffix (`${color.accent}66`)
+//   surfaceRaised   — passed as an SVG presentation attribute
+// Those three come from the active palette through a Proxy, so they follow the
+// theme on the next render. Anything new doing string maths on a colour has to
+// be added to RAW below.
+//
+// KNOWN LIMIT of the raw three: ui.tsx re-exports `accent = color.accent` as a
+// module-level alias, so the handful of labels that import THAT (screens.tsx,
+// pending.tsx, complete-screen.tsx) keep the palette the app launched in until
+// the next launch if the owner flips appearance mid-session. Everything painted
+// through a var() changes instantly. The fix is for those files to read
+// `color.accent` at render time; it is a request to their owners, not a change
+// that can be made here.
+
+export type ThemeName = "dark" | "light";
+
+export type Palette = {
   /** App background; the tab bar sits on this at 92% opacity. */
-  bg: "#0F1216",
+  bg: string;
   /** Cards, panels, list rows, segmented-control track. */
-  surface: "#191D24",
+  surface: string;
   /** Stepper buttons, chips, unselected segments, avatar. */
-  surfaceRaised: "#212630",
+  surfaceRaised: string;
   /** Every 1px border and divider. */
-  hairline: "#2B313C",
-
-  ink: "#ECEFF4",
-  dim: "#9AA3B0",
-  faint: "#6B7482",
-
-  accent: "#5AA9FF",
-  accentLight: "#8EC8FF",
+  hairline: string;
+  ink: string;
+  dim: string;
+  faint: string;
+  accent: string;
+  accentLight: string;
   /** Text/icons on top of the accent gradient. */
-  onAccent: "#0B1017",
+  onAccent: string;
+  warning: string;
+  danger: string;
+  success: string;
+};
 
-  warning: "#F2B544",
-  danger: "#FF7060",
-  success: "#4ED69A",
-} as const;
+export const palettes: Record<ThemeName, Palette> = {
+  dark: {
+    bg: "#0F1216",
+    surface: "#191D24",
+    surfaceRaised: "#212630",
+    hairline: "#2B313C",
+    ink: "#ECEFF4",
+    dim: "#9AA3B0",
+    faint: "#6B7482",
+    accent: "#5AA9FF",
+    accentLight: "#8EC8FF",
+    onAccent: "#0B1017",
+    warning: "#F2B544",
+    danger: "#FF7060",
+    success: "#4ED69A",
+  },
+  light: {
+    bg: "#F2F5F9",
+    surface: "#FFFFFF",
+    surfaceRaised: "#E8ECF3",
+    hairline: "#D3DAE4",
+    ink: "#10151C",
+    dim: "#4E5967",
+    faint: "#6E7A89",
+    accent: "#1667CE",
+    // The accent gradient does not change between themes: it is a light-blue
+    // fill carrying dark text, and that reads on either ground.
+    accentLight: "#8EC8FF",
+    onAccent: "#0B1017",
+    warning: "#8A5300",
+    danger: "#C0271B",
+    success: "#0B7A4B",
+  },
+};
+
+/** Semantic tints — the semantic colour at low alpha over `surface`. */
+export type Tints = {
+  warning: string;
+  warningBorder: string;
+  danger: string;
+  dangerBorder: string;
+  success: string;
+  successBorder: string;
+  accent: string;
+  accentBorder: string;
+};
 
 /**
- * Semantic tints — the semantic colour at low alpha over `surface`.
- *
- * Kept as 8-digit hex rather than rgba() so they compose in the same string
- * positions as the solid colours.
+ * The design's alphas (12% fill, 30% border; success 24%, accent 14%) applied to
+ * whichever palette is active. Kept as 8-digit hex rather than rgba() so they
+ * compose in the same string positions as the solid colours.
  */
-export const tint = {
-  warning: "#F2B5441F", // 12%
-  warningBorder: "#F2B5444D", // 30%
-  danger: "#FF70601F", // 12%
-  dangerBorder: "#FF70604D",
-  success: "#4ED69A1F", // 12%
-  successBorder: "#4ED69A3D", // 24%
-  accent: "#5AA9FF24", // 14%
-  accentBorder: "#5AA9FF4D", // 30%
-} as const;
+export function tintsFor(p: Palette): Tints {
+  return {
+    warning: p.warning + "1F",
+    warningBorder: p.warning + "4D",
+    danger: p.danger + "1F",
+    dangerBorder: p.danger + "4D",
+    success: p.success + "1F",
+    successBorder: p.success + "3D",
+    accent: p.accent + "24",
+    accentBorder: p.accent + "4D",
+  };
+}
 
-/** The one primary fill in the system. Exactly one primary button per screen. */
-export const accentGradient = `linear-gradient(135deg, ${color.accent}, ${color.accentLight})`;
+/** Keys that must resolve to a real colour, not a var() — see the note above. */
+const RAW = new Set(["bg", "accent", "surfaceRaised"]);
+
+let active: ThemeName = "dark";
+
+/** The palette the app is currently painted in. Set by applyTheme(). */
+export function activeTheme(): ThemeName {
+  return active;
+}
+
+/** theme.ts only. UI code never calls this — it uses useTheme(). */
+export function setActiveTheme(t: ThemeName): void {
+  active = t;
+}
+
+export const color: Palette = new Proxy({} as Palette, {
+  get: (_t, k: string) => (RAW.has(k) ? palettes[active][k as keyof Palette] : `var(--c-${k})`),
+  // Style objects get spread and inspected; make the proxy enumerate like one.
+  ownKeys: () => Object.keys(palettes.dark),
+  getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
+});
+
+export const tint: Tints = new Proxy({} as Tints, {
+  get: (_t, k: string) => `var(--t-${k})`,
+  ownKeys: () => Object.keys(tintsFor(palettes.dark)),
+  getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
+});
+
+/** The `--c-*` / `--t-*` values for a theme, written onto <html> by paint(). */
+export function cssVars(t: ThemeName): Record<string, string> {
+  const p = palettes[t];
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(p)) out[`--c-${k}`] = v;
+  for (const [k, v] of Object.entries(tintsFor(p))) out[`--t-${k}`] = v;
+  return out;
+}
+
+// --- Appearance -------------------------------------------------------------
+//
+// The resolution rule and the first paint live HERE, not in theme.ts, for one
+// blunt reason: every screen imports tokens.ts, so this module is guaranteed to
+// load, and until the custom properties exist on <html> every `var(--c-…)` is
+// unset and the app renders unpainted. theme.ts owns the React hook, the status
+// bar and the owner-facing labels on top of this. Both are pure enough to test.
+
+export type ThemeChoice = "system" | "light" | "dark";
+
+const CHOICE_KEY = "mtl.appearance";
+
+/** Only these three are honoured; anything else in storage counts as unset. */
+export function parseChoice(stored: string | null | undefined): ThemeChoice {
+  return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+}
+
+/** The one decision: a pinned choice wins, otherwise the phone's own setting. */
+export function resolveTheme(choice: ThemeChoice, prefersDark: boolean): ThemeName {
+  if (choice === "light" || choice === "dark") return choice;
+  return prefersDark ? "dark" : "light";
+}
+
+export function storedChoice(): ThemeChoice {
+  try {
+    return parseChoice(globalThis.localStorage?.getItem(CHOICE_KEY));
+  } catch {
+    return "system"; // storage blocked — the phone's own setting still applies
+  }
+}
+
+export function saveChoice(c: ThemeChoice): void {
+  try {
+    globalThis.localStorage?.setItem(CHOICE_KEY, c);
+  } catch {
+    /* the choice just won't survive a relaunch */
+  }
+}
+
+export function systemPrefersDark(): boolean {
+  return globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches ?? true;
+}
+
+/** Repaint the whole app in `theme`. Cheap: one write of custom properties. */
+export function paint(theme: ThemeName): void {
+  setActiveTheme(theme);
+  const root = globalThis.document?.documentElement;
+  if (!root) return;
+  for (const [k, v] of Object.entries(cssVars(theme))) root.style.setProperty(k, v);
+  root.dataset.theme = theme;
+  // Lets the UA paint form controls, scrollbars and the overscroll ground right.
+  root.style.colorScheme = theme;
+}
+
+paint(resolveTheme(storedChoice(), systemPrefersDark()));
+
+/** The one primary fill in the system. Exactly one primary button per screen.
+ *  Deliberately theme-independent (see `accentLight` above). */
+export const accentGradient = `linear-gradient(135deg, ${palettes.dark.accent}, ${palettes.dark.accentLight})`;
 
 // --- Semantic state ---------------------------------------------------------
 // Colour is NEVER the only signal: every state carries a word too, for
