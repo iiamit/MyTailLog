@@ -27,6 +27,10 @@ export const SYNCED_TABLES = [
   "meter_reset",
   "scanned_document",
   "weight_balance",
+  // 0058: the AD text behind a compliance record (global reference data — its
+  // change rows carry no aircraft), and the extractor's equipment proposals.
+  "ad_reference",
+  "equipment_proposal",
 ] as const;
 
 export type ChangeRow = { seq: number; table_name: string; row_id: string; op: "I" | "U" | "D" };
