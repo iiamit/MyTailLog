@@ -6,7 +6,7 @@ import { API_BASE } from "./supabase";
 import { computeNextDue, AD_STATUS_LABEL } from "@/lib/compliance";
 import type { AdCompliance, AdKind, AdReference, AdStatus, Component } from "@/lib/database.types";
 import type { Aircraft } from "./types";
-import { color, text, radius, hit, tint, semantic, semanticOf } from "./tokens";
+import { color, text, radius, hit, tint, semantic } from "./tokens";
 import { Sheet, Field, Chips, Problem, SheetButtons, EntryPicker, field, type Queued } from "./item-editor";
 
 // Airworthiness Directives — the list and the "record compliance" sheet.
@@ -154,7 +154,7 @@ export function AdSheet({
         // Nothing but the number: just start tracking it. The id is ours, so the
         // row can show up on the phone before it has synced.
         const id = crypto.randomUUID();
-        await enqueue("ad.track", aircraft.id, { id, ref: fields.reference, kind }, { id, label: `${kind.toUpperCase()} ${fields.reference} tracked` });
+        await enqueue("ad.track", aircraft.id, { id, reference: fields.reference, kind }, { id, label: `${kind.toUpperCase()} ${fields.reference} tracked` });
         await patchLocal("ad_compliance", id, {
           ...fields, id, aircraft_id: aircraft.id, next_due_date: null, next_due_hours: null,
           ad_reference_id: null, verified_report_page_id: null, verified_at: null,
@@ -285,5 +285,3 @@ const addButton: React.CSSProperties = {
   background: tint.accent, border: `1px solid ${tint.accentBorder}`, color: color.accent,
   fontFamily: text.button.fontFamily, fontSize: 15, fontWeight: 600, cursor: "pointer",
 };
-
-export { semanticOf };

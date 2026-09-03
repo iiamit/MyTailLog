@@ -5,7 +5,7 @@ import { numOrNull } from "./status-logic";
 import type { Component, EquipmentProposal } from "@/lib/database.types";
 import type { Aircraft } from "./types";
 import { color, text, radius, hit, tint } from "./tokens";
-import { Sheet, Field, Chips, Problem, SheetButtons, EntryPicker, field, type Queued } from "./item-editor";
+import { Sheet, Field, Problem, SheetButtons, EntryPicker, field, type Queued } from "./item-editor";
 
 // Installed equipment — what's on the aircraft drives which ADs apply.
 //
@@ -33,7 +33,7 @@ export function EquipmentList({
   async function decide(p: EquipmentProposal, verb: "confirm" | "dismiss") {
     setBusy(p.id);
     try {
-      await enqueue(`proposals.${verb}`, aircraft.id, { proposalIds: [p.id] }, { label: `${p.name} ${verb === "confirm" ? "added to equipment" : "not added"}` });
+      await enqueue(verb === "confirm" ? "proposals.confirm" : "proposals.dismiss", aircraft.id, { proposalIds: [p.id] }, { label: `${p.name} ${verb === "confirm" ? "added to equipment" : "not added"}` });
       // The proposal row goes either way; the component it becomes arrives on sync.
       await patchLocal("equipment_proposal", p.id, null);
       onChanged();
@@ -268,10 +268,10 @@ function RemoveSheet({ aircraft, component: c, onClose, onQueued, onChanged }: {
     <Sheet title={`Remove ${c.name}`} onClose={busy ? undefined : onClose}>
       <p style={{ ...text.secondary, color: color.dim, margin: 0, lineHeight: 1.5 }}>
         Any directive tied to this equipment stops applying from this date, with the reason recorded.
+        The record stays — use Delete only for something that was never on this aircraft.
       </p>
       <Field label="Removed on"><input style={field} type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
       <EntryPicker aircraftId={aircraft.id} value={entryId} onChange={setEntryId} label="Logbook entry that records the removal" />
-      <Chips value="x" onChange={() => {}} options={[["x", "Keeps the history — use Delete only for a mistake"]] as const} />
       <SheetButtons primary={busy ? "Saving…" : "Mark removed"} onPrimary={save} disabled={busy || !date} />
     </Sheet>
   );
