@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import type { EquipmentEntryInput } from "@/lib/extraction/equipment";
 import { proposeEquipmentForEntries } from "@/lib/extraction/equipmentProposals";
 import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
@@ -16,12 +16,13 @@ export const maxDuration = 300;
 // the owner confirms proposals before anything is written (see the apply
 // server action). RLS scopes every query to the owner.
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
+  // Bearer (native app) or cookie (browser) — createSyncClient does both.
+  const supabase = await createSyncClient(req);
   const {
     data: { user },
   } = await supabase.auth.getUser();

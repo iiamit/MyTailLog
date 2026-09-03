@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { type FaaAd } from "@/lib/faa/federalRegister";
 import { searchADsInDRS } from "@/lib/faa/drs";
 import { extractModels, matchedModels } from "@/lib/faa/applicability";
-import { saveAdReference, enrichViaDRS } from "../actions";
+import { failMessage, type WriteCtx } from "@/lib/writes/entries";
+import * as compliance from "@/lib/writes/compliance";
 
 /**
  * How a term got into the search. The MANUFACTURER terms are the broad net
@@ -171,17 +172,6 @@ const ONE_TIME: TrackOptions = {
   nextDueHours: null,
 };
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-/** A non-negative, finite number within a sane bound — or null. */
-function num(v: unknown, max: number, whole = false): number | null | "bad" {
-  if (v == null || v === "") return null;
-  const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isFinite(n) || n < 0 || n > max) return "bad";
-  if (whole && !Number.isInteger(n)) return "bad";
-  return n;
-}
-
 /**
  * Track a candidate AD found by the explorer — creates the ad_compliance record
  * (status `open`: found, not yet dispositioned) with the recurrence the owner
@@ -192,69 +182,57 @@ export async function trackCandidate(
   ad: CandidateAd,
   options: TrackOptions = ONE_TIME,
 ): Promise<{ ok: true } | { error: string }> {
-  const reference = (ad.adNumber ?? "").trim();
-  if (!reference) return { error: "AD number required." };
-
-  const intervalHours = options.recurring ? num(options.intervalHours, 100_000) : null;
-  const intervalMonths = options.recurring ? num(options.intervalMonths, 1200, true) : null;
-  const nextDueHours = num(options.nextDueHours, 1_000_000);
-  if (intervalHours === "bad" || intervalMonths === "bad" || nextDueHours === "bad") {
-    return { error: "Intervals and hours must be positive numbers (months whole)." };
-  }
-  if (options.recurring && intervalHours == null && intervalMonths == null) {
-    return { error: "A recurring AD needs an interval — hours, months, or both." };
-  }
-  const nextDueDate = options.nextDueDate?.trim() || null;
-  if (nextDueDate && !ISO_DATE.test(nextDueDate)) {
-    return { error: "Next-due date must be a valid date." };
-  }
-
   // Re-parse the model list from the AD text server-side rather than trusting
   // the browser's copy, and label it as parsed — the AD's own Applicability
   // paragraph (serial numbers and all) remains the authority.
   const models = extractModels(ad.title, ad.abstract).slice(0, 20);
 
   const supabase = await createClient();
-  const { data: created, error } = await supabase
-    .from("ad_compliance")
-    .insert({
-      aircraft_id: aircraftId,
-      kind: "ad",
-      reference,
-      title: ad.title?.slice(0, 500) || null,
-      applicability: models.length
-        ? `Models named: ${models.join(", ")} (parsed from the AD text — confirm against the AD)`
-        : null,
-      recurring: options.recurring,
-      interval_hours: intervalHours,
-      interval_months: intervalMonths,
-      next_due_date: nextDueDate,
-      next_due_hours: nextDueHours,
-      status: "open",
-    })
-    .select("id")
-    .single();
-  if (error || !created) return { error: error?.message ?? "Couldn't track that AD." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const ctx: WriteCtx = { aircraftId, userId: user?.id ?? "" };
+
+  const created = await compliance.track(supabase, ctx, {
+    kind: "ad",
+    reference: ad.adNumber ?? "",
+    title: ad.title,
+    applicability: models.length
+      ? `Models named: ${models.join(", ")} (parsed from the AD text — confirm against the AD)`
+      : null,
+    recurring: options.recurring,
+    intervalHours: options.intervalHours,
+    intervalMonths: options.intervalMonths,
+    nextDueDate: options.nextDueDate,
+    nextDueHours: options.nextDueHours,
+  });
+  if (created.status !== "ok") return { error: failMessage(created) };
+  const complianceId = String(created.row?.id ?? "");
 
   // Cache the official reference against the new record. Best-effort: a failed
   // enrichment must not undo a successful track — the owner can retry the
   // lookup from the compliance page.
   if (ad.source === "drs") {
     // Re-resolved server-side by number rather than trusting the browser's copy.
-    await enrichViaDRS(aircraftId, created.id).catch(() => undefined);
+    await compliance.enrichViaDRS(supabase, ctx, { complianceId }).catch(() => undefined);
   } else {
-    await saveAdReference(aircraftId, created.id, {
-      adNumber: ad.adNumber,
-      documentNumber: ad.documentNumber,
-      title: ad.title,
-      abstract: ad.abstract,
-      effectiveOn: ad.effectiveOn,
-      htmlUrl: ad.htmlUrl,
-      pdfUrl: ad.pdfUrl,
-      fullTextUrl: ad.fullTextUrl,
-      citation: ad.citation,
-      rin: ad.rin,
-    }).catch(() => undefined);
+    await compliance
+      .saveAdReference(supabase, ctx, {
+        complianceId,
+        ad: {
+          adNumber: ad.adNumber,
+          documentNumber: ad.documentNumber,
+          title: ad.title,
+          abstract: ad.abstract,
+          effectiveOn: ad.effectiveOn,
+          htmlUrl: ad.htmlUrl,
+          pdfUrl: ad.pdfUrl,
+          fullTextUrl: ad.fullTextUrl,
+          citation: ad.citation,
+          rin: ad.rin,
+        },
+      })
+      .catch(() => undefined);
   }
 
   revalidatePath(`/aircraft/${aircraftId}/compliance/explore`);
