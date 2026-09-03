@@ -4,9 +4,15 @@ import { logbookLabel } from "@/lib/logbooks";
 import { buildHistory, byMonth } from "./history";
 import { shortDate } from "./airworthiness";
 import { localImageSrc } from "./blobs";
+import { enqueue } from "./mutations";
+import { canEdit } from "./actions";
+import { patchLocalMany } from "./review-local";
+import { pageNeedsLook, cleanUnconfirmed, type ReviewEntry } from "./review-rules";
+import { PageReview, SpotlightRing, EntriesDrawer, type Locate } from "./review-pane";
+import type { FieldBox } from "@/lib/extraction/schema";
 import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Card, Row, TopBar, Pill, URGENCY_COLOR, URGENCY_LABEL, text, dim, faint, ink, mono, panel, panel2, line, accent, green, red } from "./ui";
+import { Card, Row, TopBar, Pill, URGENCY_COLOR, URGENCY_LABEL, text, dim, faint, ink, mono, panel, panel2, line, accent, green, red, amber, accentGradient, color } from "./ui";
 
 // ---- Fleet home ------------------------------------------------------------
 // "Which of my aircraft needs me?" in one glance. The fleet IS the content:
@@ -221,13 +227,22 @@ function orderPages(pages: Page[]): Page[] {
 }
 
 // ---- Scans browser: every page for an aircraft, tap to view full --------------
-export function Pages({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (pages: Page[], i: number) => void }) {
-  const [pages, setPages] = useState<Page[] | null>(null);
+type PageRow = Page & { extraction_status: string };
+
+export function Pages({ aircraft, onOpen, onQueued }: { aircraft: Aircraft; onOpen: (pages: Page[], i: number) => void; onQueued?: () => Promise<"synced" | "pending"> }) {
+  const [pages, setPages] = useState<PageRow[] | null>(null);
+  const [entries, setEntries] = useState<ReviewEntry[]>([]);
   const [book, setBook] = useState<string | null>(null);
+  const [needsOnly, setNeedsOnly] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [books, setBooks] = useState<Map<string, string>>(new Map());
 
+  function load() {
+    getByAircraft<PageRow>("page", aircraft.id).then((rows) => setPages(orderPages(rows) as PageRow[]));
+    getByAircraft<ReviewEntry>("log_entry", aircraft.id).then(setEntries);
+  }
   useEffect(() => {
-    getByAircraft<Page>("page", aircraft.id).then((rows) => setPages(orderPages(rows)));
+    load();
     getByAircraft<{ id: string; type: string; title: string | null }>("logbook", aircraft.id).then((rows) =>
       setBooks(new Map(rows.map((r) => [r.id, r.title ?? logbookLabel(r.type as never, null)]))),
     );
@@ -235,7 +250,21 @@ export function Pages({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (pages
 
   const all = pages ?? [];
   const present = [...new Set(all.map((p) => p.logbook_id))];
-  const shown = book ? all.filter((p) => p.logbook_id === book) : all;
+  const needs = new Set(all.filter((p) => pageNeedsLook(p, entries)).map((p) => p.id));
+  const shown = all.filter((p) => (!book || p.logbook_id === book) && (!needsOnly || needs.has(p.id)));
+  const clean = cleanUnconfirmed(entries);
+
+  // "Confirm N clean": the entries the scanner was sure about, in one tap, so
+  // the eye goes to the doubtful ones. Same rule as the server's confirmClean.
+  async function confirmClean() {
+    if (confirming || clean.length === 0) return;
+    setConfirming("Confirming…");
+    await enqueue("entries.confirmClean", aircraft.id, {}, { label: `${clean.length} clean ${clean.length === 1 ? "entry" : "entries"} confirmed` });
+    await patchLocalMany<ReviewEntry>("log_entry", aircraft.id, clean, { owner_confirmed: true });
+    load();
+    const r = await onQueued?.();
+    setConfirming(r === "synced" ? "Confirmed · synced" : "Confirmed · uploads when connected");
+  }
 
   // Grouping IS the point: 111 undifferentiated thumbnails can't be searched by
   // eye, and "the prop logbook" is how an owner thinks about them.
@@ -248,7 +277,38 @@ export function Pages({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (pages
 
   return (
     <>
-      <div style={{ ...text.meta, color: faint, marginBottom: 12 }}>{all.length} pages</div>
+      <div style={{ ...text.meta, color: faint, marginBottom: 12 }}>
+        {all.length} pages{needs.size > 0 ? ` · ${needs.size} to check` : ""}
+      </div>
+
+      {needs.size > 0 && (
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 12 }}>
+          <button
+            onClick={() => setNeedsOnly((v) => !v)}
+            style={{
+              background: needsOnly ? `${amber}1F` : panel, color: needsOnly ? amber : dim,
+              border: `1px solid ${needsOnly ? amber : line}`, borderRadius: 9,
+              padding: "7px 12px", minHeight: 44, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            {needsOnly ? "✓ " : ""}Needs a look · {needs.size}
+          </button>
+          {needsOnly && clean.length > 0 && canEdit(aircraft.id) && (
+            <button
+              onClick={confirmClean}
+              disabled={!!confirming}
+              style={{
+                background: accentGradient, color: color.onAccent, border: "none", borderRadius: 9,
+                padding: "7px 14px", minHeight: 44, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                opacity: confirming ? 0.5 : 1,
+              }}
+            >
+              Confirm {clean.length} clean
+            </button>
+          )}
+        </div>
+      )}
+      {confirming && <p style={{ ...text.meta, color: faint, marginTop: -4, marginBottom: 12 }}>{confirming}</p>}
 
       {present.length > 1 && (
         <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
@@ -286,6 +346,7 @@ export function Pages({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (pages
                   key={p.id}
                   pageId={p.id}
                   seq={p.page_sequence}
+                  flag={needs.has(p.id)}
                   onClick={() => onOpen(shown, shown.findIndex((x) => x.id === p.id))}
                 />
               ))}
@@ -295,12 +356,13 @@ export function Pages({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (pages
       })}
 
       {pages?.length === 0 && <p style={{ ...text.secondary, color: faint }}>No scans yet.</p>}
+      {needsOnly && all.length > 0 && shown.length === 0 && <p style={{ ...text.secondary, color: faint }}>Every page has been checked.</p>}
       {!pages && <p style={{ ...text.secondary, color: faint }}>Loading…</p>}
     </>
   );
 }
 
-function Thumb({ pageId, seq, onClick }: { pageId: string; seq: number | null; onClick: () => void }) {
+function Thumb({ pageId, seq, flag, onClick }: { pageId: string; seq: number | null; flag?: boolean; onClick: () => void }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -319,6 +381,8 @@ function Thumb({ pageId, seq, onClick }: { pageId: string; seq: number | null; o
           {seq}
         </span>
       )}
+      {/* Amber corner: an entry on this page is still unconfirmed. */}
+      {flag && <span aria-label="Needs a look" style={{ position: "absolute", left: 4, top: 4, width: 9, height: 9, borderRadius: "50%", background: amber, border: `1.5px solid ${panel}` }} />}
     </div>
   );
 }
@@ -328,21 +392,41 @@ function Thumb({ pageId, seq, onClick }: { pageId: string; seq: number | null; o
 // full-width Prev/Next buttons are gone: they took roughly a third of the
 // screen to do what a swipe does, and neither could jump ten pages.
 
-export function PageViewer({ pages, index, onBack, onZoom }: { pages: Page[]; index: number; onBack: () => void; onZoom: (src: string) => void }) {
+//
+// Review: on the phone the entries live in a drawer over the page (default).
+// The iPad shell passes review="external" and places <PageReview> beside this
+// viewer, holding the spotlight itself: `spot` is the box to ring, `onPage`
+// tells it which page is showing after a swipe.
+
+export function PageViewer({
+  pages, index, onBack, onZoom, onQueued, review = "drawer", spot: spotProp, onPage,
+}: {
+  pages: Page[]; index: number; onBack: () => void; onZoom: (src: string) => void;
+  onQueued?: () => Promise<"synced" | "pending">;
+  review?: "drawer" | "external";
+  spot?: FieldBox | null;
+  onPage?: (page: Page) => void;
+}) {
   const [i, setI] = useState(index);
   const [src, setSrc] = useState<string | null | "loading">("loading");
+  const [drawer, setDrawer] = useState(false);
+  const [own, setOwn] = useState<{ box: FieldBox | null; key: string | null }>({ box: null, key: null });
   const page = pages[i];
   const touch = useRef<{ x: number; y: number } | null>(null);
+  const locate: Locate = (box, key) => setOwn({ box, key });
+  const spot = review === "external" ? (spotProp ?? null) : own.box;
 
   useEffect(() => {
     let live = true;
     setSrc("loading");
+    setOwn({ box: null, key: null });
+    onPage?.(page);
     localImageSrc("page", page.id).then((s) => live && setSrc(s)).catch(() => live && setSrc(null));
     return () => { live = false; };
   }, [page.id]);
 
   return (
-    <div style={{ background: "#08090C", margin: -20, padding: "20px 0 0", minHeight: "100vh" }}>
+    <div style={{ background: "#08090C", margin: -20, padding: `20px 0 ${review === "drawer" ? "70px" : "0"}`, minHeight: "100vh" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 14px" }}>
         <button onClick={onBack} aria-label="Back" style={{ background: "none", border: "none", color: accent, fontSize: 19, cursor: "pointer", minHeight: 44, padding: "0 8px 0 0" }}>‹</button>
         <div style={{ textAlign: "center", flex: 1 }}>
@@ -371,12 +455,17 @@ export function PageViewer({ pages, index, onBack, onZoom }: { pages: Page[]; in
         {src === "loading" && <div style={{ padding: 40, textAlign: "center", color: faint, fontSize: 13 }}>Loading…</div>}
         {src === null && <div style={{ padding: 40, textAlign: "center", color: faint, fontSize: 13 }}>Not on device — connect once, or use “Download all”.</div>}
         {typeof src === "string" && (
-          <img src={src} alt={`Page ${i + 1}`} style={{ display: "block", width: "100%", height: "auto", borderRadius: 6, boxShadow: "0 14px 40px rgba(0,0,0,.5)" }} />
+          // position: relative so the ring's percentages are of the rendered image —
+          // the boxes are fractions of the full scan, so this holds at any width.
+          <div style={{ position: "relative", borderRadius: 6, overflow: "hidden", boxShadow: "0 14px 40px rgba(0,0,0,.5)" }}>
+            <img src={src} alt={`Page ${i + 1}`} style={{ display: "block", width: "100%", height: "auto" }} />
+            <SpotlightRing box={spot} />
+          </div>
         )}
       </div>
 
       <div style={{ ...text.meta, color: faint, textAlign: "center", padding: "12px 0 8px" }}>
-        Swipe to turn · tap to zoom
+        {spot ? "Showing where that was read · tap ◎ again to clear" : "Swipe to turn · tap to zoom"}
       </div>
 
       {/* The strip is for jumping ten pages at once, which a swipe can't do. */}
@@ -385,6 +474,12 @@ export function PageViewer({ pages, index, onBack, onZoom }: { pages: Page[]; in
           <StripThumb key={p.id} pageId={p.id} current={n === i} onClick={() => setI(n)} />
         ))}
       </div>
+
+      {review === "drawer" && (
+        <EntriesDrawer title={`Page ${page.page_sequence ?? i + 1}`} open={drawer} onOpen={setDrawer}>
+          <PageReview page={page} onLocate={locate} activeKey={own.key} onQueued={onQueued} />
+        </EntriesDrawer>
+      )}
     </div>
   );
 }
