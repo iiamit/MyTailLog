@@ -60,6 +60,14 @@ OPTIONS="$OUT/ExportOptions.plist"
 # uses. Override PROFILE_NAME if the team ever renames it.
 PROFILE_NAME=${PROFILE_NAME:-"iOS Team Store Provisioning Profile: $BUNDLE_ID"}
 
+# automatic | manual. Xcode-managed profiles — the ones Xcode creates itself,
+# named "iOS Team Store Provisioning Profile: <bundle>" — can ONLY be used with
+# automatic signing; naming one under manual signing fails with "is Xcode
+# managed, but signing settings require a manually managed profile". Manual is
+# for a profile you created in the portal yourself, so it is the override, not
+# the default.
+SIGNING_STYLE=${SIGNING_STYLE:-automatic}
+
 # Fail here, with the reason, rather than 400 lines into an xcodebuild log.
 PROFILE_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 [ -d "$PROFILE_DIR" ] || PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
@@ -84,17 +92,26 @@ if [ "$found_aps" != "production" ]; then
   exit 1
 fi
 
+if [ "$SIGNING_STYLE" = "manual" ]; then
+  PROFILE_BLOCK="  <key>signingCertificate</key><string>Apple Distribution</string>
+  <key>provisioningProfiles</key>
+  <dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>"
+else
+  # Automatic reuses the installed Xcode-managed profile. It only needs cloud
+  # signing when it has to CREATE one — which is why this failed before the
+  # first Organizer distribution installed it, and works after.
+  PROFILE_BLOCK=""
+fi
+
 cat >"$OPTIONS" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>method</key><string>app-store-connect</string>
   <key>destination</key><string>export</string>
-  <key>signingStyle</key><string>manual</string>
+  <key>signingStyle</key><string>$SIGNING_STYLE</string>
   <key>teamID</key><string>$TEAM_ID</string>
-  <key>signingCertificate</key><string>Apple Distribution</string>
-  <key>provisioningProfiles</key>
-  <dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>
+$PROFILE_BLOCK
 </dict></plist>
 EOF
 
