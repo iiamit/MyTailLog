@@ -10,7 +10,8 @@ import { GaugeIcon, PlusCircleIcon, FolderIcon, FlagIcon } from "./icons";
 
 export type Tab = "status" | "log" | "records" | "squawks";
 
-const TABS: { id: Tab; label: string; Icon: typeof GaugeIcon }[] = [
+/** Shared with the iPad sidebar so both list the same four, in the same order. */
+export const TABS: { id: Tab; label: string; Icon: typeof GaugeIcon }[] = [
   { id: "status", label: "Status", Icon: GaugeIcon },
   { id: "log", label: "Log", Icon: PlusCircleIcon },
   { id: "records", label: "Records", Icon: FolderIcon },

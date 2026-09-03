@@ -18,18 +18,57 @@ export function AircraftSwitcher({
   worst,
   onSwitch,
   onSeeAll,
+  variant = "header",
 }: {
   aircraft: Aircraft;
   fleet: Aircraft[];
   worst: Record<string, Urgency>;
   onSwitch: (a: Aircraft) => void;
   onSeeAll: () => void;
+  /** `header`: the phone's inline tail button. `sidebar`: stacked, with the status pill, for the iPad sidebar. */
+  variant?: "header" | "sidebar";
 }) {
   const [open, setOpen] = useState(false);
   const type = [aircraft.make, aircraft.model].filter(Boolean).join(" ");
+  // From the sidebar (regular width only) the list is a centred dialog: a
+  // full-width bottom sheet on a 1024pt screen is a long reach for three tails.
+  const dialog = variant === "sidebar";
+  const current = worst[aircraft.id];
 
   return (
     <>
+      {variant === "sidebar" ? (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label={`Switch aircraft, currently ${aircraft.tail_number}`}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 6,
+            width: "100%",
+            background: color.surfaceRaised,
+            border: `1px solid ${color.hairline}`,
+            borderRadius: radius.row,
+            padding: "10px 12px",
+            color: color.ink,
+            cursor: "pointer",
+            minHeight: 44,
+            textAlign: "left",
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
+            <span style={text.tailCard}>{aircraft.tail_number}</span>
+            <span style={{ marginLeft: "auto", display: "inline-flex" }}><ChevronDownIcon size={13} color={color.faint} /></span>
+          </span>
+          {type && (
+            <span style={{ ...text.meta, color: color.dim, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {type}
+            </span>
+          )}
+          {current && current !== "none" && <Pill tone={current}>{URGENCY_LABEL[current]}</Pill>}
+        </button>
+      ) : (
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button
           onClick={() => setOpen(true)}
@@ -55,6 +94,7 @@ export function AircraftSwitcher({
           </span>
         )}
       </div>
+      )}
 
       {open && (
         <div
@@ -65,18 +105,21 @@ export function AircraftSwitcher({
             background: "rgba(0,0,0,.55)",
             zIndex: 60,
             display: "flex",
-            alignItems: "flex-end",
+            alignItems: dialog ? "center" : "flex-end",
+            justifyContent: "center",
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
+              maxWidth: dialog ? 420 : undefined,
               background: color.surface,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
+              borderRadius: 20,
+              borderBottomLeftRadius: dialog ? 20 : 0,
+              borderBottomRightRadius: dialog ? 20 : 0,
               border: `1px solid ${color.hairline}`,
-              padding: `14px 16px calc(20px + env(safe-area-inset-bottom))`,
+              padding: dialog ? "14px 16px 20px" : `14px 16px calc(20px + env(safe-area-inset-bottom))`,
               display: "flex",
               flexDirection: "column",
               gap: 8,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
@@ -12,8 +12,10 @@ import { drainCaptures } from "./capture";
 import { prefetchAll } from "./blobs";
 import { Hangar, EntryDetail, PageViewer } from "./screens";
 import { Records } from "./records-screen";
-import { TabBar, type Tab } from "./tabbar";
+import { TabBar, TABS, type Tab } from "./tabbar";
 import { AircraftSwitcher } from "./switcher";
+import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useShortcuts } from "./layout";
+import type { ShortcutMap } from "./shortcuts";
 import { Status } from "./status-screen";
 import { Documents } from "./documents-screen";
 import { PdfViewer } from "./pdf-screen";
@@ -117,6 +119,22 @@ function Shell({ session }: { session: Session }) {
   const syncTask = useRef<Promise<void> | null>(null);
   const syncLatest = useRef<(() => Promise<void>) | null>(null);
   zoomRef.current = zoom;
+  const regular = useSizeClass() === "regular";
+
+  // ⌘1–4 switch tabs from anywhere in an aircraft. Screens claim the other
+  // chords (⌘↩ ⌘→ ⌘← ⌘N ⌘F) themselves and win over these when mounted; until
+  // they do, ⌘N and ⌘F at least land on the tab where the squawk composer and
+  // the document search live.
+  const tabChords: ShortcutMap = {};
+  if (nav.screen === "aircraft") {
+    const a = nav;
+    TABS.forEach(({ id }, i) => {
+      tabChords[`cmd+${i + 1}` as keyof ShortcutMap] = () => setNav({ ...a, tab: id, sub: null });
+    });
+    tabChords["cmd+n"] = () => setNav({ ...a, tab: "squawks", sub: null });
+    tabChords["cmd+f"] = () => setNav({ ...a, tab: "records", segment: "documents", sub: null });
+  }
+  useShortcuts(tabChords);
 
   useEffect(() => {
     if (!NATIVE) return;
@@ -313,16 +331,80 @@ function Shell({ session }: { session: Session }) {
   }
 
   // The bar is part of the aircraft context, and only shows with nothing pushed
-  // on top — a pushed viewer owns the whole screen.
+  // on top — a pushed viewer owns the whole screen. At regular width the
+  // sidebar takes its place and nothing is ever pushed: what the phone pushes,
+  // the iPad shows in the second pane.
   const tabBar =
-    nav.screen === "aircraft" && !nav.sub ? (
+    !regular && nav.screen === "aircraft" && !nav.sub ? (
       <TabBar active={nav.tab} onChange={(tab) => setNav({ ...nav, tab, sub: null })} />
     ) : null;
+
+  const accountMenu = menu && (
+    <AccountMenu
+      email={session.user.email ?? ""}
+      onClose={() => setMenu(false)}
+      onSync={() => { setMenu(false); sync(); }}
+      onDownloadAll={() => { setMenu(false); downloadAll(); }}
+      dl={dl}
+      onRebuild={() => { setMenu(false); rebuild(); }}
+      onSignOut={() => supabase.auth.signOut()}
+    />
+  );
+
+  const overlays = (
+    <>
+      {capture !== undefined && (
+        <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onChanged={writeFinished} />
+      )}
+      {nav.screen === "pending" && (
+        <div style={regular ? { maxWidth: 640, margin: "0 auto" } : undefined}>
+          <Pending onBack={back} onChanged={updatePending} />
+        </div>
+      )}
+      {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      {accountMenu}
+    </>
+  );
+
+  if (regular && nav.screen === "aircraft") {
+    const a = nav;
+    const panes = aircraftPanes(a, {
+      setNav,
+      back,
+      onZoom: setZoom,
+      onQueued: writeFinished,
+      onCapture: () => setCapture(a.aircraft),
+    });
+    return (
+      <RegularFrame
+        sidebar={
+          <Sidebar
+            aircraft={a.aircraft}
+            fleet={fleet}
+            worst={worst}
+            active={a.tab}
+            onTab={(tab) => setNav({ ...a, tab, sub: null })}
+            onSwitch={(x) => setNav({ ...a, aircraft: x, sub: null })}
+            onSeeAll={() => setNav({ screen: "hangar" })}
+            onAccount={() => setMenu(true)}
+          />
+        }
+      >
+        <div style={{ marginBottom: pending > 0 ? 18 : 0 }}>
+          <PendingBanner count={pending} onOpen={() => setNav({ screen: "pending" })} />
+        </div>
+        <TwoPane primary={panes.primary} secondary={panes.secondary} ratio={panes.ratio} />
+        {overlays}
+      </RegularFrame>
+    );
+  }
 
   return (
     <Screen tabBar={tabBar}>
       {nav.screen === "hangar" && (
-        <>
+        // On an iPad the fleet list is read at a phone's width, centred, rather
+        // than stretched across the whole screen.
+        <div style={regular ? { maxWidth: 640, margin: "0 auto" } : undefined}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
             <Brand small />
             {/* Sign out lives in here — it must not be a top-level button. */}
@@ -369,19 +451,7 @@ function Shell({ session }: { session: Session }) {
           >
             + Add pages to an aircraft
           </button>
-
-          {menu && (
-            <AccountMenu
-              email={session.user.email ?? ""}
-              onClose={() => setMenu(false)}
-              onSync={() => { setMenu(false); sync(); }}
-              onDownloadAll={() => { setMenu(false); downloadAll(); }}
-              dl={dl}
-              onRebuild={() => { setMenu(false); rebuild(); }}
-              onSignOut={() => supabase.auth.signOut()}
-            />
-          )}
-        </>
+        </div>
       )}
 
       {nav.screen === "aircraft" && (
@@ -430,13 +500,141 @@ function Shell({ session }: { session: Session }) {
         </>
       )}
 
-      {capture !== undefined && (
-        <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onChanged={writeFinished} />
-      )}
-
-      {nav.screen === "pending" && <Pending onBack={back} onChanged={updatePending} />}
-
-      {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      {overlays}
     </Screen>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Regular width: what each tab becomes. The primary pane is the phone's tab
+// root, unchanged; the secondary pane is what the phone would have pushed.
+// ---------------------------------------------------------------------------
+
+type AircraftNav = Extract<Nav, { screen: "aircraft" }>;
+
+function aircraftPanes(
+  nav: AircraftNav,
+  h: {
+    setNav: (n: Nav) => void;
+    back: () => void;
+    onZoom: (src: string) => void;
+    onQueued: () => Promise<"synced" | "pending">;
+    onCapture: () => void;
+  },
+): { primary: ReactNode; secondary: ReactNode; ratio: "50/50" | "55/45" | "40/60" } {
+  const { aircraft, sub } = nav;
+
+  if (nav.tab === "status") {
+    return {
+      ratio: "55/45",
+      primary: <Status aircraft={aircraft} onComplete={(item) => h.setNav({ ...nav, sub: { kind: "complete", item } })} />,
+      secondary:
+        sub?.kind === "complete" ? (
+          <CompleteItem aircraft={aircraft} item={sub.item} onBack={h.back} onQueued={h.onQueued} />
+        ) : (
+          <StatusAllItemsSlot aircraft={aircraft} />
+        ),
+    };
+  }
+
+  if (nav.tab === "log") {
+    return {
+      ratio: "55/45",
+      primary: <Record aircraft={aircraft} onQueued={h.onQueued} />,
+      secondary: <RecentReadingsSlot aircraft={aircraft} />,
+    };
+  }
+
+  if (nav.tab === "squawks") {
+    return {
+      ratio: "50/50",
+      primary: <Squawks aircraft={aircraft} onQueued={h.onQueued} />,
+      secondary: <SquawkDetailSlot aircraft={aircraft} />,
+    };
+  }
+
+  // Records: the segmented control stays in the primary pane; the secondary
+  // follows the segment. Changing segment drops whatever the old one had open.
+  const primary = (
+    <Records
+      aircraft={aircraft}
+      segment={nav.segment}
+      onSegment={(segment) => h.setNav({ ...nav, segment, sub: null })}
+      onOpenEntry={(entry) => h.setNav({ ...nav, sub: { kind: "entry", entry } })}
+      onOpenPage={(pages, index) => h.setNav({ ...nav, sub: { kind: "page", pages, index } })}
+      onOpenPdf={(doc) => h.setNav({ ...nav, sub: { kind: "pdf", doc } })}
+      onCapture={h.onCapture}
+      onZoom={h.onZoom}
+    />
+  );
+
+  if (nav.segment === "scans") {
+    return {
+      ratio: "40/60",
+      primary,
+      secondary:
+        sub?.kind === "page" ? (
+          <>
+            <PageViewer pages={sub.pages} index={sub.index} onBack={h.back} onZoom={h.onZoom} />
+            <ReviewPaneSlot aircraft={aircraft} page={sub.pages[sub.index]} />
+          </>
+        ) : (
+          <PanePlaceholder>Pick a page to read it here.</PanePlaceholder>
+        ),
+    };
+  }
+
+  if (nav.segment === "documents") {
+    return {
+      ratio: "40/60",
+      primary,
+      secondary:
+        sub?.kind === "pdf" ? (
+          <PdfViewer documentId={sub.doc.id} title={sub.doc.title} onBack={h.back} onZoom={h.onZoom} />
+        ) : (
+          <DocumentViewerSlot aircraft={aircraft} />
+        ),
+    };
+  }
+
+  return {
+    ratio: "40/60",
+    primary,
+    secondary:
+      sub?.kind === "entry" ? (
+        <EntryDetail entry={sub.entry} tail={aircraft.tail_number} onBack={h.back} onZoom={h.onZoom} />
+      ) : (
+        <PanePlaceholder>Pick an entry to read it here.</PanePlaceholder>
+      ),
+  };
+}
+
+// ---- Slots ------------------------------------------------------------------
+// Secondary panes other streams are building in parallel. Each slot names its
+// owner and the exact props the shell passes; the owner replaces the body (or
+// the shell swaps in their export at integration) and keeps the signature.
+
+/** status-ui — every tracked item (today's AllItems, without a back button). */
+function StatusAllItemsSlot(_p: { aircraft: Aircraft }) {
+  return <PanePlaceholder>Every tracked item will list here.</PanePlaceholder>;
+}
+
+/** status-ui — the last few tach/hobbs readings beside the Log form. */
+function RecentReadingsSlot(_p: { aircraft: Aircraft }) {
+  return <PanePlaceholder>Recent readings will show here.</PanePlaceholder>;
+}
+
+/** records-ui — the open squawk's detail, or the composer. */
+function SquawkDetailSlot(_p: { aircraft: Aircraft }) {
+  return <PanePlaceholder>Pick a squawk to read it here.</PanePlaceholder>;
+}
+
+/** records-ui — an image or PDF document viewer. */
+function DocumentViewerSlot(_p: { aircraft: Aircraft }) {
+  return <PanePlaceholder>Pick a document to read it here.</PanePlaceholder>;
+}
+
+/** review-ui — the review pane for the page shown above it. */
+function ReviewPaneSlot(_p: { aircraft: Aircraft; page: Page | undefined }) {
+  return null;
 }
