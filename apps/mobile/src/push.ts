@@ -132,39 +132,44 @@ function tokenFromApns(): Promise<string | null> {
       if (t) lastToken = t;
       resolve(t);
     };
+
     // No answer at all is normal in the simulator and offline; don't hang the
     // caller's launch on it.
-    const timer = setTimeout(() => done(null), 10_000);
-    void PushNotifications.addListener("registration", (t) => {
-      clearTimeout(timer);
-      done(t.value);
-    });
-    void PushNotifications.addListener("registrationError", (e) => {
-      clearTimeout(timer);
-      // The message names the cause outright — most often "no valid
-      // 'aps-environment' entitlement string found", which means the build was
-      // signed for the wrong channel.
-      lastError = (e as { error?: string } | undefined)?.error ?? "APNs refused the registration";
+    const timer = setTimeout(() => {
+      lastError = lastError ?? "APNs did not answer in 10s";
       done(null);
-    });
-    void PushNotifications.register();
-  });
-}
+    }, 10_000);
 
-// Registering is an auth-state concern, not a screen's, so it hangs off the
-// session rather than off some component's mount: sign in (or come back with a
-// stored session) and the device is registered; that is the whole rule. Guarded
-// so React's double-invoked effects and a token refresh don't re-prompt.
-let registering = false;
-if (Capacitor.isNativePlatform()) {
-  state = { status: "failed", reason: "Not registered yet" };
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (!session || registering) return;
-    if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION") return;
-    registering = true;
-    void registerForPush().finally(() => {
-      registering = false;
-    });
+    // addListener returns a PROMISE, and the listener is not attached natively
+    // until it resolves. register() must therefore be awaited BEHIND both of
+    // them: APNs answers in milliseconds when the token is already cached, so
+    // firing register() on the next line raced the attachment and the
+    // "registration" event was delivered to nobody. The symptom was silence —
+    // no token, no error, no console line — and then this timeout.
+    void (async () => {
+      try {
+        await Promise.all([
+          PushNotifications.addListener("registration", (t) => {
+            clearTimeout(timer);
+            done(t.value);
+          }),
+          PushNotifications.addListener("registrationError", (e) => {
+            clearTimeout(timer);
+            // The message names the cause outright — most often "no valid
+            // 'aps-environment' entitlement string found", which means the
+            // build was signed for the wrong channel.
+            lastError = (e as { error?: string } | undefined)?.error ?? "APNs refused the registration";
+            done(null);
+          }),
+        ]);
+        await PushNotifications.register();
+      } catch (e) {
+        clearTimeout(timer);
+        lastError = e instanceof Error ? e.message : "register() threw";
+        done(null);
+      }
+    })();
+
   });
 }
 

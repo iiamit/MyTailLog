@@ -58,3 +58,46 @@ test("every non-working state produces a message, so none can be silent", () => 
   ];
   for (const s of states) assert.ok(pushWarning(s), `${s.status} must say something`);
 });
+
+// ---------------------------------------------------------------------------
+// The listener race behind "APNs did not answer in 10s".
+//
+// @capacitor/push-notifications' addListener returns a Promise, and the
+// listener is not attached natively until it resolves. Calling register()
+// without awaiting that raced the attachment: APNs answers in milliseconds when
+// the token is cached, so the "registration" event was delivered to nobody and
+// the only evidence was a timeout — no token, no error, nothing in the console.
+// ---------------------------------------------------------------------------
+
+type Listener = (v: string) => void;
+
+/** A plugin whose addListener resolves asynchronously, like the real one. */
+function fakePlugin() {
+  let attached: Listener | null = null;
+  return {
+    addListener: async (fn: Listener) => {
+      await Promise.resolve(); // attachment is not synchronous
+      attached = fn;
+    },
+    /** APNs replies immediately — the cached-token case. */
+    register: () => attached?.("apns-token"),
+  };
+}
+
+test("registering before the listener attaches loses the token — the bug", async () => {
+  const p = fakePlugin();
+  let got: string | null = null;
+  void p.addListener((t) => { got = t; }); // not awaited, as the old code did
+  p.register();
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(got, null, "the event fired before anyone was listening");
+});
+
+test("awaiting attachment first delivers the token — the fix", async () => {
+  const p = fakePlugin();
+  let got: string | null = null;
+  await p.addListener((t) => { got = t; });
+  p.register();
+  await new Promise((r) => setTimeout(r, 5));
+  assert.equal(got, "apns-token");
+});
