@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CapacitorHttp } from "@capacitor/core";
 import { API_BASE, supabase } from "./supabase";
 import { shortDate } from "./airworthiness";
+import { aiAllowance } from "./actions";
 import type { Aircraft } from "./types";
 import { color, text, radius, hit, display, accentGradient } from "./tokens";
 
@@ -30,27 +31,6 @@ type Turn = {
   error: string | null;
 };
 
-const ALLOWANCE_KEY = "mytaillog.aiAllowance";
-
-/**
- * Answers left today, as /api/sync/access last reported them.
- *
- * ponytail: reads the cache directly because `aiAllowance()` lands in actions.ts
- * on the core-sync branch, not in this one's base. Swap to that import at
- * integration — same key, same shape.
- */
-function allowanceFromCache(): { callsToday: number; dailyCap: number } | null {
-  try {
-    const raw = localStorage.getItem(ALLOWANCE_KEY);
-    if (!raw) return null;
-    const a = JSON.parse(raw) as { callsToday?: number; dailyCap?: number };
-    if (typeof a.dailyCap !== "number") return null;
-    return { callsToday: a.callsToday ?? 0, dailyCap: a.dailyCap };
-  } catch {
-    return null;
-  }
-}
-
 export function AskPane({
   aircraft,
   onOpenEntry,
@@ -63,7 +43,7 @@ export function AskPane({
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
-  const allowance = allowanceFromCache();
+  const allowance = aiAllowance();
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -126,11 +106,6 @@ export function AskPane({
         <h2 style={{ fontFamily: display, fontSize: 19, fontWeight: 700, color: color.ink, margin: 0 }}>
           Ask the logbooks
         </h2>
-        {allowance && (
-          <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>
-            {Math.max(0, allowance.dailyCap - allowance.callsToday)} left today
-          </span>
-        )}
       </div>
 
       {turns.length === 0 && (
@@ -209,7 +184,16 @@ export function AskPane({
           else on this screen still works offline.
         </div>
       ) : (
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {allowance && (
+            // On the composer, not in a profile: this is where the cost is
+            // incurred (design §19).
+            <span style={{ ...text.meta, color: color.faint }}>
+              Needs a connection · {Math.max(0, allowance.dailyCap - allowance.callsToday)} of{" "}
+              {allowance.dailyCap} questions left today
+            </span>
+          )}
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
           <textarea
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -243,6 +227,7 @@ export function AskPane({
           >
             {asking ? "…" : "Ask"}
           </button>
+          </div>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { color, text, radius, display, hit } from "./tokens";
 import { Documents } from "./documents-screen";
 import { Entries, Pages } from "./screens";
@@ -9,10 +9,12 @@ import { AskPane } from "./ask-pane";
 import { RecordsSheet } from "./document-upload";
 import { getByAircraft } from "./db";
 import { computeAirworthiness, shortDate } from "./airworthiness";
+import { buildHistory } from "./history";
 import { maintenanceSummaryText } from "@/lib/summaryShare";
 import { usefulLoad } from "@/lib/weightBalance";
 import { urgencyLabel } from "@/lib/compliance";
-import type { HistoryFilter } from "./records-filter";
+import { NO_FILTER, yearsOf, type HistoryFilter } from "./records-filter";
+import { fabBottom, useSizeClass } from "./layout";
 import { CameraIcon, ChevronRightIcon } from "./icons";
 import { accentGradient } from "./tokens";
 import type { Segment } from "./App";
@@ -59,6 +61,15 @@ export function Records({
   const [extra, setExtra] = useState<Extra>(null);
   const [managing, setManaging] = useState(false);
   const [shared, setShared] = useState<string | null>(null);
+  const [filter, setFilter] = useState<HistoryFilter>(NO_FILTER);
+  const size = useSizeClass();
+  // The year chips need the years that exist. Same local rows Entries reads,
+  // through the same buildHistory, so the two lists can never disagree.
+  const [years, setYears] = useState<string[]>([]);
+  useEffect(() => {
+    if (segment !== "history") return;
+    getByAircraft<LogEntry>("log_entry", aircraft.id).then((rows) => setYears(yearsOf(buildHistory(rows))));
+  }, [aircraft.id, segment]);
 
   return (
     <>
@@ -162,7 +173,7 @@ export function Records({
             style={{
               position: "fixed",
               right: 20,
-              bottom: "calc(78px + env(safe-area-inset-bottom) + 20px)",
+              bottom: fabBottom(size),
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -186,7 +197,12 @@ export function Records({
         </>
       )}
 
-      {segment === "history" && <Entries aircraft={aircraft} onOpen={onOpenEntry} />}
+      {segment === "history" && (
+        <>
+          <HistoryFilters filter={filter} years={years} onChange={setFilter} />
+          <Entries aircraft={aircraft} onOpen={onOpenEntry} filter={filter} />
+        </>
+      )}
 
       {extra && (
         <RecordsSheet

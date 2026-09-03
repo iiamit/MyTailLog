@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DOCUMENT_TYPES, documentTypeLabel } from "@/lib/documents";
 import type { DocumentType } from "@/lib/database.types";
 import { scanPages } from "./capture";
@@ -11,6 +11,7 @@ import {
 } from "./blob-upload";
 import { ACCEPT_ATTR, fileSizeLabel, validateDocument } from "./document-validate";
 import type { Aircraft } from "./types";
+import { useDropFiles } from "./layout";
 import { color, text, radius, hit, display, accentGradient } from "./tokens";
 import { CameraIcon } from "./icons";
 
@@ -326,21 +327,12 @@ export function DropZone({
   busy?: boolean;
   children: ReactNode;
 }) {
-  const [dragging, setDragging] = useState(false);
-  const depth = useRef(0);
-  const hasFiles = (e: DragEvent<HTMLDivElement>) => Array.from(e.dataTransfer.types).includes("Files");
+  const { dragging, props } = useDropFiles<HTMLDivElement>((files) => {
+    if (!busy) onFiles(files);
+  });
   return (
     <div
-      onDragEnter={(e) => { if (!hasFiles(e)) return; e.preventDefault(); depth.current++; setDragging(true); }}
-      onDragOver={(e) => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
-      onDragLeave={(e) => { if (!hasFiles(e)) return; depth.current = Math.max(0, depth.current - 1); if (depth.current === 0) setDragging(false); }}
-      onDrop={(e) => {
-        e.preventDefault();
-        depth.current = 0;
-        setDragging(false);
-        const files = Array.from(e.dataTransfer.files);
-        if (files.length > 0 && !busy) onFiles(files);
-      }}
+      {...props}
       style={{
         border: `1px ${dragging ? "solid" : "dashed"} ${dragging ? color.accent : color.hairline}`,
         borderRadius: radius.card,

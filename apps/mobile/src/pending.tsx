@@ -174,10 +174,11 @@ function Conflict({
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: hit.min }}>
+        {/* Leaving without choosing is a real answer, so it says so (design §24). */}
         <button onClick={onBack} style={btn(dim)}>
-          ‹ Back
+          ‹ Decide later
         </button>
-        <span style={{ fontWeight: 700, fontSize: 17 }}>Which version?</span>
+        <span style={{ fontWeight: 700, fontSize: 17 }}>Changed in two places</span>
       </div>
       <p style={{ color: dim, fontSize: 13, marginTop: 10, lineHeight: 1.5 }}>
         {action.label}. Someone else saved this

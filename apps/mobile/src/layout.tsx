@@ -43,6 +43,8 @@ export function Sidebar({
   onSwitch,
   onSeeAll,
   onAccount,
+  onAsk,
+  askOn,
 }: {
   aircraft: Aircraft;
   fleet: Aircraft[];
@@ -52,6 +54,9 @@ export function Sidebar({
   onSwitch: (a: Aircraft) => void;
   onSeeAll: () => void;
   onAccount: () => void;
+  /** Opens Ask beside the current tab. Absent = no Ask row. */
+  onAsk?: () => void;
+  askOn?: boolean;
 }): ReactElement | null {
   // ponytail: inline hover until platform ships `.hoverable` in index.css
   // (requested); the className is already on the rows so the class wins later.
@@ -120,6 +125,38 @@ export function Sidebar({
           </button>
         );
       })}
+
+      {/* Ask is not a tab — it opens beside whatever tab is up — so it sits
+          after an 8pt gap rather than in the run of four (design §12). */}
+      {onAsk && (
+        <button
+          className="hoverable"
+          onClick={onAsk}
+          onMouseEnter={() => setHover("ask")}
+          onMouseLeave={() => setHover(null)}
+          aria-current={askOn ? "page" : undefined}
+          title="⌘K"
+          style={{ ...row("ask", !!askOn), marginTop: 8 }}
+        >
+          <span
+            aria-hidden
+            style={{
+              width: 19,
+              height: 19,
+              borderRadius: "50%",
+              border: `1.5px solid ${askOn ? color.accent : color.faint}`,
+              color: askOn ? color.accent : color.faint,
+              fontSize: 12,
+              lineHeight: "16px",
+              textAlign: "center",
+              display: "inline-block",
+            }}
+          >
+            ?
+          </span>
+          Ask
+        </button>
+      )}
 
       <button
         className="hoverable"
@@ -206,6 +243,13 @@ export function TwoPane({
     </div>
   );
 }
+
+/**
+ * Where a floating action button sits. On a phone it has to clear the tab bar;
+ * at regular width there is no tab bar, so it sits on the safe area alone.
+ */
+export const fabBottom = (size: SizeClass): string =>
+  size === "regular" ? "calc(20px + env(safe-area-inset-bottom))" : "calc(78px + env(safe-area-inset-bottom) + 20px)";
 
 /** What a secondary pane shows before anything is picked in the primary. */
 export function PanePlaceholder({ children }: { children: ReactNode }): ReactElement {

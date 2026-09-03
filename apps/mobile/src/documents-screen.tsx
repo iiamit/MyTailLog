@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useShortcuts } from "./layout";
 import { getByAircraft } from "./db";
 import { localImageSrc } from "./blobs";
 import { enqueue } from "./mutations";
@@ -54,6 +55,8 @@ export function Documents({
   const [waiting, setWaiting] = useState<PendingUpload[]>([]);
   const [acting, setActing] = useState<Doc | null>(null);
   const editable = canEdit(aircraft.id);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useShortcuts({ "cmd+f": () => searchRef.current?.focus() });
 
   async function reload() {
     setDocs(await getByAircraft<Doc>("document", aircraft.id));
@@ -88,6 +91,7 @@ export function Documents({
     <>
       <div style={{ position: "relative", marginBottom: 12 }}>
         <input
+          ref={searchRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           // Results are live, so there is nothing to submit — but people do

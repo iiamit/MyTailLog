@@ -24,6 +24,7 @@ export type Chord =
   | "cmd+left"
   | "cmd+n"
   | "cmd+f"
+  | "cmd+k"
   | "cmd+1"
   | "cmd+2"
   | "cmd+3"
@@ -37,6 +38,7 @@ const KEYS: Record<string, Chord> = {
   arrowleft: "cmd+left",
   n: "cmd+n",
   f: "cmd+f",
+  k: "cmd+k",
   "1": "cmd+1",
   "2": "cmd+2",
   "3": "cmd+3",

@@ -9,6 +9,7 @@ import { computeAirworthiness, buildVerdict } from "./airworthiness";
 import type { Urgency } from "@/lib/compliance";
 import { drainActions, refreshEditable } from "./actions";
 import { drainCaptures } from "./capture";
+import { drainDocumentUploads } from "./blob-upload";
 import { prefetchAll } from "./blobs";
 import { Hangar, EntryDetail, PageViewer } from "./screens";
 import { Records } from "./records-screen";
@@ -23,6 +24,7 @@ import { Documents } from "./documents-screen";
 import { PdfViewer } from "./pdf-screen";
 import { Record, RecentReadingsPane } from "./record-screen";
 import { Squawks } from "./squawks-screen";
+import { AskPane } from "./ask-pane";
 import { CompleteItem } from "./complete-screen";
 import { CaptureScreen } from "./capture-screen";
 import { Pending, PendingBanner } from "./pending";
@@ -90,7 +92,13 @@ type Sub =
   | { kind: "entry"; entry: LogEntry }
   | { kind: "page"; pages: Page[]; index: number }
   | { kind: "complete"; item: StatusItem }
-  | { kind: "pdf"; doc: { id: string; title: string } };
+  | { kind: "pdf"; doc: { id: string; title: string } }
+  // Named by records-ui (CONTRACT §11). Squawks and Documents still hold their
+  // own selection today; these let it survive a tab switch when they lift it.
+  | { kind: "squawk"; id: string }
+  | { kind: "document"; id: string }
+  // Ask is a pane over whatever tab is open, not a tab of its own.
+  | { kind: "ask" };
 
 // The Back-stack is gone: instead of a screen per node, there is a fleet list,
 // and an aircraft context that holds a tab, a Records segment, and whatever is
@@ -133,6 +141,8 @@ function Shell({ session }: { session: Session }) {
     TABS.forEach(({ id }, i) => {
       tabChords[`cmd+${i + 1}` as keyof ShortcutMap] = () => setNav({ ...a, tab: id, sub: null });
     });
+    // Ask is a pane, so it only exists where there is a second pane.
+    if (regular) tabChords["cmd+k"] = () => setNav({ ...a, sub: { kind: "ask" } });
     tabChords["cmd+n"] = () => setNav({ ...a, tab: "squawks", sub: null });
     tabChords["cmd+f"] = () => setNav({ ...a, tab: "records", segment: "documents", sub: null });
   }
@@ -273,6 +283,9 @@ function Shell({ session }: { session: Session }) {
       setSyncing("Uploading…");
       const drained = await drainActions();
       const captures = await drainCaptures((done, total) => setSyncing(`Uploading pages… ${done} of ${total}`));
+      // Documents added offline ride the same drain, or they would wait until
+      // someone opened Records › Documents and tapped "Upload now".
+      const uploaded = await drainDocumentUploads();
       await updatePending();
       await loadFleet();
       if (drained.failed > 0) {
@@ -389,13 +402,21 @@ function Shell({ session }: { session: Session }) {
             onSwitch={(x) => setNav({ ...a, aircraft: x, sub: null })}
             onSeeAll={() => setNav({ screen: "hangar" })}
             onAccount={() => setMenu(true)}
+            onAsk={() => setNav({ ...a, sub: { kind: "ask" } })}
+            askOn={a.sub?.kind === "ask"}
           />
         }
       >
         <div style={{ marginBottom: pending > 0 ? 18 : 0 }}>
           <PendingBanner count={pending} onOpen={() => setNav({ screen: "pending" })} />
         </div>
-        <TwoPane primary={panes.primary} secondary={panes.secondary} ratio={panes.ratio} />
+        {/* A tab that draws its own split (Squawks) asks for no second pane and
+            gets the whole width, rather than a nested one a sliver wide. */}
+        {panes.secondary === null ? (
+          panes.primary
+        ) : (
+          <TwoPane primary={panes.primary} secondary={panes.secondary} ratio={panes.ratio} />
+        )}
         {overlays}
       </RegularFrame>
     );
@@ -527,6 +548,15 @@ function aircraftPanes(
 ): { primary: ReactNode; secondary: ReactNode; ratio: "50/50" | "55/45" | "40/60" } {
   const { aircraft, sub } = nav;
 
+  // Ask is a pane over any tab (records-ui request 5), reached with ⌘K.
+  if (sub?.kind === "ask") {
+    return {
+      ratio: "55/45",
+      primary: aircraftPanes({ ...nav, sub: null }, h).primary,
+      secondary: <AskPane aircraft={aircraft} />,
+    };
+  }
+
   if (nav.tab === "status") {
     return {
       ratio: "55/45",
@@ -556,11 +586,9 @@ function aircraftPanes(
   }
 
   if (nav.tab === "squawks") {
-    return {
-      ratio: "50/50",
-      primary: <Squawks aircraft={aircraft} onQueued={h.onQueued} />,
-      secondary: <SquawkDetailSlot aircraft={aircraft} />,
-    };
+    // Squawks holds its own selection and draws its own 55/45 split, so the
+    // shell hands it the whole width rather than nesting a second TwoPane.
+    return { ratio: "50/50", primary: <Squawks aircraft={aircraft} onQueued={h.onQueued} />, secondary: null };
   }
 
   // Records: the segmented control stays in the primary pane; the secondary
@@ -575,6 +603,7 @@ function aircraftPanes(
       onOpenPdf={(doc) => h.setNav({ ...nav, sub: { kind: "pdf", doc } })}
       onCapture={h.onCapture}
       onZoom={h.onZoom}
+      onChanged={() => { void h.onQueued(); }}
     />
   );
 
@@ -620,11 +649,6 @@ function aircraftPanes(
 // Secondary panes other streams are building in parallel. Each slot names its
 // owner and the exact props the shell passes; the owner replaces the body (or
 // the shell swaps in their export at integration) and keeps the signature.
-
-/** records-ui — the open squawk's detail, or the composer. */
-function SquawkDetailSlot(_p: { aircraft: Aircraft }) {
-  return <PanePlaceholder>Pick a squawk to read it here.</PanePlaceholder>;
-}
 
 /** records-ui — an image or PDF document viewer. */
 function DocumentViewerSlot(_p: { aircraft: Aircraft }) {

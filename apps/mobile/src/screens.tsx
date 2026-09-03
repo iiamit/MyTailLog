@@ -10,6 +10,7 @@ import { patchLocalMany } from "./review-local";
 import { pageNeedsLook, cleanUnconfirmed, type ReviewEntry } from "./review-rules";
 import { PageReview, SpotlightRing, EntriesDrawer, type Locate } from "./review-pane";
 import { useShortcuts } from "./layout";
+import { filterHistory, NO_FILTER, type HistoryFilter } from "./records-filter";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
@@ -95,7 +96,16 @@ export function Hangar({
 }
 
 // ---- Entries: one aircraft's log, newest first --------------------------------
-export function Entries({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (e: LogEntry) => void }) {
+export function Entries({
+  aircraft,
+  onOpen,
+  filter = NO_FILTER,
+}: {
+  aircraft: Aircraft;
+  onOpen: (e: LogEntry) => void;
+  /** Set by the History filter bar above this list (records-ui). */
+  filter?: HistoryFilter;
+}) {
   const [rows, setRows] = useState<LogEntry[] | null>(null);
 
   useEffect(() => {
@@ -105,7 +115,12 @@ export function Entries({ aircraft, onOpen }: { aircraft: Aircraft; onOpen: (e: 
   if (!rows) return <p style={{ ...text.secondary, color: faint }}>Loading…</p>;
   if (rows.length === 0) return <p style={{ ...text.secondary, color: faint }}>No entries yet.</p>;
 
-  const months = byMonth(buildHistory(rows));
+  const months = byMonth(filterHistory(buildHistory(rows), filter));
+  // The list is not empty — the filter is. Say which, or the owner reads it as
+  // "the logbook is gone".
+  if (months.length === 0) {
+    return <p style={{ ...text.secondary, color: faint }}>Nothing matches what you picked.</p>;
+  }
 
   return (
     <>

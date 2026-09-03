@@ -3,7 +3,7 @@ import { getByAircraft, listActions } from "./db";
 import { enqueue } from "./mutations";
 import { canEdit } from "./actions";
 import { shortDate } from "./airworthiness";
-import { TwoPane, useSizeClass } from "./layout";
+import { TwoPane, useSizeClass, useShortcuts, fabBottom } from "./layout";
 import { SquawkDetail, SEVERITY, SEVERITY_ORDER, type SquawkRow } from "./squawk-detail";
 import type { Aircraft, LogEntry } from "./types";
 import { color, text, radius, hit, accentGradient, tint } from "./tokens";
@@ -31,6 +31,7 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
   const [showResolved, setShowResolved] = useState(false);
   const editable = canEdit(aircraft.id);
   const size = useSizeClass();
+  useShortcuts({ "cmd+n": () => editable && setComposing(true) });
 
   async function reload() {
     setRows(await getByAircraft<SquawkRow>("squawk", aircraft.id));
@@ -151,7 +152,7 @@ export function Squawks({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: 
         <button
           onClick={() => setComposing(true)}
           style={{
-            position: "fixed", right: 20, bottom: "calc(78px + env(safe-area-inset-bottom) + 20px)",
+            position: "fixed", right: 20, bottom: fabBottom(size),
             height: 50, padding: "0 20px", borderRadius: 999, border: "none",
             background: accentGradient, color: color.onAccent,
             fontFamily: text.button.fontFamily, fontSize: 14.5, fontWeight: 600,

@@ -150,9 +150,7 @@ export async function drainDocumentUploads(
  * a modern phone camera produces 4–8 MB per shot, and a registration
  * certificate is legible at a fraction of that. PDFs are never touched.
  *
- * ponytail: a near-copy of capture.ts's private `rescale`. That file belongs to
- * no stream in CONTRACT §8, so it isn't edited to export one — merge the two
- * once ownership is settled.
+ * capture.ts uses this too — it is the one downscaler in the app.
  */
 export function downscaleImage(base64: string, mime: string, maxEdge = 2200, quality = 0.85): Promise<string> {
   return new Promise((resolve, reject) => {
