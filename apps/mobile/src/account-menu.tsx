@@ -3,7 +3,7 @@ import { cacheUsage, clearCache } from "./blobs";
 import { CapacitorHttp } from "@capacitor/core";
 import { color, text, radius, hit } from "./tokens";
 import { THEME_CHOICES, THEME_LABEL, useTheme, type ThemeChoice } from "./theme";
-import { unregisterPush } from "./push";
+import { unregisterPush, pushState, onPushState, type PushState } from "./push";
 import { API_BASE, supabase } from "./supabase";
 
 // The account menu behind the fleet avatar.
@@ -48,6 +48,7 @@ export function AccountMenu({
   const downloading = !!dl && dl.total > 0 && dl.done < dl.total;
   const { choice, setChoice } = useTheme();
   const storage = useStorage(dl);
+  const push = usePushState();
   const [backup, setBackup] = useState<string | null>(null);
 
   async function runBackup() {
@@ -75,6 +76,19 @@ export function AccountMenu({
         <div style={{ ...text.meta, color: color.faint, marginBottom: 6 }}>{email}</div>
 
         <MenuItem label="Sync now" onClick={onSync} />
+        {/* Shown only when reminders will NOT arrive. A working device says
+            nothing; the point is that a silent failure stops being silent. */}
+        {push.status !== "registered" && push.status !== "unsupported" && (
+          <MenuItem
+            label="Reminders won't arrive on this phone"
+            detail={
+              push.status === "denied"
+                ? "Notifications are turned off for MyTailLog. Turn them on in iOS Settings → Notifications."
+                : `This phone couldn't register for notifications. ${push.reason}`
+            }
+            onClick={() => {}}
+          />
+        )}
         <MenuItem
           label={downloading ? `Downloading scans… ${dl!.done}/${dl!.total}` : "Download all scans for offline"}
           detail="Fetches every page and document once so the full record browses with no signal."
@@ -285,4 +299,11 @@ function WebLink({ label, detail, path, tone }: { label: string; detail: string;
       <span style={{ ...text.meta, color: color.faint, display: "block", marginTop: 3, lineHeight: 1.45 }}>{detail}</span>
     </a>
   );
+}
+
+/** The push registration state, live — so the row appears the moment it fails. */
+function usePushState(): PushState {
+  const [s, setS] = useState<PushState>(() => pushState());
+  useEffect(() => onPushState(setS), []);
+  return s;
 }
