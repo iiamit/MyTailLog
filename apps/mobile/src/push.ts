@@ -173,6 +173,28 @@ function tokenFromApns(): Promise<string | null> {
   });
 }
 
+// Registering is an auth-state concern, not a screen's, so it hangs off the
+// session rather than off some component's mount: sign in (or come back with a
+// stored session) and the device is registered; that is the whole rule. Guarded
+// so React's double-invoked effects and a token refresh don't re-prompt.
+//
+// This block is a MODULE-LEVEL SIDE EFFECT and the only caller of
+// registerForPush(). Delete it and the whole registration path becomes
+// unreferenced, tree-shakes out of the bundle, and the app silently never
+// registers — which is exactly what happened in 1.4.2 before it shipped.
+let registering = false;
+if (Capacitor.isNativePlatform()) {
+  state = { status: "failed", reason: "Not registered yet" };
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (!session || registering) return;
+    if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION") return;
+    registering = true;
+    void registerForPush().finally(() => {
+      registering = false;
+    });
+  });
+}
+
 async function postToken(
   method: "POST" | "DELETE",
   token: string,
