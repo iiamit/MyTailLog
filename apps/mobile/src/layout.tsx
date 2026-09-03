@@ -198,7 +198,11 @@ export function TwoPane({
   return (
     <div style={{ display: "flex", margin: `0 -${SCREEN_X}px`, alignItems: "stretch" }}>
       <div style={pane(a)}>{primary}</div>
-      <div style={{ ...pane(b), borderLeft: `1px solid ${color.hairline}` }}>{secondary}</div>
+      <div style={{ ...pane(b), borderLeft: `1px solid ${color.hairline}` }}>
+        {/* The viewer stays put while the list beside it scrolls: it sticks to
+            the top and scrolls on its own once taller than the window. */}
+        <div style={{ position: "sticky", top: 0, maxHeight: "100vh", overflowY: "auto" }}>{secondary}</div>
+      </div>
     </div>
   );
 }

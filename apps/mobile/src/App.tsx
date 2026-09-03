@@ -122,13 +122,17 @@ function Shell({ session }: { session: Session }) {
   const regular = useSizeClass() === "regular";
 
   // ⌘1–4 switch tabs from anywhere in an aircraft. Screens claim the other
-  // chords (⌘↩ ⌘→ ⌘← ⌘N ⌘F) themselves and win over these when mounted.
+  // chords (⌘↩ ⌘→ ⌘← ⌘N ⌘F) themselves and win over these when mounted; until
+  // they do, ⌘N and ⌘F at least land on the tab where the squawk composer and
+  // the document search live.
   const tabChords: ShortcutMap = {};
   if (nav.screen === "aircraft") {
     const a = nav;
     TABS.forEach(({ id }, i) => {
       tabChords[`cmd+${i + 1}` as keyof ShortcutMap] = () => setNav({ ...a, tab: id, sub: null });
     });
+    tabChords["cmd+n"] = () => setNav({ ...a, tab: "squawks", sub: null });
+    tabChords["cmd+f"] = () => setNav({ ...a, tab: "records", segment: "documents", sub: null });
   }
   useShortcuts(tabChords);
 
@@ -352,7 +356,11 @@ function Shell({ session }: { session: Session }) {
       {capture !== undefined && (
         <CaptureScreen aircraft={capture} onClose={() => setCapture(undefined)} onChanged={writeFinished} />
       )}
-      {nav.screen === "pending" && <Pending onBack={back} onChanged={updatePending} />}
+      {nav.screen === "pending" && (
+        <div style={regular ? { maxWidth: 640, margin: "0 auto" } : undefined}>
+          <Pending onBack={back} onChanged={updatePending} />
+        </div>
+      )}
       {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
       {accountMenu}
     </>
