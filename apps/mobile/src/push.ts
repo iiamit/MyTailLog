@@ -18,6 +18,46 @@ import { API_BASE, supabase } from "./supabase";
 
 const PLATFORM = "ios";
 
+// ---------------------------------------------------------------------------
+// Why this file reports its state instead of failing quietly.
+//
+// Every failure path here used to end at `done(null)` or a bare `catch`, so a
+// device that never registered looked exactly like one that did: no error, no
+// row on the server, nothing on screen. That cost a release to diagnose — the
+// answer (an archive signed `aps-environment: development`, which iOS refuses
+// to register on a TestFlight build) was in a message this code was throwing
+// away.
+//
+// A reminder that silently stops arriving is the worst failure this app has, so
+// the state is now kept and shown. Still no alert: the account menu is where
+// someone looks when they wonder why nothing arrived.
+// ---------------------------------------------------------------------------
+
+export type PushState =
+  | { status: "registered"; at: string }
+  | { status: "denied" }
+  | { status: "unsupported" }
+  | { status: "failed"; reason: string };
+
+let state: PushState = { status: "unsupported" };
+const watchers = new Set<(s: PushState) => void>();
+
+function setState(next: PushState): void {
+  state = next;
+  for (const w of watchers) w(next);
+}
+
+/** The last known registration state, for the account menu. */
+export function pushState(): PushState {
+  return state;
+}
+
+/** Subscribe to registration state; returns an unsubscribe. */
+export function onPushState(fn: (s: PushState) => void): () => void {
+  watchers.add(fn);
+  return () => watchers.delete(fn);
+}
+
 async function bearer(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? null;
@@ -38,13 +78,25 @@ export async function registerForPush(): Promise<"granted" | "denied" | "unavail
     if (perm.receive === "prompt" || perm.receive === "prompt-with-rationale") {
       perm = await PushNotifications.requestPermissions();
     }
-    if (perm.receive !== "granted") return "denied";
+    if (perm.receive !== "granted") {
+      setState({ status: "denied" });
+      return "denied";
+    }
 
     const token = await tokenFromApns();
-    if (!token) return "granted"; // permission is real; APNs just hasn't answered
-    await postToken("POST", token);
+    if (!token) {
+      // Permission is real, but APNs refused or never answered. THIS is the
+      // case that used to look like success.
+      setState({ status: "failed", reason: lastError ?? "APNs did not answer in 10s" });
+      return "granted";
+    }
+    const sent = await postToken("POST", token);
+    setState(sent.ok
+      ? { status: "registered", at: new Date().toISOString() }
+      : { status: "failed", reason: sent.reason });
     return "granted";
-  } catch {
+  } catch (e) {
+    setState({ status: "failed", reason: e instanceof Error ? e.message : String(e) });
     return "unavailable";
   }
 }
@@ -59,6 +111,7 @@ export async function unregisterPush(): Promise<void> {
     const token = lastToken;
     if (token) await postToken("DELETE", token);
     await PushNotifications.removeAllListeners();
+    setState({ status: "unsupported" });
   } catch {
     /* signing out matters more than tidying up */
   }
@@ -67,6 +120,8 @@ export async function unregisterPush(): Promise<void> {
 // APNs answers `register()` asynchronously through a listener, so the token has
 // to be awaited. It is kept so sign-out can unregister the same one.
 let lastToken: string | null = null;
+/** The reason APNs gave, kept so the failure can be named rather than guessed. */
+let lastError: string | null = null;
 
 function tokenFromApns(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -84,8 +139,12 @@ function tokenFromApns(): Promise<string | null> {
       clearTimeout(timer);
       done(t.value);
     });
-    void PushNotifications.addListener("registrationError", () => {
+    void PushNotifications.addListener("registrationError", (e) => {
       clearTimeout(timer);
+      // The message names the cause outright — most often "no valid
+      // 'aps-environment' entitlement string found", which means the build was
+      // signed for the wrong channel.
+      lastError = (e as { error?: string } | undefined)?.error ?? "APNs refused the registration";
       done(null);
     });
     void PushNotifications.register();
@@ -98,6 +157,7 @@ function tokenFromApns(): Promise<string | null> {
 // so React's double-invoked effects and a token refresh don't re-prompt.
 let registering = false;
 if (Capacitor.isNativePlatform()) {
+  state = { status: "failed", reason: "Not registered yet" };
   supabase.auth.onAuthStateChange((event, session) => {
     if (!session || registering) return;
     if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION") return;
@@ -108,13 +168,25 @@ if (Capacitor.isNativePlatform()) {
   });
 }
 
-async function postToken(method: "POST" | "DELETE", token: string): Promise<void> {
+async function postToken(
+  method: "POST" | "DELETE",
+  token: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
   const jwt = await bearer();
-  if (!jwt) return;
-  await CapacitorHttp.request({
-    method,
-    url: `${API_BASE}/api/push`,
-    headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
-    data: { token, platform: PLATFORM },
-  });
+  if (!jwt) return { ok: false, reason: "Not signed in" };
+  try {
+    const res = await CapacitorHttp.request({
+      method,
+      url: `${API_BASE}/api/push`,
+      headers: { Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" },
+      data: { token, platform: PLATFORM },
+    });
+    // The status was never checked here, so a 404 from a server that had not
+    // deployed this route yet was indistinguishable from success.
+    if (res.status >= 200 && res.status < 300) return { ok: true };
+    const body = typeof res.data === "string" ? res.data : JSON.stringify(res.data ?? {});
+    return { ok: false, reason: `Server answered ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}` };
+  } catch (e) {
+    return { ok: false, reason: e instanceof Error ? e.message : "Could not reach the server" };
+  }
 }

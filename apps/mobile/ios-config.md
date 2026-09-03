@@ -24,6 +24,31 @@ After editing, **Product → Clean Build Folder**. App Store Connect validates t
 There is no usage string for notifications: iOS asks for that permission through
 the system prompt with no app-supplied text.
 
+## Entitlements: two files, one per configuration
+
+`cap sync` creates `App/App.entitlements` with `aps-environment` = `development`.
+That value is correct for a cable-attached run from Xcode and **wrong for
+anything distributed** — iOS refuses to register a TestFlight build whose
+entitlement says `development`, and the plugin's `registrationError` is the only
+place it says so. Symptom: the permission prompt appears, the owner accepts, and
+`device_token` stays empty forever.
+
+So there are two files, selected by build configuration:
+
+| Configuration | `CODE_SIGN_ENTITLEMENTS` | `aps-environment` |
+| --- | --- | --- |
+| Debug | `App/App.entitlements` | `development` |
+| Release | `App/AppRelease.entitlements` | `production` |
+
+Recreate `App/AppRelease.entitlements` as a copy of `App.entitlements` with
+`production`, then set the Release configuration's `CODE_SIGN_ENTITLEMENTS` to
+point at it (Build Settings → Code Signing Entitlements, Release row only).
+`cap sync` does not touch the Release file.
+
+`APNS_ENV` in Secret Manager must match what the build actually carries:
+`production` for TestFlight and the App Store. Check the shipped value with
+`codesign -d --entitlements :- <App.app>` on the archive, never the source file.
+
 ## Capabilities (Signing & Capabilities tab)
 
 | Capability | Needed by | Notes |
