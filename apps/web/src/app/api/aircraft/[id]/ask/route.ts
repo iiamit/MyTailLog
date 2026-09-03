@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { generateAi } from "@/lib/extraction/ai";
 import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 import { entryText } from "@/lib/extraction/entryText";
@@ -56,7 +56,9 @@ export async function POST(
     return NextResponse.json({ error: "Question is too long (max 2000 characters)." }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  // Bearer (native app) or cookie (browser). The answer is buffered JSON for
+  // both — this route has never streamed, so the phone needs no special mode.
+  const supabase = await createSyncClient(req);
   const {
     data: { user },
   } = await supabase.auth.getUser();
