@@ -7,14 +7,29 @@ export type SizeClass = "compact" | "regular";
 
 /**
  * iPadOS decides by WIDTH, not device: an 11" iPad is regular full-screen and
- * compact as the third of a Split View beside ForeFlight. 700pt keeps a
- * half-split iPad compact (decided), so the phone layout is the beside-
- * ForeFlight layout and nothing built for the phone is wasted.
+ * compact as the third of a Split View beside ForeFlight.
+ *
+ * TWO thresholds, because the sidebar and the second pane do not want the same
+ * amount of room. The sidebar is a straight swap for the tab bar and pays for
+ * itself the moment there is any width to spare. A second pane is not: it
+ * halves what is left, and an 11" iPad in PORTRAIT (834pt) minus the sidebar
+ * leaves two ~300pt columns — narrower than the phone the content was designed
+ * for, which is how a scan ends up scrolling sideways in its own pane.
+ *
+ * So portrait gets the sidebar and ONE full-width pane that pushes, exactly
+ * like the phone; landscape (1194pt) gets the split. Turning the iPad is the
+ * gesture that asks for the second pane, which is also how ForeFlight behaves.
  */
-export const REGULAR_MIN_WIDTH = 700;
+export const SIDEBAR_MIN_WIDTH = 700;
+export const REGULAR_MIN_WIDTH = 1000;
 
 export function sizeClassFor(width: number): SizeClass {
   return width >= REGULAR_MIN_WIDTH ? "regular" : "compact";
+}
+
+/** Whether the sidebar replaces the tab bar — independent of the pane count. */
+export function showsSidebar(width: number): boolean {
+  return width >= SIDEBAR_MIN_WIDTH;
 }
 
 /** The chords the app answers to. ⌘ on a Magic Keyboard; Ctrl is accepted too. */

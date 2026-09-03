@@ -64,3 +64,10 @@ textarea {
     box-shadow: inset 0 0 0 999px var(--t-accentBorder);
   }
 }
+
+/* A scrollable flex column shrinks its children below their own height once
+   the content outgrows it — the text then spills over the row beneath. Rows in
+   a scrolling column keep their height and let the column scroll instead. */
+.noshrink > * {
+  flex-shrink: 0;
+}

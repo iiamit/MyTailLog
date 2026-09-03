@@ -65,6 +65,10 @@ export function AccountMenu({
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        /* noshrink: this is a scrolling flex column, and once the rows outgrow
+           it flexbox squeezes each one below its own text — which is how a
+           row's description ended up printed over the row beneath it. */
+        className="noshrink"
         style={{
           width: "100%", maxWidth: 560, margin: "0 auto", background: color.surface,
           borderTopLeftRadius: 20, borderTopRightRadius: 20,

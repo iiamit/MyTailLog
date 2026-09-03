@@ -438,6 +438,12 @@ export function PageViewer({
   const turn = (d: 1 | -1) => setI((n) => Math.min(pages.length - 1, Math.max(0, n + d)));
   useShortcuts({ "cmd+right": () => turn(1), "cmd+left": () => turn(-1) });
 
+  // `i` is seeded from the prop, which on its own means a viewer already on
+  // screen ignores a different page being picked beside it. It owns the index
+  // once mounted (turning, swiping), so it follows the prop only when the
+  // caller actually points it somewhere else.
+  useEffect(() => { setI(index); }, [index]);
+
   useEffect(() => {
     let live = true;
     setSrc("loading");

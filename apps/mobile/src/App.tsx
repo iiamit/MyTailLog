@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
@@ -15,7 +15,7 @@ import { Hangar, EntryDetail, PageViewer } from "./screens";
 import { Records } from "./records-screen";
 import { TabBar, TABS, type Tab } from "./tabbar";
 import { AircraftSwitcher } from "./switcher";
-import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useShortcuts } from "./layout";
+import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useSidebar, useShortcuts } from "./layout";
 import { useTheme } from "./theme";
 import { PageReview } from "./review-pane";
 import type { FieldBox } from "@/lib/extraction/schema";
@@ -133,7 +133,11 @@ function Shell({ session }: { session: Session }) {
   zoomRef.current = zoom;
   // Follows the phone flipping to dark (or light) while the app is open.
   useTheme();
+  // Two decisions, not one. `regular` is whether the CONTENT splits into two
+  // panes; `sidebar` is whether the sidebar stands in for the tab bar. A
+  // portrait iPad is sidebar-yes, split-no — see shortcuts.ts.
   const regular = useSizeClass() === "regular";
+  const sidebar = useSidebar();
 
   // ⌘1–4 switch tabs from anywhere in an aircraft. Screens claim the other
   // chords (⌘↩ ⌘→ ⌘← ⌘N ⌘F) themselves and win over these when mounted; until
@@ -146,7 +150,7 @@ function Shell({ session }: { session: Session }) {
       tabChords[`cmd+${i + 1}` as keyof ShortcutMap] = () => setNav({ ...a, tab: id, sub: null });
     });
     // Ask is a pane, so it only exists where there is a second pane.
-    if (regular) tabChords["cmd+k"] = () => setNav({ ...a, sub: { kind: "ask" } });
+    if (sidebar) tabChords["cmd+k"] = () => setNav({ ...a, sub: { kind: "ask" } });
     tabChords["cmd+n"] = () => setNav({ ...a, tab: "squawks", sub: null });
     tabChords["cmd+f"] = () => setNav({ ...a, tab: "records", segment: "documents", sub: null });
   }
@@ -371,8 +375,51 @@ function Shell({ session }: { session: Session }) {
   // on top — a pushed viewer owns the whole screen. At regular width the
   // sidebar takes its place and nothing is ever pushed: what the phone pushes,
   // the iPad shows in the second pane.
+  /**
+   * One tab's worth of screen with anything pushed on top of it — the phone's
+   * whole content area.
+   *
+   * Both shells call this. A portrait iPad has the sidebar but no second pane,
+   * so it pushes exactly like the phone; without this it would need a second
+   * copy of the same ternary, and the two would drift.
+   */
+  function stack(n: Extract<Nav, { screen: "aircraft" }>): ReactNode {
+    return n.sub?.kind === "entry" ? (
+      <EntryDetail entry={n.sub.entry} tail={n.aircraft.tail_number} onBack={back} onZoom={setZoom} />
+    ) : n.sub?.kind === "page" ? (
+      <PageViewer pages={n.sub.pages} index={n.sub.index} onBack={back} onZoom={setZoom} onQueued={writeFinished} />
+    ) : n.sub?.kind === "complete" ? (
+      <CompleteItem aircraft={n.aircraft} item={n.sub.item} onBack={back} onQueued={writeFinished} />
+    ) : n.sub?.kind === "pdf" ? (
+      <PdfViewer documentId={n.sub.doc.id} title={n.sub.doc.title} onBack={back} onZoom={setZoom} />
+    ) : n.sub?.kind === "ask" ? (
+      <AskPane aircraft={n.aircraft} />
+    ) : n.tab === "status" ? (
+      <Status
+        aircraft={n.aircraft}
+        onComplete={(item) => setNav({ ...n, sub: { kind: "complete", item } })}
+        onQueued={writeFinished}
+      />
+    ) : n.tab === "log" ? (
+      <Record aircraft={n.aircraft} onQueued={writeFinished} />
+    ) : n.tab === "squawks" ? (
+      <Squawks aircraft={n.aircraft} onQueued={writeFinished} />
+    ) : (
+      <Records
+        aircraft={n.aircraft}
+        segment={n.segment}
+        onSegment={(segment) => setNav({ ...n, segment, sub: null })}
+        onOpenEntry={(entry) => setNav({ ...n, sub: { kind: "entry", entry } })}
+        onOpenPage={(pages, index) => setNav({ ...n, sub: { kind: "page", pages, index } })}
+        onOpenPdf={(doc) => setNav({ ...n, sub: { kind: "pdf", doc } })}
+        onCapture={() => setCapture(n.aircraft)}
+        onZoom={setZoom}
+      />
+    );
+  }
+
   const tabBar =
-    !regular && nav.screen === "aircraft" && !nav.sub ? (
+    !sidebar && nav.screen === "aircraft" && !nav.sub ? (
       <TabBar active={nav.tab} onChange={(tab) => setNav({ ...nav, tab, sub: null })} />
     ) : null;
 
@@ -404,7 +451,7 @@ function Shell({ session }: { session: Session }) {
     </>
   );
 
-  if (regular && nav.screen === "aircraft") {
+  if (sidebar && nav.screen === "aircraft") {
     const a = nav;
     const panes = aircraftPanes(a, {
       setNav,
@@ -433,12 +480,25 @@ function Shell({ session }: { session: Session }) {
         <div style={{ marginBottom: pending > 0 ? 18 : 0 }}>
           <PendingBanner count={pending} onOpen={() => setNav({ screen: "pending" })} />
         </div>
-        {/* A tab that draws its own split (Squawks) asks for no second pane and
-            gets the whole width, rather than a nested one a sliver wide. */}
-        {panes.secondary === null ? (
+        {/* Portrait: the sidebar, and one full-width pane that pushes. Two
+            ~300pt columns are narrower than the phone this content was drawn
+            for, so the split waits for the width to turn the iPad gives it. */}
+        {!regular ? (
+          stack(a)
+        ) : panes.secondary === null ? (
+          /* A tab that draws its own split (Squawks) asks for no second pane
+             and gets the whole width, rather than a nested one a sliver wide. */
           panes.primary
         ) : (
-          <TwoPane primary={panes.primary} secondary={panes.secondary} ratio={panes.ratio} />
+          <TwoPane
+            primary={panes.primary}
+            /* Keyed by what is selected, so picking a different page or
+               document is a different component rather than the same one told
+               to change its mind. The viewers read their props once into state;
+               without this the title updated and the content did not. */
+            secondary={<Fragment key={paneKey(a)}>{panes.secondary}</Fragment>}
+            ratio={panes.ratio}
+          />
         )}
         {overlays}
       </RegularFrame>
@@ -517,39 +577,7 @@ function Shell({ session }: { session: Session }) {
             onSeeAll={() => setNav({ screen: "hangar" })}
           />
 
-          <div style={{ marginTop: 18 }}>
-            {/* Anything pushed wins over the tab's own root screen. */}
-            {nav.sub?.kind === "entry" ? (
-              <EntryDetail entry={nav.sub.entry} tail={nav.aircraft.tail_number} onBack={back} onZoom={setZoom} />
-            ) : nav.sub?.kind === "page" ? (
-              <PageViewer pages={nav.sub.pages} index={nav.sub.index} onBack={back} onZoom={setZoom} onQueued={writeFinished} />
-            ) : nav.sub?.kind === "complete" ? (
-              <CompleteItem aircraft={nav.aircraft} item={nav.sub.item} onBack={back} onQueued={writeFinished} />
-            ) : nav.sub?.kind === "pdf" ? (
-              <PdfViewer documentId={nav.sub.doc.id} title={nav.sub.doc.title} onBack={back} onZoom={setZoom} />
-            ) : nav.tab === "status" ? (
-              <Status
-                aircraft={nav.aircraft}
-                onComplete={(item) => setNav({ ...nav, sub: { kind: "complete", item } })}
-                onQueued={writeFinished}
-              />
-            ) : nav.tab === "log" ? (
-              <Record aircraft={nav.aircraft} onQueued={writeFinished} />
-            ) : nav.tab === "squawks" ? (
-              <Squawks aircraft={nav.aircraft} onQueued={writeFinished} />
-            ) : (
-              <Records
-                aircraft={nav.aircraft}
-                segment={nav.segment}
-                onSegment={(segment) => setNav({ ...nav, segment })}
-                onOpenEntry={(entry) => setNav({ ...nav, sub: { kind: "entry", entry } })}
-                onOpenPage={(pages, index) => setNav({ ...nav, sub: { kind: "page", pages, index } })}
-                onOpenPdf={(doc) => setNav({ ...nav, sub: { kind: "pdf", doc } })}
-                onCapture={() => setCapture(nav.aircraft)}
-                onZoom={setZoom}
-              />
-            )}
-          </div>
+          <div style={{ marginTop: 18 }}>{stack(nav)}</div>
         </>
       )}
 
@@ -564,6 +592,33 @@ function Shell({ session }: { session: Session }) {
 // ---------------------------------------------------------------------------
 
 type AircraftNav = Extract<Nav, { screen: "aircraft" }>;
+
+/**
+ * The identity of what the secondary pane is showing.
+ *
+ * React reuses a component in the same position, and these viewers seed their
+ * state from their props on first render only — so selecting a second document
+ * re-rendered the same viewer with a new title and left the first document's
+ * pages on screen. A changed key makes it a new instance, which is the same
+ * thing that happens on a phone when the screen is pushed afresh.
+ */
+function paneKey(nav: AircraftNav): string {
+  const sub = nav.sub;
+  const what = !sub
+    ? "none"
+    : sub.kind === "entry"
+      ? `entry:${sub.entry.id}`
+      : sub.kind === "page"
+        ? `page:${sub.pages[sub.index]?.id ?? sub.index}`
+        : sub.kind === "pdf"
+          ? `pdf:${sub.doc.id}`
+          : sub.kind === "complete"
+            ? `complete:${sub.item.id}`
+            : sub.kind === "squawk" || sub.kind === "document"
+              ? `${sub.kind}:${sub.id}`
+              : sub.kind;
+  return `${nav.tab}:${nav.segment}:${what}`;
+}
 
 function aircraftPanes(
   nav: AircraftNav,
