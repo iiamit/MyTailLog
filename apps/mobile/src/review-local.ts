@@ -7,6 +7,13 @@ import { applyChanges, getByAircraft } from "./db";
 // seq to 0 until the next pull rewrites it. Only getRows' ORDER BY seq notices,
 // and every screen here sorts its own rows. Ask core sync for a seq-preserving
 // patchRow() if that ever matters.
+//
+// `updated_at` is deliberately NOT touched. It is what the next edit sends as
+// `base`, and the server's conflict rule only refuses a write when its row is
+// NEWER than base — stamping a local "now" here would make every second edit
+// look up to date and silently overwrite whatever someone else changed in
+// between. The value on screen is optimistic; the timestamp stays honest until
+// the pull brings the server's back.
 
 export async function patchLocal<T extends { id: string; aircraft_id: string }>(
   table: string,
@@ -17,7 +24,7 @@ export async function patchLocal<T extends { id: string; aircraft_id: string }>(
   const rows = await getByAircraft<T>(table, aircraftId);
   const row = rows.find((r) => r.id === id);
   if (!row) return null;
-  const next = { ...row, ...patch, updated_at: new Date().toISOString() };
+  const next = { ...row, ...patch };
   await applyChanges([{ table, op: "upsert", id, seq: 0, row: next }]);
   return next;
 }
@@ -30,8 +37,7 @@ export async function patchLocalMany<T extends { id: string; aircraft_id: string
 ): Promise<void> {
   const want = new Set(ids);
   const rows = (await getByAircraft<T>(table, aircraftId)).filter((r) => want.has(r.id));
-  const updated_at = new Date().toISOString();
-  await applyChanges(rows.map((r) => ({ table, op: "upsert" as const, id: r.id, seq: 0, row: { ...r, ...patch, updated_at } })));
+  await applyChanges(rows.map((r) => ({ table, op: "upsert" as const, id: r.id, seq: 0, row: { ...r, ...patch } })));
 }
 
 export async function insertLocal<T extends { id: string }>(table: string, row: T): Promise<void> {
