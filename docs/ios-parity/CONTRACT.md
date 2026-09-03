@@ -133,11 +133,11 @@ the `lib/writes` function. **(base)** = update/delete, carries `base`.
 | C2 | `meterReset.delete` (base) | `{resetId}` | `meters.deleteReset` |
 | C2 | `mx.upsert` (base when id present) | `{id?, item: MaintenanceItemFields}` | `maintenance.upsert` |
 | C2 | `mx.delete` (base) | `{itemId}` | `maintenance.remove` |
-| C2 | `mx.complete` (base) | `{itemId, date, hours?, notes?, signature?, logbookId?}` | `maintenance.markDone` (today's `mx_complete`) |
+| C2 | `mx.complete` (base) | `{itemId, date, hours?, description?, workPerformed?, tach?, hobbs?, signature?, logbookId?}` — `notes` is not a log_entry column | `maintenance.markDone` (today's `mx_complete`) |
 | C2 | `mx.seedStandard` | `{}` | `maintenance.seedStandard` |
 | C2 | `ad.upsert` (base when id present) | `{id?, record: AdComplianceFields}` | `compliance.upsert` |
 | C2 | `ad.delete` (base) | `{recordId}` | `compliance.remove` |
-| C2 | `ad.track` | `{id, ref, ...}` | `compliance.track` |
+| C2 | `ad.track` | `{id, reference, ...}` — the column is `reference`, not `ref` | `compliance.track` |
 | C2 | `component.upsert` (base when id present) | `{id?, component: ComponentFields}` | `equipment.upsert` |
 | C2 | `component.delete` (base) | `{componentId}` | `equipment.remove` |
 | C2 | `component.remove` (base) | `{componentId, date, entryId?}` | `equipment.markRemoved` |
@@ -290,3 +290,48 @@ from `ios-parity` to `main` and needs 0058/0059 applied to the test project.
   <owner>**, **Migrations**, **Device checklist** (what a human must try on an
   iPhone and an iPad — be specific: which screen, which action, expected result).
 - Copy reviewed against Rule 6. Controls against Rule 5.
+
+## 11. Decisions from runs 1–2 (read this before starting)
+
+Five streams are DONE and pushed. Branch each new stream from `origin/ios-parity`
+and treat these as settled:
+
+| stream | branch | state |
+|---|---|---|
+| writes-c1 | `ios-parity-writes-c1` | done, PR #189 |
+| writes-c2 | `ios-parity-writes-c2` | done, PR #192 (stacked on c1) |
+| writes-c3 | `ios-parity-writes-c3` | done, PR #191 (stacked on c1) |
+| ipad-shell | `ios-parity-ipad-shell` | done, PR #190 |
+| core-sync | `ios-parity-core-sync` | done, incl. migration 0058 |
+
+Partial work rescued from agents the session limit killed — **cherry-pick it, do
+not start over**: `ios-parity-review-ui-partial`, `ios-parity-status-ui-partial`,
+`ios-parity-design-partial`. Each is one unverified WIP commit.
+
+**Schema questions are answered by 0058** (on `ios-parity-core-sync`): it adds
+`updated_at` to `oil_addition`, `adsb_flight`, `equipment_proposal`; adds the
+missing BEFORE UPDATE triggers to `squawk` and `hours_reading`; puts
+`ad_reference` and `equipment_proposal` in the change feed with a backfill; and
+drops `change_log.aircraft_id`'s NOT NULL because `ad_reference` is global. So
+`base` works for every update/delete type once 0058 is applied.
+
+**Cross-stream wiring, decided by the lead** (ipad-shell asked; these are binding):
+- **status-ui** exports `AllItems` from `status-screen.tsx` as a self-contained
+  component that takes its own props (aircraft + a computed Airworthiness) and
+  does not require `onBack`. The shell renders it as the Status secondary pane.
+- **review-ui** registers the `⌘←` / `⌘→` page chords *inside* `PageViewer`,
+  because the page index lives in its state. Use the shell's `useShortcuts`.
+- **records-ui** names the selection shape for the squawk and document detail
+  panes (e.g. `Sub = {kind:'squawk', id} | {kind:'document', id} | …`) and puts
+  it in its PR under "Requests for iPad shell"; the shell adds it to the Nav union.
+
+**Also settled:** `POST /api/aircraft/enroll` is C3's file (approved).
+`POST /api/aircraft/[id]/backup/run` schedules the next sweep rather than
+building an archive inline — that is the right call; say so in the UI copy
+("Backup scheduled" not "Backup created"). writes-c2/c3 are stacked on
+writes-c1 because they share `WriteResult`/`WriteCtx` from `lib/writes/entries.ts`;
+the integration order already merges c1 first, so this resolves itself.
+
+**If the contract still disagrees with the real schema, the schema wins** —
+implement against the column and report it. Two rows above were wrong; assume
+more may be.
