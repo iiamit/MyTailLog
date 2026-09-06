@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { removeBlobs } from "@/lib/storage";
+import { sendEmail } from "@/lib/email";
 import type { ShareRole } from "@/lib/database.types";
 
 async function assertOwner(aircraftId: string) {
@@ -13,21 +14,22 @@ async function assertOwner(aircraftId: string) {
   if (!user) return { supabase, error: "Not signed in." };
   const { data: ac } = await supabase
     .from("aircraft")
-    .select("owner_id")
+    .select("owner_id, tail_number")
     .eq("id", aircraftId)
     .single();
   if (!ac || ac.owner_id !== user.id) return { supabase, error: "Only the owner can manage sharing." };
-  return { supabase, user };
+  return { supabase, user, aircraft: ac };
 }
 
 export async function addShare(
   aircraftId: string,
   email: string,
   role: ShareRole,
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; emailSent?: boolean }> {
   const clean = email.trim().toLowerCase();
-  if (!clean) return { error: "Enter an email." };
-  const { supabase, user, error } = await assertOwner(aircraftId);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) return { error: "Enter a valid email." };
+  if (role !== "viewer" && role !== "editor") return { error: "Choose view only or can contribute." };
+  const { supabase, user, aircraft, error } = await assertOwner(aircraftId);
   if (error) return { error };
 
   const { error: insErr } = await supabase.from("aircraft_share").upsert(
@@ -36,7 +38,20 @@ export async function addShare(
   );
   if (insErr) return { error: insErr.message };
   revalidatePath(`/aircraft/${aircraftId}/share`);
-  return {};
+
+  // Access is already saved. A mail failure must not hide or undo the grant.
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL || "https://mytaillog.com").replace(/\/$/, "");
+  const url = `${origin}/aircraft/${encodeURIComponent(aircraftId)}`;
+  const emailSent = await sendEmail({
+    to: clean,
+    subject: `Invitation to ${aircraft!.tail_number} on MyTailLog`,
+    html: `<p>${esc(user!.email || "The aircraft owner")} invited you to ${esc(aircraft!.tail_number)} on MyTailLog.</p>
+      <p>Your access: <strong>${role === "editor" ? "Can contribute — review and edit records" : "View only"}</strong>.</p>
+      <p><a href="${esc(url)}">Open the aircraft</a></p>
+      <p>Sign in or create an account with <strong>${esc(clean)}</strong>. Your access is already available; no invitation code is needed.</p>`,
+  });
+  return { emailSent };
 }
 
 export async function removeShare(

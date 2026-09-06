@@ -54,6 +54,8 @@ export default defineConfig({
           NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.TEST_SUPABASE_ANON_KEY ?? "",
           SUPABASE_SECRET_KEY: process.env.TEST_SUPABASE_SECRET_KEY ?? "",
           NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
+          // Sharing tests exercise the unsent-email notice without sending mail.
+          RESEND_API_KEY: "",
           ENCRYPTION_KEY: process.env.TEST_ENCRYPTION_KEY ?? "e2e-test-encryption-key",
           // A dummy key makes the AI UI render (extractionConfigured); E2E_STUB_AI
           // makes getAnthropic return canned responses so no real calls are made.
