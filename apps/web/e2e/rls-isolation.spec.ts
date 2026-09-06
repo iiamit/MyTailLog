@@ -125,6 +125,36 @@ test.describe("RLS multi-tenant isolation", () => {
     expect(error, "WITH CHECK must reject a write onto a non-owned aircraft").toBeTruthy();
   });
 
+  test("sharing role changes and revocation apply to an existing recipient session", async () => {
+    const share = { aircraft_id: victimAc, invited_email: attackerEmail, invited_by: victimId };
+    try {
+      for (const role of ["viewer", "editor", "viewer"] as const) {
+        const grant = await admin.from("aircraft_share").upsert({ ...share, role }, { onConflict: "aircraft_id,invited_email" });
+        expect(grant.error).toBeNull();
+        const read = await attackerDb.from("aircraft").select("id").eq("id", victimAc);
+        expect(read.error).toBeNull();
+        expect(read.data).toHaveLength(1);
+        const edit = await attackerDb.rpc("can_edit_aircraft", { target_aircraft: victimAc });
+        expect(edit.error).toBeNull();
+        expect(edit.data).toBe(role === "editor");
+        const write = await attackerDb.from("maintenance_item")
+          .update({ label: `Shared ${role}` }).eq("aircraft_id", victimAc).select("id");
+        expect(write.error).toBeNull();
+        expect(write.data).toHaveLength(role === "editor" ? 1 : 0);
+      }
+    } finally {
+      const removed = await admin.from("aircraft_share").delete()
+        .eq("aircraft_id", victimAc).eq("invited_email", attackerEmail);
+      expect(removed.error).toBeNull();
+    }
+    const read = await attackerDb.from("aircraft").select("id").eq("id", victimAc);
+    expect(read.error).toBeNull();
+    expect(read.data).toEqual([]);
+    const edit = await attackerDb.rpc("can_edit_aircraft", { target_aircraft: victimAc });
+    expect(edit.error).toBeNull();
+    expect(edit.data).toBe(false);
+  });
+
   test("a read-only viewer can read but cannot write documents (0041 write policy)", async () => {
     // Grant the harness user viewer access to the victim's aircraft.
     await admin.from("aircraft_share").insert({

@@ -38,11 +38,13 @@ export function ShareClient({
   const [role, setRole] = useState<ShareRole>("viewer");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNotice(null);
     const res = await addShare(aircraftId, email, role);
     setBusy(false);
     if (res.error) {
@@ -55,6 +57,9 @@ export function ShareClient({
       return [...without, { id: crypto.randomUUID(), email: clean, role }];
     });
     setEmail("");
+    setNotice(res.emailSent
+      ? `Access saved. Invitation email sent to ${clean}. If it doesn't arrive, ask them to check spam or sign in with that address.`
+      : `Access saved, but the invitation email could not be sent. They can still sign in with ${clean} at mytaillog.com. Submit the same address and role to retry the email.`);
   }
 
   async function remove(email: string) {
@@ -173,13 +178,14 @@ export function ShareClient({
               disabled={busy}
               className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-bg hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? "Adding…" : "+ Invite"}
+              {busy ? "Inviting…" : "+ Invite"}
             </button>
           </div>
           <p className="text-xs text-dim">
-            They get access as soon as they sign in with this email — no account needed first.
+            We email them an invitation. They get access as soon as they sign in with this email — no account needed first.
           </p>
           {error && <p className="text-sm text-annun-red">{error}</p>}
+          {notice && <p role="status" className="text-sm text-dim">{notice}</p>}
         </form>
       </section>
 

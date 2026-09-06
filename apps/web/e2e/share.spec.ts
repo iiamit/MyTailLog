@@ -10,7 +10,8 @@ const env = (k: string): string => {
   return v;
 };
 
-test("sharing: invite by email creates a share, then remove deletes it", async ({ page, scratch }) => {
+for (const role of ["viewer", "editor"] as const) {
+test(`sharing: ${role} invite creates a share, then remove deletes it`, async ({ page, scratch }) => {
   const admin = createClient(env("TEST_SUPABASE_URL"), env("TEST_SUPABASE_SECRET_KEY"), {
     auth: { persistSession: false },
   });
@@ -18,6 +19,7 @@ test("sharing: invite by email creates a share, then remove deletes it", async (
 
   await page.goto(`${scratch.path}/share`);
   await page.getByPlaceholder("person@example.com").fill(invite);
+  await page.getByRole("combobox").selectOption(role);
   await page.getByRole("button", { name: /Invite/ }).click();
 
   await expect
@@ -29,7 +31,10 @@ test("sharing: invite by email creates a share, then remove deletes it", async (
         .eq("invited_email", invite);
       return data?.[0]?.role ?? null;
     }, { timeout: 15000 })
-    .toBe("viewer");
+    .toBe(role);
+
+  // This must distinguish saved access from a failed email, not silently succeed.
+  await expect(page.getByRole("status")).toContainText("Access saved");
 
   // The invited row now shows a Remove button (the owner row has none).
   await page.getByRole("button", { name: "Remove" }).first().click();
@@ -45,3 +50,4 @@ test("sharing: invite by email creates a share, then remove deletes it", async (
     }, { timeout: 15000 })
     .toBe(0);
 });
+}
