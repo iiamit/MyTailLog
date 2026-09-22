@@ -4,6 +4,15 @@ Notable changes to MyTailLog, newest first. Versions are calendar-based
 (`APP_VERSION`, shown in the app header). Started 2026-07; earlier history is in
 the git log.
 
+## 2026.09
+
+### Released — MyTailLog is on the App Store
+
+- **The iPhone and iPad app is publicly available.** [Download it free from the App Store](https://apps.apple.com/us/app/mytaillog/id6795396758), with no TestFlight invitation needed. Requires iOS / iPadOS 15.6 or later.
+- Sync your aircraft once to browse records offline, scan logbook pages, and record meter readings, oil, squawks and maintenance updates. Offline changes upload on the next sync; AI extraction and Ask need a connection.
+- Use the same account and aircraft on the web and in the app. The physical logbooks remain the legal maintenance record.
+- Aircraft-sharing invitations now send an email and report sending failures while preserving the recipient's access.
+
 ## 2026.08
 
 ### Added — the phone does the work now, not just the reading

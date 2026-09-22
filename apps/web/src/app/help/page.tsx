@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APP_STORE_URL } from "@/lib/appStore";
 import { AccountShell } from "@/components/shell/AccountShell";
 import {
   SparklesIcon,
@@ -102,13 +103,13 @@ const SECTIONS: Section[] = [
   {
     id: "mobile",
     icon: <SparklesIcon />,
-    title: "Mobile app (beta)",
+    title: "iPhone & iPad app",
     body: (
       <>
         <p>
-          A native <strong>iPhone / iPad app</strong> is in TestFlight beta. It syncs your aircraft once,
-          then works <strong>fully offline</strong> — which matters, because the hangar is exactly where
-          you have no signal.
+          Download the free <L href={APP_STORE_URL}>iPhone / iPad app from the App Store</L>.
+          Sync your aircraft once to browse records and capture updates offline, even when the
+          hangar has no signal. Requires iOS or iPadOS 15.6 or later. AI extraction and Ask need a connection.
         </p>
         <p>
           <strong>Status</strong> answers &ldquo;can I fly this?&rdquo; without a connection: current
@@ -179,8 +180,8 @@ const SECTIONS: Section[] = [
           Browse, check status, review pages, correct entries, manage inspections/ADs/equipment,
           resolve squawks and add documents — all offline, saved on the device and uploaded on the next
           sync. If someone changed the same row on the web meanwhile, the phone shows you both versions
-          rather than picking a winner. Viewers see everything read-only. It&apos;s rolling out through
-          TestFlight — more soon.
+          rather than picking a winner. Your account and aircraft are shared between the web and
+          native app. Download it directly from the App Store; no TestFlight invitation is needed.
         </Effects>
       </>
     ),
