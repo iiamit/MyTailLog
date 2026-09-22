@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
+import { APP_STORE_URL } from "@/lib/appStore";
 import shotReview from "../screenshots/review.png";
 import shotStatus from "../screenshots/status.png";
 import shotAsk from "../screenshots/ask.png";
@@ -229,7 +230,7 @@ const INDEX: { group: string; items: React.ReactNode[] }[] = [
           developer portal
         </Link>
       </>,
-      "An iOS app in TestFlight beta that browses everything offline",
+      "A free iPhone and iPad app on the App Store, with offline records and capture",
       "MIT licence — run the whole thing yourself",
     ],
   },
@@ -306,6 +307,16 @@ export default async function Home() {
       </header>
 
       <main>
+        <div className="border-b border-accent/30 bg-accent-soft">
+          <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 py-4`}>
+            <p className="text-sm text-ink">
+              <strong>Now on the App Store.</strong> Your aircraft records, ready for the hangar.
+            </p>
+            <a href={APP_STORE_URL} className={`rounded-md bg-accent px-4 py-3 text-sm font-semibold text-bg hover:opacity-90 ${FOCUS}`}>
+              Download for iPhone &amp; iPad
+            </a>
+          </div>
+        </div>
         {/* ── Hero ───────────────────────────────────────────────────── */}
         <section className={`${CONTAINER} animate-up pb-14 pt-14 sm:pt-20`}>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-16">
@@ -607,13 +618,14 @@ export default async function Home() {
               </div>
               <div>
                 <dt className="font-medium text-ink">
-                  Mobile is a beta, and iOS only
+                  Native mobile is iPhone and iPad only
                 </dt>
                 <dd className="mt-1.5 text-[14px] leading-relaxed text-dim">
-                  The native app is in TestFlight. It browses every entry,
-                  document and scan fully offline and captures pages offline,
-                  but editing existing entries is still done on the web, and
-                  there is no Android app.
+                  The free app is available on the App Store. Sync an aircraft
+                  once to browse its records offline, capture pages, and record
+                  updates that upload on the next sync. AI extraction and Ask
+                  need a connection. There is no native Android app; the web app
+                  works in a browser.
                 </dd>
               </div>
               <div>
@@ -649,6 +661,9 @@ export default async function Home() {
                 : "Sign in with an email link or a password. Nothing to install, no card, and a demo aircraft is already loaded so you can look around first."}
             </p>
             <div className="flex flex-wrap items-center gap-3">
+              <a href={APP_STORE_URL} className={`rounded-md border border-line px-5 py-3 text-ink hover:border-accent ${FOCUS}`}>
+                Download on the App Store
+              </a>
               <Link
                 href={primary.href}
                 className={`rounded-md bg-accent px-5 py-3 font-medium text-bg hover:opacity-90 ${FOCUS}`}
@@ -702,14 +717,15 @@ export default async function Home() {
             name: "MyTailLog",
             applicationCategory: "UtilitiesApplication",
             applicationSubCategory: "Aircraft maintenance recordkeeping",
-            operatingSystem: "Web, iOS (TestFlight beta)",
+            operatingSystem: "Web, iOS, iPadOS",
+            installUrl: APP_STORE_URL,
             url: "https://mytaillog.com",
             description:
               "Free, open-source aircraft logbook digitizer and maintenance tracker for general aviation owners. A vision model reads paper airframe, engine, prop and avionics logbooks into a searchable index with AD/SB compliance, a Part 91 maintenance forecast, plain-English Q&A over the entries, and automatic backups to storage you own.",
             isAccessibleForFree: true,
             license: "https://opensource.org/licenses/MIT",
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-            sameAs: ["https://github.com/iiamit/MyTailLog"],
+            sameAs: ["https://github.com/iiamit/MyTailLog", APP_STORE_URL],
             featureList: [
               "Vision-model extraction of scanned logbook pages with per-field confidence and a review screen",
               "CSV import with AI column mapping and deterministic row conversion",

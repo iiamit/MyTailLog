@@ -137,7 +137,7 @@ const ROWS: { axis: string; cells: string[] }[] = [
       "Yes",
       "No",
       "Usually web-only",
-      "iOS app (TestFlight beta) browses everything offline and captures offline; no Android app",
+      "Free iPhone/iPad app on the App Store: offline records, capture and queued updates; no native Android app",
     ],
   },
   {
@@ -283,9 +283,9 @@ export default function ComparePage() {
               scheduler would cost the records depth that&apos;s the entire point of this.
             </li>
             <li>
-              <strong>Mobile is a beta, and iOS only.</strong> The native app is in TestFlight: it
-              browses every entry, document and scan fully offline and captures pages offline, but
-              editing existing entries is still done on the web, and there is no Android app.
+              <strong>Native mobile is iPhone and iPad only.</strong> The free app is available on
+              the App Store. Sync once to browse records, capture pages and queue updates offline.
+              AI extraction and Ask need a connection. There is no native Android app.
             </li>
           </ul>
         </MarketingSection>

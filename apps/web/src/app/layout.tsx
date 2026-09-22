@@ -59,6 +59,7 @@ export const metadata: Metadata = {
     images: ["/og.png"],
   },
   manifest: "/manifest.webmanifest",
+  itunes: { appId: "6795396758" },
 };
 
 export const viewport: Viewport = {

@@ -1,5 +1,8 @@
 # MyTailLog — iOS app (Capacitor + Vite + React)
 
+**Public release:** [Download free on the App Store](https://apps.apple.com/us/app/mytaillog/id6795396758)
+for iPhone and iPad (iOS / iPadOS 15.6 or later). No TestFlight invitation needed.
+
 Offline-first native app for iPhone/iPad. Sync an aircraft once, then — **fully
 offline** — see whether it's airworthy, browse every log entry, document and
 original scanned page, pull up the AROW paperwork for a ramp check, **scan** new
