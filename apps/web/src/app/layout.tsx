@@ -1,23 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 // Glass-cockpit type system: display / UI / instrument-mono.
-const display = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Vendored fonts keep builds independent of Google Fonts responses/availability.
+const display = localFont({
+  src: "./fonts/SpaceGrotesk.ttf",
+  weight: "300 700",
+  style: "normal",
   variable: "--font-display",
   display: "swap",
 });
-const ui = Instrument_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const ui = localFont({
+  src: "./fonts/InstrumentSans.ttf",
+  weight: "400 700",
+  style: "normal",
   variable: "--font-ui",
   display: "swap",
 });
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const mono = localFont({
+  src: "./fonts/JetBrainsMono.ttf",
+  weight: "100 800",
+  style: "normal",
+  adjustFontFallback: false,
   variable: "--font-mono",
   display: "swap",
 });

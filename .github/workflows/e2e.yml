@@ -59,6 +59,10 @@ jobs:
           lcode=$(curl -s -o /tmp/login -w '%{http_code}' -X POST "$TEST_SUPABASE_URL/auth/v1/token?grant_type=password" -H "apikey: $TEST_SUPABASE_ANON_KEY" -H "Content-Type: application/json" --data "$body" || echo 000)
           grep -q access_token /tmp/login || { echo "::error::TEST user login failed (HTTP $lcode) against $TEST_SUPABASE_URL — TEST_USER_EMAIL/TEST_USER_PASSWORD don't match a confirmed account in THIS project. The URL, anon key, and user must all be the same Supabase project. Response: $(head -c 200 /tmp/login)"; exit 1; }
           echo "login preflight -> HTTP $lcode, TEST user authenticates"
+      # Regression guard: font compilation must not depend on Google's live CSS.
+      - name: Block Google Fonts during the build and browser tests
+        run: |
+          printf '\n127.0.0.1 fonts.googleapis.com fonts.gstatic.com\n::1 fonts.googleapis.com fonts.gstatic.com\n' | sudo tee -a /etc/hosts
       - run: npm run e2e
         env:
           CI: "true"
