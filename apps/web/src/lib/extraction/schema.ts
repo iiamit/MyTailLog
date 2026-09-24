@@ -10,7 +10,7 @@
 // the prompt changes materially.
 // ===========================================================================
 
-export const EXTRACTION_SCHEMA_VERSION = 3;
+export const EXTRACTION_SCHEMA_VERSION = 4;
 
 // Data fields that carry a per-field confidence score and a source-image box.
 // Single source of truth — the pipeline and review UI both key off this list.
@@ -83,11 +83,9 @@ export type ExtractionResult = {
   // added as a routing pre-pass.
   raw_text: string;
   /**
-   * The model can see rotated/sideways content it did NOT fully read (a sticker
-   * affixed at 90°, say). Set by the first pass to request a second, targeted
-   * one — and persisted on the page so review can warn even if that pass also
-   * comes up short. A missed entry has nothing to review against, so the point
-   * is to turn a silent omission into a visible flag.
+   * Visible rotated content not fully represented in structured entries, even
+   * if its words appear in raw_text. Persisted so review can warn when a
+   * targeted recovery pass still comes up short.
    */
   unread_rotated_content: boolean;
   entries: ExtractedEntry[];
@@ -160,7 +158,7 @@ export const EXTRACTION_JSON_SCHEMA = {
     unread_rotated_content: {
       type: "boolean",
       description:
-        "True if rotated/sideways content (e.g. a sticker at 90°) is visible but was NOT fully read in this pass. Triggers a follow-up pass; false when every orientation has been read.",
+        "True if rotated/sideways maintenance content is visible but NOT fully represented in structured entries, even when transcribed in raw_text. Triggers a follow-up pass.",
     },
     entries: { type: "array", items: ENTRY_SCHEMA },
   },
@@ -177,8 +175,8 @@ Rules:
 - Some pages are not maintenance entries at all (cover pages, aircraft/engine/prop general-information pages, blank pages). Return an empty entries array for those; still fill raw_text with whatever is printed.
 - A single image often contains TWO facing logbook pages (a spread). Report detected_page_count accordingly and return entries from both.
 - One logbook page may contain multiple dated entries — return one object per entry. Order them by reading position (top-to-bottom for upright content), but ORDER NEVER JUSTIFIES OMITTING ONE: an entry that doesn't fit the normal flow still gets its own object.
-- ORIENTATION. Shops affix adhesive stickers wherever there is room, so a single page often carries SEVERAL stickers at DIFFERENT orientations: some upright, others ROTATED 90° (reading bottom-to-top or top-to-bottom along the page edge), occasionally upside down or at an angle. Read the page in every orientation before you answer. **Each sticker is normally its OWN separate entry** — a rotated sticker beside an upright one is a second entry, not decoration on the first, and must not be skipped because it doesn't match the page's dominant text direction. This is a known real-world miss: pages with one upright and one vertical sticker have come back with only the upright one extracted.
-- If you can see rotated or sideways content that you could NOT fully read in this pass, set unread_rotated_content=true. Setting it is not a failure — it tells the owner (and a follow-up pass) that something is there. Set it false only when you are satisfied you have read every orientation on the page.
+- ORIENTATION. Shops affix adhesive stickers wherever there is room, so a single page often carries SEVERAL text regions at DIFFERENT orientations: some upright, others ROTATED 90° (reading bottom-to-top or top-to-bottom along the page edge), occasionally upside down. Read the page in every orientation before you answer. A rotated certification may belong to the SAME dated maintenance event as nearby handwriting, or it may be its OWN separate entry. Decide from the dates, work, and signatures; never omit it or automatically count it twice.
+- If you can see rotated or sideways content that you could NOT fully represent in structured entries, set unread_rotated_content=true EVEN IF you transcribed it into raw_text. Setting it is not a failure — it asks for a focused follow-up. Set it false only when every material certification and maintenance fact is represented in entries. Unclear handwritten values need low confidence or null, not plausible guesses.
 - For every entry, set confidence (0 to 1) for how sure you are overall, AND fill field_confidence with a separate 0-to-1 score for EVERY field — including fields you set to null (a field that is confidently absent scores high; an illegible one scores low). Be conservative: a smudged or ambiguous value should score low so the owner checks it.
 - Also fill field_boxes: for each field, give the bounding box of where that value appears on the image as the array [x, y, w, h] in fractions of the FULL image — x,y is the top-left corner and w,h the size, all between 0 and 1 (e.g. a hobbs reading in the upper-right might be [0.72, 0.08, 0.14, 0.05]). If a field is absent or you cannot locate it, use [0, 0, 0, 0]. Boxes may be approximate; they only help the owner find the value on the page.
 - Numbers like hobbs/tach: transcribe digits exactly as written; if a digit is ambiguous, score that field low rather than guessing.

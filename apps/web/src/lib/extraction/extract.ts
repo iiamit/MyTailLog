@@ -78,44 +78,17 @@ export async function extractFromImage(
 }
 
 /**
- * Should the page KEEP its "rotated content unread" warning after the retry?
+ * Second, targeted pass for a page with suspected rotated content.
  *
- * Clear it only on evidence: the retry must have actually returned something AND
- * no longer report anything outstanding. Getting this backwards would suppress
- * the warning on exactly the pages that need it — a silent miss is the failure
- * mode this whole change exists to remove — so it errs toward keeping it.
- */
-export function stillUnreadAfterRetry(second: {
-  unread_rotated_content: boolean;
-  entries: unknown[];
-}): boolean {
-  return second.unread_rotated_content || second.entries.length === 0;
-}
-
-/** Prompt for the follow-up pass. Deliberately narrow: ONLY the rotated content. */
-const ROTATED_PASS_PROMPT = `Your previous pass over this page reported rotated or sideways content that was not fully read.
-
-Read it now. Rotate the page mentally as needed — content may run bottom-to-top, top-to-bottom along an edge, upside down, or at an angle.
-
-Return ONLY entries from that rotated content. Do NOT return entries you already read upright — they are captured, and repeating them creates duplicates the owner has to clean up. If, on a second look, there is genuinely nothing rotated that you can read, return an empty entries array and set unread_rotated_content appropriately.`;
-
-/**
- * Second, targeted pass for a page whose first pass flagged rotated content.
- *
- * Runs on the SAME image with a narrower prompt rather than rotating the bytes:
- * a vision model reads rotated text when it is told to look, and re-encoding
- * would mean importing sharp into app code — which `package.json` deliberately
- * avoids (it is pinned for a CVE precisely because user-uploaded images reach
- * it via image optimization, and nothing in the app imports it).
- *
- * Only runs when the model asked for it, so the extra call lands on the few
- * pages that need it rather than on every page — extraction is bounded by a
- * per-user daily cap and a global dollar ceiling.
+ * Called with a physically rotated crop by orientation.ts when the first pass
+ * left a material transcript line out of structured entries or explicitly
+ * reported unread sideways content. Normal pages incur no second call.
  */
 export async function extractRotatedFromImage(
   imageBase64: string,
   mediaType: ImageMediaType,
-  isHandwritten = true,
+  isHandwritten: boolean,
+  focusPrompt: string,
 ): Promise<ExtractionResult> {
   const response = await generateAi({
     modelKind: isHandwritten ? "handwriting" : "ocr",
@@ -124,7 +97,7 @@ export async function extractRotatedFromImage(
     jsonSchema: EXTRACTION_JSON_SCHEMA,
     content: [
       { type: "image", mediaType, data: imageBase64 },
-      { type: "text", text: ROTATED_PASS_PROMPT },
+      { type: "text", text: focusPrompt },
     ],
   });
 

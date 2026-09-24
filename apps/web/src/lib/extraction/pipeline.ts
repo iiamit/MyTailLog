@@ -11,7 +11,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { extractFromImage, extractRotatedFromImage, stillUnreadAfterRetry } from "./extract";
+import { extractFromImage, extractRotatedFromImage } from "./extract";
+import { recoverMixedOrientation } from "./orientation";
 import { safeIsoDate } from "./date";
 import {
   ENTRY_FIELDS,
@@ -120,32 +121,14 @@ export async function extractPage(
     }
 
     const isHandwritten = page.is_handwritten !== false;
-    const result = await extractFromImage(base64, "image/jpeg", isHandwritten);
-
-    // Shops affix stickers wherever there's room, so a page can carry an upright
-    // sticker and a 90°-rotated one. Reported from the field: only the upright
-    // one came back. When the first pass says it saw rotated content it couldn't
-    // read, spend one more call on it — targeted at that content only.
-    //
-    // Best-effort: the first pass's entries are already saved-worthy, so a
-    // failure here must never cost them. `rotatedStillUnread` drives the warning
-    // the review screen shows, because a missed entry has nothing to review
-    // against — the only recoverable outcome is telling the owner to look.
-    let rotatedStillUnread = result.unread_rotated_content;
-    if (result.unread_rotated_content) {
-      try {
-        const second = await extractRotatedFromImage(base64, "image/jpeg", isHandwritten);
-        result.entries.push(...second.entries);
-        // Cleared only if the follow-up actually read something and no longer
-        // reports anything outstanding.
-        rotatedStillUnread = stillUnreadAfterRetry(second);
-      } catch (e) {
-        // Constant format string, values as arguments: an interpolated template
-        // passed to a format function lets an injected specifier forge the log
-        // line (semgrep javascript.lang.security.audit.unsafe-formatstring).
-        console.error("[extract] rotated second pass failed for page %s: %s", page.id, (e as Error).message);
-      }
-    }
+    const first = await extractFromImage(base64, "image/jpeg", isHandwritten);
+    // A model can transcribe a sideways stamp into raw_text while silently
+    // omitting it from structured entries and setting the old warning flag to
+    // false. Compare transcript coverage, then read physically rotated edge
+    // crops only on suspect pages. Recovery is best-effort and leaves a visible
+    // warning when content remains unrepresented.
+    const result = await recoverMixedOrientation(base64, first,
+      (image, prompt) => extractRotatedFromImage(image, "image/jpeg", isHandwritten, prompt));
 
     // The model can emit calendar-invalid dates (e.g. "1987-11-31"); coerce each
     // to a Postgres-safe date up front so one bad date can't fail the whole page.
@@ -197,7 +180,7 @@ export async function extractPage(
         ocr_text: result.raw_text || null,
         extraction_confidence: minConfidence,
         detected_page_count: result.detected_page_count,
-        unread_rotated_content: rotatedStillUnread,
+        unread_rotated_content: result.unread_rotated_content,
         extraction_status: "extracted",
         extraction_error: null,
         extracted_at: new Date().toISOString(),
