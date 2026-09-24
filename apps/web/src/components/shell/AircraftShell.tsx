@@ -82,7 +82,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
     label: "Manage",
     items: [
       { ident: "EXP", label: "Export & backup", href: `${a}/export` },
-      ...(ctx.isOwner ? [{ ident: "SHR", label: "Sharing & transfer", href: `${a}/share` }] : []),
+      ...(ctx.isOwner ? [{ ident: "SHR", label: "Sharing, transfer & delete", href: `${a}/share` }] : []),
     ],
   });
   return groups;

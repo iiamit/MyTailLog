@@ -219,6 +219,15 @@ export default async function Dashboard() {
                 Open aircraft →
               </Link>
 
+              {!shared && !a.is_demo && (
+                <Link
+                  href={`/aircraft/${a.id}/share#delete-aircraft`}
+                  className="mt-2 text-center text-[11px] text-faint underline decoration-line underline-offset-2 hover:text-ink"
+                >
+                  Manage / delete aircraft
+                </Link>
+              )}
+
               {/* Shared WITH you (incl. the read-only demo) → you can drop your
                   own grant. An aircraft you own has no share row to remove. */}
               {shared && (
