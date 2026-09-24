@@ -217,6 +217,7 @@ export function ShareClient({
         </section>
 
         <section
+          id="delete-aircraft"
           className="flex flex-col gap-2.5 rounded-xl border p-[18px]"
           style={{ borderColor: "rgba(255,97,86,.3)", background: "var(--red-bg)" }}
         >
