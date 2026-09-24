@@ -17,9 +17,9 @@
     "db:push": "supabase db push",
     "lint:fix": "eslint src --fix"
   },
-  "comment:overrides": "Force patched sharp/libvips (CVE-2026-33327/33328/35590/35591). Next pins ^0.34.5 (vulnerable); user-uploaded logbook images reach sharp via image optimization. sharp is not imported by app code, so a minor bump is safe.",
+  "comment:overrides": "Force patched sharp/libvips (CVE-2026-33327/33328/35590/35591). Next pins ^0.34.5 (vulnerable); user-uploaded logbook images reach sharp via image optimization and orientation recovery.",
   "overrides": {
-    "sharp": "^0.35.3"
+    "sharp": "$sharp"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
@@ -32,7 +32,8 @@
     "oidc-provider": "^9.9.1",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

@@ -1,5 +1,11 @@
 # Competitive analysis — SquawkFree
 
+> This is the August 2026 SquawkFree snapshot. A separate, current comparison
+> with Runup, including marketing implications, is appended under
+> [Runup — September 2026](#runup--september-2026). The original SquawkFree
+> backlog below is historical; shipped work is tracked in
+> [`plan-competitive-backlog.md`](plan-competitive-backlog.md).
+
 Full-site review of **squawkfree.com**, captured **2026-08-01**. Every public
 page was read (`/`, `/myfbo`, `/logbook-digitization`, `/faq`, `/whats-new`,
 `/about`, `/blog` + 15 posts, `/terms`, `/privacy`), plus their CSS tokens and
@@ -484,3 +490,138 @@ chasing them would blunt the one we have.
    them:** calendar-date projection with confidence (T1-1), checklists that feed
    squawks (T2-2), and passive hours capture (T2-1). The rest of their surface
    area is a flight-school business we should stay out of.
+
+---
+
+## Runup — September 2026
+
+**Checked 2026-09-23.** Sources: Runup's public [home](https://runuppro.com/),
+[features](https://runuppro.com/features), [pricing](https://runuppro.com/pricing),
+[about](https://runuppro.com/about), [what's new](https://runuppro.com/whats-new),
+and [sign-up](https://runuppro.com/signup) pages. MyTailLog claims below were
+checked against this repository's README, FAQ, feature pages, and data model at
+the same date. Runup's pages and sign-up form were reachable, but no account was
+created and no private workflow was tested. Treat its detailed feature claims as
+**advertised capabilities**, not independently verified performance. Prices are
+the public US-dollar prices shown on the site, and may change.
+
+### Snapshot: a direct competitor
+
+Runup targets **GA piston aircraft owners** with the same fundamental journey:
+scan paper logbooks, have AI extract entries, review each result beside its
+source, search maintenance history, track ADs, and share records with a mechanic.
+It explicitly says the paper originals remain the legal records. This is much
+closer to MyTailLog than SquawkFree's manual transcription service. We cannot
+claim that self-serve AI extraction or human review is unique to us.
+
+Its advertised differentiators are **calculated engine and propeller times with
+discrepancy flags**, **separate tracking for twin-engine aircraft**, a
+**chronological ledger that mixes log entries and standalone documents**, and a
+**buyer portal** with record visibility controls, contact-gated deeper access,
+and engagement analytics. It also advertises background OCR with in-app and
+email completion notices. These are more relevant to our owner audience than
+flight-school scheduling or dispatch.
+
+### Pricing and availability
+
+| Plan | Public price | Published limits and access |
+| --- | --- | --- |
+| Free | **$0** | One single-engine aircraft; **10 logbook pages + 5 records pages**; basic search and ledger; no AD tracking or mechanic access. No card required. |
+| Pro Single Engine | **$16 per aircraft per month** | Unlimited pages and aircraft in one account, but **each aircraft is billed**; full-text search, AD tracking, mechanic access, time validation. $192 per aircraft over 12 months at the stated monthly rate; no annual discount was advertised. |
+| Pro Twin Engine | **$24 per aircraft per month** | Single Engine features plus independent engine/propeller times and twin-specific validation. $288 per aircraft over 12 months at the stated monthly rate. |
+| Sales Portal | **$49 one time per aircraft** | Add-on to either Pro plan; the site says it remains active until the owner deactivates it. |
+
+The [pricing FAQ](https://runuppro.com/pricing) says downgraded accounts retain
+existing records but cannot add pages beyond Free limits. Public web sign-up
+offers email and Google sign-in. The reviewed site advertises a browser product;
+it links to no iOS or Android store listing. That supports **"no native app
+advertised"**, not a claim that one does not exist. Geographic availability
+was not stated. The public [what's-new page](https://runuppro.com/whats-new)
+shows a July 15, 2026 update; it is evidence of a published update, not proof
+of its current customer count or release cadence.
+
+### Honest capability comparison
+
+| Capability | Runup's public claim | MyTailLog today |
+| --- | --- | --- |
+| AI extraction and review | Handwriting OCR, structured fields, original beside entry, owner approval; marketing images show field confidence | **Parity:** AI extraction, field confidence, original beside editable entry, review before confirmation; also duplicate detection |
+| ADs | Report upload to import history, open/recurring status, dashboard; Pro only | AD-report import, FAA discovery, compliance and due forecasts; no paid tier |
+| Records and attachments | 337s, STCs, invoices and supporting files linked to entries | Typed Records Vault, entry/document links, original scans and ZIP backup |
+| Search and timeline | Search records; ledger combines entries and standalone documents | Search and cross-logbook entry timeline; attached documents appear on entries, but unattached vault documents have a separate view |
+| Hours validation | Calculates engine/prop times, flags disagreement and order problems; twin-specific tracking | Hobbs/tach reconciliation, anomaly review, meter resets and due projections; **no equivalent independent per-engine/per-prop time ledger or written-vs-calculated SMOH check** |
+| Sharing | Mechanic read-only invitation and revoke; buyer portal with tiered access | Email-invited viewer/editor and ownership transfer; shareable **summary**, but no browsable buyer portal |
+| Export | Full account archive with CSV, JSON, PDF and originals is advertised as Pro | CSV, printable summary, complete ZIP with originals **and re-import**, plus scheduled Dropbox/Drive copies |
+| Offline/mobile | No native app advertised on reviewed pages | iPhone/iPad app on the App Store with offline record access, capture and queued edits; web app too |
+| Other record intelligence | No oil trend, equipment reconstruction, W&B history, Ask, public API or self-hosting claim found on reviewed pages | All shipped; do not imply Runup lacks them privately, only that it does not advertise them |
+| Pricing | $0 preview; $16 or $24 per aircraft monthly for full use; $49 sale add-on | No subscription or billing; shared AI has daily caps, and bringing an AI key incurs provider usage costs |
+
+### Feasible product gaps, ordered by owner value
+
+1. **A safe buyer-facing record room — high value, medium-to-large effort.**
+   Start with an owner-created, revocable, read-only link to a selected aircraft's
+   confirmed entries and selected documents, with an expiry and a clear preview
+   of what a buyer will see. Reuse existing viewer access, summary, and signed
+   document routes where possible. Contact collection and engagement analytics
+   are optional later steps; do not make a buyer hand over contact details just
+   to verify an airworthiness claim. This is the clearest real gap in a sale.
+2. **One timeline for entries and unattached documents — medium effort.** The
+   current timeline fetches log entries and only shows vault files attached to
+   them. Add dated standalone vault documents as distinct rows, with type and
+   source labels; keep unknown dates separate rather than inventing chronology.
+   This would make annual and pre-buy review easier without changing the data
+   model substantially.
+3. **Written-versus-derived component time review — large effort.** A
+   single-engine pass could compare explicit engine/prop time statements to
+   dated maintenance events and meter history, always showing the evidence and
+   asking for confirmation. Twin support needs per-component identity, install
+   and overhaul events, and separate time bases. Current `engine_serials` and
+   `prop_serials` arrays are **not** that model. Do not present inferred SMOH or
+   prop time as authoritative until these rules and tests exist.
+4. **Extraction completion notice — small-to-medium effort.** The capture queue
+   and extraction status already exist. An in-app notice when a batch finishes
+   would close a useful feedback gap; email should be opt-in to avoid flooding
+   owners scanning a whole book. Verify the real background behavior before
+   promising that a user can always close the browser mid-upload.
+
+Runup's sales analytics and contact gating are implementation options, not the
+reason to build the record room. The priority is controlled access to credible
+source material. Its $49 sale add-on is evidence of a possible willingness to
+pay, not a reason for MyTailLog to introduce billing.
+
+### Marketing analysis and actions
+
+**What Runup does well.** Its [home page](https://runuppro.com/) leads with a
+concrete owner problem (boxes of paper) and a short upload → AI → review story.
+The [features page](https://runuppro.com/features) uses light and dark product
+screens for each promise, including a handwritten page next to extracted fields
+and a flagged time mismatch. The [pricing page](https://runuppro.com/pricing)
+puts the free limit and per-aircraft charges in public, with a plain downgrade
+answer. Its buyer and mechanic stories name a specific moment when organized
+records save effort. The fuel-cost comparison makes $16/month feel tangible,
+though it obscures the larger multi-aircraft total unless the reader reaches
+the FAQ.
+
+**Where our message is stronger.** MyTailLog has a public demo, a native offline
+app, no subscription, deeper record-derived insight, and a ZIP that can be
+re-imported into a self-hosted instance. Those are concrete trust claims. The
+pricing comparison must mention our shared-AI daily limits and potential
+bring-your-own-key cost; calling scanning simply "free and unlimited" would be
+misleading. Our review workflow is strong, but Runup now makes a similar claim,
+so lead with the **result**: a searchable record that helps with an annual,
+airworthiness question, or aircraft sale.
+
+**Where our message needs work.** Our current hero says the alternative to us
+is mailing books to a transcription service for hundreds of dollars and waiting
+weeks. Runup offers self-serve AI, so that sentence now draws an incomplete
+competitive picture. Rewrite it around our own demonstrable value instead:
+offline access, source-linked decisions, full export/re-import, and owner
+control. Do not claim superior OCR accuracy or faster processing without a
+measured side-by-side test. Show a real buyer or annual workflow using the
+existing summary and record links; label it accurately rather than implying
+we already have a buyer portal.
+
+**Recommended order:** (1) correct the hero's outdated alternatives framing;
+(2) show the App Store/offline and re-import story beside the capture/review
+screens; (3) build and demonstrate the controlled buyer record room;
+(4) publish an evidence-led page explaining source-linked AD and hours review.
+This prioritizes proof and the owner's decision over a longer list of features.
