@@ -7,6 +7,10 @@ if [[ ! -r "$signing_properties" ]]; then
   echo "Android signing config is missing: $signing_properties" >&2
   exit 1
 fi
+if [[ ! -s android/app/google-services.json ]]; then
+  echo "Android Firebase config is missing: android/app/google-services.json" >&2
+  exit 1
+fi
 
 npm run typecheck
 npm run build
