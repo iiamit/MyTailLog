@@ -16,6 +16,12 @@ function draftReleases(releases, versionCode) {
   ]
 }
 
+function promoteDraft(releases, versionCode) {
+  const draft = releases.find(release => release.status === 'draft' && release.versionCodes?.includes(String(versionCode)))
+  if (!draft) throw new Error(`No internal draft for versionCode ${versionCode}`)
+  return [{ ...draft, status: 'completed' }]
+}
+
 async function accessToken() {
   const key = JSON.parse(await readFile(keyFile, 'utf8'))
   assert.equal(key.type, 'service_account')
@@ -47,10 +53,14 @@ async function main(mode) {
     assert.deepEqual(draftReleases([{ status: 'completed', versionCodes: ['1'] }, { status: 'draft', versionCodes: ['2'] }], 3), [
       { status: 'completed', versionCodes: ['1'] }, { status: 'draft', versionCodes: ['3'] },
     ])
+    assert.deepEqual(promoteDraft([{ status: 'draft', versionCodes: ['3'] }, { status: 'completed', versionCodes: ['2'] }], 3), [
+      { status: 'completed', versionCodes: ['3'] },
+    ])
+    assert.throws(() => promoteDraft([{ status: 'completed', versionCodes: ['2'] }], 3), /No internal draft/)
     console.log('Play draft release check passed')
     return
   }
-  if (!['check', 'draft'].includes(mode)) throw new Error('Use: node scripts/play.mjs check|draft')
+  if (!['check', 'draft', 'internal'].includes(mode)) throw new Error('Use: node scripts/play.mjs check|draft|internal')
   const token = await accessToken()
   const api = async (method, url, body) => {
     const response = await fetch(url, {
@@ -88,6 +98,15 @@ async function main(mode) {
     const gradle = await readFile('android/app/build.gradle', 'utf8')
     const versionCode = gradle.match(/\bversionCode\s+(\d+)/)?.[1]
     if (!versionCode) throw new Error('Could not find Android versionCode')
+    const internal = (tracks.tracks || []).find(track => track.track === 'internal')
+    if (!internal) throw new Error('Play has no internal testing track')
+    if (mode === 'internal') {
+      await api('PUT', `${editUrl}/tracks/internal`, { track: 'internal', releases: promoteDraft(internal.releases || [], versionCode) })
+      await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`, {})
+      committed = true
+      console.log(`Released versionCode ${versionCode} to the internal-testing track.`)
+      return
+    }
     const bundles = await api('GET', `${editUrl}/bundles`)
     if ((bundles.bundles || []).some(bundle => String(bundle.versionCode) === versionCode)) {
       throw new Error(`versionCode ${versionCode} is already on Play; increase it in android/app/build.gradle before building again`)
@@ -95,8 +114,6 @@ async function main(mode) {
 
     const bundle = await api('POST', `https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${packageName}/edits/${encodeURIComponent(edit.id)}/bundles?uploadType=media`, await readFile(bundleFile))
     if (String(bundle.versionCode) !== versionCode) throw new Error(`Bundle versionCode ${bundle.versionCode} differs from build.gradle ${versionCode}`)
-    const internal = (tracks.tracks || []).find(track => track.track === 'internal')
-    if (!internal) throw new Error('Play has no internal testing track')
     await api('PUT', `${editUrl}/tracks/internal`, { track: 'internal', releases: draftReleases(internal.releases || [], versionCode) })
     await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`, {})
     committed = true

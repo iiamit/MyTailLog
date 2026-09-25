@@ -14,6 +14,7 @@
     "android:bundle": "./scripts/android-bundle.sh",
     "play:check": "node scripts/play.mjs check",
     "play:draft": "npm run android:bundle && node scripts/play.mjs draft",
+    "play:internal": "node scripts/play.mjs internal",
     "ios": "vite build && cap sync ios && cap open ios",
     "testflight": "./scripts/testflight.sh"
   },

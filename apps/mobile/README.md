@@ -49,14 +49,14 @@ change. The Play service account JSON lives at
 permissions; do not commit it.
 
 Run `npm run play:check` to confirm this host can access the app. Version codes 1,
-2, and 3 are on Play; version 3 is an internal-testing draft, while version 2
-is the completed internal release. Increase `versionCode` in
+2, and 3 are on Play; version 3 is the completed internal release. Increase `versionCode` in
 `android/app/build.gradle` for each later bundle, then run `npm run play:draft`.
 This local command typechecks, builds, signs, and uploads
 the AAB as an **internal-testing draft**. A draft is not distributed to testers;
 review and release it in Play Console when the app is ready. The command only
 touches MyTailLog's internal track and preserves any active internal release.
-It will not publish to production.
+It will not publish to production. When an internal draft has passed review,
+`npm run play:internal` releases the current `versionCode` to internal testers.
 On this 1.7 GB host, set `MYTAILLOG_ANDROID_SKIP_LINT=1` for a release build
 if Gradle's release lint exhausts memory. Run the full lint build on a larger
 host before a public release.
