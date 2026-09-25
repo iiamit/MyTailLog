@@ -340,7 +340,7 @@ export function EntriesDrawer({ title, open, onOpen, children }: { title: string
     <div
       style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 40,
-        height: open ? "62vh" : "calc(60px + env(safe-area-inset-bottom))",
+        height: open ? "62vh" : "calc(60px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
         background: color.surface, borderTop: `1px solid ${color.hairline}`,
         borderTopLeftRadius: 18, borderTopRightRadius: 18, boxShadow: "0 -10px 30px rgba(0,0,0,.45)",
         display: "flex", flexDirection: "column", transition: "height .22s ease",
@@ -364,7 +364,7 @@ export function EntriesDrawer({ title, open, onOpen, children }: { title: string
         <span style={{ ...text.rowTitle, color: color.ink }}>{title}</span>
         <span style={{ ...text.meta, color: color.accent, marginLeft: "auto" }}>{open ? "Hide" : "Review"}</span>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 16px calc(16px + env(safe-area-inset-bottom))", visibility: open ? "visible" : "hidden" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 16px calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))", visibility: open ? "visible" : "hidden" }}>
         {children}
       </div>
     </div>

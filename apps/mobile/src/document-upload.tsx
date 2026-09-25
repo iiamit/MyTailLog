@@ -177,7 +177,7 @@ export function DocumentUpload({
     <RecordsSheet onClose={onClose} title="Add a document">
       <DropZone onFiles={take} busy={!!busy}>
         <div style={{ display: "flex", gap: 8 }}>
-          <SourceButton label="Choose a file" hint="Files, iCloud, Photos" onClick={() => fileInput.current?.click()} />
+          <SourceButton label="Choose a file" hint="Files or photos" onClick={() => fileInput.current?.click()} />
           <SourceButton label="Use the camera" hint="Finds the page edges" icon onClick={shoot} />
         </div>
       </DropZone>
@@ -363,16 +363,20 @@ export function RecordsSheet({
 }) {
   return (
     <div
+      data-android-back
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         style={{
           width: "100%", maxHeight: "92vh", overflowY: "auto",
           background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
           border: `1px solid ${color.hairline}`, borderBottom: "none",
-          padding: "10px 20px calc(22px + env(safe-area-inset-bottom))",
+          padding: "10px 20px calc(22px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
         }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 2, background: color.hairline, margin: "0 auto 14px" }} />

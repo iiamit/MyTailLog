@@ -60,11 +60,15 @@ export function AccountMenu({
 
   return (
     <div
+      data-android-back
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Account"
         /* noshrink: this is a scrolling flex column, and once the rows outgrow
            it flexbox squeezes each one below its own text — which is how a
            row's description ended up printed over the row beneath it. */
@@ -73,7 +77,7 @@ export function AccountMenu({
           width: "100%", maxWidth: 560, margin: "0 auto", background: color.surface,
           borderTopLeftRadius: 20, borderTopRightRadius: 20,
           border: `1px solid ${color.hairline}`,
-          padding: "16px 16px calc(20px + env(safe-area-inset-bottom))",
+          padding: "16px 16px calc(20px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
           display: "flex", flexDirection: "column", gap: 6,
           maxHeight: "88vh", overflowY: "auto",
         }}
@@ -102,7 +106,7 @@ export function AccountMenu({
             label="Reminders won't arrive on this phone"
             detail={
               push.status === "denied"
-                ? "Notifications are turned off for MyTailLog. Turn them on in iOS Settings → Notifications."
+                ? "Notifications are turned off for MyTailLog. Turn them on in your phone's Settings → Notifications."
                 : `This phone couldn't register for notifications. ${push.reason}`
             }
             onClick={() => {}}
@@ -154,9 +158,8 @@ export function AccountMenu({
           }}
           tone={color.danger}
         />
-        {/* Apple requires an in-app way to START deleting the account. It is one
-            tap from here to the page that does it. */}
-        <WebLink label="Delete my account" detail="Permanently removes your account and every record in it." path="/profile#delete-account" tone={color.danger} />
+        <WebLink label="Delete my account" detail="Request deletion of your account and associated data." path="/account-deletion" tone={color.danger} />
+        <WebLink label="Privacy policy" detail="How MyTailLog handles your data." path="/privacy" />
 
         <button
           onClick={onClose}
@@ -341,7 +344,7 @@ async function sendTestPush(): Promise<string> {
     });
     const b = (res.data ?? {}) as { sent?: number; devices?: number; error?: string; hint?: string };
     if (res.status >= 400) return `Failed — ${b.error ?? res.status}`;
-    if (b.error) return `Apple refused it — ${b.error}`;
+    if (b.error) return `Push service refused it — ${b.error}`;
     if (!b.devices) return b.hint ?? "No device registered";
     return b.sent ? "Sent — it should arrive now" : "Nothing sent";
   } catch (e) {

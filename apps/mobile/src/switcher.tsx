@@ -98,6 +98,7 @@ export function AircraftSwitcher({
 
       {open && (
         <div
+          data-android-back
           onClick={() => setOpen(false)}
           style={{
             position: "fixed",
@@ -119,7 +120,7 @@ export function AircraftSwitcher({
               borderBottomLeftRadius: dialog ? 20 : 0,
               borderBottomRightRadius: dialog ? 20 : 0,
               border: `1px solid ${color.hairline}`,
-              padding: dialog ? "14px 16px 20px" : `14px 16px calc(20px + env(safe-area-inset-bottom))`,
+              padding: dialog ? "14px 16px 20px" : `14px 16px calc(20px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))`,
               display: "flex",
               flexDirection: "column",
               gap: 8,

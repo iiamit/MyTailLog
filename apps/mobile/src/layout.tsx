@@ -105,7 +105,7 @@ export function Sidebar({
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        padding: `max(16px, env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left))`,
+        padding: `max(16px, var(--safe-area-inset-top, env(safe-area-inset-top))) 10px calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom))) max(10px, var(--safe-area-inset-left, env(safe-area-inset-left)))`,
         background: color.surface,
         borderRight: `1px solid ${color.hairline}`,
       }}
@@ -227,7 +227,7 @@ export function RegularFrame({ sidebar, children }: { sidebar: ReactNode; childr
           // claims the height instead (flex: 1) and scrolls per pane, so this
           // never scrolls under it.
           overflowY: "auto",
-          padding: `max(20px, env(safe-area-inset-top)) max(${SCREEN_X}px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) ${SCREEN_X}px`,
+          padding: `max(20px, var(--safe-area-inset-top, env(safe-area-inset-top))) max(${SCREEN_X}px, var(--safe-area-inset-right, env(safe-area-inset-right))) calc(20px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom))) ${SCREEN_X}px`,
         }}
       >
         {children}
@@ -300,7 +300,7 @@ export function TwoPane({
  * at regular width there is no tab bar, so it sits on the safe area alone.
  */
 export const fabBottom = (size: SizeClass): string =>
-  size === "regular" ? "calc(20px + env(safe-area-inset-bottom))" : "calc(78px + env(safe-area-inset-bottom) + 20px)";
+  size === "regular" ? "calc(20px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))" : "calc(78px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)) + 20px)";
 
 /** What a secondary pane shows before anything is picked in the primary. */
 export function PanePlaceholder({ children }: { children: ReactNode }): ReactElement {

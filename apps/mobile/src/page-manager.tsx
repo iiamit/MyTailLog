@@ -433,6 +433,7 @@ function Confirm({
 }) {
   return (
     <div
+      data-android-back
       onClick={onCancel}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 70, display: "grid", placeItems: "center", padding: 24 }}
     >

@@ -9,6 +9,7 @@ const config: CapacitorConfig = {
   // API — access is gated by the Bearer token, not the origin).
   plugins: {
     CapacitorHttp: { enabled: true },
+    SystemBars: { insetsHandling: "css" },
   },
 };
 

@@ -517,9 +517,8 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           rights to tell you the nav light is out.
         </p>
         <p className="text-sm text-faint">
-          There is no self-serve account deletion yet. You can delete any aircraft yourself
-          (type-to-confirm, which removes its records and scans); to have the account itself removed,
-          email <span className="readout text-[13px]">mytaillog@iamit.org</span>.
+          You can delete an aircraft yourself. To request deletion of your account and associated
+          data, use the <Link href="/account-deletion" className="underline decoration-line underline-offset-2">account deletion page</Link>.
         </p>
       </>
     ),

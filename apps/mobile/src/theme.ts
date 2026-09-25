@@ -37,6 +37,11 @@ async function statusBarFor(theme: ThemeName): Promise<void> {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return;
+    if (Capacitor.getPlatform() === "android") {
+      const { SystemBars, SystemBarsStyle } = await import("@capacitor/core");
+      await SystemBars.setStyle({ style: theme === "dark" ? SystemBarsStyle.Dark : SystemBarsStyle.Light });
+      return;
+    }
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     await StatusBar.setStyle({ style: theme === "dark" ? Style.Dark : Style.Light });
   } catch {

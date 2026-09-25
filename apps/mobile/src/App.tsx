@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
+import { App as NativeApp } from "@capacitor/app";
+import { dismissTopSheet } from "./android-back";
 import { supabase } from "./supabase";
 import { pullAll } from "./sync";
 import { deliveryDecision } from "./sync-policy";
@@ -75,9 +77,9 @@ function Login() {
     <Screen>
       <Brand />
       <form onSubmit={signIn} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24 }}>
-        <input style={input} type="email" placeholder="Email" autoCapitalize="none" autoCorrect="off"
+        <input style={input} type="email" aria-label="Email" placeholder="Email" autoCapitalize="none" autoCorrect="off"
           value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input style={input} type="password" placeholder="Password"
+        <input style={input} type="password" aria-label="Password" placeholder="Password"
           value={password} onChange={(e) => setPassword(e.target.value)} />
         <button style={primary} disabled={busy || !email || !password}>{busy ? "Signing in…" : "Sign in"}</button>
         {error && <p style={{ color: "#ff6b6b", fontSize: 13 }}>{error}</p>}
@@ -188,6 +190,29 @@ function Shell({ session }: { session: Session }) {
       return { screen: "hangar" };
     });
   }
+
+  // Android's system Back follows the same stack as the in-app back control.
+  // At the hangar, return to the launcher instead of discarding app state.
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== "android") return;
+    let disposed = false;
+    let handle: { remove: () => Promise<void> } | undefined;
+    void NativeApp.addListener("backButton", () => {
+      if (zoom) setZoom(null);
+      else if (dismissTopSheet([...document.querySelectorAll<HTMLElement>("[data-android-back]")])) return;
+      else if (capture !== undefined) setCapture(undefined);
+      else if (menu) setMenu(false);
+      else if (nav.screen !== "hangar") back();
+      else void NativeApp.minimizeApp();
+    }).then((listener) => {
+      if (disposed) void listener.remove();
+      else handle = listener;
+    });
+    return () => {
+      disposed = true;
+      if (handle) void handle.remove();
+    };
+  }, [zoom, capture, menu, nav]);
 
   // Native-style swipe: start within 24px of the left edge, drag right → back.
   // Skipped while the lightbox is open (it owns its own touches).
@@ -365,7 +390,7 @@ function Shell({ session }: { session: Session }) {
       <Screen>
         <Brand />
         <p style={{ color: amber, fontSize: 13, marginTop: 20 }}>
-          On-device storage needs the iOS simulator — run via Xcode, not the desktop browser.
+          On-device storage needs the iOS or Android app, not the desktop browser.
         </p>
       </Screen>
     );

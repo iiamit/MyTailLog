@@ -87,7 +87,7 @@ export function Lightbox({ src, onClose }: { src: string; onClose: () => void })
         aria-label="Close"
         style={{
           position: "absolute",
-          top: "max(14px, env(safe-area-inset-top))",
+          top: "max(14px, var(--safe-area-inset-top, env(safe-area-inset-top)))",
           right: 14,
           width: 40,
           height: 40,

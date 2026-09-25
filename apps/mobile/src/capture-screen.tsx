@@ -236,7 +236,7 @@ export function CaptureScreen({
             {busy && !uploading ? busy : "Scan pages"}
           </button>
           <div style={{ ...text.meta, color: color.faint, textAlign: "center", lineHeight: 1.45, maxWidth: 250, margin: "10px auto 0" }}>
-            Apple's scanner finds the page edges. Shoot the whole stack in one go — up to 24 pages.
+            The scanner finds the page edges. Shoot the whole stack in one go — up to 24 pages.
           </div>
         </>
       )}
@@ -294,6 +294,7 @@ export function CaptureScreen({
 function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div
+      data-android-back
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
     >
@@ -303,7 +304,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
           width: "100%", maxHeight: "92vh", overflowY: "auto",
           background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
           border: `1px solid ${color.hairline}`, borderBottom: "none",
-          padding: "10px 20px calc(22px + env(safe-area-inset-bottom))",
+          padding: "10px 20px calc(22px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
         }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 2, background: color.hairline, margin: "0 auto 14px" }} />
