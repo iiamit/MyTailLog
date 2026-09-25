@@ -21,14 +21,13 @@ body,
   padding: 0;
   background: var(--ground);
   max-width: 100%;
-  overflow-x: hidden;
 }
 #root {
   min-height: 100vh;
+  overflow-x: clip;
 }
 body {
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none; /* no white rubber-band on overscroll */
 }
 *,
 *::before,
