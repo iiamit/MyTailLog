@@ -186,7 +186,9 @@ function tokenFromNative(): Promise<string | null> {
 // unreferenced, tree-shakes out of the bundle, and the app silently never
 // registers — which is exactly what happened in 1.4.2 before it shipped.
 let registering = false;
-if (Capacitor.isNativePlatform()) {
+if (Capacitor.getPlatform() === "android") {
+  state = { status: "failed", reason: "Android reminders are paused while a startup crash is investigated" };
+} else if (Capacitor.isNativePlatform()) {
   state = { status: "failed", reason: "Not registered yet" };
   supabase.auth.onAuthStateChange((event, session) => {
     if (!session || registering) return;
