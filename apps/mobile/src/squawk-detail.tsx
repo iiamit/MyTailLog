@@ -279,6 +279,7 @@ export function SquawkDetail({
 
   return (
     <div
+      data-android-back
       onClick={busy ? undefined : onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
     >
@@ -288,7 +289,7 @@ export function SquawkDetail({
           width: "100%", maxHeight: "92vh", overflowY: "auto",
           background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
           border: `1px solid ${color.hairline}`, borderBottom: "none",
-          padding: "10px 20px calc(22px + env(safe-area-inset-bottom))",
+          padding: "10px 20px calc(22px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
         }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 2, background: color.hairline, margin: "0 auto 14px" }} />

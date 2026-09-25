@@ -11,12 +11,12 @@ import { API_BASE, supabase } from "./supabase";
 // has an aircraft — asking on the splash screen is how an app gets denied
 // permanently on first launch and never gets it back.
 //
-// The token is registered on every launch, not once: iOS reissues it after a
-// restore, an OS upgrade or a long uninstall, and a stale token is a reminder
+// The token is registered on every launch, not once: either OS may reissue it
+// after a restore, an upgrade or a long uninstall, and a stale token is a reminder
 // that silently stops arriving.
 // ===========================================================================
 
-const PLATFORM = "ios";
+const PLATFORM = Capacitor.getPlatform() === "android" ? "android" : "ios";
 
 // ---------------------------------------------------------------------------
 // Why this file reports its state instead of failing quietly.
@@ -83,11 +83,15 @@ export async function registerForPush(): Promise<"granted" | "denied" | "unavail
       return "denied";
     }
 
-    const token = await tokenFromApns();
+    if (PLATFORM === "android") {
+      await PushNotifications.createChannel({
+        id: "due", name: "Due reminders", description: "Aircraft maintenance reminders", importance: 4,
+      }).catch(() => {}); // FCM uses its fallback channel if creation fails.
+    }
+    lastError = null;
+    const token = await tokenFromNative();
     if (!token) {
-      // Permission is real, but APNs refused or never answered. THIS is the
-      // case that used to look like success.
-      setState({ status: "failed", reason: lastError ?? "APNs did not answer in 10s" });
+      setState({ status: "failed", reason: lastError ?? "Push service did not answer in 10s" });
       return "granted";
     }
     const sent = await postToken("POST", token);
@@ -110,20 +114,22 @@ export async function unregisterPush(): Promise<void> {
   try {
     const token = lastToken;
     if (token) await postToken("DELETE", token);
+    if (PLATFORM === "android") await PushNotifications.unregister().catch(() => {});
     await PushNotifications.removeAllListeners();
+    lastToken = null;
     setState({ status: "unsupported" });
   } catch {
     /* signing out matters more than tidying up */
   }
 }
 
-// APNs answers `register()` asynchronously through a listener, so the token has
+// The native push service answers `register()` asynchronously, so the token has
 // to be awaited. It is kept so sign-out can unregister the same one.
 let lastToken: string | null = null;
-/** The reason APNs gave, kept so the failure can be named rather than guessed. */
+/** The provider's reason, kept so a failure can be named rather than guessed. */
 let lastError: string | null = null;
 
-function tokenFromApns(): Promise<string | null> {
+function tokenFromNative(): Promise<string | null> {
   return new Promise((resolve) => {
     let settled = false;
     const done = (t: string | null) => {
@@ -136,13 +142,13 @@ function tokenFromApns(): Promise<string | null> {
     // No answer at all is normal in the simulator and offline; don't hang the
     // caller's launch on it.
     const timer = setTimeout(() => {
-      lastError = lastError ?? "APNs did not answer in 10s";
+      lastError = lastError ?? "Push service did not answer in 10s";
       done(null);
     }, 10_000);
 
     // addListener returns a PROMISE, and the listener is not attached natively
     // until it resolves. register() must therefore be awaited BEHIND both of
-    // them: APNs answers in milliseconds when the token is already cached, so
+    // them: the provider may answer immediately with a cached token, so
     // firing register() on the next line raced the attachment and the
     // "registration" event was delivered to nobody. The symptom was silence —
     // no token, no error, no console line — and then this timeout.
@@ -155,10 +161,7 @@ function tokenFromApns(): Promise<string | null> {
           }),
           PushNotifications.addListener("registrationError", (e) => {
             clearTimeout(timer);
-            // The message names the cause outright — most often "no valid
-            // 'aps-environment' entitlement string found", which means the
-            // build was signed for the wrong channel.
-            lastError = (e as { error?: string } | undefined)?.error ?? "APNs refused the registration";
+            lastError = (e as { error?: string } | undefined)?.error ?? "Push service refused registration";
             done(null);
           }),
         ]);

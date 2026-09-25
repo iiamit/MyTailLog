@@ -18,7 +18,7 @@ type PushState =
 export function pushWarning(s: PushState): string | null {
   if (s.status === "registered" || s.status === "unsupported") return null;
   return s.status === "denied"
-    ? "Notifications are turned off for MyTailLog. Turn them on in iOS Settings → Notifications."
+    ? "Notifications are turned off for MyTailLog. Turn them on in your phone's Settings → Notifications."
     : `This phone couldn't register for notifications. ${s.reason}`;
 }
 
@@ -30,7 +30,7 @@ test("the simulator and the web say nothing either", () => {
   assert.equal(pushWarning({ status: "unsupported" }), null);
 });
 
-test("denied points at iOS Settings, not at us", () => {
+test("denied points at phone Settings, not at us", () => {
   const w = pushWarning({ status: "denied" });
   assert.match(w!, /Settings/);
   assert.doesNotMatch(w!, /error|failed/i);

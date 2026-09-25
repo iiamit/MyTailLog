@@ -12,7 +12,8 @@ import {
   itemKey,
 } from "@/lib/reminders";
 import { json, cronDenied } from "@/lib/cronAuth";
-import { pushAlert, sendPush } from "../../push/apns";
+import { pushAlert } from "../../push/apns";
+import { sendToDevices } from "../../push/devices";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Preferences } from "@/lib/database.types";
 
@@ -220,14 +221,14 @@ async function pushReminder(supabase: Service, userId: string, groups: AircraftG
 
   const db = supabase;
   try {
-    const { data } = await db.from("device_token").select("token").eq("user_id", userId);
-    const tokens = (data ?? []).map((d) => d.token);
-    if (tokens.length === 0) return;
+    const { data } = await db.from("device_token").select("token, platform").eq("user_id", userId);
+    const devices = data ?? [];
+    if (devices.length === 0) return;
 
-    const result = await sendPush(tokens, alert);
+    const result = await sendToDevices(devices, alert);
     if (result.error) console.error(`[cron] push for user ${userId}: ${result.error}`);
     // A device that was deleted, restored, or reinstalled hands back a token
-    // Apple will never accept again. Drop it or it is retried every night.
+    // Its push service will never accept again. Drop it or retry every night.
     if (result.dead.length) await db.from("device_token").delete().in("token", result.dead);
   } catch (e) {
     console.error(`[cron] push failed for user ${userId}: ${(e as Error).message}`);
@@ -338,4 +339,3 @@ function reminderHtml(groups: AircraftGroup[]): string {
 }
 
 // --- Utilities -------------------------------------------------------------
-

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { createServiceClient } from "@/lib/supabase/service";
-import { sendPush } from "../apns";
+import { sendToDevices } from "../devices";
 
 // POST /api/push/test — send a push to the caller's OWN registered devices.
 //
@@ -26,11 +26,11 @@ export async function POST(req: Request) {
   // device_token is owner-scoped and this is the owner asking about themselves —
   // filtered by user.id, never by anything the caller supplied.
   const db = createServiceClient();
-  const { data, error } = await db.from("device_token").select("token").eq("user_id", user.id);
+  const { data, error } = await db.from("device_token").select("token, platform").eq("user_id", user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const tokens = (data ?? []).map((d) => d.token);
-  if (tokens.length === 0) {
+  const devices = data ?? [];
+  if (devices.length === 0) {
     return NextResponse.json({
       devices: 0,
       sent: 0,
@@ -38,18 +38,18 @@ export async function POST(req: Request) {
     });
   }
 
-  const result = await sendPush(tokens, {
+  const result = await sendToDevices(devices, {
     title: "MyTailLog",
     body: "Test notification — push is working on this device.",
   });
 
-  // Apple refuses a token from a deleted or reinstalled app; the cron drops
+  // A push service refuses a token from a deleted or reinstalled app; the cron drops
   // those, and so does this, or the next test retries a token that can never
   // succeed.
   if (result.dead.length) await db.from("device_token").delete().in("token", result.dead);
 
   return NextResponse.json({
-    devices: tokens.length,
+    devices: devices.length,
     sent: result.sent,
     dead: result.dead.length,
     // The reason is the whole point — a silent 200 is what made this hard.

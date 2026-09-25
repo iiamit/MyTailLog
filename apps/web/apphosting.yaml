@@ -169,6 +169,11 @@ env:
       - RUNTIME
 
   # Non-sensitive defaults.
+  # Android FCM sends to the Firebase project registered in google-services.json.
+  - variable: FIREBASE_PROJECT_ID
+    value: mytaillog-22ee6
+    availability:
+      - RUNTIME
   - variable: EXTRACTION_MODEL # vision / handwriting (keep strong)
     value: claude-opus-4-8
     availability:

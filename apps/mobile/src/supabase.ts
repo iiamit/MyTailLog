@@ -25,7 +25,7 @@ if (!url || !anon) {
 // stops that the device passcode doesn't already.
 const native = Capacitor.isNativePlatform();
 
-if (native) {
+if (Capacitor.getPlatform() === "ios") {
   void SecureStorage.setSynchronize(false).catch(() => {});
 }
 

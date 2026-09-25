@@ -52,13 +52,13 @@ export function Screen({ children, tabBar }: { children: React.ReactNode; tabBar
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         background: color.bg,
         color: color.ink,
         fontFamily: body,
         // Leave room for the tab bar so content never hides behind it.
-        padding: `max(20px, env(safe-area-inset-top)) 20px ${
-          tabBar ? "calc(78px + env(safe-area-inset-bottom))" : "calc(20px + env(safe-area-inset-bottom))"
+        padding: `max(20px, var(--safe-area-inset-top, env(safe-area-inset-top))) 20px ${
+          tabBar ? "calc(78px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))" : "calc(20px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))"
         }`,
         boxSizing: "border-box",
       }}

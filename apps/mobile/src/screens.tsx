@@ -387,9 +387,9 @@ function Thumb({ pageId, seq, flag, onClick }: { pageId: string; seq: number | n
     return () => { live = false; };
   }, [pageId]);
   return (
-    <div onClick={onClick} style={{ position: "relative", aspectRatio: "3 / 4", background: panel, border: `1px solid ${line}`, borderRadius: 9, overflow: "hidden", cursor: "pointer" }}>
+    <button type="button" onClick={onClick} aria-label={`Open scanned page ${seq ?? ""}${flag ? ", needs review" : ""}`} style={{ position: "relative", aspectRatio: "3 / 4", background: panel, border: `1px solid ${line}`, borderRadius: 9, overflow: "hidden", cursor: "pointer", padding: 0 }}>
       {src ? (
-        <img src={src} alt={`Page ${seq ?? ""}`} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={src} alt="" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
       ) : (
         <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: faint, fontSize: 10 }}>—</div>
       )}
@@ -399,8 +399,8 @@ function Thumb({ pageId, seq, flag, onClick }: { pageId: string; seq: number | n
         </span>
       )}
       {/* Amber corner: an entry on this page is still unconfirmed. */}
-      {flag && <span aria-label="Needs a look" style={{ position: "absolute", left: 4, top: 4, width: 9, height: 9, borderRadius: "50%", background: amber, border: `1.5px solid ${panel}` }} />}
-    </div>
+      {flag && <span aria-hidden style={{ position: "absolute", left: 4, top: 4, width: 9, height: 9, borderRadius: "50%", background: amber, border: `1.5px solid ${panel}` }} />}
+    </button>
   );
 }
 
@@ -497,7 +497,7 @@ export function PageViewer({
       </div>
 
       {/* The strip is for jumping ten pages at once, which a swipe can't do. */}
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "0 14px calc(20px + env(safe-area-inset-bottom))" }}>
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "0 14px calc(20px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))" }}>
         {pages.map((p, n) => (
           <StripThumb key={p.id} pageId={p.id} current={n === i} onClick={() => setI(n)} />
         ))}

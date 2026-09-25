@@ -692,7 +692,7 @@ export type Database = {
         Returns: undefined;
       };
       // 0059: SECURITY DEFINER, because a phone signed into a second account has
-      // to be able to move its APNs token off the first.
+      // to be able to move its APNs or FCM token off the first.
       register_device_token: {
         Args: { p_token: string; p_platform: string };
         Returns: undefined;

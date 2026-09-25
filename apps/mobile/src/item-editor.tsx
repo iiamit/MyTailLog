@@ -156,18 +156,20 @@ export function Sheet({ title, tag, onClose, children }: {
 }) {
   return (
     <div
+      data-android-back
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label={title}
         style={{
           width: "100%", maxHeight: "92vh", overflowY: "auto", boxSizing: "border-box",
           background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
           border: `1px solid ${color.hairline}`, borderBottom: "none",
-          padding: "10px 20px calc(22px + env(safe-area-inset-bottom))",
+          padding: "10px 20px calc(22px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
           display: "flex", flexDirection: "column", gap: 12,
         }}
       >

@@ -207,6 +207,7 @@ function Ghost({ children, onClick }: { children: React.ReactNode; onClick: () =
 function Sheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <div
+      data-android-back
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 70, display: "flex", alignItems: "flex-end" }}
     >
@@ -216,7 +217,7 @@ function Sheet({ title, children, onClose }: { title: string; children: React.Re
           width: "100%", maxWidth: 560, margin: "0 auto", background: color.surface,
           borderTopLeftRadius: 20, borderTopRightRadius: 20,
           border: `1px solid ${color.hairline}`,
-          padding: "18px 18px calc(22px + env(safe-area-inset-bottom))",
+          padding: "18px 18px calc(22px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>

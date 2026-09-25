@@ -13,14 +13,14 @@ import { createSyncClient } from "@/lib/supabase/sync";
 // to take its token off the first — see 0059 for why RLS alone cannot.
 export const runtime = "nodejs";
 
-const PLATFORMS = new Set(["ios"]);
+const PLATFORMS = new Set(["ios", "android"]);
 
 async function tokenFrom(req: Request): Promise<{ token: string; platform: string } | null> {
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   const token = typeof body?.token === "string" ? body.token.trim() : "";
-  // An APNs token is 64 hex characters today, but Apple has changed its length
-  // before; bound it rather than pin it.
-  if (!token || token.length > 200) return null;
+  // FCM tokens are longer than APNs tokens. Bound both without assuming an
+  // exact provider format that could change.
+  if (!token || token.length > 4096) return null;
   const platform = typeof body?.platform === "string" ? body.platform : "ios";
   return { token, platform };
 }
@@ -65,6 +65,7 @@ export async function DELETE(req: Request) {
     .from("device_token")
     .delete()
     .eq("token", input.token)
+    .eq("platform", input.platform)
     .select("token");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data?.length) {

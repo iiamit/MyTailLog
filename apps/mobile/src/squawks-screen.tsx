@@ -327,12 +327,12 @@ function Composer({
   const [saving, setSaving] = useState(false);
 
   return (
-    <div onClick={saving ? undefined : onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+    <div data-android-back onClick={saving ? undefined : onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%", background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-          border: `1px solid ${color.hairline}`, padding: "14px 16px calc(16px + env(safe-area-inset-bottom))",
+          border: `1px solid ${color.hairline}`, padding: "14px 16px calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
           display: "flex", flexDirection: "column", gap: 10,
         }}
       >

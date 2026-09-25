@@ -474,13 +474,16 @@ export const sheetCancel: React.CSSProperties = {
 /** Bottom sheet — the same shape the squawk composer uses. */
 export function Sheet({ title, onClose, children }: { title: string; onClose?: () => void; children: React.ReactNode }) {
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+    <div data-android-back onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         style={{
           width: "100%", maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box",
           background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-          border: `1px solid ${color.hairline}`, padding: "14px 16px calc(16px + env(safe-area-inset-bottom))",
+          border: `1px solid ${color.hairline}`, padding: "14px 16px calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
           display: "flex", flexDirection: "column", gap: 12,
         }}
       >

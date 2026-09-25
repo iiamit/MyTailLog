@@ -1,16 +1,94 @@
-# MyTailLog — iOS app (Capacitor + Vite + React)
+# MyTailLog — mobile app (Capacitor + Vite + React)
+
+## Android development
+
+The Android project lives in `android/` and shares this React app, SQLite mirror,
+offline queues, and sync API with iOS. On a host with JDK 21 and Android SDK 36:
+
+```bash
+cd apps/mobile
+npm ci
+npm run android:check
+```
+
+`android:check` typechecks, builds the web assets, syncs Capacitor plugins, and
+compiles a debug-signed APK at
+`android/app/build/outputs/apk/debug/app-debug.apk`. It is the local build check;
+it does not publish or need Play credentials. The app targets Android API 36 and
+supports API 24 or newer. Test scanning, sign-in, queued offline writes, PDFs,
+file picking, and system Back on a real device before a beta release. The
+document scanner uses Google ML Kit on Android and needs Google Play Services
+and a physical camera; the plugin rejects Android emulators.
+
+Android push uses the Firebase Android app for `com.mytaillog.app`. This host has
+its `google-services.json` in `android/app/`; the file is ignored by Git, so
+restore it from Firebase Console on a new build host. The web server targets
+Firebase project `mytaillog-22ee6` and needs an identity allowed to send FCM
+messages. End-to-end delivery still needs a device test.
+Apply migration `0060_android_device_tokens.sql` before Android clients register.
+The app's local database, cached scans, and session are excluded from Android
+backup and device transfer; users can restore their records by signing in and
+syncing again, while unsent offline changes stay on the original device.
+
+### Play upload signing
+
+The upload keystore and `signing.properties` live in
+`~/.config/mytaillog/android/` with owner-only permissions. Keep both files
+backed up securely; neither belongs in Git. The public upload certificate is
+`android/upload_certificate.pem`. For a new Play app, use Play App Signing with
+a Google-generated app signing key. The local key signs bundles uploaded to
+Play; Google signs the packages delivered to devices.
+
+Run `npm run android:bundle` to typecheck, sync, and build a signed release
+bundle at `android/app/build/outputs/bundle/release/app-release.aab`. Set
+`MYTAILLOG_ANDROID_SIGNING_PROPERTIES` if the private config lives elsewhere.
+The first AAB was uploaded in Play Console; the registered upload certificate
+matches this host's key. The package name is `com.mytaillog.app` and must not
+change. The Play service account JSON lives at
+`~/.config/mytaillog/android/play-service-account.json` with owner-only
+permissions; do not commit it.
+
+Run `npm run play:check` to confirm this host can access the app. Version codes 1,
+2, and 3 are on Play; version 3 is an internal-testing draft, while version 2
+is the completed internal release. Increase `versionCode` in
+`android/app/build.gradle` for each later bundle, then run `npm run play:draft`.
+This local command typechecks, builds, signs, and uploads
+the AAB as an **internal-testing draft**. A draft is not distributed to testers;
+review and release it in Play Console when the app is ready. The command only
+touches MyTailLog's internal track and preserves any active internal release.
+It will not publish to production.
+On this 1.7 GB host, set `MYTAILLOG_ANDROID_SKIP_LINT=1` for a release build
+if Gradle's release lint exhausts memory. Run the full lint build on a larger
+host before a public release.
+
+See [Play release checklist](PLAY-RELEASE.md) for the remaining device and
+Console gates.
+
+### Android device check
+
+1. Install the debug APK, sign in, sync an aircraft, then reopen the app and
+   confirm the session and records are still there.
+2. Turn on airplane mode. Read a cached PDF and scan, edit an item, add a squawk,
+   and confirm the pending count survives a force-close. Reconnect and sync it.
+3. On a physical device with Google Play Services, scan several logbook pages,
+   adjust a crop, and check the pages appear after sync. The emulator cannot
+   exercise this scanner.
+4. Open and close sheets, PDFs, and aircraft with the system Back button. Check
+   light and dark mode, status bar, bottom controls, and keyboard clearance.
+5. After Firebase setup, allow notifications, use **Send test notification**,
+   then sign out and verify this device no longer receives reminders.
 
 **Public release:** [Download free on the App Store](https://apps.apple.com/us/app/mytaillog/id6795396758)
 for iPhone and iPad (iOS / iPadOS 15.6 or later). No TestFlight invitation needed.
 
-Offline-first native app for iPhone/iPad. Sync an aircraft once, then — **fully
+Offline-first native app for iPhone/iPad and Android. Sync an aircraft once, then — **fully
 offline** — see whether it's airworthy, browse every log entry, document and
 original scanned page, pull up the AROW paperwork for a ramp check, **scan** new
 logbook pages, and **change things**: review and correct extracted entries,
 manage inspections/ADs/equipment, resolve squawks, add documents. Every write is
 saved on the device first and uploaded on the next sync.
 
-Scanning uses **Apple's own document scanner** (VisionKit, the one Notes uses) via
+Scanning uses **VisionKit on iOS** and **ML Kit on Android** via
 `@capgo/capacitor-document-scanner`: automatic edge detection, perspective
 correction and the black-and-white document look, natively and instantly. You can
 correct its crop by hand before keeping a page, and one session takes up to **24
@@ -29,7 +107,7 @@ computed on device), `screens.tsx` / `status-screen.tsx` / `documents-screen.tsx
 `squawks-screen.tsx` / `pending.tsx` / `capture-screen.tsx` / `lightbox.tsx` (UI),
 `mutations.ts` (the one write path — `enqueue()` by mutation type),
 `layout.tsx` + `shortcuts.ts` (iPad: size class, sidebar, two panes, ⌘ chords),
-`theme.ts` + `tokens.ts` (light/dark, follows the phone), `push.ts` (APNs
+`theme.ts` + `tokens.ts` (light/dark, follows the phone), `push.ts` (APNs/FCM
 registration), `enroll-sheet.tsx` (add an aircraft), `blob-upload.ts` (offline
 document uploads), `review-pane.tsx` + `entry-editor.tsx` (page review + the
 ◎ spotlight), `item-editor.tsx` / `ad-compliance.tsx` / `equipment-list.tsx` /

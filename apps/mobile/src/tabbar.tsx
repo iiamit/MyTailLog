@@ -32,7 +32,7 @@ export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) =
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: `1px solid ${color.hairline}`,
-        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingBottom: "var(--safe-area-inset-bottom, env(safe-area-inset-bottom))",
         zIndex: 40,
       }}
     >

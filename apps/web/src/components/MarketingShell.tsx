@@ -14,6 +14,8 @@ const LINKS: { href: string; label: string }[] = [
   { href: "/guides/digitize-aircraft-logbooks", label: "Owner guides" },
   { href: "/developers/docs", label: "API" },
   { href: "/whats-new", label: "What's new" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/account-deletion", label: "Delete account" },
 ];
 
 export function MarketingShell({

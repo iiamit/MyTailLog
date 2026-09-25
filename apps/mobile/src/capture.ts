@@ -11,10 +11,8 @@ import { downscaleImage } from "./blob-upload";
 // when online. The server uploads the blob + inserts the page row, then runs
 // extraction; the new page flows back on the next sync.
 //
-// Scanning is Apple's OWN document scanner (VisionKit, via
-// @capgo/capacitor-document-scanner) — the one Notes uses. It does the edge
-// detection, the perspective correction and the black-and-white document filter
-// natively and instantly.
+// The native scanner uses VisionKit on iOS and ML Kit on Android. Both handle
+// edges, perspective and document filters outside the webview.
 //
 // That matters beyond looks. The previous in-browser attempt pulled a 9 MB
 // OpenCV build from a CDN and ran edge detection on the main thread, which on an
@@ -23,14 +21,14 @@ import { downscaleImage } from "./blob-upload";
 
 export type Photo = { image: string; thumbnail: string };
 
-// VisionKit's own ceiling is 24 pages per session.
+// Both native scanner implementations support up to 24 pages per session.
 const MAX_PAGES = 24;
 
 /**
  * Open the document scanner and return one downscaled JPEG + thumbnail per page
  * (base64, no data: prefix). Empty when the user backs out.
  *
- * `letUserAdjustCrop` keeps VisionKit's editor in the flow, so the crop it
+ * `letUserAdjustCrop` keeps the native editor in the flow, so the crop it
  * guesses can be corrected by hand before the page is kept — the "give the
  * ability to the end user to crop and adjust" half of the request. Multi-page is
  * the other half: a whole logbook can be shot in one session instead of
