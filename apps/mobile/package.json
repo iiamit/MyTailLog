@@ -15,6 +15,7 @@
     "play:check": "node scripts/play.mjs check",
     "play:draft": "npm run android:bundle && node scripts/play.mjs draft",
     "play:internal": "node scripts/play.mjs internal",
+    "play:closed": "node scripts/play.mjs closed",
     "ios": "vite build && cap sync ios && cap open ios",
     "testflight": "./scripts/testflight.sh"
   },
