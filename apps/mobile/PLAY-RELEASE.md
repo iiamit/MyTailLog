@@ -52,3 +52,8 @@ Services. This host has no device or emulator, so these checks require a tester.
 Record the results, fix any failures, then promote the tested bundle through a
 closed test or production in Play Console. A successful AAB upload alone is not
 a completed Play release.
+
+`npm run play:closed` promotes the current, completed internal bundle to Play's
+existing closed-testing `alpha` track. Add testers in Play Console and share
+the closed-test opt-in link. New personal developer accounts need at least 12
+testers opted in continuously for 14 days before applying for production access.
