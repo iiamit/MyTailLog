@@ -18,6 +18,7 @@ const src = readFileSync(join(import.meta.dirname, "../../mobile/src/push.ts"), 
 test("registerForPush has a caller — the auth-state hook", () => {
   assert.match(src, /supabase\.auth\.onAuthStateChange\(/, "the module-level hook is gone");
   assert.match(src, /registerForPush\(\)/, "nothing calls registerForPush");
+  assert.doesNotMatch(src, /Android reminders are paused/, "Android registration is still disabled");
 });
 
 test("the hook registers on a restored session, not just a fresh sign-in", () => {
