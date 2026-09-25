@@ -49,7 +49,7 @@ change. The Play service account JSON lives at
 permissions; do not commit it.
 
 Run `npm run play:check` to confirm this host can access the app. Version codes 1,
-2, and 3 are on Play; version 3 is the completed internal release. Increase `versionCode` in
+2, 3, and 4 are on Play; version 4 is the completed internal release. Increase `versionCode` in
 `android/app/build.gradle` for each later bundle, then run `npm run play:draft`.
 This local command typechecks, builds, signs, and uploads
 the AAB as an **internal-testing draft**. A draft is not distributed to testers;
@@ -63,6 +63,10 @@ host before a public release.
 
 See [Play release checklist](PLAY-RELEASE.md) for the remaining device and
 Console gates.
+
+Version 4 fixes the Android local-database setup after sign-in. Android push
+registration is temporarily paused while its startup crash is investigated;
+iOS push registration continues as before.
 
 ### Android device check
 

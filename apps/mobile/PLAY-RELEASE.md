@@ -1,7 +1,8 @@
 # Android Play release checklist
 
-Package: `com.mytaillog.app`. The local release build uses version code 3. Play
-has version codes 1–3, with 3 completed on the internal track.
+Package: `com.mytaillog.app`. The local release build uses version code 4. Play
+has version codes 1–4, with 4 completed on the internal track. Android push
+registration is paused in version 4 while a startup crash is investigated.
 The English listing has a feature graphic and four phone screenshots. Check
 `npm run play:check` for the current state.
 
@@ -15,7 +16,7 @@ The English listing has a feature graphic and four phone screenshots. Check
    `MYTAILLOG_ANDROID_SKIP_LINT=1` if Gradle release lint runs out of memory.
    Run the full lint build on a host with more RAM before public release.
 3. In Play Console, add internal tester emails or a Google Group, and install
-   version 3 using its opt-in link.
+   version 4 using its opt-in link.
 4. Complete the Console forms: App access (provide review login instructions),
    Data safety, content rating, target audience, ads declaration, and the
    privacy policy URL. Review the Console's current required declarations.

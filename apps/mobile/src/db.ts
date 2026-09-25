@@ -21,6 +21,8 @@ export async function initDb(): Promise<void> {
       ? await sqlite.retrieveConnection(DB_NAME, false)
       : await sqlite.createConnection(DB_NAME, false, "no-encryption", 1, false);
   await db.open();
+  // Keep comments outside this batch: Android's SQLite plugin splits on `;\n`
+  // before removing SQL comments, so a semicolon in a comment becomes a command.
   await db.execute(`
     CREATE TABLE IF NOT EXISTS records (
       table_name TEXT NOT NULL,
@@ -41,14 +43,6 @@ export async function initDb(): Promise<void> {
       image          TEXT NOT NULL,
       thumbnail      TEXT
     );
-    -- Offline writes waiting to reach the server (CONTRACT §2). \`payload\` is the
-    -- JSON mutation payload; \`id\` is the client-generated UUID that also becomes
-    -- the server row's key, so draining twice can't write twice. \`base\` is the
-    -- row's updated_at as the phone last saw it (update/delete types). \`status\`:
-    -- pending (waiting for signal or a retry), conflict (the server's row moved
-    -- on — \`server_row\` holds it for the yours/theirs screen), failed (refused;
-    -- \`error\` says why). \`retry_after\` gates retries after an online failure.
-    -- Columns added after v1 also live in queueUpgradeStatements (sync-apply.ts).
     CREATE TABLE IF NOT EXISTS action_queue (
       id          TEXT PRIMARY KEY,
       aircraft_id TEXT NOT NULL,
