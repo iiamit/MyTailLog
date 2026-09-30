@@ -41,6 +41,7 @@ export function Records({
   segment,
   onSegment,
   onOpenEntry,
+  onNewEntry,
   onOpenPage,
   onOpenPdf,
   onCapture,
@@ -51,6 +52,7 @@ export function Records({
   segment: Segment;
   onSegment: (s: Segment) => void;
   onOpenEntry: (e: LogEntry) => void;
+  onNewEntry: () => void;
   onOpenPage: (pages: Page[], index: number) => void;
   onOpenPdf: (doc: { id: string; title: string }) => void;
   onCapture: () => void;
@@ -199,6 +201,7 @@ export function Records({
 
       {segment === "history" && (
         <>
+          <button type="button" onClick={onNewEntry} style={{ background: accentGradient, color: color.onAccent, border: 0, borderRadius: 10, padding: "11px 16px", fontWeight: 600, marginBottom: 16 }}>New logbook entry</button>
           <HistoryFilters filter={filter} years={years} onChange={setFilter} />
           <Entries aircraft={aircraft} onOpen={onOpenEntry} filter={filter} />
         </>

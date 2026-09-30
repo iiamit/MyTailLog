@@ -56,7 +56,7 @@ export async function getAircraftShellContext(
     // `source` and `hours_reviewed_at` are NOT optional extras: toReadings() uses
     // source to mark ADS-B estimates, and without that flag an estimate competes
     // with a real reading as an equal.
-    supabase.from("log_entry").select("id, hobbs, tach, airframe, entry_date, hours_reviewed_at").eq("aircraft_id", id),
+    supabase.from("log_entry").select("id, hobbs, tach, airframe, entry_date, hours_reviewed_at, authored_superseded_by").eq("aircraft_id", id),
     supabase
       .from("hours_reading")
       .select("id, hobbs, tach, airframe, reading_date, hours_reviewed_at, source")

@@ -45,6 +45,12 @@ export type LogEntry = {
   parts: string | null;
   signature_name: string | null;
   mechanic_cert_number: string | null;
+  authored_signed_at: string | null;
+  authored_cert_kind: string | null;
+  authored_cert_rating: string | null;
+  authored_digest: string | null;
+  supersedes_entry_id: string | null;
+  authored_superseded_by: string | null;
   ad_refs: string[] | null;
   sb_refs: string[] | null;
 };

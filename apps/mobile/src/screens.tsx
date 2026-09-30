@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { Browser } from "@capacitor/browser";
 import { getByAircraft } from "./db";
+import { API_BASE, supabase } from "./supabase";
 import { logbookLabel } from "@/lib/logbooks";
 import { buildHistory, byMonth } from "./history";
 import { shortDate } from "./airworthiness";
@@ -110,7 +112,10 @@ export function Entries({
   const [rows, setRows] = useState<LogEntry[] | null>(null);
 
   useEffect(() => {
-    getByAircraft<LogEntry>("log_entry", aircraft.id).then(setRows);
+    const load = () => { void getByAircraft<LogEntry>("log_entry", aircraft.id).then(setRows); };
+    load();
+    window.addEventListener("mytaillog:entries-changed", load);
+    return () => window.removeEventListener("mytaillog:entries-changed", load);
   }, [aircraft.id]);
 
   if (!rows) return <p style={{ ...text.secondary, color: faint }}>Loading…</p>;
@@ -159,6 +164,7 @@ export function Entries({
                   {h.entry.entry_date ? shortDate(h.entry.entry_date) : "undated"}
                   {h.entry.tach != null ? ` · tach ${h.entry.tach}` : h.entry.hobbs != null ? ` · hobbs ${h.entry.hobbs}` : ""}
                   {h.entry.signature_name ? ` · ${h.entry.signature_name}` : ""}
+                  {h.entry.authored_superseded_by ? " · superseded" : ""}
                 </div>
               </div>
             </div>
@@ -177,8 +183,22 @@ const CATEGORY: Record<string, { color: string; glyph: string }> = {
 };
 
 // ---- Entry detail -------------------------------------------------------------
-export function EntryDetail({ entry, tail, onBack, onZoom }: { entry: LogEntry; tail: string; onBack: () => void; onZoom: (src: string) => void }) {
+export function EntryDetail({ entry, tail, onBack, onZoom, onCorrect }: { entry: LogEntry; tail: string; onBack: () => void; onZoom: (src: string) => void; onCorrect?: () => void }) {
   const ads = [...(entry.ad_refs ?? []), ...(entry.sb_refs ?? [])];
+  const [printError, setPrintError] = useState("");
+  async function printSticker() {
+    setPrintError("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Sign in to print this entry.");
+      const res = await fetch(`${API_BASE}/api/signed-entries/${entry.id}/print-link`, {
+        method: "POST", headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Could not open print view.");
+      await Browser.open({ url: body.url });
+    } catch (e) { setPrintError(e instanceof Error ? e.message : String(e)); }
+  }
   return (
     <>
       <TopBar title={tail} onBack={onBack} />
@@ -193,9 +213,15 @@ export function EntryDetail({ entry, tail, onBack, onZoom }: { entry: LogEntry; 
         {(entry.tach != null || entry.hobbs != null) && (
           <Row label="Meters" value={[entry.tach != null ? `tach ${entry.tach}` : null, entry.hobbs != null ? `hobbs ${entry.hobbs}` : null].filter(Boolean).join("  ·  ")} />
         )}
-        {entry.signature_name && <Row label="Signed" value={[entry.signature_name, entry.mechanic_cert_number].filter(Boolean).join(" · ")} />}
+        {entry.signature_name && <Row label={entry.authored_signed_at ? "Electronically signed" : "Signature on scan"} value={[entry.signature_name, entry.authored_cert_kind?.replaceAll("_", " "), entry.mechanic_cert_number].filter(Boolean).join(" · ")} />}
         {ads.length > 0 && <Row label="AD / SB" value={ads.join(", ")} />}
       </div>
+      {entry.authored_signed_at && <div style={{ marginTop: 16 }}>
+        <button type="button" onClick={printSticker} style={{ background: accentGradient, color: color.onAccent, border: 0, borderRadius: 10, padding: "11px 16px", fontWeight: 600 }}>Print sticker</button>
+        {onCorrect && <button type="button" onClick={onCorrect} style={{ marginLeft: 10, background: "none", color: color.accent, border: `1px solid ${color.accent}`, borderRadius: 10, padding: "10px 14px" }}>Create correction</button>}
+        <p style={{ ...text.meta, color: faint }}>A connection is needed to open the protected print view.</p>
+        {printError && <p role="alert" style={{ color: red, fontSize: 13 }}>{printError}</p>}
+      </div>}
     </>
   );
 }

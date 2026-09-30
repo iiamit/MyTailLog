@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { MfbSyncButton } from "@/components/MfbSyncButton";
 import type { AlertSettings } from "@/lib/reminders";
@@ -143,7 +144,6 @@ function AlertRow({
 export function ProfileClient({
   email,
   fullName,
-  certNumber,
   notifyDue,
   alerts,
   mfb,
@@ -153,7 +153,6 @@ export function ProfileClient({
 }: {
   email: string;
   fullName: string;
-  certNumber: string;
   notifyDue: boolean;
   alerts: AlertSettings;
   mfb: MfbState;
@@ -355,10 +354,6 @@ export function ProfileClient({
           <span className="font-medium">Full name</span>
           <input name="full_name" defaultValue={fullName} className={inputClass} placeholder="Jane Aviator" />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">A&amp;P / IA certificate number</span>
-          <input name="cert_number" defaultValue={certNumber} className={inputClass} placeholder="Optional" />
-        </label>
         <div className="flex items-center gap-3">
           <button
             type="submit"
@@ -370,6 +365,7 @@ export function ProfileClient({
           <Status msg={detailsMsg} />
         </div>
       </form>
+      <Link href="/profile/credentials" className="text-sm text-accent">Manage logbook signing credentials →</Link>
 
       {/* Notifications */}
       <form action={saveNotifications} className={card}>

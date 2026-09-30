@@ -166,7 +166,6 @@ export default async function ProfilePage() {
         <ProfileClient
           email={user.email ?? ""}
           fullName={profile?.full_name ?? ""}
-          certNumber={profile?.cert_number ?? ""}
           notifyDue={Boolean(profile?.preferences?.notify_due)}
           alerts={resolveAlerts(profile?.preferences)}
           mfb={{

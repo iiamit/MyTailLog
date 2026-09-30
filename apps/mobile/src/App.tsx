@@ -15,6 +15,7 @@ import { drainDocumentUploads, documentUploadCount, clearDocumentUploads } from 
 import { prefetchAll, clearCache } from "./blobs";
 import { Hangar, EntryDetail, PageViewer } from "./screens";
 import { Records } from "./records-screen";
+import { MobileEntryComposer } from "./authored-entry-screen";
 import { TabBar, TABS, type Tab } from "./tabbar";
 import { AircraftSwitcher } from "./switcher";
 import { Sidebar, RegularFrame, TwoPane, PanePlaceholder, useSizeClass, useSidebar, useShortcuts } from "./layout";
@@ -99,6 +100,7 @@ export type Segment = "documents" | "scans" | "history";
 /** Screens pushed ON TOP of a tab. Each tab keeps its own stack. */
 type Sub =
   | { kind: "entry"; entry: LogEntry }
+  | { kind: "new_entry"; correctionId?: string }
   | { kind: "page"; pages: Page[]; index: number }
   | { kind: "complete"; item: StatusItem }
   | { kind: "pdf"; doc: { id: string; title: string } }
@@ -415,7 +417,9 @@ function Shell({ session }: { session: Session }) {
    */
   function stack(n: Extract<Nav, { screen: "aircraft" }>): ReactNode {
     return n.sub?.kind === "entry" ? (
-      <EntryDetail entry={n.sub.entry} tail={n.aircraft.tail_number} onBack={back} onZoom={setZoom} />
+      <EntryDetail entry={n.sub.entry} tail={n.aircraft.tail_number} onBack={back} onZoom={setZoom} onCorrect={() => setNav({ ...n, sub: { kind: "new_entry", correctionId: n.sub?.kind === "entry" ? n.sub.entry.id : undefined } })} />
+    ) : n.sub?.kind === "new_entry" ? (
+      <MobileEntryComposer aircraft={n.aircraft} correctionId={n.sub.correctionId} onBack={back} onSigned={async () => { await sync(); window.dispatchEvent(new Event("mytaillog:entries-changed")); back(); }} />
     ) : n.sub?.kind === "page" ? (
       <PageViewer pages={n.sub.pages} index={n.sub.index} onBack={back} onZoom={setZoom} onQueued={writeFinished} />
     ) : n.sub?.kind === "complete" ? (
@@ -440,6 +444,7 @@ function Shell({ session }: { session: Session }) {
         segment={n.segment}
         onSegment={(segment) => setNav({ ...n, segment, sub: null })}
         onOpenEntry={(entry) => setNav({ ...n, sub: { kind: "entry", entry } })}
+        onNewEntry={() => setNav({ ...n, sub: { kind: "new_entry" } })}
         onOpenPage={(pages, index) => setNav({ ...n, sub: { kind: "page", pages, index } })}
         onOpenPdf={(doc) => setNav({ ...n, sub: { kind: "pdf", doc } })}
         onCapture={() => setCapture(n.aircraft)}
@@ -488,6 +493,7 @@ function Shell({ session }: { session: Session }) {
       back,
       onZoom: setZoom,
       onQueued: writeFinished,
+      onSigned: async () => { await sync(); window.dispatchEvent(new Event("mytaillog:entries-changed")); },
       onCapture: () => setCapture(a.aircraft),
     });
     return (
@@ -657,6 +663,7 @@ function aircraftPanes(
     back: () => void;
     onZoom: (src: string) => void;
     onQueued: () => Promise<"synced" | "pending">;
+    onSigned: () => Promise<void>;
     onCapture: () => void;
   },
 ): { primary: ReactNode; secondary: ReactNode; ratio: "50/50" | "55/45" | "40/60" } {
@@ -713,6 +720,7 @@ function aircraftPanes(
       segment={nav.segment}
       onSegment={(segment) => h.setNav({ ...nav, segment, sub: null })}
       onOpenEntry={(entry) => h.setNav({ ...nav, sub: { kind: "entry", entry } })}
+      onNewEntry={() => h.setNav({ ...nav, sub: { kind: "new_entry" } })}
       onOpenPage={(pages, index) => h.setNav({ ...nav, sub: { kind: "page", pages, index } })}
       onOpenPdf={(doc) => h.setNav({ ...nav, sub: { kind: "pdf", doc } })}
       onCapture={h.onCapture}
@@ -752,7 +760,9 @@ function aircraftPanes(
     primary,
     secondary:
       sub?.kind === "entry" ? (
-        <EntryDetail entry={sub.entry} tail={aircraft.tail_number} onBack={h.back} onZoom={h.onZoom} />
+        <EntryDetail entry={sub.entry} tail={aircraft.tail_number} onBack={h.back} onZoom={h.onZoom} onCorrect={() => h.setNav({ ...nav, sub: { kind: "new_entry", correctionId: sub.entry.id } })} />
+      ) : sub?.kind === "new_entry" ? (
+        <MobileEntryComposer aircraft={aircraft} correctionId={sub.correctionId} onBack={h.back} onSigned={async () => { await h.onSigned(); h.back(); }} />
       ) : (
         <PanePlaceholder>Pick an entry to read it here.</PanePlaceholder>
       ),

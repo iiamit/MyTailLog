@@ -41,6 +41,14 @@ const entry = (o: Partial<EntryRowLite> = {}): EntryRowLite => ({
   ...o,
 });
 
+test("superseded signed entries no longer contribute meter readings", () => {
+  const rows = toReadings([
+    entry({ id: "old", tach: 1900, authored_superseded_by: "new" }),
+    entry({ id: "new", tach: 1200 }),
+  ], []);
+  assert.deepEqual(rows.map((r) => r.id), ["new"]);
+});
+
 const reading = (o: Partial<HoursRowLite> = {}): HoursRowLite => ({
   id: "r1",
   reading_date: "2026-07-10",
