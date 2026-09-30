@@ -31,6 +31,8 @@ export type MarkDoneInput = {
   /** Last-done date; null clears it (web "unset"). Absent = today. */
   date?: string | null;
   hours?: number | null;
+  /** The physical meter the entered hours came from. */
+  meter?: Meter;
   // The 91.171(d) record, written as a real log_entry when BOTH logbookId and
   // description are present (a checkbox that only moved a due-date would leave
   // a VOR-check owner non-compliant while telling them they were fine).
@@ -84,16 +86,17 @@ type DueSource = Pick<MaintenanceItem, "kind" | "interval_months" | "interval_ho
  */
 export function markDonePlan(
   item: DueSource,
-  input: Pick<MarkDoneInput, "date" | "hours">,
+  input: Pick<MarkDoneInput, "date" | "hours" | "meter">,
   base?: string,
 ):
   | { conflict: true }
   | { error: string }
-  | { patch: Pick<MaintenanceItem, "last_done_date" | "last_done_hours" | "next_due_date" | "next_due_hours"> } {
+  | { patch: Pick<MaintenanceItem, "last_done_date" | "last_done_hours" | "next_due_date" | "next_due_hours"> & Partial<Pick<MaintenanceItem, "meter">> } {
   if (isStale(item.updated_at, base)) return { conflict: true };
   const date = input.date === undefined ? new Date().toISOString().slice(0, 10) : input.date;
   if (date != null && !isIsoDate(date)) return { error: "Pick a date." };
   if (!validNumber(input.hours)) return { error: "Hours must be zero or a positive number." };
+  if (input.meter && !METERS.includes(input.meter)) return { error: "Pick a valid meter." };
   const hours = input.hours ?? null;
   const due = maintenanceNextDue({
     kind: item.kind,
@@ -102,7 +105,7 @@ export function markDonePlan(
     last_done_date: date,
     last_done_hours: hours,
   });
-  return { patch: { last_done_date: date, last_done_hours: hours, ...due } };
+  return { patch: { last_done_date: date, last_done_hours: hours, ...due, ...(input.meter ? { meter: input.meter } : {}) } };
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +212,28 @@ export async function markDone(
     .maybeSingle();
   if (error) return { status: "error", message: error.message };
   if (!data) return { status: "error", message: "That item isn't on this aircraft.", httpStatus: 404 };
+
+  // An hours value the owner entered while completing maintenance is a real
+  // dated meter reading. Without it, an aircraft with no prior Hobbs history
+  // estimates Hobbs from Tach and can call a fresh oil change overdue.
+  if (input.meter && plan.patch.last_done_date && plan.patch.last_done_hours != null) {
+    const readingId = input.entryId ?? crypto.randomUUID();
+    const { error: readingError } = await supabase.from("hours_reading").upsert(
+      {
+        id: readingId,
+        aircraft_id: ctx.aircraftId,
+        reading_date: plan.patch.last_done_date,
+        hobbs: input.meter === "hobbs" ? plan.patch.last_done_hours : null,
+        tach: input.meter === "tach" ? plan.patch.last_done_hours : null,
+        airframe: input.meter === "airframe" ? plan.patch.last_done_hours : null,
+        source: "manual",
+        synced_by: ctx.userId,
+        external_ref: readingId,
+      },
+      { onConflict: "id" },
+    );
+    if (readingError) return { status: "error", message: readingError.message };
+  }
 
   const description = input.description?.trim();
   if (input.logbookId && description) {

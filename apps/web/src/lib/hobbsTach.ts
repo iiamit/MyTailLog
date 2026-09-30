@@ -346,6 +346,12 @@ function currentReading<K extends Meter>(
   const latestDate = rows.reduce((d, r) => ((r.date ?? "") > d ? r.date ?? "" : d), "");
   const onLatest = rows.filter((r) => (r.date ?? "") === latestDate);
   if (onLatest.length === 1) return onLatest[0];
+  // Several flights on one date have no time-of-day in MFB. When their values
+  // fit within one day's possible flying, the highest is the ending reading.
+  // Keep the anchor-based outlier guard below for wildly inconsistent rows.
+  const low = Math.min(...onLatest.map((r) => r[k]));
+  const high = Math.max(...onLatest.map((r) => r[k]));
+  if (high - low <= 24) return onLatest.reduce((b, r) => (r[k] > b[k] ? r : b));
   const earlier = rows.filter((r) => (r.date ?? "") < latestDate);
   if (!earlier.length) return onLatest.reduce((b, r) => (r[k] > b[k] ? r : b));
   const anchor = earlier.reduce((b, r) => ((r.date ?? "") > (b.date ?? "") ? r : b));

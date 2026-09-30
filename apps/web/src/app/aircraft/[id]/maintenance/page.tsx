@@ -89,7 +89,6 @@ export default async function MaintenancePage({
         dueItems={dueItems}
         currentTach={ct.tach}
         currentHobbs={ch.hobbs}
-        currentAirframe={ca.airframe}
         currentTachEstimated={ct.estimated}
         currentTachRough={ct.rough}
         currentHobbsEstimated={ch.estimated}

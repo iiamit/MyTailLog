@@ -309,6 +309,9 @@ export async function getLatestMfbReading(
     .eq("aircraft_id", aircraftId)
     .eq("source", "myflightbook")
     .order("reading_date", { ascending: false, nullsFirst: false })
+    // A second flight on the same date is the last one synced, not an arbitrary
+    // row from that date. Flight IDs can be entered out of flying order.
+    .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (!data) return null;

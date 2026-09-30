@@ -45,6 +45,17 @@ test("oil recorded directly in hobbs still works (no re-anchor needed)", () => {
   assert.equal(s.hoursUnreliable, false);
 });
 
+test("a new Hobbs oil completion stays on Hobbs when MyFlightBook is 1.1 hours behind", () => {
+  const [s] = buildStatusItems([oil(984.9, "2026-09-29")], [], {
+    tach: 4167.7, hobbs: 983.8,
+    baselineFor: (_date, meter) => meter === "hobbs" ? 983.8 : 4167.7,
+  });
+  assert.equal(s.meter, "hobbs");
+  assert.equal(s.currentForItem, 984.9);
+  assert.equal(s.nextDueForItem, 1034.9);
+  assert.equal(s.urgency, "upcoming");
+});
+
 test("oil recorded in tach when tach < hobbs re-anchors to hobbs (asymmetric-guard bug)", () => {
   // Low-time engine: oil logged at tach 284 (a SMALL number), but oil counts down
   // on hobbs (current 957.6). The old guard only re-anchored when current < stored,

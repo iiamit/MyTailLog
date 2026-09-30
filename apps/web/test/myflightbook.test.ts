@@ -7,6 +7,7 @@ import {
   MFB_AUTHORIZE_URL,
   MFB_SCOPES,
 } from "../src/lib/myflightbook";
+import { latestFlightsByAircraft } from "../src/lib/mfbSync";
 
 // --- buildAuthorizeUrl ------------------------------------------------------
 test("buildAuthorizeUrl: origin/path match MFB_AUTHORIZE_URL and params match inputs", () => {
@@ -53,4 +54,11 @@ test("expiresAtFrom: a number → an ISO timestamp ~that many seconds ahead", ()
   // Should sit ~3600s ahead of now; bracket by the real-clock window + slack.
   assert.ok(t >= before + 3600_000 - 2000, `too early: ${iso}`);
   assert.ok(t <= after + 3600_000 + 2000, `too late: ${iso}`);
+});
+
+test("same-day MyFlightBook sync follows flight order, not creation ID", () => {
+  const later = { flightId: 1001, aircraftId: 7, date: "2026-09-29", hobbs: 984.9, tach: 4172.9 };
+  const earlier = { flightId: 1002, aircraftId: 8, date: "2026-09-29", hobbs: 983.8, tach: 4167.7 };
+  // Two MFB aircraft IDs can represent the same tail in one MTL hangar.
+  assert.deepEqual(latestFlightsByAircraft([later, earlier], new Map([[7, "local"], [8, "local"]])).get("local"), later);
 });

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { failMessage, type WriteCtx, type WriteResult } from "@/lib/writes/entries";
 import * as maintenance from "@/lib/writes/maintenance";
 import type { MaintenanceItemFields } from "@/lib/writes/maintenance";
+import type { Meter } from "@/lib/hobbsTach";
 
 // Thin wrappers over lib/writes/maintenance (CONTRACT §4): session, the write,
 // then revalidate. The rules and the validation live in the lib module.
@@ -49,9 +50,10 @@ export async function markMaintenanceDone(
   id: string,
   date: string | null,
   hours: number | null,
+  meter: Meter,
 ): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await maintenance.markDone(supabase, ctx, { itemId: id, date, hours }));
+  return finish(aircraftId, await maintenance.markDone(supabase, ctx, { itemId: id, date, hours, meter }));
 }
 
 /** Seed the common Part 91 recurring items (skips any already present). */

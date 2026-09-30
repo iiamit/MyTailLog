@@ -108,7 +108,6 @@ export function MaintenanceClient({
   dueItems,
   currentTach,
   currentHobbs,
-  currentAirframe = null,
   currentTachEstimated = false,
   currentTachRough = false,
   currentHobbsEstimated = false,
@@ -121,7 +120,6 @@ export function MaintenanceClient({
   dueItems: DueItem[];
   currentTach: number | null;
   currentHobbs: number | null;
-  currentAirframe?: number | null;
   currentTachEstimated?: boolean;
   currentTachRough?: boolean;
   currentHobbsEstimated?: boolean;
@@ -138,6 +136,7 @@ export function MaintenanceClient({
   const [markId, setMarkId] = useState<string | null>(null);
   const [markDate, setMarkDate] = useState("");
   const [markHours, setMarkHours] = useState("");
+  const [markMeter, setMarkMeter] = useState<Meter>("tach");
 
   async function scanLogs() {
     setScanning(true);
@@ -204,21 +203,19 @@ export function MaintenanceClient({
     router.refresh();
   }
 
-  function openMark(m: MaintenanceItem) {
+  function openMark(m: MaintenanceItem, status: StatusItem) {
     setMarkId(m.id);
     setMarkDate(new Date().toISOString().slice(0, 10));
-    // Pre-fill with the current reading on THIS item's meter (its override, else
-    // oil → hobbs and everything else → tach) so last-done matches its countdown.
-    const mtr = meterForItem(m.kind, m.meter);
-    const cur = mtr === "tach" ? currentTach : mtr === "airframe" ? currentAirframe : currentHobbs;
-    setMarkHours(m.interval_hours != null ? cur?.toString() ?? "" : "");
+    setMarkMeter(status.meter);
+    // An estimate is not a physical meter reading and must not be saved as one.
+    setMarkHours(m.interval_hours != null && !status.currentEstimated ? status.currentForItem?.toString() ?? "" : "");
   }
 
   async function saveMark(m: MaintenanceItem) {
     const hours =
       markHours.trim() !== "" && Number.isFinite(Number(markHours)) ? Number(markHours) : null;
     setBusy(true);
-    const res = await markMaintenanceDone(aircraftId, m.id, markDate || null, hours);
+    const res = await markMaintenanceDone(aircraftId, m.id, markDate || null, hours, markMeter);
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
     toast.success(`Marked "${m.label}" done.`);
@@ -446,7 +443,7 @@ export function MaintenanceClient({
                   <div className="flex flex-wrap justify-end gap-1.5">
                     {m ? (
                       <>
-                        <button onClick={() => openMark(m)} disabled={busy} className={`${rowBtn} hover:border-annun-green/60`}>
+                        <button onClick={() => openMark(m, d)} disabled={busy} className={`${rowBtn} hover:border-annun-green/60`}>
                           Done
                         </button>
                         <button onClick={() => setForm(fromItem(m))} className={rowBtn}>
@@ -485,7 +482,7 @@ export function MaintenanceClient({
                         </label>
                         {m.interval_hours != null && (
                           <label className="flex w-40 flex-col gap-1 text-xs">
-                            Hours (optional)
+                            Hours ({markMeter}, optional)
                             <input
                               type="number"
                               step="0.1"
@@ -493,6 +490,23 @@ export function MaintenanceClient({
                               onChange={(e) => setMarkHours(e.target.value)}
                               className={inputClass}
                             />
+                          </label>
+                        )}
+                        {m.interval_hours != null && (
+                          <label className="flex w-32 flex-col gap-1 text-xs">
+                            Meter
+                            <select
+                              value={markMeter}
+                              onChange={(e) => {
+                                setMarkMeter(e.target.value as Meter);
+                                setMarkHours("");
+                              }}
+                              className={inputClass}
+                            >
+                              <option value="tach">Tach</option>
+                              <option value="hobbs">Hobbs</option>
+                              <option value="airframe">Airframe</option>
+                            </select>
                           </label>
                         )}
                         <button

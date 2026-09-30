@@ -24,7 +24,7 @@ export type SyncResult = {
 
 /**
  * Pull the user's MFB aircraft + recent flights, match by tail to the aircraft
- * they can write to, and upsert one hours_reading per matched aircraft holding
+ * they can write to, and upsert one hours_reading per matched local aircraft holding
  * the latest recorded hobbs/tach. Idempotent on (aircraft_id, source,
  * external_ref = MFB flight id).
  *
@@ -53,30 +53,26 @@ export async function syncUserHours(
 
   // MFB aircraftId → MyTailLog aircraft id, for tails present on both sides.
   const mfbIdToLocal = new Map<number, string>();
-  const matchedTails: string[] = [];
+  const matchedAircraft = new Set<string>();
   const unmatchedTails: string[] = [];
   for (const a of mfbAircraft) {
     const localId = mineByTail.get(normalizeTail(a.tailNumber));
     if (localId) {
       mfbIdToLocal.set(a.aircraftId, localId);
-      matchedTails.push(a.tailNumber);
+      matchedAircraft.add(localId);
     } else {
       unmatchedTails.push(a.tailNumber);
     }
   }
 
-  // Latest flight (by date, then id) per matched MFB aircraft.
-  const latest = new Map<number, MfbFlightReading>();
-  for (const f of flights) {
-    if (!mfbIdToLocal.has(f.aircraftId)) continue;
-    const cur = latest.get(f.aircraftId);
-    if (!cur || newer(f, cur)) latest.set(f.aircraftId, f);
-  }
+  // MFB returns flights newest first, using time/Hobbs start within the same
+  // date. FlightID is creation order, which need not be the order flown. Pick
+  // once per LOCAL aircraft: two MFB aircraft records may share its tail.
+  const latest = latestFlightsByAircraft(flights, mfbIdToLocal);
 
   let synced = 0;
   const errors: string[] = [];
-  for (const [mfbId, f] of latest) {
-    const aircraftId = mfbIdToLocal.get(mfbId)!;
+  for (const [aircraftId, f] of latest) {
     // Upsert per-row so one rejection doesn't sink the whole batch.
     const { error } = await supabase.from("hours_reading").upsert(
       {
@@ -95,12 +91,17 @@ export async function syncUserHours(
     else synced += 1;
   }
 
-  return { synced, matched: matchedTails.length, unmatchedTails, errors };
+  return { synced, matched: matchedAircraft.size, unmatchedTails, errors };
 }
 
-function newer(a: MfbFlightReading, b: MfbFlightReading): boolean {
-  const da = a.date ?? "";
-  const db = b.date ?? "";
-  if (da !== db) return da > db;
-  return a.flightId > b.flightId;
+export function latestFlightsByAircraft(
+  flights: MfbFlightReading[],
+  mfbIdToLocal: Map<number, string>,
+): Map<string, MfbFlightReading> {
+  const latest = new Map<string, MfbFlightReading>();
+  for (const flight of flights) {
+    const localId = mfbIdToLocal.get(flight.aircraftId);
+    if (localId && !latest.has(localId)) latest.set(localId, flight);
+  }
+  return latest;
 }
