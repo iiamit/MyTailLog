@@ -114,7 +114,7 @@ create or replace function sign_authored_entry(
   p_supersedes_entry_id uuid,
   p_attested boolean
 ) returns uuid
-language plpgsql security definer set search_path = public
+language plpgsql security definer set search_path = public, extensions
 as $$
 declare
   v_user uuid := auth.uid();
