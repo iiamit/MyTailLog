@@ -6,7 +6,7 @@ WORKSPACE="$ROOT/ios/App/App.xcworkspace"
 SCHEME=App
 TEAM_ID=${APPLE_TEAM_ID:-38Z53C8X48}
 BUNDLE_ID=${APP_BUNDLE_ID:-com.mytaillog.app}
-VERSION=${1:-}
+VERSION=${1:-1.4.1}
 BUILD_NUMBER=${BUILD_NUMBER:-$(date -u +%Y%m%d%H%M)}
 
 required() {
@@ -27,15 +27,6 @@ if [ ! -f "$APP_STORE_CONNECT_KEY_PATH" ]; then
 fi
 if [ ! -d "$WORKSPACE" ]; then
   echo "Missing $WORKSPACE; run 'npm run cap:sync' once first." >&2
-  exit 1
-fi
-
-if [ -z "$VERSION" ]; then
-  VERSION=$(xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -showBuildSettings 2>/dev/null |
-    awk '/MARKETING_VERSION =/{print $3; exit}')
-fi
-if [ -z "$VERSION" ]; then
-  echo "Could not determine the marketing version; pass it as the first argument." >&2
   exit 1
 fi
 
