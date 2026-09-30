@@ -42,8 +42,8 @@ test("oil completion records the chosen Hobbs reading instead of comparing it wi
 
   await page.goto(`${scratch.path}/maintenance`);
   await page.getByRole("button", { name: "Done" }).click();
-  await page.getByLabel("Meter", { exact: true }).selectOption("hobbs");
-  await page.getByLabel("Hours (hobbs, optional)").fill("900");
+  await page.getByRole("combobox", { name: "Meter" }).selectOption("hobbs");
+  await page.getByRole("spinbutton", { name: "Hours (hobbs, optional)" }).fill("900");
   await page.getByRole("button", { name: "Save", exact: true }).last().click();
 
   await expect.poll(async () => {
