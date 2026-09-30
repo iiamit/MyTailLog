@@ -12,6 +12,7 @@ dependencies {
     implementation project(':aparajita-capacitor-secure-storage')
     implementation project(':capacitor-community-sqlite')
     implementation project(':capacitor-app')
+    implementation project(':capacitor-browser')
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-push-notifications')
     implementation project(':capacitor-status-bar')

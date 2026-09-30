@@ -23,6 +23,8 @@ export type TimelineEntry = {
   sbRefs: string[];
   confidence: number | null;
   ownerConfirmed: boolean;
+  signedAt: string | null;
+  supersededBy: string | null;
   thumbnailUrl: string | null;
   fullUrl: string | null;
 };
@@ -98,7 +100,11 @@ function EntryRow({
           <span className={`rounded-full px-2 py-0.5 text-[11px] ${typeColor(e.logbookType)}`}>
             {e.logbookLabel}
           </span>
-          {e.ownerConfirmed ? (
+          {e.supersededBy ? (
+            <span className="text-[10.5px] text-dim">superseded by correction</span>
+          ) : e.signedAt ? (
+            <span className="text-[10.5px] text-annun-green">electronically signed</span>
+          ) : e.ownerConfirmed ? (
             <span className="flex items-center gap-1 text-[10.5px] text-annun-green">
               <span className="h-[5px] w-[5px] rounded-full bg-annun-green" />
               confirmed
@@ -117,6 +123,7 @@ function EntryRow({
         ) : (
           <p className="text-sm italic text-faint">no description</p>
         )}
+        {e.signedAt && <Link href={`/aircraft/${aircraftId}/entries/${e.id}`} className="mt-2 inline-block text-xs text-accent underline">View signed entry and print sticker</Link>}
         {refs.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {refs.map((r) => (
@@ -238,6 +245,8 @@ export function TimelineClient({
           sbRefs: r.sb_refs ?? [],
           confidence: r.confidence,
           ownerConfirmed: r.owner_confirmed,
+          signedAt: r.authored_signed_at,
+          supersededBy: r.authored_superseded_by,
           thumbnailUrl: r.page_id ? thumbnailByPageId[r.page_id] ?? null : null,
           fullUrl: r.page_id ? fullByPageId[r.page_id] ?? null : null,
         })),

@@ -135,6 +135,17 @@ export type LogEntry = {
   continues_next: boolean;
   is_continuation: boolean;
   reference_links: ReferenceLink[]; // external references (STC/AC/AD pages) — 0041
+  authored_by: string | null;
+  authored_signed_at: string | null;
+  authored_cert_kind: string | null;
+  authored_cert_rating: string | null;
+  authored_template_id: string | null;
+  authored_template_version: number | null;
+  authored_answers: Record<string, string> | null;
+  authored_payload: Record<string, unknown> | null;
+  authored_digest: string | null;
+  supersedes_entry_id: string | null;
+  authored_superseded_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -378,6 +389,21 @@ export type Profile = {
   created_at: string;
   updated_at: string;
 }
+
+export type SigningCredential = {
+  id: string;
+  user_id: string;
+  kind: "private_pilot" | "commercial_pilot" | "airline_transport_pilot" | "sport_pilot" | "mechanic";
+  certificate_number: string;
+  rating: string | null;
+  created_at: string;
+};
+
+export type EntrySigningChallenge = {
+  id: string; user_id: string; request: Record<string, unknown>; code_hash: string;
+  signer_name: string; cert_kind: string; cert_number: string; cert_rating: string | null;
+  expires_at: string; attempts: number; consumed_at: string | null; created_at: string;
+};
 
 export type AdminUserStat = {
   id: string;
@@ -635,6 +661,8 @@ export type Database = {
   public: {
     Tables: {
       profile: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile>; Relationships: [] };
+      signing_credential: { Row: SigningCredential; Insert: Partial<SigningCredential>; Update: Partial<SigningCredential>; Relationships: [] };
+      entry_signing_challenge: { Row: EntrySigningChallenge; Insert: Partial<EntrySigningChallenge>; Update: Partial<EntrySigningChallenge>; Relationships: [] };
       aircraft: { Row: Aircraft; Insert: Partial<Aircraft>; Update: Partial<Aircraft>; Relationships: [] };
       logbook: { Row: Logbook; Insert: Partial<Logbook>; Update: Partial<Logbook>; Relationships: [] };
       page: { Row: Page; Insert: Partial<Page>; Update: Partial<Page>; Relationships: [] };
@@ -686,6 +714,17 @@ export type Database = {
       can_edit_aircraft: {
         Args: { target_aircraft: string };
         Returns: boolean;
+      };
+      sign_authored_entry: {
+        Args: {
+          p_challenge_id: string; p_code: string;
+          p_id: string; p_aircraft_id: string; p_logbook_id: string;
+          p_template_id: string; p_template_version: number; p_entry_date: string;
+          p_hobbs: number | null; p_tach: number | null; p_airframe: number | null;
+          p_work: string; p_answers: Record<string, string>; p_credential_id: string;
+          p_performed_by: string; p_supersedes_entry_id: string | null; p_attested: boolean;
+        };
+        Returns: string;
       };
       transfer_aircraft: {
         Args: { target_aircraft: string; new_owner_email: string };

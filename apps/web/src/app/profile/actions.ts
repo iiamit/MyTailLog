@@ -17,11 +17,10 @@ export async function updateProfile(formData: FormData): Promise<{ error?: strin
   if (!user) return { error: "Not signed in." };
 
   const full_name = (formData.get("full_name") as string)?.trim() || null;
-  const cert_number = (formData.get("cert_number") as string)?.trim() || null;
 
   const { error } = await supabase
     .from("profile")
-    .update({ full_name, cert_number })
+    .update({ full_name })
     .eq("id", user.id);
 
   if (error) return { error: error.message };

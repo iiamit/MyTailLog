@@ -44,6 +44,7 @@ export type EntryRowLite = {
   tach: number | null;
   airframe: number | null;
   hours_reviewed_at: string | null;
+  authored_superseded_by?: string | null;
 };
 export type HoursRowLite = {
   id: string;
@@ -69,7 +70,8 @@ export function toReadings(
 ): Reading[] {
   const out: Reading[] = [];
   for (const r of entries)
-    out.push({ id: r.id, source: "entry", date: r.entry_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at });
+    if (!r.authored_superseded_by)
+      out.push({ id: r.id, source: "entry", date: r.entry_date, hobbs: r.hobbs, tach: r.tach, airframe: r.airframe, reviewedAt: r.hours_reviewed_at });
   for (const r of readings)
     // `*_estimate` sources are values we inferred, not meter reads — flagged so
     // the utilization rate can exclude them (see Reading.estimated).
@@ -99,7 +101,7 @@ async function fetchReadings(
   enrollment?: Enrollment,
 ): Promise<Reading[]> {
   const [{ data: entries }, { data: readings }] = await Promise.all([
-    supabase.from("log_entry").select("id, entry_date, hobbs, tach, airframe, hours_reviewed_at").eq("aircraft_id", aircraftId),
+    supabase.from("log_entry").select("id, entry_date, hobbs, tach, airframe, hours_reviewed_at, authored_superseded_by").eq("aircraft_id", aircraftId),
     supabase.from("hours_reading").select("id, reading_date, hobbs, tach, airframe, hours_reviewed_at, source").eq("aircraft_id", aircraftId),
   ]);
   return toReadings(entries ?? [], readings ?? [], enrollment);
