@@ -56,3 +56,19 @@ test("oil completion records the chosen Hobbs reading instead of comparing it wi
   }).toBe(900);
   await expect(page.getByText(/50 hrs left/)).toBeVisible();
 });
+
+test("two MyFlightBook flights on one date show the later Hobbs reading", async ({ page, scratch }) => {
+  const admin = createClient(env("TEST_SUPABASE_URL"), env("TEST_SUPABASE_SECRET_KEY"), {
+    auth: { persistSession: false },
+  });
+  const { error } = await admin.from("hours_reading").insert([
+    { aircraft_id: scratch.id, reading_date: "2026-09-28", hobbs: 982.7, source: "myflightbook", external_ref: "1000", updated_at: "2026-09-28T12:00:00Z" },
+    { aircraft_id: scratch.id, reading_date: "2026-09-29", hobbs: 983.8, source: "myflightbook", external_ref: "1001", updated_at: "2026-09-29T12:00:00Z" },
+    { aircraft_id: scratch.id, reading_date: "2026-09-29", hobbs: 984.9, source: "myflightbook", external_ref: "1002", updated_at: "2026-09-29T16:00:00Z" },
+  ]);
+  expect(error).toBeNull();
+
+  await page.goto(`${scratch.path}/maintenance`);
+  await expect(page.getByText(/hobbs 984\.9 as of 2026-09-29 · from MyFlightBook/)).toBeVisible();
+  await expect(page.getByText(/hobbs 984\.9/).first()).toBeVisible();
+});

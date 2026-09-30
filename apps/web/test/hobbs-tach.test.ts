@@ -150,6 +150,15 @@ test("currentHobbs: advances with a newer hobbs-only reading (the oil-change cas
   assert.equal(currentHobbs(rs).hobbs, 1218);
 });
 
+test("currentHobbs: the later of two plausible same-day flights wins", () => {
+  const rs = [
+    R("prior", "2026-09-28", 982.7, null),
+    R("first", "2026-09-29", 983.8, null),
+    R("second", "2026-09-29", 984.9, null),
+  ];
+  assert.equal(currentHobbs(rs).hobbs, 984.9);
+});
+
 test("currentHobbs: all-tach logbook → bridged from tach via ratio, flagged estimated", () => {
   const rs = [R("a", "2025-01-01", null, 900), R("b", "2025-02-01", null, 990)];
   const ch = currentHobbs(rs);
