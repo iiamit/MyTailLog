@@ -61,6 +61,35 @@ function list(v: unknown): string[] {
   return items.map((s) => s.trim()).filter(Boolean);
 }
 
+/** Editable identity fields; blank serial lists intentionally clear old values. */
+export function pickAircraftDetails(input: unknown):
+  | { fields: Pick<Aircraft, "make" | "model" | "serial_number" | "year" | "engine_serials" | "prop_serials" | "home_base"> }
+  | { error: string } {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return { error: "Aircraft details are missing." };
+  const src = input as Record<string, unknown>;
+  for (const key of ["make", "model", "serial_number", "year", "engine_serials", "prop_serials", "home_base"]) {
+    if (typeof src[key] !== "string") return { error: `Invalid ${key.replaceAll("_", " ")}.` };
+  }
+  const year = num(src.year);
+  if (src.year !== "" && (year == null || !Number.isInteger(year))) return { error: "Year must be a whole number." };
+  return { fields: {
+    make: text(src.make), model: text(src.model), serial_number: text(src.serial_number), year,
+    engine_serials: list(src.engine_serials), prop_serials: list(src.prop_serials), home_base: text(src.home_base),
+  } };
+}
+
+export async function updateAircraftDetails(supabase: Db, ctx: WriteCtx, input: unknown): Promise<WriteResult> {
+  const picked = pickAircraftDetails(input);
+  if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
+  // Aircraft identity belongs to the owner; the existing owner RLS policy is
+  // the final guard, and the returned row distinguishes a real save from 0 rows.
+  const { data, error } = await supabase.from("aircraft").update(picked.fields)
+    .eq("id", ctx.aircraftId).eq("owner_id", ctx.userId).select("id").maybeSingle();
+  if (error) return { status: "error", message: error.message };
+  if (!data) return { status: "error", message: "Only the aircraft owner can edit these details.", httpStatus: 403 };
+  return { status: "ok", row: data };
+}
+
 // ---------------------------------------------------------------------------
 // Write
 // ---------------------------------------------------------------------------

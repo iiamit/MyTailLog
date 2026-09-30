@@ -83,6 +83,8 @@ const SECTIONS: Section[] = [
           <strong>Enroll an aircraft</strong> — the FAA registry lookup fills make/model/serial
           from the tail number, here or in the <L href="#mobile">mobile app</L>. Five logbooks are
           created automatically: airframe, engine, prop, avionics, and <strong>Other</strong>.
+          If you skipped engine or propeller serial numbers, open the aircraft overview on the web and choose
+          <strong> Edit aircraft details</strong> to add them later.
         </li>
         <li>
           <strong>Capture or upload</strong> your logbook pages (and A&amp;P documents into Other).

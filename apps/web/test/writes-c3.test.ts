@@ -4,7 +4,7 @@ import { normalizeSeverity, pickSquawkFields } from "../src/lib/writes/squawks";
 import { pickDocumentFields } from "../src/lib/writes/documents";
 import { validateTopOff } from "../src/lib/writes/oil";
 import { validateWB } from "../src/lib/writes/weightBalance";
-import { pickEnrollFields } from "../src/lib/writes/aircraft";
+import { pickAircraftDetails, pickEnrollFields } from "../src/lib/writes/aircraft";
 
 // --- squawks -----------------------------------------------------------------
 
@@ -113,4 +113,17 @@ test("enroll: form strings and JSON both normalise to the aircraft row", () => {
   assert.deepEqual(pickEnrollFields({ make: "Cessna" }), { error: "Tail number is required." });
   assert.deepEqual(pickEnrollFields({ tail_number: "N1", year: "1978.5" }), { error: "Year must be a whole number." });
   assert.deepEqual(pickEnrollFields({ tail_number: "N1", enrollment_tach: "x" }), { error: "tach must be a number." });
+});
+
+test("aircraft details: skipped serials can be added later and cleared deliberately", () => {
+  const base = { make: "Cessna", model: "172N", year: "1978", serial_number: "17271234", home_base: "KXYZ" };
+  assert.deepEqual(pickAircraftDetails({ ...base, engine_serials: " L-123 , L-456 ", prop_serials: " EN-98765 " }), {
+    fields: { make: "Cessna", model: "172N", year: 1978, serial_number: "17271234", home_base: "KXYZ",
+      engine_serials: ["L-123", "L-456"], prop_serials: ["EN-98765"] },
+  });
+  const cleared = pickAircraftDetails({ ...base, engine_serials: "", prop_serials: "" });
+  assert.ok("fields" in cleared);
+  assert.deepEqual(cleared.fields.engine_serials, []);
+  assert.deepEqual(cleared.fields.prop_serials, []);
+  assert.deepEqual(pickAircraftDetails({ ...base, year: "not a year", engine_serials: "", prop_serials: "" }), { error: "Year must be a whole number." });
 });
