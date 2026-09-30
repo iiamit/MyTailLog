@@ -126,7 +126,7 @@ export function buildStatusItems(
     // has been replaced) — the countdown compares them against readings.
     const onScale = (v: number | null, mtr: Meter) =>
       currents.toTotalHours?.(v, m.last_done_date, mtr) ?? v;
-    let lastDone = onScale(m.last_done_hours, meter);
+    const lastDone = onScale(m.last_done_hours, meter);
     // Default: the stored scalars (correct when last-done was recorded on the
     // item's meter — always true for regulatory/tach items).
     let lastDoneForItem = lastDone;
