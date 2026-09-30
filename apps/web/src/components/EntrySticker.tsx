@@ -17,7 +17,9 @@ export function EntrySticker({ entry, tailNumber, logbookName, widthIn = 4 }: {
     <div className="mt-2 border-t border-black pt-1 text-[9pt]">
       <p>Electronically signed by {entry.signature_name} · {entry.authored_cert_kind?.replaceAll("_", " ")}{entry.authored_cert_rating ? ` (${entry.authored_cert_rating})` : ""} #{entry.mechanic_cert_number}</p>
       <p>Signature approves return to service only for the work described above.</p>
-      <p>{entry.authored_signed_at ? new Date(entry.authored_signed_at).toISOString().replace("T", " ").slice(0, 19) : ""} UTC · Entry {entry.id.slice(0, 8)} · Digest {entry.authored_digest?.slice(0, 12)}</p>
+      <p>{entry.authored_signed_at ? new Date(entry.authored_signed_at).toISOString().replace("T", " ").slice(0, 19) : ""} UTC</p>
+      <p>MTL ENTRY ID: {entry.id}</p>
+      <p>MTL DIGEST: {entry.authored_digest?.slice(0, 16)}</p>
       <p className="mt-1">Physical signature: ______________________________</p>
     </div>
   </article>;

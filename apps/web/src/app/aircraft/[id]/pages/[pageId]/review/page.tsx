@@ -52,6 +52,9 @@ export default async function ReviewPage({
     .order("entry_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
 
+  const { data: signedScans } = await supabase.from("signed_entry_scan")
+    .select("entry_id").eq("page_id", pageId);
+
   // Pages in the 'other' logbook are classified A&P documents, not log entries —
   // surface what the classifier read and what it updated.
   const { data: scanned } = await supabase
@@ -191,6 +194,10 @@ export default async function ReviewPage({
           )}
         </div>
       )}
+
+      {!!signedScans?.length && <div className="mb-6 rounded-lg border border-annun-green/40 px-4 py-3 text-sm" style={{ background: "var(--grn-bg)" }}>
+        {signedScans.map((scan) => <p key={scan.entry_id}>Printed MyTailLog sticker matched to an existing <Link className="text-accent underline" href={`/aircraft/${id}/entries/${scan.entry_id}`}>signed entry</Link>. No duplicate entry was added.</p>)}
+      </div>}
 
       <ReviewClient
         aircraftId={id}
