@@ -89,13 +89,18 @@ function sharedAnchor(a: DupEntry, b: DupEntry): boolean {
   );
 }
 
-function entriesDuplicate(a: DupEntry, ta: Set<string>, b: DupEntry, tb: Set<string>): boolean {
+function entriesDuplicate(a: DupEntry, ta: Set<string>, b: DupEntry, tb: Set<string>, threshold = ENTRY_TEXT_SIM): boolean {
   // Hard gate on date/tach: any disagreement, or the absence of a shared anchor,
   // rules out a duplicate no matter how identical the text is.
   if (datesConflict(a, b) || metersConflict(a, b) || !sharedAnchor(a, b)) return false;
   // Same coordinates — confirm the work text agrees so two distinct items logged
   // at the same date+meter (e.g. an oil change and a tire swap) aren't merged.
-  return jaccard(ta, tb) >= ENTRY_TEXT_SIM;
+  return jaccard(ta, tb) >= threshold;
+}
+
+/** Automatic suppression needs stronger evidence than the advisory duplicate UI. */
+export function sameLoggedEvent(a: DupEntry, b: DupEntry): boolean {
+  return a.logbook_id === b.logbook_id && entriesDuplicate(a, tokens(a.text), b, tokens(b.text), 0.75);
 }
 
 // --- Union-find over an index space -----------------------------------------

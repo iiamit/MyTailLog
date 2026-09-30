@@ -26,6 +26,8 @@ import type { EquipmentEntryInput } from "./equipment";
 import { entryText } from "./entryText";
 import { classifyOtherDocument, applyScannedDocument } from "./otherDocument";
 import { getBlob } from "@/lib/storage";
+import { isRescannedEntry, signedEntriesOnScan, type ExistingEntry } from "./rescan";
+import type { DupEntry } from "@/lib/duplicates";
 
 
 export type PageForExtraction = {
@@ -134,6 +136,30 @@ export async function extractPage(
     // to a Postgres-safe date up front so one bad date can't fail the whole page.
     for (const e of result.entries) e.entry_date = safeIsoDate(e.entry_date);
 
+    // A fresh photo of an old page has a new page ID. Compare its entries with
+    // the logbook before writing rows, and recognize our signed sticker by its
+    // printed entry ID plus digest. The signed row itself stays immutable.
+    const { data: priorRows, error: priorError } = await supabase.from("log_entry")
+      .select("*").eq("aircraft_id", page.aircraft_id).eq("logbook_id", page.logbook_id);
+    if (priorError) throw new Error(`Could not check existing logbook entries: ${priorError.message}`);
+    // ponytail: scan one aircraft logbook in memory; narrow candidates by date
+    // in SQL if a logbook grows beyond a few thousand entries.
+    const existing: ExistingEntry[] = (priorRows ?? []).filter((e) => e.page_id !== page.id).map((e) => ({
+      id: e.id, page_id: e.page_id, logbook_id: e.logbook_id,
+      entry_date: e.entry_date, tach: e.tach, hobbs: e.hobbs,
+      text: entryText(e), owner_confirmed: e.owner_confirmed, created_at: e.created_at,
+      authored_digest: e.authored_digest ?? null, authored_signed_at: e.authored_signed_at ?? null,
+    }));
+    const linkedSigned = signedEntriesOnScan(result.raw_text, existing);
+    const freshEntries = result.entries.filter((e, i) => {
+      const candidate: DupEntry = {
+        id: `new-${i}`, page_id: page.id, logbook_id: page.logbook_id,
+        entry_date: e.entry_date, tach: e.tach, hobbs: e.hobbs,
+        text: entryText(e), owner_confirmed: false, created_at: "",
+      };
+      return !isRescannedEntry(candidate, existing, linkedSigned);
+    });
+
     // Re-extraction is idempotent for machine output: clear prior UNCONFIRMED
     // entries for this page, but never discard entries a person has confirmed.
     await supabase
@@ -142,8 +168,8 @@ export async function extractPage(
       .eq("page_id", page.id)
       .eq("owner_confirmed", false);
 
-    if (result.entries.length > 0) {
-      const rows = result.entries.map((e, i) => ({
+    if (freshEntries.length > 0) {
+      const rows = freshEntries.map((e, i) => ({
         page_id: page.id,
         logbook_id: page.logbook_id,
         aircraft_id: page.aircraft_id,
@@ -171,6 +197,14 @@ export async function extractPage(
       if (insertError) throw new Error(`Failed to save entries: ${insertError.message}`);
     }
 
+    if (linkedSigned.length) {
+      const { error: linkError } = await supabase.from("signed_entry_scan").upsert(
+        linkedSigned.map((e) => ({ page_id: page.id, entry_id: e.id, aircraft_id: page.aircraft_id })),
+        { onConflict: "page_id,entry_id", ignoreDuplicates: true },
+      );
+      if (linkError) throw new Error(`Could not link signed sticker to scan: ${linkError.message}`);
+    }
+
     const confidences = result.entries.map((e) => e.confidence).filter(Number.isFinite);
     const minConfidence = confidences.length ? Math.min(...confidences) : null;
 
@@ -191,7 +225,7 @@ export async function extractPage(
     // this page's entries. Best-effort — never fail the extraction over it.
     let equipmentProposed = 0;
     try {
-      const equipEntries: EquipmentEntryInput[] = result.entries
+      const equipEntries: EquipmentEntryInput[] = freshEntries
         .map((e) => ({
           entry_id: page.id,
           date: e.entry_date,
@@ -228,7 +262,7 @@ export async function extractPage(
     const saved = after ?? [];
 
     return {
-      entryCount: saved.length,
+      entryCount: saved.length + linkedSigned.length,
       unconfirmedCount: saved.filter((e) => !e.owner_confirmed).length,
       detectedPageCount: result.detected_page_count,
       minConfidence,

@@ -667,6 +667,7 @@ export type Database = {
       logbook: { Row: Logbook; Insert: Partial<Logbook>; Update: Partial<Logbook>; Relationships: [] };
       page: { Row: Page; Insert: Partial<Page>; Update: Partial<Page>; Relationships: [] };
       log_entry: { Row: LogEntry; Insert: Partial<LogEntry>; Update: Partial<LogEntry>; Relationships: [] };
+      signed_entry_scan: { Row: { page_id: string; entry_id: string; aircraft_id: string; created_at: string }; Insert: { page_id: string; entry_id: string; aircraft_id: string }; Update: never; Relationships: [] };
       document: { Row: DocumentRecord; Insert: Partial<DocumentRecord>; Update: Partial<DocumentRecord>; Relationships: [] };
       component: { Row: Component; Insert: Partial<Component>; Update: Partial<Component>; Relationships: [] };
       ad_compliance: { Row: AdCompliance; Insert: Partial<AdCompliance>; Update: Partial<AdCompliance>; Relationships: [] };

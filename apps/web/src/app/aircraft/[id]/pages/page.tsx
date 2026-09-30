@@ -67,6 +67,8 @@ export default async function LogbookPagesPage({
     .from("log_entry")
     .select("page_id, entry_date, hobbs, tach, airframe, owner_confirmed")
     .eq("aircraft_id", id);
+  const { data: signedScans } = await supabase.from("signed_entry_scan")
+    .select("page_id").eq("aircraft_id", id);
   const entryCounts = new Map<string, number>();
   // A page "needs review" when it still has an unconfirmed entry — NOT merely
   // when review_status is 'unreviewed'. Entry-less extracted pages (covers,
@@ -105,6 +107,9 @@ export default async function LogbookPagesPage({
         airframe: cur.airframe ?? e.airframe ?? null,
       });
     }
+  }
+  for (const scan of signedScans ?? []) {
+    entryCounts.set(scan.page_id, (entryCounts.get(scan.page_id) ?? 0) + 1);
   }
   const pageCounts = new Map<string, number>();
   for (const p of pages ?? []) pageCounts.set(p.logbook_id, (pageCounts.get(p.logbook_id) ?? 0) + 1);

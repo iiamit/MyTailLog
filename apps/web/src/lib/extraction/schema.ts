@@ -10,7 +10,7 @@
 // the prompt changes materially.
 // ===========================================================================
 
-export const EXTRACTION_SCHEMA_VERSION = 4;
+export const EXTRACTION_SCHEMA_VERSION = 5;
 
 // Data fields that carry a per-field confidence score and a source-image box.
 // Single source of truth — the pipeline and review UI both key off this list.
@@ -181,4 +181,5 @@ Rules:
 - Also fill field_boxes: for each field, give the bounding box of where that value appears on the image as the array [x, y, w, h] in fractions of the FULL image — x,y is the top-left corner and w,h the size, all between 0 and 1 (e.g. a hobbs reading in the upper-right might be [0.72, 0.08, 0.14, 0.05]). If a field is absent or you cannot locate it, use [0, 0, 0, 0]. Boxes may be approximate; they only help the owner find the value on the page.
 - Numbers like hobbs/tach: transcribe digits exactly as written; if a digit is ambiguous, score that field low rather than guessing.
 - A single entry can SPAN A PAGE BREAK: it begins near the bottom of one page and finishes at the top of the next. You only see one page, so judge from this page alone: set continues_next=true on an entry that reaches the bottom of the page still mid-work, without its closing signature/date-out (it will finish on the next page); set is_continuation=true on an entry that starts partway through — no date or header of its own, beginning in the middle of a work item — because it began on the previous page. These are usually the last and first entries respectively; for a normal self-contained entry both are false. Do not fabricate the missing half; just flag it.
+- If a printed MyTailLog sticker has "MTL ENTRY ID" and "MTL DIGEST" (or older "Entry" and "Digest" identifiers), copy both identifiers exactly into raw_text. They allow this scan to be linked to its already-signed digital entry; do not invent or repair unreadable characters.
 - Put the complete plain-text transcription in raw_text.`;
