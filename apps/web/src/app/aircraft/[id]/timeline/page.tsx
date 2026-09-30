@@ -38,9 +38,7 @@ export default async function TimelinePage({
   // The unified cross-logbook timeline: all entries merged and ordered by date.
   const { data: entries } = await supabase
     .from("log_entry")
-    .select(
-      "id, page_id, logbook_id, entry_date, hobbs, tach, description, work_performed, parts, ad_refs, sb_refs, confidence, owner_confirmed, authored_signed_at, authored_superseded_by",
-    )
+    .select("*")
     .eq("aircraft_id", id)
     .order("entry_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -95,8 +93,8 @@ export default async function TimelinePage({
     sbRefs: e.sb_refs ?? [],
     confidence: e.confidence,
     ownerConfirmed: e.owner_confirmed,
-    signedAt: e.authored_signed_at,
-    supersededBy: e.authored_superseded_by,
+    signedAt: e.authored_signed_at ?? null,
+    supersededBy: e.authored_superseded_by ?? null,
     thumbnailUrl: e.page_id ? listThumbByPageId[e.page_id] ?? null : null,
     fullUrl: e.page_id ? fullByPageId[e.page_id] ?? null : null,
   }));
