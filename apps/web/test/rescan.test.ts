@@ -12,7 +12,7 @@ const signed: ExistingEntry = {
 const candidate = { ...signed, id: "new", page_id: "new-page", owner_confirmed: false, authored_digest: null, authored_signed_at: null };
 
 test("new and legacy sticker markers link only with matching ID and digest", () => {
-  assert.deepEqual(signedEntriesOnScan(`MTL ENTRY ID: ${signed.id}\nMTL DIGEST: ${signed.authored_digest}`, [signed]), [signed]);
+  assert.deepEqual(signedEntriesOnScan(`MTL ENTRY ID: ${signed.id}\nMTL DIGEST: ${signed.authored_digest!.slice(0, 16)}`, [signed]), [signed]);
   assert.deepEqual(signedEntriesOnScan(`Entry ${signed.id.slice(0, 8)} · Digest ${signed.authored_digest!.slice(0, 12)}`, [signed]), [signed]);
   assert.deepEqual(signedEntriesOnScan(`MTL ENTRY ID: ${signed.id}\nMTL DIGEST: ${"b".repeat(64)}`, [signed]), []);
   assert.deepEqual(signedEntriesOnScan(`MTL ENTRY ID: ${signed.id}`, [signed]), []);

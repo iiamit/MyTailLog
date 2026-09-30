@@ -8,7 +8,7 @@ export type ExistingEntry = DupEntry & {
 /** Exact ID + digest matching works for full-size new stickers and earlier short IDs. */
 export function signedEntriesOnScan(rawText: string, existing: ExistingEntry[]): ExistingEntry[] {
   const markers = [
-    ...rawText.matchAll(/MTL\s+ENTRY\s+ID\s*:\s*([0-9a-f-]{36})[\s\S]{0,140}?MTL\s+DIGEST\s*:\s*([0-9a-f]{64})/gi),
+    ...rawText.matchAll(/MTL\s+ENTRY\s+ID\s*:\s*([0-9a-f-]{36})[\s\S]{0,140}?MTL\s+DIGEST\s*:\s*([0-9a-f]{16})\b/gi),
     ...rawText.matchAll(/\bEntry\s+([0-9a-f]{8})\s*[·•|,;\-]?\s*Digest\s+([0-9a-f]{12})\b/gi),
   ];
   return existing.filter((entry) => entry.authored_signed_at && entry.authored_digest &&
