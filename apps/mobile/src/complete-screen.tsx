@@ -7,6 +7,7 @@ import { maintenanceNextDue } from "@/lib/maintenance";
 import { logbookLabel } from "@/lib/logbooks";
 import type { LogbookType, MaintenanceItem } from "@/lib/database.types";
 import type { StatusItem } from "@/lib/status";
+import type { Meter } from "@/lib/hobbsTach";
 import type { Aircraft } from "./types";
 import { TopBar, dim, faint, mono, panel, line, amber, input, primary } from "./ui";
 import { color } from "./tokens";
@@ -45,6 +46,7 @@ export function CompleteItem({
   const [signature, setSignature] = useState("");
   const [notes, setNotes] = useState("");
   const [hours, setHours] = useState("");
+  const [meter, setMeter] = useState<Meter>(item.meter);
   const [logbooks, setLogbooks] = useState<LogbookRow[]>([]);
   const [logbookId, setLogbookId] = useState("");
   const [done, setDone] = useState<"synced" | "pending" | null>(null);
@@ -70,13 +72,17 @@ export function CompleteItem({
     });
     // Prefill the hours on the item's own meter, so the counter resets from the
     // number the countdown is measured against.
+    let cancelled = false;
     computeAirworthiness(aircraft.id)
       .then((d) => {
-        const v = item.meter === "hobbs" ? d.meters.hobbs.hobbs : d.meters.tach.tach;
-        if (v != null) setHours(v.toFixed(1));
+        const current = d.meters[meter];
+        const v = meter === "hobbs" ? d.meters.hobbs.hobbs
+          : meter === "airframe" ? d.meters.airframe.airframe : d.meters.tach.tach;
+        if (!cancelled && !current.estimated && v != null) setHours(v.toFixed(1));
       })
       .catch(() => {});
-  }, [aircraft.id, item.id, item.meter]);
+    return () => { cancelled = true; };
+  }, [aircraft.id, item.id, meter]);
 
   const missing = isVor && (!place.trim() || !error.trim() || !signature.trim() || !logbookId);
   // Nothing to base the change on: this item isn't on the device (an AD, or a
@@ -108,12 +114,13 @@ export function CompleteItem({
           entryId: id,
           date,
           hours: value,
+          meter,
           // Only send the entry fields when we actually have a record to write.
           logbookId: isVor || notes.trim() ? logbookId : null,
           description: isVor || notes.trim() ? description : null,
           workPerformed,
           signature: signature.trim() || null,
-          [item.meter === "hobbs" ? "hobbs" : "tach"]: value,
+          [meter]: value,
         },
         { id, base: base ?? undefined, label: `${item.label} marked done` },
       );
@@ -122,9 +129,21 @@ export function CompleteItem({
       if (row) {
         await replaceLocal("maintenance_item", row.id, {
           ...row,
+          meter,
           last_done_date: date,
           last_done_hours: value,
           ...maintenanceNextDue({ ...row, last_done_date: date, last_done_hours: value }),
+        });
+      }
+      if (value != null) {
+        const now = new Date().toISOString();
+        await replaceLocal("hours_reading", id, {
+          id, aircraft_id: aircraft.id, reading_date: date,
+          tach: meter === "tach" ? value : null,
+          hobbs: meter === "hobbs" ? value : null,
+          airframe: meter === "airframe" ? value : null,
+          source: "manual", external_ref: id, synced_by: null,
+          created_at: now, updated_at: now,
         });
       }
       setDone(await onQueued());
@@ -170,7 +189,17 @@ export function CompleteItem({
         <Labelled label="Date">
           <input style={{ ...input, width: "100%" }} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Labelled>
-        <Labelled label={`Hours (${item.meter})`}>
+        <Labelled label="Hours counted on">
+          <select style={{ ...input, width: "100%" }} value={meter} onChange={(e) => {
+            setMeter(e.target.value as Meter);
+            setHours("");
+          }}>
+            <option value="tach">Tach</option>
+            <option value="hobbs">Hobbs</option>
+            <option value="airframe">Airframe</option>
+          </select>
+        </Labelled>
+        <Labelled label={`Hours (${meter})`}>
           <input
             style={{ ...input, ...mono, width: "100%" }}
             type="number"

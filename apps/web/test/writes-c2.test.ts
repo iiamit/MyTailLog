@@ -117,6 +117,17 @@ test("markDonePlan: date absent = today, null clears, bad input is an error", ()
   assert.ok("error" in markDonePlan(vor, { date: "2026-08-12", hours: -1 }));
 });
 
+test("markDonePlan records the meter chosen for an oil completion", () => {
+  const oil = { kind: "oil_change", interval_months: null, interval_hours: 50, updated_at: vor.updated_at };
+  assert.deepEqual(markDonePlan(oil, { date: "2026-09-30", hours: 900, meter: "hobbs" }), {
+    patch: {
+      last_done_date: "2026-09-30", last_done_hours: 900,
+      next_due_date: null, next_due_hours: 950, meter: "hobbs",
+    },
+  });
+  assert.deepEqual(markDonePlan(oil, { hours: 900, meter: "odometer" as "hobbs" }), { error: "Pick a valid meter." });
+});
+
 // --- compliance --------------------------------------------------------------
 
 test("pickAdFields: reference/kind/status required, next-due inputs typed", () => {
