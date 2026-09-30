@@ -430,6 +430,7 @@ function Shell({ session }: { session: Session }) {
       <AskPane aircraft={n.aircraft} />
     ) : n.tab === "status" ? (
       <Status
+        key={cursor}
         aircraft={n.aircraft}
         onComplete={(item) => setNav({ ...n, sub: { kind: "complete", item } })}
         onQueued={writeFinished}
@@ -489,6 +490,7 @@ function Shell({ session }: { session: Session }) {
   if (sidebar && nav.screen === "aircraft") {
     const a = nav;
     const panes = aircraftPanes(a, {
+      syncCursor: cursor,
       setNav,
       back,
       onZoom: setZoom,
@@ -665,6 +667,7 @@ function aircraftPanes(
     onQueued: () => Promise<"synced" | "pending">;
     onSigned: () => Promise<void>;
     onCapture: () => void;
+    syncCursor: number;
   },
 ): { primary: ReactNode; secondary: ReactNode; ratio: "50/50" | "55/45" | "40/60" } {
   const { aircraft, sub } = nav;
@@ -683,6 +686,7 @@ function aircraftPanes(
       ratio: "55/45",
       primary: (
         <Status
+          key={h.syncCursor}
           aircraft={aircraft}
           onComplete={(item) => h.setNav({ ...nav, sub: { kind: "complete", item } })}
           onQueued={h.onQueued}
@@ -693,7 +697,7 @@ function aircraftPanes(
         sub?.kind === "complete" ? (
           <CompleteItem aircraft={aircraft} item={sub.item} onBack={h.back} onQueued={h.onQueued} />
         ) : (
-          <AllItems aircraft={aircraft} onQueued={h.onQueued} />
+          <AllItems key={h.syncCursor} aircraft={aircraft} onQueued={h.onQueued} />
         ),
     };
   }
