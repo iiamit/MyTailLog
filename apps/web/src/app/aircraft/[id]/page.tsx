@@ -148,6 +148,7 @@ export default async function AircraftPage({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          {isOwner && <Link href={`${a}/details`} className="inline-flex items-center rounded-[9px] border border-line2 bg-panel2 px-4 py-2.5 text-[13.5px] text-ink hover:border-accent">Edit aircraft details</Link>}
           {!isOwner && (
             <span className="rounded-full bg-panel2 px-2.5 py-0.5 text-xs font-medium text-dim">
               Shared · {canEdit ? "contribute" : "view only"}
