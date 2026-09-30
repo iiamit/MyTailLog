@@ -160,18 +160,15 @@ export function buildStatusItems(
         lastDoneForItem = baseline;
         nextDueForItem = round1(baseline + m.interval_hours);
       } else if (cur.value == null || cur.value < lastDone) {
-        // Current sits below the stored last-done on this meter (can't fly negative
-        // hours) → try the other meter with the stored scalar (Phase-52 guard);
-        // else last-done sits above every reading → flag unreliable.
-        const other = otherMeter ? currentFor(otherMeter) : { value: null, estimated: false };
-        const lastDoneOther = otherMeter ? onScale(m.last_done_hours, otherMeter) : null;
-        if (otherMeter && other.value != null && lastDoneOther != null && other.value >= lastDoneOther) {
-          meter = otherMeter;
-          cur = other;
-          lastDone = lastDoneOther;
-          lastDoneForItem = lastDoneOther;
-          nextDueForItem = onScale(due.next_due_hours, otherMeter);
-        } else if (cur.value != null || other.value != null) {
+        // A completion can be newer than the latest synced reading even on the
+        // same date. That small gap is not evidence that Hobbs was really Tach.
+        // Treat the owner's completion as the latest reading for this item; a
+        // larger unexplained gap stays untrusted rather than switching meters.
+        if (cur.value != null && baseline != null &&
+            lastDone - cur.value <= m.interval_hours &&
+            Math.abs(lastDone - baseline) <= m.interval_hours) {
+          cur = { value: lastDone, estimated: false };
+        } else if (cur.value != null || (otherMeter && currentFor(otherMeter).value != null)) {
           hoursUnreliable = true;
         }
       }
