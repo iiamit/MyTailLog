@@ -23,11 +23,14 @@ const WEB_SETTINGS: { label: string; detail: string; path: string }[] = [
   { label: "Developer access", detail: "Connect another app to your records.", path: "/developers" },
 ];
 
+export type OfflineDownloadStatus = { done: number; total: number; ready?: number; failed?: number; running: boolean; error?: string };
+
 export function AccountMenu({
   email,
   onClose,
   onSync,
   onDownloadAll,
+  onClearCache,
   dl,
   onRebuild,
   onSignOut,
@@ -38,16 +41,17 @@ export function AccountMenu({
   onClose: () => void;
   onSync: () => void;
   onDownloadAll: () => void;
-  dl: { done: number; total: number } | null;
+  onClearCache: () => void;
+  dl: OfflineDownloadStatus | null;
   onRebuild: () => void;
   onSignOut: () => void;
   /** The aircraft in view — "Back up now" and sharing are per-aircraft. */
   aircraftId?: string;
   onShare?: () => void;
 }) {
-  const downloading = !!dl && dl.total > 0 && dl.done < dl.total;
+  const downloading = dl?.running ?? false;
   const { choice, setChoice } = useTheme();
-  const storage = useStorage(dl);
+  const storage = useStorage(dl, onClearCache);
   const push = usePushState();
   const [testing, setTesting] = useState<string | null>(null);
   const [backup, setBackup] = useState<string | null>(null);
@@ -113,8 +117,8 @@ export function AccountMenu({
           />
         )}
         <MenuItem
-          label={downloading ? `Downloading scans… ${dl!.done}/${dl!.total}` : "Download all scans for offline"}
-          detail="Fetches every page and document once so the full record browses with no signal."
+          label={downloading ? `Preparing offline files… ${dl!.ready}/${dl!.total} ready` : dl?.failed || dl?.error ? "Retry remaining files" : "Download all for offline"}
+          detail={dl?.error ? `Download stopped: ${dl.error}` : downloading ? `${dl!.done} of ${dl!.total} checked; ${dl!.failed} failed so far.` : dl?.total === 0 ? "No scans or documents to download yet." : dl?.failed ? `${dl.ready} of ${dl.total} files ready offline; ${dl.failed} missing. Check your connection and storage, then retry.` : dl?.ready !== undefined ? `${dl.ready} files ready offline, including scans and documents.` : "Fetches every page and document once so the full record browses with no signal."}
           onClick={onDownloadAll}
           disabled={downloading}
         />
@@ -131,6 +135,7 @@ export function AccountMenu({
             label={`Storage: ${storage.label} held · Clear cached scans`}
             detail="Removes the downloaded page and document images from this phone. Nothing is deleted from your record — they download again when you open them."
             onClick={storage.clear}
+            disabled={downloading}
           />
         )}
         {aircraftId && (
@@ -153,10 +158,12 @@ export function AccountMenu({
 
         <MenuItem
           label="Sign out"
+          detail={downloading ? "Available when the offline download finishes." : undefined}
           onClick={() => {
             void unregisterPush().finally(onSignOut);
           }}
           tone={color.danger}
+          disabled={downloading}
         />
         <WebLink label="Delete my account" detail="Request deletion of your account and associated data." path="/account-deletion" tone={color.danger} />
         <WebLink label="Privacy policy" detail="How MyTailLog handles your data." path="/privacy" />
@@ -214,7 +221,7 @@ function Appearance({ choice, onChoose }: { choice: ThemeChoice; onChoose: (c: T
 // --- Storage ----------------------------------------------------------------
 
 /** How much of the phone the cached scans are using, and the way to get it back. */
-function useStorage(dl: { done: number; total: number } | null): { label: string; clear: () => void } | null {
+function useStorage(dl: OfflineDownloadStatus | null, onClear: () => void): { label: string; clear: () => void } | null {
   const [bytes, setBytes] = useState<number | null>(null);
 
   useEffect(() => {
@@ -228,13 +235,14 @@ function useStorage(dl: { done: number; total: number } | null): { label: string
       live = false;
     };
     // Re-measure once a download-all finishes; that is when the number moves.
-  }, [dl?.done, dl?.total]);
+  }, [dl?.running]);
 
   if (bytes == null) return null;
   return {
     label: megabytes(bytes),
     clear: () => {
       setBytes(0);
+      onClear();
       void clearCache().catch(() => {});
     },
   };

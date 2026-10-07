@@ -1,6 +1,6 @@
 # Android Play release checklist
 
-Package: `com.mytaillog.app`. The local release build uses version code 6.
+Package: `com.mytaillog.app`. The combined first-sync and offline-download release uses version code 9 (version 1.5).
 Android push registration is enabled again after the version 1 Firebase crash;
 the release build now requires `google-services.json`.
 The English listing has a feature graphic and four phone screenshots. Check
@@ -12,9 +12,8 @@ The English listing has a feature graphic and four phone screenshots. Check
    deploy the matching web push API. Confirm its Firebase identity can send FCM
    messages to project `mytaillog-22ee6`.
 2. Build with `npm run android:bundle`, or use `npm run play:draft` to build and
-   upload a new signed AAB as an internal draft. On this small host, set
-   `MYTAILLOG_ANDROID_SKIP_LINT=1` if Gradle release lint runs out of memory.
-   Run the full lint build on a host with more RAM before public release.
+   upload a new signed AAB as an internal draft. The full release build,
+   including lint, passes on this host.
 3. In Play Console, add internal tester emails or a Google Group, and install
    the latest internal version using its opt-in link.
 4. Complete the Console forms: App access (provide review login instructions),
@@ -42,6 +41,11 @@ Services. This host has no device or emulator, so these checks require a tester.
 - Scan a full 24-page session; adjust a crop, review pages, and verify upload.
 - Download and open PDFs and scans, go offline, make an edit and add a squawk,
   force-close, reopen, reconnect, and resolve a conflict against a web edit.
+- On a fresh account, tap the visible Sync action and confirm the empty fleet
+  guides you to add an aircraft. Confirm no demo button appears.
+- Start "Download all for offline" from Account. Verify its final ready/missing
+  counts, retry after a failed connection, then open a scan and PDF in airplane
+  mode.
 - Open every sheet and viewer; verify system Back closes the top surface before
   changing screens. Check keyboard clearance, status bar, dark mode, talkback
   labels, and compact/tablet layouts in both orientations.

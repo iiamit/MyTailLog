@@ -2,7 +2,7 @@ import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { API_BASE, supabase } from "./supabase";
 import { getRows } from "./db";
-import { purgePlan } from "./sync-policy";
+import { offlineDownloadCounts, purgePlan } from "./sync-policy";
 
 // On-device blob cache. Scanned pages/documents are immutable once captured, so
 // each is downloaded ONCE (via the Bearer-gated serving route) and kept in the
@@ -34,7 +34,8 @@ const isPinned = (name: string) => name.startsWith("document_");
 
 async function cachedSrc(path: string): Promise<string | null> {
   try {
-    await Filesystem.stat({ path, directory: DIR });
+    const file = await Filesystem.stat({ path, directory: DIR });
+    if (file.size === 0) return null;
     const { uri } = await Filesystem.getUri({ path, directory: DIR });
     return Capacitor.convertFileSrc(uri);
   } catch {
@@ -148,30 +149,34 @@ function base64ToBytes(b64: string): Uint8Array {
  * concurrency keeps it moving without hammering the connection. Documents go
  * first so the ceiling, if it bites, takes pages rather than paperwork.
  */
-export async function prefetchAll(onProgress: (done: number, total: number) => void): Promise<void> {
+export async function prefetchAll(onProgress: (checked: number, total: number, ready: number, failed: number) => void): Promise<{ total: number; ready: number; failed: number }> {
   const [pages, docs] = await Promise.all([
     getRows<{ id: string }>("page"),
     getRows<{ id: string; storage_path: string | null }>("document"),
   ]);
-  const tasks: Array<() => Promise<unknown>> = [];
-  for (const d of docs) if (d.storage_path) tasks.push(() => localImageSrc("document", d.id));
+  const tasks: Array<{ name: string; run: () => Promise<string | null> }> = [];
+  for (const d of docs) if (d.storage_path) tasks.push({ name: pathFor("document", d.id, false).slice(FOLDER.length + 1), run: () => localImageSrc("document", d.id) });
   for (const p of pages) {
-    tasks.push(() => localImageSrc("page", p.id, { thumb: true }));
-    tasks.push(() => localImageSrc("page", p.id));
+    tasks.push({ name: pathFor("page", p.id, true).slice(FOLDER.length + 1), run: () => localImageSrc("page", p.id, { thumb: true }) });
+    tasks.push({ name: pathFor("page", p.id, false).slice(FOLDER.length + 1), run: () => localImageSrc("page", p.id) });
   }
 
   const total = tasks.length;
   let done = 0;
+  let ready = 0;
+  let failed = 0;
   let next = 0;
-  onProgress(0, total);
+  onProgress(0, total, 0, 0);
   const CONCURRENCY = 4;
   async function worker() {
     while (next < tasks.length) {
       const task = tasks[next++];
-      await task().catch(() => {});
-      onProgress(++done, total);
+      if (await task.run().catch(() => null)) ready++;
+      else failed++;
+      onProgress(++done, total, ready, failed);
     }
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
   await enforceCeiling();
+  return { total, ...offlineDownloadCounts(tasks.map((task) => task.name), (await listCache()).filter((file) => file.size > 0).map((file) => file.name)) };
 }

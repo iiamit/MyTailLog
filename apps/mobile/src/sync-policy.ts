@@ -34,6 +34,13 @@ export function nextRetryAt(attempt: number, now = Date.now()): string {
 
 export type CachedFile = { name: string; size: number; mtime: number };
 
+/** Count only requested files that are still on disk after cache cleanup. */
+export function offlineDownloadCounts(requested: string[], cached: string[]): { ready: number; failed: number } {
+  const held = new Set(cached);
+  const ready = requested.filter((name) => held.has(name)).length;
+  return { ready, failed: requested.length - ready };
+}
+
 /**
  * Which cached files to delete to get under `ceilingBytes`: oldest first,
  * never a pinned one. Returns [] when already under the ceiling. If everything

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deliveryDecision, backoffMs, nextRetryAt, purgePlan, BACKOFF_CAP_MS, BACKOFF_BASE_MS } from "../../mobile/src/sync-policy";
+import { deliveryDecision, backoffMs, nextRetryAt, purgePlan, offlineDownloadCounts, BACKOFF_CAP_MS, BACKOFF_BASE_MS } from "../../mobile/src/sync-policy";
 
 test("mobile writes sync online and stay pending offline", () => {
   assert.equal(deliveryDecision(true, 1), "sync");
@@ -44,4 +44,9 @@ test("pinned documents survive even when they alone exceed the ceiling", () => {
   const files = [f("document_poh", 900, 1), f("page_1", 100, 2)];
   assert.deepEqual(purgePlan(files, 500, pinned), ["page_1"], "the page goes, the POH stays");
   assert.deepEqual(purgePlan([f("document_poh", 900, 1)], 500, pinned), []);
+});
+
+test("offline download result counts only files retained on disk", () => {
+  assert.deepEqual(offlineDownloadCounts(["document_poh", "page_1", "page_1_thumb"], ["document_poh", "page_1_thumb"]), { ready: 2, failed: 1 });
+  assert.deepEqual(offlineDownloadCounts([], []), { ready: 0, failed: 0 });
 });

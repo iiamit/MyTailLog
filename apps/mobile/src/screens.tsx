@@ -16,7 +16,7 @@ import { filterHistory, NO_FILTER, type HistoryFilter } from "./records-filter";
 import type { FieldBox } from "@/lib/extraction/schema";
 import type { Urgency } from "@/lib/compliance";
 import type { Aircraft, LogEntry, Page } from "./types";
-import { Card, Row, TopBar, Pill, URGENCY_COLOR, URGENCY_LABEL, text, dim, faint, ink, mono, panel, line, green, red, amber, accentGradient } from "./ui";
+import { Card, Row, TopBar, Pill, URGENCY_COLOR, URGENCY_LABEL, text, dim, faint, ink, mono, panel, line, green, red, amber, accentGradient, primary } from "./ui";
 import { color, alpha } from "./tokens";
 
 // ---- Fleet home ------------------------------------------------------------
@@ -31,6 +31,8 @@ export function Hangar({
   syncing,
   syncedLabel,
   error,
+  needsFirstSync,
+  onSync,
 }: {
   fleet: Aircraft[];
   summaries: Record<string, { urgency: Urgency; line: string }>;
@@ -38,6 +40,8 @@ export function Hangar({
   syncing: string | null;
   syncedLabel: string;
   error: string | null;
+  needsFirstSync: boolean;
+  onSync: () => void;
 }) {
   // Worst first, then soonest — a problem should be impossible to miss.
   const RANK: Record<string, number> = { overdue: 0, due_soon: 1, upcoming: 2, none: 3 };
@@ -58,7 +62,12 @@ export function Hangar({
       {error && <p style={{ ...text.secondary, color: red, marginBottom: 10 }}>{error}</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {sorted.length === 0 && <p style={{ ...text.secondary, color: faint }}>Nothing on device yet — pull to sync.</p>}
+        {sorted.length === 0 && needsFirstSync && (
+          <div>
+            <p style={{ ...text.secondary, color: dim }}>No aircraft on this device yet. Sync to load your fleet.</p>
+            <button onClick={onSync} disabled={!!syncing} style={primary}>{syncing ?? "Sync now"}</button>
+          </div>
+        )}
         {sorted.map((a) => {
           const s = summaries[a.id];
           const u = s?.urgency ?? "none";

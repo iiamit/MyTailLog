@@ -37,7 +37,7 @@ import type { StatusItem } from "@/lib/status";
 import type { Aircraft, LogEntry, Page } from "./types";
 import { Screen, Brand, input, primary, dim, amber, faint, line, text, display } from "./ui";
 import { color } from "./tokens";
-import { AccountMenu } from "./account-menu";
+import { AccountMenu, type OfflineDownloadStatus } from "./account-menu";
 import { FirstRun } from "./first-run";
 
 const NATIVE = Capacitor.isNativePlatform();
@@ -125,7 +125,8 @@ function Shell({ session }: { session: Session }) {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>({ screen: "hangar" });
-  const [dl, setDl] = useState<{ done: number; total: number } | null>(null);
+  const [dl, setDl] = useState<OfflineDownloadStatus | null>(null);
+  const [hasSynced, setHasSynced] = useState(() => localStorage.getItem(`mytaillog:synced:${session.user.id}`) === "1");
   const [zoom, setZoom] = useState<string | null>(null);
   // undefined = closed. null = open with no aircraft in context (fleet entry).
   const [capture, setCapture] = useState<Aircraft | null | undefined>(undefined);
@@ -138,6 +139,7 @@ function Shell({ session }: { session: Session }) {
   const [menu, setMenu] = useState(false);
   const zoomRef = useRef<string | null>(null);
   const syncTask = useRef<Promise<void> | null>(null);
+  const downloadTask = useRef(false);
   const syncLatest = useRef<(() => Promise<void>) | null>(null);
   zoomRef.current = zoom;
   // Follows the phone flipping to dark (or light) while the app is open.
@@ -172,7 +174,13 @@ function Shell({ session }: { session: Session }) {
       // A mirror built before the deleted-aircraft fix can hold rows the feed
       // will never retract, so it is dropped once and rebuilt.
       const healed = await healMirrorIfStale();
-      setCur(await getCursor());
+      if (healed) {
+        setHasSynced(false);
+        localStorage.removeItem(`mytaillog:synced:${session.user.id}`);
+      }
+      const savedCursor = await getCursor();
+      setCur(savedCursor);
+      if (savedCursor > 0) setHasSynced(true);
       await updatePending();
       await loadFleet();
       // Best-effort: offline, canEdit() falls back to allowing, and the server
@@ -286,11 +294,16 @@ function Shell({ session }: { session: Session }) {
   }
 
   async function downloadAll() {
-    setDl({ done: 0, total: 0 });
+    if (downloadTask.current) return;
+    downloadTask.current = true;
+    setDl({ done: 0, total: 0, ready: 0, failed: 0, running: true });
     try {
-      await prefetchAll((done, total) => setDl({ done, total }));
+      const result = await prefetchAll((done, total, ready, failed) => setDl({ done, total, ready, failed, running: true }));
+      setDl({ done: result.total, ...result, running: false });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setDl((current) => ({ done: current?.done ?? 0, total: current?.total ?? 0, running: false, error: e instanceof Error ? e.message : String(e) }));
+    } finally {
+      downloadTask.current = false;
     }
   }
 
@@ -303,6 +316,8 @@ function Shell({ session }: { session: Session }) {
     try {
       await resetLocal();
       setCur(0);
+      setHasSynced(false);
+      localStorage.removeItem(`mytaillog:synced:${session.user.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setSyncing(null);
@@ -322,6 +337,8 @@ function Shell({ session }: { session: Session }) {
     try {
       await Promise.all([wipeForSignOut(), clearCache(), clearDocumentUploads()]);
       setCur(0);
+      setHasSynced(false);
+      localStorage.removeItem(`mytaillog:synced:${session.user.id}`);
     } finally {
       await supabase.auth.signOut();
     }
@@ -357,6 +374,8 @@ function Shell({ session }: { session: Session }) {
       await applyChanges(res.changes);
       await setCursor(res.cursor);
       setCur(res.cursor);
+      setHasSynced(true);
+      localStorage.setItem(`mytaillog:synced:${session.user.id}`, "1");
       setOnline(true);
       refreshEditable().catch(() => {});
       await loadFleet();
@@ -465,7 +484,8 @@ function Shell({ session }: { session: Session }) {
       aircraftId={nav.screen === "aircraft" ? nav.aircraft.id : undefined}
       onClose={() => setMenu(false)}
       onSync={() => { setMenu(false); sync(); }}
-      onDownloadAll={() => { setMenu(false); downloadAll(); }}
+      onDownloadAll={downloadAll}
+      onClearCache={() => setDl(null)}
       dl={dl}
       onRebuild={() => { setMenu(false); rebuild(); }}
       onSignOut={signOut}
@@ -567,17 +587,12 @@ function Shell({ session }: { session: Session }) {
 
           <PendingBanner count={pending} onOpen={() => setNav({ screen: "pending" })} />
 
-          {fleet.length === 0 && cursor > 0 ? (
+          {fleet.length === 0 && hasSynced ? (
             <FirstRun
-              onAddAircraft={(id) => {
-                void sync().then(() => {
-                  const a = id ? fleet.find((f) => f.id === id) : undefined;
-                  if (a) setNav({ screen: "aircraft", aircraft: a, tab: "status", segment: "documents", sub: null });
-                  else setCapture(null);
-                });
-              }}
-              onDemo={sync}
-              onSignIn={() => setMenu(true)}
+              onAddAircraft={() => { void sync(); }}
+              onSync={() => { void sync(); }}
+              syncing={syncing}
+              error={error}
             />
           ) : (
           <Hangar
@@ -585,8 +600,10 @@ function Shell({ session }: { session: Session }) {
             summaries={summaries}
             onOpen={(a) => setNav({ screen: "aircraft", aircraft: a, tab: "status", segment: "documents", sub: null })}
             syncing={syncing}
-            syncedLabel={!online ? "Offline" : cursor > 0 ? "Synced" : "Not synced yet"}
+            syncedLabel={!online ? "Offline" : hasSynced ? "Synced" : "Not synced yet"}
             error={error}
+            needsFirstSync={!hasSynced}
+            onSync={() => { void sync(); }}
           />
           )}
 

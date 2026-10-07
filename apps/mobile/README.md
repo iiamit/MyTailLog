@@ -48,8 +48,8 @@ change. The Play service account JSON lives at
 `~/.config/mytaillog/android/play-service-account.json` with owner-only
 permissions; do not commit it.
 
-Run `npm run play:check` to confirm this host can access the app. Version code 6
-is the tested internal release. Increase `versionCode` in
+Run `npm run play:check` to confirm this host can access the app. Version code 9
+combines the first-sync and offline-download updates. Increase `versionCode` in
 `android/app/build.gradle` for each later bundle, then run `npm run play:draft`.
 This local command typechecks, builds, signs, and uploads
 the AAB as an **internal-testing draft**. A draft is not distributed to testers;
