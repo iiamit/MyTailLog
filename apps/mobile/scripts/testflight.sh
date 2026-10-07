@@ -6,7 +6,7 @@ WORKSPACE="$ROOT/ios/App/App.xcworkspace"
 SCHEME=App
 TEAM_ID=${APPLE_TEAM_ID:-38Z53C8X48}
 BUNDLE_ID=${APP_BUNDLE_ID:-com.mytaillog.app}
-VERSION=${1:-1.4.6}
+VERSION=${1:-1.5}
 BUILD_NUMBER=${BUILD_NUMBER:-$(date -u +%Y%m%d%H%M)}
 
 required() {

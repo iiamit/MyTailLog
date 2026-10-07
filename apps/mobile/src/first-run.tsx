@@ -2,11 +2,7 @@ import { useState } from "react";
 import { color, text, radius, hit, accentGradient, tint, alpha } from "./tokens";
 import { EnrollSheet } from "./enroll-sheet";
 
-// First run — the screen an AirVenture booth visitor lands on.
-//
-// Promise the payoff, not the feature list. The demo aircraft matters: it lets a
-// sceptic at a trade-show booth see a populated app before typing their tail
-// number.
+// Empty account after a successful sync: the next action is adding an aircraft.
 
 const STEPS = [
   { title: "Add your aircraft", detail: "Tail number is enough — we pull the rest from the registry." },
@@ -16,13 +12,14 @@ const STEPS = [
 
 export function FirstRun({
   onAddAircraft,
-  onDemo,
-  onSignIn,
+  onSync,
+  syncing,
+  error,
 }: {
-  /** Called once the aircraft actually exists, with its id. */
-  onAddAircraft: (aircraftId?: string) => void;
-  onDemo: () => void;
-  onSignIn: () => void;
+  onAddAircraft: (aircraftId: string) => void;
+  onSync: () => void;
+  syncing: string | null;
+  error: string | null;
 }) {
   const [enrolling, setEnrolling] = useState(false);
   return (
@@ -40,13 +37,13 @@ export function FirstRun({
       }} />
 
       <h1 style={{ ...text.screenTitle, fontSize: 27, lineHeight: 1.15, color: color.ink, textAlign: "center", margin: "18px 0 0" }}>
-        Your logbooks,
-        <br />
-        off the shelf
+        Add your first aircraft
       </h1>
       <p style={{ ...text.bodyText, fontSize: 14, color: color.dim, textAlign: "center", maxWidth: 250, margin: "10px 0 0" }}>
-        Three steps and you&apos;ll know exactly when your next inspection is due.
+        Sync is complete and this account has no aircraft yet. Start with a tail number.
       </p>
+      {syncing && <p style={{ ...text.secondary, color: color.dim }}>{syncing}</p>}
+      {error && <p style={{ ...text.secondary, color: color.danger }}>{error}</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14, margin: "26px 0 0", alignSelf: "stretch" }}>
         {STEPS.map((s, i) => (
@@ -92,21 +89,16 @@ export function FirstRun({
         Add my aircraft
       </button>
       <button
-        onClick={onDemo}
+        onClick={onSync}
+        disabled={!!syncing}
         style={{
           alignSelf: "stretch", marginTop: 10, minHeight: 50, borderRadius: 15,
           background: color.surface, border: `1px solid ${color.hairline}`, color: color.dim,
           fontFamily: text.rowTitle.fontFamily, fontSize: 15, fontWeight: 500, cursor: "pointer",
         }}
       >
-        Look around with a demo aircraft
+        Sync again
       </button>
-      <p style={{ ...text.meta, color: color.faint, marginTop: 14 }}>
-        Already have an account?{" "}
-        <button onClick={onSignIn} style={{ background: "none", border: "none", color: color.accent, font: "inherit", cursor: "pointer", padding: 0 }}>
-          Sign in
-        </button>
-      </p>
     </div>
   );
 }
