@@ -12,10 +12,13 @@ import {
 
 export default async function TimelinePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ entry?: string }>;
 }) {
   const { id } = await params;
+  const { entry: focusEntryId } = await searchParams;
   const supabase = await createClient();
 
   const { data: aircraft } = await supabase
@@ -117,6 +120,7 @@ export default async function TimelinePage({
 
       <TimelineClient
         aircraftId={id}
+        focusEntryId={focusEntryId}
         entries={timeline}
         logbookMap={logbookMap}
         thumbnailByPageId={listThumbByPageId}
