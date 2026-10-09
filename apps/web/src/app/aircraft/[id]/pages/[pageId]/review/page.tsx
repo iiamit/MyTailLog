@@ -45,6 +45,12 @@ export default async function ReviewPage({
     .eq("id", page.logbook_id)
     .single();
 
+  const { data: aircraftLogbooks } = await supabase.from("logbook")
+    .select("id, type, title").eq("aircraft_id", id);
+  const logbookOptions = (aircraftLogbooks ?? [])
+    .filter((book) => book.type !== "other")
+    .map((book) => ({ id: book.id, label: book.title ?? LOGBOOK_LABEL[book.type] ?? book.type }));
+
   const { data: entries } = await supabase
     .from("log_entry")
     .select("*")
@@ -88,6 +94,7 @@ export default async function ReviewPage({
 
   const reviewEntries: ReviewEntry[] = (entries ?? []).map((e) => ({
     id: e.id,
+    logbook_id: e.logbook_id,
     entry_date: e.entry_date,
     hobbs: e.hobbs,
     airframe: e.airframe,
@@ -203,6 +210,7 @@ export default async function ReviewPage({
         aircraftId={id}
         pageId={pageId}
         logbookId={page.logbook_id}
+        logbooks={logbookOptions}
         imageUrl={signed?.signedUrl ?? null}
         storagePath={page.storage_path}
         rawText={page.ocr_text}

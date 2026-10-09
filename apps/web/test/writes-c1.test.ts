@@ -35,6 +35,7 @@ test("pickEntryFields keeps only editable columns with their types", () => {
     hobbs: 1234.5,
     tach: null,
     description: "Annual",
+    logbook_id: "prop-book",
     ad_refs: ["2020-01-02"],
     // must never pass through from a phone payload
     aircraft_id: "x",
@@ -48,6 +49,7 @@ test("pickEntryFields keeps only editable columns with their types", () => {
     hobbs: 1234.5,
     tach: null,
     description: "Annual",
+    logbook_id: "prop-book",
     ad_refs: ["2020-01-02"],
     reference_links: [{ label: "STC", url: "https://faa.gov/stc" }],
   });
@@ -61,6 +63,8 @@ test("pickEntryFields rejects wrong types and non-objects", () => {
   assert.ok("error" in pickEntryFields({ description: 5 }));
   assert.ok("error" in pickEntryFields({ ad_refs: "2020-01-02" }));
   assert.ok("error" in pickEntryFields({ sb_refs: [1] }));
+  assert.ok("error" in pickEntryFields({ logbook_id: 2 }));
+  assert.ok("error" in pickEntryFields({ logbook_id: "" }));
   // an empty patch is valid — nothing to change
   assert.deepEqual(pickEntryFields({}), { fields: {} });
 });

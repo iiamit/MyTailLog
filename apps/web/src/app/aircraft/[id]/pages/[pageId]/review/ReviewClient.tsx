@@ -20,6 +20,7 @@ import {
 
 export type ReviewEntry = {
   id: string;
+  logbook_id: string;
   entry_date: string | null;
   hobbs: number | null;
   airframe: number | null;
@@ -41,6 +42,7 @@ export type ReviewEntry = {
 
 const blankEntry = (): ReviewEntry => ({
   id: "",
+  logbook_id: "",
   entry_date: null,
   hobbs: null,
   airframe: null,
@@ -226,6 +228,7 @@ export function EntryCard({
   entry,
   isNew,
   logbookId,
+  logbooks,
   aircraftId,
   pageId,
   imageUrl,
@@ -243,6 +246,7 @@ export function EntryCard({
   entry: ReviewEntry;
   isNew: boolean;
   logbookId: string;
+  logbooks: { id: string; label: string }[];
   aircraftId: string;
   // null = no scan behind this entry (a CSV import). Used only to route the
   // revalidate and the attachments panel — the writes key off the entry id.
@@ -262,6 +266,7 @@ export function EntryCard({
   merging: boolean;
 }) {
   const [form, setForm] = useState<FormState>(toForm(entry));
+  const [selectedLogbookId, setSelectedLogbookId] = useState(entry.logbook_id || logbookId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -290,9 +295,9 @@ export function EntryCard({
   async function handleSave() {
     setBusy(true);
     setError(null);
-    const fields = toFields(form);
+    const fields = { ...toFields(form), logbook_id: selectedLogbookId };
     if (isNew) {
-      const res = await addEntry(aircraftId, pageId, logbookId, fields);
+      const res = await addEntry(aircraftId, pageId, selectedLogbookId, fields);
       setBusy(false);
       if ("error" in res) setError(res.error);
       else onCreated(entry.id, res.id, fields);
@@ -359,6 +364,13 @@ export function EntryCard({
       )}
 
       <div className="grid grid-cols-2 gap-3">
+        <label className="col-span-2 text-xs text-dim">
+          Entry category
+          <select value={selectedLogbookId} onChange={(e) => setSelectedLogbookId(e.target.value)} className={`${inputClass} mt-1`}>
+            {logbooks.map((book) => <option key={book.id} value={book.id}>{book.label}</option>)}
+          </select>
+          <span className="mt-1 block text-faint">The scanned page stays in its original book.</span>
+        </label>
         <Field label="Date" conf={conf("entry_date")} box={box("entry_date")} imageUrl={imageUrl} {...locate("entry_date")} className="col-span-2">
           <input
             type="date"
@@ -509,6 +521,7 @@ export function ReviewClient({
   aircraftId,
   pageId,
   logbookId,
+  logbooks,
   imageUrl,
   storagePath,
   rawText,
@@ -524,6 +537,7 @@ export function ReviewClient({
   aircraftId: string;
   pageId: string;
   logbookId: string;
+  logbooks: { id: string; label: string }[];
   imageUrl: string | null;
   storagePath: string | null;
   rawText: string | null;
@@ -749,6 +763,7 @@ export function ReviewClient({
             aircraftId={aircraftId}
             pageId={pageId}
             logbookId={logbookId}
+            logbooks={logbooks}
             imageUrl={imageUrl}
             onLocate={locateField}
             activeKey={spot?.key ?? null}
@@ -771,6 +786,7 @@ export function ReviewClient({
             aircraftId={aircraftId}
             pageId={pageId}
             logbookId={logbookId}
+            logbooks={logbooks}
             imageUrl={imageUrl}
             onSaved={patchEntry}
             onCreated={onCreated}
