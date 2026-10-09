@@ -13,8 +13,9 @@ const PAGES: { path: string; heading: string }[] = [
   { path: "/compliance", heading: "AD / SB compliance" },
   { path: "/equipment", heading: "Installed equipment" },
   { path: "/weight-balance", heading: "Weight & balance" },
-  { path: "/oil-analysis", heading: "Oil analysis" },
+  { path: "/oil-analysis", heading: "Oil & engine trends" },
   { path: "/audit", heading: "Records gap audit" },
+  { path: "/prebuy", heading: "Pre-buy dossier" },
 ];
 
 for (const p of PAGES) {

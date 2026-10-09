@@ -74,7 +74,7 @@ function EntryRow({
       ? `${e.description}\n${e.workPerformed}`
       : e.description || e.workPerformed || null;
   return (
-    <li className="flex gap-4 border-b border-line py-3.5 last:border-b-0">
+    <li id={`entry-${e.id}`} className="flex scroll-mt-20 gap-4 border-b border-line py-3.5 last:border-b-0">
       {e.thumbnailUrl ? (
         <ZoomableImage
           src={e.thumbnailUrl}
@@ -184,6 +184,7 @@ function yearOf(e: TimelineEntry): string {
 
 export function TimelineClient({
   aircraftId,
+  focusEntryId,
   entries,
   logbookMap,
   thumbnailByPageId,
@@ -191,6 +192,7 @@ export function TimelineClient({
   attachmentsByEntry,
 }: {
   aircraftId: string;
+  focusEntryId?: string;
   entries: TimelineEntry[];
   logbookMap: Record<string, LogbookMeta>;
   thumbnailByPageId: Record<string, string>;
@@ -291,7 +293,13 @@ export function TimelineClient({
   // years collapsed until clicked. `toggledYears` holds years the user flipped
   // from their default, so filtering never leaves everything collapsed. While
   // searching, expand everything so results show.
-  const [toggledYears, setToggledYears] = useState<Set<string>>(new Set());
+  const [toggledYears, setToggledYears] = useState<Set<string>>(() => {
+    const target = entries.find((e) => e.id === focusEntryId);
+    return target && yearOf(target) !== yearOf(entries[0]) ? new Set([yearOf(target)]) : new Set();
+  });
+  useEffect(() => {
+    if (focusEntryId) document.getElementById(`entry-${focusEntryId}`)?.scrollIntoView({ block: "center" });
+  }, [focusEntryId]);
   const toggleYear = (y: string) =>
     setToggledYears((prev) => {
       const next = new Set(prev);

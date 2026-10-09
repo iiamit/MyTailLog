@@ -58,7 +58,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
       label: "Aircraft",
       items: [
         { ident: "EQP", label: "Equipment", href: `${a}/equipment`, badge: ctx.badges.equipment, tone: "accent" },
-        { ident: "OIL", label: "Oil analysis", href: `${a}/oil-analysis` },
+        { ident: "OIL", label: "Oil & engine trends", href: `${a}/oil-analysis` },
         { ident: "WBL", label: "Weight & balance", href: `${a}/weight-balance` },
         { ident: "MTR", label: "Meters & resets", href: `${a}/meters` },
         { ident: "SQK", label: "Squawks", href: `${a}/squawks` },
@@ -81,6 +81,7 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
   groups.push({
     label: "Manage",
     items: [
+      { ident: "BUY", label: "Pre-buy dossier", href: `${a}/prebuy` },
       { ident: "EXP", label: "Export & backup", href: `${a}/export` },
       ...(ctx.isOwner ? [{ ident: "SHR", label: "Sharing, transfer & delete", href: `${a}/share` }] : []),
     ],
