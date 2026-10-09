@@ -29,10 +29,12 @@ export function ReviewAllClient({
   aircraftId,
   entries: initial,
   attachmentsByEntry,
+  logbooks,
 }: {
   aircraftId: string;
   entries: FlatEntry[];
   attachmentsByEntry: Record<string, EntryAttachment[]>;
+  logbooks: { id: string; label: string }[];
 }) {
   const toast = useToast();
   const [entries, setEntries] = useState<FlatEntry[]>(initial);
@@ -65,7 +67,13 @@ export function ReviewAllClient({
   }
 
   function onSaved(id: string, fields: EntryFields) {
-    patch(id, { ...fields, owner_confirmed: true });
+    const current = entries.find((entry) => entry.id === id);
+    const label = logbooks.find((book) => book.id === fields.logbook_id)?.label;
+    patch(id, {
+      ...fields, owner_confirmed: true,
+      ...(fields.logbook_id ? { logbookId: fields.logbook_id } : {}),
+      ...(!current?.pageId && label ? { pageLabel: `${label} · imported (no scan)` } : {}),
+    });
   }
 
   async function onMerge(tailId: string) {
@@ -160,6 +168,7 @@ export function ReviewAllClient({
             aircraftId={aircraftId}
             pageEntries={pageEntries}
             attachmentsByEntry={attachmentsByEntry}
+            logbooks={logbooks}
             onSaved={onSaved}
             onDeleted={(id) => setEntries((es) => es.filter((x) => x.id !== id))}
             onMerge={onMerge}
@@ -190,6 +199,7 @@ function PageGroup({
   aircraftId,
   pageEntries,
   attachmentsByEntry,
+  logbooks,
   onSaved,
   onDeleted,
   onMerge,
@@ -198,6 +208,7 @@ function PageGroup({
   aircraftId: string;
   pageEntries: FlatEntry[];
   attachmentsByEntry: Record<string, EntryAttachment[]>;
+  logbooks: { id: string; label: string }[];
   onSaved: (id: string, fields: EntryFields) => void;
   onDeleted: (id: string) => void;
   onMerge: (tailId: string) => void;
@@ -238,6 +249,7 @@ function PageGroup({
       aircraftId={aircraftId}
       pageId={e.pageId}
       logbookId={e.logbookId}
+      logbooks={logbooks}
       imageUrl={e.fullUrl}
       onLocate={scan ? (box, k) => setSpot(box ? { box, key: k } : null) : undefined}
       activeKey={spot?.key ?? null}

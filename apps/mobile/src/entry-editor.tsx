@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { enqueue } from "./mutations";
 import { patchLocal, insertLocal } from "./review-local";
+import { getByAircraft } from "./db";
+import type { Logbook } from "./types";
+import { logbookLabel } from "@/lib/logbooks";
 import { Sheet, Stepper, sheetInput, sheetPrimary, sheetCancel } from "./record-screen";
 import { toForm, validateEntry, fieldChip, type EntryForm, type ReviewEntry } from "./review-rules";
 import { color, text, tint, radius, hit } from "./tokens";
@@ -38,11 +41,17 @@ const TEXT_FIELDS: { key: keyof EntryForm; label: string; multiline?: boolean; h
 
 export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, focus, onClose, onSaved }: EntryEditorProps) {
   const [form, setForm] = useState<EntryForm>(() => toForm(entry));
+  const [selectedLogbookId, setSelectedLogbookId] = useState(entry?.logbook_id ?? logbookId);
+  const [logbooks, setLogbooks] = useState<Logbook[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showScan, setShowScan] = useState(false);
   const focusRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   useEffect(() => { focusRef.current?.focus(); }, []);
+  useEffect(() => {
+    void getByAircraft<Logbook>("logbook", aircraftId).then((rows) =>
+      setLogbooks(rows.filter((book) => book.type !== "other")));
+  }, [aircraftId]);
 
   const set = (k: keyof EntryForm) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const num = (k: "tach" | "hobbs" | "airframe") => (form[k] === "" ? null : Number(form[k]));
@@ -53,15 +62,15 @@ export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, foc
     setSaving(true);
     try {
       if (entry) {
-        await enqueue("entry.update", aircraftId, { entryId: entry.id, fields: v.fields }, { base: entry.updated_at });
+        await enqueue("entry.update", aircraftId, { entryId: entry.id, fields: { ...v.fields, logbook_id: selectedLogbookId } }, { base: entry.updated_at });
         // Editing implicitly confirms — the server does the same.
-        await patchLocal<ReviewEntry>("log_entry", aircraftId, entry.id, { ...v.fields, owner_confirmed: true });
+        await patchLocal<ReviewEntry>("log_entry", aircraftId, entry.id, { ...v.fields, logbook_id: selectedLogbookId, owner_confirmed: true });
       } else {
         const id = crypto.randomUUID();
-        await enqueue("entry.create", aircraftId, { id, logbookId, pageId, fields: v.fields }, { id });
+        await enqueue("entry.create", aircraftId, { id, logbookId: selectedLogbookId, pageId, fields: v.fields }, { id });
         const now = new Date().toISOString();
         await insertLocal<ReviewEntry>("log_entry", {
-          id, aircraft_id: aircraftId, logbook_id: logbookId, page_id: pageId, ...v.fields,
+          id, aircraft_id: aircraftId, logbook_id: selectedLogbookId, page_id: pageId, ...v.fields,
           confidence: null, field_confidence: null, field_boxes: null, owner_confirmed: true,
           is_continuation: false, entry_index: null, updated_at: now,
         });
@@ -82,6 +91,13 @@ export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, foc
 
   return (
     <Sheet title={entry ? "Edit this entry" : "Add an entry the extractor missed"} onClose={saving ? undefined : onClose}>
+      <label style={{ display: "block" }}>
+        {label("Entry category", "logbook_id")}
+        <select value={selectedLogbookId} onChange={(e) => setSelectedLogbookId(e.target.value)} style={sheetInput}>
+          {logbooks.map((book) => <option key={book.id} value={book.id}>{logbookLabel(book.type, book.title)}</option>)}
+        </select>
+        <span style={{ ...text.sectionLabel, color: color.faint }}>The scanned page stays in its original book.</span>
+      </label>
       <label style={{ display: "block" }}>
         {label("Date", "entry_date")}
         <input

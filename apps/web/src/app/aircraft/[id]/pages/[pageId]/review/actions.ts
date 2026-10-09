@@ -73,6 +73,7 @@ export async function saveEntry(
   const r = await entries.update(s.supabase, s.ctx, { entryId, fields });
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
+  revalidatePath(`/aircraft/${aircraftId}/timeline`);
   return { ok: true };
 }
 

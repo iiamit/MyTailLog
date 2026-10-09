@@ -80,6 +80,7 @@ export default async function ReviewAllPage({
         const label = logbookLabel.get(e.logbook_id) ?? "Logbook";
         return {
           id: e.id,
+          logbook_id: e.logbook_id,
           entry_date: e.entry_date,
           hobbs: e.hobbs,
           airframe: e.airframe,
@@ -107,6 +108,7 @@ export default async function ReviewAllPage({
       const label = logbookLabel.get(page.logbook_id) ?? "Logbook";
       return {
         id: e.id,
+        logbook_id: e.logbook_id,
         entry_date: e.entry_date,
         hobbs: e.hobbs,
         airframe: e.airframe,
@@ -125,7 +127,7 @@ export default async function ReviewAllPage({
         is_continuation: e.is_continuation,
         reference_links: e.reference_links ?? [],
         pageId: page.id,
-        logbookId: page.logbook_id,
+        logbookId: e.logbook_id,
         pageLabel: `${label}${page.page_sequence != null ? ` · page #${page.page_sequence}` : ""}`,
         thumbnailUrl: thumbUrl.get(page.id) ?? null,
         fullUrl: fullUrl.get(page.id) ?? null,
@@ -174,7 +176,9 @@ export default async function ReviewAllPage({
         </p>
       </header>
 
-      <ReviewAllClient aircraftId={id} entries={flat} attachmentsByEntry={attachmentsByEntry} />
+      <ReviewAllClient aircraftId={id} entries={flat} attachmentsByEntry={attachmentsByEntry}
+        logbooks={(logbooks ?? []).filter((book) => book.type !== "other")
+          .map((book) => ({ id: book.id, label: book.title ?? LOGBOOK_LABEL[book.type] ?? book.type }))} />
     </main>
   );
 }

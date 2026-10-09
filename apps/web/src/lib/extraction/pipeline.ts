@@ -139,18 +139,29 @@ export async function extractPage(
     // A fresh photo of an old page has a new page ID. Compare its entries with
     // the logbook before writing rows, and recognize our signed sticker by its
     // printed entry ID plus digest. The signed row itself stays immutable.
+    // ponytail: scan one aircraft in memory; date-scope these reads if its
+    // logbook grows beyond a few thousand entries.
     const { data: priorRows, error: priorError } = await supabase.from("log_entry")
-      .select("*").eq("aircraft_id", page.aircraft_id).eq("logbook_id", page.logbook_id);
+      .select("*").eq("aircraft_id", page.aircraft_id);
     if (priorError) throw new Error(`Could not check existing logbook entries: ${priorError.message}`);
-    // ponytail: scan one aircraft logbook in memory; narrow candidates by date
-    // in SQL if a logbook grows beyond a few thousand entries.
-    const existing: ExistingEntry[] = (priorRows ?? []).filter((e) => e.page_id !== page.id).map((e) => ({
+    const { data: sourcePages, error: pagesError } = await supabase.from("page")
+      .select("id, logbook_id").eq("aircraft_id", page.aircraft_id);
+    if (pagesError) throw new Error(`Could not check source pages: ${pagesError.message}`);
+    const sourceBook = new Map((sourcePages ?? []).map((source) => [source.id, source.logbook_id]));
+    // Match by the physical page's book. An owner may have classified one of
+    // its entries as Propeller while the combined physical book stays Engine.
+    // Keep confirmed entries on this page in the comparison on re-extraction.
+    const allEntries: ExistingEntry[] = (priorRows ?? []).map((e) => ({
       id: e.id, page_id: e.page_id, logbook_id: e.logbook_id,
       entry_date: e.entry_date, tach: e.tach, hobbs: e.hobbs,
       text: entryText(e), owner_confirmed: e.owner_confirmed, created_at: e.created_at,
       authored_digest: e.authored_digest ?? null, authored_signed_at: e.authored_signed_at ?? null,
     }));
-    const linkedSigned = signedEntriesOnScan(result.raw_text, existing);
+    const existing = allEntries
+      .filter((e) => (e.page_id !== page.id || e.owner_confirmed) &&
+        (e.page_id ? sourceBook.get(e.page_id) : e.logbook_id) === page.logbook_id)
+      .map((e) => ({ ...e, logbook_id: page.logbook_id }));
+    const linkedSigned = signedEntriesOnScan(result.raw_text, allEntries);
     const freshEntries = result.entries.filter((e, i) => {
       const candidate: DupEntry = {
         id: `new-${i}`, page_id: page.id, logbook_id: page.logbook_id,

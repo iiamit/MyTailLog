@@ -20,6 +20,7 @@ export type WriteResult =
 // The editable fields of a log entry. Arrays arrive already split from the
 // client's comma-separated inputs.
 export type EntryFields = {
+  logbook_id?: string;
   entry_date: string | null;
   hobbs: number | null;
   airframe: number | null;
@@ -76,6 +77,12 @@ export async function entryIsOnAircraft(supabase: Db, aircraftId: string, entryI
   return !!data;
 }
 
+async function logbookIsOnAircraft(supabase: Db, aircraftId: string, logbookId: string): Promise<boolean> {
+  const { data } = await supabase.from("logbook").select("id")
+    .eq("id", logbookId).eq("aircraft_id", aircraftId).maybeSingle();
+  return !!data;
+}
+
 // ---------------------------------------------------------------------------
 // Pure helpers — tested in apps/web/test/writes-entries.test.ts
 // ---------------------------------------------------------------------------
@@ -100,6 +107,10 @@ export function pickEntryFields(input: unknown): { fields: Partial<EntryFields> 
   if (!input || typeof input !== "object" || Array.isArray(input)) return { error: "Entry fields are missing." };
   const src = input as Record<string, unknown>;
   const out: Partial<EntryFields> = {};
+  if ("logbook_id" in src) {
+    if (typeof src.logbook_id !== "string" || !src.logbook_id) return { error: "Logbook is missing." };
+    out.logbook_id = src.logbook_id;
+  }
   for (const k of TEXT_KEYS) {
     if (!(k in src)) continue;
     const v = src[k];
@@ -235,6 +246,9 @@ export async function create(
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   if (!input.logbookId) return { status: "error", message: "Logbook is missing.", httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
+  if (!(await logbookIsOnAircraft(supabase, ctx.aircraftId, input.logbookId))) {
+    return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
+  }
 
   const { data, error } = await supabase
     .from("log_entry")
@@ -242,9 +256,9 @@ export async function create(
       {
         ...(input.id ? { id: input.id } : {}),
         page_id: input.pageId ?? null,
-        logbook_id: input.logbookId,
         aircraft_id: ctx.aircraftId,
         ...picked.fields,
+        logbook_id: input.logbookId,
         owner_confirmed: true,
         confidence: null,
         field_confidence: null,
@@ -279,6 +293,9 @@ export async function update(
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
+  if (picked.fields.logbook_id && !(await logbookIsOnAircraft(supabase, ctx.aircraftId, picked.fields.logbook_id))) {
+    return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
+  }
   return patchEntry(supabase, ctx, input.entryId, { ...picked.fields, owner_confirmed: true });
 }
 
