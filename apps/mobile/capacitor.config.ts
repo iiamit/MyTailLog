@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: "com.mytaillog.app",
   appName: "MyTailLog",
   webDir: "dist",
+  // Keep WebView errors visible in logcat for Play builds. Android suppresses
+  // Capacitor logging in release builds by default, including JS startup errors.
+  android: { loggingBehavior: "production" },
   // Route fetch() through the native HTTP stack so calls to mytaillog.com and
   // Supabase aren't subject to browser CORS (there are no CORS headers on the
   // API — access is gated by the Bearer token, not the origin).

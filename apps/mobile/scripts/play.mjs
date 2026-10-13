@@ -113,7 +113,7 @@ async function main(mode) {
     if (!internal) throw new Error('Play has no internal testing track')
     if (mode === 'internal') {
       await api('PUT', `${editUrl}/tracks/internal`, { track: 'internal', releases: promoteDraft(internal.releases || [], versionCode) })
-      await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`, {})
+      await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW&changesNotSentForReview=true`, {})
       committed = true
       console.log(`Released versionCode ${versionCode} to the internal-testing track.`)
       return
@@ -122,7 +122,7 @@ async function main(mode) {
       const closed = (tracks.tracks || []).find(track => track.track === 'alpha')
       if (!closed) throw new Error('Play has no closed-testing alpha track')
       await api('PUT', `${editUrl}/tracks/alpha`, { track: 'alpha', releases: closedRelease(internal.releases || [], versionCode) })
-      await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`, {})
+      await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW&changesNotSentForReview=true`, {})
       committed = true
       console.log(`Released versionCode ${versionCode} to the closed-testing track.`)
       return
@@ -135,7 +135,7 @@ async function main(mode) {
     const bundle = await api('POST', `https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/${packageName}/edits/${encodeURIComponent(edit.id)}/bundles?uploadType=media`, await readFile(bundleFile))
     if (String(bundle.versionCode) !== versionCode) throw new Error(`Bundle versionCode ${bundle.versionCode} differs from build.gradle ${versionCode}`)
     await api('PUT', `${editUrl}/tracks/internal`, { track: 'internal', releases: draftReleases(internal.releases || [], versionCode) })
-    await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW`, {})
+    await api('POST', `${editUrl}:commit?changesInReviewBehavior=ERROR_IF_IN_REVIEW&changesNotSentForReview=true`, {})
     committed = true
     console.log(`Uploaded versionCode ${versionCode} as an internal-testing draft. No testers received it.`)
   } finally {
