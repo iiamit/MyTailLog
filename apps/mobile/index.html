@@ -5,9 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#090c12" />
     <title>MyTailLog</title>
+    <style>
+      #startup-status { min-height: 100vh; background: #090c12; color: #e7ecf3; padding: 24px; font: 16px system-ui; box-sizing: border-box; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="startup-status">Opening MyTailLog…</div></div>
+    <script>
+      // This runs before the module, so a failed import still leaves a useful
+      // message instead of a blank screen on a release device.
+      function showStartupError(message) {
+        var root = document.getElementById("root");
+        if (!root) return;
+        var status = document.getElementById("startup-status");
+        if (!status && root.children.length) return;
+        if (!status) {
+          status = document.createElement("div");
+          status.id = "startup-status";
+          root.appendChild(status);
+        }
+        status.textContent = "MyTailLog could not start: " + message;
+      }
+      window.addEventListener("error", function (event) {
+        showStartupError(event.message || "A startup file could not load.");
+      });
+      window.addEventListener("unhandledrejection", function (event) {
+        var reason = event.reason;
+        showStartupError(reason && reason.message ? reason.message : String(reason));
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
