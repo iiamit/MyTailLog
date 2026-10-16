@@ -2,10 +2,15 @@
 
 Aircraft logbook digitization & maintenance tracker for piston GA owners — live at **[mytaillog.com](https://mytaillog.com)**.
 
-**Now on the App Store:** [Download MyTailLog for iPhone and iPad](https://apps.apple.com/us/app/mytaillog/id6795396758).
+**Mobile apps:** [iPhone and iPad on the App Store](https://apps.apple.com/us/app/mytaillog/id6795396758) · [Android on Google Play](https://play.google.com/store/apps/details?id=com.mytaillog.app).
 Free, open source, and ready for the hangar: sync once to browse records offline,
-scan logbook pages, and record updates that upload on the next sync. Requires
-iOS / iPadOS 15.6 or later. Use the same account on the web and in the app.
+scan logbook pages, and record updates that upload on the next sync. The iOS app
+requires iOS / iPadOS 15.6 or later. Use the same account on the web and in the apps.
+
+On the website, you can sign up or sign in with Google, Apple, an email magic
+link, or a password. Existing users should sign in with email first and connect
+Google or Apple under **Profile → How you sign in** to keep their aircraft and
+records in the same account. See [account and sign-in help](https://mytaillog.com/help#profile).
 
 > **This tool is an index and decision-support layer, not the legal record.**
 > The physical logbooks remain the system of record per **14 CFR 91.417**.

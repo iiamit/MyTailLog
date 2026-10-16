@@ -137,7 +137,7 @@ const ROWS: { axis: string; cells: string[] }[] = [
       "Yes",
       "No",
       "Usually web-only",
-      "Free iPhone/iPad app on the App Store: offline records, capture and queued updates; no native Android app",
+      "Free iPhone, iPad, and Android apps: offline records, capture, and queued updates",
     ],
   },
   {
@@ -283,9 +283,8 @@ export default function ComparePage() {
               scheduler would cost the records depth that&apos;s the entire point of this.
             </li>
             <li>
-              <strong>Native mobile is iPhone and iPad only.</strong> The free app is available on
-              the App Store. Sync once to browse records, capture pages and queue updates offline.
-              AI extraction and Ask need a connection. There is no native Android app.
+              <strong>AI extraction and Ask need a connection.</strong> The free iPhone, iPad, and
+              Android apps can browse synced records, capture pages, and queue updates offline.
             </li>
           </ul>
         </MarketingSection>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
-import { APP_STORE_URL } from "@/lib/appStore";
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/appStore";
 import shotReview from "../screenshots/review.png";
 import shotStatus from "../screenshots/status.png";
 import shotAsk from "../screenshots/ask.png";
@@ -230,7 +230,7 @@ const INDEX: { group: string; items: React.ReactNode[] }[] = [
           developer portal
         </Link>
       </>,
-      "A free iPhone and iPad app on the App Store, with offline records and capture",
+      "Free iPhone, iPad, and Android apps with offline records and capture",
       "MIT licence — run the whole thing yourself",
     ],
   },
@@ -310,11 +310,16 @@ export default async function Home() {
         <div className="border-b border-accent/30 bg-accent-soft">
           <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 py-4`}>
             <p className="text-sm text-ink">
-              <strong>Now on the App Store.</strong> Your aircraft records, ready for the hangar.
+              <strong>Now on the App Store and Google Play.</strong> Your aircraft records, ready for the hangar.
             </p>
-            <a href={APP_STORE_URL} className={`rounded-md bg-accent px-4 py-3 text-sm font-semibold text-bg hover:opacity-90 ${FOCUS}`}>
-              Download for iPhone &amp; iPad
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <a href={APP_STORE_URL} className={`rounded-md bg-accent px-4 py-3 text-sm font-semibold text-bg hover:opacity-90 ${FOCUS}`}>
+                Download for iPhone &amp; iPad
+              </a>
+              <a href={PLAY_STORE_URL} className={`rounded-md bg-accent px-4 py-3 text-sm font-semibold text-bg hover:opacity-90 ${FOCUS}`}>
+                Download for Android
+              </a>
+            </div>
           </div>
         </div>
         {/* ── Hero ───────────────────────────────────────────────────── */}
@@ -377,8 +382,10 @@ export default async function Home() {
 
               {!user && (
                 <p className="mt-4 text-[13.5px] text-faint">
-                  Email link or a password — one page, no card, nothing to
-                  cancel. Every new account already has a demo aircraft in it
+                  Continue with Google or Apple on the web, or use an email link
+                  or password. Already have an account? Sign in with email first,
+                  then connect Google or Apple in Profile to keep your aircraft
+                  and records together. Every new account already has a demo aircraft in it
                   (<D>N734DM</D>, a fictional 1978 Cessna 172N with decades of
                   history), so there is something to poke at before you scan
                   anything of your own.
@@ -618,14 +625,12 @@ export default async function Home() {
               </div>
               <div>
                 <dt className="font-medium text-ink">
-                  Native mobile is iPhone and iPad only
+                  Some tasks still need a connection
                 </dt>
                 <dd className="mt-1.5 text-[14px] leading-relaxed text-dim">
-                  The free app is available on the App Store. Sync an aircraft
-                  once to browse its records offline, capture pages, and record
-                  updates that upload on the next sync. AI extraction and Ask
-                  need a connection. There is no native Android app; the web app
-                  works in a browser.
+                  The free iPhone, iPad, and Android apps let you browse records
+                  offline, capture pages, and queue updates after an initial
+                  sync. AI extraction and Ask need a connection.
                 </dd>
               </div>
               <div>
@@ -658,11 +663,14 @@ export default async function Home() {
             <p className="max-w-xl leading-relaxed text-dim">
               {user
                 ? "Pick up where you left off — capture a page, review what's waiting, or check what's coming due."
-                : "Sign in with an email link or a password. Nothing to install, no card, and a demo aircraft is already loaded so you can look around first."}
+                : "Continue with Google or Apple on the web, or use an email link or password. No card, and a demo aircraft is ready to explore."}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <a href={APP_STORE_URL} className={`rounded-md border border-line px-5 py-3 text-ink hover:border-accent ${FOCUS}`}>
                 Download on the App Store
+              </a>
+              <a href={PLAY_STORE_URL} className={`rounded-md border border-line px-5 py-3 text-ink hover:border-accent ${FOCUS}`}>
+                Get it on Google Play
               </a>
               <Link
                 href={primary.href}
