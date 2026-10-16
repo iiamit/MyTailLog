@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { APP_STORE_URL } from "@/lib/appStore";
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/appStore";
 import { AccountShell } from "@/components/shell/AccountShell";
 import {
   SparklesIcon,
@@ -105,13 +105,14 @@ const SECTIONS: Section[] = [
   {
     id: "mobile",
     icon: <SparklesIcon />,
-    title: "iPhone & iPad app",
+    title: "Mobile apps",
     body: (
       <>
         <p>
-          Download the free <L href={APP_STORE_URL}>iPhone / iPad app from the App Store</L>.
-          Sync your aircraft once to browse records and capture updates offline, even when the
-          hangar has no signal. Requires iOS or iPadOS 15.6 or later. AI extraction and Ask need a connection.
+          Download the free <L href={APP_STORE_URL}>iPhone / iPad app from the App Store</L> or{" "}
+          <L href={PLAY_STORE_URL}>Android app from Google Play</L>. Sync your aircraft once to
+          browse records and capture updates offline, even when the hangar has no signal. The
+          iPhone and iPad app requires iOS or iPadOS 15.6 or later. AI extraction and Ask need a connection.
         </p>
         <p>
           <strong>Status</strong> answers &ldquo;can I fly this?&rdquo; without a connection: current
@@ -156,7 +157,7 @@ const SECTIONS: Section[] = [
           registration, POH/AFM and weight &amp; balance — for a ramp check with no signal.{" "}
           <strong>PDFs open in the app</strong>, page by page, which matters because a registration
           or airworthiness certificate usually is one. Documents also go <em>in</em> from the phone —
-          from Files, iCloud, the camera, or by dragging a PDF onto an iPad — queued on the device
+          from Files, the camera, or by dragging a PDF onto an iPad — queued on the device
           with no signal, and attachable to the log entry they belong with.
         </p>
         <p>
@@ -183,7 +184,7 @@ const SECTIONS: Section[] = [
           resolve squawks and add documents — all offline, saved on the device and uploaded on the next
           sync. If someone changed the same row on the web meanwhile, the phone shows you both versions
           rather than picking a winner. Your account and aircraft are shared between the web and
-          native app. Download it directly from the App Store; no TestFlight invitation is needed.
+          native app. Both stores offer the public release; no test invitation is needed.
         </Effects>
       </>
     ),
@@ -1077,13 +1078,34 @@ const SECTIONS: Section[] = [
   {
     id: "profile",
     icon: <UserIcon />,
-    title: "Profile & sign-in",
+    title: "Account & sign-in",
     body: (
-      <p>
-        Sign in with a magic link (no password) or set a password to use either. Manage your name,
-        A&amp;P/IA certificate number, email, and <L href="#notifications">notification settings</L>{" "}
-        from <L href="/profile">Profile</L>.
-      </p>
+      <>
+        <p>
+          On the website, <L href="/login">sign in or create an account</L> with Google, Apple,
+          an email magic link, or email and password. The Android app offers Google sign-in;
+          the iPhone app also offers Apple sign-in once its updated build is installed. Email
+          sign-in remains available in both apps.
+        </p>
+        <p className="mt-2">
+          <strong>Already have aircraft here?</strong> Sign in with your original email method
+          first. On the web, open <L href="/profile">Profile → How you sign in</L> and choose{" "}
+          <strong>Connect</strong> beside Google or Apple. In an updated mobile app, open{" "}
+          <strong>Account → Connect Google/Apple sign-in</strong>. Complete the provider prompt
+          and return to MyTailLog. When it says <strong>Connected</strong>, that method opens your
+          existing account with the same aircraft and records. This also works if Apple hides
+          your email or your provider uses a different address.
+        </p>
+        <p className="mt-2">
+          If you started a separate account by mistake, sign out and return to the account
+          that already has your aircraft before connecting a provider. Connecting a sign-in
+          method does not merge two accounts. You can still use your original magic link or
+          password afterward. To reset a password, enter your email on the sign-in page,
+          choose <strong>Password → Forgot password?</strong>, then follow the email link.
+          In Profile you can also set or change a password, change your email, and manage
+          your name, A&amp;P/IA certificate number, and <L href="#notifications">notifications</L>.
+        </p>
+      </>
     ),
   },
   {

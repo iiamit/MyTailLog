@@ -4,6 +4,17 @@ Notable changes to MyTailLog, newest first. Versions are calendar-based
 (`APP_VERSION`, shown in the app header). Started 2026-07; earlier history is in
 the git log.
 
+## 2026.10
+
+### Released — Android joins the public stores
+
+- [Download MyTailLog for Android on Google Play](https://play.google.com/store/apps/details?id=com.mytaillog.app). The [iPhone and iPad app remains on the App Store](https://apps.apple.com/us/app/mytaillog/id6795396758). Both use the same MyTailLog account and aircraft as the website.
+
+### Added — more ways to sign in
+
+- The website now offers Google and Apple sign-in alongside email magic links and passwords. Android adds Google sign-in; Apple sign-in is prepared for the next iOS App Store build.
+- Existing users can sign in with email first, then connect Google or Apple in Profile to keep their aircraft and records in the same account. [Account instructions](https://mytaillog.com/help#profile) explain the steps.
+
 ## 2026.09
 
 ### Released — MyTailLog is on the App Store

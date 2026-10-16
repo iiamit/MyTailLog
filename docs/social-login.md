@@ -1,10 +1,30 @@
-# Google and Apple sign-in rollout
+# Google and Apple sign-in
 
-The website offers Google, Apple, magic links, and email/password. Android offers
-Google, magic links, and email/password. iOS offers Apple, magic links, and
-email/password. Existing users should sign in with their original method first
-and choose **Connect** in Profile (web) or Account (mobile). That attaches the
-provider identity to the same Supabase user ID, so aircraft and records stay put.
+## For account holders
+
+The website offers Google, Apple, magic links, and email/password. Android
+offers Google and email sign-in. The iOS build adds Apple sign-in; install the
+updated App Store build when it becomes available. Your MyTailLog account is
+shared across the website and mobile apps.
+
+If you already have an account with aircraft or scans:
+
+1. Sign in using the email link or password you used before. On the website,
+   open **Profile → How you sign in**. In an updated mobile app, open **Account**.
+2. Select **Connect** beside Google or Apple, then complete that provider's
+   sign-in prompt. Return to MyTailLog and confirm it shows **Connected**.
+3. Sign out and use the connected method to check that your aircraft and records
+   appear in the same account. Your original email sign-in still works.
+
+Do this from the existing account even when the provider uses a different
+email address or Apple Hide My Email. Starting with the provider button on
+the sign-in page can create a separate account; connecting identities does not
+merge two existing accounts. If that happened, sign out and sign back in with
+the original email method before connecting the provider. For password help,
+use **Password → Forgot password?** on the website sign-in page; the recovery
+link returns you to Profile to set a new one. See the public [account guide](https://mytaillog.com/help#profile).
+
+## Provider rollout and configuration
 
 ## Provider setup (test first, then production)
 
