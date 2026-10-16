@@ -18,6 +18,10 @@ native configuration a fresh clone would otherwise lose.
 | `NSPhotoLibraryUsageDescription` | *MyTailLog accesses your photos to add existing logbook scans.* | Adding scans you already have. |
 | `UIBackgroundModes` | **absent** | We do NOT want background fetch. Reminders arrive as an APNs alert; nothing runs while the app is closed. Adding this key invites an App Review question with no good answer. |
 
+`npm run cap:sync` also runs `scripts/configure-ios-auth.sh` to register
+`com.mytaillog.app://auth/callback` in this generated plist. Run it before any
+manual archive so Apple sign-in and email magic links can return to the app.
+
 After editing, **Product → Clean Build Folder**. App Store Connect validates the
 *uploaded* plist, not the one on the device you've been testing with.
 

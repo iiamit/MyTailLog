@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "magic" | "password";
+type SocialProvider = "google" | "apple";
 
 function nextParam(): string {
   if (typeof window === "undefined") return "/dashboard";
@@ -23,6 +24,21 @@ export default function LoginPage() {
 
   const redirectTo = () =>
     `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam())}`;
+
+  async function socialSignIn(provider: SocialProvider) {
+    setBusy(true);
+    setError(null);
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: redirectTo() },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Sign-in could not be started.");
+      setBusy(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,6 +114,22 @@ export default function LoginPage() {
               ? "Sign up with your email and a password."
               : "Sign in with your email and password."}
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <button type="button" disabled={busy} onClick={() => socialSignIn("google")}
+          className="flex min-h-11 items-center justify-center gap-3 rounded-md border border-[#747775] bg-white px-4 font-medium text-[#1f1f1f] hover:opacity-90 disabled:opacity-60">
+          <img src="/brand/google-g.png" width="20" height="20" alt="" />
+          <span>Continue with Google</span>
+        </button>
+        <button type="button" disabled={busy} onClick={() => socialSignIn("apple")}
+          aria-label="Continue with Apple"
+          className="flex min-h-11 items-center justify-center rounded-md bg-black hover:opacity-90 disabled:opacity-60">
+          <img src="/brand/apple-continue.png" width="210" height="44" alt="" />
+        </button>
+        {error && <p role="alert" className="text-sm text-annun-red">{error}</p>}
+        <p className="text-xs text-faint">Already have an account? Sign in with email first, then connect Google or Apple in Profile to keep your records together.</p>
+        <p className="text-center text-xs text-faint">Or continue with email</p>
       </div>
 
       {/* Method toggle */}
@@ -177,8 +209,6 @@ export default function LoginPage() {
                   ? "Create account"
                   : "Sign in"}
           </button>
-
-          {error && <p className="text-sm text-annun-red">{error}</p>}
 
           {mode === "password" && (
             <div className="flex items-center justify-between text-sm">

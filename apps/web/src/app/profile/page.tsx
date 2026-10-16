@@ -165,6 +165,7 @@ export default async function ProfilePage() {
 
         <ProfileClient
           email={user.email ?? ""}
+          identities={(user.identities ?? []).map((identity) => identity.provider)}
           fullName={profile?.full_name ?? ""}
           notifyDue={Boolean(profile?.preferences?.notify_due)}
           alerts={resolveAlerts(profile?.preferences)}
