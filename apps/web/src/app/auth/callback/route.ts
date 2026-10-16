@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   // Only allow relative in-app paths (avoid open redirects).
   const nextParam = searchParams.get("next") ?? "/dashboard";
-  const next = nextParam.startsWith("/") ? nextParam : "/dashboard";
+  const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
 
   const origin = publicOrigin(request);
 
@@ -23,5 +23,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  if (next.startsWith("/profile") && searchParams.has("error")) {
+    return NextResponse.redirect(`${origin}/profile?identity=error`);
+  }
   return NextResponse.redirect(`${origin}/login?error=auth`);
 }

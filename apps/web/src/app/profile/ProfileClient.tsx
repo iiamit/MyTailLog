@@ -143,6 +143,7 @@ function AlertRow({
 
 export function ProfileClient({
   email,
+  identities,
   fullName,
   notifyDue,
   alerts,
@@ -152,6 +153,7 @@ export function ProfileClient({
   connectedApps,
 }: {
   email: string;
+  identities: string[];
   fullName: string;
   notifyDue: boolean;
   alerts: AlertSettings;
@@ -161,6 +163,21 @@ export function ProfileClient({
   connectedApps: ConnectedApp[];
 }) {
   const router = useRouter();
+  const [linking, setLinking] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
+  async function linkSignIn(provider: "google" | "apple") {
+    setLinking(provider);
+    setLinkError(null);
+    const { error } = await createClient().auth.linkIdentity({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/profile?identity=linked")}` },
+    });
+    if (error) {
+      setLinkError(error.message);
+      setLinking(null);
+    }
+  }
 
   // Connected OAuth apps (view + revoke)
   const [apps, setApps] = useState<ConnectedApp[]>(connectedApps);
@@ -468,6 +485,24 @@ export function ProfileClient({
           Magic links to <strong>{email}</strong> always work. Set a password to also sign in
           with one.
         </p>
+        <div className="flex flex-col gap-2 border-b border-line pb-4">
+          <p className="text-sm">Connect a sign-in method to this account. Your aircraft and records stay here.</p>
+          {(["google", "apple"] as const).map((provider) => (
+            <div key={provider} className="flex items-center justify-between gap-3 text-sm">
+              <span>{provider === "google" ? "Google" : "Apple"}</span>
+              {identities.includes(provider) ? (
+                <span className="text-annun-green">Connected</span>
+              ) : (
+                <button type="button" onClick={() => linkSignIn(provider)} disabled={linking !== null}
+                  className="rounded-md border border-line px-3 py-1.5 hover:border-accent disabled:opacity-60">
+                  {linking === provider ? "Connecting…" : "Connect"}
+                </button>
+              )}
+            </div>
+          ))}
+          {(linkError || search.get("identity") === "error") &&
+            <p role="alert" className="text-sm text-annun-red">{linkError ?? "Could not connect that sign-in method. Please try again."}</p>}
+        </div>
         <form onSubmit={changePassword} className="flex flex-col gap-2">
           <label className="text-sm font-medium">Set / change password</label>
           <input

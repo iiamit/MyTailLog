@@ -16,7 +16,9 @@ port = 54323
 
 [auth]
 enable_signup = true
+enable_manual_linking = true
 site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback**", "com.mytaillog.app://auth/callback"]
 
 [storage]
 # Logbook page images can be large phone photos; allow generous per-file size.

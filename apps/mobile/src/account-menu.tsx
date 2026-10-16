@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cacheUsage, clearCache } from "./blobs";
-import { CapacitorHttp } from "@capacitor/core";
+import { Capacitor, CapacitorHttp } from "@capacitor/core";
+import { startSocialAuth, type SocialProvider } from "./auth";
 import { color, text, radius, hit } from "./tokens";
 import { THEME_CHOICES, THEME_LABEL, useTheme, type ThemeChoice } from "./theme";
 import { unregisterPush, pushState, onPushState, type PushState } from "./push";
@@ -55,6 +56,30 @@ export function AccountMenu({
   const push = usePushState();
   const [testing, setTesting] = useState<string | null>(null);
   const [backup, setBackup] = useState<string | null>(null);
+  const [socialLinked, setSocialLinked] = useState(false);
+  const [socialMessage, setSocialMessage] = useState<string | null>(null);
+  const socialProvider: SocialProvider = Capacitor.getPlatform() === "ios" ? "apple" : "google";
+
+  useEffect(() => {
+    const refresh = () => void supabase.auth.getUserIdentities().then(({ data }) => {
+      setSocialLinked(Boolean(data?.identities.some((identity) => identity.provider === socialProvider)));
+    });
+    refresh();
+    const { data: listener } = supabase.auth.onAuthStateChange(() => refresh());
+    return () => listener.subscription.unsubscribe();
+  }, [socialProvider]);
+
+  async function connectSocial() {
+    setSocialMessage("Connecting…");
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) throw error ?? new Error("Sign in again to connect this account.");
+      await startSocialAuth(socialProvider, user.id);
+      setSocialMessage(null);
+    } catch (error) {
+      setSocialMessage(error instanceof Error ? error.message : "Could not connect this account.");
+    }
+  }
 
   async function runBackup() {
     if (!aircraftId) return;
@@ -87,6 +112,13 @@ export function AccountMenu({
         }}
       >
         <div style={{ ...text.meta, color: color.faint, marginBottom: 6 }}>{email}</div>
+
+        <MenuItem
+          label={socialLinked ? `${socialProvider === "apple" ? "Apple" : "Google"} sign-in connected` : `Connect ${socialProvider === "apple" ? "Apple" : "Google"} sign-in`}
+          detail={socialMessage ?? "Connect it while signed in so your existing aircraft and records stay with this account."}
+          onClick={() => { if (!socialLinked && !socialMessage) void connectSocial(); }}
+          disabled={socialLinked || socialMessage === "Connecting…"}
+        />
 
         <MenuItem label="Sync now" onClick={onSync} />
         {/* Only where reminders can actually arrive. The answer is the point:

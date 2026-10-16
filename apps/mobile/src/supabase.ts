@@ -72,6 +72,8 @@ export const supabase = createClient(url, anon, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    flowType: "pkce",
+    detectSessionInUrl: false,
     // In a desktop browser (`npm run dev`) there is no Keychain; supabase-js
     // falls back to local storage on its own.
     ...(native ? { storage: keychain } : {}),

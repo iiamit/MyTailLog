@@ -29,6 +29,7 @@ if [ ! -d "$WORKSPACE" ]; then
   echo "Missing $WORKSPACE; run 'npm run cap:sync' once first." >&2
   exit 1
 fi
+"$ROOT/scripts/configure-ios-auth.sh"
 
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/mytaillog-testflight.XXXXXX")
 trap 'rm -rf "$OUT"' EXIT HUP INT TERM

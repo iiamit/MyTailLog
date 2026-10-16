@@ -4,6 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { App as NativeApp } from "@capacitor/app";
 import { dismissTopSheet } from "./android-back";
 import { supabase } from "./supabase";
+import { AUTH_RETURN, listenForAuthReturns, startSocialAuth, type SocialProvider } from "./auth";
 import { pullAll } from "./sync";
 import { deliveryDecision } from "./sync-policy";
 import { initDb, applyChanges, resetLocal, wipeForSignOut, healMirrorIfStale, getCursor, setCursor, actionCount, captureCount, getRows } from "./db";
@@ -39,12 +40,15 @@ import { Screen, Brand, input, primary, dim, amber, faint, line, text, display }
 import { color } from "./tokens";
 import { AccountMenu, type OfflineDownloadStatus } from "./account-menu";
 import { FirstRun } from "./first-run";
+import appleButton from "../../web/public/brand/apple-continue.png";
+import googleG from "../../web/public/brand/google-g.png";
 
 const NATIVE = Capacitor.isNativePlatform();
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -52,14 +56,16 @@ export function App() {
       setReady(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
+    const stopLinks = listenForAuthReturns(setAuthError);
+    return () => { sub.subscription.unsubscribe(); stopLinks(); };
   }, []);
 
   if (!ready) return <Screen><p style={{ color: dim }}>Loading…</p></Screen>;
-  return session ? <Shell session={session} /> : <Login />;
+  return session ? <Shell session={session} /> : <Login authError={authError} />;
 }
 
-function Login() {
+function Login({ authError }: { authError: string | null }) {
+  const [mode, setMode] = useState<"password" | "signup" | "magic">("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -70,8 +76,22 @@ function Login() {
     setBusy(true);
     setError(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) setError(error.message);
+      if (mode === "magic") {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: email.trim(), options: { emailRedirectTo: AUTH_RETURN },
+        });
+        if (error) throw error;
+        setError("Check your email for a sign-in link.");
+      } else if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(), password, options: { emailRedirectTo: AUTH_RETURN },
+        });
+        if (error) throw error;
+        if (!data.session) setError("Check your email to confirm your account.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -79,16 +99,51 @@ function Login() {
     }
   }
 
+  async function socialSignIn(provider: SocialProvider) {
+    setBusy(true);
+    setError(null);
+    try { await startSocialAuth(provider); }
+    catch (e) { setError(e instanceof Error ? e.message : "Sign-in failed."); }
+    finally { setBusy(false); }
+  }
+
+  const provider = Capacitor.getPlatform() === "ios" ? "apple" : "google";
+
   return (
     <Screen>
       <Brand />
+      <button type="button" disabled={busy} onClick={() => socialSignIn(provider)}
+        aria-label={`Continue with ${provider === "apple" ? "Apple" : "Google"}`}
+        style={{ marginTop: 24, width: "100%", minHeight: 44, borderRadius: 8,
+          border: provider === "apple" ? "none" : "1px solid #747775",
+          background: provider === "apple" ? "#000" : "#fff",
+          color: "#1f1f1f", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+        {provider === "apple"
+          ? <img src={appleButton} width={210} height={44} alt="" />
+          : <><img src={googleG} width={20} height={20} alt="" />Continue with Google</>}
+      </button>
+      <p style={{ color: dim, fontSize: 12, lineHeight: 1.5 }}>
+        Already have an account? Sign in with email first, then connect {provider === "apple" ? "Apple" : "Google"} in Account to keep your records together.
+      </p>
+      <p style={{ color: dim, textAlign: "center", margin: "18px 0 0" }}>Or continue with email</p>
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        {(["password", "magic", "signup"] as const).map((choice) => (
+          <button key={choice} type="button" onClick={() => { setMode(choice); setError(null); }}
+            style={{ flex: 1, background: "transparent", color: mode === choice ? color.accent : dim,
+              border: `1px solid ${line}`, borderRadius: 8, padding: 8 }}>
+            {choice === "password" ? "Password" : choice === "magic" ? "Magic link" : "Sign up"}
+          </button>
+        ))}
+      </div>
       <form onSubmit={signIn} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24 }}>
         <input style={input} type="email" aria-label="Email" placeholder="Email" autoCapitalize="none" autoCorrect="off"
           value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input style={input} type="password" aria-label="Password" placeholder="Password"
-          value={password} onChange={(e) => setPassword(e.target.value)} />
-        <button style={primary} disabled={busy || !email || !password}>{busy ? "Signing in…" : "Sign in"}</button>
-        {error && <p style={{ color: "#ff6b6b", fontSize: 13 }}>{error}</p>}
+        {mode !== "magic" && <input style={input} type="password" aria-label="Password" placeholder="Password"
+          value={password} onChange={(e) => setPassword(e.target.value)} />}
+        <button style={primary} disabled={busy || !email || (mode !== "magic" && !password)}>
+          {busy ? "Working…" : mode === "magic" ? "Send magic link" : mode === "signup" ? "Create account" : "Sign in"}
+        </button>
+        {(error || authError) && <p role="alert" style={{ color: "#ff6b6b", fontSize: 13 }}>{error || authError}</p>}
       </form>
     </Screen>
   );
