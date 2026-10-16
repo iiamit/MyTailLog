@@ -22,9 +22,9 @@ function promoteDraft(releases, versionCode) {
   return [{ ...draft, status: 'completed' }]
 }
 
-function closedRelease(internalReleases, versionCode) {
+function promotedRelease(internalReleases, versionCode) {
   if (!internalReleases.some(release => release.status === 'completed' && release.versionCodes?.includes(String(versionCode)))) {
-    throw new Error(`versionCode ${versionCode} must be released internally before closed testing`)
+    throw new Error(`versionCode ${versionCode} must be released internally before promotion`)
   }
   return [{ status: 'completed', versionCodes: [String(versionCode)] }]
 }
@@ -64,12 +64,12 @@ async function main(mode) {
       { status: 'completed', versionCodes: ['3'] },
     ])
     assert.throws(() => promoteDraft([{ status: 'completed', versionCodes: ['2'] }], 3), /No internal draft/)
-    assert.deepEqual(closedRelease([{ status: 'completed', versionCodes: ['6'] }], 6), [{ status: 'completed', versionCodes: ['6'] }])
-    assert.throws(() => closedRelease([{ status: 'completed', versionCodes: ['5'] }], 6), /released internally/)
+    assert.deepEqual(promotedRelease([{ status: 'completed', versionCodes: ['6'] }], 6), [{ status: 'completed', versionCodes: ['6'] }])
+    assert.throws(() => promotedRelease([{ status: 'completed', versionCodes: ['5'] }], 6), /released internally/)
     console.log('Play draft release check passed')
     return
   }
-  if (!['check', 'draft', 'internal', 'closed'].includes(mode)) throw new Error('Use: node scripts/play.mjs check|draft|internal|closed')
+  if (!['check', 'draft', 'internal', 'closed', 'production'].includes(mode)) throw new Error('Use: node scripts/play.mjs check|draft|internal|closed|production')
   const token = await accessToken()
   const api = async (method, url, body) => {
     const response = await fetch(url, {
@@ -106,6 +106,8 @@ async function main(mode) {
       console.log(`Internal releases: ${(internal?.releases || []).map(release => `${release.status} (${release.versionCodes.join(', ')})`).join('; ') || 'none'}`)
       const closed = (tracks.tracks || []).find(track => track.track === 'alpha')
       console.log(`Closed-test releases: ${(closed?.releases || []).map(release => `${release.status} (${release.versionCodes.join(', ')})`).join('; ') || 'none'}`)
+      const production = (tracks.tracks || []).find(track => track.track === 'production')
+      console.log(`Production releases: ${(production?.releases || []).map(release => `${release.status} (${release.versionCodes.join(', ')})`).join('; ') || 'none'}`)
       const listings = await api('GET', `${editUrl}/listings`).catch(() => ({ listings: [] }))
       for (const listing of listings.listings || []) {
         const images = await Promise.all(['featureGraphic', 'phoneScreenshots', 'sevenInchScreenshots', 'tenInchScreenshots'].map(async type => {
@@ -129,13 +131,13 @@ async function main(mode) {
       console.log(`Released versionCode ${versionCode} to the internal-testing track.`)
       return
     }
-    if (mode === 'closed') {
-      const closed = (tracks.tracks || []).find(track => track.track === 'alpha')
-      if (!closed) throw new Error('Play has no closed-testing alpha track')
-      await api('PUT', `${editUrl}/tracks/alpha`, { track: 'alpha', releases: closedRelease(internal.releases || [], versionCode) })
+    if (mode === 'closed' || mode === 'production') {
+      const trackName = mode === 'closed' ? 'alpha' : 'production'
+      if (!(tracks.tracks || []).some(track => track.track === trackName)) throw new Error(`Play has no ${trackName} track`)
+      await api('PUT', `${editUrl}/tracks/${trackName}`, { track: trackName, releases: promotedRelease(internal.releases || [], versionCode) })
       await commit(editUrl)
       committed = true
-      console.log(`Released versionCode ${versionCode} to the closed-testing track.`)
+      console.log(`Released versionCode ${versionCode} to the ${mode} track.`)
       return
     }
     const bundles = await api('GET', `${editUrl}/bundles`)

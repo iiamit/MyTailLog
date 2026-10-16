@@ -16,6 +16,7 @@
     "play:draft": "npm run android:bundle && node scripts/play.mjs draft",
     "play:internal": "node scripts/play.mjs internal",
     "play:closed": "node scripts/play.mjs closed",
+    "play:production": "node scripts/play.mjs production",
     "ios": "npm run cap:sync && cap open ios",
     "testflight": "./scripts/testflight.sh"
   },
