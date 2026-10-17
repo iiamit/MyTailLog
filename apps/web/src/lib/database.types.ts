@@ -660,6 +660,8 @@ export type HoursReading = {
 export type Database = {
   public: {
     Tables: {
+      announcement: { Row: { id: string; title: string; body: string; link_path: string | null; published_at: string; expires_at: string | null; created_at: string }; Insert: { title: string; body: string; link_path?: string | null; expires_at?: string | null }; Update: Partial<{ title: string; body: string; link_path: string | null; expires_at: string | null }>; Relationships: [] };
+      announcement_dismissal: { Row: { announcement_id: string; user_id: string; dismissed_at: string }; Insert: { announcement_id: string; user_id: string }; Update: never; Relationships: [] };
       profile: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile>; Relationships: [] };
       signing_credential: { Row: SigningCredential; Insert: Partial<SigningCredential>; Update: Partial<SigningCredential>; Relationships: [] };
       entry_signing_challenge: { Row: EntrySigningChallenge; Insert: Partial<EntrySigningChallenge>; Update: Partial<EntrySigningChallenge>; Relationships: [] };
