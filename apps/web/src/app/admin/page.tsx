@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { AdminGrowthFunnel, AdminUserStat } from "@/lib/database.types";
-import { saveSharedAiProvider } from "./actions";
+import { endAnnouncement, publishAnnouncement, saveSharedAiProvider } from "./actions";
 
 export const metadata = { title: "Admin — MyTailLog" };
 
@@ -33,8 +33,11 @@ export default async function AdminPage() {
   const rows = (data ?? []) as AdminUserStat[];
   const { data: aiSetting } = await svc.from("app_setting").select("value").eq("key", "shared_ai_provider").maybeSingle();
   const { data: funnelData } = await svc.from("admin_growth_funnel").select("*").single();
+  const { data: announcements } = await svc.from("announcement").select("id,title,body,published_at,expires_at").order("published_at", { ascending: false }).limit(10);
   const funnel = funnelData as AdminGrowthFunnel | null;
   const sharedAiProvider = aiSetting?.value ?? "anthropic";
+  // eslint-disable-next-line react-hooks/purity -- server component: one timestamp for this request
+  const now = Date.now();
 
   const totals = rows.reduce(
     (t, r) => ({
@@ -108,6 +111,25 @@ export default async function AdminPage() {
           </div>
         </section>
       )}
+
+      <section className="panel mb-8 p-4">
+        <h2 className="font-semibold">In-app updates</h2>
+        <p className="mb-3 text-xs text-faint">Publish a short message to signed-in web, iOS, and Android users. Each account can dismiss it once across devices.</p>
+        <form action={publishAnnouncement} className="flex flex-col gap-3">
+          <input name="title" required maxLength={120} placeholder="Title" aria-label="Title" className="rounded-md border border-line bg-bg px-3 py-2 text-sm" />
+          <textarea name="body" required maxLength={500} rows={3} placeholder="What's new?" aria-label="Message" className="rounded-md border border-line bg-bg px-3 py-2 text-sm" />
+          <input name="link_path" placeholder="Optional link, e.g. /whats-new" aria-label="Link path" className="rounded-md border border-line bg-bg px-3 py-2 text-sm" />
+          <button className="self-start rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg">Publish to all users</button>
+        </form>
+        {(announcements ?? []).length > 0 && <div className="mt-5 space-y-3 border-t border-line pt-4">
+          {(announcements ?? []).map((notice) => (
+            <div key={notice.id} className="flex items-start justify-between gap-3 text-sm">
+              <div><strong>{notice.title}</strong><p className="whitespace-pre-line text-dim">{notice.body}</p><span className="text-xs text-faint">{notice.published_at.slice(0, 10)} · {notice.expires_at && Date.parse(notice.expires_at) <= now ? "Ended" : "Active"}</span></div>
+              {(!notice.expires_at || Date.parse(notice.expires_at) > now) && <form action={endAnnouncement}><input type="hidden" name="id" value={notice.id} /><button className="text-xs text-accent underline">End</button></form>}
+            </div>
+          ))}
+        </div>}
+      </section>
 
       <section className="panel mb-8 p-4">
         <h2 className="font-semibold">Shared AI</h2>

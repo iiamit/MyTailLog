@@ -40,6 +40,7 @@ import { Screen, Brand, input, primary, dim, amber, faint, line, text, display }
 import { color } from "./tokens";
 import { AccountMenu, type OfflineDownloadStatus } from "./account-menu";
 import { FirstRun } from "./first-run";
+import { Announcement } from "./announcement";
 import appleButton from "../../web/public/brand/apple-continue.png";
 import googleG from "../../web/public/brand/google-g.png";
 
@@ -558,6 +559,7 @@ function Shell({ session }: { session: Session }) {
         </div>
       )}
       {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      <Announcement userId={session.user.id} />
       {accountMenu}
     </>
   );
