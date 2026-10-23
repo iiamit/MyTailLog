@@ -143,9 +143,11 @@ test("currentMetersFrom: a meter replacement is stitched, so time doesn't run ba
 
   const stitched = currentMetersFrom(readings, resets);
   assert.equal(stitched.tach.tach, 1240, "post-reset reading must be lifted onto the total scale");
+  assert.equal(stitched.face.tach, 40, "the app must display and prefill the replacement meter's face reading");
 
   // Without the reset declared, the same rows read as the meter going backwards.
   assert.equal(currentMetersFrom(readings, []).tach.tach, 40);
+  assert.equal(currentMetersFrom(readings, []).face.tach, 40);
 });
 
 test("currentMetersFrom: toTotalHours lifts a stored scalar onto the readings' scale", () => {
