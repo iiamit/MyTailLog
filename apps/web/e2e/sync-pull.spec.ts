@@ -191,9 +191,8 @@ test("sync/pull: the feed is RLS-scoped — another tenant's device pulls nothin
       extraHTTPHeaders: { Authorization: `Bearer ${session.session!.access_token}` },
     });
     const res = await outsider.get("/api/sync/pull?cursor=0&limit=1000");
-    expect(res.status(), "Bearer auth must be accepted (the mobile path)").toBe(200);
-
-    const body = (await res.json()) as Pull;
+    const body = (await res.json()) as Pull & { error?: string };
+    expect(res.status(), `Bearer auth must be accepted (the mobile path): ${body.error ?? ""}`).toBe(200);
     const ours = body.changes.filter(
       (c) => c.id === scratch.id || (c.op === "upsert" && c.row.aircraft_id === scratch.id),
     );

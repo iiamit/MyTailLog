@@ -30,13 +30,25 @@ export async function GET(req: Request) {
   const cursor = Math.max(0, Number.parseInt(params.get("cursor") || "0", 10) || 0);
   const limit = Math.min(LIMIT_MAX, Math.max(1, Number.parseInt(params.get("limit") || "", 10) || LIMIT_DEFAULT));
 
-  // RLS scopes change_log to aircraft the user can access.
-  const { data: feed, error } = await supabase
+  const { data: aircraft, error: accessError } = await supabase.from("aircraft").select("id").limit(101);
+  if (accessError) return NextResponse.json({ error: accessError.message }, { status: 500 });
+
+  let query = supabase
     .from("change_log")
     .select("seq, table_name, row_id, op")
     .gt("seq", cursor)
     .order("seq", { ascending: true })
     .limit(limit);
+
+  // Avoid evaluating access checks against every other tenant's historical rows.
+  // RLS still authorizes each candidate, including shared AD references and deleted aircraft.
+  // shortcut: over 100 aircraft uses the original RLS-only query; use a DB-side join if fleets need it.
+  if ((aircraft ?? []).length <= 100) {
+    const scope = ["aircraft_id.is.null", `owner_id.eq.${user.id}`];
+    if (aircraft?.length) scope.push(`aircraft_id.in.(${aircraft.map((a) => a.id).join(",")})`);
+    query = query.or(scope.join(","));
+  }
+  const { data: feed, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const rows = (feed ?? []) as ChangeRow[];
