@@ -164,6 +164,8 @@ export type CurrentMeters = {
   tach: CurrentTach;
   hobbs: CurrentHobbs;
   airframe: CurrentAirframe;
+  /** Instrument readings for display and entry; the fields above stay on the continuous total scale for forecasts. */
+  face: Record<Meter, number | null>;
   // Meter value at a maintenance item's last-done date — the same-meter baseline
   // its countdown anchors to (so oil advances on hobbs even if recorded in tach).
   baselineFor: (date: string | null, meter: Meter) => number | null;
@@ -192,10 +194,18 @@ export type CurrentMeters = {
  */
 export function currentMetersFrom(raw: Reading[], resets: MeterReset[]): CurrentMeters {
   const readings = normalizeReadings(applyResets(raw, resets));
+  const tach = currentTach(readings);
+  const hobbs = currentHobbs(readings);
+  const airframe = currentAirframe(readings);
   return {
-    tach: currentTach(readings),
-    hobbs: currentHobbs(readings),
-    airframe: currentAirframe(readings),
+    tach,
+    hobbs,
+    airframe,
+    face: {
+      tach: toFace(tach.tach, tach.asOf, "tach", resets),
+      hobbs: toFace(hobbs.hobbs, hobbs.asOf, "hobbs", resets),
+      airframe: toFace(airframe.airframe, airframe.asOf, "airframe", resets),
+    },
     baselineFor: (date, meter) => meterValueAtDate(readings, date, meter),
     toTotalHours: (value, date, meter) => toTotal(value, date, meter, resets),
     utilization: computeUtilization(raw, resets),

@@ -249,9 +249,9 @@ async function shareSummary(aircraft: Aircraft): Promise<string> {
   const load = current ? usefulLoad(current.empty_weight, current.max_gross_weight) : null;
 
   const meters = [
-    air.meters.tach.tach != null ? `tach ${air.meters.tach.tach}${air.meters.tach.estimated ? " est." : ""}` : null,
-    air.meters.hobbs.hobbs != null ? `hobbs ${air.meters.hobbs.hobbs}${air.meters.hobbs.estimated ? " est." : ""}` : null,
-    air.meters.airframe.airframe != null ? `airframe ${air.meters.airframe.airframe}` : null,
+    air.meters.face.tach != null ? `tach ${air.meters.face.tach}${air.meters.tach.estimated ? " est." : ""}` : null,
+    air.meters.face.hobbs != null ? `hobbs ${air.meters.face.hobbs}${air.meters.hobbs.estimated ? " est." : ""}` : null,
+    air.meters.face.airframe != null ? `airframe ${air.meters.face.airframe}` : null,
   ].filter((m): m is string => !!m);
 
   const body = maintenanceSummaryText({

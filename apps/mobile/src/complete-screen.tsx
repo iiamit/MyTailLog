@@ -76,8 +76,7 @@ export function CompleteItem({
     computeAirworthiness(aircraft.id)
       .then((d) => {
         const current = d.meters[meter];
-        const v = meter === "hobbs" ? d.meters.hobbs.hobbs
-          : meter === "airframe" ? d.meters.airframe.airframe : d.meters.tach.tach;
+        const v = d.meters.face[meter];
         if (!cancelled && !current.estimated && v != null) setHours(v.toFixed(1));
       })
       .catch(() => {});
