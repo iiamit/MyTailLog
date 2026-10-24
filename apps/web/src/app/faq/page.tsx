@@ -70,8 +70,8 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
             You can remove them at any time.
           </li>
           <li>
-            <strong>Apps you consent to</strong> over our OAuth 2.1 API — read-only, limited to the
-            aircraft you picked on the consent screen, and{" "}
+            <strong>Apps you consent to</strong> over our OAuth 2.1 API — limited to the permissions and
+            aircraft covered by your consent, and{" "}
             <strong>never your log entries or scans</strong>. Revoke any of them under Profile →
             Connected apps.
           </li>
