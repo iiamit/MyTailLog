@@ -274,10 +274,6 @@ export function ProfileClient({
     }
   }
 
-  // An app the user already granted hours:write. Taken from the grant itself so
-  // this never hardcodes a partner name.
-  const hoursWriter = connectedApps.find((a) => a.scopes.includes("hours:write"));
-
   // MyFlightBook connection
   const search = useSearchParams();
   const oauthStatus = search.get("mfb");
@@ -551,17 +547,12 @@ export function ProfileClient({
       {/* MyFlightBook */}
       <div className={card}>
         <h2 className="font-semibold">MyFlightBook</h2>
-        {/* Both directions carry the same two names, and the grant below is the
-            easier one to make, so people arrive here having done that and read
-            "Not connected" as a bug. Name the other link explicitly. */}
-        {hoursWriter && !mfb.connected && (
+        {!mfb.connected && connectedApps.some((a) => a.name.toLowerCase().includes("myflightbook")) && (
           <p className="rounded-md border border-line bg-panel2 p-3 text-xs text-dim">
-            <span className="font-medium text-ink">You don&apos;t need this.</span>{" "}
-            <span className="font-medium text-ink">{hoursWriter.name}</span> can already add hours to your
-            aircraft — you granted it that under <span className="font-medium text-ink">Connected apps</span>{" "}
-            below, and it pushes them to you. This card is the older reverse setup, where MyTailLog reaches
-            into your MyFlightBook logbook instead. Only fill it in if you specifically want MyTailLog to do
-            the pulling.
+            MyFlightBook appears under <span className="font-medium text-ink">Connected apps</span> because
+            you gave it access to MyTailLog. That permission alone does not confirm that flight hours were
+            sent. To have MyTailLog pull hobbs and tach readings from MyFlightBook, connect below and use
+            Sync now.
           </p>
         )}
         <p className="text-xs text-faint">
@@ -892,12 +883,12 @@ export function ProfileClient({
         ))}
       </div>
 
-      {/* Connected apps (OAuth) — read-only access other apps hold to aircraft. */}
+      {/* Connected apps (OAuth) — access other apps hold to aircraft. */}
       {apps.length > 0 && (
         <div className={card}>
           <h2 className="font-semibold">Connected apps</h2>
           <p className="text-[13px] text-dim">
-            Apps you&apos;ve allowed to read your aircraft data. Revoking cuts off access immediately.
+            Apps you&apos;ve allowed to access your aircraft data. Revoking cuts off access immediately.
           </p>
           <ul className="flex flex-col divide-y divide-line">
             {apps.map((app) => (
