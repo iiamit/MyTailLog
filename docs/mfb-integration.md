@@ -1,13 +1,15 @@
 # MyTailLog ↔ MyFlightBook — bidirectional integration
 
-**Status:** draft for coordination with the MyFlightBook team.
-**Owner (MyTailLog):** Ian Amit. **Scope:** two-way, read-only data sync between
+**Status:** MyTailLog endpoints and MyFlightBook's two-way client are implemented;
+production execution of MyFlightBook's scheduled push has not been verified here.
+**Owner (MyTailLog):** Ian Amit. **Scope:** two-way data sync between
 a shared owner/operator's MyFlightBook (MFB) logbook and their MyTailLog (MTL)
 maintenance records.
 
 MTL is an aircraft **logbook digitization + maintenance/airworthiness tracker**;
 MFB is a **pilot logbook**. They describe the same aircraft from two angles
-(flying vs. maintenance), joined by **tail number**. Neither writes to the other.
+(flying vs. maintenance), joined by **tail number**. MyFlightBook reads maintenance
+data from MyTailLog and writes flight-hour readings back with the owner's consent.
 
 ---
 
@@ -15,19 +17,22 @@ MFB is a **pilot logbook**. They describe the same aircraft from two angles
 
 | Direction | Data | Who is the OAuth client | Status |
 |---|---|---|---|
-| **A. MFB → MTL** | **hobbs / tach** high-watermark push | **MFB** (client of MTL, `hours:write`) | 🟢 MTL endpoint live; MFB builds the push (sketch below). Old per-user pull still live, being retired |
-| **B. MTL → MFB** | **Airworthiness** (AD/inspection status, due dates), equipment, hours, oil, W&B | **MFB** (client of MTL) | ✅ live (MFB pulls via `Update from MyTailLog`) |
+| **A. MFB → MTL** | **hobbs / tach** high-watermark push | **MFB** (client of MTL, `hours:write`) | Implemented in both codebases; scheduled production execution and individual deliveries must be checked. Optional per-user pull remains available |
+| **B. MTL → MFB** | **Airworthiness** (AD/inspection status, due dates, current tach) | **MFB** (client of MTL) | Implemented (MFB pulls via `Update from MyTailLog`) |
 
-"Bidirectional" = A + B. Both now run over the **same MTL grant** (MFB is the
-OAuth client of MTL in both directions); A just adds the `hours:write` scope.
+"Bidirectional" = A + B. Both use the **same MTL grant** (MFB is the OAuth client
+of MTL in both directions), provided that grant includes `hours:write`. In
+MyFlightBook, authorizing MyTailLog stores the token; the user must then run
+**Update from MyTailLog** on My Aircraft to create the external-maintenance
+record used by the hours-push job. A grant alone is not proof that hours arrived.
 
 ---
 
 ## Direction A — hours (MFB → MTL)
 
-**Now: MFB pushes** (2026-07). MFB is already an MTL OAuth client (Direction B);
-adding the **`hours:write`** scope lets it POST hobbs/tach to MTL with the same
-grant. MFB's nightly job finds any aircraft whose latest ending hobbs/tach beat
+**Implemented in MFB code** (2026-07). MFB requests **`hours:write`** alongside
+read scopes and can POST hobbs/tach to MTL with the same grant. Its local scheduled
+endpoint finds aircraft whose latest ending hobbs/tach beat
 its last-seen value and, for each MTL-tracking user, pushes to:
 
 ```
@@ -69,18 +74,17 @@ GET /api/v1/aircraft/{id}/hours  →  {
 `/airworthiness` carries the same `current_tach` / `current_hobbs`; its inspection/
 AD urgency is judged on the (possibly estimated) tach.
 
-**Was: MTL pulls.** Each MTL user registered their **own** MFB OAuth app under
-Profile → MyFlightBook and MTL pulled recent flights (`src/lib/myflightbook.ts` +
-`src/lib/mfbSync.ts`, manual button + daily cron). The push removes that
-per-user-app friction; the pull can be retired once the push is adopted.
+**Optional legacy path: MTL pulls.** Each MTL user registers their **own** MFB OAuth app under
+Profile → MyFlightBook and MTL pulls recent flights (`src/lib/myflightbook.ts` +
+`src/lib/mfbSync.ts`, manual button + daily cron). This is independent of the
+MyFlightBook-side grant and is not required for the intended two-way path.
 
-### MFB-side push sketch (suggested)
+### Original MFB-side push sketch (historical proposal)
 
-Two prerequisites on MFB's side: (1) add **`hours:write`** to the authorize scope
-string (users re-consent once — the MTL consent screen shows "read and update");
-(2) a small **`MTLWatermark`** table `(username, idaircraft, hobbs, tach,
-latestFlightID, latestFlightDate)` for "only push what's new" — same shape as the
-existing `externalmaintenance`/TachTime state.
+MyFlightBook implemented `hours:write` and uses its existing `externalmaintenance`
+high-water marks. The sketch below is not its deployed implementation. Current
+source: [MyTailLogClient.cs](https://github.com/ericberman/MyFlightbookWeb/blob/master/MyFlightbook.Web/AppCode/oAuthServices/MyTailLogClient.cs),
+[ExternalMaintenanceRecord.cs](https://github.com/ericberman/MyFlightbookWeb/blob/master/MyFlightbook.AircraftSupport/ExternalMaintenanceRecord.cs).
 
 ```csharp
 // Nightly: push new hobbs/tach high-water marks to MyTailLog for every user who
@@ -213,7 +217,7 @@ this token's grant (a grant for aircraft A never reveals aircraft B). Rate limit
 
 Full developer guide: `https://mytaillog.com/developers/docs`.
 
-### Scopes (read-only, per aircraft)
+### Scopes (per aircraft or account-wide consent)
 | Scope | Data |
 |---|---|
 | `airworthiness:read` ⭐ | AD/SB compliance, inspection forecast, next-due, current hours, airworthy summary |
@@ -239,9 +243,9 @@ apply the same normalization when correlating an MFB aircraft with an MTL
 aircraft returned by `GET /api/v1/aircraft` (which includes `tail_number`).
 
 There is **no shared user identity** between the systems: the join is the
-aircraft (by tail) plus the owner's explicit consent on each side. A user
-connects MFB→MTL under their MTL profile (Direction A) and authorizes MFB→read
-under the consent screen (Direction B); the two are independent grants.
+aircraft (by tail) plus the owner's MTL consent. The MyFlightBook-side connection
+uses one MTL grant for both directions when it includes `hours:write`. The
+optional MTL-side pull uses a separate MFB OAuth grant.
 
 ---
 
@@ -267,24 +271,18 @@ under the consent screen (Direction B); the two are independent grants.
 
 ---
 
-## Open questions / coordination checklist (for MFB)
+## Coordination and verification checklist
 
-- **B1. Client provisioning:** self-serve at `/developers`, or MTL-provisioned
-  credentials? Supply redirect URI(s).
-- **B2. Scopes:** which of the six does MFB want for v1? (Airworthiness alone, or
-  the full set?)
-- **B3. Surface:** where does MTL airworthiness appear in MFB (aircraft page
-  badge? maintenance tab?) — informs cadence + which fields matter.
-- **B4. Cadence & refresh:** polling interval; want `offline_access` refresh
-  tokens for unattended pulls? Is 120 req/min/client enough?
-- **B5. Tail normalization:** confirm MFB can match on `[A-Z0-9]`-normalized
-  tails; flag any registries where that's ambiguous.
-- **B6. Reciprocity (Direction A): RESOLVED → MFB push.** MFB pushes hobbs/tach
-  via `hours:write` on the same MTL grant (sketch above); the per-user MFB-pull is
-  being retired. Remaining: MFB adds `hours:write` to its authorize scope + builds
-  the nightly push + watermark table.
-- **B7. Environments:** need a staging/sandbox MTL for MFB's integration testing,
-  or is a throwaway confidential client on prod sufficient?
+- Confirm the MFB grant includes `hours:write`; older grants may need re-consent.
+- Run Update from MyTailLog on MFB's My Aircraft page to create its
+  `externalmaintenance` row; the push query only scans aircraft with such a row.
+- Confirm MFB's local `PushHighWaterMaintenance` task runs in production and
+  check MTL's `oauth_access_log` for successful or denied `hours:write` calls.
+- Fix the published MFB client: the Hobbs reading currently takes its date and
+  flight ID from `Tach1` instead of `Hobbs1`; the MFB query also assumes a tach
+  high-water row exists when it converts nullable tach fields.
+- Jointly test a user with Hobbs-only flights, separate latest Hobbs/tach flights,
+  replaced tach, and an aircraft shared by multiple MFB users.
 
 ---
 
@@ -298,7 +296,6 @@ clearspace.
 
 ## MTL-side status
 
-Everything for Direction B is shipped and CI-tested (authorize → consent → token
-→ `/api/v1`, including the "grant for A never returns B" leak-proofing and
-confidential-secret verification). Reference: `docs/oauth-api-plan.md`. Remaining
-work is **coordination** with MFB (this checklist) + a joint end-to-end test.
+MTL's OAuth and `/api/v1` endpoints are shipped and CI-tested. The MFB client
+implements both directions; the production scheduler and end-to-end delivery
+still need verification. Reference: `docs/oauth-api-plan.md`.

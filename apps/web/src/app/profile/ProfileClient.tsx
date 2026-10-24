@@ -550,9 +550,10 @@ export function ProfileClient({
         {!mfb.connected && connectedApps.some((a) => a.name.toLowerCase().includes("myflightbook")) && (
           <p className="rounded-md border border-line bg-panel2 p-3 text-xs text-dim">
             MyFlightBook appears under <span className="font-medium text-ink">Connected apps</span> because
-            you gave it access to MyTailLog. That permission alone does not confirm that flight hours were
-            sent. To have MyTailLog pull hobbs and tach readings from MyFlightBook, connect below and use
-            Sync now.
+            you authorized it to access MyTailLog. That one authorization can also let MyFlightBook send
+            flight hours here. In MyFlightBook, use <span className="font-medium text-ink">Update from MyTailLog</span>{" "}
+            on My Aircraft to initialize the exchange, then check Meters here for a MyFlightBook reading.
+            The connection below is an optional, older way for MyTailLog to pull hours itself.
           </p>
         )}
         <p className="text-xs text-faint">
