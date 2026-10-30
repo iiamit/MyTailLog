@@ -9,7 +9,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "cap:sync": "vite build && cap sync ios && ./scripts/configure-ios-auth.sh",
+    "cap:sync": "vite build && cap sync ios && node scripts/prepare-ios-scene.cjs && ./scripts/configure-ios-auth.sh",
     "android:check": "npm run typecheck && npm run build && cap sync android && cd android && ./gradlew :app:assembleDebug --no-daemon --max-workers=1",
     "android:bundle": "./scripts/android-bundle.sh",
     "play:check": "node scripts/play.mjs check",
