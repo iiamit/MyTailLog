@@ -28,25 +28,27 @@ export APP_STORE_CONNECT_ISSUER_ID="00000000-0000-0000-0000-000000000000"
 export APP_STORE_CONNECT_KEY_PATH="$HOME/private_keys/AuthKey_ABC123DEF4.p8"
 ```
 
-The replacement-meter readings fix is **1.6.2**. From the latest `main`, upload its build with:
+The iOS 27 startup fix is **1.6.3**. From the latest `main`, upload its build with:
 
 ```bash
 cd apps/mobile
 npm run testflight
 ```
 
-The release script defaults to 1.6.2 and overrides the Xcode project's local version. To set a different marketing version for a later upload:
+The release script defaults to 1.6.3 and overrides the Xcode project's local version. To set a different marketing version for a later upload:
 
 ```bash
-npm run testflight -- 1.6.3
+npm run testflight -- 1.6.4
 ```
 
 The script builds the web assets, syncs Capacitor, assigns a UTC timestamp as a
 unique TestFlight build number, archives with Xcode, exports the IPA, and uploads
-it. Override the generated number only when necessary with
-`BUILD_NUMBER=123 npm run testflight -- 1.6.2`.
+it. During sync, it migrates an older generated iOS project to the scene lifecycle
+required by the iOS 27 SDK and stops before archiving if that migration is incomplete.
+For a manual Xcode archive, run `npm run cap:sync` first. Override the generated number only when necessary with
+`BUILD_NUMBER=123 npm run testflight -- 1.6.3`.
 
-After processing, create the **1.6.2** iOS version in App Store Connect, attach this build, add a short "What's New" note about corrected displayed and prefilled readings after a meter replacement, and submit it for App Review. The bundle identifier stays `com.mytaillog.app`, so existing App Store installs receive it as an update.
+After processing, create the **1.6.3** iOS version in App Store Connect, attach this build, add a short "What's New" note about improved launch compatibility on newer iOS versions, and submit it for App Review. The bundle identifier stays `com.mytaillog.app`, so existing App Store installs receive it as an update.
 
 The first run may require opening the workspace once and selecting the signing
 team. The API key handles App Store Connect authentication; the Mac still needs
