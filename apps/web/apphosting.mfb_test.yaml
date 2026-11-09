@@ -1,0 +1,86 @@
+# Firebase App Hosting environment name: mfb_test.
+# Use a separate Firebase project. This file overrides every production secret
+# inherited from apphosting.yaml; do not add a new secret to the base file
+# without deciding how it is isolated here as well.
+runConfig:
+  minInstances: 0
+  maxInstances: 1
+
+env:
+  # The test Supabase project is arpirbajxbrjbkldteaz. The anon key is public
+  # client configuration, but stays in Secret Manager to match the base setup.
+  - variable: NEXT_PUBLIC_SUPABASE_URL
+    value: https://arpirbajxbrjbkldteaz.supabase.co
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_SUPABASE_ANON_KEY
+    secret: MFB_TEST_SUPABASE_ANON_KEY
+    availability: [BUILD, RUNTIME]
+  - variable: SUPABASE_SECRET_KEY
+    secret: MFB_TEST_SUPABASE_SECRET_KEY
+    availability: [RUNTIME]
+  - variable: ENCRYPTION_KEY
+    secret: MFB_TEST_ENCRYPTION_KEY
+    availability: [RUNTIME]
+  - variable: OIDC_JWKS
+    secret: MFB_TEST_OIDC_JWKS
+    availability: [RUNTIME]
+
+  # OAuth issuer, consent links, and all public redirects must name the test
+  # origin at both build and runtime. Connect the domain before the live test.
+  - variable: NEXT_PUBLIC_SITE_URL
+    value: https://mfb-test.mytaillog.com
+    availability: [BUILD, RUNTIME]
+
+  # App Hosting rejects empty values, so use invalid test-only placeholders for
+  # providers we do not configure here. Their requests cannot authenticate.
+  - variable: ANTHROPIC_API_KEY
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: OPENAI_API_KEY
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: RESEND_API_KEY
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: CRON_SECRET
+    secret: MFB_TEST_CRON_SECRET
+    availability: [RUNTIME]
+  - variable: DROPBOX_CLIENT_ID
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: DROPBOX_CLIENT_SECRET
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: GOOGLE_DRIVE_CLIENT_ID
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: GOOGLE_DRIVE_CLIENT_SECRET
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: APNS_KEY_ID
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: APNS_TEAM_ID
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: APNS_KEY
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: APNS_BUNDLE_ID
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: APNS_ENV
+    value: test-disabled
+    availability: [RUNTIME]
+  - variable: FIREBASE_PROJECT_ID
+    value: mfb-test-disabled
+    availability: [RUNTIME]
+
+  # Keep all test uploads in the test Supabase storage project, never the
+  # production GCS bucket inherited from the base configuration.
+  - variable: STORAGE_BACKEND
+    value: supabase
+    availability: [RUNTIME]
+  - variable: GCS_BUCKET
+    value: test-disabled
+    availability: [RUNTIME]

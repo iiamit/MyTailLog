@@ -31,15 +31,14 @@ export async function POST() {
     return json({ error: `MyFlightBook error: ${(e as Error).message}` }, 502);
   }
   if (!result) {
-    // Say WHICH connection. Authorizing MyTailLog from MyFlightBook — the grant
-    // that lets MFB read your maintenance data — is a different link, and a user
-    // who has done that is looking at "MyFlightBook" in Connected apps while
-    // being told it isn't connected.
+    // The manual pull is independent of the MyFlightBook-side grant. That grant
+    // permits an hours push, but does not prove one has run.
     return json(
       {
         error:
-          "MyTailLog isn’t set up to pull from your MyFlightBook logbook. If MyFlightBook is listed " +
-          "under Connected apps in your profile, it already pushes your hours here — you don’t need this.",
+          "MyTailLog isn’t set up to pull from your MyFlightBook logbook. A MyFlightBook entry under " +
+          "Connected apps is a separate authorization that may send hours here. Check Meters for a " +
+          "MyFlightBook reading, or connect the optional pull in Profile to use Sync now.",
       },
       400,
     );

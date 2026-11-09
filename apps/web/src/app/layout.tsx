@@ -29,6 +29,7 @@ const mono = localFont({
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { ToastProvider } from "@/components/Toast";
 import { AppHeader } from "@/components/AppHeader";
+import { Announcement } from "@/components/Announcement";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -88,6 +89,7 @@ export default async function RootLayout({
       <body>
         <ToastProvider>
           <AppHeader email={user?.email ?? null} />
+          <Announcement userId={user?.id ?? null} />
           {children}
         </ToastProvider>
         <ServiceWorkerRegistrar />

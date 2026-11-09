@@ -62,8 +62,8 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
   useEffect(() => {
     computeAirworthiness(aircraft.id)
       .then((d) => {
-        const t = d.meters.tach.tach;
-        const h = d.meters.hobbs.hobbs;
+        const t = d.meters.face.tach;
+        const h = d.meters.face.hobbs;
         setCurrent(d.meters);
         setPrev({ tach: t, hobbs: h });
         // Start AT the last reading — you're correcting digits, not typing a
@@ -97,7 +97,7 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
       const value = meter === "tach" ? sendTach : sendHobbs;
       const cur = meter === "tach" ? current.tach : current.hobbs;
       if (value == null || cur.estimated) continue;
-      const shows = meter === "tach" ? current.tach.tach : current.hobbs.hobbs;
+      const shows = current.face[meter];
       const hit = detectBackwardsReading([{ date: cur.asOf, value: shows }], value);
       if (hit) return { meter, prior: hit.prior, next: value };
     }

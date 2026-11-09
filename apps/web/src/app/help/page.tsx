@@ -745,19 +745,17 @@ const SECTIONS: Section[] = [
     body: (
       <>
         <p>
-          Connect your own <strong>MyFlightBook</strong> pilot logbook to pull each
-          aircraft&apos;s latest recorded <strong>hobbs and tach</strong> into MyTailLog. There is{" "}
-          <strong>no app-wide account</strong>: in <L href="/profile">Profile → MyFlightBook</L> you
-          register your <em>own</em> OAuth app on MyFlightBook and paste its client ID and secret
-          (the secret is stored <strong>encrypted</strong> server-side and never shown again), then click{" "}
-          <strong>Connect</strong> and approve access. Once connected, <strong>Sync</strong> matches
-          your MyFlightBook aircraft to MyTailLog aircraft <strong>by tail number</strong> and
-          records the ending hours from the most recent flight.
+          For the two-way connection, authorize MyTailLog in MyFlightBook&apos;s
+          <strong> Preferences → Maintenance</strong>, then use <strong>Update from MyTailLog</strong> on
+          its My Aircraft page. MyFlightBook can read your maintenance data and send recorded{" "}
+          <strong>hobbs and tach</strong> back under that authorization. Check Meters here for a
+          MyFlightBook reading; authorization alone does not confirm that hours have arrived.
         </p>
         <p className="mt-2">
-          Because matching is by tail, a <strong>shared aircraft</strong> can receive hours from{" "}
-          <em>any</em> connected co-owner — whoever flew (and logged) most recently supplies the
-          current reading.
+          An older, optional pull is available under <L href="/profile">Profile → MyFlightBook</L>.
+          For that path, register your own OAuth app on MyFlightBook, save its client ID and secret
+          here, connect, then use <strong>Sync from MyFlightBook</strong>. It matches aircraft by tail
+          number and imports the latest recorded flight hours; the secret is stored encrypted.
         </p>
         <p className="mt-2 text-sm text-faint">
           Honesty caveat: MyFlightBook has no authoritative &ldquo;current&rdquo; meter for a
@@ -1115,8 +1113,9 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         Other apps (like MyFlightBook) can read your aircraft&apos;s airworthiness, equipment, hours,
-        oil, and weight-and-balance data — <strong>only with your consent</strong>, and{" "}
-        <strong>read-only</strong>. On the consent screen you choose the scope: <strong>all your
+        oil, and weight-and-balance data — <strong>only with your consent</strong>. An app granted{" "}
+        <strong>hours:write</strong> can also add Hobbs and tach readings. On the consent screen you choose
+        the scope: <strong>all your
         aircraft</strong> (the default — including any you add later, so an app keeps working as your
         fleet grows) or <strong>only the ones you pick</strong>. A brand-new account can authorize an
         app before adding any aircraft — the app just sees an empty list until you add one. Revoke any

@@ -76,8 +76,8 @@ export function Status({
       </div>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-        <MeterTile label="TACH" value={data.meters.tach.tach} from={data.meters.tach.from} asOf={data.meters.tach.asOf} estimated={data.meters.tach.estimated} />
-        <MeterTile label="HOBBS" value={data.meters.hobbs.hobbs} from={data.meters.hobbs.from} asOf={data.meters.hobbs.asOf} estimated={data.meters.hobbs.estimated} />
+        <MeterTile label="TACH" value={data.meters.face.tach} from={data.meters.tach.from} asOf={data.meters.tach.asOf} estimated={data.meters.tach.estimated} />
+        <MeterTile label="HOBBS" value={data.meters.face.hobbs} from={data.meters.hobbs.from} asOf={data.meters.hobbs.asOf} estimated={data.meters.hobbs.estimated} />
       </div>
 
       {attention.length > 0 && (

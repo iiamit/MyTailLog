@@ -3,7 +3,7 @@ import type { Database } from "@/lib/database.types";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { buildStatusItems } from "@/lib/status";
 import { toReadings, currentMetersFrom } from "@/lib/aircraftHours";
-import { toFace, type Meter, type MeterReset, type TachBridge } from "@/lib/hobbsTach";
+import { type Meter, type MeterReset, type TachBridge } from "@/lib/hobbsTach";
 
 /**
  * Everything the persistent aircraft shell (top bar + nav rail) needs, loaded
@@ -122,10 +122,9 @@ export async function getAircraftShellContext(
   // maintenance math runs on the reset-stitched total scale, which is a
   // different (larger) number once a meter has been replaced, so the selected
   // reading is converted back down for display.
-  const tach = toFace(meters.tach.tach, meters.tach.asOf, "tach", resets) ?? aircraft.enrollment_tach;
-  const hobbs = toFace(meters.hobbs.hobbs, meters.hobbs.asOf, "hobbs", resets) ?? aircraft.enrollment_hobbs;
-  const airframe =
-    toFace(meters.airframe.airframe, meters.airframe.asOf, "airframe", resets) ?? aircraft.enrollment_airframe;
+  const tach = meters.face.tach ?? aircraft.enrollment_tach;
+  const hobbs = meters.face.hobbs ?? aircraft.enrollment_hobbs;
+  const airframe = meters.face.airframe ?? aircraft.enrollment_airframe;
 
   // currentHours stays the best estimate of TOTAL time (highest known across all
   // readings + enrollment) — that drives the AI narration and must not regress
