@@ -83,6 +83,7 @@ The first successful manual rollout (`build-2026-11-09-002`, commit `1a8a5a6`)
 is live. Firebase reports the custom domain's host, ownership, and certificate
 as active. The home page returns 200, and the OIDC discovery document advertises
 only `mfb-test.mytaillog.com` endpoints. The effective build configuration uses
-the test Supabase project and test secret references. The test Supabase Auth
-redirect allowlist and MyFlightbook development client changes are still pending
-before an end-to-end OAuth test.
+the test Supabase project and test secret references. The project owner added
+the test Supabase Auth redirect URL on 2026-11-09; a live callback has not yet
+verified it. The MyFlightbook development client change remains pending before
+an end-to-end OAuth test.
