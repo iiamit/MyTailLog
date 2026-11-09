@@ -16,7 +16,7 @@ environment override is [`apps/web/apphosting.mfb_test.yaml`](../apps/web/apphos
    App Hosting to merge
    `apphosting.mfb_test.yaml` over `apphosting.yaml` on every rollout. Confirm
    the setting before the first rollout.
-3. In that **test Firebase project**, create these four Cloud Secret Manager
+3. In that **test Firebase project**, create these five Cloud Secret Manager
    secrets and grant the App Hosting backend access to each:
 
    | Secret ID | Value |
@@ -25,8 +25,12 @@ environment override is [`apps/web/apphosting.mfb_test.yaml`](../apps/web/apphos
    | `MFB_TEST_SUPABASE_SECRET_KEY` | Test Supabase project's `sb_secret_...` key |
    | `MFB_TEST_ENCRYPTION_KEY` | A new random value, at least 32 characters; do not reuse production |
    | `MFB_TEST_OIDC_JWKS` | A new RS256 JWKS JSON from `node apps/web/scripts/gen-oidc-jwks.mjs`; keep stable across rollouts |
+   | `MFB_TEST_CRON_SECRET` | A new random value used only to protect test cron routes |
 
    The app configuration pins the test Supabase URL and the test site URL.
+   Firebase rejects empty environment values, so optional external providers
+   use invalid `test-disabled` placeholders instead of production credentials.
+   Do not exercise AI, email, backup, or push features on this backend.
    Secret values never belong in Git or Firebase console environment text
    variables. If using `firebase apphosting:secrets:set`, decline its offer to
    edit `apphosting.yaml`; the references already exist in the test override.
@@ -74,7 +78,11 @@ matrix and rollout gate are in
 
 The test Firebase project is on Blaze, the `mfb-test` backend is created and
 tagged `mfb_test`, and GitHub is linked. Automatic rollouts are disabled; the
-live branch is `codex/mfb-test-backend`. The test encryption, signing, and
-Supabase secret keys are provisioned. The test Supabase publishable/anon key,
-DNS verification, and Auth redirect allowlist are still pending. No rollout
-has been started yet.
+live branch is `codex/mfb-test-backend`. All five test secrets are provisioned.
+The first successful manual rollout (`build-2026-11-09-002`, commit `1a8a5a6`)
+is live. Firebase reports the custom domain's host, ownership, and certificate
+as active. The home page returns 200, and the OIDC discovery document advertises
+only `mfb-test.mytaillog.com` endpoints. The effective build configuration uses
+the test Supabase project and test secret references. The test Supabase Auth
+redirect allowlist and MyFlightbook development client changes are still pending
+before an end-to-end OAuth test.
