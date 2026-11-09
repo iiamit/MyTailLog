@@ -3,20 +3,18 @@
 The test site uses the production web code path with the **test Supabase project**
 (`arpirbajxbrjbkldteaz`) and MyFlightbook's development environment. It does
 not use production data, storage, email, push, or cron credentials. The
-environment override is [`apps/web/apphosting.mfb-test.yaml`](../apps/web/apphosting.mfb-test.yaml).
+environment override is [`apps/web/apphosting.mfb_test.yaml`](../apps/web/apphosting.mfb_test.yaml).
 
 ## Firebase setup
 
-1. Use the existing **separate Firebase project** `test-67a88196` for this
-   backend. It is currently on Spark; upgrade it to Blaze at
-   `https://console.firebase.google.com/project/test-67a88196/usage/details`
-   before App Hosting can be enabled. Link the MyTailLog GitHub repository
-   under **App Hosting → Create backend**, with `apps/web` as its app root. Use
-   the feature branch while testing; switch to `main` after the integration is
-   released if this backend should persist.
-2. Open that backend's **Settings → Environment** and set the environment name
-   exactly to `mfb-test`. This causes App Hosting to merge
-   `apphosting.mfb-test.yaml` over `apphosting.yaml` on every rollout. Confirm
+1. Use the existing **separate Firebase project** `test-67a88196`, now on
+   Blaze. Its App Hosting backend is `mfb-test` in `us-east4`, linked to
+   `iiamit/MyTailLog` at `/apps/web`. Deploy the feature branch while testing;
+   switch to `main` after the integration is released if this backend should
+   persist.
+2. The backend's **Settings → Environment** name is `mfb_test`. This causes
+   App Hosting to merge
+   `apphosting.mfb_test.yaml` over `apphosting.yaml` on every rollout. Confirm
    the setting before the first rollout.
 3. In that **test Firebase project**, create these four Cloud Secret Manager
    secrets and grant the App Hosting backend access to each:
@@ -72,7 +70,8 @@ matrix and rollout gate are in
 
 ## Current deployment state
 
-The repository override is ready to deploy once the existing test Firebase
-project is upgraded to Blaze and the backend, secrets, domain, and test
-Supabase Auth URL configuration exist. The
-test backend has **not** been created or deployed by committing this file.
+The test Firebase project is on Blaze, the `mfb-test` backend is created and
+tagged `mfb_test`, and GitHub is linked. The test encryption, signing, and
+Supabase secret keys are provisioned. The test Supabase publishable/anon key,
+custom domain, and Auth redirect allowlist are still pending. No rollout has
+been started yet.

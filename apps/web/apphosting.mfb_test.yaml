@@ -1,4 +1,4 @@
-# Firebase App Hosting environment name: mfb-test.
+# Firebase App Hosting environment name: mfb_test.
 # Use a separate Firebase project. This file overrides every production secret
 # inherited from apphosting.yaml; do not add a new secret to the base file
 # without deciding how it is isolated here as well.
