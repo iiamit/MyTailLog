@@ -7,11 +7,13 @@ environment override is [`apps/web/apphosting.mfb-test.yaml`](../apps/web/apphos
 
 ## Firebase setup
 
-1. Create a **separate Firebase project** on the Blaze plan for this backend.
-   Firebase recommends separate projects for separate environments. Link the
-   MyTailLog GitHub repository under **App Hosting → Create backend**, with
-   `apps/web` as its app root. Use the feature branch while testing; switch to
-   `main` after the integration is released if this backend should persist.
+1. Use the existing **separate Firebase project** `test-67a88196` for this
+   backend. It is currently on Spark; upgrade it to Blaze at
+   `https://console.firebase.google.com/project/test-67a88196/usage/details`
+   before App Hosting can be enabled. Link the MyTailLog GitHub repository
+   under **App Hosting → Create backend**, with `apps/web` as its app root. Use
+   the feature branch while testing; switch to `main` after the integration is
+   released if this backend should persist.
 2. Open that backend's **Settings → Environment** and set the environment name
    exactly to `mfb-test`. This causes App Hosting to merge
    `apphosting.mfb-test.yaml` over `apphosting.yaml` on every rollout. Confirm
@@ -70,6 +72,7 @@ matrix and rollout gate are in
 
 ## Current deployment state
 
-The repository override is ready to deploy once the separate Firebase project,
-backend, secrets, domain, and test Supabase Auth URL configuration exist. The
+The repository override is ready to deploy once the existing test Firebase
+project is upgraded to Blaze and the backend, secrets, domain, and test
+Supabase Auth URL configuration exist. The
 test backend has **not** been created or deployed by committing this file.
