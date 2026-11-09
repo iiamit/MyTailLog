@@ -30,8 +30,10 @@ environment override is [`apps/web/apphosting.mfb_test.yaml`](../apps/web/apphos
    Secret values never belong in Git or Firebase console environment text
    variables. If using `firebase apphosting:secrets:set`, decline its offer to
    edit `apphosting.yaml`; the references already exist in the test override.
-4. Connect `mfb-test.mytaillog.com` to this backend under **Settings → Domains**
-   and apply the DNS records Firebase gives you. Wait for TLS to become active.
+4. `mfb-test.mytaillog.com` is attached to the backend. Add the DNS records
+   Firebase requested: `A mfb-test → 35.219.200.203` and
+   `TXT mfb-test → fah-claim=023-02-7f604610-2a87-4ef5-92bc-4c60adb21ac6`.
+   Wait for ownership and TLS to become active.
    The default `hosted.app` address can be used for a first smoke test, but
    OAuth issuer and redirects are pinned to the custom domain.
 5. Before using the backend, inspect the rollout's **Environment variables in
@@ -71,7 +73,8 @@ matrix and rollout gate are in
 ## Current deployment state
 
 The test Firebase project is on Blaze, the `mfb-test` backend is created and
-tagged `mfb_test`, and GitHub is linked. The test encryption, signing, and
+tagged `mfb_test`, and GitHub is linked. Automatic rollouts are disabled; the
+live branch is `codex/mfb-test-backend`. The test encryption, signing, and
 Supabase secret keys are provisioned. The test Supabase publishable/anon key,
-custom domain, and Auth redirect allowlist are still pending. No rollout has
-been started yet.
+DNS verification, and Auth redirect allowlist are still pending. No rollout
+has been started yet.
