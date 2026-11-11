@@ -8,7 +8,7 @@ The existing daily cron sends at most 50 setup emails per run. It waits 24 hours
 
 1. Apply the migration to test, then production. The campaign starts disabled so it cannot send before the recipient audit.
 2. Deploy the web build. Request `GET /api/cron/onboarding` with the existing `CRON_SECRET` bearer token. Inspect the returned recipient list and stage. Check that no owner, admin, demo, or test accounts are present.
-3. Set `onboarding_email_campaign.enabled = true` in production after the list is checked. Request `POST /api/cron/onboarding` with the same token to send the first batch. Repeat GET/POST until no catch-up candidates remain. The normal daily job then handles new accounts.
+3. Set `onboarding_email_campaign.enabled = true` in production after the list is checked. Run the **Send onboarding emails** GitHub Actions workflow to send a batch using the existing `CRON_SECRET` repository secret. Repeat until no catch-up candidates remain. The normal daily job then handles new accounts.
 4. Check `onboarding_email_log` for `sent_at` and Resend for delivery. A claimed row with null `sent_at` means the send result was uncertain; investigate it before clearing the row.
 5. Open a message's unsubscribe link. GET must show a confirmation page without changing the preference; POST must set `profile.onboarding_opt_out = true`. Verify that maintenance reminder settings are unchanged.
 
