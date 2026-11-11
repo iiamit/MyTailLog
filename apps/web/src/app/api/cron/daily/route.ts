@@ -80,9 +80,11 @@ async function runSync(supabase: Service, emailById: Map<string, string>): Promi
     try {
       const aircraft = await accessibleAircraft(supabase, c.user_id, emailById.get(c.user_id));
       const result = await syncUserHours(supabase, c.user_id, aircraft);
-      if (result) usersSynced += 1;
-      // Stamp only on a clean run so an MFB outage is retried next day.
-      await supabase.rpc("stamp_mfb_synced", { p_user_id: c.user_id });
+      // A failed refresh or partial write must remain eligible for the next run.
+      if (!result || result.errors.length) continue;
+      const { error } = await supabase.rpc("stamp_mfb_synced", { p_user_id: c.user_id });
+      if (error) throw error;
+      usersSynced += 1;
     } catch (e) {
       console.error(`[cron] sync failed for user ${c.user_id}: ${(e as Error).message}`);
     }
