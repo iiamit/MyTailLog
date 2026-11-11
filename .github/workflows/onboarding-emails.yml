@@ -3,6 +3,8 @@ name: Send onboarding emails
 on:
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   send:
     runs-on: ubuntu-latest
