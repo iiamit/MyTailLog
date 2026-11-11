@@ -15,7 +15,7 @@ const candidate: OnboardingEmailCandidate = {
 };
 
 test("admin and test-style addresses never enter onboarding mail", () => {
-  for (const email of ["iamit@iamit.org", "mfb-demo@mytaillog.com", "e2e@iamit.org", "pilot+test@gmail.com", "mytaillog@joshnisly.com"]) {
+  for (const email of ["iamit@iamit.org", "iamit@gomboc.ai", "mfb-demo@mytaillog.com", "myflightbook@gmail.com", "e2e@iamit.org", "pilot+test@gmail.com", "mytaillog@joshnisly.com", "junk@kjkpc.net", "typo@gmial.com"]) {
     assert.equal(excludedOnboardingEmail(email), true, email);
   }
   assert.equal(excludedOnboardingEmail("warren@example.net"), false);

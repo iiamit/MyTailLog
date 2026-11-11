@@ -5,8 +5,9 @@ import { sendEmail } from "@/lib/email";
 type Service = SupabaseClient<Database>;
 const SITE = "https://mytaillog.com";
 const ADDRESS = "1321 Upland Dr. Suite 9324, Houston, Texas 77043, US";
-const INTERNAL_DOMAINS = ["@iamit.org", "@mytaillog.com", "@example.com", "@localhost"];
-const INTERNAL_EMAILS = new Set(["mytaillog@joshnisly.com"]);
+const INTERNAL_DOMAINS = ["@iamit.org", "@mytaillog.com", "@example.com", "@localhost", "@vtmpj.com", "@kjkpc.net"];
+const INVALID_DOMAINS = ["@gmai.com", "@gmial.com", "@gmail.ciom"];
+const INTERNAL_EMAILS = new Set(["mytaillog@joshnisly.com", "iamit@gomboc.ai", "myflightbook@gmail.com", "mayergoup@gmail.com"]);
 
 /** Admins are excluded in SQL. This second guard catches demo/test identities. */
 export function excludedOnboardingEmail(email: string): boolean {
@@ -15,6 +16,7 @@ export function excludedOnboardingEmail(email: string): boolean {
   const extra = (process.env.ONBOARDING_EXCLUDE_EMAILS ?? "")
     .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
   return INTERNAL_DOMAINS.some((d) => normalized.endsWith(d))
+    || INVALID_DOMAINS.some((d) => normalized.endsWith(d))
     || INTERNAL_EMAILS.has(normalized)
     || extra.includes(normalized)
     || /(^|[+._-])(test|demo|e2e|qa)([+._-]|$)/.test(local);
