@@ -18,7 +18,7 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profile")
-    .select("full_name, cert_number, preferences, is_admin")
+    .select("full_name, cert_number, preferences, is_admin, onboarding_opt_out")
     .eq("id", user.id)
     .single();
 
@@ -168,6 +168,7 @@ export default async function ProfilePage() {
           identities={(user.identities ?? []).map((identity) => identity.provider)}
           fullName={profile?.full_name ?? ""}
           notifyDue={Boolean(profile?.preferences?.notify_due)}
+          onboardingEmailOn={!profile?.onboarding_opt_out}
           alerts={resolveAlerts(profile?.preferences)}
           mfb={{
             clientId: mfb?.client_id ?? "",

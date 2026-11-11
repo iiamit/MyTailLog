@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       eyebrow="Privacy"
       title="How MyTailLog handles your data"
       current="/privacy"
-      lede="This policy covers the MyTailLog website and its iOS and Android apps. Updated September 25, 2026."
+      lede="This policy covers the MyTailLog website and its iOS and Android apps. Updated November 11, 2026."
     >
       <div className="space-y-8">
         <MarketingSection id="collect" title="What we collect">
@@ -34,7 +34,8 @@ export default function PrivacyPage() {
           <p>
             We use this data to show your aircraft records, sync your devices, extract text from scans,
             answer your questions about records, create backups you request, and send reminders you
-            enable. MyTailLog does not train AI models on your data.
+            enable. We may send a small number of setup emails based on the steps you have completed,
+            such as adding an aircraft or reviewing scanned pages. MyTailLog does not train AI models on your data.
           </p>
           <p>
             To read a page or answer a question, the relevant image or text is sent to the configured
@@ -58,7 +59,8 @@ export default function PrivacyPage() {
         <MarketingSection id="control" title="Access, export and deletion">
           <p>
             You can export your records from the web app, remove an aircraft, revoke a sharing
-            invitation or connected app, and turn off reminders. To request deletion of your account
+            invitation or connected app, and turn off reminders or setup emails separately in Profile.
+            Every setup email also has an unsubscribe link. To request deletion of your account
             and associated data, use the <Link href="/account-deletion" className="underline">account deletion page</Link>.
             We verify requests before carrying them out and explain any effect on shared aircraft.
           </p>
