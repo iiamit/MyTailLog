@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { syncUserHours } from "@/lib/mfbSync";
 import { sendEmail } from "@/lib/email";
+import { runOnboardingEmails } from "@/lib/onboardingEmails";
 import { getCurrentMeters } from "@/lib/aircraftHours";
 import { buildStatusItems, hoursRemaining, type StatusItem } from "@/lib/status";
 import { dueText } from "@/lib/compliance";
@@ -36,14 +37,15 @@ const SYNC_STALE_MS = 23 * 60 * 60 * 1000;
 const SITE = "https://mytaillog.com";
 
 /**
- * Daily scheduled job (Cloud Scheduler → Bearer CRON_SECRET). Two best-effort
+ * Daily scheduled job (Cloud Scheduler → Bearer CRON_SECRET). Three best-effort
  * passes over all users via the service-role client:
  *   1. Sync MyFlightBook hours for each connected user, at most once/day.
  *   2. Email due-maintenance/AD reminders, deduped per due-cycle via reminder_log,
  *      and send the same reminder to any registered device (see pushReminder).
+ *   3. Send contextual setup emails once per milestone, with a separate opt-out.
  * One user's failure never aborts the run.
  *
- * The ADS-B sweep used to be a third pass here. It moved to GitHub Actions
+ * The ADS-B sweep used to run here. It moved to GitHub Actions
  * because OpenSky blackholes Google Cloud egress — see the header of
  * app/api/cron/adsb/route.ts for the measurements.
  */
@@ -63,7 +65,15 @@ export async function POST(req: Request) {
   const usersSynced = await runSync(supabase, emailById);
   const emailsSent = await runReminders(supabase, emailById);
 
-  return json({ usersSynced, emailsSent });
+  let onboardingSent = 0;
+  try {
+    onboardingSent = await runOnboardingEmails(supabase);
+  } catch (error) {
+    // A missing migration or delivery issue must not interrupt other daily work.
+    console.error(`[cron] onboarding failed: ${(error as Error).message}`);
+  }
+
+  return json({ usersSynced, emailsSent, onboardingSent });
 }
 
 // --- Sync pass -------------------------------------------------------------

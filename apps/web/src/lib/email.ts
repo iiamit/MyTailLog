@@ -13,6 +13,10 @@ export async function sendEmail(opts: {
   to: string;
   subject: string;
   html: string;
+  text?: string;
+  replyTo?: string;
+  headers?: Record<string, string>;
+  idempotencyKey?: string;
 }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
@@ -25,8 +29,14 @@ export async function sendEmail(opts: {
       headers: {
         authorization: `Bearer ${key}`,
         "content-type": "application/json",
+        ...(opts.idempotencyKey ? { "idempotency-key": opts.idempotencyKey } : {}),
       },
-      body: JSON.stringify({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html }),
+      body: JSON.stringify({
+        from: FROM, to: opts.to, subject: opts.subject, html: opts.html,
+        ...(opts.text ? { text: opts.text } : {}),
+        ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+        ...(opts.headers ? { headers: opts.headers } : {}),
+      }),
     });
     if (!res.ok) {
       const body = await res.text();

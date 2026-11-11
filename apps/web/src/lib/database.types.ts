@@ -386,6 +386,8 @@ export type Profile = {
   email: string | null;
   is_admin: boolean;
   preferences: Preferences;
+  onboarding_opt_out: boolean;
+  onboarding_unsubscribe_token: string;
   created_at: string;
   updated_at: string;
 }
@@ -597,6 +599,26 @@ export type ReminderLog = {
   sent_at: string;
 }
 
+export type OnboardingEmailCandidate = {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  unsubscribe_token: string;
+  stage: "aircraft" | "logbooks" | "extract" | "review" | "success";
+  is_catchup: boolean;
+  aircraft_id: string | null;
+  tail_number: string | null;
+};
+
+export type OnboardingEmailLog = {
+  id: string;
+  user_id: string;
+  stage: OnboardingEmailCandidate["stage"];
+  is_catchup: boolean;
+  claimed_at: string;
+  sent_at: string | null;
+};
+
 /** Scheduled cloud backups (0049). The DESTINATION (with its OAuth tokens)
  *  deliberately has no type here — it lives in the private schema. */
 export type BackupSchedule = {
@@ -698,6 +720,7 @@ export type Database = {
       oauth_account_grant: { Row: OauthAccountGrant; Insert: Partial<OauthAccountGrant>; Update: Partial<OauthAccountGrant>; Relationships: [] };
       oauth_access_log: { Row: OauthAccessLog; Insert: Partial<OauthAccessLog>; Update: Partial<OauthAccessLog>; Relationships: [] };
       reminder_log: { Row: ReminderLog; Insert: Partial<ReminderLog>; Update: Partial<ReminderLog>; Relationships: [] };
+      onboarding_email_log: { Row: OnboardingEmailLog; Insert: Partial<OnboardingEmailLog>; Update: Partial<OnboardingEmailLog>; Relationships: [] };
       growth_event: { Row: GrowthEvent; Insert: Partial<GrowthEvent>; Update: Partial<GrowthEvent>; Relationships: [] };
       // backup_destination lives in a private schema (0049) — not exposed to
       // PostgREST; reached only via the backup SECURITY DEFINER functions below.
@@ -710,6 +733,8 @@ export type Database = {
       admin_growth_funnel: { Row: AdminGrowthFunnel; Relationships: [] };
     };
     Functions: {
+      onboarding_email_candidates: { Args: { p_preview?: boolean }; Returns: OnboardingEmailCandidate[] };
+      unsubscribe_onboarding_email: { Args: { p_token: string }; Returns: boolean };
       has_aircraft_access: {
         Args: { target_aircraft: string };
         Returns: boolean;

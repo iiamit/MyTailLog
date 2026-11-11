@@ -146,6 +146,7 @@ export function ProfileClient({
   identities,
   fullName,
   notifyDue,
+  onboardingEmailOn,
   alerts,
   mfb,
   ai,
@@ -156,6 +157,7 @@ export function ProfileClient({
   identities: string[];
   fullName: string;
   notifyDue: boolean;
+  onboardingEmailOn: boolean;
   alerts: AlertSettings;
   mfb: MfbState;
   ai: AiState;
@@ -398,6 +400,11 @@ export function ProfileClient({
             onChange={(e) => setNotifyOn(e.target.checked)}
           />
           Email me reminders before items come due
+        </label>
+
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" name="onboarding_emails" defaultChecked={onboardingEmailOn} />
+          Email me setup tips as I add my aircraft and logbooks
         </label>
 
         {/* The same reminder also goes to the phone app when it is signed in and

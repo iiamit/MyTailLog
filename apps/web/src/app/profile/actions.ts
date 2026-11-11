@@ -71,7 +71,10 @@ export async function updateNotifications(formData: FormData): Promise<{ error?:
     },
   };
 
-  const { error } = await supabase.from("profile").update({ preferences }).eq("id", user.id);
+  const { error } = await supabase.from("profile").update({
+    preferences,
+    onboarding_opt_out: formData.get("onboarding_emails") !== "on",
+  }).eq("id", user.id);
 
   if (error) return { error: error.message };
   revalidatePath("/profile");
