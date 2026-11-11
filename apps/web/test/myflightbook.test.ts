@@ -6,6 +6,8 @@ import {
   expiresAtFrom,
   MFB_AUTHORIZE_URL,
   MFB_SCOPES,
+  MFB_TOKEN_URL,
+  refreshTokens,
 } from "../src/lib/myflightbook";
 import { latestFlightsByAircraft } from "../src/lib/mfbSync";
 
@@ -54,6 +56,28 @@ test("expiresAtFrom: a number → an ISO timestamp ~that many seconds ahead", ()
   // Should sit ~3600s ahead of now; bracket by the real-clock window + slack.
   assert.ok(t >= before + 3600_000 - 2000, `too early: ${iso}`);
   assert.ok(t <= after + 3600_000 + 2000, `too late: ${iso}`);
+});
+
+test("refreshTokens sends the current token and receives its rotated replacement", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const seen: string[] = [];
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (input, init) => {
+    assert.equal(input, MFB_TOKEN_URL);
+    assert.equal(init?.method, "POST");
+    assert.equal((init?.headers as Record<string, string>)["content-type"], "application/x-www-form-urlencoded");
+    const body = new URLSearchParams(init?.body as string);
+    assert.equal(body.get("grant_type"), "refresh_token");
+    assert.equal(body.get("client_id"), "client");
+    assert.equal(body.get("client_secret"), "secret");
+    seen.push(body.get("refresh_token") ?? "");
+    return Response.json({ access_token: `access-${seen.length}`, refresh_token: `refresh-${seen.length}`, expires_in: 3600 });
+  };
+
+  const first = await refreshTokens({ clientId: "client", clientSecret: "secret", refreshToken: "original" });
+  const second = await refreshTokens({ clientId: "client", clientSecret: "secret", refreshToken: first.refresh_token! });
+  assert.deepEqual(seen, ["original", "refresh-1"]);
+  assert.equal(second.refresh_token, "refresh-2");
 });
 
 test("same-day MyFlightBook sync follows flight order, not creation ID", () => {

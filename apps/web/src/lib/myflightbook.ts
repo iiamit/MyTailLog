@@ -135,7 +135,7 @@ async function callService(
   params: Record<string, string> = {},
 ): Promise<unknown> {
   const body = new URLSearchParams({ json: "1", ...params });
-  // DNOA's resource server reads the bearer token from the Authorization header.
+  // MyFlightBook's resource server reads the bearer token from the Authorization header.
   const res = await fetch(`${MFB_RESOURCE_URL}/${service}`, {
     method: "POST",
     headers: {
@@ -273,13 +273,17 @@ export async function getValidAccessToken(userId: string): Promise<string | null
       clientSecret,
       refreshToken,
     });
-    await svc.rpc("set_mfb_tokens", {
+    // MFB rotates refresh tokens on every use. Never retain the spent token or
+    // return the new access token unless its replacement was stored.
+    if (!tokens.refresh_token) return null;
+    const { error } = await svc.rpc("set_mfb_tokens", {
       p_user_id: userId,
       p_access: encryptSecret(tokens.access_token),
-      p_refresh: encryptSecret(tokens.refresh_token ?? refreshToken),
+      p_refresh: encryptSecret(tokens.refresh_token),
       p_expires_at: expiresAtFrom(tokens.expires_in),
       p_mark_connected: false,
     });
+    if (error) return null;
     return tokens.access_token;
   } catch {
     return null; // refresh failed — treat as disconnected for this run
