@@ -42,13 +42,16 @@ test("backup: export archive keeps pages and entries distinct, and re-imports cl
   const airframe = logbooks!.find((l) => l.type === "airframe")!.id;
 
   const pageId = randomUUID();
+  const storagePath = `${scratch.id}/e2e-backup-${pageId}.png`;
+  const { error: uploadError } = await admin.storage.from("logbook-pages").upload(
+    storagePath, fs.readFileSync("public/favicon.png"), { contentType: "image/png" },
+  );
+  expect(uploadError, `seed scan: ${uploadError?.message}`).toBeFalsy();
   const { error: pErr } = await admin.from("page").insert({
     id: pageId,
     aircraft_id: scratch.id,
     logbook_id: airframe,
-    // No real blob: export fetches scans best-effort and skips failures, so the
-    // archive simply carries no scans/ entry. The records are what we assert.
-    storage_path: `${scratch.id}/e2e-missing.jpg`,
+    storage_path: storagePath,
     page_sequence: 1,
     review_status: "unreviewed",
     extraction_status: "pending",
@@ -153,5 +156,6 @@ test("backup: export archive keeps pages and entries distinct, and re-imports cl
     // The imported aircraft gets a fresh id, so the scratch fixture's teardown
     // doesn't cover it.
     if (importedId) await admin.from("aircraft").delete().eq("id", importedId);
+    await admin.storage.from("logbook-pages").remove([storagePath]);
   }
 });
