@@ -39,7 +39,7 @@ export function RoomsPanel({
   const [label, setLabel] = useState(initialLabel);
   const [summary, setSummary] = useState(true);
   const [bookIds, setBookIds] = useState(books.map((b) => b.id));
-  const [scans, setScans] = useState(true);
+  const [scans, setScans] = useState(false);
   const [docIds, setDocIds] = useState(docs.map((d) => d.id));
   const [days, setDays] = useState(30);
   const [busy, setBusy] = useState(false);
@@ -124,7 +124,7 @@ export function RoomsPanel({
               {b.label} · {b.confirmed} confirmed
             </Check>
           ))}
-          <Check checked={scans} onChange={() => setScans(!scans)}>Page scans for those entries</Check>
+          <Check checked={scans} onChange={() => setScans(!scans)}>Page scans from selected logbooks (may include unconfirmed content)</Check>
           {docs.map((d) => (
             <Check key={d.id} checked={docIds.includes(d.id)} onChange={() => setDocIds(toggle(docIds, d.id))}>
               Vault: {d.label}
@@ -133,7 +133,7 @@ export function RoomsPanel({
         </fieldset>
         {unconfirmed > 0 && (
           <p className="text-[12px] text-annun-amber">
-            {unconfirmed} {unconfirmed === 1 ? "entry isn't" : "entries aren't"} confirmed yet and won&apos;t be shown.
+            {unconfirmed} {unconfirmed === 1 ? "entry isn't" : "entries aren't"} confirmed yet and won&apos;t appear in the entry list. Page scans may still show them if included.
           </p>
         )}
 

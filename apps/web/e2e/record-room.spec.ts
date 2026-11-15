@@ -3,6 +3,7 @@ import { request as playwrightRequest } from "@playwright/test";
 
 test("record room: owner creates a link, a visitor opens it, revocation closes it", async ({ page, scratch, baseURL }) => {
   await page.goto(`${scratch.path}/share`);
+  await expect(page.getByRole("checkbox", { name: /Page scans from selected logbooks/ })).not.toBeChecked();
   await page.getByPlaceholder("Buyer · J. Smith").fill("Test buyer");
   await page.getByRole("button", { name: "Create link" }).click();
 
