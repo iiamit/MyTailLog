@@ -8,13 +8,9 @@ import { getModelAds } from "@/lib/adCatalogData";
 import { displayModel, displayTitle, makeBySlug, normalizeModel } from "@/lib/faa/adCatalog";
 import { AdListDisclaimer, TrackCta } from "../../AdCatalogParts";
 
-// Rendered on first request and cached for a day (ISR). Nothing is prebuilt:
-// the build environment may not reach the database.
-export const revalidate = 86400;
-export const dynamicParams = true;
-export function generateStaticParams() {
-  return [];
-}
+// The root layout reads the auth cookie. Keep the route dynamic; the catalog
+// queries themselves are cached for a day in adCatalogData.ts.
+export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ make: string; model: string }> };
 
