@@ -49,6 +49,15 @@ const nextConfig = {
       // (duplicate CSP headers intersect → 'self' would win and break consent).
       { source: "/oauth/consent/:path*", headers: securityHeaders(buildCsp(supabaseHost, { broadFormAction: true, dev })) },
       { source: "/((?!oauth/consent).*)", headers: securityHeaders(buildCsp(supabaseHost, { dev })) },
+      // Record rooms carry their token in the URL: never leak it in a Referer,
+      // and keep the shared pages out of search engines.
+      {
+        source: "/r/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
       {
         source: "/sw.js",
         headers: [

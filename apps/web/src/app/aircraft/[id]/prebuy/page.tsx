@@ -19,6 +19,8 @@ export default async function PrebuyPage({ params }: { params: Promise<{ id: str
   const supabase = await createClient();
   const { data: aircraft } = await supabase.from("aircraft").select("*").eq("id", id).single();
   if (!aircraft) notFound();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user?.id === aircraft.owner_id;
   const [entries, pages, { data: logbooks }, { data: maintenance }, { data: ads }, { data: squawks }, { data: components }] = await Promise.all([
     loadLogEntries(supabase, id),
     loadRecordPages(supabase, id),
@@ -54,7 +56,7 @@ export default async function PrebuyPage({ params }: { params: Promise<{ id: str
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4 print:hidden"><div>
       <div className="eyebrow mb-2">Workflows</div><h1 className="font-display text-[27px] font-semibold">Pre-buy dossier</h1>
       <p className="mt-2 max-w-2xl text-sm text-dim">A source-linked briefing for a prospective buyer or mechanic. Print or save as PDF, then inspect the linked records and physical logbooks before relying on any finding.</p>
-    </div><PrintButton /></header>
+    </div><div className="flex flex-wrap items-center gap-2 print:hidden">{isOwner && <Link href={`/aircraft/${id}/share?room=Buyer#record-room`} className="rounded-[9px] border border-line px-4 py-2.5 text-[13.5px] text-dim hover:text-ink">Share with a buyer</Link>}<PrintButton /></div></header>
     <article className="text-[12px] leading-relaxed text-dim">
       <div className="border-b-2 border-line2 pb-3"><h2 className="font-display text-xl font-bold text-ink">{aircraft.tail_number} · Pre-buy dossier</h2>
         <p>{[aircraft.year, aircraft.make, aircraft.model].filter(Boolean).join(" ")}{aircraft.serial_number && ` · Airframe S/N ${aircraft.serial_number}`}</p>

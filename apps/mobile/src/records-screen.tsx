@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Browser } from "@capacitor/browser";
+import { API_BASE } from "./supabase";
 import { color, text, radius, display, hit, alpha } from "./tokens";
 import { Documents } from "./documents-screen";
 import { Entries, Pages } from "./screens";
@@ -147,6 +149,12 @@ export function Records({
               title="Share a summary"
               detail="One page for a buyer, an insurer, or your IA"
               onClick={async () => setShared(await shareSummary(aircraft))}
+            />
+            {/* v1 opens the web form; the owner check and the link list live there. */}
+            <MoreRow
+              title="Share a records link"
+              detail="Read-only, expiring link for a buyer, mechanic or insurer"
+              onClick={() => void Browser.open({ url: `${API_BASE}/aircraft/${aircraft.id}/share#record-room` })}
             />
           </div>
           {shared && <p style={{ ...text.secondary, color: color.dim, marginTop: 12 }}>{shared}</p>}

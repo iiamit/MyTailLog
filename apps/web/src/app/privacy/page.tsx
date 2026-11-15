@@ -37,6 +37,12 @@ export default function PrivacyPage() {
             MyTailLog?&rdquo; if you give one. We use it only to count which channels bring new owners.
             There are no third-party analytics or advertising trackers, and no page-view tracking.
           </p>
+          <p>
+            If an owner sends you a record room link, opening it shows only the records they chose,
+            until the link expires or they revoke it. Each time you open it we record the time, your
+            browser&apos;s user agent and a hash of your IP address that changes daily, so the owner can
+            see how many times the link was used. We never store the IP address itself.
+          </p>
         </MarketingSection>
         <MarketingSection id="use" title="How we use it">
           <p>

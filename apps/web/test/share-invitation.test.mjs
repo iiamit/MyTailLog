@@ -31,6 +31,8 @@ function actions({ signedIn = true, owner = true, dbError = null } = {}) {
     "@/lib/supabase/server": { createClient: async () => supabase },
     "@/lib/storage": {},
     "@/lib/email": { sendEmail },
+    "@/lib/crypto": {},
+    "@/lib/recordRoom": {},
   };
   runInNewContext(compiled, { exports, process, require: (id) => {
     assert.ok(id in dependencies, `Unexpected dependency: ${id}`);

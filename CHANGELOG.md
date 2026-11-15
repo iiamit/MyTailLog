@@ -6,6 +6,12 @@ the git log.
 
 ## 2026.11
 
+### Added — record room links
+
+- Owners can send a buyer, mechanic, IA or insurer a read-only link to the aircraft's records, with no account needed. You choose what's in it: the maintenance summary, whole logbooks (confirmed entries only), their page scans, and individual Vault documents.
+- Links expire after 7, 30, 90 or 180 days, can be revoked at any time, and show how many times they were opened. Transferring the aircraft revokes them all.
+- Create one on Sharing, from the pre-buy dossier ("Share with a buyer"), or from Records → More on the phone.
+
 ### Added — status on day one
 
 - Enrolling an aircraft on the web now opens a three-step setup: today's tach and hobbs, then a photo of the page with your last annual sign-off (or just its date), then your status. You confirm which entry is the annual before it moves anything.

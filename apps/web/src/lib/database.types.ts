@@ -150,6 +150,31 @@ export type LogEntry = {
   updated_at: string;
 }
 
+export type RecordRoom = {
+  id: string;
+  aircraft_id: string;
+  created_by: string;
+  label: string;
+  token_hash: string;
+  token_enc: string;
+  include_summary: boolean;
+  logbook_ids: string[];
+  include_scans: boolean;
+  document_ids: string[];
+  expires_at: string;
+  revoked_at: string | null;
+  created_at: string;
+};
+
+export type RecordRoomView = {
+  id: number;
+  room_id: string;
+  path: string;
+  ip_hash: string | null;
+  user_agent: string | null;
+  created_at: string;
+};
+
 export type DocumentRecord = {
   id: string;
   aircraft_id: string;
@@ -729,6 +754,8 @@ export type Database = {
       log_entry: { Row: LogEntry; Insert: Partial<LogEntry>; Update: Partial<LogEntry>; Relationships: [] };
       signed_entry_scan: { Row: { page_id: string; entry_id: string; aircraft_id: string; created_at: string }; Insert: { page_id: string; entry_id: string; aircraft_id: string }; Update: never; Relationships: [] };
       document: { Row: DocumentRecord; Insert: Partial<DocumentRecord>; Update: Partial<DocumentRecord>; Relationships: [] };
+      record_room: { Row: RecordRoom; Insert: Partial<RecordRoom> & Pick<RecordRoom, "aircraft_id" | "created_by" | "label" | "token_hash" | "token_enc" | "expires_at">; Update: Partial<RecordRoom>; Relationships: [] };
+      record_room_view: { Row: RecordRoomView; Insert: Partial<RecordRoomView> & Pick<RecordRoomView, "room_id" | "path">; Update: never; Relationships: [] };
       component: { Row: Component; Insert: Partial<Component>; Update: Partial<Component>; Relationships: [] };
       ad_compliance: { Row: AdCompliance; Insert: Partial<AdCompliance>; Update: Partial<AdCompliance>; Relationships: [] };
       ad_reference: { Row: AdReference; Insert: Partial<AdReference>; Update: Partial<AdReference>; Relationships: [] };
