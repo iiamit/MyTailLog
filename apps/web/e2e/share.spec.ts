@@ -19,7 +19,7 @@ test(`sharing: ${role} invite creates a share, then remove deletes it`, async ({
 
   await page.goto(`${scratch.path}/share`);
   await page.getByPlaceholder("person@example.com").fill(invite);
-  await page.getByRole("combobox").selectOption(role);
+  await page.locator("form").filter({ has: page.getByPlaceholder("person@example.com") }).getByRole("combobox").selectOption(role);
   await page.getByRole("button", { name: /Invite/ }).click();
 
   await expect

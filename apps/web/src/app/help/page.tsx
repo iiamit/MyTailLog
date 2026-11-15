@@ -1075,12 +1075,22 @@ const SECTIONS: Section[] = [
     icon: <UsersIcon />,
     title: "Sharing, transfer & delete",
     body: (
+      <>
       <p>
         Invite others by email as <strong>viewers</strong> (read-only) or <strong>editors</strong>{" "}
         (can contribute) — they get access the moment they sign in with that address, no account
         needed first. Owners can transfer an aircraft to another user, or delete it (type-to-confirm;
         removes all records and scans). Access is enforced by the database, not just the UI.
       </p>
+      <p>
+        <strong>Record room links</strong> give a buyer, mechanic, IA or insurer read-only access with
+        no account. You pick what&apos;s in each link: the maintenance summary, whole logbooks (only
+        entries you&apos;ve confirmed are shown), their page scans, and individual Vault documents.
+        Links expire after 7 to 180 days, you can revoke one at any time, and the list shows how many
+        times each was opened. Transferring the aircraft revokes every link. Create one on Sharing,
+        or from the pre-buy dossier with &ldquo;Share with a buyer&rdquo;.
+      </p>
+      </>
     ),
   },
   {
