@@ -30,7 +30,7 @@ const rowsByTable: Record<string, Record<string, unknown>[]> = {
   meter_reset: [{ id: "mr", _t: "meter_reset" }],
 };
 
-function fakeSupabase() {
+function fakeSupabase(failedTable?: string) {
   return {
     from(table: string) {
       const rows = rowsByTable[table] ?? [];
@@ -39,12 +39,28 @@ function fakeSupabase() {
         eq: () => builder,
         single: () => Promise.resolve({ data: rows[0] ?? null, error: null }),
         then: (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
-          Promise.resolve({ data: rows, error: null }).then(onF, onR),
+          Promise.resolve(failedTable === table
+            ? { data: null, error: { message: "read failed" } }
+            : { data: rows, error: null }).then(onF, onR),
       };
       return builder;
     },
   } as unknown as SupabaseClient<Database>;
 }
+
+test("a failed record read aborts backup collection", async () => {
+  await assert.rejects(collectBackupData(fakeSupabase("log_entry"), "ac"), /log_entry: read failed/);
+});
+
+test("browser export refuses an archive with a missing scan", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response("missing", { status: 404 })) as typeof fetch;
+  try {
+    await assert.rejects(exportBackup(fakeSupabase(), "ac"), /scans\/pg1\.jpg \(404\)/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 /** Every stored blob is present and 64 KB, unless `missing` names it. */
 const reader =

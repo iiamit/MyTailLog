@@ -113,11 +113,10 @@ export async function putBlob(
   if (BACKEND === "gcs") {
     try {
       const file = (await bucket()).file(path);
-      if (!upsert) {
-        const [exists] = await file.exists();
-        if (exists) return { error: "A file already exists at that path." };
-      }
-      await file.save(await toBuffer(body), { contentType, resumable: false });
+      await file.save(await toBuffer(body), {
+        contentType, resumable: false,
+        ...(!upsert ? { preconditionOpts: { ifGenerationMatch: 0 } } : {}),
+      });
       return { error: null };
     } catch (e) {
       return { error: e instanceof Error ? e.message : "Upload failed." };

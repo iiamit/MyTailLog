@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
-import { putBlob, type PutBody } from "@/lib/storage";
+import { getBlob, putBlob, type PutBody } from "@/lib/storage";
 import { thumbnailKey } from "@/lib/capture/thumbnail";
 
 // Capture-queue drain target for BOTH clients:
@@ -13,6 +13,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_BYTES = 15 * 1024 * 1024; // a processed page JPEG is ~1–3 MB
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type CaptureInput = {
   image: PutBody;
@@ -84,20 +85,40 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!input.pageId || !input.logbookId) {
     return NextResponse.json({ error: "Missing page or logbook id." }, { status: 400 });
   }
+  if (!UUID.test(input.pageId) || !UUID.test(input.logbookId)) {
+    return NextResponse.json({ error: "Invalid page or logbook id." }, { status: 400 });
+  }
   if (input.imageBytes > MAX_BYTES) {
     return NextResponse.json({ error: "Page image too large." }, { status: 413 });
   }
 
+  const [{ data: book, error: bookError }, { data: existing, error: existingError }] = await Promise.all([
+    supabase.from("logbook").select("id").eq("id", input.logbookId).eq("aircraft_id", id).maybeSingle(),
+    supabase.from("page").select("aircraft_id, logbook_id").eq("id", input.pageId).maybeSingle(),
+  ]);
+  if (bookError || existingError) return NextResponse.json({ error: "Could not check this page." }, { status: 500 });
+  if (!book) return NextResponse.json({ error: "Logbook not found on this aircraft." }, { status: 404 });
+  if (existing) return existing.aircraft_id === id && existing.logbook_id === input.logbookId
+    ? NextResponse.json({ ok: true, pageId: input.pageId })
+    : NextResponse.json({ error: "Page id belongs to another logbook." }, { status: 409 });
+
   const path = `${id}/${input.logbookId}/${input.pageId}.jpg`;
   const thumbPath = thumbnailKey(path);
 
-  const { error: upErr } = await putBlob(path, input.image, { contentType: "image/jpeg", upsert: true });
-  if (upErr) return NextResponse.json({ error: upErr }, { status: 500 });
+  const { error: upErr } = await putBlob(path, input.image, { contentType: "image/jpeg", upsert: false });
+  if (upErr) {
+    // A prior interrupted upload can leave the blob without its row. Reuse it
+    // only when it is byte-for-byte the same capture; never replace it.
+    const stored = await getBlob(path);
+    if (!stored) return NextResponse.json({ error: upErr }, { status: 500 });
+    const incoming = input.image instanceof Blob ? Buffer.from(await input.image.arrayBuffer()) : Buffer.from(input.image);
+    if (!stored.data.equals(incoming)) return NextResponse.json({ error: "Page image already exists with different content." }, { status: 409 });
+  }
 
   // Thumbnail is best-effort — the page still renders via a fallback to the full scan.
   let thumbOk = false;
   if (input.thumb) {
-    const { error } = await putBlob(thumbPath, input.thumb, { contentType: "image/jpeg", upsert: true });
+    const { error } = await putBlob(thumbPath, input.thumb, { contentType: "image/jpeg", upsert: false });
     thumbOk = !error;
   }
 

@@ -36,15 +36,10 @@ export async function exportBackup(
   let done = 0;
   for (const ref of blobs) {
     const url = ref.prefix === "docs" ? `/api/document/${ref.id}` : `/api/page/${ref.id}/image`;
-    try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const buf = new Uint8Array(await res.arrayBuffer());
-        files[ref.entry] = [buf, { level: 0 }];
-      }
-    } catch {
-      // Skip a scan that can't be fetched; the rest of the backup still saves.
-    }
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Backup could not fetch ${ref.entry} (${res.status}).`);
+    const buf = new Uint8Array(await res.arrayBuffer());
+    files[ref.entry] = [buf, { level: 0 }];
     onProgress?.(`Packing scans… ${++done}/${blobs.length}`);
   }
 

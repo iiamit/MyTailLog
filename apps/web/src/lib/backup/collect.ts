@@ -70,6 +70,14 @@ export async function collectBackupData(
     throw new Error(aircraft.error?.message ?? "Aircraft not found.");
   }
 
+  for (const [name, result] of [
+    ["logbook", logbooks], ["log_entry", entries], ["page", pages],
+    ["component", components], ["ad_compliance", compliance],
+    ["maintenance_item", maintenance], ["document", documents], ["meter_reset", resets],
+  ] as const) {
+    if (result.error) throw new Error(`Backup could not read ${name}: ${result.error.message}`);
+  }
+
   const data: BackupData = {
     aircraft: aircraft.data as Row,
     logbooks: (logbooks.data ?? []) as Row[],
