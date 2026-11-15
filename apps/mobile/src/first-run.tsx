@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { color, text, radius, hit, accentGradient, tint, alpha } from "./tokens";
-import { EnrollSheet, api } from "./enroll-sheet";
+import { EnrollSheet } from "./enroll-sheet";
+import { supabase } from "./supabase";
 
 // Empty account after a successful sync: the next action is adding an aircraft.
 
@@ -30,9 +31,24 @@ export function FirstRun({
 }) {
   const [enrolling, setEnrolling] = useState(false);
   const [heard, setHeard] = useState(false);
-  const answer = (value: string) => {
-    setHeard(true);
-    void api("POST", "/api/growth/heard-about", { answer: value });
+  const [heardError, setHeardError] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("profile").select("heard_about").eq("id", user.id).maybeSingle();
+      if (mounted && data?.heard_about) setHeard(true);
+    })();
+    return () => { mounted = false; };
+  }, []);
+  const answer = async (value: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = user
+      ? await supabase.from("profile").update({ heard_about: value }).eq("id", user.id)
+      : { error: new Error("Not signed in") };
+    if (error) setHeardError(true);
+    else setHeard(true);
   };
   return (
     <div style={{ position: "relative", padding: "36px 6px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
@@ -100,6 +116,7 @@ export function FirstRun({
               </button>
             ))}
           </div>
+          {heardError && <p style={{ ...text.secondary, color: color.danger, marginTop: 8 }}>Couldn&apos;t save that. Try again when online.</p>}
         </div>
       )}
 

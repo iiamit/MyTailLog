@@ -89,6 +89,10 @@ test("buildCatalogRow skips ADs it can't list", () => {
   assert.equal(buildCatalogRow(ad({ adNumber: null })), null);
   assert.equal(buildCatalogRow(ad({ title: "Airworthiness Directives; Various Airplanes", abstract: "Model 172N airplanes" })), null);
   assert.equal(buildCatalogRow(ad({ abstract: "The FAA is adopting a new AD for certain airplanes." })), null);
+  assert.equal(buildCatalogRow(ad({
+    title: "Airworthiness Directives; Cessna Aircraft Company and Beechcraft Corporation Airplanes",
+    abstract: "This AD applies to Cessna Model 172N and Beechcraft Model B300 airplanes.",
+  })), null); // separate make/model arrays would create Cessna B300 and Beechcraft 172N
 });
 
 test("preferAd keeps the original rule over a correction notice", () => {
@@ -103,4 +107,22 @@ test("display helpers", () => {
   assert.equal(displayTitle("Airworthiness Directives; Cessna Aircraft Company Airplanes"), "Cessna Aircraft Company Airplanes");
   assert.equal(displayModel("O320D2J", "Lycoming Model O-320-D2J engines"), "O-320-D2J");
   assert.equal(displayModel("172N", "nothing here"), "172N");
+});
+
+test("catalog ingest requires the cron key and rejects ambiguous make/model rows", async () => {
+  const original = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = "catalog-test-key";
+  try {
+    const { POST } = await import("../src/app/api/cron/ad-catalog/route");
+    const url = "http://localhost/api/cron/ad-catalog";
+    const body = JSON.stringify({ rows: [{ ...buildCatalogRow(ad({}))!, makes: ["cessna", "beechcraft"] }] });
+    assert.equal((await POST(new Request(url, { method: "POST", body }))).status, 401);
+    assert.equal((await POST(new Request(url, {
+      method: "POST", body,
+      headers: { authorization: "Bearer catalog-test-key", "content-type": "application/json" },
+    }))).status, 400);
+  } finally {
+    if (original === undefined) delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET = original;
+  }
 });

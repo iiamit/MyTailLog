@@ -2,21 +2,18 @@
 // Backfill / refresh the public AD catalog (ad_catalog, migration 0067) from
 // the Federal Register API.
 //
-//   npx tsx scripts/ad-catalog-backfill.ts            # fetch + upsert
+//   npx tsx scripts/ad-catalog-backfill.ts            # fetch + send to MTL
 //   npx tsx scripts/ad-catalog-backfill.ts --dry-run  # fetch + report only
 //
-// Env (not needed for --dry-run):
-//   SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL)
-//   SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) — bypasses RLS to write
+// Env (not needed for --dry-run): CRON_SECRET, optional MYTAILLOG_URL.
 //
 // Runs from the weekly GitHub Action (.github/workflows/ad-catalog.yml), never
 // from the production server: the Federal Register IP-blocks Cloud Run egress.
 // Idempotent (upsert on ad_number), paginated, one request per second.
 // ===========================================================================
 
-import { createClient } from "@supabase/supabase-js";
 import { searchADs, type FaaAd } from "../src/lib/faa/federalRegister";
-import { BACKFILL_TERMS, buildCatalogRow, preferAd, type AdCatalogRow } from "../src/lib/faa/adCatalog";
+import { BACKFILL_TERMS, buildCatalogRow, preferAd, validCatalogRow, type AdCatalogRow } from "../src/lib/faa/adCatalog";
 
 const PER_PAGE = 100;
 const DELAY_MS = 1000;
@@ -73,6 +70,8 @@ async function main() {
     const row = buildCatalogRow(ad);
     if (row) rows.push(row);
   }
+  const invalid = rows.find((row) => !validCatalogRow(row));
+  if (invalid) fail(`catalog row ${invalid.ad_number} failed validation`);
   console.log(
     `fetched ${fetched} documents, ${byAd.size} distinct ADs, ${rows.length} with a recognized make and model`,
   );
@@ -87,19 +86,21 @@ async function main() {
     return;
   }
 
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) fail("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set (or pass --dry-run)");
+  const secret = process.env.CRON_SECRET;
+  if (!secret) fail("CRON_SECRET must be set (or pass --dry-run)");
   if (rows.length === 0) fail("no catalog rows built — refusing to report success on an empty fetch");
 
-  const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-  const now = new Date().toISOString();
+  const base = (process.env.MYTAILLOG_URL ?? "https://mytaillog.com").replace(/\/$/, "");
   for (let i = 0; i < rows.length; i += UPSERT_CHUNK) {
-    const chunk = rows.slice(i, i + UPSERT_CHUNK).map((r) => ({ ...r, updated_at: now }));
-    const { error } = await supabase.from("ad_catalog").upsert(chunk, { onConflict: "ad_number" });
-    if (error) fail(`upsert failed at row ${i}: ${error.message}`);
+    const chunk = rows.slice(i, i + UPSERT_CHUNK);
+    const response = await fetch(`${base}/api/cron/ad-catalog`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
+      body: JSON.stringify({ rows: chunk }),
+    });
+    if (!response.ok) fail(`upload failed at row ${i} (HTTP ${response.status}): ${(await response.text()).slice(0, 300)}`);
   }
-  console.log(`upserted ${rows.length} rows into ad_catalog`);
+  console.log(`sent ${rows.length} rows to MyTailLog`);
 }
 
 main().catch((e) => fail(e instanceof Error ? e.message : String(e)));

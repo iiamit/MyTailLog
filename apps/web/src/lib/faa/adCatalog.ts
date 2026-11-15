@@ -132,6 +132,23 @@ export type AdCatalogRow = {
   source: string;
 };
 
+/** The runner and the protected ingest route agree on the rows they can store. */
+export function validCatalogRow(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const r = value as Record<string, unknown>;
+  return typeof r.ad_number === "string" && /^[0-9A-Z][0-9A-Z -]{5,31}$/i.test(r.ad_number)
+    && typeof r.title === "string" && r.title.length > 0 && r.title.length <= 1000
+    && (r.abstract === null || (typeof r.abstract === "string" && r.abstract.length <= 10000))
+    && (r.effective_date === null || (typeof r.effective_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.effective_date)))
+    && Array.isArray(r.makes) && r.makes.length === 1 && makeBySlug(r.makes[0]) != null
+    && Array.isArray(r.models) && r.models.length > 0 && r.models.length <= 40
+    && r.models.every((m: unknown) => typeof m === "string" && /^[A-Z0-9]{2,24}$/.test(m))
+    && (r.fr_html_url === null || (typeof r.fr_html_url === "string" && r.fr_html_url.startsWith("https://www.federalregister.gov/")))
+    && (r.pdf_url === null || (typeof r.pdf_url === "string" && /^https:\/\/(?:www\.)?(?:federalregister\.gov|govinfo\.gov)\//.test(r.pdf_url)))
+    && (r.citation === null || typeof r.citation === "string")
+    && r.source === "federal_register";
+}
+
 /** "Airworthiness Directives; Cessna …" → "Cessna …" for display. */
 export function displayTitle(title: string): string {
   return title.replace(/^airworthiness directives?;\s*/i, "").trim() || title;
@@ -154,7 +171,10 @@ export function buildCatalogRow(ad: FaaAd): AdCatalogRow | null {
   ];
   if (models.length === 0) return null;
   const makes = detectMakes(ad.title, ad.abstract, models);
-  if (makes.length === 0) return null;
+  // This table stores makes and models separately. A multi-make rule would
+  // invent every cross-pair (for example Cessna B300), so omit it until the
+  // catalog can store explicit make/model pairs.
+  if (makes.length !== 1) return null;
   return {
     ad_number: ad.adNumber,
     title: ad.title,

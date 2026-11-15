@@ -29,6 +29,13 @@ function refresh(aircraftId: string) {
   for (const p of ["", "/start", "/status", "/maintenance", "/meters"]) revalidatePath(`/aircraft/${aircraftId}${p}`);
 }
 
+function validPastDate(date: string) {
+  const parsed = Date.parse(`${date}T00:00:00Z`);
+  return isIsoDate(date) && Number.isFinite(parsed)
+    && new Date(parsed).toISOString().slice(0, 10) === date
+    && date <= new Date().toISOString().slice(0, 10);
+}
+
 /** Step 1: today's meter readings. */
 export async function saveStartHours(aircraftId: string, input: { tach: number | null; hobbs: number | null }): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
@@ -65,8 +72,7 @@ export async function pageEntries(aircraftId: string, pageId: string): Promise<E
 /** Mark a seeded Part 91 item done on a date, adding the defaults first if this
  *  aircraft predates seeding at enroll. Never moves last-done backward. */
 async function markKindDone(aircraftId: string, kind: string, date: string, hours: number | null): Promise<Result> {
-  if (!isIsoDate(date)) return { error: "Pick a date." };
-  if (date > new Date().toISOString().slice(0, 10)) return { error: "That date is in the future." };
+  if (!validPastDate(date)) return { error: "Pick a valid date on or before today." };
   const { supabase, ctx } = await session(aircraftId);
   const seeded = await maintenance.seedStandard(supabase, ctx);
   if (seeded.status !== "ok") return { error: failMessage(seeded) };
@@ -91,12 +97,16 @@ async function markKindDone(aircraftId: string, kind: string, date: string, hour
 /** Step 2 (photo path): confirm the extracted entry and set the annual from it. */
 export async function confirmAnnual(
   aircraftId: string,
-  input: { entryId: string; date: string; tach: number | null },
+  input: { entryId: string; date: string },
 ): Promise<Result> {
+  if (!validPastDate(input.date)) return { error: "Pick a valid date on or before today." };
   const { supabase, ctx } = await session(aircraftId);
-  const confirmed = await entries.setConfirmed(supabase, ctx, { entryId: input.entryId, confirmed: true });
+  // The owner may correct the extracted date while choosing the annual. Save
+  // that correction on the entry itself before using it for the forecast.
+  const confirmed = await entries.update(supabase, ctx, { entryId: input.entryId, fields: { entry_date: input.date } });
   if (confirmed.status !== "ok") return { error: failMessage(confirmed) };
-  return markKindDone(aircraftId, "annual", input.date, input.tach);
+  const tach = typeof confirmed.row?.tach === "number" ? confirmed.row.tach : null;
+  return markKindDone(aircraftId, "annual", input.date, tach);
 }
 
 /** Step 2 (typed path), and step 3's optional dates for the other Part 91 items. */

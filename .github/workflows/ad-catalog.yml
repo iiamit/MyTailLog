@@ -6,8 +6,8 @@
 # also blocks GitHub-hosted runners is unverified until the first run; the
 # script exits non-zero with a clear message on HTTP 403.
 #
-# Unlike adsb-sweep, this job writes to the database directly with the service
-# role, so it needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY repository secrets.
+# The job sends batches to the existing CRON_SECRET-protected web API. The
+# database write key stays on the server, as it does for the ADS-B sweep.
 name: ad-catalog
 
 on:
@@ -42,5 +42,4 @@ jobs:
       - name: Backfill AD catalog
         run: npx tsx scripts/ad-catalog-backfill.ts
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

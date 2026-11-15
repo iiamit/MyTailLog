@@ -187,7 +187,7 @@ function AnnualStep({ aircraftId, airframeLogbookId }: { aircraftId: string; air
         <PickAnnual
           entries={phase.entries}
           pending={pending}
-          onConfirm={(entryId, date, tach) => run(() => confirmAnnual(aircraftId, { entryId, date, tach }))}
+          onConfirm={(entryId, date) => run(() => confirmAnnual(aircraftId, { entryId, date }))}
           onType={() => setPhase({ at: "type" })}
         />
       )}
@@ -215,7 +215,7 @@ function PickAnnual({
 }: {
   entries: ExtractedEntry[];
   pending: boolean;
-  onConfirm: (entryId: string, date: string, tach: number | null) => void;
+  onConfirm: (entryId: string, date: string) => void;
   onType: () => void;
 }) {
   const initial = entries.find((e) => looksAnnual(e.text)) ?? entries[0];
@@ -250,7 +250,7 @@ function PickAnnual({
           Annual date
           <input id="annual-date" type="date" className={input} value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
         </label>
-        <button type="button" className={btn} disabled={pending || !date} onClick={() => onConfirm(id, date, chosen.tach)}>
+        <button type="button" className={btn} disabled={pending || !date} onClick={() => onConfirm(id, date)}>
           {pending ? "Saving…" : "Confirm annual"}
         </button>
         <button type="button" className="text-[13px] text-faint hover:text-ink" onClick={onType}>None of these</button>

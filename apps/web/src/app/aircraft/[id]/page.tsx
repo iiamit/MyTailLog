@@ -171,7 +171,7 @@ export default async function AircraftPage({
               className="inline-flex items-center rounded-[9px] border px-4 py-2.5 text-[13.5px] font-medium text-annun-amber hover:opacity-90"
               style={{ borderColor: "var(--amb)", background: "var(--amb-bg)" }}
             >
-              Finish setup · {setup.done} of 3 done →
+              Finish setup · {setup.done} of 2 details →
             </Link>
           )}
           {isOwner && <Link href={`${a}/details`} className="inline-flex items-center rounded-[9px] border border-line2 bg-panel2 px-4 py-2.5 text-[13.5px] text-ink hover:border-accent">Edit aircraft details</Link>}
