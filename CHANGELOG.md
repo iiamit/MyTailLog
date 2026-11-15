@@ -4,6 +4,30 @@ Notable changes to MyTailLog, newest first. Versions are calendar-based
 (`APP_VERSION`, shown in the app header). Started 2026-07; earlier history is in
 the git log.
 
+## 2026.11
+
+### Added — status on day one
+
+- Enrolling an aircraft on the web now opens a three-step setup: today's tach and hobbs, then a photo of the page with your last annual sign-off (or just its date), then your status. You confirm which entry is the annual before it moves anything.
+- New aircraft start with the standard Part 91 items (annual, transponder, pitot-static, ELT), so there's something to count down as soon as a date is known.
+- The overview shows **Records coverage**: how far back each logbook goes and where it skips, in place of the page-count tiles.
+
+### Changed — the sidebar follows what you're doing
+
+- The aircraft sidebar is grouped the way the phone app is: **Status**, **Log**, **Records**, plus **Workflows** and **Manage**. Related pages share an item as tabs, and every page keeps its address.
+- New **Annual prep** page: what comes due before the annual, open squawks for the shop, and loose ends in the records (pages awaiting review, records gaps), with the printable summary one click away.
+
+### Changed — the home page
+
+- The home page now leads with what you can check: every answer links to its source page, records work offline in the hangar, and everything exports and re-imports. It also says plainly that AI reading has a daily allowance.
+- New accounts see a one-tap "How did you hear about MyTailLog?" card. A first-party cookie notes which tagged link or site you arrived from. There are no third-party analytics; see the [privacy policy](https://mytaillog.com/privacy).
+- The printed maintenance summary and pre-buy dossier carry a small MyTailLog footer.
+
+### Added — public AD lists for each aircraft model
+
+- [Browse airworthiness directives by model](https://mytaillog.com/ads): a public page per make and model (for example the [Cessna 172N](https://mytaillog.com/ads/cessna/172n)) lists the FAA ADs whose titles or abstracts name it, newest first, with links to the official Federal Register text. Covers popular piston airframes plus Lycoming and Continental engines and Hartzell and McCauley propellers.
+- Listings come from matching FAA titles and abstracts, not from an applicability determination. Serial ranges and installed equipment decide what applies, and your mechanic makes that call. The lists refresh weekly.
+
 ## 2026.10
 
 ### Released — Android joins the public stores

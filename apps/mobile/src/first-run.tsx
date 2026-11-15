@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { color, text, radius, hit, accentGradient, tint, alpha } from "./tokens";
-import { EnrollSheet } from "./enroll-sheet";
+import { EnrollSheet, api } from "./enroll-sheet";
 
 // Empty account after a successful sync: the next action is adding an aircraft.
 
@@ -8,6 +8,13 @@ const STEPS = [
   { title: "Add your aircraft", detail: "Tail number is enough — we pull the rest from the registry." },
   { title: "Snap your logbook pages", detail: "Point, shoot, keep turning. Bad light is fine." },
   { title: "We read every entry", detail: "ADs, inspections and hours start tracking themselves." },
+];
+
+// Mirrors HEARD_ABOUT in apps/web/src/lib/signupSource.ts (and the 0066 check).
+const HEARD_ABOUT: [string, string][] = [
+  ["reddit", "Reddit"], ["facebook_group", "Facebook group"], ["forum", "Pilots of America / forum"],
+  ["type_club", "Type club"], ["search", "Search"], ["app_store", "App Store / Play"],
+  ["friend_or_mechanic", "Friend or mechanic"], ["myflightbook", "MyFlightBook"], ["other", "Other"],
 ];
 
 export function FirstRun({
@@ -22,6 +29,11 @@ export function FirstRun({
   error: string | null;
 }) {
   const [enrolling, setEnrolling] = useState(false);
+  const [heard, setHeard] = useState(false);
+  const answer = (value: string) => {
+    setHeard(true);
+    void api("POST", "/api/growth/heard-about", { answer: value });
+  };
   return (
     <div style={{ position: "relative", padding: "36px 6px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
       <div aria-hidden style={{
@@ -65,6 +77,31 @@ export function FirstRun({
           </div>
         ))}
       </div>
+
+      {!heard && (
+        <div style={{ alignSelf: "stretch", marginTop: 24, paddingTop: 16, borderTop: `1px solid ${color.hairline}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+            <span style={{ ...text.cardTitle, color: color.ink }}>How did you hear about MyTailLog?</span>
+            <button onClick={() => answer("dismissed")} style={{ ...text.secondary, color: color.dim, background: "none", border: "none", cursor: "pointer" }}>
+              Skip
+            </button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+            {HEARD_ABOUT.map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => answer(value)}
+                style={{
+                  ...text.secondary, color: color.dim, background: color.surface, cursor: "pointer",
+                  border: `1px solid ${color.hairline}`, borderRadius: radius.pill, padding: "6px 12px",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* The first promise the app makes. It now keeps it here rather than
           handing the owner back to the website. */}

@@ -26,7 +26,7 @@ test("catch-up email has a direct next step, safe text, and both unsubscribe met
   assert.match(message.subject, /N482RL/);
   assert.match(message.html, /N482RL&lt;script&gt;/);
   assert.doesNotMatch(message.html, /N482RL<script>/);
-  assert.match(message.html, /aircraft\/33333333-3333-4333-8333-333333333333\/upload/);
+  assert.match(message.html, /aircraft\/33333333-3333-4333-8333-333333333333\/start/);
   assert.match(message.html, /1321 Upland Dr/);
   assert.match(message.text, /Unsubscribe:/);
   assert.equal(message.headers["List-Unsubscribe-Post"], "List-Unsubscribe=One-Click");
@@ -35,7 +35,7 @@ test("catch-up email has a direct next step, safe text, and both unsubscribe met
 test("every stage points to the matching action", () => {
   const routes = {
     aircraft: "/aircraft/enroll",
-    logbooks: "/upload",
+    logbooks: "/start",
     extract: "/pages",
     review: "/review",
     success: "/timeline",

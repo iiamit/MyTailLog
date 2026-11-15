@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
 import { ImportBackup } from "./ImportBackup";
 import { RemoveShared } from "./RemoveShared";
+import { HeardAbout } from "./HeardAbout";
 import { dueSoonDaysForKind } from "@/lib/compliance";
 import { addDays } from "@/lib/maintenance";
 
@@ -24,6 +25,14 @@ export default async function Dashboard() {
     )
     .order("created_at", { ascending: true });
   const list = aircraft ?? [];
+
+  // New accounts (first 14 days) get a one-tap "how did you hear" card until answered.
+  const { data: me } = user
+    ? await supabase.from("profile").select("heard_about, created_at").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const askHeardAbout =
+    // eslint-disable-next-line react-hooks/purity -- server component: one timestamp for this request
+    !!me && me.heard_about == null && Date.parse(me.created_at) > Date.now() - 14 * 86_400_000;
 
   const email = user?.email?.toLowerCase();
   const roleByAircraft = new Map<string, string>();
@@ -105,6 +114,8 @@ export default async function Dashboard() {
           index of your records, never a replacement for the paper.
         </p>
       </header>
+
+      {askHeardAbout && <HeardAbout />}
 
       {/* Fleet-wide summary tiles */}
       {list.length > 0 && (

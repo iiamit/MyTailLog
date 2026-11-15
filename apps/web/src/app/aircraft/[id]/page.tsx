@@ -14,6 +14,8 @@ import {
   type AdLite,
 } from "@/lib/status";
 import { CameraIcon, ArchiveIcon } from "@/components/icons";
+import { coverageByLogbook, axisPercent } from "@/lib/coverage";
+import { startProgress } from "@/lib/startProgress";
 
 const U_COLOR: Record<Urgency, string> = {
   overdue: "var(--red)",
@@ -54,10 +56,11 @@ export default async function AircraftPage({
     { data: recent },
     { data: mxItems },
     { data: ads },
+    { count: readingCount },
   ] = await Promise.all([
     supabase.from("logbook").select("id, type, title").eq("aircraft_id", id),
     supabase.from("page").select("logbook_id").eq("aircraft_id", id),
-    supabase.from("log_entry").select("page_id, owner_confirmed").eq("aircraft_id", id),
+    supabase.from("log_entry").select("page_id, owner_confirmed, logbook_id, entry_date").eq("aircraft_id", id),
     supabase
       .from("log_entry")
       .select("id, entry_date, logbook_id, tach, hobbs, description, work_performed")
@@ -73,6 +76,7 @@ export default async function AircraftPage({
       .eq("aircraft_id", id)
       .eq("recurring", true)
       .not("status", "in", "(not_applicable,superseded)"),
+    supabase.from("hours_reading").select("id", { count: "exact", head: true }).eq("aircraft_id", id),
   ]);
 
   const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, id, {
@@ -124,11 +128,24 @@ export default async function AircraftPage({
   const reviewPending = new Set(
     (entryRows ?? []).filter((e) => !e.owner_confirmed).map((e) => e.page_id).filter(Boolean),
   ).size;
-  const capTiles = (logbooks ?? []).map((lb) => ({
-    label: lb.title ?? LOGBOOK_LABEL[lb.type] ?? lb.type,
-    type: lb.type,
-    count: pageCounts.get(lb.id) ?? 0,
-  }));
+  const totalPages = [...pageCounts.values()].reduce((x, y) => x + y, 0);
+
+  // Records coverage per logbook, on an axis from the aircraft's year to today.
+  const coverage = coverageByLogbook(logbooks ?? [], entryRows ?? []);
+  const nowYear = new Date().getFullYear();
+  const firstYear = Math.min(
+    aircraft.year ?? nowYear,
+    ...coverage.filter((c) => c.first).map((c) => Number(c.first!.slice(0, 4))),
+  );
+  const coverageNote = (() => {
+    const gap = coverage.find((c) => c.gaps.length > 0);
+    if (gap) return `${LOGBOOK_LABEL[gap.type]} gap ${gap.gaps[0].from.slice(0, 4)}–${gap.gaps[0].to.slice(0, 4)}. Missing pages, or just a quiet stretch?`;
+    const empty = coverage.find((c) => c.count === 0);
+    if (empty && coverage.some((c) => c.count > 0)) return `No ${LOGBOOK_LABEL[empty.type].toLowerCase()} entries yet.`;
+    return null;
+  })();
+
+  const setup = startProgress(aircraft, readingCount ?? 0, mxItems ?? []);
 
   const type = [aircraft.year, aircraft.make, aircraft.model].filter(Boolean).join(" ") || "Details not set";
   const a = `/aircraft/${id}`;
@@ -148,6 +165,15 @@ export default async function AircraftPage({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          {canEdit && setup.done < 2 && (
+            <Link
+              href={`${a}/start`}
+              className="inline-flex items-center rounded-[9px] border px-4 py-2.5 text-[13.5px] font-medium text-annun-amber hover:opacity-90"
+              style={{ borderColor: "var(--amb)", background: "var(--amb-bg)" }}
+            >
+              Finish setup · {setup.done} of 3 done →
+            </Link>
+          )}
           {isOwner && <Link href={`${a}/details`} className="inline-flex items-center rounded-[9px] border border-line2 bg-panel2 px-4 py-2.5 text-[13.5px] text-ink hover:border-accent">Edit aircraft details</Link>}
           {!isOwner && (
             <span className="rounded-full bg-panel2 px-2.5 py-0.5 text-xs font-medium text-dim">
@@ -284,8 +310,8 @@ export default async function AircraftPage({
           ) : (
             <p className="py-4 text-sm text-faint">
               No recurring items yet.{" "}
-              <Link href={`${a}/maintenance`} className="text-accent">
-                Seed the Part 91 defaults →
+              <Link href={canEdit ? `${a}/start` : `${a}/maintenance`} className="text-accent">
+                {canEdit ? "Set up status →" : "Open the forecast →"}
               </Link>
             </p>
           )}
@@ -336,20 +362,46 @@ export default async function AircraftPage({
         {/* Capture + Ask */}
         <div className="flex flex-col gap-4">
           <div className="panel p-5">
-            <div className="mb-3.5 flex items-center justify-between">
-              <div className="eyebrow">Logbook capture</div>
-              {reviewPending > 0 && (
+            <div className="mb-3.5 flex items-center justify-between gap-3">
+              <div className="eyebrow">Records coverage · {firstYear} → today</div>
+              {reviewPending > 0 ? (
                 <span className="readout text-[11px] text-annun-amber">{reviewPending} pages need review</span>
+              ) : (
+                <span className="readout text-[11px] text-faint">{totalPages} pages</span>
               )}
             </div>
-            {capTiles.length > 0 ? (
-              <div className="mb-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {capTiles.map((t) => (
-                  <div key={t.label} className="rounded-[9px] border border-line p-2.5 text-center">
-                    <div className={`readout text-[17px] ${t.count ? "" : "text-faint"}`}>{t.count}</div>
-                    <div className="eyebrow mt-0.5 truncate">{t.label}</div>
+            {coverage.length > 0 ? (
+              <div className="mb-3.5 flex flex-col gap-2">
+                {coverage.map((c) => (
+                  <div key={c.logbookId} className="grid grid-cols-[64px_minmax(0,1fr)_96px] items-center gap-2 text-[12px]">
+                    <span style={{ color: `var(--book-${c.type})` }}>{LOGBOOK_LABEL[c.type]}</span>
+                    <div
+                      className="relative h-3 overflow-hidden rounded border border-line bg-panel2"
+                      role="img"
+                      aria-label={c.first ? `${LOGBOOK_LABEL[c.type]}: entries ${c.first} to ${c.last}, ${c.gaps.length} gap(s)` : `${LOGBOOK_LABEL[c.type]}: no dated entries`}
+                    >
+                      {c.first && c.last &&
+                        [c.first, ...c.gaps.flatMap((g) => [g.from, g.to]), c.last]
+                          .reduce<[string, string][]>((segs, d, i, all) => (i % 2 === 0 ? [...segs, [d, all[i + 1]]] : segs), [])
+                          .map(([from, to]) => {
+                            const left = axisPercent(from, firstYear, nowYear);
+                            const width = Math.max(1, axisPercent(to, firstYear, nowYear) - left);
+                            return (
+                              <span
+                                key={from}
+                                className="absolute inset-y-0 rounded-sm"
+                                style={{ left: `${left}%`, width: `${width}%`, background: `var(--book-${c.type})` }}
+                              />
+                            );
+                          })}
+                    </div>
+                    <span className="readout truncate text-right text-[11px] text-dim">
+                      {c.count}
+                      {c.first ? ` · ${c.first.slice(0, 4)}–${c.last!.slice(0, 4)}` : ""}
+                    </span>
                   </div>
                 ))}
+                {coverageNote && <p className="mt-1 text-[11.5px] text-faint">{coverageNote}</p>}
               </div>
             ) : (
               <p className="mb-3.5 text-sm text-faint">No pages captured yet.</p>

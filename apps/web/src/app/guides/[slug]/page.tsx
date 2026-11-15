@@ -64,6 +64,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             <p>{body}</p>
           </MarketingSection>
         ))}
+        {slug === "airworthiness-directive-tracking" && (
+          <p className="text-dim">
+            Looking for a starting list?{" "}
+            <Link href="/ads" className="underline decoration-line underline-offset-2 hover:text-ink">
+              Browse airworthiness directives by aircraft, engine, and propeller model
+            </Link>
+            .
+          </p>
+        )}
       </div>
       <nav aria-label="More owner guides" className="mt-10 border-t border-line pt-5 text-sm text-dim">
         <span className="mr-3 text-faint">More owner guides:</span>

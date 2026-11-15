@@ -241,6 +241,28 @@ export type AdReference = {
   updated_at: string;
 }
 
+// Public AD catalog (0067) — Federal Register ADs with parsed makes/models.
+export type AdCatalog = {
+  ad_number: string;
+  title: string;
+  abstract: string | null;
+  effective_date: string | null;
+  makes: string[];
+  models: string[];
+  fr_html_url: string | null;
+  pdf_url: string | null;
+  citation: string | null;
+  source: string;
+  updated_at: string;
+}
+
+export type AdCatalogModel = {
+  make: string;
+  model: string;
+  ad_count: number;
+  latest_effective_date: string | null;
+}
+
 export type EquipmentProposal = {
   id: string;
   aircraft_id: string;
@@ -388,6 +410,10 @@ export type Profile = {
   preferences: Preferences;
   onboarding_opt_out: boolean;
   onboarding_unsubscribe_token: string;
+  /** First-touch attribution (0066); service-role writes only. */
+  signup_source: { ref?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; referrer_host?: string; landing: string; at: string } | null;
+  /** "How did you hear" answer (0066 check list). */
+  heard_about: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -425,6 +451,16 @@ export type AdminGrowthFunnel = {
   uploaded_pages: number;
   reviewed_pages: number;
   shared_summary: number;
+  status_ready: number;
+}
+
+export type AdminSignupsBySource = {
+  source: string;
+  signed_up: number;
+  added_aircraft: number;
+  uploaded_pages: number;
+  status_ready: number;
+  last_7d: number;
 }
 
 export type GrowthEvent = {
@@ -696,6 +732,7 @@ export type Database = {
       component: { Row: Component; Insert: Partial<Component>; Update: Partial<Component>; Relationships: [] };
       ad_compliance: { Row: AdCompliance; Insert: Partial<AdCompliance>; Update: Partial<AdCompliance>; Relationships: [] };
       ad_reference: { Row: AdReference; Insert: Partial<AdReference>; Update: Partial<AdReference>; Relationships: [] };
+      ad_catalog: { Row: AdCatalog; Insert: Partial<AdCatalog> & Pick<AdCatalog, "ad_number" | "title">; Update: Partial<AdCatalog>; Relationships: [] };
       equipment_proposal: { Row: EquipmentProposal; Insert: Partial<EquipmentProposal>; Update: Partial<EquipmentProposal>; Relationships: [] };
       maintenance_item: { Row: MaintenanceItem; Insert: Partial<MaintenanceItem>; Update: Partial<MaintenanceItem>; Relationships: [] };
       meter_reset: { Row: MeterResetRow; Insert: Partial<MeterResetRow>; Update: Partial<MeterResetRow>; Relationships: [] };
@@ -731,6 +768,8 @@ export type Database = {
     Views: {
       admin_user_stats: { Row: AdminUserStat; Relationships: [] };
       admin_growth_funnel: { Row: AdminGrowthFunnel; Relationships: [] };
+      admin_signups_by_source: { Row: AdminSignupsBySource; Relationships: [] };
+      ad_catalog_model: { Row: AdCatalogModel; Relationships: [] };
     };
     Functions: {
       onboarding_email_candidates: { Args: { p_preview?: boolean }; Returns: OnboardingEmailCandidate[] };

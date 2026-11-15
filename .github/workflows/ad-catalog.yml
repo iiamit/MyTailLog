@@ -1,0 +1,46 @@
+# Weekly refresh of the public AD catalog (ad_catalog, migration 0067) that
+# backs the /ads pages.
+#
+# Runs here rather than on Cloud Run because the Federal Register IP-blocks
+# Cloud Run egress (see apps/web/src/lib/faa/federalRegister.ts). Whether it
+# also blocks GitHub-hosted runners is unverified until the first run; the
+# script exits non-zero with a clear message on HTTP 403.
+#
+# Unlike adsb-sweep, this job writes to the database directly with the service
+# role, so it needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY repository secrets.
+name: ad-catalog
+
+on:
+  schedule:
+    - cron: "15 6 * * 1" # Mondays 06:15 UTC
+  workflow_dispatch:
+
+# No pull_request trigger: this repo is public, and secrets must never be
+# reachable from a fork's PR.
+permissions:
+  contents: read
+
+concurrency:
+  group: ad-catalog
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - name: Backfill AD catalog
+        run: npx tsx scripts/ad-catalog-backfill.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

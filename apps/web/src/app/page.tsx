@@ -344,12 +344,20 @@ export default async function Home() {
                   confirm.
                 </p>
                 <p>
-                  Minutes per page plus your review time, and nobody else ever
-                  handles your books. The other way to get decades of paper into
-                  data is to mail them to a transcription service, wait days to
-                  weeks, and pay in the hundreds per aircraft.
+                  Every answer links back to the page it came from. Your records
+                  open offline in the hangar on iPhone, iPad and Android. Export
+                  everything, scans included, and import it again whenever you
+                  want.
                 </p>
               </div>
+
+              <ul className="mt-5 flex flex-wrap gap-2" aria-label="What you can check">
+                {["Works offline", "Cites the source page", "Export & re-import"].map((c) => (
+                  <li key={c} className="rounded-full border border-line2 px-3 py-1 text-[13px] text-dim">
+                    {c}
+                  </li>
+                ))}
+              </ul>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
@@ -434,6 +442,10 @@ export default async function Home() {
                     The source is public
                   </a>
                   , so that is checkable rather than promised.
+                </p>
+                <p className="mt-2 text-[12.5px] leading-relaxed text-faint">
+                  AI reading includes a daily allowance. Add your own Anthropic
+                  key in Profile for more.
                 </p>
               </div>
             </aside>

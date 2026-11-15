@@ -84,7 +84,15 @@ const SECTIONS: Section[] = [
           from the tail number, here or in the <L href="#mobile">mobile app</L>. Five logbooks are
           created automatically: airframe, engine, prop, avionics, and <strong>Other</strong>.
           If you skipped engine or propeller serial numbers, open the aircraft overview on the web and choose
-          <strong> Edit aircraft details</strong> to add them later.
+          <strong> Edit aircraft details</strong> to add them later. The standard Part 91 items
+          (annual, transponder, pitot-static, ELT) are added for you.
+        </li>
+        <li>
+          <strong>Get started</strong> — on the web, enrolling opens a three-step setup: today&apos;s
+          tach and hobbs, then a photo of the page with your last annual sign-off (or just its date),
+          then your status. That&apos;s enough to start counting down what&apos;s due. The overview
+          shows <strong>Finish setup</strong> until it&apos;s done, and the <strong>Records
+          coverage</strong> bars there show how far back each logbook goes and where it skips.
         </li>
         <li>
           <strong>Capture or upload</strong> your logbook pages (and A&amp;P documents into Other).
@@ -583,7 +591,7 @@ const SECTIONS: Section[] = [
     body: (
       <>
         <p>
-          <L href="/aircraft">Aircraft → Meters &amp; resets</L> shows what each instrument reads and
+          <L href="/aircraft">Log → Hours &amp; oil → Meters &amp; resets</L> shows what each instrument reads and
           lets you record two things the logbook alone can&apos;t express: a meter that was{" "}
           <strong>replaced</strong>, and <strong>airframe time</strong>.
         </p>
@@ -995,7 +1003,9 @@ const SECTIONS: Section[] = [
         Advisory heuristics that flag <em>suspected</em> gaps in the digitized record: missing
         annuals (breaks in the annual chain), long stretches with no entries, and recurring ADs
         never complied or past due. Framed as &ldquo;suspected&rdquo; — a gap may just mean a page
-        isn&apos;t scanned yet.
+        isn&apos;t scanned yet. Find it under <strong>Workflows → Annual prep</strong>, which also
+        gathers what&apos;s due before the annual, open squawks for the shop, and pages still
+        awaiting review.
       </p>
     ),
   },

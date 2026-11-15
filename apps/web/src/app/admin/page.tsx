@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import type { AdminGrowthFunnel, AdminUserStat } from "@/lib/database.types";
+import type { AdminGrowthFunnel, AdminSignupsBySource, AdminUserStat } from "@/lib/database.types";
 import { endAnnouncement, publishAnnouncement, saveSharedAiProvider } from "./actions";
 
 export const metadata = { title: "Admin — MyTailLog" };
@@ -33,6 +33,8 @@ export default async function AdminPage() {
   const rows = (data ?? []) as AdminUserStat[];
   const { data: aiSetting } = await svc.from("app_setting").select("value").eq("key", "shared_ai_provider").maybeSingle();
   const { data: funnelData } = await svc.from("admin_growth_funnel").select("*").single();
+  const { data: sourceData } = await svc.from("admin_signups_by_source").select("*").order("signed_up", { ascending: false }).limit(50);
+  const sources = (sourceData ?? []) as AdminSignupsBySource[];
   const { data: announcements } = await svc.from("announcement").select("id,title,body,published_at,expires_at").order("published_at", { ascending: false }).limit(10);
   const funnel = funnelData as AdminGrowthFunnel | null;
   const sharedAiProvider = aiSetting?.value ?? "anthropic";
@@ -95,12 +97,13 @@ export default async function AdminPage() {
         <section className="panel mb-8 p-4">
           <h2 className="font-semibold">Activation funnel</h2>
           <p className="mb-3 text-xs text-faint">Unique accounts reaching each durable milestone. No page-view tracking.</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-6">
             {[
               ["Signed up", funnel.signed_up],
               ["Aircraft", funnel.added_aircraft],
               ["Uploaded", funnel.uploaded_pages],
               ["Reviewed", funnel.reviewed_pages],
+              ["Status ready", funnel.status_ready],
               ["Summary", funnel.shared_summary],
             ].map(([label, n]) => (
               <div key={label}>
@@ -108,6 +111,35 @@ export default async function AdminPage() {
                 <div className="text-xs text-faint">{label}</div>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {sources.length > 0 && (
+        <section className="panel mb-8 p-4">
+          <h2 className="font-semibold">Sign-ups by source</h2>
+          <p className="mb-3 text-xs text-faint">
+            First-touch <code>?ref=</code> / <code>utm_source</code> / referring site, else the owner&apos;s &ldquo;How did you hear&rdquo; answer.
+            Status ready = an annual with a last-done date and a current meter.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-faint">
+                <tr>{["Source", "Signed up", "Aircraft", "Uploaded", "Status ready", "Last 7 d"].map((h) => <th key={h} className="py-1 pr-4 font-medium">{h}</th>)}</tr>
+              </thead>
+              <tbody className="readout">
+                {sources.map((r) => (
+                  <tr key={r.source} className="border-t border-line">
+                    <td className="py-1.5 pr-4">{r.source}</td>
+                    <td className="pr-4">{r.signed_up}</td>
+                    <td className="pr-4">{r.added_aircraft}</td>
+                    <td className="pr-4">{r.uploaded_pages}</td>
+                    <td className="pr-4">{r.status_ready}</td>
+                    <td className="pr-4">{r.last_7d}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}

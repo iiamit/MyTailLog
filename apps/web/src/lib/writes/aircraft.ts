@@ -1,6 +1,7 @@
 import type { Aircraft } from "@/lib/database.types";
 import { LOGBOOK_TYPES } from "@/lib/logbooks";
 import type { Db, WriteCtx, WriteResult } from "./entries";
+import { seedStandard } from "./maintenance";
 
 // The ONE implementation of enrollment (CONTRACT §3 C3 `aircraft.enroll`).
 // Called by the web server action (cookie client) and POST /api/aircraft/enroll
@@ -127,5 +128,11 @@ export async function enroll(supabase: Db, ctx: WriteCtx, input: unknown): Promi
     .from("logbook")
     .insert(LOGBOOK_TYPES.map((type) => ({ aircraft_id: ctx.aircraftId, type })));
   if (logbookError) return { status: "error", message: `Aircraft saved, but logbooks failed: ${logbookError.message}` };
+
+  // Start with the Part 91 recurring items (annual, transponder, pitot-static,
+  // ELT) so status has something to count down the moment a date is known.
+  // Not fatal: the Maintenance page can still seed them by hand.
+  const seeded = await seedStandard(supabase, ctx);
+  if (seeded.status !== "ok") console.error("enroll: Part 91 seed failed", seeded);
   return { status: "ok", row };
 }
