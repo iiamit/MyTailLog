@@ -22,29 +22,59 @@ type NavGroup = { label?: string; items: NavItem[] };
 
 function buildNav(ctx: AircraftShellContext): NavGroup[] {
   const a = `/aircraft/${ctx.id}`;
-  const groups: NavGroup[] = [
+  const edit = ctx.canEdit;
+  // Grouped by task, matching the phone's tabs (Status / Log / Records / Squawks),
+  // plus the yearly workflows. Several pages share an item as hub tabs; every
+  // route keeps its URL.
+  return [
+    { items: [{ ident: "OVW", label: "Overview", href: a, match: [a] }] },
     {
-      // Top section (no header): the three surfaces you check most, with the two
-      // overlap-heavy clusters collapsed into hubs.
+      label: "Status",
       items: [
-        { ident: "OVW", label: "Overview", href: a, match: [a] },
         {
-          ident: "AWX",
-          label: "Airworthiness",
+          ident: "STS",
+          label: "Status & forecast",
           href: `${a}/status`,
           badge: ctx.badges.status,
           tone: "amber",
-          match: [`${a}/status`, `${a}/maintenance`, `${a}/compliance`, `${a}/audit`],
+          match: [`${a}/status`, `${a}/maintenance`, `${a}/compliance`],
           tabs: [
             { label: "Status", href: `${a}/status` },
             { label: "Forecast", href: `${a}/maintenance` },
             { label: "AD / SB", href: `${a}/compliance` },
-            { label: "Records gaps", href: `${a}/audit` },
           ],
         },
+        { ident: "SQK", label: "Squawks", href: `${a}/squawks` },
+      ],
+    },
+    {
+      label: "Log",
+      items: [
+        ...(edit
+          ? [
+              { ident: "CAP", label: "Capture pages", href: `${a}/capture` },
+              { ident: "RVW", label: "Review", href: `${a}/review`, badge: ctx.badges.review, tone: "amber" as const },
+              { ident: "ENT", label: "Add an entry", href: `${a}/entries/new` },
+            ]
+          : []),
         {
-          ident: "LOG",
-          label: "Logbook",
+          ident: "MTR",
+          label: "Hours & oil",
+          href: `${a}/meters`,
+          match: [`${a}/meters`, `${a}/oil-analysis`],
+          tabs: [
+            { label: "Meters & resets", href: `${a}/meters` },
+            { label: "Oil & engine trends", href: `${a}/oil-analysis` },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Records",
+      items: [
+        {
+          ident: "TLN",
+          label: "Timeline & Ask",
           href: `${a}/timeline`,
           match: [`${a}/timeline`, `${a}/ask`],
           tabs: [
@@ -52,41 +82,58 @@ function buildNav(ctx: AircraftShellContext): NavGroup[] {
             { label: "Ask your logbook", href: `${a}/ask` },
           ],
         },
+        ...(edit ? [{ ident: "PGS", label: "Logbook pages", href: `${a}/pages` }] : []),
+        { ident: "DOC", label: "Records Vault", href: `${a}/documents` },
+        {
+          ident: "EQP",
+          label: "Equipment & W&B",
+          href: `${a}/equipment`,
+          badge: ctx.badges.equipment,
+          tone: "accent",
+          match: [`${a}/equipment`, `${a}/weight-balance`],
+          tabs: [
+            { label: "Equipment", href: `${a}/equipment` },
+            { label: "Weight & balance", href: `${a}/weight-balance` },
+          ],
+        },
       ],
     },
     {
-      label: "Aircraft",
+      label: "Workflows",
       items: [
-        { ident: "EQP", label: "Equipment", href: `${a}/equipment`, badge: ctx.badges.equipment, tone: "accent" },
-        { ident: "OIL", label: "Oil & engine trends", href: `${a}/oil-analysis` },
-        { ident: "WBL", label: "Weight & balance", href: `${a}/weight-balance` },
-        { ident: "MTR", label: "Meters & resets", href: `${a}/meters` },
-        { ident: "SQK", label: "Squawks", href: `${a}/squawks` },
-        { ident: "DOC", label: "Records Vault", href: `${a}/documents` },
+        {
+          ident: "ANL",
+          label: "Annual prep",
+          href: `${a}/annual`,
+          match: [`${a}/annual`, `${a}/audit`],
+          tabs: [
+            { label: "Annual prep", href: `${a}/annual` },
+            { label: "Records gaps", href: `${a}/audit` },
+          ],
+        },
+        { ident: "BUY", label: "Pre-buy dossier", href: `${a}/prebuy` },
+      ],
+    },
+    {
+      label: "Manage",
+      items: [
+        edit
+          ? {
+              ident: "DAT",
+              label: "Import, export & duplicates",
+              href: `${a}/export`,
+              match: [`${a}/export`, `${a}/import`, `${a}/duplicates`],
+              tabs: [
+                { label: "Export & backup", href: `${a}/export` },
+                { label: "Import a CSV", href: `${a}/import` },
+                { label: "Fix duplicates", href: `${a}/duplicates` },
+              ],
+            }
+          : { ident: "EXP", label: "Export & backup", href: `${a}/export` },
+        ...(ctx.isOwner ? [{ ident: "SHR", label: "Sharing & transfer", href: `${a}/share` }] : []),
       ],
     },
   ];
-  if (ctx.canEdit) {
-    groups.push({
-      label: "Add records",
-      items: [
-        { ident: "CAP", label: "Capture pages", href: `${a}/capture` },
-        { ident: "CSV", label: "Import a CSV", href: `${a}/import` },
-        { ident: "PGS", label: "Logbook pages", href: `${a}/pages` },
-        { ident: "RVW", label: "Review", href: `${a}/review`, badge: ctx.badges.review, tone: "amber" },
-        { ident: "DUP", label: "Fix duplicates", href: `${a}/duplicates` },
-      ],
-    });
-  }
-  groups.push({
-    label: "Manage",
-    items: [
-      { ident: "BUY", label: "Pre-buy dossier", href: `${a}/prebuy` },
-      { ident: "EXP", label: "Export & backup", href: `${a}/export` },
-      ...(ctx.isOwner ? [{ ident: "SHR", label: "Sharing, transfer & delete", href: `${a}/share` }] : []),
-    ],
-  });
-  return groups;
 }
 
 function Readout({ value, label, dim }: { value: string; label: string; dim?: boolean }) {

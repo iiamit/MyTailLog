@@ -146,7 +146,7 @@ export function EnrollSheet({
 
 const strip = (t: string) => t.replace(/^N/i, "");
 
-async function api<T>(method: "GET" | "POST", path: string, data?: unknown): Promise<T | null> {
+export async function api<T>(method: "GET" | "POST", path: string, data?: unknown): Promise<T | null> {
   const { data: s } = await supabase.auth.getSession();
   const token = s.session?.access_token;
   if (!token) return null;

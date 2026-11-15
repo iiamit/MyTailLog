@@ -367,6 +367,10 @@ export default async function SummaryPage({ params }: { params: Promise<{ id: st
           Every value here is OCR-derived; verify against the original logbooks before relying
           on it.
         </p>
+        <p className="mt-1 text-[10.5px] text-faint">
+          Kept with MyTailLog, a free logbook tracker for aircraft owners ·{" "}
+          <a href="https://mytaillog.com/?ref=summary" className="underline">mytaillog.com</a>
+        </p>
       </article>
     </main>
   );

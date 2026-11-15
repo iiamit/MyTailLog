@@ -52,7 +52,7 @@ export default async function PrebuyPage({ params }: { params: Promise<{ id: str
 
   return <main className="mx-auto max-w-4xl px-6 py-8 print:max-w-none print:px-0 print:py-0">
     <header className="mb-6 flex flex-wrap items-end justify-between gap-4 print:hidden"><div>
-      <div className="eyebrow mb-2">Manage</div><h1 className="font-display text-[27px] font-semibold">Pre-buy dossier</h1>
+      <div className="eyebrow mb-2">Workflows</div><h1 className="font-display text-[27px] font-semibold">Pre-buy dossier</h1>
       <p className="mt-2 max-w-2xl text-sm text-dim">A source-linked briefing for a prospective buyer or mechanic. Print or save as PDF, then inspect the linked records and physical logbooks before relying on any finding.</p>
     </div><PrintButton /></header>
     <article className="text-[12px] leading-relaxed text-dim">
@@ -80,6 +80,7 @@ export default async function PrebuyPage({ params }: { params: Promise<{ id: str
       <p>{trends.oilChanges.length} oil-change entries recognized; {trends.oilIntervals.length} comparable intervals. <Link className="text-accent underline" href={`/aircraft/${id}/oil-analysis`}>Inspect engine trends and every source</Link></p>
       <h3 className={section}>Scope and next checks</h3>
       <p className="mt-2">This report summarizes MyTailLog records as of {generated}. Extraction and record-gap checks are imperfect. Unscanned pages, unreviewed text, unlinked AD evidence, and work after the last sync may be absent. Verify against physical logbooks, current AD research, and a qualified pre-buy inspection.</p>
+      <p className="mt-6 border-t border-line pt-2 text-[10.5px] text-faint">Kept with MyTailLog, a free logbook tracker for aircraft owners · <a href="https://mytaillog.com/?ref=prebuy" className="underline">mytaillog.com</a></p>
     </article>
   </main>;
 }

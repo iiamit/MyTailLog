@@ -12,6 +12,7 @@ const LINKS: { href: string; label: string }[] = [
   { href: "/switch/myfbo", label: "Coming from MyFBO" },
   { href: "/help", label: "Help & docs" },
   { href: "/guides/digitize-aircraft-logbooks", label: "Owner guides" },
+  { href: "/ads", label: "ADs by model" },
   { href: "/developers/docs", label: "API" },
   { href: "/whats-new", label: "What's new" },
   { href: "/privacy", label: "Privacy" },

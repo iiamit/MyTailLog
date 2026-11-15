@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       eyebrow="Privacy"
       title="How MyTailLog handles your data"
       current="/privacy"
-      lede="This policy covers the MyTailLog website and its iOS and Android apps. Updated November 11, 2026."
+      lede="This policy covers the MyTailLog website and its iOS and Android apps. Updated November 15, 2026."
     >
       <div className="space-y-8">
         <MarketingSection id="collect" title="What we collect">
@@ -28,6 +28,14 @@ export default function PrivacyPage() {
             If you connect an outside service or add your own AI key, we store the connection details
             needed to provide that feature. We also process the requests and errors needed to run and
             secure the service.
+          </p>
+          <p>
+            If you arrive at the website from a tagged link (such as one with <code>?ref=</code>) or
+            from another site, a first-party cookie records that link&apos;s tag, the other site&apos;s
+            name, and the page you landed on. If you create an account within the hour, we save that
+            on your profile, together with your answer to &ldquo;How did you hear about
+            MyTailLog?&rdquo; if you give one. We use it only to count which channels bring new owners.
+            There are no third-party analytics or advertising trackers, and no page-view tracking.
           </p>
         </MarketingSection>
         <MarketingSection id="use" title="How we use it">

@@ -23,5 +23,6 @@ export async function enrollAircraft(formData: FormData): Promise<EnrollResult> 
   if (r.status !== "ok") return { error: failMessage(r) };
 
   revalidatePath("/dashboard");
-  redirect(`/aircraft/${aircraftId}`);
+  // Guided first session: hours → last annual → status (app/aircraft/[id]/start).
+  redirect(`/aircraft/${aircraftId}/start`);
 }

@@ -58,11 +58,11 @@ export function onboardingMessage(candidate: OnboardingEmailCandidate) {
       preheader = catchup ? "Pick up where you left off with one easy next step." : "Scan a page or upload a PDF whenever you’re ready.";
       heading = catchup ? `${tail} is ready when you are.` : `${tail} is in your hangar.`;
       paragraphs = catchup
-        ? [`You added ${tail} to MyTailLog, but haven’t brought in its logbooks yet. If you’d still like searchable maintenance records, scan a page with the mobile app or upload a PDF on the web.`, "There’s no need to do it all at once. Start with one page, then add the rest whenever you have time."]
-        : ["Nice work getting your aircraft set up. Its paper history can come along too: scan a few pages with the mobile app, or upload a PDF from your computer.", "You can start with one page. Your originals stay yours, and you can return to add the rest whenever it suits you."];
-      button = catchup ? `Continue setting up ${tail}` : `Add ${tail}’s logbooks`;
-      link = `${SITE}${aircraftPath}/upload`;
-      illustration = [`${tail} · Aircraft added`, "Add a logbook · Scan pages or upload a PDF"];
+        ? [`You added ${tail} to MyTailLog, but haven’t brought in its logbooks yet. Start with today's hours and one photo of the last annual sign-off to see its status.`, "There’s no need to do it all at once. Add the rest of your logbooks whenever you have time."]
+        : ["Nice work getting your aircraft set up. The quickest next step is one photo: the page with your last annual sign-off. With that and today’s tach, MyTailLog can show what’s coming due.", "You can bring in the rest of the logbooks whenever it suits you. Your originals stay yours."];
+      button = catchup ? `Continue setting up ${tail}` : `Photograph ${tail}’s last annual`;
+      link = `${SITE}${aircraftPath}/start`;
+      illustration = [`${tail} · Aircraft added`, "Last annual + hours · Then see what’s due"];
       break;
     case "review":
       subject = catchup ? `${tail}’s logbook entries are waiting for a quick review` : `Your ${tail} logbook pages are ready to review`;
