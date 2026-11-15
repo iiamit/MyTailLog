@@ -41,6 +41,16 @@ test("csv import: map → preview → import → the entries appear for review",
   await page.getByRole("button", { name: /^Import 2 entries$/ }).click();
   await expect(page.getByText("Imported 2 entries")).toBeVisible({ timeout: 20_000 });
 
+  // A lost response or partial batch makes a user retry the same file. The
+  // retry must not create a second copy of either entry.
+  await page.goto(`${scratch.path}/import`);
+  await page.locator('input[type="file"]').setInputFiles(CSV);
+  await page.getByRole("button", { name: "Read the columns" }).click();
+  await expect(page.getByRole("combobox", { name: 'Import "Date" as' })).toHaveValue("entry_date", { timeout: 20_000 });
+  await page.getByRole("button", { name: "Check what will be created" }).click();
+  await page.getByRole("button", { name: /^Import 2 entries$/ }).click();
+  await expect(page.getByText("Imported 0 entries")).toBeVisible({ timeout: 20_000 });
+
   // …and they're in the one review queue, grouped as scan-less, unconfirmed.
   await page.goto(`${scratch.path}/review`);
   await expect(page.getByText(/imported \(no scan\)/)).toBeVisible();

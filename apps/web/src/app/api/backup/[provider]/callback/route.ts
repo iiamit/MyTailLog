@@ -72,13 +72,14 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ provide
     // never backs anything up is the failure mode this feature exists to fix.
     // Monthly is the ceiling (plan §1); the user can change or switch it off.
     const day = dayOfMonthFor(user.id);
-    await svc.rpc("set_backup_schedule", {
+    const { error: scheduleError } = await svc.rpc("set_backup_schedule", {
       p_user_id: user.id,
       p_provider: id,
       p_frequency: "monthly",
       p_day_of_month: day,
       p_next_run_at: nextRunAt("monthly", day),
     });
+    if (scheduleError) throw scheduleError;
     return back("connected");
   } catch (e) {
     console.error(`[backup] ${id} connect failed: ${redactSecrets((e as Error).message)}`);

@@ -67,11 +67,12 @@ export async function GET(req: Request) {
   const rowByKey = new Map<string, Record<string, unknown>>();
   for (const [table, ids] of idsByTable) {
     for (let i = 0; i < ids.length; i += 500) {
-      const { data } = await supabase
+      const { data, error: rowError } = await supabase
         // dynamic table name — the typed union collapses; cast the arg
         .from(table as never)
         .select("*")
         .in("id", ids.slice(i, i + 500));
+      if (rowError) return NextResponse.json({ error: rowError.message }, { status: 500 });
       for (const row of (data ?? []) as Record<string, unknown>[]) {
         rowByKey.set(`${table}:${row.id}`, row);
       }

@@ -178,7 +178,8 @@ async function runDestination(
       const path = remotePath(collected.tail, archive.filename);
       try {
         const up = await provider.upload(token, path, archive.stream, state);
-        await archive.result; // surfaces a build-side failure
+        const stats = await archive.result; // surfaces a build-side failure
+        if (stats.missing) throw new Error(`Backup omitted ${stats.missing} scan or document file(s).`);
         out.uploaded += 1;
         await finish(supabase, runId, "ok", up.bytes, up.path, null);
         // The folder the provider resolved (Drive) or nothing (Dropbox). Only
@@ -224,15 +225,17 @@ function finish(
   });
 }
 
-/** Sum the aircraft's stored blob bytes. Missing blobs count as zero — the
- *  archive builder skips them too. */
+/** Sum the aircraft's stored blob bytes; an absent file makes the backup incomplete. */
 async function totalBlobBytes(paths: string[]): Promise<number> {
   let next = 0;
   let total = 0;
   await Promise.all(
     Array.from({ length: Math.min(SIZE_CONCURRENCY, paths.length) }, async () => {
       while (next < paths.length) {
-        total += (await blobSize(paths[next++])) ?? 0;
+        const path = paths[next++];
+        const size = await blobSize(path);
+        if (size == null) throw new Error(`Backup could not read file size for ${path}.`);
+        total += size;
       }
     }),
   );

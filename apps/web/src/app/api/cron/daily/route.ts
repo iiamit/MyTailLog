@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { createHash } from "node:crypto";
 import { syncUserHours } from "@/lib/mfbSync";
 import { sendEmail } from "@/lib/email";
 import { runOnboardingEmails } from "@/lib/onboardingEmails";
@@ -135,10 +136,11 @@ async function remindUser(
   if (aircraft.length === 0) return false;
 
   // Already-sent (item_key|due_signature) pairs for this user.
-  const { data: logs } = await supabase
+  const { data: logs, error: logsError } = await supabase
     .from("reminder_log")
     .select("item_key, due_signature")
     .eq("user_id", userId);
+  if (logsError) throw logsError;
   const alreadySent = new Set((logs ?? []).map((l) => `${l.item_key}|${l.due_signature}`));
 
   const today = new Date();
@@ -198,10 +200,13 @@ async function remindUser(
     to: email,
     subject: reminderSubject(groups),
     html: reminderHtml(groups),
+    idempotencyKey: createHash("sha256")
+      .update(`${userId}:${toLog.map((t) => `${t.item_key}|${t.due_signature}`).sort().join(",")}`)
+      .digest("hex"),
   });
   if (!ok) return false; // don't log as sent if delivery failed → retry next run
 
-  await supabase.from("reminder_log").insert(
+  const { error: logError } = await supabase.from("reminder_log").insert(
     toLog.map((t) => ({
       user_id: userId,
       aircraft_id: t.aircraft_id,
@@ -209,6 +214,8 @@ async function remindUser(
       due_signature: t.due_signature,
     })),
   );
+  if (logError?.code === "23505") return false;
+  if (logError) throw logError;
 
   await pushReminder(supabase, userId, groups);
   return true;

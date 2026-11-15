@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import {
   prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage,
@@ -80,7 +81,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
   }
 
-  const parsed = parseCsv(await file.text());
+  const raw = await file.text();
+  const parsed = parseCsv(raw);
   if (parsed.header.length === 0 || parsed.rows.length === 0) {
     return NextResponse.json(
       { error: "That file has no data rows — it needs a header row and at least one row under it." },
@@ -210,8 +212,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   // page_id stays null — an imported entry has no scan behind it, and inventing
   // a fake page would put a phantom in the pages list forever.
-  const rows = entries.map((e) => ({
+  // Stable ids make a retry safe after a partial insert or lost HTTP response.
+  const importKey = createHash("sha256").update(JSON.stringify([id, logbook.id, raw, mapping, format])).digest("hex");
+  const rows = entries.map((e, index) => ({
     ...e,
+    id: (() => {
+      const hex = createHash("sha256").update(`${importKey}:${index}`).digest("hex");
+      return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+    })(),
     aircraft_id: id,
     logbook_id: logbook.id,
     page_id: null,
@@ -226,7 +234,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Chunked so one oversized statement can't stall the request; RLS applies to
   // every chunk under the caller's own session.
   for (let i = 0; i < rows.length; i += 500) {
-    const { data, error } = await supabase.from("log_entry").insert(rows.slice(i, i + 500)).select("id");
+    const { data, error } = await supabase.from("log_entry").upsert(rows.slice(i, i + 500), { onConflict: "id", ignoreDuplicates: true }).select("id");
     if (error) {
       return NextResponse.json(
         { error: `Imported ${inserted} entries, then stopped: ${error.message}` },

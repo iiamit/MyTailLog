@@ -55,6 +55,11 @@ test("capture: a page with no sequence supplied is still numbered", async ({ req
     .eq("aircraft_id", scratch.id);
   const airframe = logbooks!.find((l) => l.type === "airframe")!.id;
 
+  const badId = await request.post(`/api/aircraft/${scratch.id}/capture`, {
+    data: { pageId: "../outside", logbookId: airframe, image: PIXEL },
+  });
+  expect(badId.status()).toBe(400);
+
   const seqOf = async (pageId: string) => {
     const { data } = await admin.from("page").select("page_sequence").eq("id", pageId).single();
     return data!.page_sequence;
@@ -64,6 +69,16 @@ test("capture: a page with no sequence supplied is still numbered", async ({ req
   // to land as NULL and render as "—" forever.
   const first = await capture(request, scratch.id, airframe, {});
   expect(await seqOf(first), "an unnumbered capture must not stay unnumbered").not.toBeNull();
+
+  // An offline queue retry must keep the original bytes, even if the retry's
+  // payload changed after the first response was lost.
+  const retry = await request.post(`/api/aircraft/${scratch.id}/capture`, {
+    data: { pageId: first, logbookId: airframe, image: Buffer.from("different image").toString("base64") },
+  });
+  expect(retry.status()).toBe(200);
+  const original = await request.get(`/api/page/${first}/image`);
+  expect(original.status()).toBe(200);
+  expect(Buffer.from(await original.body())).toEqual(Buffer.from(PIXEL, "base64"));
 
   // And the next one continues rather than repeating.
   const second = await capture(request, scratch.id, airframe, {});
