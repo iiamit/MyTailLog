@@ -110,8 +110,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // A prior interrupted upload can leave the blob without its row. Reuse it
     // only when it is byte-for-byte the same capture; never replace it.
     const stored = await getBlob(path);
+    if (!stored) return NextResponse.json({ error: upErr }, { status: 500 });
     const incoming = input.image instanceof Blob ? Buffer.from(await input.image.arrayBuffer()) : Buffer.from(input.image);
-    if (!stored?.data.equals(incoming)) return NextResponse.json({ error: "Page image already exists or could not be uploaded." }, { status: 409 });
+    if (!stored.data.equals(incoming)) return NextResponse.json({ error: "Page image already exists with different content." }, { status: 409 });
   }
 
   // Thumbnail is best-effort — the page still renders via a fallback to the full scan.
