@@ -3,7 +3,8 @@ import Image, { type StaticImageData } from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { Disclaimer } from "@/components/Disclaimer";
 import { NavigationMenu } from "@/components/shell/NavigationMenu";
-import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/appStore";
+import { StoreBadges } from "@/components/StoreBadges";
+import { APP_STORE_URL } from "@/lib/appStore";
 import shotReview from "../screenshots/review.png";
 import shotStatus from "../screenshots/status.png";
 import shotAsk from "../screenshots/ask.png";
@@ -291,13 +292,8 @@ export default async function Home() {
                 )}
               </div>
 
-              <div role="group" aria-label="Mobile apps" className="mt-3 flex flex-wrap gap-2">
-                <a href={APP_STORE_URL} aria-label="Download MyTailLog for iPhone and iPad on the App Store" className={`inline-flex min-h-11 items-center rounded-md border border-line px-3 py-2 text-xs text-dim hover:border-line2 hover:text-ink ${FOCUS}`}>
-                  App Store
-                </a>
-                <a href={PLAY_STORE_URL} aria-label="Download MyTailLog for Android on Google Play" className={`inline-flex min-h-11 items-center rounded-md border border-line px-3 py-2 text-xs text-dim hover:border-line2 hover:text-ink ${FOCUS}`}>
-                  Google Play
-                </a>
+              <div className="mt-3">
+                <StoreBadges />
               </div>
 
               {!user && (
@@ -594,12 +590,7 @@ export default async function Home() {
               >
                 {primary.label} →
               </Link>
-              <a href={APP_STORE_URL} className={`rounded-md border border-line px-5 py-3 text-ink hover:border-accent ${FOCUS}`}>
-                Download on the App Store
-              </a>
-              <a href={PLAY_STORE_URL} className={`rounded-md border border-line px-5 py-3 text-ink hover:border-accent ${FOCUS}`}>
-                Get it on Google Play
-              </a>
+              <StoreBadges />
               <Link
                 href="/compare"
                 className={`rounded-md border border-line px-5 py-3 text-dim hover:border-line2 hover:text-ink ${FOCUS}`}

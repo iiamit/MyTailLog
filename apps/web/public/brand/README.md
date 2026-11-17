@@ -28,3 +28,14 @@ PNGs are already rasterized with it). Need the wordmark as **outlined paths**
 Keep padding around the logo of at least the height of the mark's triangle.
 Don't recolor, rotate, add effects, or place the light-bg lockup on a dark
 background (use the dark-bg variant instead).
+
+## Third-party store badges
+
+These are unmodified store artwork, downloaded 17 November 2026; the MyTailLog
+logo permissions above do not apply to them.
+
+- `app-store-badge.svg`: [Apple artwork](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg), used under [Apple's badge guidelines](https://developer.apple.com/app-store/marketing/guidelines/).
+- `google-play-badge.png`: [Google artwork](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png), used under [Google Play's badge guidelines](https://partnermarketinghub.withgoogle.com/brands/google-play/google-play/lockups-icons-badges/).
+
+`StoreBadges` displays the artwork at matching visible badge heights. The
+Google PNG includes its own clear space; keep it intact.
