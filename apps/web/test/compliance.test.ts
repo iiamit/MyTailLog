@@ -153,8 +153,10 @@ test("urgencyOf: hours within DUE_SOON_HOURS → due_soon; beyond → upcoming",
   assert.equal(urgencyOf({ next_due_date: null, next_due_hours: 100 }, 100 - DUE_SOON_HOURS - 1, TODAY), "upcoming");
 });
 
-test("urgencyOf: hours ignored when currentHours is null → upcoming", () => {
-  assert.equal(urgencyOf({ next_due_date: null, next_due_hours: 100 }, null, TODAY), "upcoming");
+test("urgencyOf: missing current hours cannot establish a current assessment", () => {
+  assert.equal(urgencyOf({ next_due_date: null, next_due_hours: 100 }, null, TODAY), "none");
+  assert.equal(urgencyOf({ next_due_date: "2099-01-01", next_due_hours: 100 }, null, TODAY), "none");
+  assert.equal(urgencyOf({ next_due_date: "2001-01-01", next_due_hours: 100 }, null, TODAY), "overdue");
 });
 
 test("urgencyOf: overdue on hours outranks soon on date", () => {

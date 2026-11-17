@@ -10,8 +10,8 @@
 //   SwiftUI Color            → these hex strings
 //   .monospacedDigit()       → fontVariantNumeric: "tabular-nums"
 //   SF Symbols               → inline SVG (src/icons.tsx)
-//   Dynamic Type             → rem-relative sizes; the webview honours the
-//                              OS text-size setting through the root font size
+//   Shared type scale        → rem-relative sizes; verify OS large-text
+//                              behavior on each shipped device class
 // The VISUAL result is what has to match, not the mechanism.
 // ===========================================================================
 
@@ -68,7 +68,7 @@ export const palettes: Record<ThemeName, Palette> = {
     hairline: "#2B313C",
     ink: "#ECEFF4",
     dim: "#9AA3B0",
-    faint: "#6B7482",
+    faint: "#8B95A3",
     accent: "#5AA9FF",
     accentLight: "#8EC8FF",
     onAccent: "#0B1017",
@@ -83,8 +83,8 @@ export const palettes: Record<ThemeName, Palette> = {
     hairline: "#D3DAE4",
     ink: "#10151C",
     dim: "#4E5967",
-    // 4.0:1 on the light bg at #6E7A89 — design measured it; #666F7C is 4.6:1.
-    faint: "#666F7C",
+    // Secondary text clears AA on the ground, card and raised surfaces.
+    faint: "#606A78",
     accent: "#1667CE",
     // The accent gradient does not change between themes: it is a light-blue
     // fill carrying dark text, and that reads on either ground.
@@ -139,7 +139,7 @@ export function setActiveTheme(t: ThemeName): void {
 }
 
 export const color: Palette = new Proxy({} as Palette, {
-  get: (_t, k: string) => `var(--c-${k})`,
+  get: (target, key) => Object.hasOwn(palettes.dark, key) ? `var(--c-${String(key)})` : Reflect.get(target, key),
   // Style objects get spread and inspected; make the proxy enumerate like one.
   ownKeys: () => Object.keys(palettes.dark),
   getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
@@ -160,7 +160,7 @@ export function alpha(c: string, a: string): string {
 }
 
 export const tint: Tints = new Proxy({} as Tints, {
-  get: (_t, k: string) => `var(--t-${k})`,
+  get: (target, key) => Object.hasOwn(tintsFor(palettes.dark), key) ? `var(--t-${String(key)})` : Reflect.get(target, key),
   ownKeys: () => Object.keys(tintsFor(palettes.dark)),
   getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
 });
@@ -238,19 +238,20 @@ export const accentGradient = `linear-gradient(135deg, ${palettes.dark.accent}, 
 // Colour is NEVER the only signal: every state carries a word too, for
 // colour-blind users and for reading the screen in a bright hangar.
 
-export type Semantic = "grounded" | "due" | "airworthy";
+export type Semantic = "grounded" | "due" | "airworthy" | "unknown";
 
 export const semantic: Record<Semantic, { color: string; tint: string; border: string; word: string }> = {
-  grounded: { color: color.danger, tint: tint.danger, border: tint.dangerBorder, word: "GROUNDED" },
+  grounded: { color: color.danger, tint: tint.danger, border: tint.dangerBorder, word: "OVERDUE" },
   due: { color: color.warning, tint: tint.warning, border: tint.warningBorder, word: "DUE SOON" },
-  airworthy: { color: color.success, tint: tint.success, border: tint.successBorder, word: "AIRWORTHY" },
+  airworthy: { color: color.success, tint: tint.success, border: tint.successBorder, word: "WITHIN RECORDED LIMITS" },
+  unknown: { color: color.dim, tint: color.surfaceRaised, border: color.hairline, word: "NEEDS INFORMATION" },
 };
 
 /** Map the shared compliance urgency onto the design's three states. */
 export function semanticOf(urgency: string | null | undefined): Semantic {
   if (urgency === "overdue") return "grounded";
   if (urgency === "due_soon") return "due";
-  return "airworthy";
+  return urgency === "upcoming" ? "airworthy" : "unknown";
 }
 
 // --- Type -------------------------------------------------------------------
@@ -266,7 +267,7 @@ export const tabular = { fontVariantNumeric: "tabular-nums" } as const;
 
 type TextStyle = {
   fontFamily: string;
-  fontSize: number;
+  fontSize: string;
   fontWeight: number;
   letterSpacing?: string;
   lineHeight?: number | string;
@@ -275,29 +276,29 @@ type TextStyle = {
 
 /** The type scale, authored at iPhone logical-point scale (390pt wide). */
 export const text = {
-  screenTitle: { fontFamily: display, fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" },
-  screenTitleCompact: { fontFamily: display, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" },
-  hero: { fontFamily: display, fontSize: 28, fontWeight: 700, lineHeight: 1 },
-  tailCard: { fontFamily: display, fontSize: 19, fontWeight: 700, letterSpacing: "0.01em" },
-  tailSwitcher: { fontFamily: display, fontSize: 15, fontWeight: 700 },
-  meterValue: { fontFamily: display, fontSize: 21, fontWeight: 700, letterSpacing: "-0.01em" },
-  verdict: { fontFamily: display, fontSize: 19, fontWeight: 700 },
-  countdown: { fontFamily: display, fontSize: 13, fontWeight: 700 },
-  button: { fontFamily: body, fontSize: 16, fontWeight: 600 },
-  cardTitle: { fontFamily: body, fontSize: 15, fontWeight: 600 },
-  rowTitle: { fontFamily: body, fontSize: 14.5, fontWeight: 600 },
-  bodyText: { fontFamily: body, fontSize: 13.5, fontWeight: 400, lineHeight: 1.5 },
-  secondary: { fontFamily: body, fontSize: 13, fontWeight: 400 },
-  meta: { fontFamily: body, fontSize: 11.5, fontWeight: 400 },
+  screenTitle: { fontFamily: display, fontSize: "1.625rem", fontWeight: 700, letterSpacing: "-0.02em" },
+  screenTitleCompact: { fontFamily: display, fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-0.02em" },
+  hero: { fontFamily: display, fontSize: "1.75rem", fontWeight: 700, lineHeight: 1 },
+  tailCard: { fontFamily: display, fontSize: "1.1875rem", fontWeight: 700, letterSpacing: "0.01em" },
+  tailSwitcher: { fontFamily: display, fontSize: "0.9375rem", fontWeight: 700 },
+  meterValue: { fontFamily: display, fontSize: "1.3125rem", fontWeight: 700, letterSpacing: "-0.01em" },
+  verdict: { fontFamily: display, fontSize: "1.1875rem", fontWeight: 700 },
+  countdown: { fontFamily: display, fontSize: "0.8125rem", fontWeight: 700 },
+  button: { fontFamily: body, fontSize: "1rem", fontWeight: 600 },
+  cardTitle: { fontFamily: body, fontSize: "0.9375rem", fontWeight: 600 },
+  rowTitle: { fontFamily: body, fontSize: "0.90625rem", fontWeight: 600 },
+  bodyText: { fontFamily: body, fontSize: "1.0625rem", fontWeight: 400, lineHeight: 1.5 },
+  secondary: { fontFamily: body, fontSize: "0.875rem", fontWeight: 400 },
+  meta: { fontFamily: body, fontSize: "0.875rem", fontWeight: 400 },
   sectionLabel: {
-    fontFamily: body, fontSize: 12, fontWeight: 600,
+    fontFamily: body, fontSize: "0.75rem", fontWeight: 600,
     letterSpacing: "0.08em", textTransform: "uppercase",
   },
   chip: {
-    fontFamily: body, fontSize: 11, fontWeight: 600,
+    fontFamily: body, fontSize: "0.6875rem", fontWeight: 600,
     letterSpacing: "0.04em", textTransform: "uppercase",
   },
-  tabLabel: { fontFamily: body, fontSize: 10.5, fontWeight: 500 },
+  tabLabel: { fontFamily: body, fontSize: "0.875rem", fontWeight: 500 },
 } satisfies Record<string, TextStyle>;
 
 // --- Space, radius, hit targets --------------------------------------------
@@ -314,8 +315,8 @@ export const radius = {
   pill: 999,
 } as const;
 
-/** No interactive element below 44. Steppers 46, primary buttons 52, keys 56. */
-export const hit = { min: 44, stepper: 46, primary: 52, key: 56 } as const;
+/** Shared controls meet the larger Android minimum; primary buttons retain extra space. */
+export const hit = { min: 48, stepper: 48, primary: 52, key: 56 } as const;
 
 // ---------------------------------------------------------------------------
 // The owner-facing half of the appearance setting.

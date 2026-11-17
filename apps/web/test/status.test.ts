@@ -6,6 +6,8 @@ import {
   sortStatusItems,
   daysUntil,
   hoursRemaining,
+  summarizeStatusItems,
+  statusCountdown,
 } from "../src/lib/status";
 import type { MaintenanceItem } from "../src/lib/database.types";
 
@@ -86,6 +88,24 @@ test("buildStatusItems: date-driven annual far in the future → upcoming", () =
   const [s] = buildStatusItems([annual("2099-01-01")], [], { tach: null, hobbs: null });
   assert.equal(s.urgency, "upcoming"); // > 90 days out
   assert.equal(s.nextDueDate, "2099-01-01");
+});
+
+test("incomplete schedules and missing meters never count as current; known alerts survive", () => {
+  const missingMeter = buildStatusItems([tbo(4000, 4200)], [], { tach: null, hobbs: null });
+  assert.equal(missingMeter[0].urgency, "none");
+  assert.deepEqual(summarizeStatusItems(missingMeter), { overdue: 0, due: 0, current: 0, unknown: 1 });
+  assert.deepEqual(summarizeStatusItems([]), { overdue: 0, due: 0, current: 0, unknown: 0 });
+
+  const incomplete = { ...annual("2099-01-01"), interval_hours: 100, next_due_hours: null };
+  assert.equal(buildStatusItems([incomplete], [], { tach: 100, hobbs: null })[0].urgency, "none");
+  assert.equal(buildStatusItems([{ ...incomplete, next_due_date: "2001-01-01" }], [], { tach: null, hobbs: null })[0].urgency, "overdue");
+
+  const dualLimit = { ...incomplete, next_due_hours: 200 };
+  assert.equal(buildStatusItems([dualLimit], [], { tach: null, hobbs: null })[0].urgency, "none");
+  assert.equal(buildStatusItems([dualLimit], [], { tach: 201, hobbs: null })[0].urgency, "overdue");
+  const unreliable = buildStatusItems([tbo(4000, 4200)], [], { tach: 100, hobbs: 50 });
+  assert.equal(unreliable[0].hoursUnreliable, true);
+  assert.equal(unreliable[0].urgency, "none");
 });
 
 test("buildStatusItems: legacy VOR rows are recalculated to exactly 30 days", () => {
@@ -185,4 +205,16 @@ test("hoursRemaining: null when either operand is null", () => {
   assert.equal(hoursRemaining(null, 4150), null);
   assert.equal(hoursRemaining(4200, null), null);
   assert.equal(hoursRemaining(null, null), null);
+});
+
+test("mixed-limit readouts keep both axes and lead with the breached limit", () => {
+  const [base] = buildStatusItems([tbo(0, 100)], [], { tach: 100.4, hobbs: null });
+  const item = { ...base, nextDueDate: "2026-03-02" };
+  const today = new Date("2026-01-01T23:59:00Z");
+  assert.deepEqual(statusCountdown(item, today), { days: 60, hours: -0.4, unit: "hours", text: "0.4h over · 60d" });
+  assert.equal(statusCountdown({ ...item, nextDueDate: "2025-12-31", currentForItem: 50 }, today).text, "1d over · 50h");
+  assert.equal(statusCountdown({ ...item, currentForItem: 100 }, today).text, "0h due · 60d");
+  assert.equal(statusCountdown({ ...item, nextDueDate: "2026-12-31", currentForItem: 95 }, today).unit, "hours");
+  assert.equal(statusCountdown({ ...item, currentForItem: null }, today).text, "60d · hours unknown");
+  assert.equal(statusCountdown({ ...item, hoursUnreliable: true }, today).text, "60d · check reading");
 });

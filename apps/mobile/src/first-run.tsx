@@ -7,8 +7,8 @@ import { supabase } from "./supabase";
 
 const STEPS = [
   { title: "Add your aircraft", detail: "Tail number is enough — we pull the rest from the registry." },
-  { title: "Snap your logbook pages", detail: "Point, shoot, keep turning. Bad light is fine." },
-  { title: "We read every entry", detail: "ADs, inspections and hours start tracking themselves." },
+  { title: "Snap your logbook pages", detail: "Scan a page, check its crop, then keep turning." },
+  { title: "Review the extracted entries", detail: "Confirm the readings before using them to track inspections, ADs and hours." },
 ];
 
 // Mirrors HEARD_ABOUT in apps/web/src/lib/signupSource.ts (and the 0066 check).

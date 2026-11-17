@@ -5,11 +5,12 @@ import { getByAircraft } from "./db";
 import { enqueue } from "./mutations";
 import { canEdit } from "./actions";
 import { patchLocal, deleteLocal } from "./review-local";
+import { runReviewWrite, resumableWrite } from "./review-write";
 import { useShortcuts } from "./layout";
 import { shortDate } from "./airworthiness";
 import { EntryEditor, CheckChip } from "./entry-editor";
 import {
-  entriesOn, entryBadge, fieldChip, readAllowance, extractLabel, spotlightStyle, drawerSnap,
+  entriesOn, entryBadge, fieldChip, readAllowance, extractLabel, spotlightStyle, drawerSnap, drawerClick,
   type ReviewPage, type ReviewEntry, type EntryForm, type Allowance,
 } from "./review-rules";
 import type { FieldBox } from "@/lib/extraction/schema";
@@ -61,37 +62,78 @@ export function ReviewPane({
   const editable = canEdit(page.aircraft_id);
   const [editing, setEditing] = useState<{ entry: ReviewEntry | null; focus?: keyof EntryForm } | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [reloadRequired, setReloadRequired] = useState(false);
+  const writing = useRef(false);
+  const pendingRefresh = useRef<(() => Promise<void>) | null>(null);
   const allowance = useAllowance();
 
   async function after(label?: string) {
+    if (label) setNote(`${label} · saved on this phone. Checking sync…`);
     await onChanged();
     const r = await onQueued?.();
     setNote(label ? `${label} · ${r === "synced" ? "synced" : "saved on this phone, uploads when connected"}` : null);
   }
 
+  async function change(label: string, queue: () => Promise<unknown>, mirror?: () => Promise<unknown>) {
+    if (writing.current || reloadRequired) return;
+    writing.current = true;
+    setSaving(true);
+    setProblem(null);
+    setNote(null);
+    try {
+      const result = await runReviewWrite(async () => {
+        await queue();
+        pendingRefresh.current = resumableWrite([async () => { await mirror?.(); }, () => after(label)]);
+      }, async () => { await pendingRefresh.current!(); });
+      if (!result.error) pendingRefresh.current = null;
+      setProblem(result.error);
+      setReloadRequired(Boolean(result.queued && result.error));
+      if (result.error) setNote(null);
+    } finally {
+      writing.current = false;
+      setSaving(false);
+    }
+  }
+
+  async function reload() {
+    setSaving(true);
+    try {
+      await pendingRefresh.current?.();
+      pendingRefresh.current = null;
+      setProblem(null);
+      setReloadRequired(false);
+    } catch {
+      setProblem("Could not reload this review. Check device storage, or sync your records from Account and reopen the page.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function confirm(e: ReviewEntry, confirmed: boolean) {
-    await enqueue("entry.confirm", page.aircraft_id, { entryId: e.id, confirmed }, { base: e.updated_at });
-    await patchLocal<ReviewEntry>("log_entry", page.aircraft_id, e.id, { owner_confirmed: confirmed });
-    await after(confirmed ? "Entry confirmed" : "Confirmation removed");
+    await change(confirmed ? "Entry confirmed" : "Confirmation removed",
+      () => enqueue("entry.confirm", page.aircraft_id, { entryId: e.id, confirmed }, { base: e.updated_at }),
+      () => patchLocal<ReviewEntry>("log_entry", page.aircraft_id, e.id, { owner_confirmed: confirmed }));
   }
   async function remove(e: ReviewEntry) {
-    await enqueue("entry.delete", page.aircraft_id, { entryId: e.id }, { base: e.updated_at });
-    await deleteLocal("log_entry", e.id);
-    await after("Entry deleted");
+    await change("Entry deleted",
+      () => enqueue("entry.delete", page.aircraft_id, { entryId: e.id }, { base: e.updated_at }),
+      () => deleteLocal("log_entry", e.id));
   }
   async function merge(e: ReviewEntry) {
-    await enqueue("entry.merge", page.aircraft_id, { tailEntryId: e.id }, { base: e.updated_at, label: "Log entry merged with the previous page" });
     // NOT deleted locally. A merge is the one write here the server refuses for
     // ordinary reasons an owner will hit — the page has no sequence number, or
     // it is the first page in the book — and a refused write emits no change_log
     // row, so nothing would ever put an optimistically-deleted entry back. The
     // server deletes the tail when the merge lands and the pull removes it then.
-    await after("Merging into the previous page");
+    await change("Merging into the previous page",
+      () => enqueue("entry.merge", page.aircraft_id, { tailEntryId: e.id }, { base: e.updated_at, label: "Log entry merged with the previous page" }));
   }
   async function review(status: ReviewPage["review_status"]) {
-    await enqueue("page.review", page.aircraft_id, { pageId: page.id, status }, { base: page.updated_at });
-    await patchLocal<ReviewPage>("page", page.aircraft_id, page.id, { review_status: status });
-    await after(status === "confirmed" ? "Page marked reviewed" : status === "disputed" ? "Page flagged" : "Review reopened");
+    await change(status === "confirmed" ? "Page marked reviewed" : status === "disputed" ? "Page flagged" : "Review reopened",
+      () => enqueue("page.review", page.aircraft_id, { pageId: page.id, status }, { base: page.updated_at }),
+      () => patchLocal<ReviewPage>("page", page.aircraft_id, page.id, { review_status: status }));
   }
   const [reading, setReading] = useState(false);
   // Reading a page is online-only: it spends an AI call on the server and has
@@ -102,12 +144,15 @@ export function ReviewPane({
     if (reading) return;
     setReading(true);
     setNote(null);
+    setProblem(null);
     try {
       const r = await runExtract(page.id);
-      if ("error" in r) { setNote(r.error); return; }
+      if ("error" in r) { setProblem(r.error); return; }
       await onQueued?.();          // pull the entries the server just wrote
       await onChanged();
       setNote("Page read — the entries are below");
+    } catch {
+      setProblem("The page could not be read or refreshed. Sync from Account before trying again so you can check whether new entries were saved.");
     } finally {
       setReading(false);
     }
@@ -123,7 +168,7 @@ export function ReviewPane({
   // this component's state (CONTRACT §11).
   useShortcuts({
     "cmd+enter":
-      !editable || editing
+      !editable || editing || saving || reading || reloadRequired
         ? undefined
         : next
           ? () => { void confirm(next, true); }
@@ -134,6 +179,7 @@ export function ReviewPane({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <fieldset disabled={saving || reading || reloadRequired} aria-label="Review this page" style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ ...text.cardTitle, color: color.ink }}>
           {entries.length === 0 ? "No entries on this page" : `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`}
@@ -200,7 +246,12 @@ export function ReviewPane({
         </div>
       )}
       {!editable && <p style={{ ...text.meta, color: color.warning, margin: 0 }}>View-only access — nothing here can be changed.</p>}
-      {note && <p style={{ ...text.meta, color: color.faint, margin: 0, textAlign: "center" }}>{note}</p>}
+      </fieldset>
+      <p role="status" style={{ ...text.meta, color: color.dim, margin: 0, textAlign: "center" }}>{saving ? "Saving changes…" : note}</p>
+      {problem && <div role="alert">
+        <p style={{ ...text.secondary, color: color.danger, margin: 0 }}>{problem}</p>
+        <button onClick={reload} disabled={saving} style={ghostBtn}>Reload review</button>
+      </div>}
 
       {editing && (
         <EntryEditor
@@ -300,6 +351,7 @@ function EntryCard({
 export function PageReview({ page, onLocate, activeKey, onQueued }: { page: Page; onLocate: Locate; activeKey?: string | null; onQueued?: () => Promise<"synced" | "pending"> }) {
   const [row, setRow] = useState<ReviewPage | null>(null);
   const [entries, setEntries] = useState<ReviewEntry[]>([]);
+  const [loadError, setLoadError] = useState(false);
   async function load() {
     const [pages, all] = await Promise.all([
       getByAircraft<ReviewPage>("page", page.aircraft_id),
@@ -308,7 +360,15 @@ export function PageReview({ page, onLocate, activeKey, onQueued }: { page: Page
     setRow(pages.find((p) => p.id === page.id) ?? null);
     setEntries(entriesOn(all, page.id));
   }
-  useEffect(() => { load(); }, [page.id]);
+  function reload() {
+    setLoadError(false);
+    void load().catch(() => setLoadError(true));
+  }
+  useEffect(() => { reload(); }, [page.id]);
+  if (loadError) return <div role="alert">
+    <p style={{ ...text.secondary, color: color.dim }}>This review could not be loaded from the device. Check available storage and try again.</p>
+    <button onClick={reload} style={ghostBtn}>Reload review</button>
+  </div>;
   if (!row) return <p style={{ ...text.secondary, color: color.faint, margin: 0 }}>Loading…</p>;
   return <ReviewPane page={row} entries={entries} onLocate={onLocate} activeKey={activeKey} onChanged={load} onQueued={onQueued} />;
 }
@@ -323,7 +383,6 @@ export function SpotlightRing({ box }: { box: FieldBox | null }) {
       style={{
         position: "absolute", ...s, pointerEvents: "none", borderRadius: 4,
         border: `2px solid ${color.accent}`, boxShadow: "0 0 0 9999px rgba(4,10,20,0.55)",
-        transition: "left .2s, top .2s, width .2s, height .2s",
       }}
     />
   );
@@ -336,6 +395,7 @@ export function SpotlightRing({ box }: { box: FieldBox | null }) {
  */
 export function EntriesDrawer({ title, open, onOpen, children }: { title: string; open: boolean; onOpen: (o: boolean) => void; children: React.ReactNode }) {
   const startY = useRef<number | null>(null);
+  const swiped = useRef(false);
   return (
     <div
       style={{
@@ -343,27 +403,31 @@ export function EntriesDrawer({ title, open, onOpen, children }: { title: string
         height: open ? "62vh" : "calc(60px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))",
         background: color.surface, borderTop: `1px solid ${color.hairline}`,
         borderTopLeftRadius: 18, borderTopRightRadius: 18, boxShadow: "0 -10px 30px rgba(0,0,0,.45)",
-        display: "flex", flexDirection: "column", transition: "height .22s ease",
+        display: "flex", flexDirection: "column",
       }}
     >
-      <div
-        onTouchStart={(e) => { startY.current = e.touches[0]?.clientY ?? null; }}
+      <button type="button"
+        aria-expanded={open}
+        aria-label={`${open ? "Hide" : "Review"} ${title}`}
+        onTouchStart={(e) => { startY.current = e.touches[0]?.clientY ?? null; swiped.current = false; }}
         onTouchEnd={(e) => {
           const t = e.changedTouches[0];
           if (startY.current == null || !t) return;
           const dy = t.clientY - startY.current;
-          const next = drawerSnap(open, dy);
-          if (next === open && Math.abs(dy) < 8) onOpen(!open); // a tap toggles
-          else onOpen(next);
+          swiped.current = Math.abs(dy) >= 8;
+          if (swiped.current) onOpen(drawerSnap(open, dy));
           startY.current = null;
         }}
-        // No onClick: iOS fires click after touchend and the tap would toggle twice.
-        style={{ minHeight: 60, display: "flex", alignItems: "center", gap: 10, padding: "0 16px", cursor: "pointer", flex: "0 0 auto" }}
+        onClick={(event) => {
+          onOpen(drawerClick(open, swiped.current, event.detail));
+          swiped.current = false;
+        }}
+        style={{ width: "100%", background: "transparent", border: "none", textAlign: "left", minHeight: 60, display: "flex", alignItems: "center", gap: 10, padding: "0 16px", cursor: "pointer", flex: "0 0 auto" }}
       >
         <span aria-hidden style={{ position: "absolute", top: 7, left: "50%", width: 36, height: 4, marginLeft: -18, borderRadius: 2, background: color.hairline }} />
         <span style={{ ...text.rowTitle, color: color.ink }}>{title}</span>
         <span style={{ ...text.meta, color: color.accent, marginLeft: "auto" }}>{open ? "Hide" : "Review"}</span>
-      </div>
+      </button>
       <div style={{ flex: 1, overflowY: "auto", padding: "0 16px calc(16px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)))", visibility: open ? "visible" : "hidden" }}>
         {children}
       </div>

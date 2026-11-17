@@ -389,7 +389,8 @@ function Shell({ session }: { session: Session }) {
   // fleet, and the forward-only feed (`seq > cursor`) would never retract it.
   // The two file stores go with it: cached scans and PDFs under blobs/, and
   // documents queued offline under uploads/.
-  async function signOut() {
+  async function signOut(discard = false) {
+    if ((await updatePending()) > 0 && !discard) throw new Error("Unsent work must be synced or explicitly discarded.");
     try {
       await Promise.all([wipeForSignOut(), clearCache(), clearDocumentUploads()]);
       setCur(0);
@@ -545,6 +546,7 @@ function Shell({ session }: { session: Session }) {
       dl={dl}
       onRebuild={() => { setMenu(false); rebuild(); }}
       onSignOut={signOut}
+      checkPending={updatePending}
     />
   );
 

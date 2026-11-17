@@ -1,3 +1,4 @@
+import { Modal } from "./modal";
 import { useEffect, useState } from "react";
 import { cacheUsage, clearCache } from "./blobs";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
@@ -35,6 +36,7 @@ export function AccountMenu({
   dl,
   onRebuild,
   onSignOut,
+  checkPending,
   aircraftId,
   onShare,
 }: {
@@ -45,11 +47,30 @@ export function AccountMenu({
   onClearCache: () => void;
   dl: OfflineDownloadStatus | null;
   onRebuild: () => void;
-  onSignOut: () => void;
+  onSignOut: (discard?: boolean) => Promise<void>;
+  checkPending: () => Promise<number>;
   /** The aircraft in view — "Back up now" and sharing are per-aircraft. */
   aircraftId?: string;
   onShare?: () => void;
 }) {
+  const [signOutCount, setSignOutCount] = useState<number | null>(null);
+  const [signOutBusy, setSignOutBusy] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  async function requestSignOut(discard = false) {
+    if (signOutBusy) return;
+    setSignOutBusy(true);
+    setSignOutError(null);
+    try {
+      const count = await checkPending();
+      if (count > 0 && !discard) { setSignOutCount(count); return; }
+      await unregisterPush();
+      await onSignOut(discard);
+    } catch {
+      setSignOutError("Could not sign out safely. Check your connection and sync, then try again.");
+    } finally { setSignOutBusy(false); }
+  }
+
   const downloading = dl?.running ?? false;
   const { choice, setChoice } = useTheme();
   const storage = useStorage(dl, onClearCache);
@@ -88,16 +109,9 @@ export function AccountMenu({
   }
 
   return (
-    <div
-      data-android-back
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
-    >
+    <Modal title="Account" onClose={signOutBusy ? undefined : onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Account"
         /* noshrink: this is a scrolling flex column, and once the rows outgrow
            it flexbox squeezes each one below its own text — which is how a
            row's description ended up printed over the row beneath it. */
@@ -121,6 +135,7 @@ export function AccountMenu({
         />
 
         <MenuItem label="Sync now" onClick={onSync} />
+        <WebLink label="Help & docs" detail="Capture, review, offline records and troubleshooting." path="/help" />
         {/* Only where reminders can actually arrive. The answer is the point:
             a working push says so, and a failure names the reason instead of
             leaving someone to guess from an empty inbox. */}
@@ -191,17 +206,23 @@ export function AccountMenu({
         <MenuItem
           label="Sign out"
           detail={downloading ? "Available when the offline download finishes." : undefined}
-          onClick={() => {
-            void unregisterPush().finally(onSignOut);
-          }}
+          onClick={() => void requestSignOut()}
           tone={color.danger}
-          disabled={downloading}
+          disabled={downloading || signOutBusy}
         />
+        {signOutError && <p role="alert" style={{ color: color.warning }}>{signOutError}</p>}
+        {signOutCount !== null && <div role="alert">
+          <p style={{ ...text.secondary, color: color.warning }}>{signOutCount} changes or uploads have not reached the server. Signing out discards them from this device.</p>
+          <MenuItem label="Sync before signing out" onClick={onSync} disabled={signOutBusy} />
+          <MenuItem label="Keep working" onClick={() => setSignOutCount(null)} disabled={signOutBusy} />
+          <MenuItem label="Discard unsent work and sign out" tone={color.danger} onClick={() => void requestSignOut(true)} disabled={signOutBusy} />
+        </div>}
         <WebLink label="Delete my account" detail="Request deletion of your account and associated data." path="/account-deletion" tone={color.danger} />
         <WebLink label="Privacy policy" detail="How MyTailLog handles your data." path="/privacy" />
 
         <button
           onClick={onClose}
+          disabled={signOutBusy}
           style={{
             marginTop: 6, minHeight: hit.min, background: "transparent",
             border: `1px solid ${color.hairline}`, borderRadius: radius.row,
@@ -211,7 +232,7 @@ export function AccountMenu({
           Close
         </button>
       </div>
-    </div>
+    </Modal>
   );
 }
 

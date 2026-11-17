@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LoadError } from "@/components/LoadError";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMeters } from "@/lib/aircraftHours";
@@ -95,7 +96,7 @@ function StatusCard({
   utilization: Utilization;
 }) {
   const href =
-    item.source === "ad" ? `/aircraft/${aircraftId}/compliance` : `/aircraft/${aircraftId}/maintenance`;
+    item.source === "ad" ? `/aircraft/${aircraftId}/compliance#item-${item.id}` : `/aircraft/${aircraftId}/maintenance#item-${item.id}`;
   const rem = remainingText(item);
   const proj = hoursProjection(item, utilization);
   const frac = progressFraction(item);
@@ -134,7 +135,7 @@ function StatusCard({
       </div>
 
       <div className={`text-[13px] font-medium ${REMAIN_COLOR[item.urgency]}`}>
-        {item.urgency === "none" ? "not scheduled" : urgencyLabel(item.urgency)}
+        {item.urgency === "none" ? "needs information" : urgencyLabel(item.urgency)}
         {rem && <span className="text-faint"> · {rem}</span>}
       </div>
 
@@ -220,7 +221,7 @@ export default async function StatusPage({
     .single();
   if (!aircraft) notFound();
 
-  const [{ data: items }, { data: ads }] = await Promise.all([
+  const [{ data: items, error: itemError }, { data: ads, error: adError }] = await Promise.all([
     supabase.from("maintenance_item").select("*").eq("aircraft_id", id),
     supabase
       .from("ad_compliance")
@@ -230,12 +231,14 @@ export default async function StatusPage({
       .not("status", "in", "(not_applicable,superseded)"),
   ]);
 
-  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours, utilization } = await getCurrentMeters(supabase, id, {
+  const meters = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
     airframe: aircraft.enrollment_airframe,
     date: aircraft.enrollment_date,
-  });
+  }).catch(() => null);
+  if (!meters || itemError || adError) return <main className="mx-auto max-w-6xl p-6"><LoadError message="Tracked status could not be loaded. No assessment is available." href={`/aircraft/${id}/status`} /></main>;
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours, utilization } = meters;
 
   const statusItems = sortStatusItems(
     buildStatusItems(items ?? [], ads ?? [], {
@@ -252,7 +255,8 @@ export default async function StatusPage({
 
   const overdueItems = statusItems.filter((s) => s.urgency === "overdue");
   const dueItems = statusItems.filter((s) => s.urgency === "due_soon");
-  const currentItems = statusItems.filter((s) => s.urgency === "upcoming" || s.urgency === "none");
+  const currentItems = statusItems.filter((s) => s.urgency === "upcoming");
+  const unknownItems = statusItems.filter((s) => s.urgency === "none");
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
@@ -303,7 +307,7 @@ export default async function StatusPage({
 
       {statusItems.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line px-5 py-10 text-center text-sm text-dim">
-          No status items yet. Seed the standard Part 91 items on the{" "}
+          No status items yet. Add the standard Part 91 items on the{" "}
           <Link href={`/aircraft/${id}/maintenance`} className="underline">
             maintenance forecast
           </Link>{" "}
@@ -333,10 +337,15 @@ export default async function StatusPage({
               <span className="readout text-[15px] text-annun-green">{currentItems.length}</span>
               <span className="text-xs text-dim">current</span>
             </div>
+            <div className="flex items-center gap-2 rounded-lg border border-line2 px-3.5 py-1.5 text-dim">
+              <span className="readout text-[15px]">{unknownItems.length}</span>
+              <span className="text-xs">need information</span>
+            </div>
           </div>
 
           <UrgencySection title="Overdue" color="var(--red)" items={overdueItems} aircraftId={id} utilization={utilization} />
           <UrgencySection title="Due soon" color="var(--amb)" items={dueItems} aircraftId={id} utilization={utilization} />
+          <UrgencySection title="Needs information" color="var(--dim)" items={unknownItems} aircraftId={id} utilization={utilization} />
           <UrgencySection title="Current" color="var(--grn)" items={currentItems} aircraftId={id} utilization={utilization} />
         </>
       )}

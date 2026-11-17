@@ -39,13 +39,13 @@ export const URGENCY_COLOR: Record<string, string> = {
   overdue: color.danger,
   due_soon: color.warning,
   upcoming: color.success,
-  none: color.success,
+  none: color.dim,
 };
 export const URGENCY_LABEL: Record<string, string> = {
   overdue: "OVERDUE",
   due_soon: "DUE SOON",
   upcoming: "CURRENT",
-  none: "OK",
+  none: "NEEDS INFO",
 };
 
 export function Screen({ children, tabBar }: { children: React.ReactNode; tabBar?: React.ReactNode }) {

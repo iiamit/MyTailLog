@@ -1,0 +1,31 @@
+1
+00:00:00,000 --> 00:00:03,400
+2,800+ pages scanned. 3,700+ entries.
+
+2
+00:00:03,400 --> 00:00:07,000
+Dozens of aircraft. 50+ active users.
+
+3
+00:00:07,000 --> 00:00:12,000
+Meet MyTailLog. Turn paper logbooks into searchable history, one page at a time.
+
+4
+00:00:12,000 --> 00:00:17,000
+See what's due next with maintenance forecasts, ADs, and engine trends.
+
+5
+00:00:17,000 --> 00:00:22,000
+Your records, available offline on iPhone, iPad, and Android.
+
+6
+00:00:22,000 --> 00:00:26,000
+Sync MyFlightBook hours into your maintenance forecast.
+
+7
+00:00:26,000 --> 00:00:30,000
+Already have an account? Link Google or Apple. Email works too.
+
+8
+00:00:30,000 --> 00:00:35,000
+Free and open source, with your records in your hands. Start at MyTailLog dot com.

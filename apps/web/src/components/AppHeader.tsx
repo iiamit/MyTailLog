@@ -30,7 +30,7 @@ export function AppHeader({ email }: { email: string | null }) {
   }
 
   const link = (href: string, active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] ${
+    `inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] ${
       active ? "font-medium text-ink" : "text-dim hover:bg-panel hover:text-ink"
     }`;
 
@@ -54,22 +54,22 @@ export function AppHeader({ email }: { email: string | null }) {
           <Link
             href="/whats-new"
             title="What's new in this release"
-            className="readout rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint hover:border-line2 hover:text-dim"
+            className="readout hidden rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint hover:border-line2 hover:text-dim sm:inline"
           >
             v{APP_VERSION}
           </Link>
         </div>
 
         <nav className="flex items-center gap-0.5">
-          <Link href="/help" aria-current={pathname.startsWith("/help") ? "page" : undefined} className={link("/help", pathname.startsWith("/help"))}>
+          <Link href="/help" aria-label="Help" aria-current={pathname.startsWith("/help") ? "page" : undefined} className={link("/help", pathname.startsWith("/help"))}>
             <HelpIcon />
             <span className="hidden sm:inline">Help</span>
           </Link>
-          <Link href="/profile" aria-current={pathname.startsWith("/profile") ? "page" : undefined} className={link("/profile", pathname.startsWith("/profile"))}>
+          <Link href="/profile" aria-label="Profile" aria-current={pathname.startsWith("/profile") ? "page" : undefined} className={link("/profile", pathname.startsWith("/profile"))}>
             <UserIcon />
             <span className="hidden sm:inline">Profile</span>
           </Link>
-          <button onClick={signOut} className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] text-faint hover:bg-panel hover:text-dim">
+          <button aria-label="Sign out" onClick={signOut} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-[13px] text-faint hover:bg-panel hover:text-dim">
             <LogoutIcon />
             <span className="hidden sm:inline">Sign out</span>
           </button>

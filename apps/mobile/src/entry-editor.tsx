@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { runReviewWrite, resumableWrite } from "./review-write";
 import { enqueue } from "./mutations";
 import { patchLocal, insertLocal } from "./review-local";
 import { getByAircraft } from "./db";
 import type { Logbook } from "./types";
 import { logbookLabel } from "@/lib/logbooks";
 import { Sheet, Stepper, sheetInput, sheetPrimary, sheetCancel } from "./record-screen";
-import { toForm, validateEntry, fieldChip, type EntryForm, type ReviewEntry } from "./review-rules";
+import { toForm, entryDraftChanged, validateEntry, fieldChip, type EntryForm, type ReviewEntry } from "./review-rules";
 import { color, text, tint, radius, hit } from "./tokens";
 
 // The entry editor sheet. Opened from a card in the review pane with the tapped
@@ -45,6 +46,13 @@ export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, foc
   const [logbooks, setLogbooks] = useState<Logbook[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const pendingRefresh = useRef<(() => Promise<void>) | null>(null);
+  const [draftId] = useState(() => crypto.randomUUID());
+  const [discard, setDiscard] = useState(false);
+  const [initial] = useState(() => ({ form: toForm(entry), logbook: entry?.logbook_id ?? logbookId }));
+  const discardRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (discard) discardRef.current?.focus(); }, [discard]);
   const [showScan, setShowScan] = useState(false);
   const focusRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   useEffect(() => { focusRef.current?.focus(); }, []);
@@ -56,27 +64,44 @@ export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, foc
   const set = (k: keyof EntryForm) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const num = (k: "tach" | "hobbs" | "airframe") => (form[k] === "" ? null : Number(form[k]));
 
+  function requestClose() {
+    if (saving) return;
+    if (!saved && entryDraftChanged(initial.form, form, initial.logbook, selectedLogbookId)) setDiscard(true);
+    else onClose();
+  }
+
   async function save() {
+    if (saving) return;
     const v = validateEntry(form);
     if ("error" in v) { setError(v.error); return; }
     setSaving(true);
+    setError(null);
     try {
-      if (entry) {
-        await enqueue("entry.update", aircraftId, { entryId: entry.id, fields: { ...v.fields, logbook_id: selectedLogbookId } }, { base: entry.updated_at });
-        // Editing implicitly confirms — the server does the same.
-        await patchLocal<ReviewEntry>("log_entry", aircraftId, entry.id, { ...v.fields, logbook_id: selectedLogbookId, owner_confirmed: true });
-      } else {
-        const id = crypto.randomUUID();
-        await enqueue("entry.create", aircraftId, { id, logbookId: selectedLogbookId, pageId, fields: v.fields }, { id });
-        const now = new Date().toISOString();
-        await insertLocal<ReviewEntry>("log_entry", {
-          id, aircraft_id: aircraftId, logbook_id: selectedLogbookId, page_id: pageId, ...v.fields,
-          confidence: null, field_confidence: null, field_boxes: null, owner_confirmed: true,
-          is_continuation: false, entry_index: null, updated_at: now,
-        });
-      }
-      await onSaved();
-      onClose();
+      const result = await runReviewWrite(
+        async () => {
+          if (pendingRefresh.current) return; // Finish the original local update without queuing twice.
+          if (entry) {
+            await enqueue("entry.update", aircraftId, { entryId: entry.id, fields: { ...v.fields, logbook_id: selectedLogbookId } }, { base: entry.updated_at });
+          } else {
+            await enqueue("entry.create", aircraftId, { id: draftId, logbookId: selectedLogbookId, pageId, fields: v.fields }, { id: draftId });
+          }
+          pendingRefresh.current = resumableWrite([async () => {
+            if (entry) {
+              await patchLocal<ReviewEntry>("log_entry", aircraftId, entry.id, { ...v.fields, logbook_id: selectedLogbookId, owner_confirmed: true });
+            } else {
+              await insertLocal<ReviewEntry>("log_entry", {
+                id: draftId, aircraft_id: aircraftId, logbook_id: selectedLogbookId, page_id: pageId, ...v.fields,
+                confidence: null, field_confidence: null, field_boxes: null, owner_confirmed: true,
+                is_continuation: false, entry_index: null, updated_at: new Date().toISOString(),
+              });
+            }
+          }, async () => { await onSaved(); }]);
+        },
+        async () => { await pendingRefresh.current!(); },
+      );
+      setSaved(result.queued);
+      if (result.error) setError(result.error);
+      else onClose();
     } finally {
       setSaving(false);
     }
@@ -90,7 +115,13 @@ export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, foc
   );
 
   return (
-    <Sheet title={entry ? "Edit this entry" : "Add an entry the extractor missed"} onClose={saving ? undefined : onClose}>
+    <Sheet title={entry ? "Edit this entry" : "Add an entry the extractor missed"} onClose={saving ? undefined : requestClose}>
+      {discard && <div role="alert" style={{ ...text.secondary, color: color.warning }}>
+        <p>Your changes have not been saved. Discard this draft?</p>
+        <button ref={discardRef} type="button" onClick={() => setDiscard(false)} style={sheetCancel}>Keep editing</button>
+        <button type="button" onClick={onClose} style={sheetCancel}>Discard changes</button>
+      </div>}
+      <fieldset disabled={saving || saved || discard} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
       <label style={{ display: "block" }}>
         {label("Entry category", "logbook_id")}
         <select value={selectedLogbookId} onChange={(e) => setSelectedLogbookId(e.target.value)} style={sheetInput}>
@@ -152,11 +183,12 @@ export function EntryEditor({ aircraftId, logbookId, pageId, ocrText, entry, foc
         </div>
       )}
 
-      {error && <p style={{ ...text.secondary, color: color.danger, margin: 0 }}>{error}</p>}
-      <button onClick={save} disabled={saving} style={{ ...sheetPrimary, opacity: saving ? 0.4 : 1 }}>
-        {saving ? "Saving…" : entry ? "Save changes" : "Add entry"}
+      </fieldset>
+      {error && <p role="alert" style={{ ...text.secondary, color: color.danger, margin: 0 }}>{error}</p>}
+      <button onClick={save} disabled={saving || discard} style={{ ...sheetPrimary, opacity: saving || discard ? 0.4 : 1 }}>
+        {saving ? "Saving…" : saved ? "Reload saved entry" : entry ? "Save changes" : "Add entry"}
       </button>
-      <button onClick={onClose} style={sheetCancel}>Cancel</button>
+      <button onClick={requestClose} disabled={saving} style={sheetCancel}>{saved ? "Close" : "Cancel"}</button>
     </Sheet>
   );
 }

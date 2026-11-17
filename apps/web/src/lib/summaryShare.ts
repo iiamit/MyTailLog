@@ -13,6 +13,7 @@ export function maintenanceSummaryText(input: {
   overdue: number;
   dueSoon: number;
   current: number;
+  unknown: number;
   openSquawks: number;
   adCount: number;
   equipmentCount: number;
@@ -24,7 +25,7 @@ export function maintenanceSummaryText(input: {
     input.description,
     `Generated ${input.generated}${input.meters.length ? ` · ${input.meters.join(" · ")}` : ""}`,
     "",
-    `Status: ${input.overdue} overdue · ${input.dueSoon} due soon · ${input.current} current · ${input.openSquawks} open squawks`,
+    `Status: ${input.overdue} overdue · ${input.dueSoon} due soon · ${input.current} within recorded limits · ${input.unknown} need information · ${input.openSquawks} open squawks`,
     `Tracked: ${input.adCount} AD/SB items · ${input.equipmentCount} installed components`,
   ];
   if (input.weightBalance) lines.push(input.weightBalance);

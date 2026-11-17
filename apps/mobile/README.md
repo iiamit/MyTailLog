@@ -59,9 +59,8 @@ It will not publish to production. When an internal draft has passed review,
 `npm run play:internal` releases the current `versionCode` to internal testers.
 `npm run play:closed` promotes that completed internal bundle to the existing
 closed-testing track; configure its testers in Play Console.
-On this 1.7 GB host, set `MYTAILLOG_ANDROID_SKIP_LINT=1` for a release build
-if Gradle's release lint exhausts memory. Run the full lint build on a larger
-host before a public release.
+This host has a 3 GiB container memory limit and completes the signed release
+build with lint enabled. Keep the default full build for future releases.
 
 See [Play release checklist](PLAY-RELEASE.md) for the remaining device and
 Console gates.

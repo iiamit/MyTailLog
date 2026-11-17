@@ -18,7 +18,7 @@ import { color, hit, alpha } from "./tokens";
 export function PendingBanner({ count, onOpen }: { count: number; onOpen: () => void }) {
   if (count === 0) return null;
   return (
-    <div
+    <button type="button"
       onClick={onOpen}
       style={{
         marginTop: 14,
@@ -31,13 +31,16 @@ export function PendingBanner({ count, onOpen }: { count: number; onOpen: () => 
         display: "flex",
         alignItems: "center",
         gap: 10,
+        width: "100%",
+        textAlign: "left",
+        fontFamily: "inherit",
       }}
     >
       <span style={{ color: ink, fontSize: 13 }}>
         {count} change{count === 1 ? "" : "s"} waiting to upload
       </span>
       <span style={{ marginLeft: "auto", color: color.accent, fontSize: 12 }}>View ›</span>
-    </div>
+    </button>
   );
 }
 

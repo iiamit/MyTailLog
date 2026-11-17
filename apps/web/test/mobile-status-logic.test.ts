@@ -1,5 +1,43 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { buildVerdict, type StatusLine } from "../../mobile/src/status-logic";
+import { buildStatusItems } from "../src/lib/status";
+import type { MaintenanceItem } from "../src/lib/database.types";
+
+test("mobile verdicts distinguish untracked, incomplete, overdue and assessed records", () => {
+  const line = (date: string | null): StatusLine => {
+    const [item] = buildStatusItems([{
+      id: String(date), kind: "annual", label: "Annual", regulatory: true,
+      interval_months: 12, next_due_date: date, next_due_hours: null,
+      last_done_date: null, last_done_hours: null, interval_hours: null,
+    } as MaintenanceItem], [], { tach: null, hobbs: null });
+    return { item, urgency: item.urgency, due: "", projection: null };
+  };
+  assert.equal(buildVerdict([]).semantic, "unknown");
+  assert.equal(buildVerdict([]).headline, "No tracked assessment yet");
+  const current = line("2099-01-01");
+  const unknown = line(null);
+  const overdue = line("2001-01-01");
+  assert.equal(buildVerdict([current]).headline, "No tracked items overdue");
+  assert.equal(buildVerdict([current, unknown]).semantic, "unknown");
+  const alert = buildVerdict([current, unknown, overdue, overdue]);
+  assert.equal(alert.headline, "2 tracked items overdue");
+  assert.match(alert.detail, /4 tracked; 1 need more information/);
+  assert.doesNotMatch(alert.detail, /everything else is clear/i);
+});
+
+test("mobile hero and ring prioritize overdue hours rather than a future calendar limit", () => {
+  const [item] = buildStatusItems([{
+    id: "dual", kind: "engine_tbo", label: "Engine", regulatory: false,
+    interval_months: 12, interval_hours: 100, last_done_hours: 0,
+    last_done_date: "2020-01-01", next_due_date: "2099-01-01", next_due_hours: 100,
+  } as MaintenanceItem], [], { tach: 100.4, hobbs: null });
+  const verdict = buildVerdict([{ item, urgency: item.urgency, due: "", projection: null }]);
+  assert.equal(verdict.value, "0.4");
+  assert.equal(verdict.unit, "hours over");
+  assert.equal(verdict.progress, 1);
+  assert.match(verdict.detail, /0\.4h over/);
+});
 import {
   detectBackwardsReading,
   validateItem,

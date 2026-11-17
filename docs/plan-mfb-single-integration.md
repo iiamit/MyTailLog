@@ -1,6 +1,6 @@
 # One MyFlightbook connection: implementation and verification plan
 
-**Prepared:** 2026-11-09. **Status:** plan only; no product or partner changes deployed.
+**Prepared:** 2026-11-09. **Updated:** 2026-11-10. **Status:** partner-reported test round trip passed; rollout gate remains open.
 
 ## Decision and non-negotiable test boundary
 
@@ -24,9 +24,12 @@ If MyFlightbook cannot point its development client at the test host, keep autom
 
 ## Verified code and data facts
 
-- MyFlightbook's `ExternalMaintenanceRecord.PushHighWaterMarks` computes the greatest recorded Hobbs and Tach separately, and `MyTailLogClient.UpdateHighWaterForAircraft` sends both when positive. `oAuthController.PushHighWaterMaintenance` is local-only; source does not prove that a scheduler invokes it in production.
-- MyFlightbook currently assigns `Tach1`'s date and flight ID to the **Hobbs** payload. Its query can produce a null Tach date/ID, but its row mapper converts those values unconditionally. Its all-time-maximum comparison cannot convey a current Tach below a pre-replacement maximum. These require partner fixes and a real test before cutover.
+- MyFlightbook's `ExternalMaintenanceRecord.PushHighWaterMarks` computes the greatest recorded Hobbs and Tach separately, and `MyTailLogClient.UpdateHighWaterForAircraft` sends both when positive. Eric confirmed a nightly push in his 2026-11-09 email; confirm its development trigger and observe a real run before cutover.
+- Earlier MyFlightbook code assigned `Tach1`'s date and flight ID to the **Hobbs** payload and could dereference a missing Tach date/ID. Eric's 2026-11-09 SQL now selects separate Hobbs and Tach dates/flight IDs; verify the downstream payload mapper uses them correctly. Its all-time-maximum comparison cannot convey a current Tach below a pre-replacement maximum. Conversely, a latest-only push would promote an omitted leading digit as a false meter reset; Eric reports this occurs in shared aircraft. These require a real partner test before cutover.
 - MyTailLog accepts one or batched meter readings at `POST /api/v1/aircraft/{id}/hours`, preserving the other meter on an upsert and deduplicating by `(aircraft_id, source, external_ref)`.
+- MyTailLog tracks both Hobbs and Tach independently, including declared meter replacements. Its hours GET returns both reconciled values with `estimated` and `as_of` fields; an estimate is not a physical meter observation.
+- The hours GET returns reset-stitched **continuous totals** in `current_tach.value` and `current_hobbs.value`, while pushed `hours_reading` values are physical meter readings. Raw MyFlightbook readings must not be numerically compared with the stitched values. The current airworthiness API also judges every maintenance item against Tach even when its `meter` field is Hobbs; fix that before promoting the integration.
+- `detectAnomalies` flags a non-monotonic observation but does not exclude it from `currentReading`: a later lower value can currently become the displayed meter even without a declared reset. Add a hold/review gate before ingesting lower candidate readings from MyFlightbook.
 - The old pull stores credentials/tokens in `private.mfb_connection` and runs manually or in the daily cron. The MyFlightbook-initiated grant is stored separately in `oauth_account_grant` or `oauth_aircraft_grant`. A legacy token cannot be silently converted into the latter grant.
 - Existing `oauth-mfb-exchange.spec.ts` covers OAuth/refresh/reads with a simulated MyFlightbook callback; `oauth-write.spec.ts` covers writes, idempotency, scope denial, and separate meter flights. They do not exercise the live MyFlightbook development client or the scheduled push.
 
@@ -35,17 +38,18 @@ If MyFlightbook cannot point its development client at the test host, keep autom
 1. Inventory in production, read-only: identify the actual MyFlightbook OAuth **client ID** (do not match by its display name); count legacy pull connections, partner grants, grants missing `hours:write`, and accounts/aircraft with successful partner POSTs. Record counts and timestamps, never export tokens or secrets.
 2. Provision a minimal second Firebase App Hosting backend at `mfb-test.mytaillog.com`, sourced from the same commit as the proposed product change. Use an environment-specific App Hosting configuration. Set `NEXT_PUBLIC_SITE_URL` to the test origin at build **and** runtime; set both `NEXT_PUBLIC_SUPABASE_*` variables to the test project at build and runtime; give the backend only the test `SUPABASE_SECRET_KEY`, test `OIDC_JWKS`, test `ENCRYPTION_KEY`, and test-only OAuth client registration. Check the effective rollout environment: Firebase console overrides YAML values.
 3. Set `STORAGE_BACKEND=supabase` for the test backend, using test storage. Do not mount the production GCS bucket, production email/push keys, or production cron secret. No scheduler targets this backend. Use test Supabase Auth redirect allowlisting for the test origin and test accounts/aircraft only. Configure DNS/TLS before testing browser cookies and redirects.
-4. In MyFlightbook's **development** deployment, make the MyTailLog base URL configurable and set it to the test origin. Keep the normal production value unchanged. Register a distinct confidential MTL test client with its exact callback `https://developer.myflightbook.com/logbook/mvc/oAuth/MyTailLogRedir`, including `hours:write`, read scopes, and `offline_access`. Use a separate MFB development account with synthetic flights.
+4. In MyFlightbook's **development** deployment, make the MyTailLog base URL configurable and set it to the test origin. Keep the normal production value unchanged. The existing MFB client ID and secret have been copied into the test DB, with only its exact development callback `https://developer.myflightbook.com/logbook/mvc/oAuth/MyTailLogRedir` allowed; they retain `hours:write`, read scopes, and `offline_access`. Use a separate MFB development account with synthetic flights.
 5. Verify isolation before authentication: the test page identifies the test Supabase project, a scratch aircraft exists only there, and the production account cannot log into the test backend. Abort if any test request reaches the production Supabase ref or production storage.
 
-**Exit:** reachable test origin, correct issuer/discovery URL, distinct credentials, and a successful test-account login. Partner dev configuration is a hard prerequisite for the live test round trip.
+**Exit:** reachable test origin, correct issuer/discovery URL, isolated databases and server-side encryption keys, and a successful test-account login. Partner dev configuration is a hard prerequisite for the live test round trip.
 
 ## Phase 1 — make MyFlightbook's push safe
 
-1. Partner PR: use `Hobbs1.AsOfDate`/`Hobbs1.FlightID` for the Hobbs reading; construct Tach only when a Tach high mark exists. Keep each meter's own external reference and date.
-2. Agree with MyFlightbook on reset-aware Tach behavior. A decrease after replacement must be represented as a new reading with provenance, not ignored by `value > all-time maximum`; avoid treating airframe total time as displayed Tach. Make the trigger/retry behavior observable and ensure a failed POST does not advance the stored high-water mark.
-3. Confirm the local-only push job is actually scheduled in MyFlightbook development and production, at what cadence, and whether manual invocation is available to partner testers. If it is not scheduled, add it there before relying on push as the sole source.
+1. Partner check: Eric's revised query selects distinct Hobbs and Tach dates and flight IDs. Verify the payload mapper actually uses each meter's own provenance and handles a missing Tach reading. Keep each meter's own external reference and date.
+2. Keep MyFlightbook's high-water push as the trusted default for each meter until MTL can safely review decreases. A latest observation may be sent separately as a **candidate**, with its own raw value, flight date/ID, and correction provenance; it must not silently replace the accepted meter reading. Within the current meter era, accept a monotonic candidate; hold a lower candidate for owner review as either an omitted leading digit, a correction, or a real replacement. Only an explicitly confirmed `meter_reset` (with replacement date and old/new face readings) starts a new era and stitches its readings into continuous totals. Do not infer a reset from magnitude or date alone, or compare raw MFB readings with MTL's reset-stitched totals. Agree on an idempotent per-meter checkpoint that can observe new/corrected flights without using `value > highWater` as its sole trigger. Make retries observable and do not advance the checkpoint on failed POSTs.
+3. Eric confirms production pushes nightly. Confirm the development trigger, cadence, and whether manual invocation is available to partner testers. Observe successful writes and failed-write retries before relying on push as the sole source.
 4. Verify matching and authorization behavior for a new aircraft, an account-wide grant, a selected-aircraft grant, an unmatched tail, and a grant without `hours:write`.
+5. Fix MTL's airworthiness API urgency for Hobbs-based maintenance and reset-stitched due values; compare its output with the web Forecast on the same aircraft.
 
 **Exit:** partner code merged in its development environment and documented push invocation/cadence. A source review alone is insufficient.
 
@@ -62,7 +66,8 @@ If MyFlightbook cannot point its development client at the test host, keep autom
 ### Automated, against test Supabase
 
 - Reuse the existing Playwright runner with `TEST_SUPABASE_*` and the same app commit. Expand the simulated MFB exchange so **one token** carries the complete read/write scope set, reads airworthiness, posts independent Hobbs/Tach readings, refreshes, and reads again.
-- Verify Hobbs-only; Tach-only; both on one flight; different flight IDs/dates; repeated POST; same flight ID sent by two meter records; correction preserving the other meter; malformed input; missing scope; revoked grant; selected-aircraft restriction; no aircraft; wrong user.
+- Verify Hobbs-only; Tach-only; both on one flight; different flight IDs/dates; repeated POST; same flight ID sent by two meter records; correction preserving the other meter; malformed input; missing scope; revoked grant; selected-aircraft restriction; no aircraft; wrong user. Cover `3204.8 -> 206.1` both as a dropped leading digit (hold current value) and a documented replacement (new face reading, stitched total), with Tach and Hobbs evaluated independently.
+- For legacy MyTailLog pull connections, exercise an existing MyFlightbook access token and two sequential refreshes against MyFlightbook development. Confirm each newly returned refresh token replaces the previous encrypted token in the test database; a failed refresh or database write must not mark the account synced. This tests MyFlightbook's November 2026 refresh-token rotation independently of the MyFlightbook-initiated grant.
 - Verify migration classification and flag transitions: legacy only, partner only, both verified, both unverified, old grant missing `hours:write`, and no flight since grant. Assert that cutover never deletes historical readings or credentials before the user's replacement is verified.
 - Confirm the status card accurately distinguishes OAuth consent from observed data. Test browser callback/CSP behavior and exact redirect URI.
 
@@ -70,10 +75,12 @@ If MyFlightbook cannot point its development client at the test host, keep autom
 
 Use a MyFlightbook development user and a MyTailLog test user with a matching synthetic tail. Capture a redacted run record: app commit, MFB dev commit, client ID suffix, test tail, scopes, timestamps, HTTP status, flight IDs, and resulting test-DB rows. Do not log tokens or client secrets.
 
+**Partner smoke report, 2026-11-10:** Eric authorized/exchanged a token on MFB development, manually ran the nightly push against MTL test, and saw both Tach and Hobbs arrive. He created an annual inspection in MTL test and imported it into MFB development. His partner changes are committed but not pushed to production. This is a successful reported round trip; server-side test-DB/audit verification and the cases below are still pending.
+
 1. Start at MyFlightbook dev, authorize MTL test, choose account-wide or selected-aircraft access, and follow the **real browser** redirect into the MFB dev callback. Confirm the MFB dev client exchanges and refreshes tokens against the MTL test host.
 2. Run "Update from MyTailLog" and verify MFB dev displays the test aircraft's maintenance/airworthiness data.
 3. Enter synthetic flights covering the meter matrix and trigger/await the real MFB dev push job. Verify MTL test `oauth_access_log`, `hours_reading`, current meters, and status card agree on both meter values and each meter's own date/flight ID.
-4. Re-run the job (no duplicates), revoke the grant (push fails without data change), re-consent (push resumes), and verify a replaced tach is not stuck behind the old maximum. Exercise an older MFB-side token through refresh after its OAuth client rewrite.
+4. Re-run the job (no duplicates), revoke the grant (push fails without data change), re-consent (push resumes), and verify both a dropped leading digit and a confirmed tach replacement. The former must not lower the accepted meter or forecast; the latter must display the new face reading with the correct stitched total. Exercise an older MFB-side token through refresh after its OAuth client rewrite.
 5. Include a legacy-connected MTL test account; confirm no gap or null overwrite during overlap and that the pull stops only after verified push delivery.
 
 **Pass gate:** every case above passes; no test call touches production Supabase/storage; a real scheduled MFB dev push is observed; both directions use one grant; and results are signed off in the PR/release checklist. If any case fails, do not remove the legacy path or start broad migration.
@@ -87,6 +94,6 @@ Use a MyFlightbook development user and a MyTailLog test user with a matching sy
 
 ## Dependencies and readiness
 
-MTL can implement the test backend, automated tests, UI, migration controls, and docs. The **live test milestone depends on MyFlightbook** accepting a configurable development base URL, fixing meter provenance/null/reset behavior, and providing access to its development account and push job. The source currently does not confirm that the production push schedule is running. Do not promise full rollout until these dependencies and the milestone are verified.
+MTL can implement the test backend, automated tests, UI, migration controls, and docs. Eric's development client now supports the test host and its manual push passed the initial round trip. The **full rollout still depends on** reset/provenance handling, repeat/refresh/revocation tests, a production canary, and verified per-user migration. Do not promise full rollout until the milestone passes.
 
 The local checkout currently has production Supabase URLs in `.env.local` and `apps/web/.env.local`; no `TEST_SUPABASE_*` variables are exported in this shell. The CI workflow has test-database secrets and already runs the application code against them. Implementation must obtain the test values through the established secret store or a private local env file, not copy production env files into the test deployment.

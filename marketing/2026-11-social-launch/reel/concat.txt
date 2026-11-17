@@ -1,0 +1,7 @@
+file 'clips/01.mp4'
+file 'clips/02.mp4'
+file 'clips/03.mp4'
+file 'clips/04.mp4'
+file 'clips/05.mp4'
+file 'clips/06.mp4'
+file 'clips/07.mp4'

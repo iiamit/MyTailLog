@@ -142,7 +142,7 @@ export type QueuedAction = {
 export async function enqueueAction(
   a: Pick<QueuedAction, "id" | "aircraft_id" | "type" | "label" | "payload" | "created_at"> & { base?: string | null },
 ): Promise<void> {
-  if (!db) return;
+  if (!db) throw new Error("Device storage is not ready. Reopen the app and try again.");
   await db.run(
     "INSERT OR REPLACE INTO action_queue (id,aircraft_id,type,label,payload,created_at,attempts,error,base,status,server_row,retry_after) VALUES (?,?,?,?,?,?,0,NULL,?,'pending',NULL,NULL)",
     [a.id, a.aircraft_id, a.type, a.label, a.payload, a.created_at, a.base ?? null],

@@ -53,17 +53,26 @@ MyTailLog web authentication uses Supabase Auth. The test project's Auth URL
 configuration must allow `https://mfb-test.mytaillog.com` and its
 `/auth/callback` redirect. Any social login test also needs its provider
 configuration in the **test Supabase project**. This is separate from the
-MyFlightbook OAuth client registration.
+MyFlightbook OAuth client registration. Production user accounts and aircraft
+are not copied into the test project. Partner testers should create a test
+account with an email they can receive, then enroll synthetic aircraft with
+tails that match their MyFlightbook development account. The unconfirmed
+`mfb-demo@mytaillog.com` test account has no aircraft and should not be used.
 
 ## MyFlightbook development setup and smoke test
 
 The MyFlightbook development client currently points at `mytaillog.com` in its
 source. It must be changed to use `https://mfb-test.mytaillog.com` for auth,
-token, revoke, discovery/API calls in development only. The MyTailLog test DB
-needs a **separate confidential client** whose callback is exactly
-`https://developer.myflightbook.com/logbook/mvc/oAuth/MyTailLogRedir`. Give it
-the required read scopes, `hours:write`, and `offline_access`. Keep the client
-secret in MyFlightbook development configuration, not in Firebase.
+token, revoke, discovery/API calls in development only. On 2026-11-09, the
+existing MyFlightbook OAuth client ID and secret were copied from production to
+the **test Supabase database**, with only the development callback
+`https://developer.myflightbook.com/logbook/mvc/oAuth/MyTailLogRedir` allowed.
+The secret was re-encrypted with the test backend's distinct `ENCRYPTION_KEY`;
+production registration and grants were unchanged. The test client has the
+same read scopes, `hours:write`, and `offline_access`. No Firebase secret is
+needed for the MyFlightbook client: it lives in the test database. A live token
+endpoint probe accepted the client credentials and rejected only the deliberately
+invalid authorization code (`invalid_grant`).
 
 Before the live OAuth exchange, sign in with a test Supabase account and check
 `https://mfb-test.mytaillog.com/api/oidc/.well-known/openid-configuration`.
@@ -84,6 +93,13 @@ is live. Firebase reports the custom domain's host, ownership, and certificate
 as active. The home page returns 200, and the OIDC discovery document advertises
 only `mfb-test.mytaillog.com` endpoints. The effective build configuration uses
 the test Supabase project and test secret references. The project owner added
-the test Supabase Auth redirect URL on 2026-11-09; a live callback has not yet
-verified it. The MyFlightbook development client change remains pending before
-an end-to-end OAuth test.
+the test Supabase Auth redirect URL on 2026-11-09; the initial partner callback
+was exercised on 2026-11-10.
+
+On 2026-11-10, Eric reported a successful development OAuth exchange, a manual
+run of his nightly push that populated Tach and Hobbs on the test aircraft,
+and an annual inspection imported from MTL test into MFB development. His
+changes are committed but not yet in MyFlightbook production. This partner
+smoke report does not close the reset, repeat-push, refresh, revocation, or
+production-canary gates in the integration plan. The Firebase CLI login on
+this host expired before a fresh test-DB audit could be read independently.

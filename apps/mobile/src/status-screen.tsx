@@ -12,7 +12,7 @@ import { EquipmentList } from "./equipment-list";
 import { CompleteItem } from "./complete-screen";
 import { READING_SOURCE_LABEL } from "@/lib/hobbsTach";
 import type { MaintenanceItem } from "@/lib/database.types";
-import type { StatusItem } from "@/lib/status";
+import { statusCountdown, type StatusItem } from "@/lib/status";
 import type { Aircraft } from "./types";
 import { color, text, radius, hit, tint, semantic, accentGradient, tabular, alpha } from "./tokens";
 import { ChevronRightIcon } from "./icons";
@@ -39,26 +39,37 @@ export function Status({
 }) {
   const [data, setData] = useState<Airworthiness | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [showAll, setShowAll] = useState(false);
+  const [directiveId, setDirectiveId] = useState<string | null>(null);
   const editable = canEdit(aircraft.id);
 
   useEffect(() => {
     let live = true;
     setData(null);
+    setError(null);
+    setShowAll(false);
+    setDirectiveId(null);
     computeAirworthiness(aircraft.id)
       .then((d) => live && setData(d))
       .catch((e) => live && setError(e instanceof Error ? e.message : String(e)));
     return () => { live = false; };
-  }, [aircraft.id]);
+  }, [aircraft.id, attempt]);
 
-  if (error) return <p style={{ ...text.secondary, color: color.danger }}>{error}</p>;
-  if (!data) return <p style={{ ...text.secondary, color: color.faint }}>Working it out…</p>;
+  if (error) return (
+    <div role="alert">
+      <p style={{ ...text.secondary, color: color.dim }}>Tracked status could not be loaded from this device. Try again, or sync your records from the account menu.</p>
+      <button onClick={() => setAttempt((n) => n + 1)} style={addButton}>Try again</button>
+    </div>
+  );
+  if (!data) return <p style={{ ...text.secondary, color: color.faint }}>Loading tracked maintenance…</p>;
 
   const verdict = buildVerdict(data.lines);
   const attention = data.lines.filter((l) => l.urgency === "overdue" || l.urgency === "due_soon");
-  const clear = data.lines.filter((l) => l.urgency !== "overdue" && l.urgency !== "due_soon");
+  const clear = data.lines.filter((l) => l.urgency === "upcoming");
+  const unknown = data.lines.filter((l) => l.urgency === "none");
 
-  if (showAll) return <AllItems aircraft={aircraft} data={data} onBack={() => setShowAll(false)} onQueued={onQueued} />;
+  if (showAll) return <AllItems aircraft={aircraft} data={data} directiveId={directiveId ?? undefined} onBack={() => { setShowAll(false); setDirectiveId(null); }} onQueued={onQueued} />;
 
   return (
     <div style={{ position: "relative" }}>
@@ -86,7 +97,8 @@ export function Status({
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
             {attention.map((l) => (
               <AttentionCard key={`${l.item.source}:${l.item.id}`} line={l}
-                editable={editable && l.item.source === "maintenance"} onComplete={() => onComplete(l.item)} />
+                editable={editable && l.item.source === "maintenance"} onComplete={() => onComplete(l.item)}
+                onReviewDirective={() => { setDirectiveId(l.item.id); setShowAll(true); }} />
             ))}
           </div>
         </>
@@ -99,13 +111,13 @@ export function Status({
         }}>
           <span style={{ minWidth: 0, flex: 1 }}>
             <span style={{ ...text.rowTitle, color: color.ink, display: "block" }}>
-              {clear.length === 0 ? "Everything tracked" : attention.length > 0 ? "Clear for now" : "Everything is clear"}
+              {unknown.length > 0 ? `Review ${unknown.length} incomplete item${unknown.length === 1 ? "" : "s"}` : "View all tracked items"}
             </span>
             {/* Plain English, not a count of opaque rows. */}
             <span style={{ ...text.meta, color: color.faint, display: "block", marginTop: 2 }}>
               {clear.length > 0
-                ? clear.map((l) => l.item.label.replace(/\s*\(.*\)\s*/, "")).join(", ")
-                : "Inspections, directives and equipment"}
+                ? `${clear.length} within recorded limits · ${data.lines.length} tracked`
+                : "Add inspections, review schedules and record compliance"}
             </span>
           </span>
           {clear.length > 0 && <span style={{ ...text.countdown, color: color.success, fontSize: 14 }}>{clear.length}</span>}
@@ -147,13 +159,13 @@ function CountdownRing({ verdict }: { verdict: Verdict }) {
       <svg width={SIZE} height={SIZE} style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }} aria-hidden>
         {/* stroke goes through style, not the presentation attribute: a var() is not substituted in an attribute. */}
         <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" strokeWidth={5} style={{ stroke: color.surfaceRaised }} />
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" strokeWidth={5} strokeLinecap="round"
+        <circle className="status-countdown" cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" strokeWidth={5} strokeLinecap="round"
           strokeDasharray={circumference} strokeDashoffset={circumference * (1 - sweep)}
           style={{ stroke: c, transition: "stroke-dashoffset 400ms ease-out" }} />
       </svg>
       <div style={{ position: "relative", textAlign: "center" }}>
         <div style={{ ...text.hero, ...tabular, color: color.ink }}>{verdict.value}</div>
-        <div style={{ fontFamily: text.meta.fontFamily, fontSize: 10.5, color: color.dim, marginTop: 2 }}>{verdict.unit}</div>
+        <div style={{ fontFamily: text.meta.fontFamily, fontSize: "0.875rem", color: color.dim, marginTop: 2 }}>{verdict.unit}</div>
       </div>
     </div>
   );
@@ -164,7 +176,7 @@ function MeterTile({ label, value, from, asOf, estimated }: {
 }) {
   return (
     <div style={{ flex: 1, background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: "11px 13px" }}>
-      <div style={{ fontFamily: text.meta.fontFamily, fontSize: 10.5, fontWeight: 600, letterSpacing: "0.09em", color: color.faint }}>{label}</div>
+      <div style={{ fontFamily: text.meta.fontFamily, fontSize: "0.875rem", fontWeight: 600, letterSpacing: "0.09em", color: color.faint }}>{label}</div>
       <div style={{ ...text.meterValue, ...tabular, color: value == null ? color.faint : color.ink, marginTop: 3 }}>
         {value == null ? "—" : value.toFixed(1)}
       </div>
@@ -186,8 +198,8 @@ function freshness(iso: string | null): string {
   return shortDate(iso);
 }
 
-function AttentionCard({ line, editable, onComplete }: {
-  line: Airworthiness["lines"][number]; editable: boolean; onComplete: () => void;
+function AttentionCard({ line, editable, onComplete, onReviewDirective }: {
+  line: Airworthiness["lines"][number]; editable: boolean; onComplete: () => void; onReviewDirective: () => void;
 }) {
   const i = line.item;
   const sem = line.urgency === "overdue" ? semantic.grounded : semantic.due;
@@ -213,12 +225,17 @@ function AttentionCard({ line, editable, onComplete }: {
       </div>
       {i.hoursUnreliable && (
         <div style={{ ...text.meta, color: color.warning }}>
-          The hours countdown can&apos;t be trusted — last-done is above the current reading.
+          Check the last completion and the current meter reading before relying on this countdown.
         </div>
       )}
       {editable && (
         <button onClick={onComplete} style={{ minHeight: 44, borderRadius: radius.control, border: "none", background: accentGradient, color: color.onAccent, fontFamily: text.button.fontFamily, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
           Mark done
+        </button>
+      )}
+      {i.source === "ad" && (
+        <button onClick={onReviewDirective} style={{ minHeight: hit.min, borderRadius: radius.control, border: `1px solid ${color.hairline}`, background: "transparent", color: color.accent, fontFamily: text.button.fontFamily, fontSize: "1rem", cursor: "pointer" }}>
+          Review directive
         </button>
       )}
     </div>
@@ -243,32 +260,41 @@ const SEGMENTS: [Segment, string][] = [
   ["equipment", "Equipment"],
 ];
 
-export function AllItems({ aircraft, data: seed, onBack, onQueued }: {
+export function AllItems({ aircraft, data: seed, onBack, onQueued, directiveId }: {
   aircraft: Aircraft;
   /** Already computed by Status — avoids a blank frame on the push. */
   data?: Airworthiness;
   /** Compact only; the iPad pane has nothing to go back to. */
   onBack?: () => void;
   onQueued?: Queued;
+  directiveId?: string;
 }) {
   const [data, setData] = useState<Airworthiness | null>(seed ?? null);
   const [rows, setRows] = useState<AirworthinessRows | null>(null);
-  const [segment, setSegment] = useState<Segment>("inspections");
+  const [segment, setSegment] = useState<Segment>(directiveId ? "ads" : "inspections");
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<MaintenanceItem | "new" | null>(null);
   const [completing, setCompleting] = useState<StatusItem | null>(null);
   const [scan, setScan] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const editable = canEdit(aircraft.id);
   const queued = onQueued ?? whenQueued;
 
-  const reload = useCallback(async () => {
-    const [d, r] = await Promise.all([
-      computeAirworthiness(aircraft.id),
-      loadAirworthinessRows(aircraft.id),
-    ]);
-    setData(d);
-    setRows(r);
+  const reload = useCallback(async (preserveRows = false) => {
+    setLoadError(false);
+    if (!preserveRows) setRows(null);
+    try {
+      const [d, r] = await Promise.all([
+        computeAirworthiness(aircraft.id),
+        loadAirworthinessRows(aircraft.id),
+      ]);
+      setData(d);
+      setRows(r);
+    } catch (error) {
+      if (preserveRows) throw error;
+      setLoadError(true);
+    }
   }, [aircraft.id]);
 
   useEffect(() => { void reload(); }, [reload]);
@@ -329,11 +355,18 @@ export function AllItems({ aircraft, data: seed, onBack, onQueued }: {
         <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>{aircraft.tail_number}</span>
       </div>
 
-      <div style={{ display: "flex", gap: 7, marginBottom: 14 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 14 }}>
         {SEGMENTS.map(([id, label]) => (
           <SegButton key={id} on={segment === id} onClick={() => setSegment(id)}>{label}</SegButton>
         ))}
       </div>
+
+      {loadError ? (
+        <div role="alert">
+          <p style={{ ...text.secondary, color: color.dim }}>Tracked items could not be loaded from this device.</p>
+          <button onClick={() => void reload()} style={addButton}>Try again</button>
+        </div>
+      ) : !rows ? <p role="status" style={{ ...text.secondary, color: color.dim }}>Loading tracked items…</p> : <>
 
       {scan && <p style={{ ...text.secondary, color: color.dim, lineHeight: 1.45, marginTop: 0 }}>{scan}</p>}
 
@@ -345,7 +378,7 @@ export function AllItems({ aircraft, data: seed, onBack, onQueued }: {
 
           {/* Required vs advisory is a filter, not grey metadata. */}
           {inspections.length > 0 && (
-            <div style={{ display: "flex", gap: 7, marginBottom: 14, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 14 }}>
               {([["all", "All"], ["required", "Required"], ["advisory", "Advisory"]] as const).map(([id, label]) => (
                 <SegButton key={id} small on={filter === id} onClick={() => setFilter(id)}>{`${label} ${counts[id]}`}</SegButton>
               ))}
@@ -388,6 +421,9 @@ export function AllItems({ aircraft, data: seed, onBack, onQueued }: {
 
       {segment === "ads" && rows && (
         <AdList
+          key={directiveId ?? "directives"}
+          initialRecordId={directiveId}
+          onRecordClose={directiveId ? onBack : undefined}
           aircraft={aircraft}
           ads={rows.ads}
           refs={rows.refs}
@@ -395,7 +431,7 @@ export function AllItems({ aircraft, data: seed, onBack, onQueued }: {
           currentTach={data?.meters.tach.tach ?? null}
           editable={editable}
           onQueued={queued}
-          onChanged={reload}
+          onChanged={() => reload(true)}
         />
       )}
 
@@ -423,9 +459,10 @@ export function AllItems({ aircraft, data: seed, onBack, onQueued }: {
           item={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
           onQueued={queued}
-          onChanged={reload}
+          onChanged={() => reload(true)}
         />
       )}
+      </>}
     </>
   );
 }
@@ -442,10 +479,10 @@ function SegButton({ on, small, onClick, children }: {
 }) {
   return (
     <button onClick={onClick} style={{
-      flex: small ? "none" : 1, background: on ? color.accent : color.surface,
+      flex: small ? "0 1 auto" : "1 1 auto", background: on ? color.accent : color.surface,
       color: on ? color.onAccent : color.dim,
       border: `1px solid ${on ? color.accent : color.hairline}`, borderRadius: radius.chip,
-      padding: "7px 12px", minHeight: small ? 36 : 40, fontFamily: text.rowTitle.fontFamily,
+      padding: "7px 12px", minHeight: hit.min, fontFamily: text.rowTitle.fontFamily,
       fontSize: small ? 12 : 13.5, fontWeight: 600, cursor: "pointer",
     }}>{children}</button>
   );
@@ -475,8 +512,9 @@ function ItemRow({ line: l, editable, onEdit, onComplete }: {
       <button onClick={onEdit} disabled={!editable} style={{ all: "unset", cursor: editable ? "pointer" : "default", display: "flex", flexDirection: "column", gap: 8, minHeight: editable ? 44 : undefined, justifyContent: "center" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <span style={{ ...text.rowTitle, color: color.ink, minWidth: 0, flex: 1 }}>{i.label.replace(/\s*\(.*\)\s*/, "")}</span>
-          <span style={{ ...text.countdown, ...tabular, color: sem ? sem.color : color.dim, whiteSpace: "nowrap" }}>{shortRemaining(l)}</span>
+          <span style={{ ...text.countdown, ...tabular, color: sem ? sem.color : color.dim, whiteSpace: "nowrap" }}>{statusCountdown(l.item).text}</span>
         </div>
+        {l.urgency === "none" && <span style={{ ...text.secondary, color: color.dim }}>Needs schedule or reading information</span>}
         <div style={{ height: 4, borderRadius: 2, background: color.surfaceRaised, overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${Math.round(fraction(i) * 100)}%`, background: sem ? sem.color : i.regulatory ? color.accent : color.faint }} />
         </div>
@@ -515,20 +553,4 @@ function fraction(i: StatusItem): number {
     return Math.max(0, Math.min(1, (total - days) / total));
   }
   return 0;
-}
-
-/** "26 days" / "30 hrs" / "7 months" — short enough not to wrap. */
-function shortRemaining(l: Airworthiness["lines"][number]): string {
-  const i = l.item;
-  if (i.nextDueDate) {
-    const days = Math.round((Date.parse(`${i.nextDueDate}T00:00:00Z`) - Date.now()) / 86_400_000);
-    if (days < 0) return `${Math.abs(days)} d over`;
-    if (days < 90) return `${days} days`;
-    return `${Math.round(days / 30.44)} months`;
-  }
-  if (i.nextDueForItem != null && i.currentForItem != null) {
-    const h = Math.round(i.nextDueForItem - i.currentForItem);
-    return h < 0 ? `${Math.abs(h)} h over` : `${h} hrs`;
-  }
-  return "—";
 }

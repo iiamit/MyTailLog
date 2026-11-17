@@ -61,7 +61,7 @@ export async function loadSummary(supabase: SupabaseClient<Database>, aircraft: 
   const id = aircraft.id;
   const [{ data: mxItems }, { data: recurringAds }, { data: allAds }, { data: squawks }, { data: components }, { data: wb }] =
     await Promise.all([
-      supabase.from("maintenance_item").select("*").eq("aircraft_id", id),
+      supabase.from("maintenance_item").select("*").eq("aircraft_id", id).throwOnError(),
       // Only recurring, still-applicable ADs carry a countdown — same filter the
       // Status page uses, so the two views can't disagree.
       supabase
@@ -69,7 +69,7 @@ export async function loadSummary(supabase: SupabaseClient<Database>, aircraft: 
         .select("id, reference, kind, next_due_date, next_due_hours, status, verified_report_page_id, verified_at")
         .eq("aircraft_id", id)
         .eq("recurring", true)
-        .not("status", "in", "(not_applicable,superseded)"),
+        .not("status", "in", "(not_applicable,superseded)").throwOnError(),
       supabase
         .from("ad_compliance")
         .select("kind, reference, title, status, recurring, complied_date, next_due_date, next_due_hours")
@@ -135,7 +135,8 @@ export async function loadSummary(supabase: SupabaseClient<Database>, aircraft: 
     meters,
     overdue: overdue.length,
     dueSoon: dueSoon.length,
-    current: statusItems.length - overdue.length - dueSoon.length,
+    current: statusItems.filter((s) => s.urgency === "upcoming").length,
+    unknown: statusItems.filter((s) => s.urgency === "none").length,
     openSquawks: openSquawks.length,
     adCount: allAds?.length ?? 0,
     equipmentCount: components?.length ?? 0,
@@ -179,7 +180,8 @@ export function SummaryArticle({ data, refTag }: { data: SummaryData; refTag?: s
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
       <Tile n={overdue.length} label="Overdue" color="text-annun-red" />
       <Tile n={dueSoon.length} label="Due soon" color="text-annun-amber" />
-      <Tile n={statusItems.length - overdue.length - dueSoon.length} label="Current" color="text-annun-green" />
+      <Tile n={statusItems.filter((s) => s.urgency === "upcoming").length} label="Within recorded limits" color="text-annun-green" />
+      <Tile n={statusItems.filter((s) => s.urgency === "none").length} label="Needs information" color="text-dim" />
       <Tile n={openSquawks.length} label="Open squawks" color={openSquawks.length ? "text-annun-amber" : "text-annun-green"} />
     </div>
 
@@ -207,7 +209,7 @@ export function SummaryArticle({ data, refTag }: { data: SummaryData; refTag?: s
               <td className={TD}>{dueAt(s.nextDueDate, s.nextDueHours)}</td>
               <td className={TD}>{remainingText(s) || "—"}</td>
               <td className={`${TD} ${URGENCY_COLOR[s.urgency]}`}>
-                {s.urgency === "none" ? "—" : urgencyLabel(s.urgency)}
+                {s.urgency === "none" ? "needs information" : urgencyLabel(s.urgency)}
               </td>
             </tr>
           ))}

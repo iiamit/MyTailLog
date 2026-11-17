@@ -119,7 +119,7 @@
 
     --ink: #e9eef5;
     --dim: #94a3b6;
-    --faint: #5d6b7d;
+    --faint: #8795a8;
 
     --accent: #5aa9ff;
     --accent-soft: #16324e;
@@ -171,6 +171,11 @@
       44px 44px,
       44px 44px;
     background-attachment: fixed;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
   }
 
   ::selection {

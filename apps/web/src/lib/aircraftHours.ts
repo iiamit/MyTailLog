@@ -100,10 +100,11 @@ async function fetchReadings(
   aircraftId: string,
   enrollment?: Enrollment,
 ): Promise<Reading[]> {
-  const [{ data: entries }, { data: readings }] = await Promise.all([
+  const [{ data: entries, error: entryError }, { data: readings, error: readingError }] = await Promise.all([
     supabase.from("log_entry").select("id, entry_date, hobbs, tach, airframe, hours_reviewed_at, authored_superseded_by").eq("aircraft_id", aircraftId),
     supabase.from("hours_reading").select("id, reading_date, hobbs, tach, airframe, hours_reviewed_at, source").eq("aircraft_id", aircraftId),
   ]);
+  if (entryError || readingError) throw new Error("Could not load aircraft readings. Try again.");
   return toReadings(entries ?? [], readings ?? [], enrollment);
 }
 
@@ -112,11 +113,12 @@ export async function getMeterResets(
   supabase: SupabaseClient<Database>,
   aircraftId: string,
 ): Promise<MeterReset[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("meter_reset")
     .select("meter, reset_date, prior_value, new_value")
     .eq("aircraft_id", aircraftId)
     .order("reset_date", { ascending: true });
+  if (error) throw new Error("Could not load meter replacements. Try again.");
   return (data ?? []).map((r) => ({
     meter: r.meter as Meter,
     date: r.reset_date,

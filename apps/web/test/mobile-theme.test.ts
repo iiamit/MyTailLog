@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 // theme.ts is NOT imported here: it pulls React and Capacitor, which the web
 // typecheck cannot resolve. The pure half lives in tokens.ts.
-import { palettes, tintsFor, cssVars, parseChoice, resolveTheme, alpha, color, paint, nextChoice, THEME_CHOICES, THEME_LABEL, type Palette } from "../../mobile/src/tokens";
+import { palettes, text, hit, tintsFor, cssVars, parseChoice, resolveTheme, alpha, color, tint, paint, nextChoice, THEME_CHOICES, THEME_LABEL, type Palette } from "../../mobile/src/tokens";
 
 // The iOS app's light appearance, checked here because apps/mobile has no
 // runner. Two things are worth covering and both are silent when wrong: which
@@ -87,12 +88,30 @@ test("both palettes define every role, as a 6-digit hex", () => {
 
 test("body text clears WCAG AA on both the ground and a card", () => {
   for (const [name, p] of THEMES) {
-    for (const ground of [p.bg, p.surface]) {
+    for (const ground of [p.bg, p.surface, p.surfaceRaised]) {
       assert.ok(contrast(p.ink, ground) >= 7, `${name}: ink is only ${contrast(p.ink, ground).toFixed(2)}:1`);
       assert.ok(contrast(p.dim, ground) >= 4.5, `${name}: dim is only ${contrast(p.dim, ground).toFixed(2)}:1`);
-      // faint is metadata at 11.5px — held to the large-text floor, not AA body.
-      assert.ok(contrast(p.faint, ground) >= 3, `${name}: faint is only ${contrast(p.faint, ground).toFixed(2)}:1`);
+      assert.ok(contrast(p.faint, ground) >= 4.5, `${name}: faint is only ${contrast(p.faint, ground).toFixed(2)}:1`);
     }
+  }
+});
+
+test("shared mobile text scales with the root and common targets meet both platform minimums", () => {
+  for (const [role, style] of Object.entries(text)) assert.match(style.fontSize, /^[\d.]+rem$/, role);
+  assert.ok(parseFloat(text.bodyText.fontSize) >= 1);
+  assert.ok(parseFloat(text.meta.fontSize) >= 0.875);
+  assert.ok(hit.min >= 48);
+});
+
+test("web secondary text clears normal-text contrast on every ordinary dark surface", () => {
+  const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+  const token = (name: string) => {
+    const value = css.match(new RegExp(`--${name}: (#[0-9a-f]{6});`))?.[1];
+    assert.ok(value, name);
+    return value;
+  };
+  for (const surface of ["bg", "panel", "panel2", "raise"]) {
+    assert.ok(contrast(token("faint"), token(surface)) >= 4.5, surface);
   }
 });
 
@@ -175,5 +194,16 @@ test("alpha() passes a literal colour straight through", () => {
 test("every token is a var() — nothing snapshots the launch palette", () => {
   for (const k of Object.keys(palettes.dark) as (keyof Palette)[]) {
     assert.equal(color[k], `var(--c-${k})`, `${k} must be a var(), or a module-level const freezes it`);
+  }
+});
+
+
+test("theme proxies support React Refresh object inspection without treating symbols as tokens", () => {
+  for (const tokens of [color, tint]) {
+    assert.equal(Object.prototype.toString.call(tokens), "[object Object]");
+    assert.equal(Reflect.get(tokens, Symbol.toStringTag), undefined);
+    assert.equal(Reflect.get(tokens, "constructor"), Object);
+    assert.equal(Reflect.get(tokens, "missingToken"), undefined);
+    for (const [key, value] of Object.entries(tokens)) assert.match(value, new RegExp(`^var\\(--[ct]-${key}\\)$`));
   }
 });

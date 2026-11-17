@@ -12,8 +12,8 @@ The English listing has a feature graphic and four phone screenshots. Check
    deploy the matching web push API. Confirm its Firebase identity can send FCM
    messages to project `mytaillog-22ee6`.
 2. Build with `npm run android:bundle`, or use `npm run play:draft` to build and
-   upload a new signed AAB as an internal draft. The full release build,
-   including lint, passes on this host.
+   upload a new signed AAB as an internal draft. This host completes the full
+   release build, including lint, within its 3 GiB container memory limit.
 3. In Play Console, add internal tester emails or a Google Group, and install
    the latest internal version using its opt-in link.
 4. Complete the Console forms: App access (provide review login instructions),

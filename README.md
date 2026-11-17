@@ -175,7 +175,8 @@ A lightweight monorepo:
   standalone npm project — see [`apps/mobile/README.md`](apps/mobile/README.md).
 - **`packages/`** — reserved for cross-app shared code (a placeholder today; see
   the README there and [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md) for why).
-- **`supabase/migrations`** — the Postgres schema (applied manually, in order).
+- **`supabase/migrations`** — versioned Postgres schema; new migrations are
+  applied to test and production through Supabase MCP during releases.
 - **`docs/`** — design docs, incl. the [offline sync engine & iOS app](docs/mobile-and-sync.md).
 
 Root `package.json` is a thin runner (`npm --prefix apps/web run <script>`); most
@@ -275,7 +276,7 @@ own account and lift the limit.
 cd apps/web
 npm install
 cp .env.example .env.local     # fill in Supabase URL + anon key and at least one AI provider key
-# Apply supabase/migrations/*.sql (from the repo root) in order via the Supabase SQL editor
+# Set up the database schema; see supabase/README.md for the migration workflow
 npm run dev                    # http://localhost:3000
 ```
 
@@ -359,10 +360,13 @@ Configure custom SMTP (e.g. Resend) to lift the built-in email rate limit.
 **4. Custom domain** — App Hosting → **Add custom domain** → add the DNS records;
 Google provisions a managed TLS cert.
 
-**5. Migrations** — run `supabase/migrations/*.sql` **in order** via the dashboard
-SQL editor (the repo isn't CLI-linked). Enum-adding migrations (e.g.
-`0004`/`0017`) must be run and committed **before** the migration that uses the
-new value.
+**5. Migrations** — commit each new SQL file in `supabase/migrations/`, then
+apply it through Supabase MCP to test and production, verifying each project
+before deploying application code. As of 2026-10-13, both projects contain all
+migrations through `0062`, including the two distinct `0060` files. See
+[`supabase/README.md`](supabase/README.md) for the release workflow. Enum-adding
+migrations (e.g. `0004`/`0017`) must be applied before deploying code that uses
+the new value.
 
 **6. Daily reminders (optional)** — create a **Cloud Scheduler** job that does a
 daily `POST https://mytaillog.com/api/cron/daily` with header

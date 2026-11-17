@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getAircraftRole, canEditRole } from "@/lib/access";
-import { buildStatusItems } from "@/lib/status";
+import { buildStatusItems, summarizeStatusItems } from "@/lib/status";
 import { toReadings, currentMetersFrom } from "@/lib/aircraftHours";
 import { type Meter, type MeterReset, type TachBridge } from "@/lib/hobbsTach";
 
@@ -25,7 +25,7 @@ export type AircraftShellContext = {
   currentHours: number | null;
   /** hobbs→tach converter for this aircraft (null when nothing anchors it). */
   bridge: TachBridge | null;
-  annun: { overdue: number; due: number; current: number };
+  annun: ReturnType<typeof summarizeStatusItems> | null;
   badges: { equipment: number; status: number; review: number };
 };
 
@@ -44,11 +44,11 @@ export async function getAircraftShellContext(
 
   const [
     role,
-    { data: entryHours },
-    { data: readings },
-    { data: items },
-    { data: ads },
-    { data: resetRows },
+    { data: entryHours, error: entryError },
+    { data: readings, error: readingError },
+    { data: items, error: itemError },
+    { data: ads, error: adError },
+    { data: resetRows, error: resetError },
     { count: equipment },
     { data: unconfirmed },
   ] = await Promise.all([
@@ -143,14 +143,12 @@ export async function getAircraftShellContext(
     airframe: meters.airframe.airframe,
     tachEstimated: meters.tach.estimated,
     hobbsEstimated: meters.hobbs.estimated,
+    airframeEstimated: meters.airframe.estimated,
     baselineFor: meters.baselineFor,
     toTotalHours: meters.toTotalHours,
   });
-  const annun = {
-    overdue: status.filter((s) => s.urgency === "overdue").length,
-    due: status.filter((s) => s.urgency === "due_soon").length,
-    current: status.filter((s) => s.urgency === "upcoming" || s.urgency === "none").length,
-  };
+  const annun = entryError || readingError || itemError || adError || resetError
+    ? null : summarizeStatusItems(status);
 
   return {
     id,
@@ -160,15 +158,15 @@ export async function getAircraftShellContext(
     demo: aircraft.is_demo ?? false,
     isOwner: role === "owner",
     canEdit: canEditRole(role),
-    tach,
-    hobbs,
-    airframe,
-    currentHours,
-    bridge: meters.bridge,
+    tach: entryError || readingError || resetError ? null : tach,
+    hobbs: entryError || readingError || resetError ? null : hobbs,
+    airframe: entryError || readingError || resetError ? null : airframe,
+    currentHours: entryError || readingError || resetError ? null : currentHours,
+    bridge: entryError || readingError || resetError ? null : meters.bridge,
     annun,
     badges: {
       equipment: equipment ?? 0,
-      status: annun.overdue + annun.due,
+      status: annun ? annun.overdue + annun.due + annun.unknown : 0,
       review: review ?? 0,
     },
   };
