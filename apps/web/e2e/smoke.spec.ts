@@ -70,6 +70,14 @@ test.describe("public marketing pages", () => {
     await page.goto("/");
     // Signed out: account creation is a primary CTA, not a buried "Sign in".
     await expect(page.getByRole("link", { name: /create your account/i }).first()).toBeVisible();
+    const badges = page.getByRole("group", { name: "Mobile apps" }).first();
+    for (const [name, href] of [
+      ["Download on the App Store", "https://apps.apple.com/us/app/mytaillog/id6795396758"],
+      ["Get it on Google Play", "https://play.google.com/store/apps/details?id=com.mytaillog.app"],
+    ]) {
+      await expect(badges.getByRole("link", { name, exact: true })).toHaveAttribute("href", href);
+      await expect.poll(() => badges.getByRole("img", { name, exact: true }).evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    }
     for (const href of ["/faq", "/compare", "/switch/myfbo", "/help", "/whats-new", "/developers/docs"]) {
       await expect(page.locator(`footer a[href="${href}"]`)).toBeVisible();
     }
@@ -80,7 +88,7 @@ test.describe("public marketing pages", () => {
 
   // No horizontal overflow at any width — a previous marketing page shipped a
   // table wider than its container and scrolled sideways at every viewport.
-  for (const width of [1512, 1280, 1024, 768, 390]) {
+  for (const width of [1512, 1280, 1024, 768, 390, 320]) {
     test(`landing page does not scroll sideways at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AdCompliance, AdKind, AdStatus, AdReference } from "@/lib/database.types";
 import {
@@ -191,6 +191,17 @@ export function ComplianceClient({
   const [busy, setBusy] = useState(false);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const editorRef = useRef<HTMLElement>(null);
+
+  function openForm(next: FormState) {
+    setError(null);
+    setForm(next);
+    // The editor sits above the list; focus it after React mounts it.
+    requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ block: "start" });
+      editorRef.current?.focus({ preventScroll: true });
+    });
+  }
 
   async function enrich(id: string, reference: string) {
     setEnrichingId(id);
@@ -265,7 +276,7 @@ export function ComplianceClient({
         </span>
         {!form && (
           <button
-            onClick={() => setForm(blankForm())}
+            onClick={() => openForm(blankForm())}
             className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90"
           >
             Add AD / SB
@@ -296,8 +307,8 @@ export function ComplianceClient({
 
       {/* Add / edit form */}
       {form && (
-        <section className="panel p-4">
-          <div className="eyebrow mb-3">{form.id ? "Edit record" : "New record"}</div>
+        <section ref={editorRef} tabIndex={-1} aria-labelledby="ad-editor-title" className="panel scroll-mt-32 p-4 focus-visible:outline-2 focus-visible:outline-accent sm:scroll-mt-20">
+          <h2 id="ad-editor-title" className="mb-3 font-display text-lg font-semibold">{form.id ? `Edit ${form.kind.toUpperCase()} ${form.reference}` : "Track an AD or service bulletin"}</h2>
           <div className="grid grid-cols-2 gap-3">
             <label className="text-xs font-medium text-dim">
               Type
@@ -629,7 +640,7 @@ export function ComplianceClient({
                 })()}
 
                 <div className="flex flex-wrap gap-2 border-t border-line px-4 py-2.5">
-                  <button onClick={() => setForm(fromRecord(r))} className={rowBtn}>
+                  <button onClick={() => openForm(fromRecord(r))} className={rowBtn}>
                     Edit
                   </button>
                   {r.kind === "ad" && !r.ad_reference_id && (
