@@ -13,6 +13,18 @@ import {
 } from "../src/lib/aircraftHours";
 import type { MeterReset } from "../src/lib/hobbsTach";
 
+test("meter query failures cannot become an empty or partially assessed reading history", async () => {
+  for (const failedTable of ["log_entry", "hours_reading", "meter_reset"]) {
+    const client = {
+      from(table: string) {
+        const result = { data: [], error: table === failedTable ? { message: "offline" } : null };
+        return { select: () => ({ eq: () => Object.assign(Promise.resolve(result), { order: () => Promise.resolve(result) }) }) };
+      },
+    } as unknown as Parameters<typeof getCurrentMeters>[0];
+    await assert.rejects(() => getCurrentMeters(client, "aircraft"), /Could not load/);
+  }
+});
+
 // The async entry points take a Supabase client and do I/O, so they stay smoke
 // checks. But toReadings() and currentMetersFrom() are PURE and are now a shared
 // API: the native app (apps/mobile) calls them with rows out of its own SQLite

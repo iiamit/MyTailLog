@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentMeters, getLatestMfbReading } from "@/lib/aircraftHours";
 import { buildStatusItems, sortStatusItems } from "@/lib/status";
 import { MaintenanceClient } from "./MaintenanceClient";
+import { LoadError } from "@/components/LoadError";
 
 export default async function MaintenancePage({
   params,
@@ -19,13 +20,13 @@ export default async function MaintenancePage({
     .single();
   if (!aircraft) notFound();
 
-  const { data: items } = await supabase
+  const { data: items, error: itemError } = await supabase
     .from("maintenance_item")
     .select("*")
     .eq("aircraft_id", id);
 
   // Recurring ADs that have a next-due join the same forecast list.
-  const { data: ads } = await supabase
+  const { data: ads, error: adError } = await supabase
     .from("ad_compliance")
     .select("id, reference, kind, next_due_date, next_due_hours, status, verified_report_page_id, verified_at")
     .eq("aircraft_id", id)
@@ -34,12 +35,14 @@ export default async function MaintenancePage({
 
   // Both meters, reconciled from hobbs/tach readings. Regulatory items count
   // down on tach; usage items (oil) on hobbs.
-  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours, utilization } = await getCurrentMeters(supabase, id, {
+  const meters = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
     airframe: aircraft.enrollment_airframe,
     date: aircraft.enrollment_date,
-  });
+  }).catch(() => null);
+  if (!meters || itemError || adError) return <main className="mx-auto max-w-6xl p-6"><LoadError message="The maintenance forecast could not be loaded. No assessment is available." href={`/aircraft/${id}/maintenance`} /></main>;
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours, utilization } = meters;
 
   // Latest reading synced from MyFlightBook, for an honest "as of <date>" note.
   const mfbReading = await getLatestMfbReading(supabase, id);

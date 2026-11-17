@@ -1,3 +1,5 @@
+import { statusNeedsInformation, statusCountdown, type StatusItem } from "@/lib/status";
+import { semanticOf, type Semantic } from "./tokens";
 import { AD_STATUS_LABEL, urgencyOf, type Urgency } from "@/lib/compliance";
 import { METERS, type Meter } from "@/lib/hobbsTach";
 
@@ -141,4 +143,103 @@ export function adStatusLine(ad: AdLite, currentTach: number | null, today = new
     urgency,
     open: urgency === "overdue",
   };
+}
+
+/** An AD or maintenance item, judged and ready to render. */
+export type StatusLine = {
+  item: StatusItem;
+  urgency: Urgency;
+  /** "Due in 21 days", "42.3 h remaining", "OVERDUE by 4 days" — already worded. */
+  due: string;
+  /** Approximate calendar date an hours-based item lands on, when we can say. */
+  projection: string | null;
+};
+
+// --- The verdict ------------------------------------------------------------
+// Tracked records summarized before any list. Everything here is DERIVED from
+// the lines above — nothing new is stored.
+
+export type Verdict = {
+  semantic: Semantic;
+  /** Describes tracked records, never an airworthiness determination. */
+  headline: string;
+  /** The next item and any remaining gaps in recorded information. */
+  detail: string;
+  /** The countdown number and its unit, adapting to the interval. */
+  value: string;
+  unit: string;
+  /** 0–1, how much of the interval has elapsed — the ring's arc sweep. */
+  progress: number;
+  /** The item the countdown refers to, when there is one. */
+  item: StatusItem | null;
+};
+
+const DAY = 86_400_000;
+
+function daysUntil(iso: string | null): number | null {
+  if (!iso) return null;
+  return Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) / DAY);
+}
+
+
+/**
+ * How far through its interval an item is, 0–1. The ring fills as the deadline
+ * approaches, so a glance reads "nearly due" without reading the number.
+ */
+function elapsedFraction(item: StatusItem): number {
+  const days = daysUntil(item.nextDueDate);
+  const dateProgress = days != null && item.intervalMonths
+    ? 1 - days / (item.intervalMonths * 30.44) : 0;
+  const hourProgress = !item.hoursUnreliable && item.nextDueForItem != null && item.currentForItem != null && item.intervalHours
+    ? 1 - (item.nextDueForItem - item.currentForItem) / item.intervalHours : 0;
+  return Math.max(0, Math.min(1, Math.max(dateProgress, hourProgress)));
+}
+
+export function buildVerdict(lines: StatusLine[]): Verdict {
+  const worst = lines.find((l) => l.urgency === "overdue")
+    ?? lines.find((l) => l.urgency === "due_soon")
+    ?? lines.find((l) => l.urgency === "none")
+    ?? lines[0] ?? null;
+  if (!worst) {
+    return {
+      semantic: "unknown", headline: "No tracked assessment yet",
+      detail: "Open all items to add inspections and record compliance.",
+      value: "—", unit: "", progress: 0, item: null,
+    };
+  }
+
+  const sem = semanticOf(worst.urgency);
+  const item = worst.item;
+  const countdown = statusCountdown(item);
+  const { days, hours } = countdown;
+
+  // Unit adapts: days under 90, months beyond, hours for hour-driven items.
+  let value = "—";
+  let unit = "";
+  if (days != null && countdown.unit === "days") {
+    if (days < 0) {
+      value = String(Math.abs(days));
+      unit = Math.abs(days) === 1 ? "day overdue" : "days overdue";
+    } else if (days < 90) {
+      value = String(days);
+      unit = days === 1 ? "day to next" : "days to next";
+    } else {
+      value = String(Math.round(days / 30.44));
+      unit = "months to next";
+    }
+  } else if (hours != null) {
+    value = String(Math.abs(hours));
+    unit = hours < 0 ? "hours over" : hours === 0 ? "hours — due now" : "hours to next";
+  }
+
+  const overdue = lines.filter((l) => l.urgency === "overdue").length;
+  const due = lines.filter((l) => l.urgency === "due_soon").length;
+  const unknown = lines.filter((l) => statusNeedsInformation(l.item)).length;
+  const headline = overdue > 0 ? `${overdue} tracked item${overdue === 1 ? "" : "s"} overdue`
+    : due > 0 ? `${due} item${due === 1 ? "" : "s"} due soon`
+    : unknown > 0 ? "Tracked assessment incomplete"
+    : "No tracked items overdue";
+  const detail = `${item.label.replace(/\s*\(.*\)\s*/, "")}: ${countdown.text}. ${lines.length} tracked; ${unknown} need more information.`;
+
+  return { semantic: sem, headline, detail, value, unit, progress: elapsedFraction(item), item };
 }

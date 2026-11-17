@@ -75,3 +75,12 @@ textarea {
   outline: 2px solid var(--c-accent);
   outline-offset: 2px;
 }
+
+dialog::backdrop { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hoverable,
+  .status-countdown {
+    transition: none !important;
+  }
+}

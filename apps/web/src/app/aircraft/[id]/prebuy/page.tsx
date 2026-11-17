@@ -25,8 +25,8 @@ export default async function PrebuyPage({ params }: { params: Promise<{ id: str
     loadLogEntries(supabase, id),
     loadRecordPages(supabase, id),
     supabase.from("logbook").select("id, type, title").eq("aircraft_id", id),
-    supabase.from("maintenance_item").select("*").eq("aircraft_id", id),
-    supabase.from("ad_compliance").select("*").eq("aircraft_id", id),
+    supabase.from("maintenance_item").select("*").eq("aircraft_id", id).throwOnError(),
+    supabase.from("ad_compliance").select("*").eq("aircraft_id", id).throwOnError(),
     supabase.from("squawk").select("id, description, severity, status, reported_at").eq("aircraft_id", id).eq("status", "open"),
     supabase.from("component").select("id, name, make, part_number, serial_number").eq("aircraft_id", id).eq("is_installed", true),
   ]);
@@ -38,7 +38,7 @@ export default async function PrebuyPage({ params }: { params: Promise<{ id: str
     tachEstimated: meters.tach.estimated, hobbsEstimated: meters.hobbs.estimated,
     airframeEstimated: meters.airframe.estimated, baselineFor: meters.baselineFor, toTotalHours: meters.toTotalHours };
   const status = sortStatusItems(buildStatusItems(maintenance ?? [], (ads ?? []).filter((ad) => ad.recurring && ad.status !== "not_applicable" && ad.status !== "superseded"), current));
-  const urgent = status.filter((item) => item.urgency === "overdue" || item.urgency === "due_soon");
+  const urgent = status.filter((item) => item.urgency === "overdue" || item.urgency === "due_soon" || item.urgency === "none");
   const auditEntries = entries.filter((e) => !e.authored_superseded_by).map((e) => ({ date: e.entry_date,
     text: `${e.description ?? ""} ${e.work_performed ?? ""}`.toLowerCase() }));
   const findings = [
@@ -71,7 +71,7 @@ export default async function PrebuyPage({ params }: { params: Promise<{ id: str
       <h3 className={section}>Items to investigate</h3>
       {findings.length === 0 && urgent.length === 0 && !squawks?.length && <p className="mt-2">No issue was flagged by the available records. This does not establish completeness or airworthiness.</p>}
       {findings.map((f, i) => <div key={i} className="mt-2 break-inside-avoid"><strong className="text-ink">{f.title}</strong> · {f.detail} <Link className="text-accent underline" href={`/aircraft/${id}/audit`}>Records gap audit</Link><span className="text-faint"> · Source: inferred from dated entries; a missing record has no linked scan.</span></div>)}
-      {urgent.map((item) => { const ad = item.source === "ad" ? ads?.find((a) => a.id === item.id) : null; const pageId = ad?.verified_report_page_id ?? null; const entry = ad?.reference_entry_id ? entries.find((e) => e.id === ad.reference_entry_id) : null; const href = pageId ? `/aircraft/${id}/pages/${pageId}/review` : entry ? source(id, entry.page_id, entry.id) : item.source === "ad" ? `/aircraft/${id}/compliance` : `/aircraft/${id}/maintenance`; return <div key={`${item.source}-${item.id}`} className="mt-2 break-inside-avoid"><strong className="text-ink">{item.label}</strong> · {item.urgency === "overdue" ? "Overdue" : "Due soon"}{item.nextDueDate && ` · due ${item.nextDueDate}`}{item.nextDueForItem != null && ` / ${item.nextDueForItem} ${item.meter} hrs`}. <Link className="text-accent underline" href={href}>{pageId || entry ? "Source record" : "Tracker record"}</Link>{!pageId && !entry && <span className="text-faint"> · No scanned source linked.</span>}</div>; })}
+      {urgent.map((item) => { const ad = item.source === "ad" ? ads?.find((a) => a.id === item.id) : null; const pageId = ad?.verified_report_page_id ?? null; const entry = ad?.reference_entry_id ? entries.find((e) => e.id === ad.reference_entry_id) : null; const href = pageId ? `/aircraft/${id}/pages/${pageId}/review` : entry ? source(id, entry.page_id, entry.id) : item.source === "ad" ? `/aircraft/${id}/compliance` : `/aircraft/${id}/maintenance`; return <div key={`${item.source}-${item.id}`} className="mt-2 break-inside-avoid"><strong className="text-ink">{item.label}</strong> · {item.urgency === "overdue" ? "Overdue" : item.urgency === "due_soon" ? "Due soon" : "Needs information"}{item.nextDueDate && ` · due ${item.nextDueDate}`}{item.nextDueForItem != null && ` / ${item.nextDueForItem} ${item.meter} hrs`}. <Link className="text-accent underline" href={href}>{pageId || entry ? "Source record" : "Tracker record"}</Link>{!pageId && !entry && <span className="text-faint"> · No scanned source linked.</span>}</div>; })}
       {(squawks ?? []).map((s) => <div key={s.id} className="mt-2"><strong className="text-ink">Open squawk ({s.severity})</strong> · {s.description} <Link className="text-accent underline" href={`/aircraft/${id}/squawks`}>Squawk record</Link></div>)}
       <h3 className={section}>AD status and equipment</h3>
       <p className="mt-2">{ads?.length ?? 0} AD/SB records tracked; {(ads ?? []).filter((a) => a.status === "open").length} open. <Link className="text-accent underline" href={`/aircraft/${id}/compliance`}>Inspect AD records and evidence</Link></p>

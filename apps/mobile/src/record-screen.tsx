@@ -1,3 +1,5 @@
+import { resumableWrite } from "./review-write";
+import { Modal } from "./modal";
 import { useEffect, useRef, useState } from "react";
 import { computeAirworthiness } from "./airworthiness";
 import { queueAction, canEdit } from "./actions";
@@ -51,6 +53,8 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
   const [include, setInclude] = useState({ tach: true, hobbs: true });
   const [saved, setSaved] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const pendingSave = useRef<(() => Promise<void>) | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [readings, setReadings] = useState<ReadingRow[]>([]);
   const editable = canEdit(aircraft.id);
   const compact = useSizeClass() === "compact";
@@ -106,6 +110,7 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
 
   async function save() {
     if (!editable || saving) return;
+    if (pendingSave.current) return saveReading();
     const hit = backwards();
     // The reset row has to exist before the reading, or every hour countdown
     // re-anchors a frame late — so the reading waits for the answer.
@@ -116,30 +121,35 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
   async function saveReading() {
     if (!editable || saving) return;
     setSaving(true);
+    setSaveError(null);
     try {
-      const date = todayIso();
-      if (sendTach != null || sendHobbs != null) {
-        await queueAction({
-          aircraftId: aircraft.id,
-          type: "reading",
+      if (!pendingSave.current) {
+        const date = todayIso();
+        const steps: (() => Promise<unknown>)[] = [];
+        if (sendTach != null || sendHobbs != null) steps.push(() => queueAction({
+          aircraftId: aircraft.id, type: "reading",
           label: [sendTach != null ? `Tach ${sendTach.toFixed(1)}` : null, sendHobbs != null ? `Hobbs ${sendHobbs.toFixed(1)}` : null].filter(Boolean).join(" · "),
           payload: { date, tach: sendTach, hobbs: sendHobbs },
-        });
-      }
-      if (oilQuarts > 0) {
-        await queueAction({
-          aircraftId: aircraft.id,
-          type: "oil",
-          label: `Oil +${oilQuarts} qt`,
-          // Recorded against whichever meters were actually read.
+        }));
+        if (oilQuarts > 0) steps.push(() => queueAction({
+          aircraftId: aircraft.id, type: "oil", label: `Oil +${oilQuarts} qt`,
           payload: { date, quarts: oilQuarts, tach: sendTach, hobbs: sendHobbs },
+        }));
+        steps.push(async () => {
+          const result = await onQueued();
+          await loadReadings();
+          setSaved(result === "synced" ? "Saved · synced" : "Saved · waiting for a connection");
         });
+        pendingSave.current = resumableWrite(steps);
       }
+      await pendingSave.current();
+      pendingSave.current = null;
+      setPrev((previous) => ({ tach: sendTach ?? previous?.tach ?? null, hobbs: sendHobbs ?? previous?.hobbs ?? null }));
       setOil(0);
       setOilCustom(false);
       setOilText("");
-      const result = await onQueued();
-      setSaved(result === "synced" ? "Saved · synced" : "Saved · waiting for a connection");
+    } catch {
+      setSaveError("The save did not finish. Your inputs are preserved. Retry to finish only the remaining steps; already saved readings or oil will not be added again.");
     } finally {
       setSaving(false);
     }
@@ -147,6 +157,23 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
 
   return (
     <>
+      {(saving || saveError) && <Sheet title="Finish saving flight">
+        {saving ? <p role="status" style={{ ...text.secondary, color: color.dim }}>Saving your flight…</p> : <>
+          <p role="alert" style={{ ...text.secondary, color: color.warning }}>{saveError}</p>
+          <button type="button" onClick={saveReading} style={sheetPrimary}>Retry remaining save</button>
+          <button type="button" style={sheetCancel} onClick={() => {
+            if (!window.confirm("Discard unfinished steps? Changes already queued on this device will be kept.")) return;
+            pendingSave.current = null;
+            setSaveError(null);
+            setOil(0);
+            setOilCustom(false);
+            setOilText("");
+            setTach(null);
+            setHobbs(null);
+            setSaved("Unfinished steps discarded. Already queued changes are kept; check recent readings before recording again.");
+          }}>Discard unfinished steps</button>
+        </>}
+      </Sheet>}
       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
         <h1 style={{ ...text.screenTitle, color: color.ink, margin: 0 }}>Log a flight</h1>
         <span style={{ ...text.meta, color: color.faint, marginLeft: "auto" }}>{aircraft.tail_number}</span>
@@ -161,6 +188,7 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
         </p>
       )}
 
+      <fieldset disabled={!editable || saving || !!pendingSave.current} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <div style={{ background: color.surface, border: `1px solid ${color.hairline}`, borderRadius: radius.panel, padding: "18px 16px", display: "flex", flexDirection: "column", gap: 18 }}>
         <Meter
           label="TACH" value={tach} was={prev?.tach ?? null} onChange={setTach}
@@ -246,6 +274,8 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
         </span>
       </div>
 
+      </fieldset>
+      {saveError && <p role="alert" style={{ ...text.secondary, color: color.warning }}>{saveError}</p>}
       <button
         onClick={save}
         disabled={saving || !editable || nothingEntered || unchanged || !oilValid}
@@ -257,9 +287,9 @@ export function Record({ aircraft, onQueued }: { aircraft: Aircraft; onQueued: (
           cursor: "pointer",
         }}
       >
-        {saving ? "Saving…" : "Save to logbook"}
+        {saving ? "Saving…" : pendingSave.current ? "Retry remaining save" : "Save to logbook"}
       </button>
-      <p style={{ ...text.meta, color: color.faint, textAlign: "center", marginTop: 8 }}>
+      <p role="status" style={{ ...text.meta, color: color.faint, textAlign: "center", marginTop: 8 }}>
         {saved ?? "Saves immediately when connected · safely queues offline"}
       </p>
 
@@ -326,19 +356,41 @@ function RecentReadings({
   // iOS fires a click right after touchend, so a swipe would also open the
   // editor. The gesture that moved the row swallows the click that follows it.
   const swiped = useRef(false);
+  const pending = useRef<(() => Promise<void>) | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function write(steps: (() => Promise<unknown>)[]) {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      pending.current ??= resumableWrite(steps);
+      await pending.current();
+      pending.current = null;
+      setEditing(null);
+      setRevealed(null);
+    } catch {
+      setProblem("This change did not finish. Retry the remaining steps without submitting the saved change again.");
+    } finally { setBusy(false); }
+  }
 
   if (rows.length === 0) return null;
 
   async function remove(r: ReadingRow) {
-    await enqueue("reading.delete", aircraft.id, { readingId: r.id }, { base: r.updated_at, label: "Meter reading deleted" });
-    await deleteLocal("hours_reading", r.id);
-    setRevealed(null);
-    await onChanged();
+    if (!window.confirm("Delete this meter reading? This cannot be undone.")) return;
+    await write([
+      () => enqueue("reading.delete", aircraft.id, { readingId: r.id }, { base: r.updated_at, label: "Meter reading deleted" }),
+      () => deleteLocal("hours_reading", r.id),
+      onChanged,
+    ]);
   }
 
   return (
     <div style={{ marginTop: 26 }}>
       <div style={{ ...text.sectionLabel, color: color.faint, marginBottom: 8 }}>Recent readings</div>
+      {problem && !editing && <p role="alert" style={{ color: color.warning }}>{problem}<button disabled={busy} onClick={() => write([])} style={sheetCancel}>Retry remaining steps</button></p>}
+      <fieldset disabled={busy || !!pending.current} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {rows.map((r) => {
           const open = revealed === r.id;
@@ -348,11 +400,14 @@ function RecentReadings({
           const mine = editable && readingEditable(r);
           const from = readingProvenance(r);
           return (
-            <div key={r.id} style={{ position: "relative", borderRadius: radius.row, overflow: "hidden" }}>
+            <div key={r.id}>
+              <div style={{ position: "relative", borderRadius: radius.row, overflow: "hidden" }}>
               {mine && (
                 <button
                   onClick={() => remove(r)}
                   aria-label="Delete this reading"
+                  tabIndex={-1}
+                  aria-hidden="true"
                   style={{
                     position: "absolute", top: 0, bottom: 0, right: 0, width: 96, border: "none",
                     background: color.danger, color: color.onAccent,
@@ -362,7 +417,8 @@ function RecentReadings({
                   Delete
                 </button>
               )}
-              <div
+              <button type="button" disabled={!mine}
+                aria-label={`Correct reading from ${shortDate(r.reading_date)}`}
                 onTouchStart={(e) => { const t = e.touches[0]; touch.current = t ? { x: t.clientX, y: t.clientY } : null; swiped.current = false; }}
                 onTouchEnd={(e) => {
                   const t = e.changedTouches[0];
@@ -378,7 +434,7 @@ function RecentReadings({
                   else if (mine) setEditing(r);
                 }}
                 style={{
-                  position: "relative", background: color.surface, border: `1px solid ${color.hairline}`,
+                  width: "100%", textAlign: "left", position: "relative", background: color.surface, border: `1px solid ${color.hairline}`,
                   borderRadius: radius.row, padding: "11px 14px", minHeight: hit.min, boxSizing: "border-box",
                   display: "flex", alignItems: "center", gap: 12, cursor: mine ? "pointer" : "default",
                   transform: open ? "translateX(-96px)" : "none", transition: "transform .18s ease",
@@ -391,25 +447,30 @@ function RecentReadings({
                   {shortDate(r.reading_date)}
                   {from && <span style={{ display: "block" }}>{from}</span>}
                 </span>
+              </button>
               </div>
+              {mine && <button type="button" onClick={() => remove(r)} style={{ ...sheetCancel, color: color.danger }}>Delete reading</button>}
             </div>
           );
         })}
       </div>
-      {editable && <p style={{ ...text.meta, color: color.faint, marginTop: 8 }}>Tap a reading to correct it · swipe left to delete</p>}
+      </fieldset>
+      {editable && <p style={{ ...text.meta, color: color.faint, marginTop: 8 }}>Select a reading to correct it.</p>}
 
       {editing && (
         <ReadingEditor
           reading={editing}
           onClose={() => setEditing(null)}
+          busy={busy}
+          unfinished={!!pending.current}
+          onDiscard={() => { pending.current = null; setProblem(null); setEditing(null); }}
+          problem={problem}
           onSave={async (payload) => {
-            await enqueue("reading.update", aircraft.id, { readingId: editing.id, ...payload }, {
-              base: editing.updated_at,
-              label: [payload.tach != null ? `Tach ${payload.tach.toFixed(1)}` : null, payload.hobbs != null ? `Hobbs ${payload.hobbs.toFixed(1)}` : null].filter(Boolean).join(" · "),
-            });
-            await patchLocal<ReadingRow>("hours_reading", aircraft.id, editing.id, { reading_date: payload.date, tach: payload.tach, hobbs: payload.hobbs });
-            setEditing(null);
-            await onChanged();
+            await write([
+              () => enqueue("reading.update", aircraft.id, { readingId: editing.id, ...payload }, { base: editing.updated_at, label: "Meter reading corrected" }),
+              () => patchLocal<ReadingRow>("hours_reading", aircraft.id, editing.id, { reading_date: payload.date, tach: payload.tach, hobbs: payload.hobbs }),
+              onChanged,
+            ]);
           }}
         />
       )}
@@ -418,9 +479,9 @@ function RecentReadings({
 }
 
 function ReadingEditor({
-  reading, onClose, onSave,
+  reading, onClose, onSave, busy, unfinished, problem, onDiscard,
 }: {
-  reading: ReadingRow; onClose: () => void;
+  reading: ReadingRow; onClose: () => void; busy: boolean; unfinished: boolean; problem: string | null; onDiscard: () => void;
   onSave: (p: { date: string; tach: number | null; hobbs: number | null }) => Promise<void>;
 }) {
   const [date, setDate] = useState(reading.reading_date ?? "");
@@ -429,15 +490,22 @@ function ReadingEditor({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  function requestClose() {
+    const dirty = date !== (reading.reading_date ?? "") || tach !== reading.tach || hobbs !== reading.hobbs;
+    if (!saving && !busy && !unfinished && (!dirty || window.confirm("Discard your unsaved reading correction?"))) onClose();
+  }
+
   return (
-    <Sheet title="Correct this reading" onClose={saving ? undefined : onClose}>
+    <Sheet title="Correct this reading" onClose={saving || busy || unfinished ? undefined : requestClose}>
+      <fieldset disabled={saving || busy || unfinished} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <label style={{ display: "block" }}>
         <span style={{ ...text.sectionLabel, color: color.faint, display: "block", marginBottom: 6 }}>Date</span>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={sheetInput} />
       </label>
       <Stepper label="TACH" value={tach} onChange={setTach} onClear={() => setTach(null)} />
       <Stepper label="HOBBS" value={hobbs} onChange={setHobbs} onClear={() => setHobbs(null)} />
-      {error && <p style={{ ...text.secondary, color: color.danger, margin: 0 }}>{error}</p>}
+      </fieldset>
+      {(error || problem) && <p role="alert" style={{ ...text.secondary, color: color.danger, margin: 0 }}>{error || problem}</p>}
       <button
         onClick={async () => {
           const v = validateReading({ date, tach, hobbs });
@@ -448,9 +516,11 @@ function ReadingEditor({
         disabled={saving}
         style={{ ...sheetPrimary, opacity: saving ? 0.4 : 1 }}
       >
-        {saving ? "Saving…" : "Save correction"}
+        {saving ? "Saving…" : unfinished ? "Retry remaining steps" : "Save correction"}
       </button>
-      <button onClick={onClose} style={sheetCancel}>Cancel</button>
+      {unfinished ? <button disabled={saving || busy} style={sheetCancel} onClick={() => {
+        if (window.confirm("Discard unfinished correction steps? Changes already queued on this device will be kept.")) onDiscard();
+      }}>Discard unfinished steps</button> : <button onClick={requestClose} disabled={saving || busy} style={sheetCancel}>Cancel</button>}
     </Sheet>
   );
 }
@@ -474,12 +544,9 @@ export const sheetCancel: React.CSSProperties = {
 /** Bottom sheet — the same shape the squawk composer uses. */
 export function Sheet({ title, onClose, children }: { title: string; onClose?: () => void; children: React.ReactNode }) {
   return (
-    <div data-android-back onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}>
+    <Modal title={title} onClose={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
         style={{
           width: "100%", maxHeight: "90vh", overflowY: "auto", boxSizing: "border-box",
           background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
@@ -487,10 +554,13 @@ export function Sheet({ title, onClose, children }: { title: string; onClose?: (
           display: "flex", flexDirection: "column", gap: 12,
         }}
       >
-        <div style={{ ...text.rowTitle, color: color.ink }}>{title}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ ...text.rowTitle, color: color.ink, flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{title}</div>
+          <button type="button" onClick={onClose} disabled={!onClose} style={sheetCancel}>Close</button>
+        </div>
         {children}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -540,9 +610,9 @@ function Meter({
         )}
       </div>
 
-      <div style={{ opacity: included ? 1 : 0.35, pointerEvents: included ? "auto" : "none" }}>
+      <fieldset disabled={!included} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, opacity: included ? 1 : 0.35 }}>
         <Stepper label={label} value={value} fallback={was} onChange={onChange} />
-      </div>
+      </fieldset>
 
       {!included && (
         <span style={{ ...text.meta, color: color.faint }}>Not recorded this time.</span>
@@ -624,6 +694,7 @@ export function Stepper({
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button aria-label={`${label} down`} style={btn}
+          onClick={(event) => { if (event.detail === 0) step(-1, 0.1); }}
           onPointerDown={() => start(-1)} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}>−</button>
         <input
           value={value == null ? "" : value.toFixed(1)}
@@ -641,6 +712,7 @@ export function Stepper({
           }}
         />
         <button aria-label={`${label} up`} style={btn}
+          onClick={(event) => { if (event.detail === 0) step(1, 0.1); }}
           onPointerDown={() => start(1)} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}>+</button>
       </div>
     </div>

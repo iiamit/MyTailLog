@@ -19,7 +19,7 @@ const STEPS: Array<{ title: string; body: string; image: StaticImageData; alt: s
   { title: "Ask the logbook", body: "Ask a plain-English question and get a concise answer with the source entries cited underneath for verification against the scans.", image: ask, alt: "A logbook question answered with cited maintenance entries" },
   { title: "Search one timeline", body: "Airframe, engine, propeller, avionics, and other records become one chronological, searchable maintenance history.", image: timeline, alt: "Searchable aircraft maintenance timeline" },
   { title: "Keep weight and balance history", body: "Current figures sit above every dated revision, with stale data flagged when later equipment changes may have affected it.", image: wb, alt: "Aircraft weight and balance figures and revision history" },
-  { title: "Run the aircraft from one overview", body: "Hours, upcoming work, squawks, oil trends, and recent activity land in one owner-focused view.", image: hub, alt: "Aircraft overview with hours, upcoming maintenance, and squawks" },
+  { title: "Run the aircraft from one overview", body: "Recorded hours, tracked maintenance, recent activity, and pages awaiting review land in one owner-focused view.", image: hub, alt: "Aircraft overview with hours, tracked maintenance, recent activity and pages awaiting review" },
 ];
 
 export default function DemoPage() {
@@ -31,7 +31,10 @@ export default function DemoPage() {
             <div className="eyebrow">{String(index + 1).padStart(2, "0")}</div>
             <h2 className="text-xl font-semibold">{step.title}</h2>
             <p className="text-dim">{step.body}</p>
-            <Image src={step.image} alt={step.alt} sizes="(max-width: 768px) 100vw, 720px" placeholder="blur" className="h-auto w-full rounded-lg border border-line bg-panel2" />
+            <a href={step.image.src} target="_blank" rel="noreferrer" aria-label={`Open ${step.title.toLowerCase()} screenshot at full size`} className="block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+              <Image src={step.image} alt={step.alt} sizes="(max-width: 768px) 100vw, 720px" placeholder="blur" className="h-auto w-full rounded-lg border border-line bg-panel2" />
+              <span className="mt-2 block text-sm text-accent">Open screenshot at full size →</span>
+            </a>
           </section>
         ))}
         <div className="panel flex flex-wrap items-center justify-between gap-4 p-5">

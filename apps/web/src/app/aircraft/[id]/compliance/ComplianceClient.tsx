@@ -502,7 +502,9 @@ export function ComplianceClient({
             return (
               <li
                 key={r.id}
-                className="panel overflow-hidden"
+                id={`item-${r.id}`}
+                tabIndex={-1}
+                className="panel scroll-mt-6 overflow-hidden target:outline-2 target:outline-accent"
                 style={{ borderLeft: `3px solid ${accent}` }}
               >
                 {/* Design row: kind/id/method — subject — last/next due */}

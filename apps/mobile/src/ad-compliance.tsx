@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { runReviewWrite } from "./review-write";
 import { enqueue } from "./mutations";
 import { replaceLocal, shortDate } from "./airworthiness";
 import { adStatusLine, numOrNull } from "./status-logic";
@@ -18,7 +19,7 @@ import { Sheet, Field, Chips, Problem, SheetButtons, EntryPicker, field, type Qu
 const STATUSES = Object.keys(AD_STATUS_LABEL) as AdStatus[];
 
 export function AdList({
-  aircraft, ads, refs, components, currentTach, editable, onQueued, onChanged,
+  aircraft, ads, refs, components, currentTach, editable, onQueued, onChanged, initialRecordId, onRecordClose,
 }: {
   aircraft: Aircraft;
   ads: AdCompliance[];
@@ -27,9 +28,11 @@ export function AdList({
   currentTach: number | null;
   editable: boolean;
   onQueued: Queued;
-  onChanged: () => void;
+  onChanged: () => Promise<void> | void;
+  initialRecordId?: string;
+  onRecordClose?: () => void;
 }) {
-  const [open, setOpen] = useState<AdCompliance | null | "new">(null);
+  const [open, setOpen] = useState<AdCompliance | null | "new">(() => ads.find((ad) => ad.id === initialRecordId) ?? null);
   const refById = new Map(refs.map((r) => [r.id, r]));
   const refByNumber = new Map(refs.map((r) => [r.ad_number?.toLowerCase(), r]));
   const refFor = (a: AdCompliance) =>
@@ -80,7 +83,7 @@ export function AdList({
           reference={open === "new" ? null : refFor(open)}
           components={components}
           editable={editable}
-          onClose={() => setOpen(null)}
+          onClose={() => { setOpen(null); onRecordClose?.(); }}
           onQueued={onQueued}
           onChanged={onChanged}
         />
@@ -105,7 +108,7 @@ export function AdSheet({
   editable: boolean;
   onClose: () => void;
   onQueued: Queued;
-  onChanged: () => void;
+  onChanged: () => Promise<void> | void;
 }) {
   const [kind, setKind] = useState<AdKind>(record?.kind ?? "ad");
   const [ref, setRef] = useState(record?.reference ?? "");
@@ -125,6 +128,28 @@ export function AdSheet({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
+  const [queued, setQueued] = useState(false);
+  const [draftId] = useState(() => crypto.randomUUID());
+  const pending = useRef<(() => Promise<void>) | null>(null);
+
+  async function write(queue: () => Promise<unknown>, refresh: () => Promise<void>) {
+    if (busy || !editable) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      const result = await runReviewWrite(async () => {
+        if (pending.current) return;
+        await queue();
+        pending.current = refresh;
+      }, async () => { await pending.current!(); });
+      setQueued(result.queued);
+      if (result.error) setProblem(result.error);
+      else onClose();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const complied = status === "complied" || status === "previously_complied";
   const retired = status === "not_applicable" || status === "superseded";
 
@@ -133,57 +158,55 @@ export function AdSheet({
     if (complied && !date) return setProblem("When was it complied with?");
     const im = numOrNull(months), ih = numOrNull(hours), ch = numOrNull(atHours);
     if ([im, ih, ch].some((n) => n != null && !Number.isFinite(n))) return setProblem("Hours and months must be numbers.");
-    setBusy(true);
-    try {
-      // AdComplianceFields = the web's AdInput, plus the entry that documents
-      // the compliance (the ad_compliance.reference_entry_id column).
-      const fields = {
-        kind, reference: ref.trim(), title: title.trim() || null, applicability: record?.applicability ?? null,
-        recurring, interval_hours: ih, interval_months: im, status, method: method.trim() || null,
-        complied_date: complied ? date || null : null, complied_hours: complied ? ch : null,
-        notes: notes.trim() || null,
-        reason: retired ? reason.trim() || null : null,
-        status_changed_on: retired ? record?.status_changed_on ?? today() : null,
-        component_id: componentId || null,
-        reference_entry_id: entryId || null,
-      };
+    const fields = {
+      kind, reference: ref.trim(), title: title.trim() || null, applicability: record?.applicability ?? null,
+      recurring, interval_hours: ih, interval_months: im, status, method: method.trim() || null,
+      complied_date: complied ? date || null : null, complied_hours: complied ? ch : null,
+      notes: notes.trim() || null,
+      reason: retired ? reason.trim() || null : null,
+      status_changed_on: retired ? record?.status_changed_on ?? today() : null,
+      component_id: componentId || null,
+      reference_entry_id: entryId || null,
+    };
+    await write(async () => {
       if (record) {
         await enqueue("ad.upsert", aircraft.id, { id: record.id, record: fields }, { base: record.updated_at, label: `${kind.toUpperCase()} ${fields.reference} updated` });
-        await replaceLocal("ad_compliance", record.id, { ...record, ...fields, ...computeNextDue(fields) });
       } else if (status === "open" && !method.trim() && !entryId) {
-        // Nothing but the number: just start tracking it. The id is ours, so the
-        // row can show up on the phone before it has synced.
-        const id = crypto.randomUUID();
-        await enqueue("ad.track", aircraft.id, { id, reference: fields.reference, kind }, { id, label: `${kind.toUpperCase()} ${fields.reference} tracked` });
-        await replaceLocal("ad_compliance", id, {
-          ...fields, id, aircraft_id: aircraft.id, next_due_date: null, next_due_hours: null,
-          ad_reference_id: null, verified_report_page_id: null, verified_at: null,
-          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-        });
+        await enqueue("ad.track", aircraft.id, { id: draftId, reference: fields.reference, kind }, { id: draftId, label: `${kind.toUpperCase()} ${fields.reference} tracked` });
       } else {
         await enqueue("ad.upsert", aircraft.id, { record: fields }, { label: `${kind.toUpperCase()} ${fields.reference} recorded` });
       }
-      onChanged();
-      onClose();
+    }, async () => {
+      if (record) {
+        await replaceLocal("ad_compliance", record.id, { ...record, ...fields, ...computeNextDue(fields) });
+      } else if (status === "open" && !method.trim() && !entryId) {
+        await replaceLocal("ad_compliance", draftId, {
+          ...fields, id: draftId, aircraft_id: aircraft.id, next_due_date: null, next_due_hours: null,
+          ad_reference_id: null, verified_report_page_id: null, verified_at: null,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        });
+      }
       await onQueued();
-    } finally {
-      setBusy(false);
-    }
+      await onChanged();
+    });
   }
 
   async function remove() {
     if (!record) return;
-    setBusy(true);
-    try {
-      // Nothing references ad_compliance(id) — the row simply goes.
-      await enqueue("ad.delete", aircraft.id, { recordId: record.id }, { base: record.updated_at, label: `${record.kind.toUpperCase()} ${record.reference} removed` });
-      await replaceLocal("ad_compliance", record.id, null);
-      onChanged();
-      onClose();
-      await onQueued();
-    } finally {
-      setBusy(false);
-    }
+    await write(
+      () => enqueue("ad.delete", aircraft.id, { recordId: record.id }, { base: record.updated_at, label: `${record.kind.toUpperCase()} ${record.reference} removed` }),
+      async () => {
+        await replaceLocal("ad_compliance", record.id, null);
+        await onQueued();
+        await onChanged();
+      },
+    );
+  }
+
+  const draft = JSON.stringify([kind, ref, title, status, recurring, months, hours, date, atHours, method, entryId, componentId, reason, notes]);
+  const [initial] = useState(draft);
+  function requestClose() {
+    if (!busy && (queued || !editable || draft === initial || window.confirm("Discard your unsaved directive changes?"))) onClose();
   }
 
   const webUrl = `${API_BASE}/aircraft/${aircraft.id}/compliance`;
@@ -194,7 +217,7 @@ export function AdSheet({
       // "AD 2011-10-09" as the tag beneath (design §21a).
       title={record ? record.title || `${record.kind.toUpperCase()} ${record.reference}` : "Track a directive"}
       tag={record?.title ? `${record.kind.toUpperCase()} ${record.reference}` : undefined}
-      onClose={busy ? undefined : onClose}
+      onClose={busy ? undefined : requestClose}
     >
       {record && (
         <div style={{ background: color.surfaceRaised, border: `1px solid ${color.hairline}`, borderRadius: radius.row, padding: "11px 13px", display: "flex", flexDirection: "column", gap: 5 }}>
@@ -219,6 +242,7 @@ export function AdSheet({
         </div>
       )}
 
+      <fieldset disabled={!editable || busy || queued} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
       {!record && (
         <>
           <Chips value={kind} onChange={setKind} options={[["ad", "Airworthiness Directive"], ["sb", "Service Bulletin"]]} />
@@ -271,15 +295,16 @@ export function AdSheet({
 
       <Field label="Notes"><textarea style={{ ...field, minHeight: 56, resize: "vertical" }} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
 
+      </fieldset>
       {!editable && <Problem>You have view-only access to this aircraft, so this can&apos;t be saved.</Problem>}
       {problem && <Problem>{problem}</Problem>}
       {editable && (
         <SheetButtons
-          primary={busy ? "Saving…" : record ? "Save" : "Start tracking"}
-          onPrimary={save}
+          primary={busy ? "Saving…" : queued ? "Reload queued change" : record ? "Save" : "Start tracking"}
+          onPrimary={queued ? () => write(async () => {}, pending.current!) : save}
           disabled={busy}
-          danger={record ? (confirmDelete ? "Yes, remove this record" : "Remove from this aircraft") : undefined}
-          onDanger={record ? (confirmDelete ? remove : () => setConfirmDelete(true)) : undefined}
+          danger={record && !queued ? (confirmDelete ? "Yes, remove this record" : "Remove from this aircraft") : undefined}
+          onDanger={record && !queued ? (confirmDelete ? remove : () => setConfirmDelete(true)) : undefined}
         />
       )}
     </Sheet>

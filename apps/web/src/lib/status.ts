@@ -5,7 +5,7 @@
 // ===========================================================================
 
 import { effectiveNextDue, maintenanceNextDue } from "./maintenance";
-import { dueSoonDaysForKind, urgencyOf, type Urgency } from "./compliance";
+import { dueSoonDaysForKind, DUE_SOON_HOURS, urgencyOf, type Urgency } from "./compliance";
 import type { Meter } from "./hobbsTach";
 import type { MaintenanceItem } from "./database.types";
 
@@ -235,7 +235,27 @@ export function buildStatusItems(
       verifiedReportAt: a.verified_at,
     });
   }
+  // A future calendar limit cannot clear an hour limit we cannot assess.
+  for (const item of out) {
+    if (item.urgency === "upcoming" && statusNeedsInformation(item)) item.urgency = "none";
+  }
   return out;
+}
+
+export function statusNeedsInformation(item: StatusItem): boolean {
+  return item.urgency === "none" || item.hoursUnreliable ||
+    (item.nextDueForItem != null && item.currentForItem == null) ||
+    (item.intervalHours != null && item.nextDueForItem == null) ||
+    (item.intervalMonths != null && item.nextDueDate == null);
+}
+
+export function summarizeStatusItems(items: StatusItem[]) {
+  return {
+    overdue: items.filter((s) => s.urgency === "overdue").length,
+    due: items.filter((s) => s.urgency === "due_soon").length,
+    current: items.filter((s) => s.urgency === "upcoming").length,
+    unknown: items.filter((s) => s.urgency === "none").length,
+  };
 }
 
 export const URGENCY_RANK: Record<Urgency, number> = {
@@ -271,4 +291,22 @@ export function hoursRemaining(
 ): number | null {
   if (nextDueHours == null || currentHours == null) return null;
   return Math.round((nextDueHours - currentHours) * 10) / 10;
+}
+
+/** Keep both limits visible, with the breached or soon-due limit first. */
+export function statusCountdown(item: StatusItem, today = new Date()) {
+  const days = daysUntil(item.nextDueDate, today);
+  const hours = item.hoursUnreliable ? null : hoursRemaining(item.nextDueForItem, item.currentForItem);
+  const hoursFirst = hours != null && (days == null ||
+    (days >= 0 && hours <= 0) ||
+    (days > dueSoonDaysForKind(item.kind) && hours <= DUE_SOON_HOURS));
+  const dateText = days == null ? null : days < 0 ? `${-days}d over` : days === 0 ? "due today" : `${days}d`;
+  const hoursText = item.hoursUnreliable ? "check reading"
+    : hours == null ? item.nextDueForItem != null ? "hours unknown" : null
+    : hours < 0 ? `${-hours}h over` : hours === 0 ? "0h due" : `${hours}h`;
+  return {
+    days, hours,
+    unit: hoursFirst ? "hours" : days != null ? "days" : null,
+    text: (hoursFirst ? [hoursText, dateText] : [dateText, hoursText]).filter(Boolean).join(" · ") || "—",
+  };
 }

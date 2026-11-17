@@ -1,4 +1,6 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { runReviewWrite } from "./review-write";
+import { Modal } from "./modal";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { enqueue } from "./mutations";
 import { getByAircraft } from "./db";
 import { replaceLocal, shortDate } from "./airworthiness";
@@ -30,7 +32,7 @@ export function ItemEditor({
   item: MaintenanceItem | null;
   onClose: () => void;
   onQueued: Queued;
-  onChanged: () => void;
+  onChanged: () => Promise<void> | void;
 }) {
   const [kind, setKind] = useState(item?.kind ?? "other");
   const [label, setLabel] = useState(item?.label ?? "");
@@ -63,45 +65,56 @@ export function ItemEditor({
     setHours(std.interval_hours?.toString() ?? "");
   }
 
+  const [queued, setQueued] = useState(false);
+  const pending = useRef<(() => Promise<void>) | null>(null);
+  const draft = JSON.stringify([kind, label, regulatory, months, hours, lastDate, lastHours, meter, notes]);
+  const [initial] = useState(draft);
+  function requestClose() {
+    if (!busy && (queued || draft === initial || window.confirm("Discard your unsaved item changes?"))) onClose();
+  }
+  async function write(queue: () => Promise<unknown>, refresh: () => Promise<void>) {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      const result = await runReviewWrite(async () => {
+        if (pending.current) return;
+        await queue();
+        pending.current = refresh;
+      }, async () => { await pending.current!(); });
+      setQueued(result.queued);
+      if (result.error) setProblem(result.error);
+      else onClose();
+    } finally { setBusy(false); }
+  }
   async function save() {
     const why = validateItem(fields);
     if (why) return setProblem(why);
-    setBusy(true);
-    try {
-      const payload = { ...fields, label: fields.label.trim() };
-      if (item) {
-        await enqueue("mx.upsert", aircraft.id, { id: item.id, item: payload }, { base: item.updated_at, label: `${payload.label} edited` });
-        await replaceLocal("maintenance_item", item.id, { ...item, ...payload, ...maintenanceNextDue(payload) });
-      } else {
-        // No local row until the server assigns the id — it appears after the
-        // next sync, like a squawk added offline.
-        await enqueue("mx.upsert", aircraft.id, { item: payload }, { label: `${payload.label} added` });
-      }
-      onChanged();
-      onClose();
-      await onQueued();
-    } finally {
-      setBusy(false);
-    }
+    const payload = { ...fields, label: fields.label.trim() };
+    await write(
+      () => enqueue("mx.upsert", aircraft.id, { ...(item ? { id: item.id } : {}), item: payload }, { base: item?.updated_at, label: `${payload.label} saved` }),
+      async () => {
+        if (item) await replaceLocal("maintenance_item", item.id, { ...item, ...payload, ...maintenanceNextDue(payload) });
+        await onQueued();
+        await onChanged();
+      },
+    );
   }
-
   async function remove() {
     if (!item) return;
-    setBusy(true);
-    try {
-      // No table references maintenance_item(id) — nothing to relink.
-      await enqueue("mx.delete", aircraft.id, { itemId: item.id }, { base: item.updated_at, label: `${item.label} deleted` });
-      await replaceLocal("maintenance_item", item.id, null);
-      onChanged();
-      onClose();
-      await onQueued();
-    } finally {
-      setBusy(false);
-    }
+    await write(
+      () => enqueue("mx.delete", aircraft.id, { itemId: item.id }, { base: item.updated_at, label: `${item.label} deleted` }),
+      async () => {
+        await replaceLocal("maintenance_item", item.id, null);
+        await onQueued();
+        await onChanged();
+      },
+    );
   }
 
   return (
-    <Sheet title={item ? "Edit item" : "New item"} onClose={busy ? undefined : onClose}>
+    <Sheet title={item ? "Edit item" : "New item"} onClose={busy ? undefined : requestClose}>
+      <fieldset disabled={busy || queued} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
       <Field label="What">
         <select style={field} value={kind} onChange={(e) => pickKind(e.target.value)}>
           {STANDARD_ITEMS.map((s) => <option key={s.kind} value={s.kind}>{s.label}</option>)}
@@ -132,12 +145,13 @@ export function ItemEditor({
       <Field label="Notes">
         <textarea style={{ ...field, minHeight: 64, resize: "vertical" }} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </Field>
+      </fieldset>
       {problem && <Problem>{problem}</Problem>}
       <SheetButtons
-        primary={busy ? "Saving…" : item ? "Save changes" : "Add item"}
+        primary={busy ? "Saving…" : queued ? "Refresh saved change" : item ? "Save changes" : "Add item"}
         onPrimary={save}
         disabled={busy}
-        danger={item ? (confirmDelete ? `Yes, delete ${item.label}` : "Delete this item") : undefined}
+        danger={item && !queued ? (confirmDelete ? `Yes, delete ${item.label}` : "Delete this item") : undefined}
         onDanger={item ? (confirmDelete ? remove : () => setConfirmDelete(true)) : undefined}
       />
     </Sheet>
@@ -155,16 +169,9 @@ export function Sheet({ title, tag, onClose, children }: {
   children: ReactNode;
 }) {
   return (
-    <div
-      data-android-back
-      onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 60, display: "flex", alignItems: "flex-end" }}
-    >
+    <Modal title={title} onClose={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
         style={{
           width: "100%", maxHeight: "92vh", overflowY: "auto", boxSizing: "border-box",
           background: color.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
@@ -174,11 +181,14 @@ export function Sheet({ title, tag, onClose, children }: {
         }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 2, background: color.hairline, margin: "0 auto 2px" }} />
-        <div style={{ ...text.verdict, color: color.ink }}>{title}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ ...text.verdict, color: color.ink, flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{title}</div>
+          <button type="button" onClick={onClose} disabled={!onClose} style={{ ...field, width: "auto", background: "transparent" }}>Close</button>
+        </div>
         {tag && <div style={{ ...text.meta, fontSize: 10, color: color.faint, marginTop: -8 }}>{tag}</div>}
         {children}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -207,7 +217,7 @@ export function Chips<T extends string>({ value, onChange, options }: {
       {options.map(([id, label]) => {
         const on = id === value;
         return (
-          <button key={id} type="button" onClick={() => onChange(id)} style={{
+          <button key={id} type="button" aria-pressed={on} onClick={() => onChange(id)} style={{
             flex: 1, minHeight: hit.min, borderRadius: radius.control, padding: "0 12px",
             background: on ? tint.accent : color.surfaceRaised,
             border: `1px solid ${on ? color.accent : color.hairline}`,
@@ -221,7 +231,7 @@ export function Chips<T extends string>({ value, onChange, options }: {
 }
 
 export function Problem({ children }: { children: ReactNode }) {
-  return <p style={{ ...text.secondary, color: color.warning, margin: 0, lineHeight: 1.45 }}>{children}</p>;
+  return <p role="alert" style={{ ...text.secondary, color: color.warning, margin: 0, lineHeight: 1.45 }}>{children}</p>;
 }
 
 export function SheetButtons({ primary, onPrimary, disabled, danger, onDanger }: {

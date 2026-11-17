@@ -13,10 +13,9 @@ import { buildStatusItems, hoursRemaining, type StatusItem } from "@/lib/status"
 import { dueText, type Urgency } from "@/lib/compliance";
 import { projectDueDate, projectionLabel } from "@/lib/utilization";
 import type { Meter, MeterReset } from "@/lib/hobbsTach";
-import { semanticOf, type Semantic } from "./tokens";
-import { shortDate } from "./status-logic";
+import type { StatusLine } from "./status-logic";
 
-export { shortDate };
+export { shortDate, buildVerdict, type StatusLine, type Verdict } from "./status-logic";
 
 // ===========================================================================
 // "Am I legal right now?" — computed ON DEVICE, offline, from the synced mirror.
@@ -40,16 +39,6 @@ type MeterResetRow = {
   reset_date: string | null;
   prior_value: number | null;
   new_value: number | null;
-};
-
-/** An AD or maintenance item, judged and ready to render. */
-export type StatusLine = {
-  item: StatusItem;
-  urgency: Urgency;
-  /** "Due in 21 days", "42.3 h remaining", "OVERDUE by 4 days" — already worded. */
-  due: string;
-  /** Approximate calendar date an hours-based item lands on, when we can say. */
-  projection: string | null;
 };
 
 export type Airworthiness = {
@@ -103,12 +92,13 @@ export async function computeAirworthiness(aircraftId: string): Promise<Airworth
     airframe: meters.airframe.airframe,
     tachEstimated: meters.tach.estimated,
     hobbsEstimated: meters.hobbs.estimated,
+    airframeEstimated: meters.airframe.estimated,
     baselineFor: meters.baselineFor,
     toTotalHours: meters.toTotalHours,
   }).map((item) => {
     // buildStatusItems already judged urgency — reuse it rather than re-deriving,
     // so the phone can never disagree with the web about what's overdue.
-    const projection = projectDueDate(
+    const projection = item.urgency === "none" || item.hoursUnreliable ? null : projectDueDate(
       hoursRemaining(item.nextDueForItem, item.currentForItem),
       meters.utilization,
     );
@@ -121,112 +111,10 @@ export async function computeAirworthiness(aircraftId: string): Promise<Airworth
   });
 
   // Worst first: an overdue annual must not sit below a fine oil change.
-  const rank: Record<Urgency, number> = { overdue: 0, due_soon: 1, upcoming: 2, none: 3 };
+  const rank: Record<Urgency, number> = { overdue: 0, due_soon: 1, upcoming: 3, none: 2 };
   lines.sort((a, b) => rank[a.urgency] - rank[b.urgency]);
 
   return { meters, lines, worst: lines[0]?.urgency ?? null };
-}
-
-// --- The verdict ------------------------------------------------------------
-// "Can I fly today?" answered before any list. Everything here is DERIVED from
-// the lines above — nothing new is stored.
-
-export type Verdict = {
-  semantic: Semantic;
-  /** "Grounded — annual overdue" / "One item due soon" / "Airworthy". */
-  headline: string;
-  /** "VOR check by 12 Sep. Everything else is clear." */
-  detail: string;
-  /** The countdown number and its unit, adapting to the interval. */
-  value: string;
-  unit: string;
-  /** 0–1, how much of the interval has elapsed — the ring's arc sweep. */
-  progress: number;
-  /** The item the countdown refers to, when there is one. */
-  item: StatusItem | null;
-};
-
-const DAY = 86_400_000;
-
-function daysUntil(iso: string | null): number | null {
-  if (!iso) return null;
-  return Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`)) / DAY);
-}
-
-
-/**
- * How far through its interval an item is, 0–1. The ring fills as the deadline
- * approaches, so a glance reads "nearly due" without reading the number.
- */
-function elapsedFraction(item: StatusItem): number {
-  const days = daysUntil(item.nextDueDate);
-  if (days != null && item.intervalMonths) {
-    const total = item.intervalMonths * 30.44;
-    return Math.max(0, Math.min(1, (total - days) / total));
-  }
-  if (item.nextDueForItem != null && item.currentForItem != null && item.intervalHours) {
-    const remaining = item.nextDueForItem - item.currentForItem;
-    return Math.max(0, Math.min(1, (item.intervalHours - remaining) / item.intervalHours));
-  }
-  return 0;
-}
-
-export function buildVerdict(lines: StatusLine[]): Verdict {
-  const worst = lines[0] ?? null; // already sorted worst-first
-  if (!worst) {
-    return {
-      semantic: "airworthy", headline: "Airworthy",
-      detail: "Nothing tracked yet — add maintenance items on the web app.",
-      value: "—", unit: "", progress: 0, item: null,
-    };
-  }
-
-  const sem = semanticOf(worst.urgency);
-  const item = worst.item;
-  const days = daysUntil(item.nextDueDate);
-  const hours =
-    item.nextDueForItem != null && item.currentForItem != null
-      ? Math.round(item.nextDueForItem - item.currentForItem)
-      : null;
-
-  // Unit adapts: days under 90, months beyond, hours for hour-driven items.
-  let value = "—";
-  let unit = "";
-  if (days != null) {
-    if (days < 0) {
-      value = String(Math.abs(days));
-      unit = Math.abs(days) === 1 ? "day overdue" : "days overdue";
-    } else if (days < 90) {
-      value = String(days);
-      unit = days === 1 ? "day to next" : "days to next";
-    } else {
-      value = String(Math.round(days / 30.44));
-      unit = "months to next";
-    }
-  } else if (hours != null) {
-    value = String(Math.abs(hours));
-    unit = hours < 0 ? "hours over" : "hours to next";
-  }
-
-  const others = lines.length - 1;
-  const headline =
-    sem === "grounded"
-      ? `Grounded — ${item.label.toLowerCase().replace(/\s*\(.*\)\s*/, "")} overdue`
-      : sem === "due"
-        ? lines.filter((l) => semanticOf(l.urgency) !== "airworthy").length === 1
-          ? "One item due soon"
-          : `${lines.filter((l) => semanticOf(l.urgency) !== "airworthy").length} items due soon`
-        : "Airworthy";
-
-  const when = item.nextDueDate ? ` by ${shortDate(item.nextDueDate)}` : "";
-  const detail =
-    sem === "airworthy"
-      ? item.label
-        ? `Next up: ${item.label.replace(/\s*\(.*\)\s*/, "")}${when}.`
-        : "Everything is clear."
-      : `${item.label.replace(/\s*\(.*\)\s*/, "")}${when}.${others > 0 ? " Everything else is clear." : ""}`;
-
-  return { semantic: sem, headline, detail, value, unit, progress: elapsedFraction(item), item };
 }
 
 // --- Raw rows for the management screens -------------------------------------

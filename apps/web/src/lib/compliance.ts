@@ -58,7 +58,8 @@ export type Urgency = "overdue" | "due_soon" | "upcoming" | "none";
 /**
  * Urgency of a next-due, comparing against today and the aircraft's current
  * hours. "Overdue" if either the calendar or hours limit has passed; "due soon"
- * within the thresholds above. Returns "none" when there's no next-due at all.
+ * within the thresholds above. Returns "none" without a schedule or required
+ * meter reading, unless a known limit already establishes an alert.
  */
 export function urgencyOf(
   r: { next_due_date: string | null; next_due_hours: number | null },
@@ -88,6 +89,7 @@ export function urgencyOf(
 
   if (overdue) return "overdue";
   if (soon) return "due_soon";
+  if (r.next_due_hours != null && currentHours == null) return "none";
   if (r.next_due_date || r.next_due_hours != null) return "upcoming";
   return "none";
 }

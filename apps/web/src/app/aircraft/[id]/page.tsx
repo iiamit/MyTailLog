@@ -3,14 +3,14 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { dueText, type Urgency } from "@/lib/compliance";
-import { getCurrentMeters } from "@/lib/aircraftHours";
+import { getCurrentMeters, currentMetersFrom } from "@/lib/aircraftHours";
+import { LoadError } from "@/components/LoadError";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import {
   buildStatusItems,
   sortStatusItems,
-  daysUntil,
-  hoursRemaining,
-  type StatusItem,
+  summarizeStatusItems,
+  statusCountdown,
   type AdLite,
 } from "@/lib/status";
 import { CameraIcon, ArchiveIcon } from "@/components/icons";
@@ -23,16 +23,6 @@ const U_COLOR: Record<Urgency, string> = {
   upcoming: "var(--grn)",
   none: "var(--faint)",
 };
-
-// Compact "time/hours left" token for the forecast preview rows.
-function shortRemain(item: StatusItem): string {
-  const d = daysUntil(item.nextDueDate);
-  if (d != null) return d < 0 ? `${-d}d over` : `${d}d`;
-  if (item.hoursUnreliable) return "check";
-  const h = hoursRemaining(item.nextDueForItem, item.currentForItem);
-  if (h != null) return h < 0 ? `${-h}h over` : `${h}h`;
-  return "—";
-}
 
 export default async function AircraftPage({
   params,
@@ -50,12 +40,12 @@ export default async function AircraftPage({
   const canEdit = canEditRole(role);
 
   const [
-    { data: logbooks },
-    { data: pages },
-    { data: entryRows },
-    { data: recent },
-    { data: mxItems },
-    { data: ads },
+    { data: logbooks, error: logbookError },
+    { data: pages, error: pageError },
+    { data: entryRows, error: entryError },
+    { data: recent, error: recentError },
+    { data: mxItems, error: itemError },
+    { data: ads, error: adError },
     { count: readingCount },
   ] = await Promise.all([
     supabase.from("logbook").select("id, type, title").eq("aircraft_id", id),
@@ -79,12 +69,14 @@ export default async function AircraftPage({
     supabase.from("hours_reading").select("id", { count: "exact", head: true }).eq("aircraft_id", id),
   ]);
 
-  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = await getCurrentMeters(supabase, id, {
+  const meters = await getCurrentMeters(supabase, id, {
     hobbs: aircraft.enrollment_hobbs,
     tach: aircraft.enrollment_tach,
     airframe: aircraft.enrollment_airframe,
     date: aircraft.enrollment_date,
-  });
+  }).catch(() => null);
+  const { tach: ct, hobbs: ch, airframe: ca, baselineFor, toTotalHours } = meters ?? currentMetersFrom([], []);
+  const statusUnavailable = Boolean(itemError || adError || !meters);
 
   // Unified airworthiness list → annunciator counts + most-urgent + forecast.
   const status = buildStatusItems(mxItems ?? [], (ads ?? []) as AdLite[], {
@@ -93,22 +85,18 @@ export default async function AircraftPage({
     airframe: ca.airframe,
     tachEstimated: ct.estimated,
     hobbsEstimated: ch.estimated,
-      airframeEstimated: ca.estimated,
+    airframeEstimated: ca.estimated,
     baselineFor,
     toTotalHours,
   });
   const sorted = sortStatusItems(status);
-  const annun = {
-    overdue: status.filter((s) => s.urgency === "overdue").length,
-    due: status.filter((s) => s.urgency === "due_soon").length,
-    current: status.filter((s) => s.urgency === "upcoming" || s.urgency === "none").length,
-  };
+  const annun = summarizeStatusItems(status);
   const attention = annun.overdue + annun.due;
-  const total = annun.overdue + annun.due + annun.current || 1;
-  const gauge = `conic-gradient(var(--red) 0 ${(annun.overdue / total) * 100}%, var(--amb) 0 ${
+  const total = status.length || 1;
+  const gauge = status.length === 0 ? "var(--line2)" : `conic-gradient(var(--red) 0 ${(annun.overdue / total) * 100}%, var(--amb) 0 ${
     ((annun.overdue + annun.due) / total) * 100
-  }%, var(--grn) 0 100%)`;
-  const attnColor = annun.overdue > 0 ? "var(--red)" : annun.due > 0 ? "var(--amb)" : "var(--grn)";
+  }%, var(--grn) 0 ${((annun.overdue + annun.due + annun.current) / total) * 100}%, var(--line2) 0 100%)`;
+  const attnColor = annun.overdue > 0 ? "var(--red)" : annun.due > 0 ? "var(--amb)" : annun.unknown > 0 || status.length === 0 ? "var(--dim)" : "var(--grn)";
   const mostUrgent = sorted[0]?.urgency === "overdue" || sorted[0]?.urgency === "due_soon" ? sorted[0] : null;
   const forecast = sorted.filter((s) => s.source === "maintenance").slice(0, 4);
 
@@ -200,42 +188,45 @@ export default async function AircraftPage({
       </header>
 
       {/* Row 1: airworthiness + forecast */}
-      <div className="mb-4 grid gap-4 lg:grid-cols-2">
+      <div className="mb-4 grid gap-4 xl:grid-cols-2">
         {/* Airworthiness status */}
-        <div className="panel-raised p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="eyebrow">Airworthiness status</div>
+        {statusUnavailable ? (
+          <LoadError message="Maintenance status is unavailable because some records could not be loaded." href={a} />
+        ) : <div className="panel-raised p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-ink">Tracked maintenance status</h2>
             <span className="readout text-[11px] text-dim">
               tach ≈ {ct.tach != null ? ct.tach.toFixed(1) : "—"} · hobbs {ch.hobbs != null ? ch.hobbs.toFixed(1) : "—"}
             </span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
             <div className="relative h-[132px] w-[132px] shrink-0 rounded-full" style={{ background: gauge }}>
               <div className="absolute inset-[15px] flex flex-col items-center justify-center rounded-full border border-line bg-panel">
                 <span className="readout text-[30px] font-semibold leading-none" style={{ color: attnColor }}>
-                  {attention}
+                  {status.length === 0 ? "—" : attention || annun.unknown}
                 </span>
                 {/* Wraps to two lines — the inner disc is too narrow for one. */}
                 <span
-                  className="mt-1 uppercase text-faint"
+                  className="mt-1 uppercase text-dim"
                   style={{
                     textAlign: "center",
                     padding: "0 12%",
                     lineHeight: 1.25,
-                    fontSize: "8.5px",
+                    fontSize: "11px",
                     letterSpacing: ".1em",
                     maxWidth: "100%",
                   }}
                 >
-                  need attention
+                  {status.length === 0 ? "not assessed" : attention > 0 ? "need attention" : annun.unknown > 0 ? "need information" : "tracked alerts"}
                 </span>
               </div>
             </div>
-            <div className="flex flex-1 flex-col gap-2.5">
+            <div className="flex min-w-[9rem] flex-1 flex-col gap-2.5">
               {[
                 { c: "var(--red)", n: annun.overdue, l: "overdue" },
                 { c: "var(--amb)", n: annun.due, l: "due soon" },
-                { c: "var(--grn)", n: annun.current, l: "current" },
+                { c: "var(--grn)", n: annun.current, l: "within recorded limits" },
+                { c: "var(--dim)", n: annun.unknown, l: "need information" },
               ].map((r) => (
                 <div key={r.l} className="flex items-center gap-2.5">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.c, boxShadow: `0 0 9px ${r.c}` }} />
@@ -245,64 +236,70 @@ export default async function AircraftPage({
               ))}
               <Link
                 href={`${a}/status`}
-                className="mt-1.5 self-start rounded-lg border border-line2 px-3 py-1.5 text-xs text-dim hover:border-accent hover:text-ink"
+                className="mt-1.5 self-start inline-flex min-h-11 items-center rounded-lg border border-line2 px-3 py-2 text-sm text-dim hover:border-accent hover:text-ink"
               >
-                View all status →
+                Review tracked status →
               </Link>
             </div>
           </div>
+          <p className="mt-4 text-sm text-dim">
+            {status.length === 0 ? "Nothing tracked yet. Add maintenance items to begin." : `${status.length} tracked items. Only recorded items are assessed.`}
+            {ct.asOf && ` Tach reading as of ${ct.asOf}.`}
+            {ch.asOf && ` Hobbs reading as of ${ch.asOf}.`}
+            {" "}Verify against the physical logbooks.
+          </p>
           {mostUrgent && (
             <Link
               href={`${a}/status`}
               className="mt-5 flex items-center gap-3.5 rounded-xl border px-4 py-3.5"
-              style={{ background: "var(--red-bg)", borderColor: "rgba(255,97,86,.35)" }}
+              style={{ background: mostUrgent.urgency === "overdue" ? "var(--red-bg)" : "var(--amb-bg)", borderColor: U_COLOR[mostUrgent.urgency], color: U_COLOR[mostUrgent.urgency] }}
             >
               <span
-                className="shrink-0 rounded-md px-1.5 py-1 text-[9px] font-semibold tracking-[0.12em] text-annun-red"
-                style={{ border: "1px solid rgba(255,97,86,.5)" }}
+                className="shrink-0 rounded-md border border-current px-1.5 py-1 text-[11px] font-semibold tracking-[0.12em]"
               >
                 MOST URGENT
               </span>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14.5px] font-semibold">{mostUrgent.label}</div>
-                <div className="readout mt-0.5 text-[11.5px] text-annun-red">
+                <div className="readout mt-0.5 text-xs">
                   {mostUrgent.hoursUnreliable
-                    ? dueText(mostUrgent.nextDueDate, null, null) || "check last-done"
+                    ? dueText(mostUrgent.nextDueDate, null, null) || "Check the last recorded completion"
                     : dueText(mostUrgent.nextDueDate, mostUrgent.nextDueForItem, mostUrgent.currentForItem) ?? "due"}
                 </div>
               </div>
-              <span className="text-lg text-annun-red">→</span>
+              <span className="text-lg">→</span>
             </Link>
           )}
-        </div>
+        </div>}
 
         {/* Next due forecast */}
         <div className="panel p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="eyebrow">Next due · Part 91 forecast</div>
-            <Link href={`${a}/maintenance`} className="text-xs text-accent hover:opacity-80">
-              all →
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-ink">Next due · Part 91 forecast</h2>
+            <Link href={`${a}/maintenance`} className="inline-flex min-h-11 items-center text-sm text-accent hover:opacity-80">
+              View forecast →
             </Link>
           </div>
-          {forecast.length > 0 ? (
+          {statusUnavailable ? <LoadError message="The forecast could not be loaded." href={a} /> : forecast.length > 0 ? (
             <div>
               {forecast.map((f) => (
                 <Link
                   key={f.id}
-                  href={`${a}/maintenance`}
+                  href={`${a}/maintenance#item-${f.id}`}
                   className="flex items-center gap-3 border-b border-line py-2.5 last:border-0 hover:opacity-90"
                 >
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: U_COLOR[f.urgency] }} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13.5px]">{f.label}</div>
-                    <div className="readout mt-0.5 text-[11px] text-faint">
+                    <div className="readout mt-0.5 text-xs text-dim">
                       {f.hoursUnreliable
-                        ? dueText(f.nextDueDate, null, null) || "check last-done"
-                        : dueText(f.nextDueDate, f.nextDueForItem, f.currentForItem) ?? "not scheduled"}
+                        ? dueText(f.nextDueDate, null, null) || "Check the last recorded completion"
+                        : dueText(f.nextDueDate, f.nextDueForItem, f.currentForItem) ?? "Schedule information needed"}
+                      {f.urgency === "none" && " · Needs information"}
                     </div>
                   </div>
                   <span className="readout shrink-0 text-xs" style={{ color: U_COLOR[f.urgency] }}>
-                    {shortRemain(f)}
+                    {statusCountdown(f).text}
                   </span>
                 </Link>
               ))}
@@ -319,16 +316,16 @@ export default async function AircraftPage({
       </div>
 
       {/* Row 2: recent activity + capture/ask */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         {/* Recent activity */}
         <div className="panel p-5">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="eyebrow">Recent activity</div>
-            <Link href={`${a}/timeline`} className="text-xs text-accent hover:opacity-80">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-ink">Recent activity</h2>
+            <Link href={`${a}/timeline`} className="inline-flex min-h-11 items-center text-sm text-accent hover:opacity-80">
               timeline &amp; search →
             </Link>
           </div>
-          {recent && recent.length > 0 ? (
+          {recentError ? <LoadError message="Recent entries could not be loaded." href={a} /> : recent && recent.length > 0 ? (
             <div>
               {recent.map((e) => (
                 <div key={e.id} className="flex gap-3.5 border-b border-line py-3 last:border-0">
@@ -370,6 +367,7 @@ export default async function AircraftPage({
                 <span className="readout text-[11px] text-faint">{totalPages} pages</span>
               )}
             </div>
+            {logbookError || pageError || entryError ? <LoadError message="Logbook pages and review counts could not be loaded." href={a} /> : <>
             {coverage.length > 0 ? (
               <div className="mb-3.5 flex flex-col gap-2">
                 {coverage.map((c) => (
@@ -432,20 +430,19 @@ export default async function AircraftPage({
                 </Link>
               )}
             </div>
+            </>}
           </div>
 
           <div className="panel-raised p-5">
-            <div className="eyebrow mb-3">Ask your logbook</div>
+            <h2 className="text-sm font-semibold text-ink mb-3">Ask your logbook</h2>
             <Link
               href={`${a}/ask`}
-              className="flex items-center gap-2.5 rounded-[10px] border border-line2 bg-bg px-3.5 py-3 text-[13px] text-faint hover:border-accent"
+              className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-accent underline underline-offset-4 hover:opacity-90"
             >
-              <span className="h-[15px] w-[15px] shrink-0 rounded-full border-[1.5px] border-faint" />
-              When was the engine last overhauled?
+              Ask about your records →
             </Link>
             <p className="mt-2.5 text-[11px] leading-relaxed text-faint">
-              Plain-English answers drawn only from your extracted entries — each one cites the source
-              entry.
+              Try “When was the engine last overhauled?” Answers cite the source entries for you to check.
             </p>
           </div>
         </div>

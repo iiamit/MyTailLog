@@ -4,11 +4,10 @@ import { Disclaimer } from "@/components/Disclaimer";
 import { ImportBackup } from "./ImportBackup";
 import { RemoveShared } from "./RemoveShared";
 import { HeardAbout } from "./HeardAbout";
-import { dueSoonDaysForKind } from "@/lib/compliance";
-import { addDays } from "@/lib/maintenance";
-
-const today = () => new Date().toISOString().slice(0, 10);
-const DUE_SOON_DAYS = 30;
+import { buildStatusItems, summarizeStatusItems } from "@/lib/status";
+import { currentMetersFrom, toReadings } from "@/lib/aircraftHours";
+import type { Meter } from "@/lib/hobbsTach";
+import { LoadError } from "@/components/LoadError";
 
 // Fleet "hangar" — every aircraft the user owns or is shared on, with an
 // at-a-glance airworthiness pill and instrument readouts, matching the redesign.
@@ -18,10 +17,10 @@ export default async function Dashboard() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: aircraft } = await supabase
+  const { data: aircraft, error: aircraftError } = await supabase
     .from("aircraft")
     .select(
-      "id, tail_number, make, model, year, home_base, enrollment_date, enrollment_tach, enrollment_hobbs, owner_id, is_demo",
+      "id, tail_number, make, model, year, home_base, enrollment_date, enrollment_tach, enrollment_hobbs, enrollment_airframe, owner_id, is_demo",
     )
     .order("created_at", { ascending: true });
   const list = aircraft ?? [];
@@ -50,55 +49,60 @@ export default async function Dashboard() {
   const spanMin = new Map<string, number>();
   const spanMax = new Map<string, number>();
   const needsReview = new Map<string, number>();
-  const overdue = new Map<string, number>();
-  const dueSoon = new Map<string, number>();
+  const statusByAircraft = new Map<string, ReturnType<typeof summarizeStatusItems>>();
+  let statusUnavailable = false;
+  let entriesUnavailable = false;
 
   if (list.length > 0) {
-    const t = today();
-    const [{ data: entries }, { data: pages }, { data: items }] = await Promise.all([
-      supabase.from("log_entry").select("aircraft_id, hobbs, tach, entry_date"),
-      supabase.from("page").select("aircraft_id, review_status, extraction_status"),
-      supabase.from("maintenance_item").select("aircraft_id, kind, last_done_date, next_due_date"),
+    const [entryResult, readingResult, itemResult, adResult, resetResult] = await Promise.all([
+      supabase.from("log_entry").select("id, aircraft_id, page_id, owner_confirmed, hobbs, tach, airframe, entry_date, hours_reviewed_at, authored_superseded_by"),
+      supabase.from("hours_reading").select("id, aircraft_id, hobbs, tach, airframe, reading_date, hours_reviewed_at, source"),
+      supabase.from("maintenance_item").select("*"),
+      supabase.from("ad_compliance").select("aircraft_id, id, reference, kind, next_due_date, next_due_hours, status, verified_report_page_id, verified_at").eq("recurring", true).not("status", "in", "(not_applicable,superseded)"),
+      supabase.from("meter_reset").select("aircraft_id, meter, reset_date, prior_value, new_value").order("reset_date", { ascending: true }),
     ]);
-
-    for (const e of entries ?? []) {
+    entriesUnavailable = Boolean(entryResult.error);
+    statusUnavailable = [entryResult, readingResult, itemResult, adResult, resetResult].some((r) => r.error);
+    const entries = entryResult.data ?? [];
+    for (const e of entries) {
       entryCount.set(e.aircraft_id, (entryCount.get(e.aircraft_id) ?? 0) + 1);
-      const h = Math.max(e.hobbs ?? 0, e.tach ?? 0);
-      if (h > (hoursMax.get(e.aircraft_id) ?? 0)) hoursMax.set(e.aircraft_id, h);
       const yr = e.entry_date ? Number(e.entry_date.slice(0, 4)) : null;
       if (yr) {
         if (yr < (spanMin.get(e.aircraft_id) ?? Infinity)) spanMin.set(e.aircraft_id, yr);
         if (yr > (spanMax.get(e.aircraft_id) ?? 0)) spanMax.set(e.aircraft_id, yr);
       }
     }
-    for (const p of pages ?? []) {
-      if (p.extraction_status === "extracted" && p.review_status === "unreviewed")
-        needsReview.set(p.aircraft_id, (needsReview.get(p.aircraft_id) ?? 0) + 1);
-    }
-    for (const it of items ?? []) {
-      const dueDate = it.kind === "vor" && it.last_done_date ? addDays(it.last_done_date, 30) : it.next_due_date;
-      if (!dueDate) continue;
-      if (dueDate < t)
-        overdue.set(it.aircraft_id, (overdue.get(it.aircraft_id) ?? 0) + 1);
-      else if (
-        dueDate <=
-        new Date(
-          Date.parse(`${t}T00:00:00Z`) +
-            dueSoonDaysForKind(it.kind, DUE_SOON_DAYS) * 86_400_000,
-        )
-          .toISOString()
-          .slice(0, 10)
-      )
-        dueSoon.set(it.aircraft_id, (dueSoon.get(it.aircraft_id) ?? 0) + 1);
+    for (const a of list) {
+      const aircraftEntries = entries.filter((e) => e.aircraft_id === a.id);
+      needsReview.set(a.id, new Set(aircraftEntries.filter((e) => !e.owner_confirmed && e.page_id).map((e) => e.page_id)).size);
+      if (statusUnavailable) continue;
+      const raw = toReadings(aircraftEntries, (readingResult.data ?? []).filter((r) => r.aircraft_id === a.id), {
+        hobbs: a.enrollment_hobbs, tach: a.enrollment_tach, airframe: a.enrollment_airframe, date: a.enrollment_date,
+      });
+      const resets = (resetResult.data ?? []).filter((r) => r.aircraft_id === a.id).map((r) => ({
+        meter: r.meter as Meter, date: r.reset_date, prior: r.prior_value, next: r.new_value,
+      }));
+      const meters = currentMetersFrom(raw, resets);
+      if (meters.face.tach != null) hoursMax.set(a.id, meters.face.tach);
+      const status = buildStatusItems(
+        (itemResult.data ?? []).filter((r) => r.aircraft_id === a.id),
+        (adResult.data ?? []).filter((r) => r.aircraft_id === a.id),
+        {
+          tach: meters.tach.tach, hobbs: meters.hobbs.hobbs, airframe: meters.airframe.airframe,
+          tachEstimated: meters.tach.estimated, hobbsEstimated: meters.hobbs.estimated, airframeEstimated: meters.airframe.estimated,
+          baselineFor: meters.baselineFor, toTotalHours: meters.toTotalHours,
+        },
+      );
+      statusByAircraft.set(a.id, summarizeStatusItems(status));
     }
   }
 
-  const sum = (m: Map<string, number>) => [...m.values()].reduce((a, b) => a + b, 0);
+  const summaries = [...statusByAircraft.values()];
   const fleet = {
     aircraft: list.length,
-    overdue: sum(overdue),
-    due: sum(dueSoon),
-    pending: sum(needsReview),
+    overdue: statusUnavailable ? "—" : summaries.reduce((n, s) => n + s.overdue, 0),
+    due: statusUnavailable ? "—" : summaries.reduce((n, s) => n + s.due, 0),
+    pending: entriesUnavailable ? "—" : [...needsReview.values()].reduce((n, count) => n + count, 0),
   };
   const greeting = list.length === 0 ? "Welcome to MyTailLog" : "Your hangar";
 
@@ -109,13 +113,14 @@ export default async function Dashboard() {
         <div className="eyebrow mb-2">Fleet</div>
         <h1 className="font-display text-[30px] font-semibold leading-none">{greeting}</h1>
         <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-dim">
-          Photograph or upload your logbook pages, confirm what the extractor reads, and
-          MyTailLog tracks what&apos;s due — annuals, ADs, the transponder cert, TBO. It&apos;s an
-          index of your records, never a replacement for the paper.
+          Choose an aircraft to review its records, check upcoming maintenance or add logbook pages.
         </p>
       </header>
 
       {askHeardAbout && <HeardAbout />}
+      {(aircraftError || statusUnavailable) && (
+        <div className="mb-5"><LoadError message={aircraftError ? "Your aircraft could not be loaded." : "Some records could not be loaded. Fleet status is unavailable."} href="/dashboard" /></div>
+      )}
 
       {/* Fleet-wide summary tiles */}
       {list.length > 0 && (
@@ -146,24 +151,29 @@ export default async function Dashboard() {
       <div className="eyebrow mb-3">
         {list.length > 0 ? "Aircraft" : "Get started"}
       </div>
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
         {list.map((a) => {
           const shared = user ? a.owner_id !== user.id : false;
           const role = roleByAircraft.get(a.id) ?? "viewer";
-          const over = overdue.get(a.id) ?? 0;
-          const soon = dueSoon.get(a.id) ?? 0;
+          const summary = statusByAircraft.get(a.id);
           const review = needsReview.get(a.id) ?? 0;
-          // Airworthiness pill: overdue → red, due-soon → amber, else green.
-          const status = over > 0
-            ? { color: "var(--red)", text: `${over} overdue` }
-            : soon > 0
-              ? { color: "var(--amb)", text: `${soon} due soon` }
-              : { color: "var(--grn)", text: "On top of it" };
+          const tracked = summary ? summary.overdue + summary.due + summary.current + summary.unknown : 0;
+          const status = !summary
+            ? { color: "var(--dim)", text: "Status unavailable" }
+            : summary.overdue > 0
+              ? { color: "var(--red)", text: `${summary.overdue} overdue` }
+              : summary.due > 0
+                ? { color: "var(--amb)", text: `${summary.due} due soon` }
+                : summary.unknown > 0
+                  ? { color: "var(--dim)", text: `${summary.unknown} need information` }
+                  : tracked === 0
+                    ? { color: "var(--dim)", text: "Nothing tracked yet" }
+                    : { color: "var(--grn)", text: "No tracked items overdue" };
           const tach = hoursMax.get(a.id);
           const lo = spanMin.get(a.id);
           const hi = spanMax.get(a.id);
           const span = lo ? (lo === hi ? `${lo}` : `${lo}–${hi}`) : "—";
-          const nextMeta = review > 0 ? `${review} to review` : "";
+          const nextMeta = entriesUnavailable ? "Review count unavailable" : review > 0 ? `${review} to review` : "";
           const type = [a.year, a.make, a.model].filter(Boolean).join(" ") || "Details not set";
 
           return (
@@ -195,8 +205,8 @@ export default async function Dashboard() {
               </div>
 
               <div
-                className="mb-3 flex items-center gap-2 rounded-[9px] border bg-bg px-3 py-2.5"
-                style={{ borderColor: status.color + "55" }}
+                className="mb-3 flex flex-wrap items-center gap-2 rounded-[9px] border bg-bg px-3 py-2.5"
+                style={{ borderColor: status.color }}
               >
                 <span
                   className="h-2 w-2 rounded-full"
@@ -210,10 +220,13 @@ export default async function Dashboard() {
                 )}
               </div>
 
-              <div className="mb-4 flex gap-4">
+              {summary && (
+                <p className="mb-3 text-xs text-dim">{tracked} tracked · {summary.unknown} need information. Verify against the logbooks.</p>
+              )}
+              <div className="mb-4 flex flex-wrap gap-4">
                 {[
                   { v: tach != null ? tach.toFixed(1) : "—", l: "Tach hrs", dim: false },
-                  { v: entryCount.get(a.id) ?? 0, l: "Entries", dim: true },
+                  { v: entriesUnavailable ? "—" : entryCount.get(a.id) ?? 0, l: "Entries", dim: true },
                   { v: span, l: "Records span", dim: true },
                 ].map((st) => (
                   <div key={st.l}>

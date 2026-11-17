@@ -129,6 +129,10 @@ export type EntryFieldValues = {
   sb_refs: string[];
 };
 
+export function entryDraftChanged(initial: EntryForm, current: EntryForm, initialBook: string, currentBook: string): boolean {
+  return initialBook !== currentBook || (Object.keys(initial) as (keyof EntryForm)[]).some((key) => initial[key] !== current[key]);
+}
+
 export function toForm(e: Partial<ReviewEntry> | null): EntryForm {
   const n = (v: number | null | undefined) => (v == null ? "" : String(v));
   return {
@@ -260,6 +264,11 @@ export function drawerSnap(open: boolean, dy: number, threshold = 40): boolean {
   if (dy <= -threshold) return true;
   if (dy >= threshold) return false;
   return open;
+}
+
+/** Keyboard/assistive activation toggles; a swipe's synthesized click does not. */
+export function drawerClick(open: boolean, swiped: boolean, clickDetail: number): boolean {
+  return clickDetail === 0 || !swiped ? !open : open;
 }
 
 /** Swipe-to-delete: a clear leftward drag with little vertical drift. */

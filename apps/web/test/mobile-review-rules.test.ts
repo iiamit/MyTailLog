@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  pageNeedsLook, cleanUnconfirmed, fieldChip, entryBadge, toForm, validateEntry, validateReading,
-  recentReadings, readAllowance, extractLabel, spotlightStyle, drawerSnap, swipeReveals, entriesOn,
+  pageNeedsLook, cleanUnconfirmed, fieldChip, entryBadge, toForm, entryDraftChanged, validateEntry, validateReading,
+  recentReadings, readAllowance, extractLabel, spotlightStyle, drawerSnap, drawerClick, swipeReveals, entriesOn,
   readingEditable, readingProvenance,
   type ReviewEntry,
 } from "../../mobile/src/review-rules";
@@ -18,6 +18,20 @@ const E = (o: Partial<ReviewEntry>): ReviewEntry => ({
   signature_name: null, mechanic_cert_number: null, ad_refs: [], sb_refs: [],
   confidence: 0.9, field_confidence: null, field_boxes: null, owner_confirmed: false,
   is_continuation: false, entry_index: 0, updated_at: "2026-07-05T00:00:00Z", ...o,
+});
+
+test("entry drafts protect changed fields and logbook moves, but allow untouched or reverted forms to close", () => {
+  for (const entry of [null, E({})]) {
+    const initial = toForm(entry);
+    assert.equal(entryDraftChanged(initial, { ...initial }, "engine", "engine"), false);
+    for (const key of Object.keys(initial) as (keyof typeof initial)[]) {
+      assert.equal(entryDraftChanged(initial, { ...initial, [key]: `${initial[key]} edited` }, "engine", "engine"), true, key);
+    }
+    assert.equal(entryDraftChanged(initial, initial, "engine", "airframe"), true);
+    const edited = { ...initial, description: "changed" };
+    edited.description = initial.description;
+    assert.equal(entryDraftChanged(initial, edited, "engine", "engine"), false);
+  }
 });
 
 test("a page needs a look only when extracted AND holding an unconfirmed entry", () => {
@@ -154,6 +168,13 @@ test("drawer snaps only past the threshold; a wobble stays put", () => {
   assert.equal(drawerSnap(false, -10), false);
   assert.equal(drawerSnap(true, 10), true);
   assert.equal(drawerSnap(true, -200), true, "already open, dragging up keeps it open");
+});
+
+test("drawer activation works with keyboard and taps without toggling twice after a swipe", () => {
+  assert.equal(drawerClick(false, false, 1), true);
+  assert.equal(drawerClick(true, false, 1), false);
+  assert.equal(drawerClick(true, true, 1), true);
+  assert.equal(drawerClick(false, true, 0), true);
 });
 
 test("swipe-to-delete needs a clear leftward drag", () => {

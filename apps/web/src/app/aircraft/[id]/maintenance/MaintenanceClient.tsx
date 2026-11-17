@@ -401,7 +401,7 @@ export function MaintenanceClient({
               : projectDueDate(hoursRemaining(d.nextDueForItem, d.currentForItem), utilization);
             const marking = m && markId === m.id;
             return (
-              <div key={`${d.source}-${d.id}`} className="border-b border-line last:border-b-0">
+              <div key={`${d.source}-${d.id}`} id={`item-${d.id}`} tabIndex={-1} className="scroll-mt-6 border-b border-line last:border-b-0 target:outline-2 target:outline-accent">
                 <div className={`grid ${FORECAST_COLS} items-center gap-3 px-[18px] py-3`}>
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <span

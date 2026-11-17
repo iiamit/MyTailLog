@@ -67,9 +67,15 @@ Single-owner from day one, enforced in Postgres — not just app code:
 
 ## Applying migrations
 
-```bash
-supabase link --project-ref <your-project-ref>
-supabase db push          # apply to the linked hosted project
-# or, for a full local stack:
-supabase start && supabase db reset
-```
+As of 2026-10-13, test and production both have every migration through `0062`,
+including both distinct `0060` files. Treat those files as the verified baseline;
+do not replay them. Earlier changes were applied outside Supabase's migration
+history, so its historical migration list does not represent this baseline.
+
+For each new change, add a uniquely named, sequential SQL file here and commit
+it with the application change. During the release, apply that file through the
+project-scoped Supabase MCP `apply_migration` tool to **test**, verify the schema
+and behavior, then apply the same SQL to **production** and verify it there.
+Record which file was applied to each project in the release notes. Do not use
+`supabase db push` against these projects unless their migration histories have
+first been reconciled with the repository.
