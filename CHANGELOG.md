@@ -6,6 +6,13 @@ the git log.
 
 ## 2026.11
 
+### Improved — tracked status and small-screen navigation
+
+- Missing schedules or meter readings now show as **needs information**, rather than appearing current. Failed record loads show a retry action instead of a reassuring empty assessment.
+- Status, overview, forecast and shared summaries use the same recorded-limit rules. Countdown text keeps both hour and calendar limits visible, and status cards link to the relevant item.
+- Small-screen navigation keeps the main aircraft tasks within reach, with keyboard-accessible menus for the remaining pages.
+- The home page and product tour show current demo screens at full size, with links to open each screenshot for a closer look.
+
 ### Added — record room links
 
 - Owners can send a buyer, mechanic, IA or insurer a read-only link to the aircraft's records, with no account needed. You choose what's in it: the maintenance summary, whole logbooks (confirmed entries only), their page scans, and individual Vault documents.
