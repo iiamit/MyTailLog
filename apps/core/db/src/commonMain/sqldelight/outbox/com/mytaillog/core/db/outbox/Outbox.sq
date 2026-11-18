@@ -1,0 +1,33 @@
+-- outbox.db: unsent work, never rebuildable (05 §6.2, §6.4).
+
+CREATE TABLE mutation (
+    id TEXT NOT NULL PRIMARY KEY,        -- UUIDv7, the idempotency key
+    aircraft_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    payload TEXT NOT NULL,               -- JSON
+    target_table TEXT,
+    target_id TEXT,
+    base TEXT,                           -- updated_at of the server row; null for inserts
+    base_row TEXT,                       -- that server row, for the three-way diff
+    label TEXT NOT NULL,                 -- owner-readable
+    created_at TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    next_try_at TEXT,
+    status TEXT NOT NULL DEFAULT 'pending', -- pending | sending | conflict | refused | blocked
+    error TEXT,
+    server_row TEXT,
+    depends_on TEXT
+);
+
+enqueue:
+INSERT INTO mutation(id, aircraft_id, type, payload, target_table, target_id, base, base_row, label, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+pending:
+SELECT * FROM mutation WHERE status = 'pending' ORDER BY created_at, id;
+
+remove:
+DELETE FROM mutation WHERE id = ?;
+
+setStatus:
+UPDATE mutation SET status = ?, error = ?, server_row = ? WHERE id = ?;

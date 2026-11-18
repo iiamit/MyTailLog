@@ -1,0 +1,31 @@
+-- mirror.db: server rows, rebuildable from cursor 0 (05 §6.2).
+-- Typed tables per synced table arrive with the phases that read them; until then
+-- every pulled row lands in unknown_record, as 05 §6.2 prescribes for tables the app doesn't know yet.
+
+CREATE TABLE sync_state (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+CREATE TABLE unknown_record (
+    table_name TEXT NOT NULL,
+    id TEXT NOT NULL,
+    raw TEXT NOT NULL,
+    seq INTEGER NOT NULL,
+    PRIMARY KEY (table_name, id)
+);
+
+stateValue:
+SELECT value FROM sync_state WHERE key = ?;
+
+setState:
+INSERT OR REPLACE INTO sync_state(key, value) VALUES (?, ?);
+
+upsertUnknown:
+INSERT OR REPLACE INTO unknown_record(table_name, id, raw, seq) VALUES (?, ?, ?, ?);
+
+deleteUnknown:
+DELETE FROM unknown_record WHERE table_name = ? AND id = ?;
+
+countUnknown:
+SELECT count(*) FROM unknown_record;

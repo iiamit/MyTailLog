@@ -26,12 +26,15 @@ export function flatten(node, path = [], inheritedType) {
 }
 
 const kebab = (path) => path.join("-");
-export const camel = (path) =>
-  path
+export const camel = (path) => {
+  const name = path
     .join("-")
     .split("-")
     .map((w, i) => (i === 0 ? w : w[0].toUpperCase() + w.slice(1)))
     .join("");
+  // space.1 → s1: Swift and Kotlin identifiers can't start with a digit.
+  return /^\d/.test(name) ? `s${name}` : name;
+};
 
 /** "#rrggbb" or "rgba(r,g,b,a)" → [r,g,b,a] with a in 0..1. */
 export function rgba(value) {

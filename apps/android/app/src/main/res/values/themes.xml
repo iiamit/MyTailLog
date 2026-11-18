@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#0B0F16</color>
+    <!-- color.cover: the launch window is the binder's cover in both modes (05 §20), no white flash. -->
+    <color name="cover">#17191E</color>
+
+    <style name="Theme.MyTailLog" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/cover</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

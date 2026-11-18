@@ -195,14 +195,14 @@ data class TypeRole(val family: TypeFamily, val size: TextUnit, val weight: Font
 
 object Tokens {
     object Space {
-        val 1 = 4.dp
-        val 2 = 8.dp
-        val 3 = 12.dp
-        val 4 = 16.dp
-        val 5 = 20.dp
-        val 6 = 24.dp
-        val 7 = 28.dp
-        val 8 = 32.dp
+        val s1 = 4.dp
+        val s2 = 8.dp
+        val s3 = 12.dp
+        val s4 = 16.dp
+        val s5 = 20.dp
+        val s6 = 24.dp
+        val s7 = 28.dp
+        val s8 = 32.dp
     }
     object Radius {
         val s = 3.dp
