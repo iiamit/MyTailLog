@@ -44,6 +44,20 @@ function clean(row: Row): Row {
   return o;
 }
 
+/**
+ * A backed-up log entry as the owner may re-insert it. The in-app e-signature is not restored: its digest is a
+ * plain hash anyone could recompute, so a restored zip can't prove the mechanic signed it, and the database only
+ * lets sign_authored_entry create signed rows. The entry keeps its text, signer name and certificate number.
+ */
+export function restorableEntry(e: Row): Row {
+  const o = clean(e);
+  delete o.trust; // generated column (0069)
+  for (const col of ["authored_signed_at", "authored_digest", "authored_by", "supersedes_entry_id", "authored_superseded_by"]) {
+    delete o[col];
+  }
+  return o;
+}
+
 async function insertRows(
   supabase: SupabaseClient<Database>,
   table: TableName,
@@ -144,19 +158,28 @@ export async function importBackup(
 
   onProgress?.("Restoring records…");
 
-  // 4. Log entries.
-  const entryMap = new Map<string, string>();
+  // 4. Log entries. Ids are mapped up front because supersede links can point forward.
+  const entryMap = new Map(data.log_entries.map((e) => [e.id as string, crypto.randomUUID()]));
   const entryRows = data.log_entries.map((e) => {
-    const nid = crypto.randomUUID();
-    entryMap.set(e.id as string, nid);
-    const o = clean(e);
-    o.id = nid;
+    const o = restorableEntry(e);
+    o.id = entryMap.get(e.id as string);
     o.aircraft_id = aircraftId;
     o.logbook_id = logbookMap.get(e.logbook_id as string);
     o.page_id = e.page_id ? pageMap.get(e.page_id as string) ?? null : null;
     return o;
   });
   await insertRows(supabase, "log_entry", entryRows);
+  // Second pass: links may cross insert chunks.
+  for (const e of data.log_entries) {
+    const links: Row = {};
+    for (const col of ["supersedes_entry_id", "authored_superseded_by"]) {
+      const to = e[col] ? entryMap.get(e[col] as string) : undefined;
+      if (to) links[col] = to;
+    }
+    if (!Object.keys(links).length) continue;
+    const { error } = await supabase.from("log_entry").update(links as never).eq("id", entryMap.get(e.id as string)!);
+    if (error) throw new Error(`log_entry: ${error.message}`);
+  }
 
   // 5. Components (reference log entries).
   const componentMap = new Map<string, string>();

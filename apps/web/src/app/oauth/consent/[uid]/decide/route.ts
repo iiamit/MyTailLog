@@ -1,6 +1,7 @@
 import { toNode, toFetchResponse } from "@/lib/oauth/bridge";
 import { getOAuthProvider } from "@/lib/oauth/provider";
 import { createClient } from "@/lib/supabase/server";
+import { publicOrigin } from "@/lib/publicOrigin";
 
 // Handles the consent form submission: resolves the oidc login+consent
 // interaction and records the per-aircraft grant (the Resource Server's authz
@@ -20,7 +21,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ uid
     // a raw 500 — and log the real error so a genuine server-side failure in the
     // authorize→consent→redirect chain is diagnosable (not swallowed).
     console.error("[oidc] consent decide failed:", err);
-    return Response.redirect(new URL(`/oauth/consent/${uid}`, request.url), 303);
+    return Response.redirect(new URL(`/oauth/consent/${uid}`, publicOrigin(request)), 303);
   }
 }
 
@@ -40,7 +41,7 @@ async function decide(request: Request, uid: string): Promise<Response> {
 
   if (!user) {
     // Session lapsed between rendering and submitting — bounce to login.
-    return Response.redirect(new URL(`/login?next=/oauth/consent/${uid}`, request.url), 303);
+    return Response.redirect(new URL(`/login?next=/oauth/consent/${uid}`, publicOrigin(request)), 303);
   }
 
   // Only an explicit Deny refuses. Approving with no aircraft is allowed — a new
