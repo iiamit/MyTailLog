@@ -1,0 +1,106 @@
+/* Direction D base layer. Everything is scoped to [data-ui="v2"] so the v1 glass-cockpit pages are untouched.
+   Values come from tokens.css; component specifics live next to their components as Tailwind classes. */
+
+[data-ui="v2"] {
+  font-family: var(--font-app);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-lh);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+  background: var(--color-cover);
+  -webkit-font-smoothing: antialiased;
+  accent-color: var(--color-ink);
+  caret-color: var(--color-ink);
+}
+
+/* The overlay hides v1 chrome rendered by the root layout (header, announcement bar) on v2 screens. */
+.v2-root {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow: hidden;
+}
+
+[data-ui="v2"] ::selection {
+  background: var(--color-highlight);
+  color: inherit;
+}
+
+/* Double focus ring (02 §2.4): 2px ink outside, 2px leaf inside, keyboard only. */
+[data-ui="v2"] :focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-focus-inner);
+}
+[data-ui="v2"] :focus:not(:focus-visible) {
+  outline: none;
+}
+
+[data-ui="v2"] a {
+  text-underline-offset: 3px;
+}
+
+[data-ui="v2"] * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-rule-2) transparent;
+}
+
+/* State layer (02 §2.3): 8% of the content colour on hover, 14% pressed, over the component's own fill. */
+[data-ui="v2"] .state-layer {
+  position: relative;
+  isolation: isolate;
+}
+[data-ui="v2"] .state-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-out);
+}
+@media (pointer: fine) {
+  [data-ui="v2"] .state-layer:hover::after {
+    opacity: 0.08;
+  }
+}
+[data-ui="v2"] .state-layer:active::after {
+  opacity: 0.14;
+}
+[data-ui="v2"] [aria-disabled="true"].state-layer::after,
+[data-ui="v2"] .state-layer:disabled::after {
+  opacity: 0;
+}
+
+/* Board colour cross-fade between sections (11 §11: slow, none under reduced motion). */
+[data-ui="v2"] .board {
+  transition: background-color var(--motion-duration-slow) var(--motion-ease-in-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ui="v2"] *,
+  [data-ui="v2"] *::after,
+  [data-ui="v2"] *::before {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
+
+@media (pointer: coarse) {
+  [data-ui="v2"] .key-hint {
+    display: none;
+  }
+}
+
+@media print {
+  [data-ui="v2"] .rail,
+  [data-ui="v2"] .board-head,
+  [data-ui="v2"] .spine {
+    display: none !important;
+  }
+  .v2-root {
+    position: static;
+    overflow: visible;
+  }
+}

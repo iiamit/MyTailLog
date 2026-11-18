@@ -272,6 +272,13 @@ export function AircraftShell({
         <div className="flex-1" />
 
         <nav aria-label="Account" className="hidden items-center gap-0.5 text-[13px] lg:flex">
+          {/* Plain <a>: the cookie must be set before the next document request (13 §6 opt-in). */}
+          <a
+            href={`/api/ui?design=v2&next=${encodeURIComponent(`/aircraft/${context.id}/status`)}`}
+            className="rounded-md px-3 py-2 text-accent hover:bg-panel"
+          >
+            Try the new design
+          </a>
           <Link href="/help" className="rounded-md px-3 py-2 text-dim hover:bg-panel hover:text-ink">
             Help
           </Link>

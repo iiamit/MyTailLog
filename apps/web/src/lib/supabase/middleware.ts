@@ -10,6 +10,7 @@ import {
   isFreshAccount,
   sourceFromLanding,
 } from "@/lib/signupSource";
+import { UI_COOKIE, v2Rewrite } from "@/lib/uiV2";
 
 /**
  * Refreshes the Supabase auth session on every request and redirects
@@ -49,22 +50,40 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/aircraft") ||
     pathname.startsWith("/profile") ||
-    pathname.startsWith("/admin");
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/v2");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    url.searchParams.set("next", pathname.startsWith("/v2/") ? pathname.slice(3) : pathname);
     return withSourceCookie(request, NextResponse.redirect(url));
   }
 
   if (user && request.cookies.has(SOURCE_COOKIE)) {
     await claimSource(user.id, user.created_at, request.cookies.get(SOURCE_COOKIE)?.value);
     response.cookies.delete(SOURCE_COOKIE);
-    return response;
+    return withUiV2(request, response);
   }
 
-  return user ? response : withSourceCookie(request, response);
+  return user ? withUiV2(request, response) : withSourceCookie(request, response);
+}
+
+/**
+ * Owners who opted into the new design see the /v2 tree at the same URLs. `?ui=v1` on one request shows
+ * the current design for that page (the v2 shell links there for screens it doesn't cover yet).
+ */
+function withUiV2(request: NextRequest, response: NextResponse) {
+  if (request.cookies.get(UI_COOKIE)?.value !== "v2" || request.nextUrl.searchParams.get("ui") === "v1") {
+    return response;
+  }
+  const target = v2Rewrite(request.nextUrl.pathname);
+  if (!target) return response;
+  const url = request.nextUrl.clone();
+  url.pathname = target;
+  const rewritten = NextResponse.rewrite(url, { request });
+  response.cookies.getAll().forEach((c) => rewritten.cookies.set(c));
+  return rewritten;
 }
 
 /** First touch: set mtl_src for an anonymous visitor from a tagged link or another site. */

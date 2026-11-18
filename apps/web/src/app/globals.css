@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import '../ui/tokens.css';
+@import '../ui/v2.css';
 
 @theme {
   --color-bg: var(--bg);
