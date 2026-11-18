@@ -41,6 +41,10 @@ function clean(row: Row): Row {
   delete o.id;
   delete o.created_at;
   delete o.updated_at;
+  // shortcut: service providers and scan batches aren't in the backup yet, so their links can't be remapped;
+  // add them to collect.ts/import.ts when phase 3/4 makes them owner-visible.
+  delete o.provider_id;
+  delete o.batch_id;
   return o;
 }
 
@@ -56,6 +60,12 @@ export function restorableEntry(e: Row): Row {
     delete o[col];
   }
   return o;
+}
+
+/** The ad_reference id for a backed-up compliance row in this database, or null (the link is optional). */
+export function resolveAdReference(a: Row, known: Map<string, string>): string | null {
+  if (!a.ad_reference_id) return null;
+  return known.get(a.ad_reference_id as string) ?? known.get(`ad:${a.reference}`) ?? null;
 }
 
 async function insertRows(
@@ -195,11 +205,23 @@ export async function importBackup(
   });
   await insertRows(supabase, "component", componentRows);
 
-  // 6. AD/SB compliance (reference entries + components; ad_reference_id is the
-  //    shared global reference table, kept as-is).
+  // 6. AD/SB compliance (reference entries + components). ad_reference is a shared table whose ids differ per
+  //    database (e.g. a production backup restored on test): keep an id that exists here, else match by AD number.
+  const linked = data.ad_compliance.filter((a) => a.ad_reference_id);
+  const known = new Map<string, string>(); // backup ad_reference_id or AD number -> id in this database
+  if (linked.length) {
+    const ids = [...new Set(linked.map((a) => a.ad_reference_id as string))];
+    const nums = [...new Set(linked.map((a) => a.reference as string))];
+    const byId = await supabase.from("ad_reference").select("id").in("id", ids);
+    const byNum = await supabase.from("ad_reference").select("id, ad_number").in("ad_number", nums);
+    if (byId.error || byNum.error) throw new Error(`ad_reference: ${(byId.error ?? byNum.error)!.message}`);
+    for (const r of byId.data) known.set(r.id, r.id);
+    for (const r of byNum.data) if (r.ad_number) known.set(`ad:${r.ad_number}`, r.id);
+  }
   const adRows = data.ad_compliance.map((a) => {
     const o = clean(a);
     o.aircraft_id = aircraftId;
+    o.ad_reference_id = resolveAdReference(a, known);
     o.reference_entry_id = a.reference_entry_id
       ? entryMap.get(a.reference_entry_id as string) ?? null
       : null;

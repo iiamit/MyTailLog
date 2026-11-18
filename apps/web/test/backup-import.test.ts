@@ -20,3 +20,18 @@ test("restored entries drop the e-signature, generated and server columns but ke
   assert.deepEqual(o.authored_payload, { text: "Annual inspection" });
   assert.equal(signed.authored_signed_at, "2026-11-01T00:00:00Z", "input not mutated");
 });
+
+test("AD links survive a restore into another database by matching the AD number", async () => {
+  const { resolveAdReference } = await import("../src/lib/backup/import");
+  const known = new Map([["same-db-id", "same-db-id"], ["ad:2020-01-01", "test-db-id"]]);
+  assert.equal(resolveAdReference({ ad_reference_id: "same-db-id", reference: "x" }, known), "same-db-id");
+  assert.equal(resolveAdReference({ ad_reference_id: "prod-id", reference: "2020-01-01" }, known), "test-db-id");
+  assert.equal(resolveAdReference({ ad_reference_id: "prod-id", reference: "1999-99-99" }, known), null);
+  assert.equal(resolveAdReference({ ad_reference_id: null, reference: "2020-01-01" }, known), null);
+});
+
+test("links to tables the backup doesn't carry are dropped", () => {
+  const o = restorableEntry({ id: "e", provider_id: "p", batch_id: "b", description: "x" });
+  assert.equal("provider_id" in o, false);
+  assert.equal("batch_id" in o, false);
+});
