@@ -87,3 +87,11 @@ Contents: 1 Data and behaviour · 2 The map · 3 Copy · 4 Accessibility, sizes 
 - Phone gap sheet: D19. Hit-area ties: M6. Scrubber steps: M7.
 - Record room expiry: D18. SectionTab maximum: §5.
 - Open questions in 02, 05 and 06 that these decisions answer are closed by this register.
+
+## 8. Kickoff decisions (owner, 2026-11-18)
+| # | Topic | Decision |
+|---|---|---|
+| K1 | Shared phone code | Kotlin Multiplatform core (05 §4.2) with fully native SwiftUI and Compose UIs. The GRDB/Room fallback is not used. |
+| K2 | Minimum OS | iOS/iPadOS 18, Android 10 (API 29). |
+| K3 | PDF for dossier and summary | Keep today's approach: print stylesheets and the browser's "Save as PDF" (phones print the same web page with the system print sheet). No server-side PDF renderer for now; 13 §5 phase 5's "render server-side to PDF" is deferred until owners need a generated file. |
+| K4 | Time zone | No `aircraft.time_zone`. The user's time zone is captured automatically from the browser and phone (`profile.time_zone`, IANA name, no settings control) and is used for "today" in the due engine and status snapshot, quiet hours, "Remind me Friday" and the daily digest. UTC when unknown. Closes 09 open question 7. |

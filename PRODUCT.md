@@ -4,9 +4,9 @@
 
 ## Platform
 
-web
+adaptive
 
-The iPhone, iPad and Android apps are a Capacitor wrapper (`apps/mobile`) with their own React screens. They follow the same web design language; mobile is not a separate native design language.
+One product on three platforms: the web app (`apps/web`), a native iPhone and iPad app in SwiftUI (`apps/ios`, iOS/iPadOS 18+), and a native Android app in Jetpack Compose (`apps/android`, Android 10 / API 29+). The two native apps share a Kotlin Multiplatform core (`apps/core`) for due rules, map layout, sync and the local database. All three keep the same visual identity (DESIGN.md); the phones use their own platform's navigation, sheets, gestures, pickers, widgets and notifications. The Capacitor app (`apps/mobile`) stays in service until both native apps reach parity.
 
 ## Users
 
@@ -27,7 +27,7 @@ Success for the current quarter is acquisition: new owners who sign up, add an a
 All four are core and every page may lean on them:
 
 - **Cites the source page.** Every value and every "Ask" answer links back to the scanned page it came from, and nothing moves compliance until the owner confirms it.
-- **Free and open source.** MIT licensed, no subscription. AI reading has a daily allowance; owners can add their own Anthropic key for more.
+- **Free and open source.** MIT licensed, no subscription. AI reading has a daily allowance; owners can add their own Anthropic key for more (about 50 pages per rolling 24 hours on the shared key).
 - **The owner keeps the data.** Nobody else handles the books. Full export, scans included, and re-import.
 - **Works in the hangar.** Records open offline on iPhone, iPad and Android; pages can be scanned on the phone and sync later.
 

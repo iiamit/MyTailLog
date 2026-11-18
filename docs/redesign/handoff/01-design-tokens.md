@@ -1,5 +1,7 @@
 # 01 · Design tokens
 
+> The machine-readable tokens now live at `packages/shared/tokens/tokens.json` (moved there at phase 0, 13 §3). Generated outputs: `apps/web/src/ui/tokens.css`, `apps/ios/MyTailLog/DesignSystem/Tokens.swift`, `apps/android/core-design/src/main/kotlin/com/mytaillog/design/Tokens.kt` (`node packages/shared/scripts/build-tokens.mjs`; `--check` in CI).
+
 The complete visual vocabulary of direction D: colour (light and dark), type, space, size, radius, elevation, iconography and the logbook inks used by the map. The machine-readable copy is `tokens.json` in this folder (W3C Design Tokens format); generate CSS custom properties, a Swift `enum`/`Color` asset catalog and a Compose `object` from it rather than retyping values. The mockups' CSS (`docs/redesign/b/system.css`, `d/system.css`) uses the same values under short names; the mapping is given in §9.
 
 Contents: 1 Colour roles · 2 Light palette · 3 Dark palette · 4 Logbook inks · 5 Typography · 6 Space and layout · 7 Radius, borders, elevation · 8 Icons · 9 Mockup CSS mapping · 10 Rules · 11 Platform notes

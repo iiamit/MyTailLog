@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "apps/mobile/src/review-pane.tsx"
+        ],
+        "createdAt": "2026-11-17T16:37:02.917Z",
+        "reason": "Codex verified the only match is the literal img tag in SpotlightRing documentation, not a rendered image. This rule has no extractable value."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "apps/web/src/app/aircraft/[id]/compliance/ComplianceClient.tsx"
+        ],
+        "createdAt": "2026-11-17T17:24:30.639Z",
+        "reason": "Agent review: existing border color is computed from directive urgency/status by accentColor, alongside textual status badges. Preserve the incumbent annunciator cue; not decorative card emphasis."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "apps/web/src/app/aircraft/[id]/status/page.tsx"
+        ],
+        "createdAt": "2026-11-17T17:24:30.732Z",
+        "reason": "Agent review: existing border uses BORDER[item.urgency] alongside an urgency dot and remaining-limit text. Preserve the incumbent maintenance-priority cue; not decorative card emphasis."
+      }
+    ]
+  }
+}

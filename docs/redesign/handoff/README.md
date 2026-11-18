@@ -7,7 +7,7 @@ This folder is everything a coding agent (or a team) needs to build the redesign
 | # | File | What it settles | Read when |
 |---|---|---|---|
 | 00 | [00-product-principles.md](00-product-principles.md) | Who it's for, the 9 non-negotiable rules, design principles, the direction in one page | First, always |
-| 01 | [01-design-tokens.md](01-design-tokens.md) + [tokens.json](tokens.json) | Colour (light and dark), type, space, radius, elevation, icons, motion tokens; per-platform mapping | Before writing any UI |
+| 01 | [01-design-tokens.md](01-design-tokens.md) + [tokens.json](../../../packages/shared/tokens/tokens.json) | Colour (light and dark), type, space, radius, elevation, icons, motion tokens; per-platform mapping | Before writing any UI |
 | 02 | [02-components.md](02-components.md) | Every component: anatomy, props, states, behaviour, a11y, web/iOS/Android notes | Before building screens |
 | 03 | [03-information-architecture.md](03-information-architecture.md) | Web shell, rail, sections and sub-tabs, spine navigation, shortcuts, route table, redirects from today's URLs, deep links and URL state, roles, responsive bands | Before routing |
 | — | [screen-index.md](screen-index.md) | All 109 screens (W-, M-, T-) with their mockup links and spec file | Finding any screen |
