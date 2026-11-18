@@ -5,7 +5,7 @@ The shared, UI-free core of the native apps (docs/redesign/handoff/05-mobile-arc
 | Module | Holds |
 |---|---|
 | `:domain` | Wire types of today's sync protocol (`SyncChange`, `PullPage`, `Mutation`, `PushResult`) and the mutation catalogue mirrored from `apps/web/src/lib/sync/mutations.ts` |
-| `:api` | Ktor client: `AuthApi` (Supabase email one-time code: `/auth/v1/otp`, `/auth/v1/verify`) and `HttpSyncApi` (`GET /api/sync/pull`, `POST /api/sync/push`, Bearer token injected by the platform) |
+| `:api` | Ktor client: `AuthApi` (Supabase Auth: email code and link with PKCE, password, ID token, PKCE code exchange, refresh, sign-out, the OAuth authorize URL) and `HttpSyncApi` (`GET /api/sync/pull`, `POST /api/sync/push`, Bearer token injected by the platform) |
 | `:db` | SQLDelight, two databases per signed-in user: `MirrorDatabase` (`mirror.db`, server truth, rebuildable) and `OutboxDatabase` (`outbox.db`, unsent work, never rebuildable). Phase 0 schema: `sync_state`, `unknown_record`, `mutation` |
 | `:sync` | `SyncEngine`: pull pages from the stored cursor until `hasMore` is false; push in batches of 100; refuses online-only types |
 | `:framework` | Umbrella that exports the four modules as one Apple framework |
