@@ -10,7 +10,7 @@ val releaseSupabaseKey = providers.gradleProperty("mytaillog.supabaseKey")
 
 android {
     namespace = "com.mytaillog.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         // Same id as the Capacitor app (apps/mobile/capacitor.config.ts): the native app replaces it in place.

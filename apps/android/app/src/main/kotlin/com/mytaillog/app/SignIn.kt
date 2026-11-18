@@ -138,7 +138,8 @@ fun SignInScreen(auth: AuthApi, onSession: suspend (Session) -> Unit) {
     BackHandler(enabled = model.codeStep) { model.useDifferentEmail() }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(setup.board).imePadding()) {
-        val boardHeight = maxHeight * 0.46f
+        val screenHeight = maxHeight // read here: Column's scope blocks the implicit receiver
+        val boardHeight = screenHeight * 0.46f
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             Box(Modifier.fillMaxWidth().height(boardHeight)) {
                 Column(Modifier.padding(start = Tokens.Space.s6, top = 120.dp, end = 48.dp)) {
@@ -150,7 +151,7 @@ fun SignInScreen(auth: AuthApi, onSession: suspend (Session) -> Unit) {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .heightIn(min = maxHeight - boardHeight)
+                    .heightIn(min = screenHeight - boardHeight)
                     .padding(horizontal = Tokens.Space.s2)
                     .clip(RoundedCornerShape(topStart = Tokens.Radius.s, topEnd = Tokens.Radius.s))
                     .background(colors.leaf)
