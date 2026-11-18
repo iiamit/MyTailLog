@@ -16,6 +16,8 @@ struct MyTailLogApp: App {
         WindowGroup {
             // Light and dark follow the system (14-decisions C8); the Settings override arrives with Settings.
             RootView(core: core).environment(store)
+                // Email links (Universal Links) and OAuth returns (05 §8.4).
+                .onOpenURL { url in Task { await store.open(url) } }
         }
     }
 }

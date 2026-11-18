@@ -30,6 +30,14 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
         CODE_SIGN_STYLE: Automatic
+        # The team the Capacitor app ships under (apps/mobile/scripts/testflight.sh); the AASA appID uses it too.
+        DEVELOPMENT_TEAM: 38Z53C8X48
+    entitlements:
+      path: MyTailLog/MyTailLog.entitlements
+      properties:
+        com.apple.developer.applesignin: [Default]
+        # Email sign-in links: https://mytaillog.com/app/auth/callback (apps/web serves the AASA file).
+        com.apple.developer.associated-domains: ["applinks:mytaillog.com"]
     preBuildScripts:
       - name: Check Supabase config
         basedOnDependencyAnalysis: false
@@ -47,6 +55,10 @@ targets:
         SupabaseHost: $(SUPABASE_HOST)
         SupabasePublishableKey: $(SUPABASE_PUBLISHABLE_KEY)
         UIAppFonts: [LibreFranklin.ttf, Literata.ttf]
+        # OAuth return: com.mytaillog.app://auth/callback (same scheme as the Capacitor app).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.mytaillog.auth
+            CFBundleURLSchemes: [com.mytaillog.app]
         UILaunchScreen:
           UIColorName: LaunchCover
         UIApplicationSceneManifest:
