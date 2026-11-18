@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MyTailLog Design Analysis</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="shared/gallery.css">
+<style>
+  .an-shot { margin: 18px 0 8px; border: 1px solid var(--g-line); border-radius: 8px; overflow: hidden; background: var(--g-stage); }
+  .an-shot img { display: block; width: 100%; height: auto; }
+  .an-shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin: 16px 0 26px; }
+  .an-shots figure { margin: 0; }
+  .an-shots figcaption { font-size: 15px; color: var(--g-ink-2); margin-top: 6px; }
+  .an-score { display: inline-block; min-width: 2.2em; text-align: center; font-weight: 700; border-radius: 4px; padding: 0 6px; background: var(--g-bg); border: 1px solid var(--g-line-2); }
+  .an-tag { font-size: 13px; font-weight: 700; color: var(--g-ink-3); }
+  .an-list li b { font-weight: 700; }
+</style>
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="index.html">Overview</a>
+  <a href="analysis.html" aria-current="page">Analysis</a>
+  <a href="a/index.html">A · Paint Scheme</a>
+  <a href="b/index.html">B · Section Tabs</a>
+  <a href="c/index.html">C · Line Diagram</a>
+  <a href="d/index.html">D · Tabbed Binder</a>
+</div></nav>
+
+<main class="g-wrap">
+  <h1 class="g-h1">What the category looks like, and where MyTailLog stands</h1>
+  <p class="g-lede">Research for the redesign: 25 owner-facing products, 6 enterprise trackers, the open-source field, and a screen-by-screen read of today's MyTailLog web and phone apps.</p>
+  <ul class="g-index">
+    <li><a href="#method">How this was done</a></li>
+    <li><a href="#look">The category look</a></li>
+    <li><a href="#rivals">Owner apps, one by one</a></li>
+    <li><a href="#serious">Enterprise and open source</a></li>
+    <li><a href="#borrow">Ideas from outside aviation</a></li>
+    <li><a href="#today">MyTailLog today</a></li>
+    <li><a href="#missing">Capabilities to add</a></li>
+    <li><a href="#principles">What the redesign must do</a></li>
+  </ul>
+
+  <h2 class="g-h2" id="method">How this was done</h2>
+  <div class="g-prose">
+    <p>Competitor fonts, colours, navigation labels, prices and copy were read from live page source and store listings in November 2026. About fifteen product screenshots were viewed directly; everything else about in-app UI comes from vendor material or reviews and is treated as a claim. No accounts were created with any competitor.</p>
+    <p>MyTailLog was read from its source code (the Next.js web app and the Capacitor phone app), its design documents, changelog and plans, and the six product screenshots in the repository. The app was not run on a device, so a few behaviour notes below are inferred from code and marked as such.</p>
+  </div>
+
+  <h2 class="g-h2" id="look">The category look</h2>
+  <div class="g-cols">
+    <div>
+      <h3 class="g-h3">What nearly everyone does</h3>
+      <ul class="g-pc">
+        <li class="g-con">Navy and sky blue with white cards. Two competitors use colours that match ForeFlight's own site almost exactly, because owners read that palette as "serious aviation software".</li>
+        <li class="g-con">Green, amber and red do all the work, usually by colour alone, and green is shouted as loudly as red.</li>
+        <li class="g-con">A dashboard of stat tiles (tach, hobbs, total time) above a due list. The same layout every day, whatever the aircraft's situation.</li>
+        <li class="g-con">Hours remaining shown without a date, and the limit that bites first (date or hours) left for the owner to work out.</li>
+        <li class="g-con">Parchment backgrounds, handwriting fonts and cockpit metaphors (annunciator, preflight, "in the green") standing in for an identity.</li>
+        <li class="g-con">The scanned page appears during review, then disappears. Nothing on the dashboard, in a reminder or in a shared link points back to the page that proves it.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="g-h3">What nobody does yet</h3>
+      <ul class="g-pc">
+        <li class="g-pro">A home that answers in a sentence and changes with the aircraft's situation: all clear, something coming up, annual month, in the shop, being sold.</li>
+        <li class="g-pro">One forward view that puts calendar and hour limits on the same timeline, with hours projected to dates and clusters suggested for one shop visit.</li>
+        <li class="g-pro">Provenance everywhere: a page citation beside every derived number, in lists, answers, emails, links and printed documents.</li>
+        <li class="g-pro">A visible scale of trust: read by AI, confirmed by the owner, signed by a mechanic.</li>
+        <li class="g-pro">Status that does not depend on red and green, using position, shape and words first.</li>
+        <li class="g-pro">Hand-off documents a mechanic or buyer would recognise as competent paperwork, rather than a CSV and a generic PDF.</li>
+        <li class="g-pro">Hangar ergonomics: one hand, glare, gloves, offline, big targets.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="g-h2" id="rivals">Owner apps, one by one</h2>
+  <p class="g-prose">The six most relevant products in depth, then the rest. Prices are per aircraft and were current in November 2026.</p>
+  <div class="g-tablewrap"><table class="g-table">
+    <thead><tr><th>Product</th><th>What it is</th><th>Design language</th><th>Good</th><th>Weak</th></tr></thead>
+    <tbody>
+      <tr><td>Runup</td><td>Web app: AI reads logbooks, owner reviews beside the page, AD dashboard, ledger of entries and documents, buyer portal. Free tier; $16 to $24 a month.</td><td>Navy-black #0d1220 console, Inter Tight with IBM Plex Mono for data, square corners, seven KPI tiles, light and dark.</td><td>The most credible "pro" tool. Per-field check marks during review. A ledger that mixes entries with invoices and 337s. Written-versus-calculated time checks.</td><td>Web only, no phone app. Table-heavy. The KPI row gives every number the same weight.</td></tr>
+      <tr><td>BetterPlane</td><td>Phone app: digitize, track, log flights with oil and fuel, squawks. $119 a year.</td><td>Parchment #f0e5c8, rust #c45d3e, navy header bands, Lora serif with a racing-stripe display face, hard offset shadows, an "Annunciator" grid of lamps.</td><td>The only product with a recognisable identity. Fun, and clearly made by owners.</td><td>Skeuomorphic. Status by lamp colour alone. Cryptic codes (FVINSP, BRKDPH) as labels.</td></tr>
+      <tr><td>HobbsMate</td><td>Owners and partnerships: photo-based flight logging, scanned logbooks, cost splits. Free to $108 a year.</td><td>Navy #003367 and sky blue on warm paper; emoji as section icons; illustrations instead of screenshots.</td><td>"Snap the tach. The flight logs itself." One approval updates hours to annual, cost per hour and partner splits. The best single interaction in the field.</td><td>Five audiences on one site; feature catalogue sprawls; emoji icons.</td></tr>
+      <tr><td>Coflyt</td><td>The incumbent: tracking, flights, scheduling, billing, Garmin and ForeFlight import. $170 a year and up.</td><td>WordPress site with eight font families; app in Poppins with a navy top bar and a tile grid.</td><td>"Ready" as a word rather than a colour. Two severity counts on the status row.</td><td>Reviews say it "feels like a website" and is buggy. Fuel quantity and airworthiness tiles get the same weight. Widgets for features you do not pay for cannot be hidden.</td></tr>
+      <tr><td>Maggneto</td><td>Digitizing and tracking, with a cited-answer demo on its home page that is listed as still in development.</td><td>Stock iOS: system blue, green and orange on Tailwind greys.</td><td>Clear, honest scheduling by date, hours or both.</td><td>No brand in the app. Marketing promises more than the product shows.</td></tr>
+      <tr><td>AirLogbooks</td><td>Aircraft and pilot records together. $100 a year.</td><td>Inter on white cards; fully saturated red, amber and green rows.</td><td>Aircraft readiness and pilot currency in one list answers the real question before a flight.</td><td>Saturated colour rows are loud and leave no room for nuance; nine nav items.</td></tr>
+      <tr><td>SquawkFree</td><td>Squawks, ADs, ADS-B flight import, a human digitizing service ($299). From $4.99 a month.</td><td>Barlow Condensed, Inter and JetBrains Mono; slate and sky blue matching ForeFlight's site; square corners.</td><td>Mono numbers used inline in prose; cheap.</td><td>Responsive web only on phones; seven top-bar links.</td></tr>
+      <tr><td>Bluetail, TBX LogIQ, Crewchief, PlaneLogiX, Savvy</td><td>Services or shop-oriented tools from $49 a month to $900 a year.</td><td>WordPress or Webflow navy-and-blue sites; Poppins, Outfit, Nunito, Raleway.</td><td>"Answers with sources" (TBX, Bluetail); VOR and nav-data logs (Crewchief); expert judgment in plain English (Savvy).</td><td>Priced for operators, not a single owner. Interchangeable visual identities.</td></tr>
+      <tr><td>ForeFlight, Garmin Pilot, LogTen, MyFlightbook</td><td>Where owners already spend their time.</td><td>Dark navy chrome and dense lists (ForeFlight, Garmin); Apple-native (LogTen); 2000s menus (MyFlightbook).</td><td>flyGarmin sharing means the panel can send hours directly. LogTen treats a logbook as an asset with milestones.</td><td>Owner maintenance is thin or absent. MyFlightbook's maintenance is a form section.</td></tr>
+      <tr><td>Flighty</td><td>Flight tracking, the benchmark for aviation-flavoured consumer design.</td><td>Departure-board rows, one line per flight; content that changes as the trip progresses.</td><td>"Packed, wrapped and coloured" data so the user never interprets raw values. A screen that knows where you are in the journey.</td><td>Not a maintenance product; the lesson is the approach.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="g-h2" id="serious">Enterprise trackers and open source</h2>
+  <div class="g-cols">
+    <div>
+      <h3 class="g-h3">Enterprise (CAMP, Traxxall, Veryon, WinAir, FL3XX, Quantum MX)</h3>
+      <ul class="g-pc">
+        <li class="g-pro">A named state between OK and overdue, and the nearest limit in every unit at once (Traxxall's "Earliest Due").</li>
+        <li class="g-pro">Forecasting from expected use, and "as of" stamps on every figure.</li>
+        <li class="g-pro">CAMP's own framing of the job: answer "Can I fly on that day?"</li>
+        <li class="g-con">Rows of saturated count tiles, needle gauges and pie charts that decorate rather than inform.</li>
+        <li class="g-con">The limiting unit is not identified and hours are not converted to a date; reviewers complain about exactly this.</li>
+        <li class="g-con">Department navigation that is mostly empty for one aircraft and one person. No observed screen shows the original entry beside the tracked item.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="g-h3">Open source and hobbyist</h3>
+      <ul class="g-pc">
+        <li class="g-pro">Deterministic, written-down status rules and the regulation cited per item.</li>
+        <li class="g-pro">Local-first, exportable, no account to share. "Status indicators do not determine airworthiness" stated calmly.</li>
+        <li class="g-pro">The best due line found anywhere was in a zero-star project: "Due Oct 30, 2026 at 2151.2 tach · due in 30 days · 46.5 hrs left".</li>
+        <li class="g-con">Framework-default looks (Bootstrap, PatternFly, MUI) with nothing of aviation in them.</li>
+        <li class="g-con">No hierarchy among due items: a lapsed VOR check looks the same as a lapsed annual.</li>
+        <li class="g-con">The scan is an attachment rather than a working surface. The closest overlap (Simple Aircraft Manager) shows this space is starting to fill.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="g-h2" id="borrow">Ideas worth borrowing from outside aviation</h2>
+  <div class="g-tablewrap"><table class="g-table">
+    <thead><tr><th>Source</th><th>The pattern</th><th>Where it lands in MyTailLog</th></tr></thead>
+    <tbody>
+      <tr><td>Flighty, airport boards</td><td>One line per item, fixed columns, in arrival order; the card's content changes as the item gets closer.</td><td>Due list, phone home, reminders (direction C's departures board)</td></tr>
+      <tr><td>CAMP, FL3XX</td><td>Pick a date and expected use; see what will have lapsed.</td><td>"Pick a date" in all three directions</td></tr>
+      <tr><td>ProBikeGarage, Traxxall</td><td>A dual-limit bar with the limiting unit marked; hours turned into "about" a date from recent use.</td><td>Every due item</td></tr>
+      <tr><td>Apple Weather, Things 3</td><td>Every item on one shared time axis; groups named by horizon ("this month", "later").</td><td>Direction A's horizon, direction B's hung groups</td></tr>
+      <tr><td>Oura, Apple Fitness</td><td>A verdict and its contributors, never a bare score.</td><td>The sentence that opens every home screen</td></tr>
+      <tr><td>Vanta, Drata</td><td>Each requirement shows the evidence that satisfies it, and its age; "no evidence" is its own state.</td><td>Citation chips; the "needs information" state</td></tr>
+      <tr><td>Rossum, Konfuzio, FamilySearch</td><td>Selecting a field lights its region on the scan; least-confident field first; accept, edit or "not on page"; keyboard-first.</td><td>The review desk in all three directions</td></tr>
+      <tr><td>Expensify, Adobe Scan</td><td>Capture now, review later on another device, with a visible queue.</td><td>Scan at the hangar, review at the desk</td></tr>
+      <tr><td>NotebookLM, Readwise</td><td>Citations that show a crop of the source on hover.</td><td>Ask answers, summaries, record room</td></tr>
+      <tr><td>Fuelly, Drivvo</td><td>Meter-first quick log with the last value, the live delta and a plausibility check.</td><td>Log a flight</td></tr>
+      <tr><td>DocSend, Stripe Atlas</td><td>A binder-style share with a cover, order, expiry, revoke and a view log.</td><td>Record room</td></tr>
+      <tr><td>CARFAX</td><td>Badges on the cover, each linked, with gaps stated plainly ("Annuals recorded 49 of 52 years").</td><td>Pre-buy dossier</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="g-h2" id="today">MyTailLog today</h2>
+  <div class="g-prose">
+    <p>MyTailLog already does more than most rivals: native offline phone apps, cited Ask answers, a re-importable export with scheduled Dropbox and Drive copies, oil trends, equipment reconstructed from the logs, W&amp;B history, the A&amp;P AD report as ground truth, an OAuth API, and an MIT licence. Its weakness is not the feature list. It is that the interface hides the product's best ideas behind its own structure.</p>
+  </div>
+  <div class="an-shots">
+    <figure><div class="an-shot"><img src="current/hub.png" alt="Current aircraft overview: dark panels with a status gauge, a next-due list, recent activity, records coverage and an Ask teaser"></div><figcaption>Overview. Three accent buttons (blue Capture, amber Review, red Most urgent) compete for the first look; three links lead to the same Status page.</figcaption></figure>
+    <figure><div class="an-shot"><img src="current/status.png" alt="Current status page: four red overdue cards and four green current cards in a grid"></div><figcaption>Status. Clear grouping, but cards cannot be acted on, due dates sit in 11px monospace, and the counts in the top bar disappear below 1536px.</figcaption></figure>
+    <figure><div class="an-shot"><img src="current/review.png" alt="Current review page: the scanned page on the left, a long form on the right"></div><figcaption>Review. The scan beside the fields and the source spotlight are the product's best moments; the form is a dense wall with 10px confidence chips and no keyboard flow.</figcaption></figure>
+    <figure><div class="an-shot"><img src="current/timeline.png" alt="Current timeline: entries grouped by collapsed years"></div><figcaption>Timeline. Fifty years collapsed into year headings; the coverage bar that would show the gaps lives on a different page.</figcaption></figure>
+  </div>
+
+  <div class="g-cols">
+    <div>
+      <h3 class="g-h3">Web: what works against the owner</h3>
+      <ol class="an-list">
+        <li><b>Type is too small for the audience.</b> 24 distinct sizes, about 140 uses between 9 and 11.5px, including due dates and the legal note. Many owners are over 50.</li>
+        <li><b>Dark only on screen.</b> Hard to read in a bright hangar or office, and it fights the cream paper of every scan.</li>
+        <li><b>Navigation is heavy.</b> 15 sidebar items in 6 groups, 6 hubs with 14 sub-tabs, three different page shells, and three-letter idents that vanish on smaller screens.</li>
+        <li><b>Status disappears.</b> Readouts and the status dots in the top bar hide below 1280px and 1536px; phones lose them entirely. There is no global search and no aircraft switcher.</li>
+        <li><b>Logging hours is buried</b> in the fifth section of the Meters tab; nothing on the hangar, overview or top bar offers it.</li>
+        <li><b>The overview does not lead with an answer.</b> A gauge, an amber review button and a blue capture button compete.</li>
+        <li><b>Status, Annual prep and Records gaps are read-only.</b> Nothing can be marked done where it is seen.</li>
+        <li><b>Digitizing spans four screens</b> with no hand-offs. Reading is a manual step tied to an open tab, with no progress, cancel or allowance shown.</li>
+        <li><b>Review is split</b> between a per-page screen and a review-all scroll with different abilities; Delete acts immediately.</li>
+        <li><b>AD handling</b> has no "record compliance" action and keeps no compliance history.</li>
+        <li><b>No component layer</b>: eight heading styles, four button radii, four confirmation patterns, developer strings in the UI.</li>
+        <li><b>Reminders are off by default</b> and invisible in the product; Profile is a 936-line scroll; delete-aircraft lives on the Sharing page.</li>
+      </ol>
+    </div>
+    <div>
+      <h3 class="g-h3">Phone: what works against the owner</h3>
+      <ol class="an-list">
+        <li><b>No sync on launch or return,</b> and "Synced" is a bare word with no time. Inside an aircraft the phone shows no offline, pending or error state.</li>
+        <li><b>Account, Sync now and the theme switch</b> cannot be reached from inside an aircraft.</li>
+        <li><b>The verdict ignores squawks</b> (even "Ground"), missing carry-aboard documents and open one-time ADs; tabs carry no badges.</li>
+        <li><b>Back gestures exit too far:</b> All items and Mark done are not real screens, so a swipe returns to the hangar.</li>
+        <li><b>Not native-feeling:</b> no transitions or haptics, four sheet implementations, six system confirm dialogs, a capture sheet with no close button.</li>
+        <li><b>Log a flight</b> reformats the number on every keystroke (inferred from code), has no date field, and uses the UTC date.</li>
+        <li><b>Scanning takes five taps</b> to reach the camera and never says when pages have been read; review is cramped in a drawer.</li>
+        <li><b>Small type and small targets</b> remain (41 declarations at 9 to 12.5px; Back about 30pt).</li>
+        <li><b>Squawks cannot carry a photo;</b> Ask and sharing are buried; many edits open the website.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="g-cols">
+    <div>
+      <h3 class="g-h3">Strengths to keep, whichever direction is chosen</h3>
+      <ul class="g-pc">
+        <li class="g-pro">Field-level provenance: the scan beside the form, per-field confidence, the spotlight on the source ink.</li>
+        <li class="g-pro">Honest language: "≈", "as of", "needs information", "a lead, not a determination", and the 91.417 "index, not the record" line.</li>
+        <li class="g-pro">One status model with real regulatory nuance (calendar-month rule, advisory versus regulatory, hours never overriding a calendar limit).</li>
+        <li class="g-pro">Unconfirmed readings never move what is due; bulk confirm is strict and says what it skipped.</li>
+        <li class="g-pro">Offline-first phone app with durable queues, plain wording and a conflict screen that never decides silently.</li>
+        <li class="g-pro">The record room model: scoped, expiring, revocable, view-counted, confirmed entries only.</li>
+        <li class="g-pro">Domain-correct details: VOR check fields per 91.171(d), the meter-replaced prompt, the carry-aboard card.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="g-h3">The current design system, judged</h3>
+      <p>"The Glass Cockpit" is coherent on paper: annunciator colours reserved for status, one accent, hairlines instead of shadows, monospace for every number. In practice it borrows the look of the tool pilots fly with, which makes a records app feel like an instrument it is not, and it pushes type down to sizes that suit a panel at arm's length rather than a person reading a document. It is also the category's most common look (dark navy and sky blue), so it does not distinguish MyTailLog from ForeFlight or SquawkFree. The redesign keeps its discipline about colour meaning and numbers, and drops the costume.</p>
+    </div>
+  </div>
+
+  <h2 class="g-h2" id="missing">Capabilities to add</h2>
+  <p class="g-prose">Ranked by value to a solo piston owner and by how many competitors now set the expectation. Items marked "in all three" are drawn in every direction's mockups.</p>
+  <div class="g-tablewrap"><table class="g-table">
+    <thead><tr><th>Capability</th><th>Who has it</th><th>In the mockups</th></tr></thead>
+    <tbody>
+      <tr><td>Hours without typing: photograph the tach</td><td>HobbsMate; flyGarmin push via Coflyt, TBX, PlaneLogiX</td><td>In all three (phone)</td></tr>
+      <tr><td>Pick a date: what lapses by then</td><td>CAMP, FL3XX (enterprise)</td><td>In all three</td></tr>
+      <tr><td>A home that changes with the situation</td><td>Nobody (Flighty, outside aviation)</td><td>In all three</td></tr>
+      <tr><td>"First read" account after the first logbook</td><td>Nobody</td><td>In all three</td></tr>
+      <tr><td>Squawk with photo, sent to the mechanic as a link</td><td>FlightBoss, Crewchief</td><td>In all three</td></tr>
+      <tr><td>Document expiries on the due list (registration, insurance)</td><td>Crewchief, FlightBoss, BetterPlane</td><td>In all three</td></tr>
+      <tr><td>"Do these together" for one shop visit</td><td>FlightGuard (claimed)</td><td>In all three</td></tr>
+      <tr><td>Written versus calculated engine and prop times</td><td>Runup, TBX LogIQ</td><td>In all three</td></tr>
+      <tr><td>Reminders that carry the whole answer; a lock-screen widget</td><td>aeroLogbook (widgets only)</td><td>In all three (phone)</td></tr>
+      <tr><td>Record compliance and keep AD history</td><td>Most trackers</td><td>In all three</td></tr>
+      <tr><td>QR code and view log on a shared link</td><td>AirLogbooks (QR), Runup (analytics)</td><td>In all three</td></tr>
+      <tr><td>Reading finishes in the background and tells you</td><td>Runup</td><td>In all three</td></tr>
+      <tr><td>Pilot currency and medical beside aircraft status</td><td>AirLogbooks, SquawkFree, HobbsMate</td><td>Not drawn; a reasonable later addition that does not change the structure</td></tr>
+      <tr><td>Cost of ownership and receipts</td><td>HobbsMate, Coflyt</td><td>Not drawn; outside the current product scope</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="g-h2" id="principles">What the redesign must do</h2>
+  <ol class="g-prose an-list">
+    <li><b>Answer first.</b> Every home screen opens with a sentence that says what the records show, then the evidence.</li>
+    <li><b>Both limits, one list.</b> Calendar and hours side by side, the one that bites first named, hours turned into "about" a date.</li>
+    <li><b>The page is always one step away.</b> A citation chip beside every derived value, everywhere it appears.</li>
+    <li><b>Five places, not fifteen.</b> One Add action and one Search-or-ask field replace most of the sidebar.</li>
+    <li><b>One pipeline from paper to index</b>, with a visible queue, background reading and a single review desk.</li>
+    <li><b>Readable by a 60-year-old in a hangar.</b> Body text at 16 to 17px, light themes, 44pt targets, the main action within thumb reach.</li>
+    <li><b>Never a verdict.</b> The paper logbook is the record. The app says what the records show and never "airworthy".</li>
+    <li><b>An identity that is not the category's.</b> No navy-and-sky cockpit, no parchment, no annunciator lamps. Each direction takes its look from something owners know that the category has not used.</li>
+  </ol>
+</main>
+<script src="shared/gallery.js"></script>
+</body>
+</html>

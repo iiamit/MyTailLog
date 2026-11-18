@@ -1,0 +1,1421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Section Tabs web screens: status, capture, review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Libre+Franklin:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,700&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<link rel="stylesheet" href="system.css">
+<style>
+/* page-local additions for direction B, built from system.css tokens only */
+.db .b-tab.setup { background: #3a3f46; }
+.db .b-railhd { font-size: 13px; color: var(--on-cover-2); padding: 16px 4px 4px; }
+.db .b-railac { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-right: 14px; border-radius: 5px; color: var(--on-cover); text-decoration: none; font-weight: 700; font-size: 15px; line-height: 1.25; }
+.db .b-railac small { display: block; font-weight: 500; font-size: 13px; color: var(--on-cover-2); }
+.db .b-railac:hover { background: var(--cover-2); }
+.db .b-st.low::before { border: 2px solid var(--ink); }
+.db .b-st.low { color: var(--ink); }
+.db .b-tag { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 1px solid var(--rule-2); border-radius: 3px; font-size: 13px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.db .b-chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.db .b-chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--rule-2); border-radius: 4px; font-size: 14px; font-weight: 600; color: var(--ink-2); background: var(--leaf); }
+.db .b-chip b { font-weight: 800; color: var(--ink); }
+.db .b-chip.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); color: var(--ink); }
+.db .b-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.db .b-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.db .b-bar { height: 10px; background: var(--leaf-2); border-radius: 1px; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px var(--rule); }
+.db .b-bar > b { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
+.db .b-scrimw { position: absolute; inset: 0; background: rgba(15,16,20,.5); }
+.db .b-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 470px; background: var(--leaf); padding: 26px 30px; display: flex; flex-direction: column; gap: 16px; box-shadow: -1px 0 0 rgba(0,0,0,.3); }
+.db .b-drop { border: 2px dashed var(--rule-2); border-radius: 4px; background: var(--leaf-2); padding: 30px 24px; display: grid; justify-items: center; gap: 6px; text-align: center; }
+.db .b-thumbs { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 18px 14px; }
+.db .b-thumb { display: grid; gap: 6px; font-size: 13px; line-height: 1.3; position: relative; align-content: start; min-width: 0; }
+.db .b-thumb .b-st { white-space: normal; }
+.db .b-thumb > span:last-child { display: grid; gap: 2px; justify-items: start; }
+.db .b-thumb > .b-check { z-index: 1; }
+/* review desk field rows */
+.db .b-frow { display: grid; grid-template-columns: 112px 1fr auto; gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: center; }
+.db .b-frow > b { font-size: 14px; color: var(--ink-2); }
+.db .b-frow.sel { background: var(--leaf-2); box-shadow: inset 4px 0 0 var(--ink); margin: 0 -16px; padding: 16px; align-items: start; }
+.db .b-frow .ok { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink-2); font-weight: 600; }
+.db .b-outs { display: flex; gap: 6px; flex-wrap: wrap; }
+.db .b-outs .b-btn .b-key { margin-left: 2px; }
+.db .b-btn .b-key { background: transparent; color: inherit; border-color: currentColor; opacity: .7; }
+.db .b-thumb .scan { aspect-ratio: .72; --lh: 8px; --top: 12px; }
+.db .b-thumb.sel .scan { outline: 3px solid var(--ink); outline-offset: 2px; }
+.db .b-thumb .b-check { position: absolute; top: 6px; left: 6px; background: var(--leaf); }
+.db .b-thumb .b-check.on { background: var(--ink); }
+.db .b-spine { width: 128px; height: 156px; background: var(--cover); border-radius: 4px 2px 2px 4px; position: relative; color: var(--on-cover); padding: 12px 10px; font: 800 15px/1.1 var(--f-app); letter-spacing: .02em; }
+.db .b-spine > span { position: absolute; right: -9px; width: 9px; border-radius: 0 2px 2px 0; }
+.db .b-qr { width: 148px; height: 148px; padding: 8px; background: #fff; border: 1px solid var(--rule-2); border-radius: 3px; flex: none; }
+.db .b-qr svg { width: 100%; height: 100%; fill: var(--ink); }
+.db .b-photo { border-radius: 3px; position: relative; overflow: hidden; background:
+  radial-gradient(circle at 46% 58%, #1d1f22 0 23%, #3b3e43 23.5% 27%, #121315 27.5% 30%, transparent 30.5%),
+  linear-gradient(160deg, #8d8f8c 0%, #6c6f6f 38%, #4a4c4d 60%, #2f3133 100%); }
+.db .b-photo::after { content: ""; position: absolute; left: 30%; top: 40%; width: 34%; height: 9%; background: #a6a39a; border-radius: 2px; transform: rotate(-8deg); box-shadow: 0 2px 0 #55524b; }
+.db .b-photo.lens { background: radial-gradient(ellipse at 50% 50%, #c8473a 0 26%, #8d2a21 27% 34%, transparent 35%), linear-gradient(170deg, #e8e8e4, #b7b9b6 70%, #9c9e9b); }
+.db .b-photo.lens::after { left: 38%; top: 36%; width: 3px; height: 30%; background: #f4f4f1; transform: rotate(24deg); box-shadow: none; }
+.db .b-kbd-row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--ink-3); align-items: center; }
+.db .b-kbd-row span { display: inline-flex; gap: 6px; align-items: center; }
+/* sign-in: the closed binder */
+.db.b-signin { background: var(--cover); display: grid; grid-template-columns: 1fr 600px 170px; align-items: center; }
+.db .b-coverside { color: var(--on-cover); padding: 0 70px 0 96px; display: grid; gap: 18px; align-content: center; }
+.db .b-coverside .b-mark { font: 800 44px/1 var(--f-app); letter-spacing: -0.01em; }
+.db .b-coverside p { margin: 0; font-size: 19px; line-height: 1.5; color: var(--on-cover); max-width: 30ch; }
+.db .b-coverside p.small { font-size: 15px; color: var(--on-cover-2); }
+.db .b-signleaf { background: var(--leaf); border-radius: 3px; padding: 46px 52px 40px; display: grid; gap: 16px; box-shadow: 0 1px 0 rgba(0,0,0,.25); position: relative; }
+.db .b-edge { position: absolute; left: 100%; top: 34px; display: grid; gap: 6px; }
+.db .b-edge > span { width: 30px; border-radius: 0 4px 4px 0; display: block; }
+.db .b-or { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; font-size: 14px; color: var(--ink-3); }
+.db .b-or::before, .db .b-or::after { content: ""; border-top: 1px solid var(--rule); }
+/* grouped tables and limits */
+.db .b-table tr.grp td { padding: 22px 0 7px; border-bottom: 2px solid var(--ink); font-weight: 700; background: none; box-shadow: none; }
+.db .b-table tr.grp td small { display: inline; font-weight: 400; color: var(--ink-3); font-size: 14px; margin-left: 8px; }
+.db .b-table tr.grp:first-child td { padding-top: 4px; }
+.db .b-first { font-size: 12px; font-weight: 700; color: var(--ink); border: 1px solid var(--ink); border-radius: 2px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+.db .b-na { color: var(--ink-3); }
+.db .b-table td.lim { white-space: nowrap; width: 150px; }
+.db .b-table td.lim small { display: block; font-size: 14px; color: var(--ink-3); }
+</style>
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a><a href="../analysis.html">Analysis</a>
+  <a href="../a/index.html">A · Paint Scheme</a><a href="../b/index.html" aria-current="page">B · Section Tabs</a><a href="../c/index.html">C · Line Diagram</a>
+  <a href="../d/index.html">D · Tabbed Binder</a>
+</div></nav>
+<nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
+  <a href="index.html">Direction overview</a><a href="web1.html" aria-current="page">Web: status, capture, review</a><a href="web2.html">Web: records, aircraft, sharing</a><a href="mobile.html">Phone and tablet</a>
+</div></nav>
+<main class="g-wrap">
+<h1 class="g-h1">Section Tabs on the web: status, capture and review</h1>
+<p class="g-lede">Eighteen desk screens in the binder: getting the first aircraft in, reading what is due, and turning paper pages into confirmed entries. Every screen keeps the tab rail, floods the board with its section's colour, and puts the proving page on the right-hand leaf.</p>
+<ul class="g-index">
+  <li><a href="#b-w-signin">Sign in</a></li>
+  <li><a href="#b-w-hangar">Hangar</a></li>
+  <li><a href="#b-w-add">Add an aircraft</a></li>
+  <li><a href="#b-w-setup">First session setup</a></li>
+  <li><a href="#b-w-new">New aircraft home</a></li>
+  <li><a href="#b-w-home">Home</a></li>
+  <li><a href="#b-w-annual">Home: annual month</a></li>
+  <li><a href="#b-w-clear">Home: all clear</a></li>
+  <li><a href="#b-w-due">Due list</a></li>
+  <li><a href="#b-w-item">Item and mark done</a></li>
+  <li><a href="#b-w-date">Pick a date</a></li>
+  <li><a href="#b-w-ads">ADs and SBs</a></li>
+  <li><a href="#b-w-findad">Find ADs</a></li>
+  <li><a href="#b-w-squawks">Squawks</a></li>
+  <li><a href="#b-w-addpages">Add pages</a></li>
+  <li><a href="#b-w-pages">Pages library</a></li>
+  <li><a href="#b-w-review">Review desk</a></li>
+  <li><a href="#b-w-reviewall">Review all</a></li>
+  <li><a href="#b-w-firstread">First read</a></li>
+</ul>
+
+<h2 class="g-h2" id="b-getting-in">Getting in</h2>
+<p class="g-prose">The owner signs in, finds their aircraft on the shelf, and adds a new one in three short screens that end with a first verdict. Today's onboarding asks for the meters twice, says "three logbooks" while making five, and opens on a demo aircraft that pushes the real first action to the end of the grid. Here the hangar leads with each aircraft's one-line verdict, the add screen names all five books, and setup is one screen with three answers.</p>
+
+<figure class="g-shot" id="b-w-signin">
+  <figcaption><b>Sign in</b><span>The closed binder: the cover carries one calm line on what the app is, the first leaf carries the four ways in. Email link is the default; a password is one tap away.</span><em>Replaces: /login</em></figcaption>
+  <div class="g-stage"><div class="artboard db sec-setup b-signin fixed" style="--w:1440;--h:900">
+    <div class="b-coverside">
+      <div class="b-mark">MyTailLog</div>
+      <p>Your aircraft's logbooks, photographed, read and searchable, with what is due worked out from the pages themselves.</p>
+      <p class="small">The paper logbooks stay the legal record. MyTailLog is the index to them. Free and open source under the MIT licence.</p>
+    </div>
+    <section class="b-signleaf">
+      <div class="b-edge" aria-hidden="true">
+        <span style="height:46px;background:var(--h-status)"></span><span style="height:132px;background:var(--h-books)"></span><span style="height:84px;background:var(--h-maint)"></span><span style="height:62px;background:var(--h-aircraft)"></span><span style="height:52px;background:var(--h-docs)"></span><span style="height:46px;background:var(--h-share)"></span>
+      </div>
+      <div>
+        <h1 class="b-title" style="margin:0 0 6px">Sign in</h1>
+        <p class="muted" style="margin:0">Use the account you made before, or make one now. It takes a minute.</p>
+      </div>
+      <a class="b-btn ghost" href="#" style="height:48px;font-size:16px">Continue with Google</a>
+      <a class="b-btn ghost" href="#" style="height:48px;font-size:16px">Continue with Apple</a>
+      <div class="b-or">or with your email</div>
+      <div class="b-seg" style="justify-self:start"><span class="on">Email me a link</span><span>Use a password</span></div>
+      <div class="b-field"><label for="si-email">Email</label><div class="b-input focus" id="si-email">dana@example.com</div></div>
+      <a class="b-btn" href="#" style="height:48px;font-size:16px"><i data-lucide="mail"></i>Email me a sign-in link</a>
+      <p class="b-meta" style="margin:0">The link signs you in on this computer and works once. Nothing to remember.</p>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--rule);padding-top:14px;font-size:15px"><a href="#">New here? Create an account</a><a href="#">Look around the demo aircraft</a></div>
+    </section>
+    <div></div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-hangar">
+  <figcaption><b>Hangar</b><span>Each aircraft is a binder on the shelf, its tab edges showing how much each section holds, beside its one-line verdict. The demo aircraft is marked as such; adding an aircraft and restoring a backup are the board's two actions.</span><em>Replaces: /dashboard</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-setup fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>MyTailLog</b><span>Dana Morgan</span></div>
+      <a class="b-tab setup on" href="#" style="height:58px">Hangar<small>2 aircraft</small></a>
+      <div class="b-railhd">Aircraft</div>
+      <a class="b-railac" href="#"><i data-lucide="plane"></i><span>N734DM<small>Cessna 172N</small></span></a>
+      <a class="b-railac" href="#"><i data-lucide="plane"></i><span>N4321J<small>Piper Cherokee 140</small></span></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Hangar</h1>
+        <div class="b-boardacts"><a class="b-btn on-mat sm" href="#"><i data-lucide="upload"></i>Import a backup</a><a class="b-btn on-board sm" href="#"><i data-lucide="plus"></i>Add an aircraft</a></div>
+      </div>
+      <div class="b-leaves one">
+        <section class="b-leaf" style="padding-top:8px">
+          <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:34px;padding:26px 0;border-bottom:1px solid var(--rule);align-items:start">
+            <div class="b-spine">N734DM<span style="top:10px;height:16px;background:var(--h-status)"></span><span style="top:30px;height:44px;background:var(--h-books)"></span><span style="top:78px;height:28px;background:var(--h-maint)"></span><span style="top:110px;height:18px;background:var(--h-aircraft)"></span><span style="top:131px;height:12px;background:var(--h-docs)"></span></div>
+            <div>
+              <div style="display:flex;gap:10px;align-items:center"><h2 class="b-h2" style="font-size:24px">N734DM</h2><span class="b-tag">Demo aircraft</span></div>
+              <p class="b-meta" style="margin:2px 0 12px;font-size:15px">1978 Cessna 172N · S/N 17269841 · you are the owner</p>
+              <p class="b-lede" style="max-width:none;margin:0 0 14px"><b>One check has lapsed, for IFR only.</b> Next is an oil change, in 9.7 hours.</p>
+              <div class="b-actions" style="gap:18px"><span class="b-st bad">1 overdue</span><span class="b-st soon">3 due soon</span><span class="b-meta" style="color:var(--ink-2);font-weight:600">6 pages waiting for review</span></div>
+            </div>
+            <div style="display:grid;gap:14px">
+              <dl class="b-kv" style="grid-template-columns:96px 1fr"><dt>Tach</dt><dd>4212.4 <span class="muted" style="font-weight:400">read Nov 14</span></dd><dt>Entries</dt><dd>212 confirmed</dd><dt>Records</dt><dd>1978 to 2026</dd></dl>
+              <a class="b-btn ghost" href="#">Open N734DM</a>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:150px 1fr 300px;gap:34px;padding:26px 0;border-bottom:1px solid var(--rule);align-items:start">
+            <div class="b-spine">N4321J<span style="top:10px;height:14px;background:var(--h-status)"></span><span style="top:28px;height:26px;background:var(--h-books)"></span><span style="top:58px;height:22px;background:var(--h-maint)"></span><span style="top:84px;height:14px;background:var(--h-aircraft)"></span><span style="top:102px;height:10px;background:var(--h-docs)"></span></div>
+            <div>
+              <div style="display:flex;gap:10px;align-items:center"><h2 class="b-h2" style="font-size:24px">N4321J</h2><span class="b-tag"><i data-lucide="users"></i>Shared with you, editor</span></div>
+              <p class="b-meta" style="margin:2px 0 12px;font-size:15px">1966 Piper Cherokee 140 · you can add and confirm entries</p>
+              <p class="b-lede" style="max-width:none;margin:0 0 14px"><b>Nothing tracked is overdue.</b> Two items are coming due.</p>
+              <div class="b-actions" style="gap:18px"><span class="b-st soon">2 due soon</span><span class="b-meta">No pages waiting</span></div>
+            </div>
+            <div style="display:grid;gap:14px">
+              <dl class="b-kv" style="grid-template-columns:96px 1fr"><dt>Tach</dt><dd>2954.6 <span class="muted" style="font-weight:400">read Nov 9</span></dd><dt>Entries</dt><dd>96 confirmed</dd><dt>Records</dt><dd>1966 to 2026</dd></dl>
+              <a class="b-btn ghost" href="#">Open N4321J</a>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:34px;padding:22px 0 6px">
+            <a href="#" style="display:grid;grid-template-columns:auto 1fr;gap:4px 14px;text-decoration:none;color:var(--ink)"><i data-lucide="plus" style="width:22px;height:22px;margin-top:2px"></i><b style="font-size:17px">Add an aircraft</b><span></span><span class="muted">Type the tail number. The FAA registry fills in the rest and we set up its five logbooks.</span></a>
+            <a href="#" style="display:grid;grid-template-columns:auto 1fr;gap:4px 14px;text-decoration:none;color:var(--ink)"><i data-lucide="archive" style="width:22px;height:22px;margin-top:2px"></i><b style="font-size:17px">Import a backup</b><span></span><span class="muted">Restore an aircraft from a MyTailLog .zip archive: scans, entries and status, as they were.</span></a>
+          </div>
+          <p class="b-meta" style="margin:26px 0 0;border-top:1px solid var(--rule);padding-top:14px">MyTailLog is an index of your logbooks. The paper logbooks remain the record (14 CFR 91.417).</p>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<figure class="g-shot" id="b-w-add">
+  <figcaption><b>Add an aircraft</b><span>The tail number is looked up in the FAA registry and fills make, model, year, serial and engine, each marked as coming from the registry. The right leaf shows the five logbooks and the four inspections the new binder starts with. No meter readings here; they are asked once, on the next screen.</span><em>Replaces: /aircraft/enroll</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-setup" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>MyTailLog</b><span>Dana Morgan</span></div>
+      <a class="b-tab setup on" href="#" style="height:58px">Hangar<small>2 aircraft</small></a>
+      <div class="b-railhd">Aircraft</div>
+      <a class="b-railac" href="#"><i data-lucide="plane"></i><span>N734DM<small>Cessna 172N</small></span></a>
+      <a class="b-railac" href="#"><i data-lucide="plane"></i><span>N4321J<small>Piper Cherokee 140</small></span></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Add an aircraft</h1>
+        <div class="b-boardacts"><a class="b-btn on-mat sm" href="#">Cancel</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.45fr 1fr">
+        <section class="b-leaf">
+          <div class="b-hung" style="--hung:150px"><h3>Tail number</h3>
+            <div style="display:grid;gap:12px">
+              <div style="display:flex;gap:8px"><div class="b-input" style="width:220px;font-weight:700;font-size:18px">N734DM</div><a class="b-btn ghost" href="#"><i data-lucide="refresh-cw"></i>Look up again</a></div>
+              <div class="b-well" style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="circle-check" style="margin-top:3px"></i><div><b>Found in the FAA aircraft registry.</b> Registered to Dana Morgan, certificate valid to Mar 31, 2029. We filled in what the registry knows. Check it against the data plate.</div></div>
+            </div>
+          </div>
+          <div class="b-hung" style="--hung:150px"><h3>From the registry<small>Change anything that is wrong</small></h3>
+            <div class="b-grid2">
+              <div class="b-field"><label>Make <span class="muted" style="font-weight:500">FAA registry</span></label><div class="b-input">Cessna</div></div>
+              <div class="b-field"><label>Model <span class="muted" style="font-weight:500">FAA registry</span></label><div class="b-input">172N</div></div>
+              <div class="b-field"><label>Year <span class="muted" style="font-weight:500">FAA registry</span></label><div class="b-input">1978</div></div>
+              <div class="b-field"><label>Airframe serial <span class="muted" style="font-weight:500">FAA registry</span></label><div class="b-input">17269841</div></div>
+              <div class="b-field" style="grid-column:1/-1"><label>Engine <span class="muted" style="font-weight:500">FAA registry</span></label><div class="b-input">Lycoming O-320-H2AD</div></div>
+            </div>
+          </div>
+          <div class="b-hung" style="--hung:150px"><h3>From you<small>Optional, add any later</small></h3>
+            <div class="b-grid2">
+              <div class="b-field"><label>Engine serial</label><div class="b-input">L-14238-27A</div></div>
+              <div class="b-field"><label>Propeller</label><div class="b-input">McCauley 1C160/DTM7557</div></div>
+              <div class="b-field"><label>Propeller serial</label><div class="b-input">EM-77341</div></div>
+              <div class="b-field"><label>Home airport <span class="muted" style="font-weight:500">Private to you</span></label><div class="b-input muted">Optional</div></div>
+            </div>
+          </div>
+          <div class="b-actions" style="border-top:2px solid var(--ink);padding-top:18px;gap:16px"><a class="b-btn" href="#">Add N734DM</a><span class="b-meta">Next: today's tach and your last annual, on one screen.</span></div>
+        </section>
+        <section class="b-leaf">
+          <h2 class="b-h2">N734DM gets five logbooks</h2>
+          <p class="muted" style="margin:4px 0 14px">One for each paper book you keep. Pages go into the book they came from.</p>
+          <div style="display:grid;gap:0">
+            <div class="b-row" style="grid-template-columns:34px 1fr;align-items:start"><span style="width:28px;height:34px;background:var(--h-books);color:#1c1600;display:grid;place-items:center;border-radius:2px 4px 4px 2px"><i data-lucide="book-open"></i></span><div><b>Airframe</b><div class="b-meta">Inspections, repairs, ADs and alterations to the airframe</div></div></div>
+            <div class="b-row" style="grid-template-columns:34px 1fr;align-items:start"><span style="width:28px;height:34px;background:var(--h-books);color:#1c1600;display:grid;place-items:center;border-radius:2px 4px 4px 2px"><i data-lucide="book-open"></i></span><div><b>Engine</b><div class="b-meta">Lycoming O-320-H2AD, S/N L-14238-27A</div></div></div>
+            <div class="b-row" style="grid-template-columns:34px 1fr;align-items:start"><span style="width:28px;height:34px;background:var(--h-books);color:#1c1600;display:grid;place-items:center;border-radius:2px 4px 4px 2px"><i data-lucide="book-open"></i></span><div><b>Propeller</b><div class="b-meta">McCauley 1C160/DTM7557, S/N EM-77341</div></div></div>
+            <div class="b-row" style="grid-template-columns:34px 1fr;align-items:start"><span style="width:28px;height:34px;background:var(--h-books);color:#1c1600;display:grid;place-items:center;border-radius:2px 4px 4px 2px"><i data-lucide="book-open"></i></span><div><b>Avionics</b><div class="b-meta">Radios, transponder, ELT and GPS work, if kept apart</div></div></div>
+            <div class="b-row" style="grid-template-columns:34px 1fr;align-items:start"><span style="width:28px;height:34px;background:var(--h-books);color:#1c1600;display:grid;place-items:center;border-radius:2px 4px 4px 2px"><i data-lucide="book-open"></i></span><div><b>Other</b><div class="b-meta">W&amp;B sheets, 8130-3 tags, AD reports. Filed and applied, not split into entries.</div></div></div>
+          </div>
+          <div style="margin-top:26px;border-top:2px solid var(--ink);padding-top:14px"><h3 style="margin:0 0 6px;font-size:16px">Tracked from day one</h3>
+            <table class="b-table">
+              <tr><td class="name">Annual inspection<small>91.409 · 12 calendar months</small></td><td class="r"><span class="b-st unk">Needs a date</span></td></tr>
+              <tr><td class="name">Transponder<small>91.413 · 24 calendar months</small></td><td class="r"><span class="b-st unk">Needs a date</span></td></tr>
+              <tr><td class="name">Pitot-static and altimeter<small>91.411 · 24 months · IFR only</small></td><td class="r"><span class="b-st unk">Needs a date</span></td></tr>
+              <tr><td class="name">ELT inspection<small>91.207 · 12 months</small></td><td class="r"><span class="b-st unk">Needs a date</span></td></tr>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-setup">
+  <figcaption><b>First session setup</b><span>Three answers on one screen: today's meters, the last annual (typed, or found on a photographed page shown on the right leaf), and reminders switched on. The bottom of the leaf fills in as each answer lands, ending in the aircraft's first verdict.</span><em>Replaces: /aircraft/[id]/start (three steps, no back)</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>Setting up</small></a>
+      <a class="b-tab books" href="#" style="height:62px">Logbooks<small>5 books, 1 page</small></a>
+      <a class="b-tab maint" href="#" style="height:62px">Maintenance<small>4 tracked items</small></a>
+      <a class="b-tab aircraft" href="#" style="height:62px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:52px">Documents<small>Empty</small></a>
+      <a class="b-tab share" href="#" style="height:52px">Share<small>Not shared</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Set up N734DM</h1>
+        <div class="b-boardacts"><a href="#" style="color:var(--on-board)">Skip for now</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.4fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede" style="max-width:44ch">Three answers and <b>your status is ready.</b> The rest of the logbooks can come later.</p>
+          <div class="b-hung" style="--hung:160px"><h3>Meters today<small>Hour items count down from these</small></h3>
+            <div style="display:grid;grid-template-columns:170px 170px 1fr;gap:14px;align-items:end">
+              <div class="b-field"><label>Tach</label><div class="b-input" style="font-weight:600">4212.4</div></div>
+              <div class="b-field"><label>Hobbs</label><div class="b-input" style="font-weight:600">4680.4</div></div>
+              <span class="b-meta" style="padding-bottom:10px">No hobbs? The tach is enough.</span>
+            </div>
+          </div>
+          <div class="b-hung" style="--hung:160px"><h3>Last annual<small>Usually the last inspection in the airframe logbook</small></h3>
+            <div style="display:grid;gap:12px">
+              <div class="b-seg" style="justify-self:start"><span>Type the date</span><span class="on">Find it on a scanned page</span></div>
+              <div class="b-well" style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center">
+                <div><b style="font-size:17px">Jul 14, 2026 at tach 4168.3</b><div style="margin:2px 0"><span class="b-truth">Read by AI, not yet confirmed</span></div><div class="b-meta">Annual inspection on Airframe p. 60, signed D. Alvarez, IA. Check it against the page.</div></div>
+                <a class="b-btn ghost sm" href="#"><i data-lucide="check"></i>That's right</a>
+              </div>
+            </div>
+          </div>
+          <div class="b-hung" style="--hung:160px"><h3>Reminders</h3>
+            <div style="display:flex;gap:14px;align-items:flex-start"><span class="b-toggle on" style="margin-top:2px"></span><div>Email me 30 days or 10 hours before anything comes due<div class="b-meta">To dana@example.com. You can change the lead time for each item later.</div></div></div>
+          </div>
+          <div class="b-hung" style="--hung:160px"><h3>Your first status</h3>
+            <div>
+              <p style="font-size:19px;line-height:1.4;margin:0 0 8px;font-weight:600">The annual is current until Jul 31, 2027. Three other inspections need their last date.</p>
+              <table class="b-table due">
+                <tr><td class="name">Annual inspection<small>91.409 · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>Jul 31, 2027</td><td>255 days</td><td><span class="b-st ok">Current</span></td></tr>
+                <tr><td class="name">Transponder<small>91.413 · every 24 months</small></td><td><a href="#">Add date</a></td><td></td><td><span class="b-st unk">Unknown</span></td></tr>
+                <tr><td class="name">Pitot-static and altimeter<small>91.411 · IFR only</small></td><td><a href="#">Add date</a></td><td></td><td><span class="b-st unk">Unknown</span></td></tr>
+                <tr><td class="name">ELT inspection<small>91.207 · every 12 months</small></td><td><a href="#">Add date</a></td><td></td><td><span class="b-st unk">Unknown</span></td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="b-actions" style="border-top:2px solid var(--ink);padding-top:18px;gap:16px"><a class="b-btn" href="#">Done, show my status</a><span class="b-meta">Leave the three dates blank and the scanned pages will find them.</span></div>
+        </section>
+        <section class="b-leaf mat">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div class="b-label"><b>Airframe logbook, page 60</b>Photographed just now · read by AI, not yet confirmed</div>
+            <div style="display:flex;gap:6px"><a class="b-btn on-mat sm" href="#"><i data-lucide="zoom-in"></i>Zoom</a><a class="b-btn on-mat sm" href="#"><i data-lucide="camera"></i>Retake</a></div>
+          </div>
+          <div style="flex:1;min-height:560px;position:relative">
+            <div class="scan photo" style="--lh:26px;--top:52px;--cols:17% 14% 1fr 24%;aspect-ratio:auto;position:absolute;inset:0">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>6/20/26</span><span>4160.2</span><span>Repl. L/H nav bulb.</span><span class="black">M Torres</span>
+                <span></span><span></span><span>Ops ck good.</span><span class="black">A&amp;P 3667012</span>
+                <span class="gap"></span>
+                <span>7/14/26</span><span>4168.3</span><span>Annual insp. IAW</span><span class="black">D. Alvarez</span>
+                <span></span><span></span><span>FAR 43 App. D.</span><span class="black">A&amp;P 3105582</span>
+                <span></span><span></span><span>AD 2011-10-09 c/w.</span><span class="black">IA</span>
+                <span></span><span></span><span>Repl. alt. belt.</span><span></span>
+                <span class="gap"></span>
+                <span>10/12/26</span><span>4198.7</span><span>VOR ck +1°</span><span class="black">D Morgan</span>
+              </div>
+              <div class="scan-hl" style="left:1%;top:130px;width:98%;height:104px"></div>
+              <div class="scan-page">60</div>
+            </div>
+          </div>
+          <div class="b-label paper" style="color:var(--on-cover);font-size:16px">“Annual insp. IAW FAR 43 App. D. AD 2011-10-09 c/w. Repl. alt. belt.”</div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-new">
+  <figcaption><b>New aircraft home, nothing scanned yet</b><span>The status board on day one: what is known and where it came from, one item current, three waiting for a date, and the right leaf given over to the next step. No empty gauges; the coverage rows say plainly that no pages are in yet.</span><em>Replaces: /aircraft/[id] with an empty index</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>3 need a date</small></a>
+      <a class="b-tab books" href="#" style="height:62px">Logbooks<small>5 books, 1 page</small></a>
+      <a class="b-tab maint" href="#" style="height:62px">Maintenance<small>4 tracked items</small></a>
+      <a class="b-tab aircraft" href="#" style="height:62px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:52px">Documents<small>Empty</small></a>
+      <a class="b-tab share" href="#" style="height:52px">Share<small>Not shared</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Status</h1>
+        <nav class="b-subtabs"><a class="on" href="#">What's due</a><a href="#">Forecast</a><a href="#">Pick a date</a></nav>
+        <div class="b-boardacts">Tach 4212.4, entered today<a class="b-btn on-board sm" href="#"><i data-lucide="plane-landing"></i>Log a flight</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.6fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede" style="max-width:40ch"><b>Your annual is current</b> until Jul 31, 2027. Three inspections need a last date before they can be counted.</p>
+          <div class="b-hung"><h3>Tracked<small>4 items</small></h3>
+            <table class="b-table due">
+              <tr><td class="name">Annual inspection<small>91.409 · every 12 months · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>Jul 31, 2027</td><td>255 days</td><td><span class="b-st ok">Current</span></td></tr>
+              <tr><td class="name">Transponder<small>91.413 · every 24 months</small></td><td><a href="#">Add date</a></td><td></td><td><span class="b-st unk">Unknown</span></td></tr>
+              <tr><td class="name">Pitot-static and altimeter<small>91.411 · every 24 months · IFR only</small></td><td><a href="#">Add date</a></td><td></td><td><span class="b-st unk">Unknown</span></td></tr>
+              <tr><td class="name">ELT inspection<small>91.207 · every 12 months</small></td><td><a href="#">Add date</a></td><td></td><td><span class="b-st unk">Unknown</span></td></tr>
+            </table>
+          </div>
+          <div class="b-hung"><h3>What we know<small>And where it came from</small></h3>
+            <dl class="b-kv" style="grid-template-columns:120px 1fr"><dt>Aircraft</dt><dd>1978 Cessna 172N, S/N 17269841 <span class="muted" style="font-weight:400">FAA registry</span></dd><dt>Engine</dt><dd>Lycoming O-320-H2AD, S/N L-14238-27A <span class="muted" style="font-weight:400">you</span></dd><dt>Meters</dt><dd>Tach 4212.4, hobbs 4680.4 <span class="muted" style="font-weight:400">you, today</span></dd><dt>Last annual</dt><dd>Jul 14, 2026 at 4168.3 <a class="b-cite" href="#">Airframe p. 60</a> <span class="b-truth conf">Confirmed by you</span></dd></dl>
+          </div>
+          <div class="b-hung"><h3>Not tracked yet</h3>
+            <p style="margin:0" class="muted">Oil changes, ADs, the ELT battery and engine time since overhaul appear here as the logbooks are read. Nothing is guessed.</p>
+          </div>
+        </section>
+        <section class="b-leaf">
+          <h2 class="b-h2">Next, put the logbooks in</h2>
+          <p class="muted" style="margin:4px 0 16px">Start with the airframe logbook and work back from the newest page. Every page you confirm fills in more of what is due.</p>
+          <a class="b-btn" href="#" style="width:100%;height:48px"><i data-lucide="qr-code"></i>Scan pages with your phone</a>
+          <div class="b-row" style="margin-top:10px"><div><b>Already scanned?</b><div class="b-meta">Drop PDFs or photos. Long PDFs are split into pages.</div></div><a class="b-btn ghost sm" href="#"><i data-lucide="upload"></i>Upload pages</a></div>
+          <div class="b-row"><div><b>Know the dates?</b><div class="b-meta">Type the last transponder, pitot-static and ELT dates.</div></div><a class="b-btn ghost sm" href="#">Add dates</a></div>
+          <div class="b-hung" style="--hung:86px;margin-top:20px;border-top:2px solid var(--ink)"><h3>Pages in</h3>
+            <div class="b-cov" style="grid-template-columns:84px 1fr 64px">
+              <span>Airframe</span><i><b style="left:97%;width:3%"></b></i><span class="muted">1 page</span>
+              <span>Engine</span><i></i><span class="muted">none</span>
+              <span>Propeller</span><i></i><span class="muted">none</span>
+              <span>Avionics</span><i></i><span class="muted">none</span>
+              <span>Other</span><i></i><span class="muted">none</span>
+            </div>
+          </div>
+          <p class="b-meta" style="margin:16px 0 0">AI reads up to 50 pages a day for free. Nothing it reads counts until you confirm it.</p>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<h2 class="g-h2" id="b-what-is-due">What is due</h2>
+<p class="g-prose">The owner opens the binder to find out where things stand, then works the list: marking items done, checking a date ahead of a trip, keeping ADs straight. Today the status page is read-only and hides below 1536px, the forecast and the AD page disagree on what counts, and nothing can be marked done where it is read. Here Status opens on a sentence, the Maintenance tab holds the one list with both limits and a "Mark done" on every row, and each due date carries the page it was counted from.</p>
+
+<figure class="g-shot" id="b-w-home">
+  <figcaption><b>Home: Status</b><span>As on the direction overview, with only the scan reflowed so the lit entry lines up. The verdict in words, then one table with both limits grouped by horizon; the selected row's logbook page sits on the right leaf with the entry lit.</span><em>Replaces: /aircraft/[id], /aircraft/[id]/status</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Status</h1>
+        <nav class="b-subtabs"><a class="on" href="#">What's due</a><a href="#">Forecast</a><a href="#">Pick a date</a></nav>
+        <div class="b-boardacts">Tach 4212.4, read Nov 14<a class="b-btn on-board sm" href="#"><i data-lucide="plane-landing"></i>Log a flight</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.75fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede"><b>One check has lapsed</b>, and it only matters for IFR. Three more come due before the new year.</p>
+          <div class="b-hung">
+            <h3>Overdue</h3>
+            <table class="b-table due">
+              <tr><td class="name">VOR check<small>91.171 · every 30 days · IFR only · <a class="b-cite" href="#">Airframe p. 61</a></small></td><td>Nov 11</td><td>7 days over</td><td><span class="b-st bad">Overdue</span></td></tr>
+            </table>
+          </div>
+          <div class="b-hung">
+            <h3>Before the new year<small>60 days or 25 hours</small></h3>
+            <table class="b-table due">
+              <tr class="sel"><td class="name">Transponder<small>91.413 · every 24 months · <a class="b-cite" href="#">Airframe p. 58</a></small></td><td>Dec 31</td><td>43 days</td><td><span class="b-st soon">Due soon</span></td></tr>
+              <tr><td class="name">Pitot-static and altimeter<small>91.411 · every 24 months · IFR only · <a class="b-cite" href="#">Airframe p. 58</a></small></td><td>Dec 31</td><td>43 days</td><td><span class="b-st soon">Due soon</span></td></tr>
+              <tr><td class="name">Oil and filter<small>every 50 hours · advisory · <a class="b-cite" href="#">Engine p. 38</a></small></td><td>tach 4222.1<small>about Dec 12</small></td><td>9.7 h</td><td><span class="b-st soon">Due soon</span></td></tr>
+            </table>
+          </div>
+          <div class="b-hung">
+            <h3>Later<small>7 items</small></h3>
+            <table class="b-table due">
+              <tr><td class="name">ELT battery<small><a class="b-cite" href="#">Airframe p. 55</a></small></td><td>Feb 28, 2027</td><td>102 days</td><td><span class="b-st ok">Current</span></td></tr>
+              <tr><td class="name">AD 2011-10-09 seat rails<small>every 100 hours · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>tach 4268.3<small>about Apr 2027</small></td><td>55.9 h</td><td><span class="b-st ok">Current</span></td></tr>
+              <tr><td class="name">Annual inspection<small>91.409 · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>Jul 31, 2027</td><td>255 days</td><td><span class="b-st ok">Current</span></td></tr>
+            </table>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div class="b-label"><b>Airframe logbook, page 58</b>Scanned Mar 2, 2026 · entry confirmed by you Mar 4</div>
+            <div style="display:flex;gap:6px"><a class="b-btn on-mat sm" href="#"><i data-lucide="zoom-in"></i>Zoom</a><a class="b-btn on-mat sm" href="#">Open page</a></div>
+          </div>
+          <div style="flex:1;min-height:0;display:grid;place-items:center;overflow:hidden">
+            <div class="scan" style="--lh:24px;--top:52px;--cols:18% 15% 1fr 22%;width:100%;aspect-ratio:auto;height:100%">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>5/14/24</span><span>4096.2</span><span>Repl. L/H main</span><span class="black">M Torres</span>
+                <span></span><span></span><span>tire &amp; tube.</span><span class="black">A&amp;P</span>
+                <span></span><span></span><span>Svc'd nose strut.</span><span class="black">3667012</span>
+                <span class="gap"></span>
+                <span>12/3/24</span><span>4131.5</span><span class="scan-sticker">ATC TRANSPONDER TEST AND INSPECTION PERFORMED I/A/W FAR 91.413 AND FAR 43 APP. F. ALTIMETER AND STATIC SYSTEM TESTED I/A/W FAR 91.411, APP. E, TO 20,000 FT. FOUND TO COMPLY. AEROCHECK INSTRUMENTS CRS# A3KR418L</span><span class="black">J. Whit</span>
+                <span class="gap"></span>
+                <span>2/11/25</span><span>4139.0</span><span>R&amp;R vacuum pump</span><span class="black">M Torres</span>
+                <span></span><span></span><span>filter. Leak ck OK.</span><span class="black">A&amp;P</span>
+                <span></span><span></span><span></span><span class="black">3667012</span>
+              </div>
+              <div class="scan-hl" style="left:1%;top:146px;width:98%;height:126px"></div>
+              <div class="scan-stamp" style="right:3%;top:206px">AEROCHECK<br>INSTRUMENTS</div>
+              <div class="scan-page">58</div>
+            </div>
+          </div>
+          <div class="b-label paper" style="color:var(--on-cover);font-size:16px">“ATC transponder test and inspection performed i/a/w FAR 91.413 … found to comply.”</div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-annual">
+  <figcaption><b>Home variant: annual month (New)</b><span>As Status would read on Jul 2, 2027. The board knows the annual is close: the sentence names it, the items that can ride along are listed with it, and the right leaf turns into the annual checklist with "Share with your IA".</span><em>Replaces: nothing; today's overview reads the same in every situation</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status fixed" style="--w:1440;--h:520">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>Annual this month</small></a>
+      <a class="b-tab books" href="#" style="height:120px">Logbooks<small>431 pages in 5 books</small></a>
+      <a class="b-tab maint" href="#" style="height:84px">Maintenance<small>11 tracked items</small></a>
+      <a class="b-tab aircraft" href="#" style="height:62px">Aircraft</a>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Status</h1>
+        <nav class="b-subtabs"><a class="on" href="#">What's due</a><a href="#">Forecast</a><a href="#">Pick a date</a></nav>
+        <div class="b-boardacts">Tach 4309.8, read Jun 30<a class="b-btn on-board sm" href="#"><i data-lucide="plane-landing"></i>Log a flight</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.75fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede" style="max-width:40ch"><b>The annual is due this month</b>, by Jul 31. The ELT inspection is due the same day and can be signed off at the same visit.</p>
+          <div class="b-hung">
+            <h3>This month<small>29 days left</small></h3>
+            <table class="b-table due">
+              <tr class="sel"><td class="name">Annual inspection<small>91.409 · every 12 calendar months · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>Jul 31</td><td>29 days</td><td><span class="b-st soon">Due soon</span></td></tr>
+              <tr><td class="name">ELT inspection<small>91.207 · every 12 months · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>Jul 31</td><td>29 days</td><td><span class="b-st soon">Due soon</span></td></tr>
+            </table>
+          </div>
+        </section>
+        <section class="b-leaf">
+          <h2 class="b-h2">Getting ready for the annual</h2>
+          <div class="b-row"><span>2 open squawks to show your IA</span><a href="#">See them</a></div>
+          <div class="b-row"><span>Airframe pages missing for 1983 to 1991</span><a href="#">Records gaps</a></div>
+          <div class="b-actions" style="margin-top:16px"><a class="b-btn hue" href="#"><i data-lucide="share-2"></i>Share with your IA</a><a class="b-btn ghost" href="#">Annual prep</a></div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-clear">
+  <figcaption><b>Home variant: all clear (New)</b><span>As Status would read on Dec 20, 2026, after one shop visit cleared the December items. The sentence says nothing tracked is due soon and names the next thing; the right leaf shows what the visit moved, with the page it is written on.</span><em>Replaces: nothing; today's ring gauge shows a number with no sentence</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status fixed" style="--w:1440;--h:520">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>Nothing due soon</small></a>
+      <a class="b-tab books" href="#" style="height:120px">Logbooks<small>414 pages in 5 books</small></a>
+      <a class="b-tab maint" href="#" style="height:84px">Maintenance<small>11 tracked items</small></a>
+      <a class="b-tab aircraft" href="#" style="height:62px">Aircraft</a>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Status</h1>
+        <nav class="b-subtabs"><a class="on" href="#">What's due</a><a href="#">Forecast</a><a href="#">Pick a date</a></nav>
+        <div class="b-boardacts">Tach 4226.0, read Dec 19<a class="b-btn on-board sm" href="#"><i data-lucide="plane-landing"></i>Log a flight</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.75fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede" style="max-width:40ch"><b>Nothing tracked is overdue or due soon.</b> Next is the ELT battery, on Feb 28.</p>
+          <div class="b-hung">
+            <h3>Next three</h3>
+            <table class="b-table due">
+              <tr><td class="name">ELT battery<small>expiry · <a class="b-cite" href="#">Airframe p. 55</a></small></td><td>Feb 28, 2027</td><td>70 days</td><td><span class="b-st ok">Current</span></td></tr>
+              <tr><td class="name">Oil and filter<small>every 50 hours · <a class="b-cite" href="#">Engine p. 39</a></small></td><td>tach 4271.8<small>about Mar 2027</small></td><td>45.8 h</td><td><span class="b-st ok">Current</span></td></tr>
+            </table>
+          </div>
+        </section>
+        <section class="b-leaf">
+          <h2 class="b-h2">What December's entries moved</h2>
+          <div class="b-row"><span>Transponder and pitot-static<small class="b-meta" style="display:block">Dec 14 · next due Dec 31, 2028</small></span><a class="b-cite" href="#">Airframe p. 62</a></div>
+          <div class="b-row"><span>Oil and filter, Dec 14 at tach 4221.8</span><a class="b-cite" href="#">Engine p. 39</a></div>
+          <div class="b-row"><span>VOR check, logged by you Dec 12</span><a class="b-cite" href="#">Airframe p. 62</a></div>
+          <p class="b-meta" style="margin:12px 0 0">Counted from entries you confirmed on Dec 16.</p>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<figure class="g-shot" id="b-w-due">
+  <figcaption><b>Due list</b><span>All eleven tracked items in one table, grouped by horizon. Calendar and hours limits get their own columns and the one that bites first is marked; hours turn into "about" dates from recent flying. The legend chips count and filter. "Mark done" opens in the row itself, here with the 91.171 fields for the VOR check. The right leaf suggests one shop visit for the December items.</span><em>Replaces: /aircraft/[id]/maintenance and the status card grid</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-maint" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint on" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Maintenance</h1>
+        <nav class="b-subtabs"><a class="on" href="#">Tracked items</a><a href="#">ADs and SBs</a><a href="#">Squawks</a><a href="#">Annual prep</a></nav>
+        <div class="b-boardacts">Tach 4212.4, read Nov 14<a class="b-btn on-board sm" href="#"><i data-lucide="plus"></i>Track an item</a></div>
+      </div>
+      <div class="b-leaves" style="--split:3.3fr 1fr">
+        <section class="b-leaf">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:12px">
+            <div class="b-chips" role="group" aria-label="Filter by state">
+              <span class="b-chip on">All <b>11</b></span>
+              <span class="b-chip"><span class="b-st bad">Overdue</span><b>1</b></span>
+              <span class="b-chip"><span class="b-st soon">Due soon</span><b>3</b></span>
+              <span class="b-chip"><span class="b-st ok">Current</span><b>6</b></span>
+              <span class="b-chip"><span class="b-st unk">Needs information</span><b>1</b></span>
+            </div>
+          </div>
+          <table class="b-table">
+            <thead><tr><th style="width:40%">Item</th><th>Calendar limit</th><th>Hours limit</th><th class="r">Left</th><th>State</th><th></th></tr></thead>
+            <tr class="grp"><td colspan="6">Overdue<small>1 item</small></td></tr>
+            <tr><td class="name">VOR check<small>91.171 · every 30 days · IFR only · <a class="b-cite" href="#">Airframe p. 61</a></small></td><td class="lim"><b>Nov 11, 2026</b></td><td class="lim b-na">none</td><td class="r nw"><b>7 days over</b></td><td><span class="b-st bad">Overdue</span></td><td class="r"><span class="b-btn ghost sm" style="border-color:var(--ink)">Cancel</span></td></tr>
+            <tr class="sel"><td colspan="6">
+              <div style="display:grid;grid-template-columns:150px 1.2fr 120px 1fr auto;gap:12px;align-items:end">
+                <div class="b-field"><label>Date checked</label><div class="b-input">Nov 18, 2026</div></div>
+                <div class="b-field"><label>Place</label><div class="b-input">KBDN VOT</div></div>
+                <div class="b-field"><label>Bearing error</label><div class="b-input">+1°</div></div>
+                <div class="b-field"><label>Signed</label><div class="b-input">Dana Morgan</div></div>
+                <a class="b-btn" href="#"><i data-lucide="check"></i>Mark done</a>
+              </div>
+              <p class="b-meta" style="margin:8px 0 0">The four things 91.171(d) asks for. Write the same in your own logbook; next check due Dec 18.</p>
+            </td></tr>
+            <tr class="grp"><td colspan="6">Next 60 days<small>3 items</small></td></tr>
+            <tr><td class="name">Oil and filter change<small>every 50 hours or 4 months · advisory · <a class="b-cite" href="#">Engine p. 38</a></small></td><td class="lim">Jan 3, 2027</td><td class="lim"><b>tach 4222.1</b><span class="b-first">first</span><small>about Dec 12</small></td><td class="r nw"><b>9.7 h</b></td><td><span class="b-st soon">Due soon</span></td><td class="r"><a class="b-btn ghost sm" href="#">Mark done</a></td></tr>
+            <tr><td class="name">Transponder<small>91.413 · every 24 calendar months · <a class="b-cite" href="#">Airframe p. 58</a></small></td><td class="lim"><b>Dec 31, 2026</b></td><td class="lim b-na">none</td><td class="r nw"><b>43 days</b></td><td><span class="b-st soon">Due soon</span></td><td class="r"><a class="b-btn ghost sm" href="#">Mark done</a></td></tr>
+            <tr><td class="name">Pitot-static and altimeter<small>91.411 · every 24 months · IFR only · <a class="b-cite" href="#">Airframe p. 58</a></small></td><td class="lim"><b>Dec 31, 2026</b></td><td class="lim b-na">none</td><td class="r nw"><b>43 days</b></td><td><span class="b-st soon">Due soon</span></td><td class="r"><a class="b-btn ghost sm" href="#">Mark done</a></td></tr>
+            <tr class="grp"><td colspan="6">Within a year<small>4 items</small></td></tr>
+            <tr><td class="name">ELT battery<small>expiry date on the battery · <a class="b-cite" href="#">Airframe p. 55</a></small></td><td class="lim"><b>Feb 28, 2027</b></td><td class="lim b-na">none</td><td class="r nw">102 days</td><td><span class="b-st ok">Current</span></td><td class="r"><a class="b-btn ghost sm" href="#">Mark done</a></td></tr>
+            <tr><td class="name">AD 2011-10-09 seat rails<small>recurring every 100 hours · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td class="lim b-na">none</td><td class="lim"><b>tach 4268.3</b><small>about Apr 2027</small></td><td class="r nw">55.9 h</td><td><span class="b-st ok">Current</span></td><td class="r"><a class="b-btn ghost sm" href="#">Record</a></td></tr>
+            <tr><td class="name">Annual inspection<small>91.409 · every 12 calendar months · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td class="lim"><b>Jul 31, 2027</b></td><td class="lim b-na">none</td><td class="r nw">255 days</td><td><span class="b-st ok">Current</span></td><td class="r"><a class="b-btn ghost sm" href="#">Mark done</a></td></tr>
+            <tr><td class="name">ELT inspection<small>91.207 · every 12 months · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td class="lim"><b>Jul 31, 2027</b></td><td class="lim b-na">none</td><td class="r nw">255 days</td><td><span class="b-st ok">Current</span></td><td class="r"><a class="b-btn ghost sm" href="#">Mark done</a></td></tr>
+            <tr class="grp"><td colspan="6">Further out<small>2 items</small></td></tr>
+            <tr><td class="name">Engine TBO<small>2000 h since overhaul · advisory · <a class="b-cite" href="#">Engine p. 22</a></small></td><td class="lim b-na">none</td><td class="lim"><b>tach 4803.0</b><small>overhauled at 2803.0</small></td><td class="r nw">590.6 h</td><td><span class="b-st adv">Advisory</span></td><td></td></tr>
+            <tr><td class="name">Registration<small>renewed every 7 years · <a class="b-cite" href="#">Documents</a></small></td><td class="lim"><b>Mar 31, 2029</b></td><td class="lim b-na">none</td><td class="r nw">28 months</td><td><span class="b-st ok">Current</span></td><td class="r"><a class="b-btn ghost sm" href="#">Renewed</a></td></tr>
+            <tr class="grp"><td colspan="6">Needs information<small>1 item</small></td></tr>
+            <tr><td class="name">Insurance policy<small>renewed every year · no policy on file</small></td><td class="lim b-na">no date</td><td class="lim b-na">none</td><td class="r"></td><td><span class="b-st unk">Unknown</span></td><td class="r"><a class="b-btn ghost sm" href="#">Add the policy</a></td></tr>
+          </table>
+          <p class="b-meta" style="margin:16px 0 0">Counted from entries you confirmed. Pages waiting for review do not move any date. Hours become dates at your recent flying, about 3 hours a week.</p>
+        </section>
+        <section class="b-leaf">
+          <h2 class="b-h2">Do these together</h2>
+          <p style="margin:6px 0 14px">The transponder and pitot-static checks fall due the same day, and the oil change about two weeks before. One visit in early December covers all three.</p>
+          <div class="b-row"><span><b>Oil and filter change</b><small class="b-meta" style="display:block">about Dec 12 · 9.7 h</small></span><span class="b-st soon">Soon</span></div>
+          <div class="b-row"><span><b>Transponder</b><small class="b-meta" style="display:block">Dec 31 · 43 days</small></span><span class="b-st soon">Soon</span></div>
+          <div class="b-row"><span><b>Pitot-static and altimeter</b><small class="b-meta" style="display:block">Dec 31 · 43 days</small></span><span class="b-st soon">Soon</span></div>
+          <p class="b-meta" style="margin:14px 0 16px">AeroCheck Instruments did the last transponder and pitot-static check, on <a class="b-cite" href="#">Airframe p. 58</a>.</p>
+          <a class="b-btn ghost" href="#" style="width:100%"><i data-lucide="send"></i>Send this list to a shop</a>
+          <div style="border-top:2px solid var(--ink);margin-top:26px;padding-top:14px">
+            <h3 style="margin:0;font-size:16px">Reminders</h3>
+            <p class="b-meta" style="margin:4px 0 0">Email at 30 days or 10 hours before each item. <a href="#">Change lead times</a></p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<figure class="g-shot" id="b-w-item">
+  <figcaption><b>Item detail, mark done</b><span>One tracked item: both limits and which bites first, which meter the hours are counted on, the reminder lead time, and every past completion with its page and trust level. "Mark done" slides a drawer over the source leaf and previews the new due date before saving. A tach that repeats an older reading is flagged in the history, not silently used.</span><em>Replaces: the inline "Done" form on /maintenance and the item form</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-maint fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint on" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Maintenance</h1>
+        <nav class="b-subtabs"><a class="on" href="#">Tracked items</a><a href="#">ADs and SBs</a><a href="#">Squawks</a><a href="#">Annual prep</a></nav>
+      </div>
+      <div class="b-leaves" style="--split:1.35fr 1fr">
+        <section class="b-leaf">
+          <a href="#" style="font-size:14px;display:inline-flex;align-items:center;gap:2px"><i data-lucide="chevron-left"></i>All tracked items</a>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin:6px 0 16px"><div><h2 class="b-h2" style="font-size:26px">Oil and filter change</h2><p class="b-meta" style="margin:2px 0 0;font-size:15px">Every 50 hours or 4 months, whichever comes first · advisory</p></div><span class="b-st soon">Due soon</span></div>
+          <div class="b-hung" style="--hung:130px"><h3>Next due</h3>
+            <dl class="b-kv" style="grid-template-columns:110px 1fr"><dt>Hours</dt><dd>tach 4222.1, about Dec 12 · 9.7 h left <span class="b-first">first</span></dd><dt>Calendar</dt><dd>Jan 3, 2027 · 46 days left</dd></dl>
+          </div>
+          <div class="b-hung" style="--hung:130px"><h3>Rule</h3>
+            <div style="display:grid;gap:10px">
+              <div style="display:flex;gap:14px;align-items:center"><span class="b-meta" style="width:110px;font-size:15px">Hours on</span><span class="b-seg"><span class="on">Tach</span><span>Hobbs</span></span><span class="b-meta">Tach reads 4212.4, Nov 14</span></div>
+              <div style="display:flex;gap:14px;align-items:center"><span class="b-meta" style="width:110px;font-size:15px">Remind me</span><b>10 hours or 14 days before</b><a href="#" style="font-size:14px">Change</a></div>
+            </div>
+          </div>
+          <div class="b-hung" style="--hung:130px"><h3>Done before<small>33 times since 1979</small></h3>
+            <table class="b-table">
+              <tr><th>Date</th><th class="r">Tach</th><th class="r">After</th><th>Page</th><th>Trust</th></tr>
+              <tr><td class="nw">Sep 3, 2026</td><td class="r">4172.1</td><td class="r nw">40.6 h</td><td><a class="b-cite" href="#">Engine p. 38</a></td><td><span class="b-truth signed">Signed by M. Torres</span></td></tr>
+              <tr><td class="nw">May 9, 2026</td><td class="r">4131.5</td><td class="r">?</td><td><a class="b-cite" href="#">Engine p. 36</a></td><td><span class="b-truth conf">Confirmed by you</span><small class="b-meta" style="display:block;color:var(--alarm);font-weight:600">Same tach as Dec 3, 2024. Check the page.</small></td></tr>
+            </table>
+            <a href="#" style="font-size:14px;display:inline-block;margin-top:8px">Show all 33</a>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div class="b-label"><b>Engine logbook, page 38</b>Signed entry, Sep 3, 2026</div>
+          <div style="flex:1;position:relative">
+            <div class="scan engine" style="--lh:26px;--top:52px;--cols:16% 14% 1fr 24%;aspect-ratio:auto;position:absolute;inset:0">
+              <div class="scan-title">ENGINE LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Work performed</span><span>Signature</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>7/14/26</span><span>4168.3</span><span>Annual insp. eng.</span><span class="black">D. Alvarez</span>
+                <span></span><span></span><span>Plugs cleaned, rotated.</span><span class="black">IA</span>
+                <span class="gap"></span>
+                <span>9/3/26</span><span>4172.1</span><span>Oil &amp; filter chg.</span><span class="black">M Torres</span>
+                <span></span><span></span><span>7 qt Phillips XC 20W-50</span><span class="black">A&amp;P 3667012</span>
+                <span></span><span></span><span>Filter cut, no metal.</span><span></span>
+                <span></span><span></span><span>Sample to Blackstone.</span><span></span>
+              </div>
+              <div class="scan-hl" style="left:1%;top:130px;width:98%;height:104px"></div>
+              <div class="scan-page">38</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="b-scrimw"></div>
+    <aside class="b-drawer" aria-label="Mark done">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h2 class="b-h2" style="font-size:22px">Mark oil and filter change done</h2><p class="b-meta" style="margin:2px 0 0">Counted on tach</p></div><i data-lucide="x" style="width:22px;height:22px"></i></div>
+      <div class="b-grid2">
+        <div class="b-field"><label>Date done</label><div class="b-input">Nov 18, 2026</div></div>
+        <div class="b-field"><label>Tach at the change</label><div class="b-input focus">4212.4</div></div>
+        <div class="b-field"><label>Oil added</label><div class="b-input">7 qt</div></div>
+        <div class="b-field"><label>Oil</label><div class="b-input">Phillips XC 20W-50</div></div>
+      </div>
+      <label style="display:flex;gap:10px;align-items:center;font-size:15px"><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span>Oil sample sent for analysis</label>
+      <div class="b-field"><label>The logbook entry</label><div class="b-seg" style="justify-self:start"><span class="on">Link the page later</span><span>Write the entry now</span></div></div>
+      <div class="b-well"><b>Next due at tach 4262.4</b>, about Mar 10, or Mar 18, 2027 by the calendar, whichever comes first.</div>
+      <p class="b-meta" style="margin:0">Saved as your note, confirmed by you. When the signed engine logbook page is scanned, it replaces the note as the source.</p>
+      <div class="b-actions" style="margin-top:auto;border-top:1px solid var(--rule);padding-top:16px"><a class="b-btn" href="#"><i data-lucide="check"></i>Mark done</a><a class="b-btn ghost" href="#">Cancel</a></div>
+    </aside>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-date">
+  <figcaption><b>Pick a date (New)</b><span>Choose a date and expected flying; the chart lays every tracked item against it. Items that lapse first are solid vermilion, items still in date are ink. The right leaf turns the answer into what to do before the trip, including the 30-day window for the VOR check.</span><em>Replaces: nothing; today there is no way to ask "what about Feb 15?"</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Status</h1>
+        <nav class="b-subtabs"><a href="#">What's due</a><a href="#">Forecast</a><a class="on" href="#">Pick a date</a></nav>
+        <div class="b-boardacts">Tach 4212.4, read Nov 14</div>
+      </div>
+      <div class="b-leaves" style="--split:2.3fr 1fr">
+        <section class="b-leaf">
+          <div style="display:grid;grid-template-columns:200px 260px 1fr;gap:16px;align-items:end;margin-bottom:20px">
+            <div class="b-field"><label>Date</label><div class="b-input focus" style="justify-content:space-between">Feb 15, 2027<i data-lucide="calendar"></i></div></div>
+            <div class="b-field"><label>Flying until then</label><div class="b-input" style="justify-content:space-between">About 3 hours a week<i data-lucide="chevron-down"></i></div></div>
+            <span class="b-meta" style="padding-bottom:10px">About 38 hours, so the tach reads about 4250.5 that day</span>
+          </div>
+          <p class="b-lede" style="max-width:46ch"><b>By Feb 15, four items will have lapsed</b> unless they are done first. The ELT battery has 13 days to spare.</p>
+          <svg viewBox="0 0 760 262" style="width:100%;height:auto;font:500 14px var(--f-app)" role="img" aria-label="Tracked items laid against Feb 15, 2027">
+            <rect x="221" y="24" width="318" height="204" style="fill:var(--leaf-2)"/>
+            <g style="stroke:var(--rule)"><line x1="160" y1="50" x2="750" y2="50"/><line x1="160" y1="82" x2="750" y2="82"/><line x1="160" y1="114" x2="750" y2="114"/><line x1="160" y1="146" x2="750" y2="146"/><line x1="160" y1="178" x2="750" y2="178"/><line x1="160" y1="210" x2="750" y2="210"/></g>
+            <g style="fill:var(--ink);font-weight:700"><text x="0" y="55">VOR check</text><text x="0" y="87">Oil and filter</text><text x="0" y="119">Transponder</text><text x="0" y="151">Pitot-static</text><text x="0" y="183">ELT battery</text><text x="0" y="215">AD 2011-10-09</text></g>
+            <line x1="160" y1="228" x2="750" y2="228" style="stroke:var(--ink-2)"/>
+            <g style="stroke:var(--ink-2)"><line x1="160" y1="228" x2="160" y2="234"/><line x1="267" y1="228" x2="267" y2="234"/><line x1="378" y1="228" x2="378" y2="234"/><line x1="489" y1="228" x2="489" y2="234"/><line x1="589" y1="228" x2="589" y2="234"/><line x1="700" y1="228" x2="700" y2="234"/></g>
+            <g style="fill:var(--ink-3)"><text x="160" y="254">Nov</text><text x="267" y="254">Dec</text><text x="378" y="254">Jan 2027</text><text x="489" y="254">Feb</text><text x="589" y="254">Mar</text><text x="700" y="254">Apr</text></g>
+            <line x1="221" y1="18" x2="221" y2="228" style="stroke:var(--ink-3);stroke-dasharray:4 4"/><text x="226" y="15" style="fill:var(--ink-2)">Today</text>
+            <line x1="539" y1="18" x2="539" y2="228" style="stroke:var(--ink);stroke-width:3"/><text x="545" y="15" style="fill:var(--ink);font-weight:800">Feb 15</text>
+            <g style="fill:var(--alarm)"><rect x="190" y="44" width="12" height="12"/><rect x="369" y="108" width="12" height="12"/><rect x="369" y="140" width="12" height="12"/></g>
+            <circle cx="307" cy="82" r="6" style="fill:none;stroke:var(--alarm);stroke-width:3"/>
+            <g style="fill:var(--alarm);font-weight:700"><text x="208" y="46">lapsed Nov 11</text><text x="318" y="77">about Dec 12</text><text x="388" y="111">Dec 31</text><text x="388" y="143">Dec 31</text></g>
+            <circle cx="586" cy="178" r="6" style="fill:var(--ink)"/><text x="596" y="173" style="fill:var(--ink);font-weight:700">Feb 28</text>
+            <circle cx="700" cy="210" r="6" style="fill:none;stroke:var(--ink);stroke-width:2"/><text x="688" y="205" text-anchor="end" style="fill:var(--ink);font-weight:700">about Apr</text>
+          </svg>
+          <p class="b-meta" style="margin:6px 0 18px">Square: a calendar limit. Ring: an hours limit turned into an "about" date. Hours never override a calendar date.</p>
+          <table class="b-table due">
+            <tr><td class="name">ELT battery<small>still in date on Feb 15 · <a class="b-cite" href="#">Airframe p. 55</a></small></td><td>Feb 28</td><td>13 days</td><td><span class="b-st ok">Current</span></td></tr>
+            <tr><td class="name">AD 2011-10-09 seat rails<small>still in date · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>tach 4268.3</td><td>17.8 h</td><td><span class="b-st ok">Current</span></td></tr>
+            <tr><td class="name">Annual and ELT inspection<small>still in date · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>Jul 31</td><td>166 days</td><td><span class="b-st ok">Current</span></td></tr>
+          </table>
+        </section>
+        <section class="b-leaf">
+          <h2 class="b-h2">To fly on Feb 15 with nothing lapsed</h2>
+          <div class="b-row" style="align-items:start"><span><b>Oil and filter change</b><small class="b-meta" style="display:block">By about Dec 12, at tach 4222.1</small></span><span class="b-st soon">First</span></div>
+          <div class="b-row" style="align-items:start"><span><b>Transponder and pitot-static</b><small class="b-meta" style="display:block">By Dec 31. One visit to AeroCheck Instruments covers both.</small></span></div>
+          <div class="b-row" style="align-items:start"><span><b>VOR check</b><small class="b-meta" style="display:block">Between Jan 16 and Feb 15, so it is inside the 30 days before an IFR flight.</small></span></div>
+          <div class="b-row" style="align-items:start"><span><b>ELT battery</b><small class="b-meta" style="display:block">Nothing needed. It expires Feb 28, after the trip.</small></span></div>
+          <a class="b-btn" href="#" style="width:100%;margin-top:20px"><i data-lucide="bell"></i>Remind me about these</a>
+          <a class="b-btn ghost" href="#" style="width:100%;margin-top:8px"><i data-lucide="calendar"></i>Try another date</a>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-ads">
+  <figcaption><b>ADs and SBs register</b><span>Every AD the aircraft carries, in four plain states: recurring, complied once, not applicable with its reason, and open. Selecting a row shows its compliance history, each time with its page, and the right leaf opens the page itself. "Record compliance" adds a new line to the history instead of overwriting the last one. An SB referenced in the logs but not yet tracked waits at the foot.</span><em>Replaces: /aircraft/[id]/compliance</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-maint fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint on" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Maintenance</h1>
+        <nav class="b-subtabs"><a href="#">Tracked items</a><a class="on" href="#">ADs and SBs</a><a href="#">Squawks</a><a href="#">Annual prep</a></nav>
+        <div class="b-boardacts"><a class="b-btn on-mat sm" href="#" style="border-color:rgba(255,255,255,.5)"><i data-lucide="search"></i>Find ADs</a><a class="b-btn on-board sm" href="#"><i data-lucide="plus"></i>Track an AD or SB</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.55fr 1fr">
+        <section class="b-leaf">
+          <table class="b-table">
+            <thead><tr><th>AD</th><th>Applies</th><th>Last done</th><th>Next due</th><th class="r">Source</th></tr></thead>
+            <tr class="sel"><td class="name nw">2011-10-09<small>Seat rails and seat rail holes</small></td><td><span class="b-st low">Recurring</span><small>every 100 hours</small></td><td class="nw">Jul 14, 2026<small>tach 4168.3</small></td><td class="nw">tach 4268.3<small>about Apr 2027</small></td><td class="r"><a class="b-cite" href="#">Airframe p. 60</a></td></tr>
+            <tr><td class="name nw">76-07-12<small>Fuel filler caps</small></td><td><span class="b-st ok">Complied once</span><small>one-time AD</small></td><td class="nw">Apr 18, 1998<small>at the annual</small></td><td class="b-na">none</td><td class="r"><a class="b-cite" href="#">Airframe p. 31</a></td></tr>
+            <tr><td class="name nw">2020-18-01<small>Fuel pump diaphragm</small></td><td><span class="b-st adv">Not applicable</span><small>Different pump P/N installed</small></td><td class="b-na">none</td><td class="b-na">none</td><td class="r"><span class="b-meta">Your note</span></td></tr>
+          </table>
+          <div class="b-well" style="display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:14px"><span><b>Lycoming SB 388C</b>, valve wobble check, is mentioned on <a class="b-cite" href="#">Engine p. 37</a> but not tracked.</span><a class="b-btn ghost sm" href="#">Track it</a></div>
+          <div class="b-hung" style="--hung:120px;margin-top:22px"><h3>2011-10-09<small>Compliance history</small></h3>
+            <div>
+              <table class="b-table">
+                <tr><td class="nw">Jul 14, 2026</td><td class="r">4168.3</td><td>Inspected, no cracks. D. Alvarez, IA</td><td><span class="b-truth conf">Confirmed</span></td><td class="r"><a class="b-cite" href="#">Airframe p. 60</a></td></tr>
+                <tr><td class="nw">Aug 22, 2011</td><td class="r">3384.0</td><td>First compliance at the annual</td><td><span class="b-truth conf">Confirmed</span></td><td class="r"><a class="b-cite" href="#">Airframe p. 41</a></td></tr>
+              </table>
+              <div class="b-actions" style="margin-top:14px;justify-content:space-between"><a href="#" style="font-size:14px">Show the 14 in between</a><span class="b-actions"><a href="#" style="font-size:14px;display:inline-flex;gap:4px;align-items:center">FAA document<i data-lucide="external-link"></i></a><a class="b-btn" href="#"><i data-lucide="clipboard-check"></i>Record compliance</a></span></div>
+            </div>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div class="b-label"><b>Airframe logbook, page 60</b>Annual, Jul 14, 2026 · confirmed by you Jul 20</div>
+          <div style="flex:1;position:relative">
+            <div class="scan" style="--lh:26px;--top:52px;--cols:15% 13% 1fr 27%;aspect-ratio:auto;position:absolute;inset:0">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>6/20/26</span><span>4160.2</span><span>Repl. L/H nav bulb.</span><span class="black">M Torres</span>
+                <span></span><span></span><span>Ops ck good.</span><span class="black">A&amp;P 3667012</span>
+                <span class="gap"></span>
+                <span>7/14/26</span><span>4168.3</span><span>Annual insp. IAW</span><span class="black">D. Alvarez</span>
+                <span></span><span></span><span>FAR 43 App. D.</span><span class="black">A&amp;P 3105582</span>
+                <span></span><span></span><span>AD 2011-10-09 c/w.</span><span class="black">IA</span>
+                <span></span><span></span><span>Repl. alt. belt.</span><span></span>
+              </div>
+              <div class="scan-hl" style="left:28%;top:182px;width:44%;height:26px"></div>
+              <div class="scan-hl quiet" style="left:1%;top:130px;width:98%;height:104px"></div>
+              <div class="scan-page">60</div>
+            </div>
+          </div>
+          <div class="b-label paper" style="color:var(--on-cover);font-size:16px">“AD 2011-10-09 c/w.”</div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<figure class="g-shot" id="b-w-findad">
+  <figcaption><b>Find ADs</b><span>Searches the FAA by the aircraft's make and model and by every installed part, then sorts candidates by how closely they name this aircraft. ADs already tracked are hidden; one superseded by a tracked AD says so. The right leaf shows the selected candidate beside the equipment it names, with "Track this AD" and its interval.</span><em>Replaces: /aircraft/[id]/compliance/explore (no nav entry, no way back)</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-maint fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint on" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Maintenance</h1>
+        <nav class="b-subtabs"><a href="#">Tracked items</a><a class="on" href="#">ADs and SBs</a><a href="#">Squawks</a><a href="#">Annual prep</a></nav>
+      </div>
+      <div class="b-leaves" style="--split:1.55fr 1fr">
+        <section class="b-leaf">
+          <a href="#" style="font-size:14px;display:inline-flex;align-items:center;gap:2px"><i data-lucide="chevron-left"></i>ADs and SBs</a>
+          <h2 class="b-h2" style="font-size:24px;margin:4px 0 14px">Find ADs for N734DM</h2>
+          <div class="b-field"><label>Search the FAA for ADs that name</label>
+            <div class="b-input" style="flex-wrap:wrap;gap:6px;padding:7px 8px">
+              <span class="b-tag" style="border-color:var(--ink);color:var(--ink)">Cessna 172N</span><span class="b-tag">Lycoming O-320-H2AD</span><span class="b-tag">McCauley 1C160</span><span class="b-tag">Garmin GTN 650</span><span class="b-tag">Rapco RA215CC</span><span class="b-tag">ACK E-04</span><span class="muted" style="font-size:15px;margin-left:4px">Add a part or keyword</span>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px"><span class="b-meta" style="font-size:15px"><b style="color:var(--ink)">11 candidates.</b> 4 name this aircraft or a part on it. 3 you already track are hidden.</span><a class="b-btn ghost sm" href="#"><i data-lucide="search"></i>Search again</a></div>
+          <table class="b-table" style="margin-top:8px">
+            <thead><tr><th>AD</th><th>Subject</th><th>Why it came up</th><th class="r">Effective</th></tr></thead>
+            <tr class="sel"><td class="name nw">2021-07-14</td><td>Dry vacuum pumps, drive coupling</td><td><b>Names your Rapco RA215CC</b></td><td class="r nw">May 2021</td></tr>
+            <tr><td class="name nw">2006-14-05</td><td>ELT battery pack</td><td><b>Names your ACK E-04</b></td><td class="r nw">Aug 2006</td></tr>
+            <tr><td class="name nw">96-09-10</td><td>Oil pump body and impeller</td><td><b>Names O-320 engines</b><small class="b-meta" style="display:block">Check your engine serial</small></td><td class="r nw">Jun 1996</td></tr>
+            <tr><td class="name nw">87-20-03 R2</td><td>Seat rails and seat stops</td><td>Names 172N<small class="b-meta" style="display:block">Superseded by 2011-10-09, which you track</small></td><td class="r nw">Dec 1987</td></tr>
+            <tr><td class="name nw">2001-01-09</td><td>Exhaust muffler, heater shroud</td><td class="muted">Names Cessna single-engine models</td><td class="r nw">Feb 2001</td></tr>
+            <tr><td class="name nw">2000-06-01</td><td>Flap actuator jackscrew</td><td class="muted">Names Cessna, not 172N</td><td class="r nw">Apr 2000</td></tr>
+          </table>
+          <a href="#" style="font-size:14px;display:inline-block;margin-top:10px">Show 5 more that only name the make</a>
+        </section>
+        <section class="b-leaf">
+          <div class="b-meta">AD 2021-07-14 · FAA, effective May 2021</div>
+          <h2 class="b-h2" style="font-size:22px;margin:2px 0 10px">Dry vacuum pumps, drive coupling</h2>
+          <p style="margin:0 0 14px">Requires inspecting the pump drive coupling for wear and replacing pumps in an affected serial range. Applies to Rapco RA215CC pumps built in certain lots.</p>
+          <div class="b-well" style="margin-bottom:16px"><b>On N734DM:</b> Rapco RA215CC vacuum pump, installed 2021, <a class="b-cite" href="#">Airframe p. 57</a>. Check its serial against the affected range before you track this.</div>
+          <div class="b-field" style="margin-bottom:12px"><label>How it repeats</label><div class="b-seg" style="justify-self:start"><span>One time</span><span class="on">Recurring</span></div></div>
+          <div class="b-grid2" style="margin-bottom:18px">
+            <div class="b-field"><label>Every</label><div class="b-input">100 hours</div></div>
+            <div class="b-field"><label>Next due</label><div class="b-input muted">At the next annual</div></div>
+          </div>
+          <div class="b-actions"><a class="b-btn" href="#"><i data-lucide="plus"></i>Track this AD</a><a class="b-btn ghost" href="#">Doesn't apply</a></div>
+          <a href="#" style="font-size:14px;display:inline-flex;gap:4px;align-items:center;margin-top:14px">Read the AD on the Federal Register<i data-lucide="external-link"></i></a>
+          <p class="b-meta" style="margin:22px 0 0;border-top:1px solid var(--rule);padding-top:12px">A candidate is a lead to check with your A&amp;P, not a finding that it applies.</p>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<h2 class="g-h2" id="b-squawks">Squawks</h2>
+<p class="g-prose">The owner notes something wrong, keeps an eye on it, and hands it to a mechanic. Today a squawk is one line of text with a severity, resolved by one click with no note, date or entry, and absent from the overview. Here each squawk carries photos, a three-step severity in the owner's terms, a link a mechanic can open without an account, and, once fixed, the logbook entry that cleared it.</p>
+
+<figure class="g-shot" id="b-w-squawks">
+  <figcaption><b>Squawks</b><span>Open and resolved squawks on the left leaf; the selected one on the right with its photo, who reported it and when, related entries found in the logs, and "Send to mechanic". The resolved squawk names the entry that cleared it.</span><em>Replaces: /aircraft/[id]/squawks</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-maint fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint on" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Maintenance</h1>
+        <nav class="b-subtabs"><a href="#">Tracked items</a><a href="#">ADs and SBs</a><a class="on" href="#">Squawks</a><a href="#">Annual prep</a></nav>
+        <div class="b-boardacts"><a class="b-btn on-board sm" href="#"><i data-lucide="plus"></i>Report a squawk</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1fr 1.15fr">
+        <section class="b-leaf">
+          <div class="b-hung" style="--hung:96px"><h3>Open<small>2</small></h3>
+            <div>
+              <div class="b-row" style="background:var(--leaf-2);box-shadow:inset 4px 0 0 var(--board);padding:12px 12px 12px 16px;margin:0 0 0 -16px;align-items:center"><span><b>Left brake feels soft</b><small class="b-meta" style="display:block">Reported Nov 8 by Dana · 2 photos</small></span><span class="b-st soon">Watch</span></div>
+              <div class="b-row" style="align-items:center"><span><b>Nav light lens cracked</b><small class="b-meta" style="display:block">Reported Oct 21 by Dana · 1 photo</small></span><span class="b-st low">Low</span></div>
+            </div>
+          </div>
+          <div class="b-hung" style="--hung:96px"><h3>Resolved<small>1</small></h3>
+            <div class="b-row" style="align-items:start"><span><b style="color:var(--ink-2)">Alternator belt squeal</b><small class="b-meta" style="display:block">Cleared by the annual, Jul 14, 2026: "Repl. alt. belt."</small></span><a class="b-cite" href="#">Airframe p. 60</a></div>
+          </div>
+          <div class="b-hung" style="--hung:96px"><h3>Severity</h3>
+            <dl class="b-kv" style="grid-template-columns:80px 1fr;font-size:15px"><dt><span class="b-st low">Low</span></dt><dd style="font-weight:400">Fix at the next convenient visit.</dd><dt><span class="b-st soon">Watch</span></dt><dd style="font-weight:400">Check it before each flight.</dd><dt><span class="b-st bad">Ground</span></dt><dd style="font-weight:400">You have chosen not to fly until it is looked at.</dd></dl>
+          </div>
+        </section>
+        <section class="b-leaf">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+            <div><h2 class="b-h2" style="font-size:24px">Left brake feels soft</h2><p class="b-meta" style="margin:2px 0 0;font-size:15px">Reported Nov 8, 2026 by Dana Morgan at tach 4209.0</p></div>
+            <div class="b-seg"><span>Low</span><span class="on">Watch</span><span>Ground</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin:16px 0 6px;height:220px"><div class="b-photo"></div><div class="b-photo" style="filter:brightness(1.15)"></div></div>
+          <p class="b-meta" style="margin:0 0 12px">Left main brake from below, Nov 8. Tap to enlarge.</p>
+          <p style="margin:0 0 14px">Pedal travels further than the right one before it firms up. Holds on run-up. Noticed taxiing in at KBDN.</p>
+          <div class="b-well" style="margin-bottom:16px;display:flex;justify-content:space-between;gap:12px;align-items:center"><span><b>In the logs:</b> left brake relined Mar 2021, the third brake job on that side since 2015.</span><a class="b-cite" href="#">Airframe p. 56</a></div>
+          <div class="b-hung" style="--hung:112px;border-top:2px solid var(--ink)"><h3>Mechanic</h3>
+            <div style="display:grid;gap:10px">
+              <div style="display:flex;gap:10px;align-items:center"><div class="b-input" style="flex:1;justify-content:space-between">M. Torres, A&amp;P 3667012<i data-lucide="chevron-down"></i></div><a class="b-btn" href="#"><i data-lucide="send"></i>Send to mechanic</a></div>
+              <span class="b-meta">They get a link by email. It shows this squawk and its photos, nothing else, for 14 days. No account needed.</span>
+            </div>
+          </div>
+          <div class="b-actions" style="justify-content:space-between;border-top:1px solid var(--rule);padding-top:14px"><a class="b-btn ghost" href="#"><i data-lucide="link"></i>Resolve with an entry</a><a href="#" style="color:var(--ink-3);font-size:14px;display:inline-flex;gap:6px;align-items:center"><i data-lucide="trash-2"></i>Delete</a></div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<h2 class="g-h2" id="b-paper">From paper to index</h2>
+<p class="g-prose">The owner turns a shelf of paper into confirmed entries: pages go in, the AI reads them in the background, and the owner checks each reading against its page. Today that spans four screens with no hand-offs, reading is a manual step tied to an open tab, the daily allowance is hidden in Profile, and review is split across two screens with different tools. Here the Logbooks tab holds one pipeline with a visible queue, and one review desk where the scan always sits on the right leaf.</p>
+
+<figure class="g-shot" id="b-w-addpages">
+  <figcaption><b>Add pages</b><span>Drop PDFs or photos, or hand off to the phone with a code. The right leaf is the whole pipeline in one queue: uploading, being read, waiting for review, with today's reading allowance in plain numbers. Reading carries on after the owner leaves and announces itself when done.</span><em>Replaces: /aircraft/[id]/upload and /capture, and the "Extract pending" step on /pages</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-books fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books on" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Logbooks</h1>
+        <nav class="b-subtabs"><a href="#">Pages</a><a class="on" href="#">Add pages</a><a href="#">Review 6</a><a href="#">Timeline</a></nav>
+      </div>
+      <div class="b-leaves" style="--split:1.2fr 1fr">
+        <section class="b-leaf">
+          <div class="b-grid2" style="grid-template-columns:1.4fr 1fr;margin-bottom:16px">
+            <div class="b-field"><label>Into</label><div class="b-input" style="justify-content:space-between">Airframe, volume 1 (1978 to 1997)<i data-lucide="chevron-down"></i></div></div>
+            <div class="b-field"><label>Place them</label><div class="b-input" style="justify-content:space-between">After page 19, Jun 1983<i data-lucide="chevron-down"></i></div></div>
+          </div>
+          <div class="b-drop">
+            <i data-lucide="upload" style="width:30px;height:30px"></i>
+            <b style="font-size:18px">Drop PDFs or photos here</b>
+            <span class="muted">or <a href="#">choose files</a>. Long PDFs are split into pages, in order.</span>
+            <span class="b-meta">PDF, JPEG, PNG and iPhone HEIC</span>
+          </div>
+          <label style="display:flex;gap:12px;align-items:center;margin:14px 0 22px"><span class="b-toggle on"></span><span>Handwritten pages<span class="b-meta" style="display:block">Read by the handwriting model. Turn off for typed or printed pages.</span></span></label>
+          <div style="display:flex;gap:22px;align-items:center;border-top:2px solid var(--ink);padding-top:20px">
+            <div class="b-qr"><svg viewBox="0 0 25 25" shape-rendering="crispEdges" aria-label="Code to open the camera on your phone"><path d="M0 0h7v1h-7zM8 0h1v1h-1zM10 0h2v1h-2zM13 0h4v1h-4zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM11 1h3v1h-3zM15 1h2v1h-2zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h2v1h-2zM12 2h4v1h-4zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM10 3h2v1h-2zM13 3h2v1h-2zM16 3h1v1h-1zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM14 4h2v1h-2zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h4v1h-4zM14 5h1v1h-1zM16 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM11 7h2v1h-2zM14 7h3v1h-3zM1 8h3v1h-3zM5 8h6v1h-6zM12 8h1v1h-1zM14 8h5v1h-5zM23 8h2v1h-2zM3 9h1v1h-1zM7 9h4v1h-4zM17 9h1v1h-1zM1 10h1v1h-1zM6 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM13 10h1v1h-1zM15 10h1v1h-1zM18 10h3v1h-3zM22 10h3v1h-3zM0 11h1v1h-1zM4 11h1v1h-1zM8 11h1v1h-1zM11 11h6v1h-6zM1 12h2v1h-2zM6 12h2v1h-2zM12 12h3v1h-3zM17 12h1v1h-1zM19 12h3v1h-3zM24 12h1v1h-1zM0 13h2v1h-2zM4 13h2v1h-2zM8 13h1v1h-1zM11 13h1v1h-1zM23 13h2v1h-2zM4 14h1v1h-1zM6 14h1v1h-1zM9 14h1v1h-1zM12 14h1v1h-1zM14 14h3v1h-3zM19 14h1v1h-1zM23 14h1v1h-1zM0 15h2v1h-2zM3 15h3v1h-3zM11 15h1v1h-1zM13 15h3v1h-3zM17 15h4v1h-4zM24 15h1v1h-1zM1 16h3v1h-3zM5 16h2v1h-2zM10 16h14v1h-14zM14 17h1v1h-1zM16 17h1v1h-1zM20 17h3v1h-3zM0 18h7v1h-7zM9 18h4v1h-4zM16 18h1v1h-1zM18 18h1v1h-1zM20 18h4v1h-4zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h2v1h-2zM11 19h2v1h-2zM14 19h1v1h-1zM16 19h1v1h-1zM20 19h1v1h-1zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM9 20h1v1h-1zM11 20h2v1h-2zM16 20h5v1h-5zM22 20h2v1h-2zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM8 21h1v1h-1zM10 21h2v1h-2zM14 21h4v1h-4zM21 21h1v1h-1zM23 21h1v1h-1zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM8 22h4v1h-4zM15 22h2v1h-2zM18 22h2v1h-2zM23 22h2v1h-2zM0 23h1v1h-1zM6 23h1v1h-1zM12 23h1v1h-1zM14 23h5v1h-5zM21 23h1v1h-1zM0 24h7v1h-7zM9 24h8v1h-8zM18 24h5v1h-5zM24 24h1v1h-1z"/></svg></div>
+            <div><h3 style="margin:0 0 4px;font-size:18px">Or scan with your phone</h3><p style="margin:0 0 6px">Point your phone's camera at this code. It opens the scanner on this logbook, and every page you photograph joins the queue on the right.</p><span class="b-meta">Works without signal. Pages wait on the phone and upload later.</span></div>
+          </div>
+        </section>
+        <section class="b-leaf">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><h2 class="b-h2">The queue</h2><span class="b-meta">Carries on if you leave this page</span></div>
+          <div class="b-hung" style="--hung:118px;margin-top:12px"><h3>Uploading<small>9 of 14</small></h3>
+            <div><div style="display:flex;justify-content:space-between;font-size:15px;margin-bottom:6px"><span>airframe-1983-1991.pdf</span><span class="muted">splitting into pages</span></div><div class="b-bar"><b style="width:64%"></b></div></div>
+          </div>
+          <div class="b-hung" style="--hung:118px"><h3>Being read<small>3 pages</small></h3>
+            <div style="display:grid;gap:8px">
+              <div style="display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center"><div class="scan" style="--lh:5px;--top:7px;width:30px"></div><span>Page 1 of 14, Aug 1983</span><span class="b-meta">reading now</span></div>
+              <div style="display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center"><div class="scan" style="--lh:5px;--top:7px;width:30px"></div><span>Pages 2 and 3</span><span class="b-meta">next</span></div>
+            </div>
+          </div>
+          <div class="b-hung" style="--hung:118px"><h3>Waiting for you<small>6 pages</small></h3>
+            <div><p style="margin:0 0 10px">Scanned Sunday, Nov 15. <b>4 read cleanly, 2 have a doubtful date or tach.</b></p><a class="b-btn" href="#">Review 6 pages</a></div>
+          </div>
+          <div class="b-hung" style="--hung:118px"><h3>Reading today</h3>
+            <div><div style="display:flex;justify-content:space-between;font-size:15px;margin-bottom:6px"><span><b>31 of 50 pages</b> used</span><span class="muted">shared allowance</span></div><div class="b-bar"><b style="width:62%"></b></div><p class="b-meta" style="margin:8px 0 0">The 14 new pages fit. Past 50, pages wait their turn tomorrow, or <a href="#">add your own key</a>.</p></div>
+          </div>
+          <p class="b-meta" style="margin:10px 0 0;display:flex;gap:8px;align-items:center"><i data-lucide="bell"></i>We'll tell you here and by email when these are read.</p>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-pages">
+  <figcaption><b>Pages library</b><span>Every page by book and volume, each thumbnail marked with its state in the trust vocabulary: read by AI, needs a look, confirmed. Select many to move misfiled pages or re-read them; "Reorder" lets pages be dragged into the paper's order. Deleting names what goes with it and asks first.</span><em>Replaces: /aircraft/[id]/pages</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-books fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books on" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Logbooks</h1>
+        <nav class="b-subtabs"><a class="on" href="#">Pages</a><a href="#">Add pages</a><a href="#">Review 6</a><a href="#">Timeline</a></nav>
+        <div class="b-boardacts"><a class="b-btn on-board sm" href="#"><i data-lucide="upload"></i>Add pages</a></div>
+      </div>
+      <div class="b-leaves" style="--split:250px 1fr">
+        <section class="b-leaf" style="padding:22px 18px">
+          <nav style="display:grid;gap:2px;font-size:15px">
+            <b style="padding:6px 10px">Airframe<span class="b-meta" style="float:right;font-weight:400">198</span></b>
+            <a href="#" style="display:flex;justify-content:space-between;padding:8px 10px;border-radius:3px;background:var(--ink);color:#fff;text-decoration:none;font-weight:600">Vol. 1, 1978 to 1997<span>102</span></a>
+            <a href="#" style="display:flex;justify-content:space-between;padding:8px 10px;color:var(--ink);text-decoration:none">Vol. 2, 1997 to 2026<span class="muted">96</span></a>
+            <a href="#" style="display:flex;justify-content:space-between;padding:8px 10px;color:var(--ink);text-decoration:none;font-weight:700;border-top:1px solid var(--rule);margin-top:6px">Engine<span class="muted" style="font-weight:400">118</span></a>
+            <a href="#" style="display:flex;justify-content:space-between;padding:8px 10px;color:var(--ink);text-decoration:none;font-weight:700;border-top:1px solid var(--rule)">Propeller<span class="muted" style="font-weight:400">41</span></a>
+            <a href="#" style="display:flex;justify-content:space-between;padding:8px 10px;color:var(--ink);text-decoration:none;font-weight:700;border-top:1px solid var(--rule)">Avionics<span class="muted" style="font-weight:400">38</span></a>
+            <a href="#" style="display:flex;justify-content:space-between;padding:8px 10px;color:var(--ink);text-decoration:none;font-weight:700;border-top:1px solid var(--rule)">Other<span class="muted" style="font-weight:400">17</span></a>
+          </nav>
+          <p class="b-meta" style="margin:18px 10px 0">412 pages in all. Airframe volume 1 has no pages for 1983 to 1991.</p>
+        </section>
+        <section class="b-leaf">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:6px">
+            <div><h2 class="b-h2" style="font-size:22px">Airframe logbook, volume 1</h2><p class="b-meta" style="margin:2px 0 0;font-size:15px">102 pages · 1978 to 1997 · showing pages 9 to 32</p></div>
+            <div class="b-actions"><span class="b-seg"><span class="on">All</span><span>To review 6</span><span>Confirmed</span></span><a class="b-btn ghost sm" href="#"><i data-lucide="grip-vertical"></i>Reorder</a></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;background:var(--ink);color:#fff;border-radius:3px;padding:8px 10px 8px 14px;margin:14px 0 18px;font-size:15px"><b>3 pages selected</b><span style="opacity:.8">pp. 30 to 32, 7 entries</span><span style="margin-left:auto;display:flex;gap:6px"><a class="b-btn on-mat sm" href="#"><i data-lucide="folder"></i>Move to another book</a><a class="b-btn on-mat sm" href="#"><i data-lucide="refresh-cw"></i>Read again</a><a class="b-btn on-mat sm" href="#"><i data-lucide="trash-2"></i>Delete</a><a class="b-btn on-mat sm" href="#" style="border-color:transparent">Clear</a></span></div>
+          <div class="b-thumbs">
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 9</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 10</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 11</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 12</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 13</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan photo"></div><span><b>p. 14</b> <span class="b-truth">Read by AI</span></span></div>
+            <div class="b-thumb"><div class="scan photo"></div><span><b>p. 15</b> <span class="b-truth">Read by AI</span></span></div>
+            <div class="b-thumb"><div class="scan photo"></div><span><b>p. 16</b> <span class="b-st soon" style="font-size:13px">Needs a look</span></span></div>
+            <div class="b-thumb"><div class="scan photo"></div><span><b>p. 17</b> <span class="b-st soon" style="font-size:13px">Needs a look</span></span></div>
+            <div class="b-thumb"><div class="scan photo"></div><span><b>p. 18</b> <span class="b-truth">Read by AI</span></span></div>
+            <div class="b-thumb"><div class="scan photo"></div><span><b>p. 19</b> <span class="b-truth">Read by AI</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 20</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 21</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 22</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 23</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 24</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 25</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 26</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 27</b> <span class="b-truth signed">Signed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 28</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb"><div class="scan"></div><span><b>p. 29</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb sel"><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span><div class="scan engine"></div><span><b>p. 30</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb sel"><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span><div class="scan engine"></div><span><b>p. 31</b> <span class="b-truth conf">Confirmed</span></span></div>
+            <div class="b-thumb sel"><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span><div class="scan engine"></div><span><b>p. 32</b> <span class="b-truth conf">Confirmed</span></span></div>
+          </div>
+          <p class="b-meta" style="margin:18px 0 0">Pages 30 to 32 look like engine logbook pages filed here by mistake.</p>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<figure class="g-shot" id="b-w-review">
+  <figcaption><b>Review desk</b><span>The core screen. The entry is on the left leaf with its least-certain field first; selecting a field lights its ink on the page at the right, with a close-up underneath. Each field has three outcomes: accept, edit, not on this page. The doubtful tach comes with the reason one reading fits better. The entry can be marked as running onto the next page, a missed entry added, the page cropped and read again. "Confirm page and next" never ejects to a list.</span><em>Replaces: /aircraft/[id]/pages/[pageId]/review</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-books fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books on" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Logbooks</h1>
+        <nav class="b-subtabs"><a href="#">Pages</a><a href="#">Add pages</a><a class="on" href="#">Review 6</a><a href="#">Timeline</a></nav>
+        <div class="b-boardacts" style="color:var(--on-board)"><a class="b-btn on-board sm" href="#" aria-label="Previous page"><i data-lucide="chevron-left"></i></a><b>Page 4 of 6 waiting</b><a class="b-btn on-board sm" href="#" aria-label="Next page"><i data-lucide="chevron-right"></i></a></div>
+      </div>
+      <div class="b-leaves" style="--split:1fr 1.08fr">
+        <section class="b-leaf" style="display:flex;flex-direction:column;padding-bottom:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+            <span class="b-seg"><span>Mar 2</span><span class="on">Jun 12</span><span>Sep 20</span></span>
+            <span class="b-meta">Entry 2 of 3 on this page</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 2px"><h2 class="b-h2" style="font-size:22px">100-hour inspection, Jun 12, 1982</h2><span class="b-truth">Read by AI</span></div>
+          <p class="b-meta" style="margin:0 0 10px">Least certain first. 1 field to check, 4 read clearly.</p>
+          <div class="b-frow sel">
+            <b style="padding-top:10px">Tach</b>
+            <div style="display:grid;gap:8px">
+              <div style="display:flex;gap:8px;align-items:center"><div class="b-input doubt" style="width:130px;font-weight:700;font-size:18px">812.4</div><span class="b-chip" style="height:32px">or 842.4</span><span class="b-st soon" style="font-size:13px">Unsure</span></div>
+              <p style="margin:0;font-size:15px;line-height:1.45">The second digit is smudged. 812.4 is 99.8 hours after the last 100-hour inspection at 712.6 on <a class="b-cite" href="#">p. 16</a>; 842.4 would be 129.8.</p>
+              <div class="b-outs"><a class="b-btn sm" href="#"><i data-lucide="check"></i>Accept 812.4<span class="b-key">A</span></a><a class="b-btn ghost sm" href="#"><i data-lucide="pencil"></i>Edit<span class="b-key">E</span></a><a class="b-btn ghost sm" href="#">Not on this page<span class="b-key">X</span></a></div>
+            </div>
+            <span></span>
+          </div>
+          <div class="b-frow"><b>Date</b><span>Jun 12, 1982</span><span class="ok"><i data-lucide="check"></i>Clear</span></div>
+          <div class="b-frow"><b>Signed</b><span>H. Bergstrom, A&amp;P 1873390</span><span class="ok"><i data-lucide="check"></i>Clear</span></div>
+          <div class="b-frow"><b>Kind of work</b><span><span class="b-tag">100-hour inspection</span></span><span class="ok"><i data-lucide="check"></i>Clear</span></div>
+          <div class="b-frow" style="align-items:start"><b style="padding-top:2px">What was done</b><span class="paper" style="font-size:16px;line-height:1.5">100 hr insp. IAW FAR 43 App. D. Compr. 74/76/75/73. Cleaned, gapped plugs. Repacked whl brgs.</span><span class="ok"><i data-lucide="check"></i>Clear</span></div>
+          <label style="display:flex;gap:10px;align-items:center;margin:14px 0 4px;font-size:15px"><span class="b-check"></span>This entry carries on to page 18</label>
+          <div class="b-actions" style="gap:18px;margin:6px 0 16px;font-size:15px"><a href="#" style="display:inline-flex;gap:6px;align-items:center"><i data-lucide="plus"></i>Add an entry the AI missed</a><a href="#" style="display:inline-flex;gap:6px;align-items:center;color:var(--ink-3)"><i data-lucide="trash-2"></i>Delete this entry</a></div>
+          <div style="margin-top:auto;border-top:2px solid var(--ink);padding-top:14px;display:grid;gap:10px">
+            <div class="b-actions" style="justify-content:space-between"><a class="b-btn" href="#"><i data-lucide="check"></i>Confirm page and next<span class="b-key">Shift Enter</span></a><span class="b-meta">Entries 1 and 3 are accepted</span></div>
+            <div class="b-kbd-row"><span><span class="b-key">J</span><span class="b-key">K</span>next or previous field</span><span><span class="b-key">A</span>accept</span><span><span class="b-key">E</span>edit</span><span><span class="b-key">X</span>not on this page</span></div>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div class="b-label"><b>Airframe logbook vol. 1, page 17</b>Scanned Sunday, Nov 15</div>
+            <div style="display:flex;gap:6px"><a class="b-btn on-mat sm" href="#"><i data-lucide="zoom-in"></i>Zoom</a><a class="b-btn on-mat sm" href="#" aria-label="Rotate"><i data-lucide="rotate-cw"></i></a><a class="b-btn on-mat sm" href="#"><i data-lucide="crop"></i>Crop and read again</a></div>
+          </div>
+          <div style="flex:1;position:relative">
+            <div class="scan photo" style="--lh:28px;--top:56px;--cols:16% 13% 1fr 25%;aspect-ratio:auto;position:absolute;inset:0">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>3/2/82</span><span>774.6</span><span>Replaced battery.</span><span class="black">J. Koenig</span>
+                <span></span><span></span><span>Ops ck good.</span><span class="black">A&amp;P 2049915</span>
+                <span class="gap"></span>
+                <span>6/12/82</span><span>8<span style="filter:blur(1.6px);opacity:.7">1</span>2.4</span><span>100 hr insp. IAW</span><span class="black">H. Bergstrom</span>
+                <span></span><span></span><span>FAR 43 App. D.</span><span class="black">A&amp;P 1873390</span>
+                <span></span><span></span><span>Compr. 74 76 75 73</span><span></span>
+                <span></span><span></span><span>Cleaned, gapped plugs.</span><span></span>
+                <span></span><span></span><span>Repacked whl brgs.</span><span></span>
+                <span class="gap"></span>
+                <span>9/20/82</span><span>861.0</span><span>Annual insp. IAW</span><span class="black">H. Bergstrom</span>
+                <span></span><span></span><span>FAR 43 App. D.</span><span class="black">A&amp;P 1873390 IA</span>
+                <span></span><span></span><span>Repl. nose tire.</span><span></span>
+              </div>
+              <div class="scan-hl quiet" style="left:1%;top:140px;width:98%;height:140px"></div>
+              <div class="scan-hl" style="left:16%;top:140px;width:13%;height:28px"></div>
+              <div class="scan-page">17</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center">
+            <div class="scan" style="--lh:70px;--top:0px;aspect-ratio:auto;width:230px;height:76px;--cols:1fr"><div class="scan-body" style="padding-left:14px"><span>8<span style="filter:blur(2.4px);opacity:.7">1</span>2.4</span></div></div>
+            <div class="b-label"><b>Close-up of the tach</b>Enlarged four times from the scan. If the paper is clearer, check it there.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+<figure class="g-shot" id="b-w-reviewall">
+  <figcaption><b>Review all</b><span>The six pages scanned on Sunday in one list: the two that need eyes first, each naming exactly what the AI was unsure of, then the four that read cleanly with "Confirm 4 clean pages". The right leaf shows the selected clean page, so a spot check costs one click.</span><em>Replaces: /aircraft/[id]/review (a second review screen with different tools)</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-books fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books on" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Logbooks</h1>
+        <nav class="b-subtabs"><a href="#">Pages</a><a href="#">Add pages</a><a class="on" href="#">Review 6</a><a href="#">Timeline</a></nav>
+      </div>
+      <div class="b-leaves" style="--split:1.4fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede" style="max-width:none;margin-bottom:10px"><b>4 pages read cleanly.</b> 2 need your eyes.</p>
+          <p class="b-meta" style="margin:0 0 18px;font-size:15px">Airframe logbook vol. 1, pages 14 to 19, scanned Sunday, Nov 15. Nothing on them counts toward what is due until you confirm it.</p>
+          <div class="b-hung" style="--hung:120px"><h3>Need your eyes<small>2 pages</small></h3>
+            <table class="b-table">
+              <tr><td style="width:40px"><div class="scan photo" style="--lh:5px;--top:7px;width:34px"></div></td><td class="name nw">p. 16<small>Jan 1981 to Feb 1982</small></td><td><b>Date</b> on entry 2 reads 4/?/81. The day is torn off.</td><td class="r"><a class="b-btn ghost sm" href="#">Review</a></td></tr>
+              <tr><td><div class="scan photo" style="--lh:5px;--top:7px;width:34px"></div></td><td class="name nw">p. 17<small>Mar to Sep 1982</small></td><td><b>Tach</b> on entry 2 reads 812.4 or 842.4.</td><td class="r"><a class="b-btn ghost sm" href="#">Review</a></td></tr>
+            </table>
+          </div>
+          <div class="b-hung" style="--hung:120px"><h3>Read cleanly<small>4 pages, 11 entries</small></h3>
+            <div>
+              <table class="b-table">
+                <tr class="sel"><td style="width:40px"><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span></td><td class="name nw">p. 14<small>Jan to Jun 1980</small></td><td>3 entries · annual Mar 1980 at 528.7</td><td class="r"><span class="b-meta nw">every field clear</span></td></tr>
+                <tr><td><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span></td><td class="name nw">p. 15<small>Jul to Dec 1980</small></td><td>3 entries · 100-hour inspection at 612.3</td><td class="r"><span class="b-meta nw">every field clear</span></td></tr>
+                <tr><td><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span></td><td class="name nw">p. 18<small>Oct 1982 to Jan 1983</small></td><td>2 entries · ELT battery, mag timing</td><td class="r"><span class="b-meta nw">every field clear</span></td></tr>
+                <tr><td><span class="b-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span></td><td class="name nw">p. 19<small>Feb to Jun 1983</small></td><td>3 entries · annual Mar 1983 at 902.8</td><td class="r"><span class="b-meta nw">every field clear</span></td></tr>
+              </table>
+              <div class="b-actions" style="margin-top:16px;gap:14px"><a class="b-btn" href="#"><i data-lucide="check"></i>Confirm 4 clean pages</a><span class="b-meta">Untick any page to leave it for a closer look.</span></div>
+            </div>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div class="b-label"><b>Airframe logbook vol. 1, page 14</b>Read by AI · 3 entries, every field clear</div>
+            <a class="b-btn on-mat sm" href="#">Open in the desk</a>
+          </div>
+          <div style="flex:1;position:relative">
+            <div class="scan photo" style="--lh:24px;--top:50px;--cols:15% 12% 1fr 28%;aspect-ratio:auto;position:absolute;inset:0">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>1/18/80</span><span>497.0</span><span>Repl. L/H landing lt.</span><span class="black">J. Koenig</span>
+                <span></span><span></span><span>Ops ck good.</span><span class="black">A&amp;P 2049915</span>
+                <span class="gap"></span>
+                <span>3/22/80</span><span>528.7</span><span>Annual insp. IAW</span><span class="black">H. Bergstrom</span>
+                <span></span><span></span><span>FAR 43 App. D.</span><span class="black">A&amp;P 1873390</span>
+                <span></span><span></span><span>Compr. 76 77 75 76</span><span class="black">IA</span>
+                <span class="gap"></span>
+                <span>5/30/80</span><span>566.1</span><span>Serviced nose strut.</span><span class="black">J. Koenig</span>
+                <span></span><span></span><span>Ops ck good.</span><span class="black">A&amp;P 2049915</span>
+              </div>
+              <div class="scan-hl quiet" style="left:1%;top:122px;width:98%;height:72px"></div>
+              <div class="scan-page">14</div>
+            </div>
+          </div>
+          <div class="b-label paper" style="color:var(--on-cover);font-size:16px">“Annual insp. IAW FAR 43 App. D. Compr. 76 77 75 76”</div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="b-w-firstread">
+  <figcaption><b>First read (New)</b><span>Once the first logbook is in, a short account of what the books revealed, written like a broker's notes: overhauls, repairs that keep coming back, big changes, gaps, and figures that disagree. Every line carries its page; quotes are in the paper's own words. The right leaf shows how much of each book is in, year by year, with the 1983 to 1991 gap hatched.</span><em>Replaces: nothing; today the books are read but never summarised</em></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-books" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books on" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Logbooks</h1>
+        <nav class="b-subtabs"><a href="#">Pages</a><a href="#">Add pages</a><a href="#">Review 6</a><a href="#">Timeline</a><a class="on" href="#">First read</a></nav>
+        <div class="b-boardacts"><a class="b-btn on-board sm" href="#"><i data-lucide="share-2"></i>Share with your IA</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.55fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede" style="max-width:46ch"><b>What the logbooks told us.</b> 406 confirmed pages from 1978 to 2026. Five things stand out.</p>
+          <div class="b-hung"><h3>Overhauls</h3>
+            <div>
+              <p style="margin:0 0 6px">Engine overhauled by Signal Engines on Sep 14, 2005 at tach 2803.0, so 1409.4 hours since. <a class="b-cite" href="#">Engine p. 22</a></p>
+              <p style="margin:0">Propeller overhauled Apr 30, 2010 at tach 3204.8. <a class="b-cite" href="#">Propeller p. 9</a></p>
+            </div>
+          </div>
+          <div class="b-hung"><h3>Repairs that recur</h3>
+            <div>
+              <p style="margin:0 0 6px">The left brake has been relined three times since 2015, last in Mar 2021. An open squawk says it feels soft again. <a class="b-cite" href="#">Airframe p. 56</a></p>
+              <p class="paper" style="margin:0 0 6px;color:var(--ink-2)">“L/H brake linings worn below limits. Relined, bled system.”</p>
+              <p style="margin:0">Vacuum pump replaced in 2009 and again in 2021. <a class="b-cite" href="#">Airframe p. 38</a> <a class="b-cite" href="#">Airframe p. 57</a></p>
+            </div>
+          </div>
+          <div class="b-hung"><h3>Big changes</h3>
+            <p style="margin:0">Garmin GTN 650 installed Mar 12, 2019 under STC SA01714WI by SkyTech Avionics, replacing the King KX-155. Form 337 is in Documents. <a class="b-cite" href="#">Airframe p. 53</a></p>
+          </div>
+          <div class="b-hung"><h3>Gaps</h3>
+            <p style="margin:0">No airframe pages for 1983 to 1991. The engine log has 31 entries in those years, so the aircraft was flying and maintained. The pages may be in another binder. <a class="b-cite" href="#">Engine pp. 9 to 14</a></p>
+          </div>
+          <div class="b-hung"><h3>Figures that disagree</h3>
+            <p style="margin:0">The May 9, 2026 oil change gives tach 4131.5, the same as the transponder check on Dec 3, 2024. One of them was probably copied wrong. <a class="b-cite" href="#">Engine p. 36</a> <a class="b-cite" href="#">Airframe p. 58</a></p>
+          </div>
+          <p class="b-meta" style="margin:16px 0 0">Built only from entries you confirmed. A summary of the index, not of the aircraft; the logbooks remain the record.</p>
+        </section>
+        <section class="b-leaf">
+          <h2 class="b-h2">How much is in</h2>
+          <p class="b-meta" style="margin:2px 0 18px;font-size:15px">Pages by year, 1978 to 2026</p>
+          <div class="b-cov" style="grid-template-columns:84px 1fr 56px">
+            <span>Airframe</span><i><b style="left:0;width:11%"></b><b class="gap" style="left:11%;width:16.5%"></b><b style="left:27.5%;width:72.5%"></b></i><span class="muted">198</span>
+            <span>Engine</span><i><b style="left:0;width:100%"></b></i><span class="muted">118</span>
+            <span>Propeller</span><i><b style="left:0;width:100%"></b></i><span class="muted">41</span>
+            <span>Avionics</span><i><b style="left:41.7%;width:58.3%"></b></i><span class="muted">38</span>
+            <span>Other</span><i><b style="left:41.7%;width:2.5%"></b><b style="left:85.4%;width:2.5%"></b><b style="left:89.6%;width:2.5%"></b><b style="left:93.8%;width:6.2%"></b></i><span class="muted">17</span>
+          </div>
+          <div style="position:relative;height:18px;margin:6px 70px 0 98px;font-size:13px;color:var(--ink-3)"><span style="position:absolute;left:0">1978</span><span style="position:absolute;left:25%;transform:translateX(-50%)">1990</span><span style="position:absolute;left:45.8%;transform:translateX(-50%)">2000</span><span style="position:absolute;left:66.7%;transform:translateX(-50%)">2010</span><span style="position:absolute;right:0">2026</span></div>
+          <p style="margin:16px 0 0;display:flex;gap:10px;align-items:center;font-size:15px"><span style="width:28px;height:12px;background:repeating-linear-gradient(135deg, var(--alarm) 0 2px, transparent 2px 5px);display:inline-block"></span>No pages for these years</p>
+          <div style="border-top:2px solid var(--ink);margin-top:24px;padding-top:14px">
+            <h3 style="margin:0 0 6px;font-size:16px">Next</h3>
+            <div class="b-row"><span>Look for the 1983 to 1991 airframe pages</span><a href="#">Add pages</a></div>
+            <div class="b-row"><span>Check the two tach readings that match</span><a href="#">Open both</a></div>
+            <div class="b-row"><span>Ask the books a question</span><a href="#">Search or ask</a></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+</main>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="../shared/gallery.js"></script>
+</body>
+</html>

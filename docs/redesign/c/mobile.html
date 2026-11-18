@@ -1,0 +1,1243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phone and tablet — MyTailLog direction C</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Encode+Sans:wdth,wght@75..125,400..800&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<link rel="stylesheet" href="system.css">
+<style>
+/* page-local additions for the phone and tablet, built from system.css tokens only */
+.dc .cm-head .c-tail { font-size: 17px; padding: 6px 12px 6px 15px; }
+.dc .cm-head .c-tail [data-lucide] { width: 16px; height: 16px; }
+.dc .cm-sync { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink-3); white-space: nowrap; }
+.dc .cm-sync [data-lucide] { width: 15px; height: 15px; }
+.dc .cm-sync.off { color: var(--soon); }
+.dc .cm-title { font: 700 19px/1.2 var(--f); }
+.dc .cm-foot { flex: none; padding: 12px 18px 16px; display: grid; gap: 8px; background: var(--ground); border-top: 1px solid var(--rule); }
+.dc .cm-foot.row { grid-template-columns: auto 1fr; }
+.dc .cm-lede { margin: 6px 0 0; color: var(--ink-2); }
+.dc .cm-lbl { display: flex; justify-content: space-between; align-items: baseline; font: 600 14px/1.3 var(--f); color: var(--ink-2); margin: 16px 0 7px; }
+.dc .cm-lbl a { font-weight: 600; }
+.dc .cm-lbl > span { display: flex; align-items: center; gap: 6px; }
+.dc .cm-lbl [data-lucide] { width: 16px; height: 16px; }
+.dc .cm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dc .cm-chips.nowrap { flex-wrap: nowrap; overflow: hidden; }
+.dc .cm-chip { min-height: 44px; padding: 0 15px; border-radius: 22px; border: 1px solid var(--rule); background: var(--panel); display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--ink); white-space: nowrap; }
+.dc .cm-chip.on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.dc .cm-chip.c-line::before { width: 14px; }
+.dc .cm-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--rule); border-radius: 22px; overflow: hidden; background: var(--panel); }
+.dc .cm-seg > * { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 7px; font-weight: 600; font-size: 15px; color: var(--ink-2); }
+.dc .cm-seg > .on { background: var(--ink); color: var(--on-ink); }
+.dc .cm-item { display: flex; align-items: center; gap: 13px; min-height: 58px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.dc .cm-item:last-child { border-bottom: 0; }
+.dc .cm-item .x { flex: 1; min-width: 0; }
+.dc .cm-item .t { font-weight: 700; line-height: 1.25; }
+.dc .cm-item .d { font-size: 14px; color: var(--ink-2); line-height: 1.35; margin-top: 2px; }
+.dc .cm-item > .chev { color: var(--ink-3); }
+.dc .cm-ic { width: 44px; height: 44px; border-radius: 22px; background: var(--raise); display: grid; place-items: center; flex: none; }
+.dc .cm-card.list { padding: 2px 16px; }
+.dc .cm-row:last-child { border-bottom: 0; }
+.dc .cm-row .when small { font-size: 13px; }
+.dc .cm-step { display: grid; grid-template-columns: 60px 1fr 60px; gap: 10px; align-items: center; }
+.dc .cm-step > span { height: 60px; border-radius: 30px; border: 1px solid var(--rule); background: var(--panel); display: grid; place-items: center; }
+.dc .cm-step > b { font: 700 36px/1 var(--f); text-align: center; letter-spacing: -0.01em; }
+.dc .cm-tag { display: inline-flex; align-items: center; gap: 6px; font: 600 13px/1 var(--f); padding: 6px 10px; border-radius: 999px; background: var(--raise); color: var(--ink-2); white-space: nowrap; }
+.dc .cm-tag [data-lucide] { width: 14px; height: 14px; }
+.dc .cm-trust { display: inline-flex; align-items: center; gap: 6px; font: 600 14px/1.2 var(--f); color: var(--ink-2); white-space: nowrap; }
+.dc .cm-trust [data-lucide] { width: 17px; height: 17px; }
+.dc .cm-trust.ai { color: var(--soon); }
+.dc.cm .c-field > label { font-size: 14px; }
+.dc.cm .c-input { font-size: 17px; min-height: 50px; }
+.dc .cm-vf { position: relative; background: var(--ground); overflow: hidden; }
+.dc .cm-shutter { width: 76px; height: 76px; border-radius: 50%; border: 4px solid var(--ink); display: grid; place-items: center; }
+.dc .cm-shutter::after { content: ""; width: 58px; height: 58px; border-radius: 50%; background: var(--ink); }
+.dc .cm-lock { background: var(--ground); color: var(--ink); }
+.dc .cm-note2 { font-size: 14px; color: var(--ink-2); line-height: 1.45; }
+.dc .cm-sheet .cm-title { margin-bottom: 4px; }
+.dc .cm-thumbs { display: flex; gap: 8px; }
+.dc .cm-thumbs > .scan { width: 46px; flex: none; }
+.dc .cm-num { font: 700 17px/1.2 var(--f); }
+.dc .cm-bar { height: 8px; border-radius: 4px; background: var(--raise); overflow: hidden; }
+.dc .cm-bar > i { display: block; height: 100%; background: var(--ink-2); }
+/* phone and tablet floor: nothing under 13px */
+.dc .cm-tabs a, .dc.web.tab .c-rail a, .dc.tab .c-board th, .dc .c-table th, .dc .c-map text.s, .dc .c-map text.f { font-size: 13px; }
+/* tablet uses the web shell at 1024 wide */
+.dc.web.tab { grid-template-columns: 76px 1fr; grid-template-rows: 60px 1fr; }
+.dc.web.tab .c-rail a { width: 64px; }
+.dc.web.tab .c-top { padding: 0 20px; gap: 14px; }
+.dc.web.tab .c-work { padding: 18px 20px; }
+.dc .t-split { display: grid; grid-template-columns: var(--split, 1.25fr 1fr); min-height: 0; grid-row: 2; }
+.dc .t-split > * { min-width: 0; overflow: hidden; }
+.dc .t-pane { padding: 18px 20px; border-left: 1px solid var(--rule); background: var(--panel); }
+</style>
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a><a href="../analysis.html">Analysis</a>
+  <a href="../a/index.html">A · Paint Scheme</a><a href="../b/index.html">B · Section Tabs</a><a href="../c/index.html" aria-current="page">C · Line Diagram</a>
+  <a href="../d/index.html">D · Tabbed Binder</a>
+</div></nav>
+<nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
+  <a href="index.html">Direction overview</a><a href="web1.html">Web: status, capture, review</a><a href="web2.html">Web: records, aircraft, sharing</a><a href="mobile.html" aria-current="page">Phone and tablet</a>
+</div></nav>
+<main class="g-wrap">
+  <h1 class="g-h1">Line Diagram on the phone and tablet</h1>
+  <p class="g-lede">The phone is for the ramp: one hand, bright sun, gloves sometimes. It opens in the porcelain day theme, keeps the four logbook lines and the departures board from the desk, and puts every main action within reach of the thumb.</p>
+  <ul class="g-index">
+    <li><a href="#c-m-signin">Sign in</a></li><li><a href="#c-m-hangar">Hangar</a></li><li><a href="#c-m-add-aircraft">Add an aircraft</a></li>
+    <li><a href="#c-m-home">Home</a></li><li><a href="#c-m-home-clear">Home, all clear</a></li><li><a href="#c-m-home-offline">Home, offline</a></li><li><a href="#c-m-lock">Lock screen</a></li>
+    <li><a href="#c-m-add">Add</a></li><li><a href="#c-m-tach-photo">Photograph the tach</a></li><li><a href="#c-m-flight">Confirm the flight</a></li><li><a href="#c-m-flight-saved">Flight saved</a></li>
+    <li><a href="#c-m-sq-photo">Squawk photo</a></li><li><a href="#c-m-sq-words">Squawk words</a></li><li><a href="#c-m-sq-detail">Squawk detail</a></li>
+    <li><a href="#c-m-scan-book">Choose the logbook</a></li><li><a href="#c-m-scan-camera">Camera</a></li><li><a href="#c-m-scan-queue">The queue</a></li><li><a href="#c-m-scan-done">Pages read</a></li>
+    <li><a href="#c-m-review">Review</a></li><li><a href="#c-m-review-field">Doubtful field</a></li><li><a href="#c-m-review-next">Page confirmed</a></li>
+    <li><a href="#c-m-due">Due board</a></li><li><a href="#c-m-due-item">Item detail</a></li><li><a href="#c-m-done">Mark done</a></li><li><a href="#c-m-vor">VOR check</a></li><li><a href="#c-m-pick-date">Pick a date</a></li><li><a href="#c-m-ads">ADs</a></li>
+    <li><a href="#c-m-books">Logbooks</a></li><li><a href="#c-m-timeline">Timeline</a></li><li><a href="#c-m-entry">Entry</a></li><li><a href="#c-m-ask">Search and Ask</a></li>
+    <li><a href="#c-m-aircraft">Aircraft</a></li><li><a href="#c-m-docs">Documents</a></li>
+    <li><a href="#c-m-share">Share</a></li><li><a href="#c-m-share-link">Link made</a></li>
+    <li><a href="#c-m-pending">Waiting to upload</a></li><li><a href="#c-m-settings">Settings</a></li>
+    <li><a href="#c-t-home">Tablet home</a></li><li><a href="#c-t-review">Tablet review</a></li><li><a href="#c-t-due">Tablet due board</a></li>
+  </ul>
+
+<!--S1-->
+  <h2 class="g-h2" id="c-getting-in">Getting in</h2>
+  <p class="g-prose">The owner signs in once and lands in the hangar, where each aircraft says in one sentence how it stands. Today the fleet card reads "7 tracked; 0 need more information", the only action on it is mislabelled, and a second aircraft cannot be added from the phone at all. Here adding an aircraft is a sheet that fills itself from the FAA registry.</p>
+  <div class="g-phones">
+    <figure class="g-phone" id="c-m-signin">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-body" style="padding-top:36px">
+          <svg class="c-map" viewBox="0 0 354 92" role="img" aria-label="Four logbook lines meeting at an interchange">
+            <path class="ln air" d="M8,18 H170 l14,14 H346"/><path class="ln eng" d="M8,46 H346"/><path class="ln prop" d="M8,74 H118 l14,-14 H170"/>
+            <path class="ln avi future" d="M220,74 H346"/>
+            <rect class="cap" x="166" y="22" width="22" height="48" rx="11"/>
+            <circle class="stop" cx="60" cy="18" r="5"/><circle class="stop" cx="96" cy="46" r="5"/><circle class="stop" cx="260" cy="46" r="5"/><circle class="ring soon" cx="300" cy="32" r="7"/>
+          </svg>
+          <h1 class="cm-h1" style="margin-top:26px;font-size:30px">MyTailLog</h1>
+          <p class="cm-lede" style="font-size:17px">Your paper logbooks, read into an index you can search, with everything that is due worked out from them. Free and open source.</p>
+          <div style="display:grid;gap:10px;margin-top:28px">
+            <span class="cm-btn"><i data-lucide="circle-user-round"></i>Continue with Apple</span>
+            <span class="cm-btn ghost"><i data-lucide="circle-user-round"></i>Continue with Google</span>
+          </div>
+          <div class="c-field" style="margin-top:24px"><label>Or use your email</label><div class="c-input">dana@example.com</div></div>
+          <span class="cm-btn ghost" style="margin-top:10px"><i data-lucide="mail"></i>Email me a sign-in link</span>
+          <p class="c-note" style="margin:14px 0 0;text-align:center"><a href="#">Use a password instead</a></p>
+        </div>
+        <p class="c-note" style="padding:0 24px 30px;margin:0;text-align:center">New here? The same buttons make your account.</p>
+      </div></div>
+      <figcaption><b>Sign in</b><span>Apple first on iPhone, Google first on Android. The email link replaces the three tiny mode buttons.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-hangar">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-title" style="font-size:25px">Hangar</span><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico" style="font-weight:700;font-size:15px">DM</span></div>
+        <div class="cm-body">
+          <div class="cm-card">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span class="c-tail" style="font-size:17px">N734DM</span><span class="cm-tag">Demo aircraft</span></div>
+            <p class="ink2" style="margin:8px 0 0;font-size:15px">1978 Cessna 172N</p>
+            <p style="margin:6px 0 10px;font-weight:600">One check has lapsed, for IFR only. Next is an oil change, in 9.7 hours.</p>
+            <svg class="c-map" viewBox="0 0 320 82" role="img" aria-label="N734DM, the year ahead">
+              <path class="ln air" d="M6,14 H110"/><path class="ln air future" d="M122,14 H314"/><path class="ln eng" d="M6,32 H110"/><path class="ln eng future" d="M122,32 H314"/>
+              <path class="ln prop" d="M6,50 H110"/><path class="ln prop future" d="M122,50 H314"/><path class="ln avi" d="M6,68 H110"/><path class="ln avi future" d="M122,68 H314"/>
+              <line class="today" x1="116" y1="4" x2="116" y2="78"/>
+              <circle class="ring bad" cx="104" cy="68" r="6"/><circle class="ring soon" cx="132" cy="32" r="6"/><circle class="ring soon" cx="146" cy="68" r="6"/><circle class="ring soon" cx="146" cy="14" r="6"/>
+              <rect class="cap due" x="262" y="6" width="14" height="52" rx="7"/>
+            </svg>
+            <div style="display:flex;gap:8px;margin-top:10px"><span class="c-st bad">1 overdue</span><span class="c-st soon">3 due soon</span></div>
+          </div>
+          <div class="cm-card" style="margin-top:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span class="c-tail" style="font-size:17px">N4321J</span><span class="cm-tag"><i data-lucide="users"></i>Shared, editor</span></div>
+            <p class="ink2" style="margin:8px 0 0;font-size:15px">1966 Piper Cherokee 140</p>
+            <p style="margin:6px 0 10px;font-weight:600">Nothing tracked is overdue. 2 items coming due.</p>
+            <span class="c-st soon">2 due soon</span>
+          </div>
+          <div style="display:grid;gap:10px;margin-top:18px">
+            <span class="cm-btn ghost"><i data-lucide="plus"></i>Add an aircraft</span>
+          </div>
+          <p class="c-note" style="text-align:center;margin:12px 0 0"><a href="#">Import a backup file</a></p>
+        </div>
+      </div></div>
+      <figcaption><b>Hangar</b><span>Each aircraft opens with its sentence and its year ahead. The sync time is always stated.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-add-aircraft">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-title" style="font-size:25px">Hangar</span><span class="ico" style="font-weight:700;font-size:15px">DM</span></div>
+        <div class="cm-body"></div><div class="cm-scrim"></div>
+          <div class="cm-sheet">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span class="cm-title">Add an aircraft</span><span class="cm-ic" style="background:transparent"><i data-lucide="x"></i></span></div>
+            <div class="c-field" style="margin-top:10px"><label>Tail number</label><div class="c-input focus" style="font-weight:700;font-size:20px;letter-spacing:.03em">N734DM</div></div>
+            <p class="cm-lbl" style="margin-top:14px"><span><i data-lucide="badge-check"></i>Found in the FAA registry</span></p>
+            <div class="cm-card" style="padding:12px 16px">
+              <dl class="c-kv"><dt>Aircraft</dt><dd>1978 Cessna 172N</dd><dt>Serial</dt><dd>17269841</dd><dt>Engine</dt><dd>Lycoming O-320-H2AD</dd><dt>Registered to</dt><dd>Dana Morgan</dd><dt>Expires</dt><dd>Mar 31, 2029</dd></dl>
+            </div>
+            <p class="cm-lbl">It starts five logbook lines</p>
+            <div class="cm-chips" style="gap:6px 14px"><span class="c-line air">Airframe</span><span class="c-line eng">Engine</span><span class="c-line prop">Propeller</span><span class="c-line avi">Avionics</span><span class="c-line">Other</span></div>
+            <div style="display:grid;gap:10px;margin-top:22px">
+              <span class="cm-btn">That's my aircraft</span>
+              <span class="cm-btn ghost">Try another tail number</span>
+            </div>
+          </div>
+      </div></div>
+      <figcaption><b>Add an aircraft</b><span>Type the tail, check the registry's answer, and the five lines exist. Needs a connection, and says so if there is none.</span></figcaption>
+    </figure>
+  </div>
+<!--/S1-->
+
+<!--S2-->
+  <h2 class="g-h2" id="c-glance">A glance at the aircraft</h2>
+  <p class="g-prose">Standing at the aircraft, the owner wants the answer in one line and the next few stops in arrival order. Today's phone spends the first screen on a countdown ring, never says when it last synced, and hides offline and conflict states once you are inside an aircraft. Here the sentence comes first, the sync time sits in the header of every aircraft screen, and the home changes with the aircraft's situation.</p>
+  <div class="g-phones">
+    <figure class="g-phone" id="c-m-home">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">One check has lapsed, for IFR only. Next stop: oil change, in 9.7 hours.</h1>
+          <div class="cm-card" style="margin-top:14px;padding:8px 10px 6px">
+            <svg class="c-map" viewBox="0 0 330 124" role="img" aria-label="The year ahead on each logbook line">
+              <path class="ln air" d="M8,32 H118"/><path class="ln air future" d="M134,32 H322"/>
+              <path class="ln eng" d="M8,56 H118"/><path class="ln eng future" d="M134,56 H322"/>
+              <path class="ln prop" d="M8,80 H118"/><path class="ln prop future" d="M134,80 H322"/>
+              <path class="ln avi" d="M8,104 H118"/><path class="ln avi future" d="M134,104 H322"/>
+              <rect class="cap" x="58" y="23" width="16" height="66" rx="8"/>
+              <rect class="cap due" x="272" y="23" width="16" height="66" rx="8"/>
+              <line class="today" x1="126" y1="18" x2="126" y2="120"/>
+              <circle class="ring bad" cx="114" cy="104" r="7"/><circle class="ring soon" cx="142" cy="56" r="7"/><circle class="ring soon" cx="156" cy="104" r="7"/><circle class="ring soon" cx="156" cy="32" r="7"/><circle class="ring ok" cx="188" cy="32" r="6"/><circle class="ring ok" cx="214" cy="32" r="6"/>
+              <text x="126" y="12" text-anchor="middle">Today</text><text class="f" x="66" y="12" text-anchor="middle" style="font-size:13px">Jul 14</text><text class="f" x="280" y="12" text-anchor="middle" style="font-size:13px">Annual</text>
+            </svg>
+          </div>
+          <h2 class="cm-h2">Next stops <a href="#">All 11</a></h2>
+          <div class="cm-row"><div class="when">Nov 11<small>lapsed</small></div><div><div class="t">VOR check</div><div class="d"><span class="c-line avi">Avionics</span></div></div><span class="c-st bad">Overdue</span></div>
+          <div class="cm-row"><div class="when">≈ Dec 12<small>9.7 h</small></div><div><div class="t">Oil and filter</div><div class="d"><span class="c-line eng">Engine</span></div></div><span class="c-st soon">Soon</span></div>
+          <div class="cm-row"><div class="when">Dec 31<small>43 days</small></div><div><div class="t">Transponder, static</div><div class="d"><span class="c-line avi">Avionics</span></div></div><span class="c-st soon">Soon</span></div>
+          <div class="cm-row"><div class="when">Jul 31<small>255 days</small></div><div><div class="t">Annual inspection</div><div class="d"><span class="c-line air">Airframe</span></div></div><span class="c-st ok">On time</span></div>
+        </div>
+        <nav class="cm-tabs"><a class="on" href="#"><span><i data-lucide="route"></i></span>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a href="#"><i data-lucide="book-open"></i>Books</a><a href="#"><i data-lucide="menu"></i>More</a></nav>
+      </div></div>
+      <figcaption><b>Home</b><span>The verdict, the year ahead on four lines, then the next stops in arrival order. As on the overview page, with the sync time added.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-home-clear">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 16:05</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">Nothing tracked is overdue or due soon. Next stop: VOR check, Dec 18, IFR only.</h1>
+          <div class="cm-card" style="margin-top:14px;padding:8px 10px 6px">
+            <svg class="c-map" viewBox="0 0 330 124" role="img" aria-label="The year ahead, with nothing due soon">
+              <path class="ln air" d="M8,32 H118"/><path class="ln air future" d="M134,32 H322"/>
+              <path class="ln eng" d="M8,56 H118"/><path class="ln eng future" d="M134,56 H322"/>
+              <path class="ln prop" d="M8,80 H118"/><path class="ln prop future" d="M134,80 H322"/>
+              <path class="ln avi" d="M8,104 H118"/><path class="ln avi future" d="M134,104 H322"/>
+              <rect class="cap" x="58" y="23" width="16" height="66" rx="8"/><rect class="cap sel" x="108" y="23" width="16" height="90" rx="8"/>
+              <rect class="cap due" x="272" y="23" width="16" height="66" rx="8"/>
+              <line class="today" x1="128" y1="18" x2="128" y2="120"/>
+              <circle class="ring ok" cx="150" cy="104" r="6"/><circle class="ring ok" cx="182" cy="32" r="6"/><circle class="ring ok" cx="196" cy="56" r="6"/><circle class="ring ok" cx="214" cy="32" r="6"/>
+              <text x="128" y="12" text-anchor="middle">Today</text><text class="f" x="280" y="12" text-anchor="middle" style="font-size:13px">Annual</text>
+            </svg>
+          </div>
+          <p class="c-note" style="margin:8px 2px 0">Today's shop visit is the ringed interchange: oil change, VOR check, transponder and static, all confirmed.</p>
+          <h2 class="cm-h2">Next stops <a href="#">All 11</a></h2>
+          <div class="cm-row"><div class="when">Dec 18<small>30 days</small></div><div><div class="t">VOR check</div><div class="d">IFR only</div></div><span class="c-st ok">On time</span></div>
+          <div class="cm-row"><div class="when">Feb 28<small>102 days</small></div><div><div class="t">ELT battery</div><div class="d"><span class="c-line avi">Avionics</span></div></div><span class="c-st ok">On time</span></div>
+          <div class="cm-row"><div class="when">≈ Mar 20<small>50.0 h</small></div><div><div class="t">Oil and filter</div><div class="d"><span class="c-line eng">Engine</span></div></div><span class="c-st ok">On time</span></div>
+        </div>
+        <nav class="cm-tabs"><a class="on" href="#"><span><i data-lucide="route"></i></span>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a href="#"><i data-lucide="book-open"></i>Books</a><a href="#"><i data-lucide="menu"></i>More</a></nav>
+      </div></div>
+      <figcaption><b>Home, all clear</b><span>New: the home follows the aircraft's situation. After a shop visit it says so plainly and rings the visit on the map.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-home-offline">
+      <div class="g-device"><div class="artboard dc cm">
+        <div class="cm-sys"><span>18:22</span><i><i data-lucide="signal"></i><i data-lucide="wifi-off"></i><i data-lucide="battery-medium"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync off"><i data-lucide="wifi-off"></i>Offline</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">One check has lapsed, for IFR only. Next stop: oil change, in 7.3 hours.</h1>
+          <p class="c-note" style="margin:8px 0 0">Worked out on this phone from the 9:38 sync plus your 3 changes below.</p>
+          <h2 class="cm-h2">Saved on this phone <a href="#">Details</a></h2>
+          <div class="cm-card list">
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="plane-landing"></i></span><div class="x"><div class="t">Flight, tach 4214.8</div><div class="d">+2.4 h, logged 17:58</div></div><i class="chev" data-lucide="cloud-upload"></i></div>
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="droplet"></i></span><div class="x"><div class="t">Oil added, 1 qt</div><div class="d">With that flight</div></div><i class="chev" data-lucide="cloud-upload"></i></div>
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="image"></i></span><div class="x"><div class="t">Photo on a squawk</div><div class="d">Nav light lens cracked</div></div><i class="chev" data-lucide="cloud-upload"></i></div>
+          </div>
+          <h2 class="cm-h2">Next stops</h2>
+          <div class="cm-row"><div class="when">Nov 11<small>lapsed</small></div><div><div class="t">VOR check</div><div class="d"><span class="c-line avi">Avionics</span></div></div><span class="c-st bad">Overdue</span></div>
+          <div class="cm-row"><div class="when">≈ Dec 6<small>7.3 h</small></div><div><div class="t">Oil and filter</div><div class="d"><span class="c-line eng">Engine</span></div></div><span class="c-st soon">Soon</span></div>
+        </div>
+        <div class="cm-offline"><i data-lucide="wifi-off" style="width:16px;height:16px"></i>Offline. 3 changes will upload by themselves.</div>
+        <nav class="cm-tabs"><a class="on" href="#"><span><i data-lucide="route"></i></span>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a href="#"><i data-lucide="book-open"></i>Books</a><a href="#"><i data-lucide="menu"></i>More</a></nav>
+      </div></div>
+      <figcaption><b>Home, offline</b><span>Midnight theme in a dark hangar. Offline is said inside the aircraft, the sentence already counts the flight just logged, and the three waiting changes are listed.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-lock">
+      <div class="g-device"><div class="artboard dc cm cm-lock">
+        <div class="cm-sys"><span></span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div style="text-align:center;padding-top:22px">
+          <i data-lucide="lock" style="width:22px;height:22px;margin:0 auto"></i>
+          <div style="font-size:17px;font-weight:600;margin-top:8px">Wednesday, November 18</div>
+          <div style="font:700 88px/1 var(--f);letter-spacing:-0.02em;margin-top:2px">7:02</div>
+        </div>
+        <div style="margin:16px auto 0;width:212px;border:1px solid var(--rule);background:var(--panel);border-radius:18px;padding:10px 12px">
+          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px"><span>N734DM</span><span class="cond" style="color:var(--bad)">1 lapsed</span></div>
+          <div style="font-size:15px;font-weight:700;margin-top:4px">Oil in 9.7 h</div>
+          <div class="c-note" style="font-size:13px">Then transponder, Dec 31</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="margin:0 12px 10px;background:var(--panel);border:1px solid var(--rule);border-radius:20px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink-3);font-weight:600"><span style="display:flex;gap:7px;align-items:center"><i data-lucide="route" style="width:16px;height:16px"></i>MyTailLog</span><span>7:00</span></div>
+          <div style="font-weight:700;margin-top:6px">N734DM: oil change in 9.7 hours</div>
+          <p style="margin:4px 0 0;font-size:15px;line-height:1.45;color:var(--ink-2)">That is about Dec 12 at your usual flying. The VOR check lapsed Nov 11, which matters for IFR only. Nothing else is due before Dec 31.</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 44px 40px"><span class="cm-ic" style="width:50px;height:50px;border-radius:25px"><i data-lucide="flashlight"></i></span><span class="cm-ic" style="width:50px;height:50px;border-radius:25px"><i data-lucide="camera"></i></span></div>
+      </div></div>
+      <figcaption><b>Lock screen</b><span>New: the reminder carries the whole answer, what, when, and what else is coming, so it needs no tap. The small widget keeps the next stop on the lock screen.</span></figcaption>
+    </figure>
+  </div>
+<!--/S2-->
+
+<!--S3-->
+  <h2 class="g-h2" id="c-after-flight">After a flight</h2>
+  <p class="g-prose">Back on the ramp, the owner records the tach, and maybe a quart of oil, with one hand. Today that is buried under a tab, the value field fights typing, the date cannot be changed and is stored in UTC. Here the big Add button opens every kind of record, a photo of the tach becomes a draft flight to check rather than retype, and saving says which stops moved.</p>
+  <div class="g-phones g-flow">
+    <figure class="g-phone" id="c-m-add">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>17:56</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 17:40</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body"><h1 class="cm-h1">One check has lapsed, for IFR only. Next stop: oil change, in 9.7 hours.</h1></div>
+        <div class="cm-scrim"></div>
+        <div class="cm-sheet" style="padding-bottom:22px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="cm-title">Add to N734DM</span><span class="c-note">Works offline</span></div>
+          <div style="margin-top:6px">
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="plane-landing"></i></span><div class="x"><div class="t">Log a flight</div><div class="d">Photograph the tach, or type it</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="droplet"></i></span><div class="x"><div class="t">Add oil</div><div class="d">Quarts topped up between changes</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="triangle-alert"></i></span><div class="x"><div class="t">Report a squawk</div><div class="d">Photo first, then a few words</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="scan-line"></i></span><div class="x"><div class="t">Scan logbook pages</div><div class="d">Adds to the end of a book</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="file-plus-2"></i></span><div class="x"><div class="t">Add a document</div><div class="d">Registration, insurance, a 337</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="cm-ic"><i data-lucide="signature"></i></span><div class="x"><div class="t">Write a logbook entry</div><div class="d">Signed with an emailed code. Needs a connection.</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          </div>
+          <span class="cm-btn ghost" style="margin-top:14px">Close</span>
+        </div>
+      </div></div>
+      <figcaption><b>Add</b><span>One sheet for every kind of record, from the button in the middle of the tab bar. Close sits under the thumb.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-tach-photo">
+      <div class="g-device"><div class="artboard dc cm">
+        <div class="cm-sys"><span>17:57</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Cancel</span><span class="cm-title">Photograph the tach</span><span class="ico"><i data-lucide="zap"></i></span></div>
+        <div class="cm-vf" style="flex:1;margin:0 10px;border-radius:18px;border:1px solid var(--rule)">
+          <svg class="c-map" viewBox="0 0 354 460" preserveAspectRatio="xMidYMid slice" style="height:100%" role="img" aria-label="Camera view of the tachometer with the hour meter framed">
+            <rect x="0" y="0" width="354" height="460" style="fill:var(--panel)"/>
+            <circle cx="22" cy="40" r="8" style="fill:var(--raise)"/><circle cx="332" cy="40" r="8" style="fill:var(--raise)"/><circle cx="22" cy="410" r="8" style="fill:var(--raise)"/><circle cx="332" cy="410" r="8" style="fill:var(--raise)"/>
+            <circle cx="177" cy="215" r="160" style="fill:var(--ground);stroke:var(--rule);stroke-width:8"/>
+            <circle cx="177" cy="215" r="145" style="fill:none;stroke:var(--ink);stroke-width:12;stroke-dasharray:2.5 20.27"/>
+            <path d="M177,215 L69.5,322.5 A152,152 0 0,0 284.5,322.5 Z" style="fill:var(--ground)"/>
+            <text x="98" y="152" text-anchor="middle" style="font-size:26px;font-weight:700">10</text><text x="256" y="152" text-anchor="middle" style="font-size:26px;font-weight:700">20</text><text x="98" y="310" text-anchor="middle" style="font-size:26px;font-weight:700">0</text><text x="256" y="310" text-anchor="middle" style="font-size:26px;font-weight:700">30</text>
+            <text class="f" x="177" y="124" text-anchor="middle" style="font-size:14px">RPM × 100</text>
+            <rect x="125" y="160" width="104" height="38" rx="3" style="fill:var(--raise)"/>
+            <text x="138" y="188" text-anchor="middle" style="font-size:25px;font-weight:700">4</text><text x="158" y="188" text-anchor="middle" style="font-size:25px;font-weight:700">2</text><text x="178" y="188" text-anchor="middle" style="font-size:25px;font-weight:700">1</text><text x="198" y="188" text-anchor="middle" style="font-size:25px;font-weight:700">4</text>
+            <rect x="208" y="163" width="19" height="32" rx="2" style="fill:var(--ink)"/><text x="217.5" y="188" text-anchor="middle" style="font-size:25px;font-weight:700;fill:var(--on-ink)">8</text>
+            <text class="f" x="214" y="262" text-anchor="middle" style="font-size:14px">hours</text>
+            <line x1="177" y1="215" x2="112" y2="284" style="stroke:var(--ink);stroke-width:6;stroke-linecap:round"/><circle cx="177" cy="215" r="12" style="fill:var(--raise);stroke:var(--ink);stroke-width:2"/>
+            <path d="M113,166 V150 H129 M225,150 H241 V166 M241,192 V208 H225 M129,208 H113 V192" style="fill:none;stroke:var(--ok);stroke-width:4;stroke-linecap:round"/>
+          </svg>
+          <span class="c-st ok" style="position:absolute;left:50%;top:18px;transform:translateX(-50%);background:var(--ground)">Reading 4214.8</span>
+        </div>
+        <p class="cm-note2" style="margin:12px 24px 0;text-align:center">Fill the frame with the hour meter. The number goes into a draft flight for you to check.</p>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 24px 34px">
+          <a href="#" style="font-weight:600;min-height:44px;display:flex;align-items:center">Type it instead</a><span class="cm-shutter"></span><span></span>
+        </div>
+      </div></div>
+      <figcaption><b>Photograph the tach</b><span>New: point the phone at the hour meter. It reads the digits, tenths included, and frames what it read.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-flight">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>17:57</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Retake</span><span class="cm-title">Log a flight</span><span class="cm-sync" style="margin-left:0">N734DM</span></div>
+        <div class="cm-body">
+          <div class="c-field"><label>Date</label><div class="c-input" style="justify-content:space-between">Today, Wed Nov 18<i data-lucide="calendar"></i></div></div>
+          <p class="cm-lbl"><span>Tach</span><span class="cm-trust ai"><i data-lucide="scan-line"></i>Read from your photo</span></p>
+          <div class="cm-step"><span><i data-lucide="minus"></i></span><b>4214.8</b><span><i data-lucide="plus"></i></span></div>
+          <p class="c-note" style="margin:6px 0 0;text-align:center">Was 4212.4. <b style="color:var(--ink)">+2.4 h this flight</b></p>
+          <p class="cm-lbl"><span>Hobbs</span><a href="#">Not this time</a></p>
+          <div class="cm-step"><span><i data-lucide="minus"></i></span><b>4683.0</b><span><i data-lucide="plus"></i></span></div>
+          <p class="c-note" style="margin:6px 0 0;text-align:center">Was 4680.4. +2.6 h</p>
+          <p class="cm-lbl"><span>Oil added</span></p>
+          <div class="cm-seg"><span>None</span><span class="on">1 qt</span><span>2 qt</span><span>Other</span></div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn"><i data-lucide="check"></i>Save flight</span><p class="c-note" style="margin:0;text-align:center">Saves on this phone first, uploads when it can.</p></div>
+      </div></div>
+      <figcaption><b>Confirm the reading</b><span>The photo's number arrives marked as read, not confirmed. Big steppers for a correction, a date you can change, oil presets, and one Save.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-flight-saved">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>17:58</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Uploaded 17:58</span></div>
+        <div class="cm-body">
+          <span class="cm-ic" style="width:56px;height:56px;border-radius:28px;background:var(--ok-bg);color:var(--ok)"><i data-lucide="check" style="width:28px;height:28px"></i></span>
+          <h1 class="cm-h1" style="margin-top:14px">Flight saved. Tach is now 4214.8.</h1>
+          <p class="cm-lede">2.4 hours flown and 1 quart of oil added.</p>
+          <h2 class="cm-h2">What it moved</h2>
+          <div class="cm-card list">
+            <div class="cm-row"><div class="when">≈ Dec 6<small>7.3 h</small></div><div><div class="t">Oil change</div><div class="d">7.3 h left, was 9.7</div></div><span class="c-st soon">Soon</span></div>
+            <div class="cm-row"><div class="when">≈ Apr<small>53.5 h</small></div><div><div class="t">AD 2011-10-09</div><div class="d">53.5 h left, was 55.9</div></div><span class="c-st ok">On time</span></div>
+            <div class="cm-row"><div class="when">TBO<small>588.2 h</small></div><div><div class="t">Engine TBO</div><div class="d">1411.8 h SMOH</div></div><span class="c-st ok">On time</span></div>
+          </div>
+          <div class="cm-card" style="margin-top:12px;padding:8px 10px 4px">
+            <svg class="c-map" viewBox="0 0 330 64" role="img" aria-label="The oil change stop moved closer on the engine line">
+              <path class="ln eng" d="M8,30 H120"/><path class="ln eng future" d="M132,30 H322"/>
+              <line class="today" x1="126" y1="12" x2="126" y2="48"/>
+              <circle class="ring soon" cx="214" cy="30" r="7" style="opacity:.35;stroke-dasharray:3 3"/><circle class="ring soon" cx="182" cy="30" r="9" style="stroke-width:5"/>
+              <text x="126" y="62" text-anchor="middle">Today</text><text class="soon" x="182" y="62" text-anchor="middle">7.3 h</text><text class="f" x="224" y="62" style="font-size:13px">was 9.7 h</text>
+            </svg>
+          </div>
+          <p class="c-note" style="margin:12px 2px 0">Calendar items like the transponder did not move. Hours never push a calendar limit later.</p>
+        </div>
+        <div class="cm-foot" style="grid-template-columns:auto 1fr;border-top:0"><span class="cm-btn ghost" style="padding:0 20px"><i data-lucide="undo-2"></i>Undo</span><span class="cm-btn">Done</span></div>
+      </div></div>
+      <figcaption><b>Saved, with what moved</b><span>The answer to "so what": the oil change is now 7.3 hours away, about Dec 6. Undo stays for the session.</span></figcaption>
+    </figure>
+  </div>
+<!--/S3-->
+
+<!--S4-->
+  <h2 class="g-h2" id="c-squawk">Something is wrong</h2>
+  <p class="g-prose">The owner notices something on the walkaround and wants it on record before forgetting it. Today a squawk is text only, defaults to Low, and a swipe resolves it with no undo. Here the camera opens first, words can be dictated, severity is a deliberate choice, and the squawk goes to the mechanic as a link with the photo.</p>
+  <div class="g-phones g-flow">
+    <figure class="g-phone" id="c-m-sq-photo">
+      <div class="g-device"><div class="artboard dc cm">
+        <div class="cm-sys"><span>18:04</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Cancel</span><span class="cm-title">New squawk</span><span class="ico"><i data-lucide="zap"></i></span></div>
+        <div class="cm-vf" style="flex:1;margin:0 10px;border-radius:18px;border:1px solid var(--rule)">
+          <svg class="c-map" viewBox="0 0 354 420" preserveAspectRatio="xMidYMid slice" style="height:100%" role="img" aria-label="Camera view of a cylinder and rocker cover with an oil seep">
+            <rect width="354" height="420" style="fill:var(--panel)"/>
+            <g style="fill:none;stroke:var(--ink-3);stroke-width:7;stroke-linecap:round"><path d="M40,250 H314"/><path d="M40,272 H314"/><path d="M40,294 H314"/><path d="M40,316 H314"/><path d="M40,338 H314"/><path d="M40,360 H314"/></g>
+            <rect x="60" y="120" width="234" height="106" rx="22" style="fill:var(--raise);stroke:var(--ink-3);stroke-width:4"/>
+            <circle cx="92" cy="144" r="7" style="fill:var(--ink-2)"/><circle cx="262" cy="144" r="7" style="fill:var(--ink-2)"/><circle cx="92" cy="204" r="7" style="fill:var(--ink-2)"/><circle cx="262" cy="204" r="7" style="fill:var(--ink-2)"/>
+            <path d="M120,226 C126,240 124,256 132,272 C138,284 128,296 134,312" style="fill:none;stroke:var(--ink-2);stroke-width:9;stroke-linecap:round;opacity:.8"/>
+            <path d="M96,94 H72 V118 M282,94 H306 V118 M306,380 V404 H282 M72,404 H48 V380" style="fill:none;stroke:var(--ink);stroke-width:3"/>
+          </svg>
+        </div>
+        <p class="cm-note2" style="margin:12px 24px 0;text-align:center">A photo shows the mechanic what you saw. Words come next.</p>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 24px 34px">
+          <a href="#" style="font-weight:600;min-height:44px;display:flex;align-items:center">Skip the photo</a><span class="cm-shutter"></span><span class="cm-ic" style="justify-self:end"><i data-lucide="image"></i></span>
+        </div>
+      </div></div>
+      <figcaption><b>Photo first</b><span>New: the camera opens straight away. Pick from the library, or skip it.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-sq-words">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>18:05</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Photo</span><span class="cm-title">New squawk</span><span class="cm-sync" style="margin-left:0">N734DM</span></div>
+        <div class="cm-body">
+          <div style="display:flex;gap:12px;align-items:center">
+            <svg viewBox="0 0 96 72" style="width:96px;height:72px;border-radius:10px;flex:none" role="img" aria-label="Your photo"><rect width="96" height="72" style="fill:var(--ink-2)"/><rect x="16" y="14" width="64" height="30" rx="7" style="fill:var(--ink-3)"/><g style="stroke:var(--ink-3);stroke-width:3"><path d="M10,52 H86"/><path d="M10,60 H86"/><path d="M10,68 H86"/></g></svg>
+            <div><div style="font-weight:700">1 photo</div><a href="#" style="font-size:15px;font-weight:600">Add another</a></div>
+          </div>
+          <div class="c-field" style="margin-top:16px"><label>What did you notice?</label>
+            <div class="c-input focus" style="align-items:flex-start;min-height:104px">Oil seep at the left rocker cover gasket, fresh after today's flight. Wiped it, will look again next flight.</div></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span class="cm-ic" style="background:var(--ink);color:var(--on-ink)"><i data-lucide="mic"></i></span><span style="font-weight:600">Listening. Tap to stop.</span></div>
+          <p class="cm-lbl"><span>How serious is it?</span></p>
+          <div class="cm-seg"><span>Low</span><span class="on"><i data-lucide="eye"></i>Watch</span><span>Ground</span></div>
+          <p class="c-note" style="margin:8px 2px 0">Watch: you'll still fly, and it stays on the home screen until it's cleared.</p>
+          <p class="cm-lbl"><span>Which part of the aircraft</span></p>
+          <div class="cm-seg"><span>Airframe</span><span class="on">Engine</span><span>Prop</span><span>Avionics</span></div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn">Add squawk</span></div>
+      </div></div>
+      <figcaption><b>Severity and words</b><span>Dictate rather than type with cold hands. Severity has no default, so it is always chosen.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-sq-detail">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>18:06</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Squawks</span><span class="cm-sync"><i data-lucide="check"></i>Uploaded 18:06</span><span class="ico"><i data-lucide="ellipsis"></i></span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1" style="font-size:23px">Oil seep at the left rocker cover</h1>
+          <div style="display:flex;gap:8px;margin:10px 0 12px;align-items:center"><span class="cm-tag" style="background:var(--soon-bg);color:var(--soon)"><i data-lucide="eye"></i>Watch</span><span class="c-line eng">Engine</span></div>
+          <svg viewBox="0 0 354 170" style="width:100%;border-radius:12px" role="img" aria-label="Photo of the rocker cover"><rect width="354" height="170" style="fill:var(--ink-2)"/><rect x="50" y="22" width="254" height="84" rx="18" style="fill:var(--ink-3)"/><g style="stroke:var(--ink-3);stroke-width:7"><path d="M20,122 H334"/><path d="M20,140 H334"/><path d="M20,158 H334"/></g><path d="M112,106 C118,118 114,132 122,148" style="fill:none;stroke:var(--ground);stroke-width:8;stroke-linecap:round;opacity:.7"/></svg>
+          <p style="margin:12px 0 0">Oil seep at the left rocker cover gasket, fresh after today's flight. Wiped it, will look again next flight.</p>
+          <dl class="c-kv" style="margin-top:12px"><dt>Reported</dt><dd>Today 18:05, by Dana</dd><dt>At</dt><dd>tach 4214.8</dd><dt>Cleared by</dt><dd class="ink2" style="font-weight:500">No entry yet. Link it when fixed.</dd></dl>
+          <p class="c-note" style="margin:14px 0 0">Also open: Left brake feels soft (Watch, Nov 8) and Nav light lens cracked (Low, Oct 21).</p>
+        </div>
+        <div class="cm-foot"><span class="cm-btn"><i data-lucide="send"></i>Send to M. Torres</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="cm-btn ghost" style="height:48px;font-size:16px">Other mechanic</span><span class="cm-btn ghost" style="height:48px;font-size:16px">Mark resolved</span></div></div>
+      </div></div>
+      <figcaption><b>Squawk detail</b><span>New: send it as a link. M. Torres sees the photo and the words without an account; the link ends in 30 days.</span></figcaption>
+    </figure>
+  </div>
+<!--/S4-->
+
+<!--S5-->
+  <h2 class="g-h2" id="c-scanning">Scanning at the hangar</h2>
+  <p class="g-prose">The owner photographs a stack of logbook pages, then puts the phone away. Today the scanner is five taps deep, nothing says when pages have been read, and review starts somewhere else. Here scanning starts from Add or from a book, the queue is a short line with four stops, and the phone announces when reading is finished.</p>
+  <div class="g-phones g-flow">
+    <figure class="g-phone" id="c-m-scan-book">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>14:20</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 14:02</span></div>
+        <div class="cm-scrim"></div>
+        <div class="cm-sheet" style="top:84px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span class="cm-title">Scan pages</span><span class="cm-ic" style="background:transparent"><i data-lucide="x"></i></span></div>
+          <p class="cm-lbl" style="margin-top:6px"><span>Which logbook</span></p>
+          <div class="cm-card list">
+            <div class="cm-item" style="min-height:56px"><span class="c-line air" style="width:96px">Airframe</span><div class="x"><div class="t" style="font-size:15px">Volume 2</div><div class="d">Adds to the end, 198 pages so far</div></div><i data-lucide="circle-check" style="width:24px;height:24px"></i></div>
+            <div class="cm-item" style="min-height:50px"><span class="c-line eng" style="width:96px">Engine</span><div class="x d">118 pages</div></div>
+            <div class="cm-item" style="min-height:50px"><span class="c-line prop" style="width:96px">Propeller</span><div class="x d">41 pages</div></div>
+            <div class="cm-item" style="min-height:50px"><span class="c-line avi" style="width:96px">Avionics</span><div class="x d">38 pages</div></div>
+            <div class="cm-item" style="min-height:50px"><span class="c-line" style="width:96px">Other</span><div class="x d">17 pages</div></div>
+          </div>
+          <div class="cm-item" style="border:0;margin-top:6px"><div class="x"><div class="t">Handwritten entries</div><div class="d">Reads cursive too. Turn off for typed pages; they come back faster.</div></div><span class="c-toggle on"></span></div>
+          <p class="c-note" style="margin:4px 0 14px">19 of today's 50 AI readings left. Extra pages wait for tomorrow.</p>
+          <span class="cm-btn"><i data-lucide="camera"></i>Open the camera</span>
+        </div>
+      </div></div>
+      <figcaption><b>Choose the logbook</b><span>Pages always add to the end of the book, so the stack can be shot in any order of sessions.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-scan-camera">
+      <div class="g-device"><div class="artboard dc cm">
+        <div class="cm-sys"><span>14:22</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Cancel</span><span class="c-line air" style="font-size:15px">Airframe, vol. 2</span><span class="ico"><i data-lucide="zap"></i></span></div>
+        <div class="cm-vf" style="flex:1;margin:0 10px;border-radius:18px;background:var(--panel)">
+          <span class="c-st ok" style="position:absolute;left:50%;top:14px;transform:translateX(-50%);background:var(--ground);z-index:2">Edges found, hold still</span>
+          <div class="scan photo" style="position:absolute;left:34px;top:62px;width:302px;aspect-ratio:auto;height:400px;--lh:22px;--top:48px;--cols:18% 14% 1fr 20%;outline:3px solid var(--ok);outline-offset:4px">
+            <div class="scan-title">AIRCRAFT LOG</div>
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>2/9/85</span><span>702.4</span><span>Replaced vacuum</span><span class="black">J. Kessler</span><span></span><span></span><span>pump filter.</span><span></span><span class="gap"></span><span>5/30/85</span><span>748.9</span><span>Annual inspection</span><span class="black">J. Kessler</span><span></span><span></span><span>i/a/w FAR 43 App. D.</span><span class="black">A&amp;P IA</span><span></span><span></span><span>Returned to service.</span><span></span></div>
+            <div class="scan-page">204</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px 20px 34px">
+          <div style="display:flex;align-items:center;gap:8px"><div class="cm-thumbs"><div class="scan" style="--lh:6px;--top:9px;width:40px"></div></div><b>5 pages</b></div>
+          <span class="cm-shutter"></span>
+          <span class="cm-btn" style="justify-self:end;height:48px;padding:0 20px;font-size:16px">Done</span>
+        </div>
+      </div></div>
+      <figcaption><b>Camera</b><span>The page edges are found and the shot is taken on its own. A running count; up to 24 pages a go.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-scan-queue">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>14:24</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Books</span><span class="cm-sync"><i data-lucide="cloud-upload"></i>Uploading</span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">6 new Airframe pages</h1>
+          <p class="cm-lede">You can lock the phone. We'll tell you when they are read.</p>
+          <div class="cm-card" style="margin-top:14px;padding:10px 12px 4px">
+            <svg class="c-map" viewBox="0 0 330 74" role="img" aria-label="The pipeline: on this phone, being read, to review, done">
+              <path class="ln" d="M24,22 H306" style="stroke:var(--rule)"/><path class="ln" d="M24,22 H150" style="stroke:var(--l-air)"/>
+              <circle class="ring ok" cx="24" cy="22" r="9"/><circle class="ring ok" cx="118" cy="22" r="9"/><circle class="cap" cx="212" cy="22" r="8"/><circle class="cap" cx="306" cy="22" r="8"/>
+              <text x="12" y="52">On phone</text><text x="118" y="52" text-anchor="middle">Reading</text><text x="212" y="52" text-anchor="middle">To review</text><text x="306" y="52" text-anchor="end">Done</text>
+              <text class="s" x="12" y="69" style="font-size:13px">2 pages</text><text class="s" x="118" y="69" text-anchor="middle" style="font-size:13px">4</text><text class="s" x="212" y="69" text-anchor="middle" style="font-size:13px">0</text><text class="s" x="306" y="69" text-anchor="end" style="font-size:13px">0</text>
+            </svg>
+          </div>
+          <h2 class="cm-h2">On this phone</h2>
+          <div class="cm-item" style="border:0;padding-top:0"><div class="cm-thumbs"><div class="scan" style="--lh:6px;--top:9px"></div><div class="scan" style="--lh:6px;--top:9px"></div></div><div class="x"><div class="t">Pages 203 and 204</div><div class="d">Uploading 1 of 2</div><div class="cm-bar" style="margin-top:6px"><i style="width:55%"></i></div></div></div>
+          <h2 class="cm-h2" style="margin-top:8px">Being read</h2>
+          <div class="cm-item" style="border:0;padding-top:0"><div class="cm-thumbs"><div class="scan" style="--lh:6px;--top:9px"></div><div class="scan" style="--lh:6px;--top:9px"></div></div><div class="x"><div class="t">Pages 199 to 202</div><div class="d">Reading page 200. About a minute a page.</div><div class="cm-bar" style="margin-top:6px"><i style="width:30%;background:var(--l-air)"></i></div></div></div>
+          <div class="cm-card" style="margin-top:14px">
+            <div style="display:flex;justify-content:space-between;font-weight:700"><span>AI reading today</span><span>31 of 50</span></div>
+            <div class="cm-bar" style="margin:8px 0 6px"><i style="width:62%"></i></div>
+            <p class="c-note" style="margin:0">Shared across your aircraft. These 6 pages make it 37. <a href="#">Use your own key</a></p>
+          </div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn ghost"><i data-lucide="camera"></i>Scan more pages</span></div>
+      </div></div>
+      <figcaption><b>The queue</b><span>Four stops on one line: on this phone, being read, to review, done. The daily allowance is shown where it is spent.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-scan-done">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>14:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 14:41</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">One check has lapsed, for IFR only. Next stop: oil change, in 9.7 hours.</h1>
+          <h2 class="cm-h2">Next stops</h2>
+          <div class="cm-row"><div class="when">Nov 11<small>lapsed</small></div><div><div class="t">VOR check</div><div class="d"><span class="c-line avi">Avionics</span></div></div><span class="c-st bad">Overdue</span></div>
+          <div class="cm-row"><div class="when">≈ Dec 12<small>9.7 h</small></div><div><div class="t">Oil and filter</div><div class="d"><span class="c-line eng">Engine</span></div></div><span class="c-st soon">Soon</span></div>
+          <div class="cm-scrim" style="background:rgba(8,14,34,.35)"></div>
+        </div>
+        <div style="position:absolute;left:10px;right:10px;top:46px;background:var(--panel);border:1px solid var(--rule);border-radius:22px;padding:14px 16px 16px;box-shadow:0 14px 30px -12px rgba(8,14,34,.5)">
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--ink-3)"><span style="display:flex;gap:7px;align-items:center"><i data-lucide="route" style="width:16px;height:16px"></i>MyTailLog</span><span>now</span></div>
+          <div style="font-weight:700;font-size:17px;margin-top:6px">6 pages are read. 2 need a look.</div>
+          <p class="cm-note2" style="margin:4px 0 12px">Airframe pages 199 to 204. Four read cleanly and can be confirmed together. Two have a doubtful date or tach.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="cm-btn" style="height:48px;font-size:16px">Review the 2</span><span class="cm-btn ghost" style="height:48px;font-size:16px">Later</span></div>
+        </div>
+        <nav class="cm-tabs"><a class="on" href="#"><span><i data-lucide="route"></i></span>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a href="#"><i data-lucide="book-open"></i>Books<span></span></a><a href="#"><i data-lucide="menu"></i>More</a></nav>
+      </div></div>
+      <figcaption><b>Pages read</b><span>The loop closes: a notification says how many are clean and how many need eyes, and opens review on the doubtful ones.</span></figcaption>
+    </figure>
+  </div>
+<!--/S5-->
+
+<!--S6-->
+  <h2 class="g-h2" id="c-review">Review on the phone</h2>
+  <p class="g-prose">Review is checking what the AI read against the page, one entry at a time. Today the drawer covers most of the scan, the spotlight button sits at the screen edge, and each page takes five taps to finish. Here the page fills the screen, the drawer starts with the least certain field, its ink lights on the scan, and confirming a page moves to the next with one swipe. This is the midnight theme, which keeps the paper the brightest thing on screen.</p>
+  <div class="g-phones g-flow">
+    <figure class="g-phone" id="c-m-review">
+      <div class="g-device"><div class="artboard dc cm">
+        <div class="cm-sys"><span>14:43</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Books</span><span class="c-line air" style="font-size:15px">Page 201</span><span class="cm-sync" style="margin-left:0">2 of 6</span></div>
+        <div style="padding:0 12px">
+          <div class="scan" style="--lh:24px;--top:58px;--cols:16% 15% 1fr 19%;aspect-ratio:auto;height:520px">
+            <div class="scan-title">AIRCRAFT LOG</div>
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>6/2/84</span><span>641.7</span><span>Annual inspection</span><span class="black">Kessler</span><span></span><span></span><span>i/a/w FAR 43 App. D.</span><span class="black">A&amp;P IA</span><span></span><span></span><span>Comp. 74/76/75/73</span><span></span><span></span><span></span><span>Cleaned, gapped plugs</span><span></span><span></span><span></span><span>Returned to service.</span><span></span><span class="gap"></span><span>9/18/84</span><span>688.0</span><span>Replaced L/H nav</span><span class="black">Kessler</span><span></span><span></span><span>light bulb. Ops ck.</span><span></span></div>
+            <div class="scan-hl quiet" style="left:3px;top:58px;width:calc(100% - 6px);height:121px"></div>
+            <div class="scan-page">201</div>
+          </div>
+        </div>
+        <div class="cm-sheet" style="padding-bottom:26px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="cm-title">Jun 2, 1984 · Annual</span><span class="c-note">Entry 1 of 2</span></div>
+          <div style="display:flex;gap:12px;align-items:center;margin:8px 0 14px"><span class="cm-trust ai"><i data-lucide="scan-line"></i>Read by AI</span><span class="c-note">1 field needs a look</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="cm-btn ghost" style="height:50px">Whole page</span><span class="cm-btn" style="height:50px">Check the entry</span></div>
+        </div>
+      </div></div>
+      <figcaption><b>The page fills the screen</b><span>The entry sits in a short drawer, its lines outlined on the page. Swipe sideways to turn pages.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-review-field">
+      <div class="g-device"><div class="artboard dc cm">
+        <div class="cm-sys"><span>14:43</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Page</span><span class="c-line air" style="font-size:15px">Page 201</span><span class="cm-sync" style="margin-left:0">2 of 6</span></div>
+        <div style="padding:0 12px">
+          <div class="scan" style="--lh:24px;--top:58px;--cols:16% 15% 1fr 19%;aspect-ratio:auto;height:300px">
+            <div class="scan-title">AIRCRAFT LOG</div>
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>6/2/84</span><span>641.7</span><span>Annual inspection</span><span class="black">Kessler</span><span></span><span></span><span>i/a/w FAR 43 App. D.</span><span class="black">A&amp;P IA</span><span></span><span></span><span>Comp. 74/76/75/73</span><span></span><span></span><span></span><span>Cleaned, gapped plugs</span><span></span></div>
+            <div class="scan-hl" style="left:57px;top:58px;width:57px;height:25px"></div>
+            <div class="scan-page">201</div>
+          </div>
+        </div>
+        <div class="cm-sheet" style="top:404px;padding-top:10px">
+          <p class="cm-lbl" style="margin:0 0 6px"><span>Tach</span><span class="cm-trust ai"><i data-lucide="circle-help"></i>Not sure</span></p>
+          <div class="c-input doubt" style="font-size:24px;font-weight:700;min-height:56px">641.7</div>
+          <p class="cm-note2" style="margin:6px 0 12px">The 1 could be a 7. The next entry reads 688.0 in September.</p>
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:8px"><span class="cm-btn" style="height:50px"><i data-lucide="check"></i>Accept 641.7</span><span class="cm-btn ghost" style="height:50px"><i data-lucide="pencil"></i>Edit</span></div>
+          <span class="cm-btn ghost" style="height:46px;margin-top:8px;font-size:16px;border:0;background:transparent">Not on this page</span>
+          <p class="cm-lbl" style="margin:6px 0 2px;border-top:1px solid var(--rule);padding-top:10px"><span>Rest of this entry</span><span class="c-note">Swipe right to accept</span></p>
+          <dl class="c-kv" style="font-size:15px"><dt>Date</dt><dd>Jun 2, 1984</dd><dt>Work</dt><dd>Annual inspection i/a/w FAR 43 App. D</dd><dt>Signed</dt><dd>Kessler, A&amp;P IA</dd></dl>
+        </div>
+      </div></div>
+      <figcaption><b>A doubtful field</b><span>The least certain field comes first, its ink lit on the page. Three outcomes: accept, edit, or not on this page.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-review-next">
+      <div class="g-device"><div class="artboard dc cm">
+        <div class="cm-sys"><span>14:44</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Books</span><span class="c-line air" style="font-size:15px">Page 202</span><span class="cm-sync" style="margin-left:0">3 of 6</span></div>
+        <div style="position:relative;height:380px;overflow:hidden">
+          <div class="scan" style="position:absolute;left:-250px;top:10px;width:280px;aspect-ratio:auto;height:360px;--lh:20px;--top:40px;opacity:.55"></div>
+          <div class="scan" style="position:absolute;left:46px;top:0;width:300px;aspect-ratio:auto;height:380px;--lh:22px;--top:46px;--cols:18% 14% 1fr 20%">
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description</span><span>Sig.</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>3/4/85</span><span>713.2</span><span>Oil &amp; filter changed.</span><span class="black">J. Kessler</span><span class="gap"></span><span>4/22/85</span><span>731.0</span><span>Replaced R/H</span><span class="black">J. Kessler</span><span></span><span></span><span>brake linings.</span><span></span></div>
+            <div class="scan-page">202</div>
+          </div>
+        </div>
+        <div class="cm-card" style="margin:14px 12px 0;display:flex;gap:12px;align-items:center;padding:12px 14px">
+          <i data-lucide="circle-check" style="width:24px;height:24px;color:var(--ok)"></i>
+          <div style="flex:1"><div style="font-weight:700">Page 201 confirmed</div><div class="c-note">2 entries now on the Airframe line, 1984</div></div>
+          <a href="#" style="font-weight:700;min-height:44px;display:flex;align-items:center">Undo</a>
+        </div>
+        <div style="flex:1"></div>
+        <div class="cm-sheet" style="position:static;padding-bottom:26px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="cm-title">Page 202 read cleanly</span><span class="c-note">2 entries</span></div>
+          <p class="cm-note2" style="margin:4px 0 12px">Mar 4, 1985 oil change and Apr 22 brake linings. Nothing doubtful.</p>
+          <span class="cm-btn"><i data-lucide="check"></i>Confirm page and next</span>
+        </div>
+      </div></div>
+      <figcaption><b>Page confirmed, next page in</b><span>Confirmed entries join their line on the map. A clean page is one tap; a doubtful one opens at its field.</span></figcaption>
+    </figure>
+  </div>
+<!--/S6-->
+
+<!--S7-->
+  <h2 class="g-h2" id="c-due">What is due</h2>
+  <p class="g-prose">The due board lists every stop in the order it arrives, documents included, with the limit that bites first. Today "All items" lives outside navigation, so Back exits the aircraft, and Mark done is an older screen of 10px type. Here every item opens to its page, marking done is a sheet, related items can be done together, and a date can be picked to see what will have lapsed by then.</p>
+  <div class="g-phones">
+    <figure class="g-phone" id="c-m-due">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico"><i data-lucide="calendar-clock"></i></span></div>
+        <div class="cm-body" style="padding-top:0">
+          <div class="cm-chips nowrap" style="gap:6px"><span class="cm-chip on" style="padding:0 12px">All 11</span><span class="cm-chip" style="padding:0 12px">Overdue 1</span><span class="cm-chip" style="padding:0 12px">Soon 3</span><span class="cm-chip" style="padding:0 12px">No record 1</span></div>
+          <div style="margin-top:6px">
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">No date<small>on file</small></div><div><div class="t">Insurance policy</div><div class="d"><span class="c-line">Document</span></div></div><span class="c-st unk">No record</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Nov 11<small>lapsed</small></div><div><div class="t">VOR check</div><div class="d"><span class="c-line avi">Avionics</span> · IFR only</div></div><span class="c-st bad">Overdue</span></div>
+            <div style="display:flex;align-items:center;gap:8px;font:700 13px/1 var(--f);font-stretch:87%;padding:6px 0"><span>Today, Nov 18</span><span style="flex:1;height:2px;background:var(--ink)"></span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">≈ Dec 12<small>9.7 h</small></div><div><div class="t">Oil and filter</div><div class="d"><span class="c-line eng">Engine</span> · 50 h</div></div><span class="c-st soon">Soon</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Dec 31<small>43 days</small></div><div><div class="t">Transponder</div><div class="d"><span class="c-line avi">Avionics</span> · 24 mo</div></div><span class="c-st soon">Soon</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Dec 31<small>43 days</small></div><div><div class="t">Pitot-static</div><div class="d"><span class="c-line avi">Avionics</span> · IFR only</div></div><span class="c-st soon">Soon</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Feb 28<small>102 days</small></div><div><div class="t">ELT battery</div><div class="d"><span class="c-line avi">Avionics</span> · expiry</div></div><span class="c-st ok">On time</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">≈ Apr<small>55.9 h</small></div><div><div class="t">AD 2011-10-09</div><div class="d"><span class="c-line air">Airframe</span> · 100 h</div></div><span class="c-st ok">On time</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Jul 31<small>255 days</small></div><div><div class="t">Annual inspection</div><div class="d"><span class="c-line air">Airframe</span> · 12 mo</div></div><span class="c-st ok">On time</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Jul 31<small>255 days</small></div><div><div class="t">ELT inspection</div><div class="d"><span class="c-line avi">Avionics</span> · 12 mo</div></div><span class="c-st ok">On time</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Mar 31<small>2029</small></div><div><div class="t">Registration</div><div class="d"><span class="c-line">Document</span> · 7 years</div></div><span class="c-st ok">On time</span></div>
+            <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">≈ 2030<small>590.6 h</small></div><div><div class="t">Engine TBO</div><div class="d"><span class="c-line eng">Engine</span> · advisory</div></div><span class="c-st ok">On time</span></div>
+          </div>
+        </div>
+        <nav class="cm-tabs"><a href="#"><i data-lucide="route"></i>Network</a><a class="on" href="#"><span><i data-lucide="list-ordered"></i></span>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a href="#"><i data-lucide="book-open"></i>Books</a><a href="#"><i data-lucide="menu"></i>More</a></nav>
+      </div></div>
+      <figcaption><b>Due board</b><span>All 11 stops in arrival order with a line for today. Insurance and registration sit on the same board. The calendar button opens Pick a date.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-due-item">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:42</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Due board</span><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span></div>
+        <div class="cm-body">
+          <div style="display:flex;justify-content:space-between;align-items:center"><h1 class="cm-h1">Transponder</h1><span class="c-st soon">Due soon</span></div>
+          <p class="ink2" style="margin:4px 0 12px"><span class="c-line avi">Avionics</span> · 91.413, every 24 months</p>
+          <div class="cm-card"><dl class="c-kv"><dt>Due</dt><dd>Dec 31, 2026, in 43 days</dd><dt>Last done</dt><dd>Dec 3, 2024 at 4131.5</dd><dt>By</dt><dd>AeroCheck Instruments</dd><dt>Reminders</dt><dd>30 and 7 days before</dd></dl></div>
+          <h2 class="cm-h2">The page that shows it <a href="#">Open</a></h2>
+          <div style="display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:start">
+            <div class="scan" style="--lh:9px;--top:12px"><div class="scan-hl" style="left:4px;top:40px;width:86px;height:42px"></div></div>
+            <div><p style="margin:0 0 8px;font-size:15px">"ATC transponder test and inspection performed i/a/w FAR 91.413 and FAR 43 App. F."</p><a class="c-src air" href="#">Airframe p. 58</a></div>
+          </div>
+          <div class="cm-card" style="margin-top:14px;background:var(--raise);border-color:var(--raise)">
+            <div style="font-weight:700;display:flex;gap:8px;align-items:center"><i data-lucide="merge" style="width:18px;height:18px"></i>Do these together</div>
+            <p class="cm-note2" style="margin:4px 0 0">Pitot-static and altimeter is due the same day and AeroCheck did both last time. One visit, one entry.</p>
+          </div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn"><i data-lucide="check"></i>Mark done</span></div>
+      </div></div>
+      <figcaption><b>Item detail</b><span>Its rule, both dates, and the page that proves the last one. A "do these together" note when another item shares the visit.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-done">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>15:30</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Due board</span><span class="cm-sync"><i data-lucide="check"></i>Synced 15:12</span></div>
+        <div class="cm-body"><h1 class="cm-h1">Transponder</h1></div>
+        <div class="cm-scrim"></div>
+        <div class="cm-sheet" style="top:120px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span class="cm-title">Mark the transponder done</span><span class="cm-ic" style="background:transparent"><i data-lucide="x"></i></span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+            <div class="c-field"><label>Done on</label><div class="c-input" style="justify-content:space-between">Nov 18, 2026<i data-lucide="calendar"></i></div></div>
+            <div class="c-field"><label>Tach at the time</label><div class="c-input">4212.4</div></div>
+          </div>
+          <div class="c-field" style="margin-top:12px"><label>Who did it</label><div class="c-input" style="justify-content:space-between">AeroCheck Instruments<i data-lucide="chevrons-up-down"></i></div></div>
+          <div class="cm-item" style="border-bottom:1px solid var(--rule);margin-top:6px"><div class="x"><div class="t">Also mark pitot-static done</div><div class="d">Same visit, same entry</div></div><span class="c-toggle on"></span></div>
+          <p class="cm-lbl"><span>The logbook entry</span></p>
+          <div class="cm-seg"><span class="on"><i data-lucide="camera"></i>Scan it now</span><span>Link it later</span></div>
+          <p class="cm-note2" style="margin:12px 0 0"><b>Next due: Nov 30, 2028</b> for both. This updates the index; the shop's signed entry in your logbook is the record.</p>
+          <span class="cm-btn" style="margin-top:14px">Mark 2 done</span>
+        </div>
+      </div></div>
+      <figcaption><b>Mark done</b><span>A sheet, not a separate old screen. The tach comes from the last reading, and the paired item can ride along.</span></figcaption>
+    </figure>
+  </div>
+  <div class="g-phones">
+    <figure class="g-phone" id="c-m-vor">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>8:15</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>VOR check</span><span class="cm-sync"><i data-lucide="check"></i>Synced 8:02</span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">Log a VOR check</h1>
+          <p class="cm-lede" style="font-size:15px">91.171(d) asks for the date, place, bearing error and your signature, in a log or other record.</p>
+          <div class="c-field" style="margin-top:14px"><label>Date</label><div class="c-input" style="justify-content:space-between">Today, Nov 18, 2026<i data-lucide="calendar"></i></div></div>
+          <p class="cm-lbl"><span>Kind of check</span></p>
+          <div class="cm-seg"><span class="on">VOT</span><span>Ground</span><span>Airborne</span><span>Dual</span></div>
+          <div class="c-field" style="margin-top:12px"><label>Place</label><div class="c-input">VOT 108.0, home field ramp</div></div>
+          <p class="cm-lbl"><span>Bearing error</span><span>VOT limit ±4°</span></p>
+          <div class="cm-step" style="grid-template-columns:52px 1fr 52px"><span style="height:52px"><i data-lucide="minus"></i></span><b style="font-size:30px">+2°</b><span style="height:52px"><i data-lucide="plus"></i></span></div>
+          <p class="cm-lbl"><span>Signature</span><a href="#">Clear</a></p>
+          <div style="height:72px;border:1px solid var(--rule);border-radius:10px;background:var(--panel);position:relative">
+            <svg viewBox="0 0 354 72" style="width:100%;height:72px" aria-label="Your signature"><path d="M28,48 C40,20 52,22 50,46 C48,60 62,30 74,34 C84,38 80,52 92,44 C104,36 112,24 124,40 C132,50 140,46 152,36 C170,24 182,48 204,40" style="fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round"/><path d="M20,58 H330" style="stroke:var(--rule);stroke-width:1"/></svg>
+          </div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn">Save VOR check</span><p class="c-note" style="margin:0;text-align:center">Clears the lapse. Next due Dec 18 for IFR.</p></div>
+      </div></div>
+      <figcaption><b>VOR check log</b><span>The four things 91.171(d) asks for, and nothing else. A signature drawn with a finger.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-pick-date">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:44</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Due board</span><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">Pick a date</h1>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+            <div class="c-field"><label>Date</label><div class="c-input focus" style="justify-content:space-between;font-weight:700">Feb 15, 2027<i data-lucide="calendar"></i></div></div>
+            <div class="c-field"><label>Hours by then</label><div class="c-input" style="justify-content:space-between;font-weight:700">39 h<span class="c-note" style="font-weight:500">3 h/wk</span></div></div>
+          </div>
+          <div class="cm-card" style="margin-top:12px;padding:6px 8px 4px">
+            <svg class="c-map" viewBox="0 0 330 120" role="img" aria-label="Today and Feb 15 on the four lines">
+              <rect x="26" y="20" width="196" height="96" rx="6" style="fill:var(--raise)"/>
+              <path class="ln air future" d="M8,34 H322"/><path class="ln eng future" d="M8,58 H322"/><path class="ln prop future" d="M8,82 H322"/><path class="ln avi future" d="M8,106 H322"/>
+              <line class="today" x1="26" y1="20" x2="26" y2="116"/><line class="today" x1="222" y1="20" x2="222" y2="116" style="stroke-width:3"/>
+              <circle class="ring bad" cx="14" cy="106" r="7"/><circle class="ring bad" cx="82" cy="58" r="7"/><circle class="ring bad" cx="128" cy="106" r="7"/><circle class="ring bad" cx="128" cy="34" r="7"/><circle class="ring soon" cx="254" cy="106" r="7"/><circle class="ring soon" cx="296" cy="34" r="7"/>
+              <text x="26" y="13" text-anchor="middle">Today</text><text x="222" y="13" text-anchor="middle">Feb 15</text>
+            </svg>
+          </div>
+          <h2 class="cm-h2">By Feb 15, 4 will have lapsed</h2>
+          <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Nov 11</div><div><div class="t">VOR check</div><div class="d">IFR only, lapsed now</div></div><span class="c-st bad">Overdue</span></div>
+          <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">≈ Dec 12</div><div><div class="t">Oil and filter</div><div class="d">at tach 4222.1</div></div><span class="c-st bad">Overdue</span></div>
+          <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Dec 31</div><div><div class="t">Transponder, static</div><div class="d">calendar limit</div></div><span class="c-st bad">Overdue</span></div>
+          <h2 class="cm-h2" style="margin-top:12px">Close behind</h2>
+          <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">Feb 28</div><div><div class="t">ELT battery</div><div class="d">13 days after</div></div><span class="c-st soon">Soon</span></div>
+          <div class="cm-row" style="min-height:50px;padding:7px 0"><div class="when">≈ Apr</div><div><div class="t">AD 2011-10-09</div><div class="d">16.9 h left by then</div></div><span class="c-st soon">Soon</span></div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn"><i data-lucide="merge"></i>Plan one shop visit</span></div>
+      </div></div>
+      <figcaption><b>Pick a date</b><span>New: before a trip, choose the date and the hours you expect to fly. The board shows what will have lapsed by then.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-ads">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:46</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Due board</span><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">ADs and SBs</h1>
+          <div class="cm-seg" style="margin-top:12px"><span class="on">Applies 2</span><span>Not applicable 1</span></div>
+          <div class="cm-card" style="margin-top:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">AD 2011-10-09</b><span class="c-st ok">On time</span></div>
+            <p style="margin:2px 0 8px;font-weight:600">Seat rails and stops</p>
+            <dl class="c-kv" style="font-size:15px"><dt>Kind</dt><dd>Recurring, every 100 h</dd><dt>Complied</dt><dd>Jul 14, 2026 at 4168.3</dd><dt>Next</dt><dd>tach 4268.3, 55.9 h, about Apr 2027</dd></dl>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><a class="c-src air" href="#">Airframe p. 60</a><span class="cm-btn ghost" style="height:44px;font-size:15px;padding:0 14px">Record compliance</span></div>
+          </div>
+          <div class="cm-card" style="margin-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">AD 76-07-12</b><span class="cm-tag"><i data-lucide="check"></i>Complied</span></div>
+            <p style="margin:2px 0 8px;font-weight:600">Fuel filler caps</p>
+            <dl class="c-kv" style="font-size:15px"><dt>Kind</dt><dd>One-time</dd><dt>Complied</dt><dd>1998</dd></dl>
+          </div>
+          <div class="cm-item" style="margin-top:6px"><span class="cm-ic"><i data-lucide="circle-alert"></i></span><div class="x"><div class="t">2020-18-01 fuel pump diaphragm</div><div class="d">Not applicable: different pump P/N</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn ghost"><i data-lucide="search"></i>Find ADs for a Cessna 172N</span></div>
+      </div></div>
+      <figcaption><b>ADs</b><span>Recurring, one-time and not applicable, each with its reason and the page that records it.</span></figcaption>
+    </figure>
+  </div>
+<!--/S7-->
+
+<!--S8-->
+  <h2 class="g-h2" id="c-records">The records</h2>
+  <p class="g-prose">On the phone the records are for looking something up for a mechanic or a buyer. Today history uses text glyphs in hard-coded colours, entry detail is read-only with no way back to its page, and Ask is three levels down with citations that cannot be tapped. Here the books, the timeline, each entry beside its scan, and one search-or-ask field share the same line colours and page chips.</p>
+  <div class="g-phones">
+    <figure class="g-phone" id="c-m-books">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body">
+          <div class="cm-seg"><span class="on">Books</span><span>Timeline</span></div>
+          <div class="cm-card" style="margin-top:14px;display:flex;gap:12px;align-items:center;padding:12px 14px">
+            <div class="cm-thumbs"><div class="scan" style="--lh:6px;--top:9px;width:36px"></div></div>
+            <div style="flex:1"><div style="font-weight:700">6 pages to review</div><div class="c-note">4 read cleanly, 2 need a look</div></div>
+            <span class="cm-btn" style="height:44px;font-size:15px;padding:0 16px">Review</span>
+          </div>
+          <p class="cm-lbl"><span>412 pages, 212 confirmed entries</span></p>
+          <div class="cm-card list">
+            <div class="cm-item"><span class="c-line air" style="width:94px">Airframe</span><div class="x"><div class="t" style="font-size:15px">2 volumes, 198 pages</div><div class="d">1978 to 2026</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="c-line eng" style="width:94px">Engine</span><div class="x"><div class="t" style="font-size:15px">118 pages</div><div class="d">1978 to 2026</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="c-line prop" style="width:94px">Propeller</span><div class="x"><div class="t" style="font-size:15px">41 pages</div><div class="d">1978 to 2026</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="c-line avi" style="width:94px">Avionics</span><div class="x"><div class="t" style="font-size:15px">38 pages</div><div class="d">2019 to 2026</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><span class="c-line" style="width:94px">Other</span><div class="x"><div class="t" style="font-size:15px">17 pages</div><div class="d">Weighings, 337s</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          </div>
+          <div class="cm-item" style="border:0;margin-top:4px;align-items:flex-start"><svg viewBox="0 0 44 12" style="width:44px;height:12px;margin-top:6px;flex:none"><path d="M0,6 H44" style="stroke:var(--l-air);stroke-width:2;stroke-dasharray:5 7"/></svg><div class="x"><div class="t" style="font-size:15px">No airframe pages for 1983 to 1991</div><div class="d">If you have that volume, scan it and the line fills in.</div></div></div>
+        </div>
+        <nav class="cm-tabs"><a href="#"><i data-lucide="route"></i>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a class="on" href="#"><span><i data-lucide="book-open"></i></span>Books</a><a href="#"><i data-lucide="menu"></i>More</a></nav>
+      </div></div>
+      <figcaption><b>Logbooks</b><span>The five books with volumes and page counts, what is waiting for review on top, and the gap stated plainly.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-timeline">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body">
+          <div class="cm-seg"><span>Books</span><span class="on">Timeline</span></div>
+          <div class="cm-card" style="margin-top:12px;padding:8px 8px 4px">
+            <svg class="c-map" viewBox="0 0 338 124" role="img" aria-label="Forty-eight years on four lines, with 2026 selected">
+              <path class="ln air" d="M10,20 H45"/><path class="ln air gap" d="M45,20 H100"/><path class="ln air" d="M100,20 H326"/>
+              <path class="ln eng" d="M10,44 H190 l8,8 H326"/><path class="ln prop" d="M10,68 H224 l8,8 H326"/><path class="ln avi" d="M286,92 H326"/>
+              <text class="f" x="72" y="37" text-anchor="middle" style="font-size:13px">no pages</text>
+              <circle class="stop" cx="10" cy="20" r="5"/><circle class="stop" cx="194" cy="48" r="5"/><circle class="stop" cx="228" cy="72" r="5"/><circle class="stop" cx="286" cy="92" r="5"/>
+              <rect x="306" y="6" width="28" height="98" rx="8" style="fill:none;stroke:var(--ink);stroke-width:2.5"/>
+              <text class="f" x="10" y="120" style="font-size:13px">1978</text><text class="f" x="100" y="120" text-anchor="middle" style="font-size:13px">1991</text><text class="f" x="194" y="120" text-anchor="middle" style="font-size:13px">2005</text><text x="320" y="120" text-anchor="middle" style="font-size:13px;font-weight:700">2026</text>
+            </svg>
+          </div>
+          <div class="cm-chips nowrap" style="margin-top:10px;gap:5px"><span class="cm-chip on" style="padding:0 13px">All</span><span class="cm-chip c-line air" style="padding:0 10px">Air</span><span class="cm-chip c-line eng" style="padding:0 10px">Eng</span><span class="cm-chip c-line prop" style="padding:0 10px">Prop</span><span class="cm-chip c-line avi" style="padding:0 10px">Avi</span></div>
+          <p class="cm-lbl" style="margin-top:12px"><span>October 2026</span></p>
+          <div class="cm-row" style="min-height:50px;padding:6px 0"><div class="when">Oct 12</div><div><div class="t">VOR check</div><div class="d">VOT, within limits</div></div><a class="c-src air" href="#">p. 61</a></div>
+          <p class="cm-lbl" style="margin-top:8px"><span>September 2026</span></p>
+          <div class="cm-row" style="min-height:50px;padding:6px 0"><div class="when">Sep 3<small>4172.1</small></div><div><div class="t">Oil and filter</div><div class="d">7 qt, sample normal</div></div><a class="c-src eng" href="#">p. 38</a></div>
+          <p class="cm-lbl" style="margin-top:8px"><span>July 2026</span></p>
+          <div class="cm-row" style="min-height:50px;padding:6px 0;align-items:start"><div class="when">Jul 14<small>4168.3</small></div><div><div class="t">Annual inspection</div><div class="d" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px"><a class="c-src air" href="#">p. 60</a><a class="c-src eng" href="#">p. 37</a><a class="c-src prop" href="#">p. 12</a></div></div><span class="cm-tag">3 books</span></div>
+        </div>
+        <nav class="cm-tabs"><a href="#"><i data-lucide="route"></i>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a class="on" href="#"><span><i data-lucide="book-open"></i></span>Books</a><a href="#"><i data-lucide="menu"></i>More</a></nav>
+      </div></div>
+      <figcaption><b>Timeline</b><span>The whole life on four lines, the gap dashed; drag the window to a year and the stops below follow, in date order.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-entry">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:43</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Timeline</span><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico"><i data-lucide="share-2"></i></span></div>
+        <div style="padding:0 18px;flex:none">
+          <div class="scan" style="--lh:22px;--top:44px;--cols:16% 14% 1fr 21%;aspect-ratio:auto;height:290px">
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>7/14/26</span><span>4168.3</span><span class="scan-sticker">ANNUAL INSPECTION COMPLETED I/A/W FAR 43 APP. D. AD 2011-10-09 SEAT RAILS COMPLIED WITH. AIRCRAFT RETURNED TO SERVICE.</span><span class="black">D Alvarez</span></div>
+            <div class="scan-hl quiet" style="left:3px;top:44px;width:calc(100% - 6px);height:66px"></div>
+            <div class="scan-page">60</div>
+          </div>
+        </div>
+        <div class="cm-body" style="padding-top:12px">
+          <h1 class="cm-h1" style="font-size:22px">Jul 14, 2026 · Annual inspection</h1>
+          <div style="display:flex;gap:14px;margin:8px 0 10px;flex-wrap:wrap"><span class="cm-trust" style="color:var(--ok)"><i data-lucide="circle-check"></i>Confirmed by you</span><span class="cm-trust"><i data-lucide="signature"></i>Signed on paper</span></div>
+          <p style="margin:0;font-size:15px">Annual inspection completed i/a/w FAR 43 App. D at tach 4168.3. AD 2011-10-09 seat rails complied with. Aircraft returned to service.</p>
+          <p class="c-note" style="margin:6px 0 0">D. Alvarez, A&amp;P 3105582 IA</p>
+          <p class="cm-lbl"><span>On these pages</span></p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="c-src air" href="#">Airframe p. 60</a><a class="c-src eng" href="#">Engine p. 37</a><a class="c-src prop" href="#">Propeller p. 12</a></div>
+          <p class="cm-lbl"><span>It counts for</span></p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="cm-tag">Annual inspection</span><span class="cm-tag">ELT inspection</span><span class="cm-tag">AD 2011-10-09</span></div>
+        </div>
+      </div></div>
+      <figcaption><b>Entry with its scan</b><span>The page on top, the reading below, and the trust level in words. Every book it was signed in, and every item it satisfied.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-ask">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:45</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><div class="c-input focus" style="flex:1;border-radius:24px;gap:8px;font-size:16px;min-height:48px;white-space:nowrap;overflow:hidden"><i data-lucide="search"></i><span style="overflow:hidden;text-overflow:ellipsis">When was the engine last overhauled?</span></div><span class="ico"><i data-lucide="x"></i></span></div>
+        <div class="cm-body">
+          <div class="cm-card">
+            <p style="margin:0;font-size:17px;font-weight:600;line-height:1.4">Sep 14, 2005, at tach 2803.0, by Signal Engines. It has run 1409.4 hours since.</p>
+            <div style="display:grid;grid-template-columns:110px 1fr;gap:12px;margin-top:12px;align-items:center">
+              <div class="scan engine" style="--lh:12px;--top:0px;aspect-ratio:auto;height:70px"><div class="scan-hl" style="left:4px;top:16px;width:100px;height:30px"></div></div>
+              <div><p style="margin:0 0 6px;font-size:14px" class="ink2">"Engine major overhauled, Signal Engines, zero time since."</p><a class="c-src eng" href="#">Engine p. 19</a></div>
+            </div>
+            <p class="c-note" style="margin:12px 0 0">From entries you confirmed. Your logbooks are the record.</p>
+          </div>
+          <p class="cm-lbl"><span>Entries that match</span></p>
+          <div class="cm-row" style="min-height:52px;padding:6px 0"><div class="when">Sep 14<small>2005</small></div><div><div class="t">Engine overhaul</div><div class="d">at 2803.0</div></div><a class="c-src eng" href="#">p. 19</a></div>
+          <div class="cm-row" style="min-height:52px;padding:6px 0"><div class="when">May 9<small>2026</small></div><div><div class="t">Compressions</div><div class="d">76 74 75 77 over 80</div></div><a class="c-src eng" href="#">p. 36</a></div>
+          <div class="cm-row" style="min-height:52px;padding:6px 0"><div class="when">Jul 14<small>2026</small></div><div><div class="t">Annual inspection</div><div class="d">engine items</div></div><a class="c-src eng" href="#">p. 37</a></div>
+          <p class="c-note" style="margin:12px 0 0">Searching works offline. Asking a question needs a connection.</p>
+        </div>
+      </div></div>
+      <figcaption><b>Search and Ask</b><span>One field: words find entries, a question gets an answer. Each answer quotes its page and the chip opens it.</span></figcaption>
+    </figure>
+  </div>
+<!--/S8-->
+
+<!--S9-->
+  <h2 class="g-h2" id="c-aircraft">Aircraft and documents</h2>
+  <p class="g-prose">At the aircraft the owner checks a meter, an installed part, or that the carry-aboard paperwork is in the vault. Today equipment is two levels under Status, the meter tiles cannot be tapped, and a missing AROW document cannot be added from where it is reported missing. Here the aircraft is one page under More, and documents with an expiry join the due board.</p>
+  <div class="g-phones">
+    <figure class="g-phone" id="c-m-aircraft">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><a class="c-tail" href="#">N734DM<i data-lucide="chevron-down"></i></a><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico"><i data-lucide="pencil"></i></span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1" style="font-size:22px">1978 Cessna 172N</h1>
+          <p class="c-note" style="margin:2px 0 12px">S/N 17269841 · Lycoming O-320-H2AD · McCauley 1C160</p>
+          <div class="cm-card" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;padding:14px 16px">
+            <div class="c-meter"><div class="v" style="font-size:24px">4212.4</div><div class="l">Tach, read Nov 14</div></div>
+            <div class="c-meter"><div class="v" style="font-size:24px">4680.4</div><div class="l">Hobbs</div></div>
+            <div class="c-meter"><div class="v" style="font-size:24px">1409.4</div><div class="l"><span class="c-line eng">Engine</span> since overhaul</div></div>
+            <div class="c-meter"><div class="v" style="font-size:24px">1007.6</div><div class="l"><span class="c-line prop">Prop</span> since overhaul</div></div>
+          </div>
+          <h2 class="cm-h2">Equipment <a href="#">All</a></h2>
+          <div class="cm-item" style="min-height:50px;padding:6px 0"><span class="c-line avi" style="width:20px"></span><div class="x"><div class="t" style="font-size:15px">Garmin GTN 650</div><div class="d">011-01057-00 · 2019, STC SA01714WI</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          <div class="cm-item" style="min-height:50px;padding:6px 0"><span class="c-line eng" style="width:20px"></span><div class="x"><div class="t" style="font-size:15px">Rapco vacuum pump</div><div class="d">RA215CC · 2021</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          <div class="cm-item" style="min-height:50px;padding:6px 0"><span class="c-line avi" style="width:20px"></span><div class="x"><div class="t" style="font-size:15px">ACK E-04 ELT</div><div class="d">2015 · battery to Feb 2027</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          <h2 class="cm-h2" style="margin-top:14px">Weight and balance <a href="#">History</a></h2>
+          <div class="cm-card" style="padding:12px 14px">
+            <dl class="c-kv" style="font-size:15px"><dt>Empty</dt><dd>1447.80 lb, arm 39.610</dd><dt>Moment</dt><dd>57,347.36 · computed 2019</dd></dl>
+            <p class="c-banner" style="margin:10px 0 0;font-size:14px;padding:8px 12px"><i data-lucide="triangle-alert"></i>May be stale: the 2021 vacuum pump came after it.</p>
+          </div>
+        </div>
+        <nav class="cm-tabs"><a href="#"><i data-lucide="route"></i>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="add" href="#"><span><i data-lucide="plus"></i></span></a><a href="#"><i data-lucide="book-open"></i>Books</a><a class="on" href="#"><span><i data-lucide="menu"></i></span>More</a></nav>
+      </div></div>
+      <figcaption><b>Aircraft</b><span>Meters, time since overhaul, installed equipment and the current weighing, with a plain flag when the weighing predates an install.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-docs">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>More</span><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span><span class="ico"><i data-lucide="search"></i></span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">Records Vault</h1>
+          <p class="c-note" style="margin:2px 0 12px">14 documents, all kept on this phone</p>
+          <div class="cm-card list" style="padding-top:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0 6px"><b>Carry aboard: AROW</b><span class="c-st ok">All 4 on file</span></div>
+            <div class="cm-item" style="min-height:48px;padding:5px 0"><div class="x"><div class="t" style="font-size:15px">Airworthiness certificate</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item" style="min-height:48px;padding:5px 0"><div class="x"><div class="t" style="font-size:15px">Registration</div><div class="d">Expires Mar 31, 2029</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item" style="min-height:48px;padding:5px 0"><div class="x"><div class="t" style="font-size:15px">Operating handbook (POH)</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item" style="min-height:48px;padding:5px 0"><div class="x"><div class="t" style="font-size:15px">Weight and balance report</div><div class="d">2019 revision</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          </div>
+          <div class="cm-item" style="margin-top:6px"><span class="c-st unk" style="padding-left:0">No date</span><div class="x"><div class="t" style="font-size:15px">Insurance policy</div><div class="d">Add the expiry so it joins the due board</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          <p class="cm-lbl" style="margin-top:10px"><span>Everything else</span></p>
+          <div class="cm-item" style="min-height:46px;padding:4px 0"><i data-lucide="file-text"></i><div class="x t" style="font-size:15px">STC SA01714WI, GTN 650</div></div>
+          <div class="cm-item" style="min-height:46px;padding:4px 0"><i data-lucide="file-text"></i><div class="x t" style="font-size:15px">Form 337, GTN install</div></div>
+          <div class="cm-item" style="min-height:46px;padding:4px 0"><i data-lucide="file-text"></i><div class="x t" style="font-size:15px">8130-3, vacuum pump</div></div>
+          <div class="cm-item" style="min-height:46px;padding:4px 0"><i data-lucide="flask-conical"></i><div class="x t" style="font-size:15px">Oil analysis reports (3)</div></div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn"><i data-lucide="file-plus-2"></i>Add a document</span></div>
+      </div></div>
+      <figcaption><b>Documents</b><span>The AROW card first. A document missing its expiry says what to do about it, right where it shows.</span></figcaption>
+    </figure>
+  </div>
+<!--/S9-->
+
+<!--S10-->
+  <h2 class="g-h2" id="c-sharing">Sharing</h2>
+  <p class="g-prose">The owner is standing with the IA, a buyer or an insurer and wants to hand over the right records. Today "Share a records link" leaves the app and the Share row in the account menu never renders. Here Share starts with who it is for, builds the matching record room, and ends on a QR code to show across the wing.</p>
+  <div class="g-phones g-flow">
+    <figure class="g-phone" id="c-m-share">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>10:02</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>More</span><span class="cm-sync"><i data-lucide="check"></i>Synced 9:38</span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">Who is it for?</h1>
+          <div class="cm-card list" style="margin-top:14px">
+            <div class="cm-item"><i data-lucide="circle-check" style="width:24px;height:24px"></i><div class="x"><div class="t">Your IA, for the annual</div><div class="d">Due board, ADs, open squawks, the last annual's pages</div></div></div>
+            <div class="cm-item"><span class="cm-ic" style="width:24px;height:24px;background:transparent;border:2px solid var(--rule)"></span><div class="x"><div class="t">A buyer</div><div class="d">Every logbook page, gaps stated plainly</div></div></div>
+            <div class="cm-item"><span class="cm-ic" style="width:24px;height:24px;background:transparent;border:2px solid var(--rule)"></span><div class="x"><div class="t">An insurer</div><div class="d">One-page summary: hours, annual, equipment</div></div></div>
+            <div class="cm-item"><span class="cm-ic" style="width:24px;height:24px;background:transparent;border:2px solid var(--rule)"></span><div class="x"><div class="t">A co-owner</div><div class="d">An account with edit rights</div></div></div>
+            <div class="cm-item"><span class="cm-ic" style="width:24px;height:24px;background:transparent;border:2px solid var(--rule)"></span><div class="x"><div class="t">A mechanic, for one squawk</div><div class="d">Photo and words only</div></div></div>
+          </div>
+          <p class="cm-lbl"><span>Live now</span><a href="#">People</a></p>
+          <div class="cm-item" style="padding-top:0"><span class="cm-ic"><i data-lucide="link"></i></span><div class="x"><div class="t" style="font-size:15px">Pre-buy for J. Okafor</div><div class="d">Ends Dec 18 · opened 3 times</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+        </div>
+        <div class="cm-foot"><span class="cm-btn">Make the link</span></div>
+      </div></div>
+      <figcaption><b>Who is it for</b><span>Five audiences, each with what it will see. The live record room is right below, one tap from revoke.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-share-link">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>10:03</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Share</span><span class="cm-sync"><i data-lucide="check"></i>Saved 10:03</span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">Record room for D. Alvarez</h1>
+          <div style="width:216px;margin:16px auto 0;background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:14px">
+            <svg viewBox="-1 -1 27 27" style="width:186px;height:186px" role="img" aria-label="QR code for the link">
+              <path fill-rule="evenodd" style="fill:var(--ink)" d="M0,0h7v7h-7zM1,1v5h5v-5zM18,0h7v7h-7zM19,1v5h5v-5zM0,18h7v7h-7zM1,19v5h5v-5zM2,2h3v3h-3zM20,2h3v3h-3zM2,20h3v3h-3z"/>
+              <path style="fill:var(--ink)" d="M9,0h1v1h-1zM16,0h1v1h-1zM9,1h2v1h-2zM12,1h4v1h-4zM11,2h1v1h-1zM14,2h1v1h-1zM16,2h1v1h-1zM9,3h2v1h-2zM8,4h3v1h-3zM12,4h2v1h-2zM15,4h1v1h-1zM9,5h1v1h-1zM12,5h2v1h-2zM16,5h1v1h-1zM10,6h1v1h-1zM12,6h2v1h-2zM16,6h1v1h-1zM8,7h1v1h-1zM10,7h1v1h-1zM12,7h2v1h-2zM1,8h1v1h-1zM3,8h1v1h-1zM6,8h2v1h-2zM9,8h2v1h-2zM13,8h2v1h-2zM16,8h2v1h-2zM19,8h1v1h-1zM21,8h1v1h-1zM24,8h1v1h-1zM0,9h1v1h-1zM2,9h2v1h-2zM6,9h4v1h-4zM11,9h1v1h-1zM17,9h2v1h-2zM20,9h1v1h-1zM2,10h1v1h-1zM5,10h2v1h-2zM10,10h5v1h-5zM17,10h1v1h-1zM19,10h2v1h-2zM0,11h1v1h-1zM2,11h1v1h-1zM4,11h2v1h-2zM7,11h1v1h-1zM9,11h2v1h-2zM12,11h1v1h-1zM15,11h1v1h-1zM17,11h1v1h-1zM20,11h1v1h-1zM24,11h1v1h-1zM1,12h2v1h-2zM5,12h1v1h-1zM7,12h4v1h-4zM14,12h2v1h-2zM17,12h4v1h-4zM23,12h1v1h-1zM0,13h1v1h-1zM2,13h1v1h-1zM4,13h3v1h-3zM8,13h1v1h-1zM10,13h4v1h-4zM15,13h1v1h-1zM17,13h4v1h-4zM1,14h2v1h-2zM6,14h1v1h-1zM9,14h5v1h-5zM20,14h1v1h-1zM4,15h1v1h-1zM12,15h1v1h-1zM14,15h1v1h-1zM16,15h1v1h-1zM18,15h1v1h-1zM21,15h3v1h-3zM0,16h4v1h-4zM7,16h1v1h-1zM11,16h1v1h-1zM14,16h6v1h-6zM12,17h2v1h-2zM17,17h2v1h-2zM23,17h2v1h-2zM8,18h1v1h-1zM11,18h1v1h-1zM13,18h3v1h-3zM18,18h3v1h-3zM23,18h2v1h-2zM8,19h1v1h-1zM10,19h1v1h-1zM13,19h1v1h-1zM8,20h2v1h-2zM14,20h1v1h-1zM16,20h1v1h-1zM19,20h1v1h-1zM22,20h1v1h-1zM24,20h1v1h-1zM8,21h2v1h-2zM12,21h1v1h-1zM16,21h1v1h-1zM18,21h2v1h-2zM21,21h3v1h-3zM12,22h1v1h-1zM14,22h1v1h-1zM16,22h1v1h-1zM18,22h4v1h-4zM8,23h1v1h-1zM10,23h3v1h-3zM14,23h1v1h-1zM19,23h6v1h-6zM9,24h1v1h-1zM11,24h1v1h-1zM13,24h3v1h-3zM18,24h2v1h-2zM21,24h2v1h-2z"/>
+            </svg>
+          </div>
+          <div class="c-input" style="margin-top:14px;justify-content:space-between">mytaillog.com/r/7KQ2M4XD<i data-lucide="copy"></i></div>
+          <dl class="c-kv" style="margin-top:14px"><dt>Shows</dt><dd>Due board, ADs, 2 open squawks, Jul 14 annual pages, as of Nov 18</dd><dt>Ends</dt><dd>Dec 18, 2026 · <a href="#">Change</a></dd><dt>Opened</dt><dd class="ink2" style="font-weight:500">Not yet. You'll see each view here.</dd></dl>
+        </div>
+        <div class="cm-foot"><span class="cm-btn"><i data-lucide="copy"></i>Copy link</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="cm-btn ghost" style="height:48px;font-size:16px"><i data-lucide="share-2"></i>Send</span><span class="cm-btn ghost" style="height:48px;font-size:16px;color:var(--bad)">Revoke</span></div></div>
+      </div></div>
+      <figcaption><b>Link made</b><span>A QR code to hold up across the wing, the link to copy, what it shows, when it ends, and who opened it. No account needed.</span></figcaption>
+    </figure>
+  </div>
+<!--/S10-->
+
+<!--S11-->
+  <h2 class="g-h2" id="c-sync">Sync and settings</h2>
+  <p class="g-prose">Everything recorded on the phone is kept on the phone until it reaches the server, and the owner can always see what is waiting. Today the waiting list and conflicts use 10px type, show only from the hangar, and Appearance is five taps away from an aircraft. Here a conflict compares "yours" and "theirs" in plain words, and settings are one tap under More.</p>
+  <div class="g-phones">
+    <figure class="g-phone" id="c-m-pending">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>10:15</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>Network</span><span class="cm-sync off"><i data-lucide="refresh-cw"></i>1 needs you</span></div>
+        <div class="cm-body">
+          <h1 class="cm-h1">Waiting to upload</h1>
+          <p class="cm-lede">3 changes saved on this phone. Two are uploading now.</p>
+          <div class="cm-card" style="margin-top:14px;border-color:var(--soon)">
+            <div style="display:flex;justify-content:space-between;align-items:center"><b>Squawk: Left brake feels soft</b></div>
+            <p class="cm-note2" style="margin:4px 0 10px">Sam Reyes changed it on the web at 10:12, after your edit at 9:50.</p>
+            <table class="c-table" style="font-size:15px"><tr><th></th><th>Yours</th><th>Theirs</th></tr>
+              <tr><td class="ink2">Severity</td><td><b>Ground</b></td><td><b>Watch</b></td></tr>
+              <tr><td class="ink2">Notes</td><td>Pedal goes to the floor</td><td>Pads checked, fine for now</td></tr></table>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><span class="cm-btn" style="height:48px;font-size:16px">Keep mine</span><span class="cm-btn ghost" style="height:48px;font-size:16px">Take theirs</span></div>
+            <p class="c-note" style="margin:8px 0 0;text-align:center"><a href="#">Decide later</a>, it stays here</p>
+          </div>
+          <div class="cm-item" style="margin-top:6px"><span class="cm-ic"><i data-lucide="plane-landing"></i></span><div class="x"><div class="t">Flight, tach 4214.8</div><div class="d">Uploading, try 1</div></div></div>
+          <div class="cm-item"><span class="cm-ic"><i data-lucide="image"></i></span><div class="x"><div class="t">Photo on Nav light lens</div><div class="d">Uploading 2.1 of 3.4 MB</div></div></div>
+        </div>
+      </div></div>
+      <figcaption><b>Waiting to upload, with a conflict</b><span>A change made in two places is never resolved silently: "yours" and "theirs" side by side, or decide later.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone" id="c-m-settings">
+      <div class="g-device"><div class="artboard dc day cm">
+        <div class="cm-sys"><span>10:20</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+        <div class="cm-head"><span class="cm-back"><i data-lucide="chevron-left"></i>More</span><span class="cm-sync"><i data-lucide="check"></i>Synced 10:18</span></div>
+        <div class="cm-body">
+          <div class="cm-item" style="padding-top:0"><span class="cm-ic" style="font-weight:700;font-size:15px">DM</span><div class="x"><div class="t">Dana Morgan</div><div class="d">dana@example.com · Apple and email link</div></div></div>
+          <p class="cm-lbl"><span>Appearance</span></p>
+          <div class="cm-seg"><span>Match phone</span><span class="on"><i data-lucide="sun"></i>Day</span><span><i data-lucide="moon"></i>Night</span></div>
+          <p class="c-note" style="margin:6px 2px 0">Day is easier to read in sunlight.</p>
+          <p class="cm-lbl"><span>On this phone</span></p>
+          <div class="cm-card list">
+            <div class="cm-item"><div class="x"><div class="t" style="font-size:15px">Keep every page offline</div><div class="d">412 pages ready, checked 10:18</div></div><span class="c-toggle on"></span></div>
+            <div class="cm-item"><div class="x"><div class="t" style="font-size:15px">Storage</div><div class="d">Scans 486 MB, records 12 MB</div></div><a href="#" style="font-weight:600;font-size:15px">Clear scans</a></div>
+            <div class="cm-item"><div class="x"><div class="t" style="font-size:15px">Reminders</div><div class="d">30 and 7 days, 5 hours ahead</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+            <div class="cm-item"><div class="x"><div class="t" style="font-size:15px">Rebuild from the server</div><div class="d">Unsent changes are kept</div></div><i class="chev" data-lucide="chevron-right"></i></div>
+          </div>
+          <p class="cm-lbl"><span>Account</span></p>
+          <div class="cm-card list">
+            <div class="cm-item"><div class="x t" style="font-size:15px">Sign-in methods, AI key, backups</div><i class="chev" data-lucide="external-link"></i></div>
+          </div>
+          <span class="cm-btn ghost" style="margin-top:16px;color:var(--bad)">Sign out</span>
+          <p class="c-note" style="margin:6px 0 0;text-align:center">Nothing is waiting to upload, so signing out loses nothing.</p>
+        </div>
+      </div></div>
+      <figcaption><b>Settings</b><span>Appearance first, since sunlight is the common problem. Offline copy, storage, reminders, and a sign-out that says what it would lose.</span></figcaption>
+    </figure>
+  </div>
+<!--/S11-->
+
+<!--S12-->
+  <h2 class="g-h2" id="c-tablet">Tablet</h2>
+  <p class="g-prose">On a tablet the app takes the desk layout: the slim rail and command field, with a second pane so a list and its detail sit side by side. Today the iPad fleet home is a stretched 640px phone column, and three-way review exists but without counts or a sync line. Here review gets three panes, pages, scan and fields, and works with a keyboard attached.</p>
+  <div class="g-phones">
+    <figure class="g-phone tablet" id="c-t-home" style="--pw:700">
+      <div class="g-device tablet"><div class="artboard dc day web tab">
+        <aside class="c-rail">
+          <a class="on" href="#"><i data-lucide="route"></i>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a href="#"><i data-lucide="book-open"></i>Books<span class="n">6</span></a><a href="#"><i data-lucide="plane"></i>Aircraft</a><a href="#"><i data-lucide="share-2"></i>Share</a><span class="sp"></span><a href="#"><i data-lucide="settings"></i>Settings</a>
+        </aside>
+        <header class="c-top">
+          <a class="c-tail" href="#" style="font-size:17px">N734DM<i data-lucide="chevron-down" style="width:16px;height:16px"></i></a>
+          <div class="c-cmd"><i data-lucide="search"></i>Search or ask</div>
+          <span class="sync"><i data-lucide="check" style="width:16px;height:16px"></i>Synced 9:38</span>
+          <a class="c-btn" href="#"><i data-lucide="plus"></i>Add</a>
+        </header>
+        <div class="t-split" style="--split:1.5fr 1fr">
+          <div class="c-work">
+            <h1 class="c-h1" style="font-size:25px">One check has lapsed, for IFR only. Next stop: oil change, in 9.7 hours.</h1>
+            <div class="c-panel" style="margin-top:14px;padding:8px 14px 4px">
+              <svg class="c-map" viewBox="0 0 540 196" role="img" aria-label="Last and next months on each logbook line">
+                <text class="lg" x="0" y="45" style="fill:var(--l-air)">Airframe</text><text class="lg" x="0" y="85" style="fill:var(--l-eng)">Engine</text><text class="lg" x="0" y="125" style="fill:var(--l-prop)">Propeller</text><text class="lg" x="0" y="165" style="fill:var(--l-avi)">Avionics</text>
+                <path class="ln air" d="M92,40 H250"/><path class="ln air future" d="M262,40 H532"/><path class="ln eng" d="M92,80 H250"/><path class="ln eng future" d="M262,80 H532"/>
+                <path class="ln prop" d="M92,120 H250"/><path class="ln prop future" d="M262,120 H532"/><path class="ln avi" d="M92,160 H250"/><path class="ln avi future" d="M262,160 H532"/>
+                <rect class="cap" x="160" y="30" width="18" height="100" rx="9"/><rect class="cap due" x="478" y="30" width="18" height="100" rx="9"/>
+                <line class="today" x1="256" y1="26" x2="256" y2="176"/>
+                <circle class="ring bad" cx="244" cy="160" r="7"/><circle class="ring soon" cx="290" cy="80" r="10" style="stroke-width:5"/><circle class="ring soon" cx="332" cy="160" r="7"/><circle class="ring soon" cx="332" cy="40" r="7"/><circle class="ring ok" cx="372" cy="160" r="6"/><circle class="ring ok" cx="398" cy="40" r="6"/>
+                <text x="256" y="18" text-anchor="middle" style="font-weight:700">Today</text><text class="f" x="169" y="18" text-anchor="middle" style="font-size:13px">Jul 14 annual</text><text class="f" x="487" y="18" text-anchor="middle" style="font-size:13px">Annual Jul 31</text>
+                <text class="soon" x="304" y="104">Oil, 9.7 h</text><text class="bad" x="236" y="190" text-anchor="end">VOR lapsed</text><text class="soon" x="322" y="190">Transponder, static</text>
+              </svg>
+            </div>
+            <table class="c-board" style="margin-top:12px">
+              <tr><th>When</th><th>Stop</th><th class="left">Left</th><th class="r">Status</th></tr>
+              <tr><td class="when">Nov 11<small>7 days ago</small></td><td class="what"><b>VOR check</b><small>IFR only</small></td><td class="left">lapsed</td><td class="r"><span class="c-st bad">Overdue</span></td></tr>
+              <tr style="background:var(--raise)"><td class="when">≈ Dec 12<small>tach 4222.1</small></td><td class="what"><b>Oil and filter change</b><small>every 50 h</small></td><td class="left">9.7 h</td><td class="r"><span class="c-st soon">Due soon</span></td></tr>
+              <tr><td class="when">Dec 31<small>end of month</small></td><td class="what"><b>Transponder, pitot-static</b><small>every 24 months</small></td><td class="left">43 days</td><td class="r"><span class="c-st soon">Due soon</span></td></tr>
+            </table>
+          </div>
+          <aside class="t-pane">
+            <div style="display:flex;justify-content:space-between;align-items:center"><h2 class="c-h2">Oil and filter change</h2></div>
+            <p class="c-note" style="margin:4px 0 12px"><span class="c-line eng">Engine</span> · every 50 hours · advisory</p>
+            <dl class="c-kv"><dt>Due at</dt><dd>tach 4222.1</dd><dt>Left</dt><dd>9.7 h, about Dec 12</dd><dt>Last done</dt><dd>Sep 3 at 4172.1</dd></dl>
+            <div class="cm-bar" style="margin:14px 0 4px;height:10px"><i style="width:81%;background:var(--l-eng)"></i></div>
+            <p class="c-note" style="margin:0">40.3 of 50 hours used</p>
+            <h3 class="c-h3" style="margin:18px 0 6px">The last two</h3>
+            <table class="c-table"><tr><td><b>Sep 3</b><br><span class="c-note">4172.1</span></td><td>7 qt Phillips XC 20W-50, sample normal</td><td><a class="c-src eng" href="#">p. 38</a></td></tr><tr><td><b>May 9</b><br><span class="c-note">4131.5</span></td><td>Compressions 76 74 75 77</td><td><a class="c-src eng" href="#">p. 36</a></td></tr></table>
+            <div style="display:grid;gap:8px;margin-top:16px"><span class="c-btn"><i data-lucide="check"></i>Mark done</span><span class="c-btn ghost">Log a flight</span></div>
+          </aside>
+        </div>
+      </div></div>
+      <figcaption><b>Home in two panes</b><span>The verdict, the diagram and the board on the left; the selected stop opens on the right instead of pushing a new screen.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone tablet" id="c-t-review" style="--pw:700">
+      <div class="g-device tablet"><div class="artboard dc web tab">
+        <aside class="c-rail">
+          <a href="#"><i data-lucide="route"></i>Network</a><a href="#"><i data-lucide="list-ordered"></i>Due board</a><a class="on" href="#"><i data-lucide="book-open"></i>Books<span class="n">6</span></a><a href="#"><i data-lucide="plane"></i>Aircraft</a><a href="#"><i data-lucide="share-2"></i>Share</a><span class="sp"></span><a href="#"><i data-lucide="settings"></i>Settings</a>
+        </aside>
+        <header class="c-top">
+          <a class="c-tail" href="#" style="font-size:17px">N734DM<i data-lucide="chevron-down" style="width:16px;height:16px"></i></a>
+          <b style="font-size:17px">Review: 6 Airframe pages</b>
+          <span class="sync"><i data-lucide="check" style="width:16px;height:16px"></i>Saved 14:44</span>
+        </header>
+        <div class="t-split" style="--split:118px 1fr 330px">
+          <div style="padding:14px 12px;display:grid;gap:12px;align-content:start;grid-template-columns:80px;justify-content:center;border-right:1px solid var(--rule)">
+            <div style="opacity:.7"><div class="scan" style="--lh:6px;--top:9px"></div><div class="c-note" style="display:flex;justify-content:space-between;margin-top:3px"><span>p. 199</span><i data-lucide="check" style="width:15px;height:15px"></i></div></div>
+            <div style="opacity:.7"><div class="scan" style="--lh:6px;--top:9px"></div><div class="c-note" style="display:flex;justify-content:space-between;margin-top:3px"><span>p. 200</span><i data-lucide="check" style="width:15px;height:15px"></i></div></div>
+            <div><div class="scan" style="--lh:6px;--top:9px;outline:3px solid var(--ink);outline-offset:2px"></div><div style="display:flex;justify-content:space-between;margin-top:5px;font-size:13px;font-weight:700;color:var(--soon)"><span>p. 201</span><i data-lucide="circle-help" style="width:15px;height:15px"></i></div></div>
+            <div><div class="scan" style="--lh:6px;--top:9px"></div><div class="c-note" style="margin-top:3px">p. 202, clean</div></div>
+            <div><div class="scan" style="--lh:6px;--top:9px"></div><div style="margin-top:3px;font-size:13px;font-weight:700;color:var(--soon)">p. 203, look</div></div>
+          </div>
+          <div style="padding:14px;display:grid;place-items:start center;background:var(--ground)">
+            <div class="scan" style="--lh:24px;--top:58px;--cols:16% 15% 1fr 19%;aspect-ratio:auto;height:676px;width:440px">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body"><span>6/2/84</span><span>641.7</span><span>Annual inspection</span><span class="black">Kessler</span><span></span><span></span><span>i/a/w FAR 43 App. D.</span><span class="black">A&amp;P IA</span><span></span><span></span><span>Comp. 74/76/75/73</span><span></span><span></span><span></span><span>Cleaned, gapped plugs</span><span></span><span></span><span></span><span>Returned to service.</span><span></span><span class="gap"></span><span>9/18/84</span><span>688.0</span><span>Replaced L/H nav</span><span class="black">Kessler</span><span></span><span></span><span>light bulb. Ops ck.</span><span></span></div>
+              <div class="scan-hl" style="left:69px;top:58px;width:68px;height:25px"></div>
+              <div class="scan-page">201</div>
+            </div>
+          </div>
+          <aside class="t-pane" style="display:flex;flex-direction:column;gap:10px">
+            <div><h2 class="c-h2">Jun 2, 1984 · Annual</h2><p class="c-note" style="margin:4px 0 0">Entry 1 of 2 · <span style="color:var(--soon);font-weight:600">read by AI, not yet confirmed</span></p></div>
+            <div class="c-field"><label>Tach <span style="color:var(--soon)">Not sure: the 1 could be a 7</span></label><div class="c-input doubt focus" style="font-size:20px;font-weight:700">641.7</div></div>
+            <div style="display:flex;gap:6px"><span class="c-btn sm"><i data-lucide="check"></i>Accept</span><span class="c-btn sm ghost">Edit</span><span class="c-btn sm ghost">Not on page</span></div>
+            <div class="c-field"><label>Date</label><div class="c-input">Jun 2, 1984</div></div>
+            <div class="c-field"><label>Work done</label><div class="c-input" style="align-items:flex-start;font-size:15px">Annual inspection i/a/w FAR 43 App. D. Compressions 74/76/75/73. Cleaned and gapped plugs. Returned to service.</div></div>
+            <div class="c-field"><label>Signed by</label><div class="c-input">Kessler, A&amp;P IA</div></div>
+            <div style="margin-top:auto;display:grid;gap:6px"><span class="c-btn"><i data-lucide="check"></i>Confirm page and next</span><p class="c-note" style="margin:0;text-align:center">Keyboard: A accept, E edit, N not on page, Enter confirm</p></div>
+          </aside>
+        </div>
+      </div></div>
+      <figcaption><b>Review in three panes</b><span>Pages with their state, the scan with the doubtful ink lit, and the fields. Works by touch or with a keyboard.</span></figcaption>
+    </figure>
+
+    <figure class="g-phone tablet" id="c-t-due" style="--pw:700">
+      <div class="g-device tablet"><div class="artboard dc day web tab">
+        <aside class="c-rail">
+          <a href="#"><i data-lucide="route"></i>Network</a><a class="on" href="#"><i data-lucide="list-ordered"></i>Due board</a><a href="#"><i data-lucide="book-open"></i>Books<span class="n">6</span></a><a href="#"><i data-lucide="plane"></i>Aircraft</a><a href="#"><i data-lucide="share-2"></i>Share</a><span class="sp"></span><a href="#"><i data-lucide="settings"></i>Settings</a>
+        </aside>
+        <header class="c-top">
+          <a class="c-tail" href="#" style="font-size:17px">N734DM<i data-lucide="chevron-down" style="width:16px;height:16px"></i></a>
+          <div class="c-cmd"><i data-lucide="search"></i>Search or ask</div>
+          <span class="sync"><i data-lucide="check" style="width:16px;height:16px"></i>Synced 9:38</span>
+          <a class="c-btn ghost" href="#"><i data-lucide="calendar-clock"></i>Pick a date</a>
+        </header>
+        <div class="t-split" style="--split:1.55fr 1fr">
+          <div class="c-work" style="padding-top:12px">
+            <table class="c-board" style="font-size:15px">
+              <tr><th>When</th><th>Stop</th><th class="left">Left</th><th class="r">Status</th></tr>
+              <tr><td class="when" style="font-size:15px">No date<small>on file</small></td><td class="what"><b>Insurance policy</b></td><td class="left"></td><td class="r"><span class="c-st unk">No record</span></td></tr>
+              <tr><td class="when" style="font-size:15px">Nov 11<small>lapsed</small></td><td class="what"><b>VOR check</b></td><td class="left">7 days</td><td class="r"><span class="c-st bad">Overdue</span></td></tr>
+              <tr><td class="when" style="font-size:15px">≈ Dec 12<small>tach 4222.1</small></td><td class="what"><b>Oil and filter</b></td><td class="left">9.7 h</td><td class="r"><span class="c-st soon">Due soon</span></td></tr>
+              <tr><td class="when" style="font-size:15px">Dec 31</td><td class="what"><b>Transponder</b></td><td class="left">43 days</td><td class="r"><span class="c-st soon">Due soon</span></td></tr>
+              <tr><td class="when" style="font-size:15px">Dec 31</td><td class="what"><b>Pitot-static, altimeter</b></td><td class="left">43 days</td><td class="r"><span class="c-st soon">Due soon</span></td></tr>
+              <tr><td class="when" style="font-size:15px">Feb 28</td><td class="what"><b>ELT battery</b></td><td class="left">102 days</td><td class="r"><span class="c-st ok">On time</span></td></tr>
+              <tr style="background:var(--raise)"><td class="when" style="font-size:15px">≈ Apr<small>tach 4268.3</small></td><td class="what"><b>AD 2011-10-09</b></td><td class="left">55.9 h</td><td class="r"><span class="c-st ok">On time</span></td></tr>
+              <tr><td class="when" style="font-size:15px">Jul 31</td><td class="what"><b>Annual inspection</b></td><td class="left">255 days</td><td class="r"><span class="c-st ok">On time</span></td></tr>
+              <tr><td class="when" style="font-size:15px">Jul 31</td><td class="what"><b>ELT inspection</b></td><td class="left">255 days</td><td class="r"><span class="c-st ok">On time</span></td></tr>
+              <tr><td class="when" style="font-size:15px">Mar 31, 2029</td><td class="what"><b>Registration</b></td><td class="left"></td><td class="r"><span class="c-st ok">On time</span></td></tr>
+              <tr><td class="when" style="font-size:15px">≈ 2030</td><td class="what"><b>Engine TBO</b></td><td class="left">590.6 h</td><td class="r"><span class="c-st ok">On time</span></td></tr>
+            </table>
+          </div>
+          <aside class="t-pane">
+            <h2 class="c-h2">AD 2011-10-09</h2>
+            <p class="c-note" style="margin:4px 0 12px"><span class="c-line air">Airframe</span> · seat rails · every 100 h</p>
+            <dl class="c-kv"><dt>Next at</dt><dd>tach 4268.3</dd><dt>Left</dt><dd>55.9 h, about Apr 2027</dd><dt>Counted on</dt><dd>Tach</dd><dt>Remind me</dt><dd>10 h before</dd></dl>
+            <h3 class="c-h3" style="margin:18px 0 4px">Latest and first compliance</h3>
+            <table class="c-table"><tr><td><b>Jul 14, 2026</b><br><span class="c-note">at 4168.3, annual</span></td><td><a class="c-src air" href="#">p. 60</a></td></tr><tr><td><b>Aug 22, 2011</b><br><span class="c-note">first complied, 3384.0</span></td><td><a class="c-src air" href="#">p. 41</a></td></tr></table>
+            <div style="display:grid;gap:8px;margin-top:16px"><span class="c-btn">Record compliance</span><span class="c-btn ghost">Read the AD</span></div>
+          </aside>
+        </div>
+      </div></div>
+      <figcaption><b>Due board with detail</b><span>All 11 stops in arrival order on the left, the selected one with its compliance history and pages on the right.</span></figcaption>
+    </figure>
+  </div>
+<!--/S12-->
+
+</main>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="../shared/gallery.js"></script>
+</body>
+</html>

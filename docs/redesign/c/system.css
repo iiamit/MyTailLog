@@ -1,0 +1,169 @@
+/* Direction C — "Line Diagram"
+   Layout: time runs left to right. Each logbook is a coloured line, each entry a stop, each multi-book shop visit an interchange;
+   the lines continue past today as what is due. A slim rail and a command field do the navigating.
+   Enamel-sign palette: midnight ground at the desk, porcelain "day" theme for the ramp.
+   Scoped to .dc artboards. Web components are c-*, phone components are cm-*. */
+
+.dc {
+  --ground: #0f1a3a;       /* midnight enamel */
+  --panel: #16234c;
+  --raise: #1f2f63;
+  --rule: #2d3d78;
+  --ink: #f3f0e8;          /* porcelain */
+  --ink-2: #bcc5df;
+  --ink-3: #8f9bc0;
+  --on-ink: #0f1a3a;
+  /* line inks: one per logbook, never used for status */
+  --l-air: #4da3ff;
+  --l-eng: #ff5fa2;
+  --l-prop: #f3f0e8;
+  --l-avi: #a78bfa;
+  --l-other: #8f9bc0;
+  /* service status, always with a word */
+  --ok: #3ddc97; --soon: #ffc043; --bad: #ff5a4f; --unk: #8f9bc0;
+  --ok-bg: rgba(61,220,151,.14); --soon-bg: rgba(255,192,67,.16); --bad-bg: rgba(255,90,79,.18);
+  --f: "Encode Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background: var(--ground); color: var(--ink);
+  font: 400 16px/1.5 var(--f); font-variant-numeric: tabular-nums; color-scheme: dark;
+}
+.dc.day {
+  --ground: #edf0f4; --panel: #ffffff; --raise: #dfe5ee; --rule: #c5cedb;
+  --ink: #0f1a3a; --ink-2: #36436a; --ink-3: #566289; --on-ink: #ffffff;
+  --l-air: #0b63ce; --l-eng: #c2186b; --l-prop: #0f1a3a; --l-avi: #6d3fd1; --l-other: #6b7694;
+  --ok: #0b7548; --soon: #8a5300; --bad: #b3261e; --unk: #566289;
+  --ok-bg: #dff3e8; --soon-bg: #fcefd2; --bad-bg: #fbe3e0; color-scheme: light;
+}
+.dc ::selection { background: var(--ink); color: var(--on-ink); }
+.dc a { color: var(--ink); text-underline-offset: 3px; }
+.dc .muted { color: var(--ink-3); } .dc .ink2 { color: var(--ink-2); }
+.dc .cond { font-stretch: 87%; }
+
+/* ---------- web shell ---------- */
+.dc.web { display: grid; grid-template-columns: 84px 1fr; grid-template-rows: 64px auto 1fr; }
+.dc .c-rail { grid-row: 1 / -1; background: var(--panel); border-right: 1px solid var(--rule); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; }
+.dc .c-rail a { width: 68px; padding: 9px 0 7px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; font: 600 12px/1.2 var(--f); font-stretch: 87%; color: var(--ink-2); text-decoration: none; position: relative; }
+.dc .c-rail a svg, .dc .c-rail a [data-lucide] { width: 22px; height: 22px; }
+.dc .c-rail a.on { background: var(--ink); color: var(--on-ink); }
+.dc .c-rail a .n { position: absolute; top: 3px; right: 9px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--soon); color: #2b1d00; font-size: 11px; line-height: 18px; text-align: center; font-weight: 700; padding: 0 4px; }
+.dc .c-rail .sp { flex: 1; }
+.dc .c-top { display: flex; align-items: center; gap: 18px; padding: 0 28px; border-bottom: 1px solid var(--rule); }
+.dc .c-tail { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--on-ink); border-radius: 999px; padding: 6px 16px 6px 18px; font: 800 19px/1.2 var(--f); letter-spacing: .03em; text-decoration: none; }
+.dc .c-tail small { font-weight: 500; font-size: 13px; letter-spacing: 0; }
+.dc .c-cmd { flex: 1; max-width: 620px; height: 42px; border-radius: 21px; background: var(--panel); border: 1px solid var(--rule); display: flex; align-items: center; gap: 10px; padding: 0 16px; color: var(--ink-3); font-size: 15px; }
+.dc .c-cmd kbd { margin-left: auto; font: 600 12px/1 var(--f); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 6px; color: var(--ink-2); }
+.dc .c-top .sync { margin-left: auto; font-size: 14px; color: var(--ink-3); display: flex; gap: 7px; align-items: center; }
+.dc .c-strip { border-bottom: 1px solid var(--rule); padding: 8px 28px 6px; background: var(--panel); }
+.dc .c-work { padding: 26px 32px 36px; min-width: 0; }
+.dc .c-h1 { font: 700 30px/1.18 var(--f); letter-spacing: -0.012em; margin: 0; text-wrap: balance; }
+.dc .c-h2 { font: 700 20px/1.25 var(--f); margin: 0; }
+.dc .c-h3 { font: 700 16px/1.3 var(--f); margin: 0; }
+.dc .c-sub { color: var(--ink-2); margin: 8px 0 0; max-width: 70ch; }
+.dc .c-cols { display: grid; grid-template-columns: var(--cols, 1.5fr 1fr); gap: 20px; align-items: start; }
+.dc .c-panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 20px 22px; min-width: 0; }
+.dc .c-panel.flush { padding: 0; overflow: hidden; }
+.dc .c-panelhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.dc .c-panelhead a { font-size: 14px; font-weight: 600; }
+.dc .c-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); margin: 18px 0; }
+.dc .c-tabs a { padding: 9px 14px; font-weight: 600; font-size: 15px; color: var(--ink-2); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.dc .c-tabs a.on { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* ---------- line and status vocabulary ---------- */
+.dc .c-line { display: inline-flex; align-items: center; gap: 7px; font: 700 13px/1 var(--f); font-stretch: 87%; white-space: nowrap; }
+.dc .c-line::before { content: ""; width: 18px; height: 6px; border-radius: 3px; background: var(--lc, var(--l-other)); }
+.dc .c-line.air { --lc: var(--l-air); } .dc .c-line.eng { --lc: var(--l-eng); } .dc .c-line.prop { --lc: var(--l-prop); } .dc .c-line.avi { --lc: var(--l-avi); }
+.dc .c-st { display: inline-flex; align-items: center; gap: 7px; font: 700 14px/1 var(--f); padding: 5px 10px 5px 8px; border-radius: 5px; white-space: nowrap; }
+.dc .c-st::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 3px solid currentColor; }
+.dc .c-st.ok { color: var(--ok); background: var(--ok-bg); } .dc .c-st.ok::before { background: currentColor; }
+.dc .c-st.soon { color: var(--soon); background: var(--soon-bg); }
+.dc .c-st.bad { color: var(--bad); background: var(--bad-bg); } .dc .c-st.bad::before { border-radius: 2px; background: currentColor; }
+.dc .c-st.unk { color: var(--unk); } .dc .c-st.unk::before { border-style: dashed; border-width: 2px; }
+.dc .c-src { display: inline-flex; align-items: center; gap: 6px; font: 600 13px/1 var(--f); color: var(--ink); border: 1px solid var(--rule); border-radius: 999px; padding: 4px 10px; text-decoration: none; white-space: nowrap; }
+.dc .c-src::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--lc, var(--ink-3)); }
+.dc .c-src.air { --lc: var(--l-air); } .dc .c-src.eng { --lc: var(--l-eng); } .dc .c-src.prop { --lc: var(--l-prop); } .dc .c-src.avi { --lc: var(--l-avi); }
+
+/* the departures board: what is due, in the order it arrives */
+.dc .c-board { width: 100%; border-collapse: collapse; }
+.dc .c-board th { text-align: left; font: 700 12px/1 var(--f); font-stretch: 87%; color: var(--ink-3); padding: 0 12px 9px 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.dc .c-board td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.dc .c-board tr:last-child td { border-bottom: 0; }
+.dc .c-board .when { font: 700 17px/1.2 var(--f); white-space: nowrap; width: 112px; }
+.dc .c-board .when small { display: block; font-weight: 500; font-size: 13px; color: var(--ink-3); }
+.dc .c-board .what b { font-weight: 700; display: block; }
+.dc .c-board .what small { font-size: 14px; color: var(--ink-2); }
+.dc .c-board .left { text-align: right; font-weight: 700; white-space: nowrap; }
+.dc .c-board .r { text-align: right; padding-right: 0; }
+.dc .c-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.dc .c-table th { text-align: left; font: 700 12px/1 var(--f); color: var(--ink-3); padding: 0 12px 9px 0; border-bottom: 1px solid var(--rule); }
+.dc .c-table td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+
+/* ---------- controls ---------- */
+.dc .c-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 21px; background: var(--ink); color: var(--on-ink); border: 1px solid var(--ink); font: 700 15px/1 var(--f); text-decoration: none; white-space: nowrap; }
+.dc .c-btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); font-weight: 600; }
+.dc .c-btn.sm { height: 34px; padding: 0 13px; font-size: 14px; }
+.dc .c-btn.bad { background: transparent; color: var(--bad); border-color: var(--bad); }
+.dc .c-field { display: grid; gap: 6px; }
+.dc .c-field > label { font: 600 13px/1.3 var(--f); color: var(--ink-2); display: flex; justify-content: space-between; }
+.dc .c-input { min-height: 44px; padding: 9px 13px; border-radius: 8px; border: 1px solid var(--rule); background: var(--ground); color: var(--ink); font: 400 16px/1.5 var(--f); display: flex; align-items: center; }
+.dc .c-input.focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(243,240,232,.18); }
+.dc .c-input.doubt { border-color: var(--soon); border-style: dashed; }
+.dc .c-seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; }
+.dc .c-seg > * { padding: 7px 14px; font: 600 14px/1.2 var(--f); color: var(--ink-2); }
+.dc .c-seg > .on { background: var(--ink); color: var(--on-ink); }
+.dc .c-kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0; font-size: 15px; }
+.dc .c-kv dt { color: var(--ink-3); } .dc .c-kv dd { margin: 0; font-weight: 600; }
+.dc .c-meter .v { font: 700 28px/1.1 var(--f); letter-spacing: -0.01em; } .dc .c-meter .l { font-size: 13px; color: var(--ink-3); }
+.dc .c-toggle { width: 42px; height: 24px; border-radius: 12px; background: var(--rule); position: relative; flex: none; }
+.dc .c-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); }
+.dc .c-toggle.on { background: var(--ok); } .dc .c-toggle.on::after { left: 21px; background: var(--on-ink); }
+.dc .c-note { font-size: 14px; color: var(--ink-3); }
+.dc .c-banner { display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-radius: 10px; background: var(--soon-bg); color: var(--soon); font-weight: 600; }
+.dc .c-banner.bad { background: var(--bad-bg); color: var(--bad); }
+
+/* ---------- the diagram (inline SVG) ---------- */
+.dc .c-map { width: 100%; height: auto; display: block; }
+.dc .c-map .ln { fill: none; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.dc .c-map .ln.air { stroke: var(--l-air); } .dc .c-map .ln.eng { stroke: var(--l-eng); } .dc .c-map .ln.prop { stroke: var(--l-prop); } .dc .c-map .ln.avi { stroke: var(--l-avi); }
+.dc .c-map .ln.future { stroke-dasharray: 1 13; }
+.dc .c-map .ln.gap { stroke-width: 2; stroke-dasharray: 5 7; opacity: .7; stroke-linecap: butt; }
+.dc .c-map .yr { fill: none; stroke: var(--ground); stroke-width: 8; stroke-dasharray: 2 12.68; opacity: .55; }
+.dc .c-map .stop { fill: var(--ink); stroke: var(--ground); stroke-width: 3; }
+.dc .c-map .cap { fill: var(--ground); stroke: var(--ink); stroke-width: 3; }
+.dc .c-map .cap.due { stroke-dasharray: 5 5; }
+.dc .c-map .cap.sel { stroke-width: 5; }
+.dc .c-map .ring { fill: var(--ground); stroke-width: 4; }
+.dc .c-map .ring.soon { stroke: var(--soon); } .dc .c-map .ring.bad { stroke: var(--bad); } .dc .c-map .ring.ok { stroke: var(--ink); }
+.dc .c-map text { font: 600 13px var(--f); font-stretch: 87%; fill: var(--ink); }
+.dc .c-map text.s { font-weight: 500; font-size: 12px; fill: var(--ink-2); }
+.dc .c-map text.f { fill: var(--ink-3); font-weight: 500; font-size: 12px; }
+.dc .c-map text.lg { font-size: 14px; font-weight: 700; }
+.dc .c-map text.bad { fill: var(--bad); } .dc .c-map text.soon { fill: var(--soon); }
+.dc .c-map .today { stroke: var(--ink); stroke-width: 2; }
+.dc .c-map .axis { stroke: var(--rule); stroke-width: 1; }
+
+/* ---------- phone ---------- */
+.dc.cm { display: flex; flex-direction: column; }
+.dc .cm-sys { height: 50px; flex: none; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 30px 8px; font: 700 16px/1 var(--f); }
+.dc .cm-sys i { display: flex; gap: 6px; font-style: normal; } .dc .cm-sys svg, .dc .cm-sys [data-lucide] { width: 17px; height: 17px; }
+.dc .cm-head { flex: none; padding: 8px 18px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dc .cm-head .ico { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--rule); display: grid; place-items: center; background: var(--panel); }
+.dc .cm-back { font-weight: 600; display: flex; align-items: center; gap: 2px; min-height: 44px; }
+.dc .cm-body { flex: 1; min-height: 0; overflow: hidden; padding: 4px 18px 0; position: relative; }
+.dc .cm-h1 { font: 700 25px/1.18 var(--f); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.dc .cm-h2 { font: 700 17px/1.3 var(--f); margin: 20px 0 6px; display: flex; justify-content: space-between; align-items: baseline; }
+.dc .cm-h2 a { font-size: 14px; font-weight: 600; }
+.dc .cm-card { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 14px 16px; }
+.dc .cm-row { display: grid; grid-template-columns: 74px 1fr auto; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--rule); min-height: 58px; }
+.dc .cm-row .when { font-weight: 700; font-size: 15px; line-height: 1.2; white-space: nowrap; } .dc .cm-row .when small { display: block; font-weight: 500; font-size: 12px; color: var(--ink-3); }
+.dc .cm-row .t { font-weight: 700; line-height: 1.25; } .dc .cm-row .d { font-size: 14px; color: var(--ink-2); }
+.dc .cm-btn { display: flex; align-items: center; justify-content: center; gap: 9px; height: 54px; border-radius: 27px; background: var(--ink); color: var(--on-ink); font-weight: 700; font-size: 17px; }
+.dc .cm-btn.ghost { background: var(--panel); color: var(--ink); border: 1px solid var(--rule); }
+.dc .cm-tabs { flex: none; height: 84px; background: var(--panel); border-top: 1px solid var(--rule); display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 6px 26px; }
+.dc .cm-tabs a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font: 600 12px/1.2 var(--f); font-stretch: 87%; color: var(--ink-3); text-decoration: none; }
+.dc .cm-tabs a svg, .dc .cm-tabs a [data-lucide] { width: 23px; height: 23px; }
+.dc .cm-tabs a.on { color: var(--ink); }
+.dc .cm-tabs a.on span { background: var(--ink); color: var(--on-ink); border-radius: 14px; padding: 4px 16px; display: grid; place-items: center; }
+.dc .cm-tabs a.add span { width: 54px; height: 54px; border-radius: 27px; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; margin-top: -20px; border: 4px solid var(--panel); }
+.dc .cm-scrim { position: absolute; inset: 0; background: rgba(8,14,34,.6); }
+.dc .cm-sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--ground); border-radius: 24px 24px 0 0; padding: 12px 18px 30px; border-top: 1px solid var(--rule); }
+.dc .cm-sheet::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--rule); margin: 0 auto 14px; }
+.dc .cm-offline { flex: none; background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600; padding: 7px 18px; display: flex; gap: 8px; align-items: center; }

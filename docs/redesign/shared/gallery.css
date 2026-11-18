@@ -1,0 +1,133 @@
+/* Presentation chrome for the redesign proposal pages.
+   Everything here is prefixed g- and stays deliberately quiet: the mockups carry the design, the chrome only frames them.
+   Mockup styles live in each direction's system.css and are scoped to .da / .db / .dc artboards. */
+
+:root {
+  --g-bg: #f3f4f2;
+  --g-surface: #ffffff;
+  --g-ink: #15181c;
+  --g-ink-2: #4a5059;
+  --g-ink-3: #6b727c;
+  --g-line: #d9dcd7;
+  --g-line-2: #c3c7c1;
+  --g-mark: #1c4fd6;
+  --g-good: #1f7a4a;
+  --g-warn: #9a5b00;
+  --g-bad: #b3261e;
+  --g-stage: #e6e8e4;
+  --g-font: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --g-bg: #14171a; --g-surface: #1c2024; --g-ink: #eef0ec; --g-ink-2: #b9bfc6; --g-ink-3: #8f96a0;
+    --g-line: #2e343a; --g-line-2: #414850; --g-mark: #8fb0ff; --g-good: #6fd09a; --g-warn: #f0b860; --g-bad: #ff8a80;
+    --g-stage: #0d0f11; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --g-bg: #14171a; --g-surface: #1c2024; --g-ink: #eef0ec; --g-ink-2: #b9bfc6; --g-ink-3: #8f96a0;
+  --g-line: #2e343a; --g-line-2: #414850; --g-mark: #8fb0ff; --g-good: #6fd09a; --g-warn: #f0b860; --g-bad: #ff8a80;
+  --g-stage: #0d0f11; color-scheme: dark;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--g-bg); }
+body.g-page, div.g-page {
+  margin: 0; background: var(--g-bg); color: var(--g-ink);
+  font: 400 17px/1.55 var(--g-font);
+}
+.g-wrap {
+  max-width: 1500px; margin: 0 auto; padding-block: 28px 96px;
+  padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
+}
+.g-prose { max-width: 72ch; }
+.g-page ::selection { background: var(--g-mark); color: var(--g-surface); }
+.g-page a { color: var(--g-mark); text-underline-offset: 3px; }
+.g-page a:focus-visible, .g-page button:focus-visible, .g-page summary:focus-visible { outline: 3px solid var(--g-mark); outline-offset: 2px; border-radius: 4px; }
+
+/* top navigation across the proposal */
+.g-top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--g-bg); border-bottom: 1px solid var(--g-line); }
+.g-top-in { max-width: 1500px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline;
+  padding-block: 12px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.g-top b { font-weight: 700; }
+.g-top a { color: var(--g-ink-2); text-decoration: none; font-size: 15px; padding: 4px 0; border-bottom: 2px solid transparent; }
+.g-top a:hover { color: var(--g-ink); }
+.g-top a[aria-current="page"] { color: var(--g-ink); border-bottom-color: var(--g-ink); font-weight: 700; }
+
+.g-h1 { font-size: clamp(30px, 4vw, 46px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 700; margin: 26px 0 10px; text-wrap: balance; }
+.g-h2 { font-size: 27px; line-height: 1.2; letter-spacing: -0.01em; font-weight: 700; margin: 64px 0 10px; text-wrap: balance; scroll-margin-top: 70px; }
+.g-h3 { font-size: 20px; line-height: 1.3; font-weight: 700; margin: 34px 0 6px; scroll-margin-top: 70px; }
+.g-lede { font-size: 20px; line-height: 1.5; color: var(--g-ink-2); max-width: 66ch; margin: 0 0 8px; }
+.g-page p { margin: 0 0 14px; }
+.g-muted { color: var(--g-ink-3); }
+.g-small { font-size: 15px; }
+.g-page ul, .g-page ol { padding-left: 22px; margin: 0 0 14px; }
+.g-page li { margin-bottom: 6px; }
+
+/* in-page index of screens */
+.g-index { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 14px 0 6px; padding: 0; list-style: none; }
+.g-index a { display: inline-block; font-size: 14px; text-decoration: none; color: var(--g-ink-2); border: 1px solid var(--g-line-2); border-radius: 999px; padding: 3px 11px; background: var(--g-surface); }
+.g-index a:hover { color: var(--g-ink); border-color: var(--g-ink-3); }
+
+/* tables for comparisons */
+.g-tablewrap { overflow-x: auto; border: 1px solid var(--g-line); border-radius: 8px; background: var(--g-surface); margin: 14px 0 22px; }
+.g-table { border-collapse: collapse; width: 100%; font-size: 15px; line-height: 1.45; min-width: 760px; }
+.g-table th, .g-table td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--g-line); }
+.g-table thead th { font-weight: 700; background: var(--g-bg); position: sticky; top: 0; }
+.g-table tr:last-child td { border-bottom: 0; }
+.g-table td:first-child, .g-table th:first-child { font-weight: 700; white-space: nowrap; }
+
+.g-pro, .g-con { padding-left: 20px; position: relative; }
+.g-pro::before, .g-con::before { position: absolute; left: 0; top: 0; font-weight: 700; }
+.g-pro::before { content: "+"; color: var(--g-good); }
+.g-con::before { content: "\2212"; color: var(--g-bad); }
+ul.g-pc { list-style: none; padding: 0; margin: 0 0 14px; }
+ul.g-pc li { margin-bottom: 7px; }
+
+.g-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 34px; }
+.g-cols > * { min-width: 0; }
+.g-note { border: 1px solid var(--g-line-2); background: var(--g-surface); border-radius: 8px; padding: 14px 18px; margin: 16px 0; max-width: 78ch; }
+.g-kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 10px 0 18px; font-size: 16px; }
+.g-kv dt { font-weight: 700; } .g-kv dd { margin: 0; color: var(--g-ink-2); }
+
+/* swatches + type specimens on direction overview pages */
+.g-swatches { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 20px; }
+.g-sw { width: 124px; border: 1px solid var(--g-line); border-radius: 8px; overflow: hidden; background: var(--g-surface); font-size: 13px; line-height: 1.3; }
+.g-sw i { display: block; height: 56px; }
+.g-sw span { display: block; padding: 6px 8px 8px; }
+.g-sw b { display: block; font-size: 14px; }
+
+/* ---------- screen figures ---------- */
+.g-shot { margin: 26px 0 44px; scroll-margin-top: 70px; }
+.g-shot > figcaption { display: grid; gap: 2px; margin: 0 0 10px; max-width: 86ch; }
+.g-shot > figcaption b { font-size: 19px; font-weight: 700; }
+.g-shot > figcaption span { color: var(--g-ink-2); font-size: 16px; }
+.g-shot > figcaption em { font-style: normal; color: var(--g-ink-3); font-size: 14px; }
+.g-stage { background: var(--g-stage); border: 1px solid var(--g-line); border-radius: 10px; padding: 14px; overflow: hidden; }
+.g-stage.is-open { overflow: auto; }
+.g-stage .artboard { width: calc(var(--w, 1440) * 1px); min-height: calc(var(--h, 900) * 1px); zoom: var(--z, 0.5); box-sizing: border-box;
+  position: relative; overflow: hidden; border-radius: 6px; box-shadow: 0 1px 0 rgba(0,0,0,.08), 0 18px 40px -22px rgba(0,0,0,.45); }
+.g-stage .artboard.fixed { height: calc(var(--h, 900) * 1px); }
+.g-zoomhint { all: unset; cursor: pointer; font-size: 13px; color: var(--g-ink-3); margin-top: 6px; display: inline-block; text-decoration: underline; text-underline-offset: 3px; }
+
+/* a row of phone screens */
+.g-phones { display: flex; flex-wrap: wrap; gap: 26px 22px; align-items: flex-start; margin: 18px 0 44px; }
+.g-phone { margin: 0; width: calc(var(--pw, 300) * 1px); scroll-margin-top: 70px; }
+.g-phone > figcaption { display: grid; gap: 2px; margin: 10px 2px 0; }
+.g-phone > figcaption b { font-size: 16px; font-weight: 700; }
+.g-phone > figcaption span { color: var(--g-ink-2); font-size: 14px; line-height: 1.4; }
+.g-device { border-radius: 34px; padding: 8px; background: #101214; box-shadow: 0 22px 40px -24px rgba(0,0,0,.6); }
+.g-device .artboard { width: 390px; height: 844px; zoom: calc((var(--pw, 300) - 16) / 390); border-radius: 27px; overflow: hidden; position: relative; box-sizing: border-box; }
+.g-device.tablet { border-radius: 26px; }
+.g-phone.tablet { width: calc(var(--pw, 620) * 1px); }
+.g-device.tablet .artboard { width: 1024px; height: 768px; zoom: calc((var(--pw, 620) - 16) / 1024); border-radius: 18px; }
+
+/* flow strip: screens joined into a workflow */
+.g-flow { counter-reset: step; }
+.g-flow .g-phone > figcaption b::before, .g-flow .g-shot > figcaption b::before { counter-increment: step; content: counter(step) ". "; color: var(--g-ink-3); font-weight: 400; }
+
+@media (max-width: 640px) {
+  body.g-page { font-size: 16px; }
+  .g-phones { justify-content: center; }
+}
+@media print { .g-top { position: static; } }

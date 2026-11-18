@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Section Tabs — MyTailLog direction B</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Libre+Franklin:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,700&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<link rel="stylesheet" href="system.css">
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a>
+  <a href="../analysis.html">Analysis</a>
+  <a href="../a/index.html">A · Paint Scheme</a>
+  <a href="index.html" aria-current="page">B · Section Tabs</a>
+  <a href="../c/index.html">C · Line Diagram</a>
+  <a href="../d/index.html">D · Tabbed Binder</a>
+</div></nav>
+<nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
+  <a href="index.html" aria-current="page">Direction overview</a><a href="web1.html">Web: status, capture, review</a><a href="web2.html">Web: records, aircraft, sharing</a><a href="mobile.html">Phone and tablet</a>
+</div></nav>
+
+<main class="g-wrap">
+<!--B-INTRO-->
+<h1 class="g-h1">Direction B: Section Tabs</h1>
+<p class="g-lede">The records binder every owner already keeps, made into the app. Each section has a coloured tab sized by how much it holds, the open section's colour floods the screen, and every fact sits on a leaf beside the scanned page that proves it.</p>
+<ul class="g-index">
+  <li><a href="#b-idea">The idea</a></li>
+  <li><a href="#b-home">Home screens</a></li>
+  <li><a href="#b-system">Colour and type</a></li>
+  <li><a href="#b-ia">Navigation</a></li>
+  <li><a href="#b-flows">What changes in the workflows</a></li>
+  <li><a href="web1.html">Web screens, part 1</a></li><li><a href="web2.html">Web screens, part 2</a></li>
+  <li><a href="mobile.html">Phone and tablet screens</a></li>
+</ul>
+<!--/B-INTRO-->
+
+<h2 class="g-h2" id="b-idea">The idea</h2>
+<div class="g-cols"><div class="g-prose">
+<p>Before an annual or a sale, owners build a binder: tabbed dividers, the logbooks, the 337s, the W&amp;B. Direction B is that binder. A dark cover rail holds one coloured tab per section, each tab as tall as the section is full, so the shape of the rail shows where the records are thin. Opening a section floods the screen with its colour; the work happens on white leaves laid over it.</p>
+<p>Almost every screen is a spread: the record on the left leaf, the scanned page that proves it on the right, on a dark mat. A due item, an AD, an answer from Ask: the page is already open beside it. Text transcribed from paper is set in a book face, the app's own words in a sans, so the owner can always tell what the logbook says from what the software concluded.</p>
+</div><div>
+<dl class="g-kv"><dt>Best for</dt><dd>Desk-first owners, the annual with an IA, pre-buys and audits; the strongest at proving things.</dd><dt>Density</dt><dd>Medium to high. Document-like tables with headings in the margin.</dd><dt>Signature</dt><dd>The tab rail and the record-beside-source spread.</dd><dt>Honest risks</dt><dd>Six section colours could read as playful if used anywhere but the tabs and the board. The spread needs width, so phones show the page as a second step. A full-colour board over a long session may tire; leaves stay white so the working surface is calm.</dd></dl>
+</div></div>
+
+<h2 class="g-h2" id="b-home">Home, on the web and on the phone</h2>
+
+<figure class="g-shot" id="b-web-status">
+  <figcaption><b>Status (web)</b><span>Left leaf: what is due, in one table with both limits. Right leaf: the logbook page behind whichever row is selected. Nothing is claimed without its page.</span></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead">
+        <h1 class="b-title">Status</h1>
+        <nav class="b-subtabs"><a class="on" href="#">What's due</a><a href="#">Forecast</a><a href="#">Pick a date</a></nav>
+        <div class="b-boardacts">Tach 4212.4, read Nov 14<a class="b-btn on-board sm" href="#"><i data-lucide="plane-landing"></i>Log a flight</a></div>
+      </div>
+      <div class="b-leaves" style="--split:1.75fr 1fr">
+        <section class="b-leaf">
+          <p class="b-lede"><b>One check has lapsed</b>, and it only matters for IFR. Three more come due before the new year.</p>
+          <div class="b-hung">
+            <h3>Overdue</h3>
+            <table class="b-table due">
+              <tr><td class="name">VOR check<small>91.171 · every 30 days · IFR only · <a class="b-cite" href="#">Airframe p. 61</a></small></td><td>Nov 11</td><td>7 days over</td><td><span class="b-st bad">Overdue</span></td></tr>
+            </table>
+          </div>
+          <div class="b-hung">
+            <h3>Before the new year<small>60 days or 25 hours</small></h3>
+            <table class="b-table due">
+              <tr class="sel"><td class="name">Transponder<small>91.413 · every 24 months · <a class="b-cite" href="#">Airframe p. 58</a></small></td><td>Dec 31</td><td>43 days</td><td><span class="b-st soon">Due soon</span></td></tr>
+              <tr><td class="name">Pitot-static and altimeter<small>91.411 · every 24 months · IFR only · <a class="b-cite" href="#">Airframe p. 58</a></small></td><td>Dec 31</td><td>43 days</td><td><span class="b-st soon">Due soon</span></td></tr>
+              <tr><td class="name">Oil and filter<small>every 50 hours · advisory · <a class="b-cite" href="#">Engine p. 38</a></small></td><td>tach 4222.1<small>about Dec 12</small></td><td>9.7 h</td><td><span class="b-st soon">Due soon</span></td></tr>
+            </table>
+          </div>
+          <div class="b-hung">
+            <h3>Later<small>7 items</small></h3>
+            <table class="b-table due">
+              <tr><td class="name">ELT battery<small><a class="b-cite" href="#">Airframe p. 55</a></small></td><td>Feb 28, 2027</td><td>102 days</td><td><span class="b-st ok">Current</span></td></tr>
+              <tr><td class="name">AD 2011-10-09 seat rails<small>every 100 hours · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>tach 4268.3<small>about Apr 2027</small></td><td>55.9 h</td><td><span class="b-st ok">Current</span></td></tr>
+              <tr><td class="name">Annual inspection<small>91.409 · <a class="b-cite" href="#">Airframe p. 60</a></small></td><td>Jul 31, 2027</td><td>255 days</td><td><span class="b-st ok">Current</span></td></tr>
+            </table>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div class="b-label"><b>Airframe logbook, page 58</b>Scanned Mar 2, 2026 · entry confirmed by you Mar 4</div>
+            <div style="display:flex;gap:6px"><a class="b-btn on-mat sm" href="#"><i data-lucide="zoom-in"></i>Zoom</a><a class="b-btn on-mat sm" href="#">Open page</a></div>
+          </div>
+          <div style="flex:1;min-height:0;display:grid;place-items:center;overflow:hidden">
+            <div class="scan" style="--lh:28px;--top:56px;--cols:19% 16% 1fr 21%;width:92%;aspect-ratio:auto;height:100%">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of inspections, tests, repairs and alterations</span><span>Signature / cert.</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>5/14/24</span><span>4096.2</span><span>Replaced L/H main tire and tube.</span><span class="black">M Torres</span>
+                <span></span><span></span><span>Serviced nose strut. Ops ck good.</span><span class="black">A&amp;P 3667012</span>
+                <span class="gap"></span>
+                <span>12/3/24</span><span>4131.5</span><span class="scan-sticker">ATC TRANSPONDER TEST AND INSPECTION PERFORMED I/A/W FAR 91.413 AND FAR 43 APP. F. ALTIMETER AND STATIC SYSTEM TESTED I/A/W FAR 91.411, APP. E, TO 20,000 FT. FOUND TO COMPLY. AEROCHECK INSTRUMENTS CRS# A3KR418L</span><span class="black">J. Whit</span>
+                <span class="gap"></span><span class="gap"></span>
+                <span>2/11/25</span><span>4139.0</span><span>Removed &amp; replaced vacuum</span><span class="black">M Torres</span>
+                <span></span><span></span><span>pump filter. Leak ck OK.</span><span class="black">A&amp;P 3667012</span>
+              </div>
+              <div class="scan-hl" style="left:1%;top:196px;width:98%;height:150px"></div>
+              <div class="scan-stamp" style="right:4%;top:292px">AEROCHECK<br>INSTRUMENTS</div>
+              <div class="scan-page">58</div>
+            </div>
+          </div>
+          <div class="b-label paper" style="color:var(--on-cover);font-size:16px">“ATC transponder test and inspection performed i/a/w FAR 91.413 … found to comply.”</div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<div class="g-phones">
+  <figure class="g-phone" id="b-m-status">
+    <div class="g-device"><div class="artboard db bm sec-status">
+      <div class="bm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="bm-head"><div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:16px;height:16px"></i></div><h1>Status</h1></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div class="bm-leaf">
+        <p class="bm-lede"><b>One check has lapsed</b>, IFR only. Three more are due before the new year.</p>
+        <div class="bm-group"><span>Overdue</span></div>
+        <div class="bm-row"><div><div class="t">VOR check</div><div class="d">Nov 11 · IFR only · Airframe p. 61</div></div><span class="b-st bad">7 days over</span></div>
+        <div class="bm-group"><span>Before the new year</span></div>
+        <div class="bm-row"><div><div class="t">Oil and filter</div><div class="d">tach 4222.1 · about Dec 12</div></div><div class="r">9.7 h<small>Due soon</small></div></div>
+        <div class="bm-row"><div><div class="t">Transponder</div><div class="d">Dec 31 · Airframe p. 58</div></div><div class="r">43 days<small>Due soon</small></div></div>
+        <div class="bm-row"><div><div class="t">Pitot-static and altimeter</div><div class="d">Dec 31 · IFR only</div></div><div class="r">43 days<small>Due soon</small></div></div>
+        <div class="bm-group"><span>Later</span><span>7 items</span></div>
+        <div class="bm-row"><div><div class="t">ELT battery</div><div class="d">Feb 28, 2027 · 102 days</div></div></div>
+        <span class="bm-fab"><i data-lucide="plus"></i></span>
+      </div>
+      <nav class="bm-tabs">
+        <a class="status on" href="#"><i data-lucide="list-checks"></i>Status</a>
+        <a class="books" href="#"><i data-lucide="book-open"></i>Logbooks</a>
+        <a class="maint" href="#"><i data-lucide="wrench"></i>Maint.</a>
+        <a class="aircraft" href="#"><i data-lucide="plane"></i>Aircraft</a>
+        <a class="share" href="#"><i data-lucide="share-2"></i>Share</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Status (phone)</b><span>The board colour fills the top; the list is the leaf. Tabs keep their colours at the bottom.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="b-m-proof">
+    <div class="g-device"><div class="artboard db bm sec-status">
+      <div class="bm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="bm-head" style="padding-bottom:10px"><span class="bm-back"><i data-lucide="chevron-left"></i>Status</span><span class="b-st soon" style="color:#fff">Due soon</span></div>
+      <div class="bm-leaf">
+        <h2 class="b-h2" style="font-size:24px">Transponder</h2>
+        <p class="muted" style="margin:2px 0 12px;font-size:15px">91.413 · every 24 calendar months</p>
+        <dl class="b-kv" style="grid-template-columns:96px 1fr"><dt>Due</dt><dd>Dec 31, 2026 · 43 days</dd><dt>Last done</dt><dd>Dec 3, 2024 at tach 4131.5</dd><dt>By</dt><dd>AeroCheck Instruments</dd></dl>
+        <div class="bm-group"><span>The page that says so</span><span class="b-truth conf">Confirmed by you</span></div>
+        <div style="background:#2a2c31;margin:10px -18px 0;padding:14px 18px 0;height:300px;overflow:hidden">
+          <div class="scan" style="--lh:24px;--top:0px;aspect-ratio:auto;height:230px">
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body">
+              <span>12/3/24</span><span>4131.5</span><span class="scan-sticker">ATC TRANSPONDER TEST AND INSPECTION PERFORMED I/A/W FAR 91.413 AND FAR 43 APP. F. ALTIMETER AND STATIC SYSTEM TESTED I/A/W FAR 91.411. FOUND TO COMPLY. AEROCHECK INSTRUMENTS</span><span class="black">J. Whit</span>
+            </div>
+            <div class="scan-hl" style="left:1%;top:1%;width:98%;height:62%"></div>
+          </div>
+          <div class="b-label" style="margin-top:8px"><b>Airframe logbook, page 58</b></div>
+        </div>
+      </div>
+      <div style="background:var(--leaf);margin:0 8px;padding:10px 18px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><span class="bm-btn ghost">Edit item</span><span class="bm-btn">Mark done</span></div>
+      <nav class="bm-tabs">
+        <a class="status on" href="#"><i data-lucide="list-checks"></i>Status</a>
+        <a class="books" href="#"><i data-lucide="book-open"></i>Logbooks</a>
+        <a class="maint" href="#"><i data-lucide="wrench"></i>Maint.</a>
+        <a class="aircraft" href="#"><i data-lucide="plane"></i>Aircraft</a>
+        <a class="share" href="#"><i data-lucide="share-2"></i>Share</a>
+      </nav>
+    </div></div>
+    <figcaption><b>An item and its proof</b><span>Tap any row and the page that backs it comes with it, already open at the entry.</span></figcaption>
+  </figure>
+</div>
+
+<h2 class="g-h2" id="b-system">Colour and type</h2>
+<div class="g-swatches"><div class="g-sw"><i style="background:#17191e"></i><span><b>Cover</b>#17191e<br>rail</span></div><div class="g-sw"><i style="background:#2a3dbe"></i><span><b>Status</b>#2a3dbe<br>ultramarine</span></div><div class="g-sw"><i style="background:#edbb1b"></i><span><b>Logbooks</b>#edbb1b<br>chrome yellow</span></div><div class="g-sw"><i style="background:#0b6b6a"></i><span><b>Maintenance</b>#0b6b6a<br>teal</span></div><div class="g-sw"><i style="background:#2f7533"></i><span><b>Aircraft</b>#2f7533<br>grass</span></div><div class="g-sw"><i style="background:#85491f"></i><span><b>Documents</b>#85491f<br>sienna</span></div><div class="g-sw"><i style="background:#6b44b8"></i><span><b>Share</b>#6b44b8<br>violet</span></div><div class="g-sw"><i style="background:#dd3418"></i><span><b>Alarm</b>#dd3418<br>vermilion, overdue only</span></div></div>
+<div class="g-cols"><div class="g-prose"><p><b>Libre Franklin</b> is the app's voice, at one 16px body size; headings hang in the left margin of each leaf. <b>Literata</b> is the paper's voice and appears only for words transcribed from a scan: entry narratives, quotes in answers, citations in documents.</p></div>
+<div class="g-prose"><p>No green and no amber anywhere. Current is a black dot; due soon is a vermilion ring; overdue is a solid vermilion slip; unknown is a dashed ring. It reads for colour-blind owners and prints correctly in black and white. Trust shows as a dotted dot (read by AI), a filled dot (confirmed by you) or a diamond (signed by a mechanic).</p></div></div>
+<h2 class="g-h2" id="b-ia">Navigation</h2>
+<div class="g-prose"><p>Web: six tabs (Status, Logbooks, Maintenance, Aircraft, Documents, Share) with Search-or-ask, Add and the account at the foot of the rail; sub-tabs sit along the top of the board. Phone: five coloured tabs along the bottom (Documents moves under Aircraft) and a square Add button. The mapping from today's fifteen items is on the <a href="../index.html#ia">overview page</a>.</p></div>
+<h2 class="g-h2" id="b-flows">What changes in the workflows</h2>
+<ul class="g-prose"><li><b>Every list row opens its page.</b> Selecting a due item, an AD or an entry turns the right leaf to the page that backs it, with the entry outlined.</li><li><b>Review is the same spread</b> with the leaves swapped in purpose: the page on the mat, the fields on the leaf, confirmed one at a time.</li><li><b>Hand-offs are tabbed documents.</b> The dossier and summary print as a binder with dividers, every fact footnoted to its page.</li><li><b>Coverage is visible from the rail</b>: a thin Logbooks tab means thin records.</li></ul>
+<p class="g-prose">See every screen: <a href="web1.html">web, status to review</a> · <a href="web2.html">web, records to sharing</a> · <a href="mobile.html">phone and tablet</a>.</p>
+</main>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="../shared/gallery.js"></script>
+</body>
+</html>
