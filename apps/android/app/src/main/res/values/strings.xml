@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copy per docs/redesign/handoff/12-copy-and-voice.md and 06 M-AUTH-01. Phone copy says "signal". -->
+<resources>
+    <string name="app_name">MyTailLog</string>
+
+    <!-- Section titles (board titles) and phone tab labels (06 §1.1) -->
+    <string name="section_status">Status</string>
+    <string name="section_books">Logbooks</string>
+    <string name="section_maint">Maintenance</string>
+    <string name="tab_maint">Maint.</string>
+    <string name="section_aircraft">Aircraft</string>
+    <string name="section_docs">Documents</string>
+    <string name="section_share">Share</string>
+
+    <!-- Empty states (12 §9) -->
+    <string name="empty_status">Nothing to show yet. Status fills in as your logbooks are read and confirmed.</string>
+    <string name="empty_books">Add your first logbook. Most owners start with the airframe log, newest volume first.</string>
+    <string name="empty_nothing">Nothing here yet.</string>
+    <string name="empty_docs">Keep registration, airworthiness certificate, POH, insurance and W&amp;B here.</string>
+    <string name="empty_share">Share records with a mechanic, a buyer or an insurer. They don\'t need an account.</string>
+
+    <!-- Sign in (06 M-AUTH-01) -->
+    <string name="auth_lede">Your aircraft\'s logbooks, photographed and read into an index you can search, with what is due worked out from them.</string>
+    <string name="auth_apple">Continue with Apple</string>
+    <string name="auth_google">Continue with Google</string>
+    <string name="auth_providers_unavailable">Apple and Google sign-in aren\'t on Android yet. Use your email.</string>
+    <string name="auth_or_email">or with your email</string>
+    <string name="auth_email_label">Email</string>
+    <string name="auth_send">Email me a sign-in code</string>
+    <string name="auth_sending">Sending</string>
+    <string name="auth_footer">Free and open source. The paper logbooks stay the record.</string>
+    <string name="auth_check_title">Check your email</string>
+    <string name="auth_check_body">We sent a 6-digit code to %1$s. Type it here.</string>
+    <string name="auth_code_label">6-digit code</string>
+    <string name="auth_sign_in">Sign in</string>
+    <string name="auth_signing_in">Signing in</string>
+    <string name="auth_send_again">Send it again</string>
+    <string name="auth_sent_again">Sent again at %1$s</string>
+    <string name="auth_different_email">Use a different email</string>
+
+    <!-- Sign-in errors (06 M-AUTH-01; raw server text is never shown) -->
+    <string name="auth_error_signal">Signing in needs signal. Try again when you have it.</string>
+    <string name="auth_error_code">That code didn\'t match. Check the newest email, or send it again.</string>
+    <string name="auth_error_too_many">Too many tries in a short time. Wait a minute, then try again.</string>
+    <string name="auth_error_server">Something went wrong on our side. Try again in a minute.</string>
+</resources>
