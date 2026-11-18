@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { publicOrigin } from "@/lib/publicOrigin";
 import { THEME_COOKIE, UI_COOKIE, UI_COOKIE_MAX_AGE_S, parseTheme, safeNext } from "@/lib/uiV2";
 
 /**
@@ -9,7 +10,7 @@ import { THEME_COOKIE, UI_COOKIE, UI_COOKIE_MAX_AGE_S, parseTheme, safeNext } fr
  */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const res = NextResponse.redirect(new URL(safeNext(params.get("next")), request.url));
+  const res = NextResponse.redirect(new URL(safeNext(params.get("next")), publicOrigin(request)));
   const opts = {
     maxAge: UI_COOKIE_MAX_AGE_S,
     sameSite: "lax" as const,

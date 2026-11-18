@@ -59,3 +59,18 @@ test("rail zero and role cases", () => {
   assert.deepEqual(empty[5].lines, ["Dossier and summary"], "non-owners see the dossier line");
   assert.deepEqual(railTabs("a1", { ...counts, overdue: null }, true)[0].lines, [], "a failed count drops the line");
 });
+
+test("opt-in redirect uses the public site URL, not the container address", async () => {
+  const { GET } = await import("../src/app/api/ui/route");
+  const { NextRequest } = await import("next/server");
+  const prev = process.env.NEXT_PUBLIC_SITE_URL;
+  process.env.NEXT_PUBLIC_SITE_URL = "https://mfb-test.mytaillog.com";
+  try {
+    const res = await GET(new NextRequest("http://0.0.0.0:8080/api/ui?design=v2&next=/dashboard"));
+    assert.equal(res.headers.get("location"), "https://mfb-test.mytaillog.com/dashboard");
+    assert.match(res.headers.get("set-cookie") ?? "", /mtl_ui=v2/);
+  } finally {
+    if (prev === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+    else process.env.NEXT_PUBLIC_SITE_URL = prev;
+  }
+});
