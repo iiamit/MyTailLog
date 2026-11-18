@@ -7,7 +7,9 @@ test("v2 rewrites only the routes the new design covers", () => {
   assert.equal(v2Rewrite("/aircraft/abc/status"), "/v2/aircraft/abc/status");
   assert.equal(v2Rewrite("/aircraft/abc/logbooks/"), "/v2/aircraft/abc/logbooks");
   assert.equal(v2Rewrite("/aircraft/abc/documents"), "/v2/aircraft/abc/documents");
-  assert.equal(v2Rewrite("/aircraft/abc/status/item/mx:1"), null, "deeper screens stay v1 until built");
+  assert.equal(v2Rewrite("/aircraft/abc/status/item/mx:1"), "/v2/aircraft/abc/status/item/mx:1");
+  assert.equal(v2Rewrite("/aircraft/abc/status/item/"), null, "an item route needs its key");
+  assert.equal(v2Rewrite("/aircraft/abc/status/plan"), null, "deeper screens stay v1 until built");
   assert.equal(v2Rewrite("/aircraft/abc/review"), null);
   assert.equal(v2Rewrite("/aircraft/enroll"), null);
   assert.equal(v2Rewrite("/dashboard"), null);
