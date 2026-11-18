@@ -1,6 +1,7 @@
 package com.mytaillog.app
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,35 +10,68 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.mytaillog.design.MyTailLogTheme
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    /** An OAuth return or email link (05 §8.4) waiting for the sign-in screen. */
+    private var authReturn by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as MyTailLogApp
-        setContent { MyTailLogTheme { AppRoot(app) } }
+        if (savedInstanceState == null) authReturn = intent?.data?.toString()
+        setContent { MyTailLogTheme { AppRoot(app.account, authReturn) { authReturn = null } } }
+    }
+
+    // singleTask: the Custom Tab redirect and App Links come back here instead of stacking a second activity.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.data?.let { authReturn = it.toString() }
     }
 }
 
 @Composable
-private fun AppRoot(app: MyTailLogApp) {
+private fun AppRoot(account: Account, authReturn: String?, onReturnHandled: () -> Unit) {
     // (loaded, signedIn): the cover shows until the stored session has been read.
-    val state by remember { app.sessions.session.map { true to (it != null) } }
-        .collectAsStateWithLifecycle(initialValue = false to false)
-    val (loaded, signedIn) = state
+    val state by remember { account.session.map { true to it } }
+        .collectAsStateWithLifecycle(initialValue = false to null)
+    val (loaded, session) = state
+    val signedIn = session != null
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    // Refresh on every return to the foreground (05 §8.1); a spent refresh token signs out with a notice.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(signedIn) { if (signedIn) lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { account.accessToken() } }
     when {
         !loaded -> Box(Modifier.fillMaxSize().background(MyTailLogTheme.colors.cover))
-        signedIn -> Shell()
-        else -> SignInScreen(app.auth, app.sessions::save)
+        signedIn -> {
+            LaunchedEffect(authReturn) { if (authReturn != null) onReturnHandled() } // already signed in: drop it
+            Shell(email = session.user.email, onSignOut = {
+                scope.launch {
+                    account.signOut()
+                    clearGoogleChoice(context)
+                }
+            })
+        }
+        else -> SignInScreen(account, authReturn, onReturnHandled)
     }
 }
 

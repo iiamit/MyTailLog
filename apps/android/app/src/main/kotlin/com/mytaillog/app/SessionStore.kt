@@ -25,20 +25,10 @@ private val Context.sessionData by preferencesDataStore("session")
  * (05 §8.1; EncryptedSharedPreferences is deprecated). A session that can't be decrypted
  * (Keystore reset, restored to another device) reads as signed out.
  */
-class SessionStore(private val context: Context) {
+class SessionStore(private val context: Context, makeAead: () -> Aead = { keystoreAead(context) }) {
     private val key = stringPreferencesKey("session")
     private val json = Json { ignoreUnknownKeys = true }
-
-    private val aead: Aead by lazy {
-        AeadConfig.register()
-        AndroidKeysetManager.Builder()
-            .withSharedPref(context, "session_keyset", "mytaillog_keys")
-            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-            .withMasterKeyUri("android-keystore://mytaillog_session")
-            .build()
-            .keysetHandle
-            .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
-    }
+    private val aead: Aead by lazy(makeAead)
 
     val session: Flow<Session?> = context.sessionData.data
         .map { prefs -> prefs[key]?.let(::open) }
@@ -46,14 +36,50 @@ class SessionStore(private val context: Context) {
 
     suspend fun save(session: Session) {
         withContext(Dispatchers.IO) {
-            val sealed = aead.encrypt(json.encodeToString(Session.serializer(), session).encodeToByteArray(), AD)
-            context.sessionData.edit { it[key] = Base64.encodeToString(sealed, Base64.NO_WRAP) }
+            val sealed = seal(json.encodeToString(Session.serializer(), session).encodeToByteArray())
+            context.sessionData.edit { it[key] = sealed }
         }
     }
 
+    suspend fun clear() {
+        withContext(Dispatchers.IO) { context.sessionData.edit { it.clear() } }
+    }
+
+    /** The PKCE verifier for a flow this phone started; sealed like the session (the email app may outlive this process). */
+    suspend fun putVerifier(flow: AuthFlow, verifier: String) {
+        withContext(Dispatchers.IO) {
+            context.sessionData.edit { it[verifierKey(flow)] = seal(verifier.encodeToByteArray()) }
+        }
+    }
+
+    /** One use: the verifier is removed as it is read. */
+    suspend fun takeVerifier(flow: AuthFlow): String? = withContext(Dispatchers.IO) {
+        var sealed: String? = null
+        context.sessionData.edit { sealed = it.remove(verifierKey(flow)) }
+        sealed?.let { s -> runCatching { unseal(s).decodeToString() }.getOrNull() }
+    }
+
+    private fun verifierKey(flow: AuthFlow) = stringPreferencesKey("verifier_${flow.name}")
+
+    private fun seal(plain: ByteArray) = Base64.encodeToString(aead.encrypt(plain, AD), Base64.NO_WRAP)
+    private fun unseal(sealed: String) = aead.decrypt(Base64.decode(sealed, Base64.NO_WRAP), AD)
+
     private fun open(sealed: String): Session? = runCatching {
-        json.decodeFromString(Session.serializer(), aead.decrypt(Base64.decode(sealed, Base64.NO_WRAP), AD).decodeToString())
+        json.decodeFromString(Session.serializer(), unseal(sealed).decodeToString())
     }.getOrNull()
 
-    private companion object { val AD = "mytaillog.session".encodeToByteArray() }
+    private companion object {
+        val AD = "mytaillog.session".encodeToByteArray()
+
+        fun keystoreAead(context: Context): Aead {
+            AeadConfig.register()
+            return AndroidKeysetManager.Builder()
+                .withSharedPref(context, "session_keyset", "mytaillog_keys")
+                .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+                .withMasterKeyUri("android-keystore://mytaillog_session")
+                .build()
+                .keysetHandle
+                .getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+        }
+    }
 }

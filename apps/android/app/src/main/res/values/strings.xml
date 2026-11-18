@@ -23,14 +23,15 @@
     <string name="auth_lede">Your aircraft\'s logbooks, photographed and read into an index you can search, with what is due worked out from them.</string>
     <string name="auth_apple">Continue with Apple</string>
     <string name="auth_google">Continue with Google</string>
-    <string name="auth_providers_unavailable">Apple and Google sign-in aren\'t on Android yet. Use your email.</string>
     <string name="auth_or_email">or with your email</string>
     <string name="auth_email_label">Email</string>
-    <string name="auth_send">Email me a sign-in code</string>
+    <string name="auth_send">Email me a sign-in link</string>
+    <string name="auth_use_password">Use a password instead</string>
     <string name="auth_sending">Sending</string>
     <string name="auth_footer">Free and open source. The paper logbooks stay the record.</string>
     <string name="auth_check_title">Check your email</string>
-    <string name="auth_check_body">We sent a 6-digit code to %1$s. Type it here.</string>
+    <string name="auth_check_body">We sent a link and a 6-digit code to %1$s. Open the link on this phone, or type the code.</string>
+    <string name="auth_link_fallback">Enter the 6-digit code from the same email</string>
     <string name="auth_code_label">6-digit code</string>
     <string name="auth_sign_in">Sign in</string>
     <string name="auth_signing_in">Signing in</string>
@@ -38,9 +39,34 @@
     <string name="auth_sent_again">Sent again at %1$s</string>
     <string name="auth_different_email">Use a different email</string>
 
+    <!-- Password mode (06 M-AUTH-01) -->
+    <string name="auth_password_label">Password</string>
+    <string name="auth_new_password_label">New password</string>
+    <string name="auth_password_rule">At least 8 characters</string>
+    <string name="auth_name_label">Your name</string>
+    <string name="auth_create_account">Create an account</string>
+    <string name="auth_have_account">Sign in with a password</string>
+    <string name="auth_forgot">Forgot your password?</string>
+    <string name="auth_link_instead">Email me a link instead</string>
+    <string name="auth_reset_body">We sent a 6-digit code to %1$s. Type it with a new password.</string>
+    <string name="auth_reset_submit">Set the password and sign in</string>
+    <string name="auth_signed_out">You\'ve been signed out. Sign in again to keep syncing.</string>
+
     <!-- Sign-in errors (06 M-AUTH-01; raw server text is never shown) -->
     <string name="auth_error_signal">Signing in needs signal. Try again when you have it.</string>
     <string name="auth_error_code">That code didn\'t match. Check the newest email, or send it again.</string>
     <string name="auth_error_too_many">Too many tries in a short time. Wait a minute, then try again.</string>
     <string name="auth_error_server">Something went wrong on our side. Try again in a minute.</string>
+    <string name="auth_error_password">That email and password didn\'t match. Try again, or email me a link instead.</string>
+    <string name="auth_error_signup">That account couldn\'t be created. Check the email, or sign in instead.</string>
+    <string name="auth_error_apple">Apple sign-in didn\'t finish. Try again, or use your email.</string>
+    <string name="auth_error_google">Google sign-in didn\'t finish. Try again, or use your email.</string>
+
+    <!-- Settings and sign-out (06 M-SYS-02, 05 §8.6) -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_signed_in_as">Signed in as %1$s</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_out_title">Sign out of MyTailLog on this phone?</string>
+    <string name="sign_out_body">The records stay on the server.</string>
+    <string name="cancel">Cancel</string>
 </resources>

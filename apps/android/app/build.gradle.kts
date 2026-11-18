@@ -7,6 +7,9 @@ fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\
 
 val releaseSupabaseUrl = providers.gradleProperty("mytaillog.supabaseUrl")
 val releaseSupabaseKey = providers.gradleProperty("mytaillog.supabaseKey")
+// The Google Cloud *Web* OAuth client ID that Supabase's Google provider uses (Credential Manager's serverClientId).
+// Not a secret. Blank: "Continue with Google" uses the OAuth Custom Tab instead.
+val googleWebClientId = providers.gradleProperty("mytaillog.googleWebClientId")
 
 android {
     namespace = "com.mytaillog.app"
@@ -19,6 +22,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", quoted(googleWebClientId.getOrElse("")))
     }
 
     buildFeatures {
@@ -65,9 +69,16 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.tink.android)
     implementation(libs.core.ktx)
+    // Sign-in (05 §8.2). Android-only, so declared here rather than in the catalog shared with apps/core.
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("androidx.browser:browser:1.8.0")
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
