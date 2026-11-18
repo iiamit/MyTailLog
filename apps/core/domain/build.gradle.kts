@@ -19,6 +19,11 @@ val generateFixturesDir = tasks.register("generateFixturesDir") {
     }
 }
 
+// Tests read the fixtures at run time; declare them so a regenerated fixture reruns the tests.
+tasks.withType<AbstractTestTask>().configureEach {
+    inputs.dir(rootDir.resolve("../../packages/shared/fixtures")).withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 kotlin {
     android {
         namespace = "com.mytaillog.core.domain"
