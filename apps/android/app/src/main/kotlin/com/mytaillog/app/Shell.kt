@@ -16,7 +16,14 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
@@ -54,9 +61,49 @@ import com.mytaillog.design.section
 
 /** Signed in: the phone binder below 700dp, the rail and list-detail at 700dp and wider. */
 @Composable
-fun Shell() {
+fun Shell(email: String? = null, onSignOut: () -> Unit = {}) {
+    val account: @Composable () -> Unit = { AccountSettings(email, onSignOut) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (isTablet(maxWidth.value.toInt())) TabletShell() else PhoneShell()
+        if (isTablet(maxWidth.value.toInt())) TabletShell(account) else PhoneShell(account = account)
+    }
+}
+
+/**
+ * The account part of Settings (06 M-SYS-02) until that screen lands: who is signed in and
+ * **Sign out** in alarm text, confirmed first (05 §8.6, nothing unsent: there is no outbox yet).
+ */
+@Composable
+fun AccountSettings(email: String?, onSignOut: () -> Unit) {
+    val colors = MyTailLogTheme.colors
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    Column {
+        email?.let { Text(stringResource(R.string.settings_signed_in_as, it), color = colors.ink, style = MaterialTheme.typography.bodyLarge) }
+        TextButton(
+            onClick = { confirming = true },
+            colors = ButtonDefaults.textButtonColors(contentColor = colors.alarmText),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.heightIn(min = 48.dp),
+        ) { Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700))) }
+    }
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text(stringResource(R.string.sign_out_title)) },
+            text = { Text(stringResource(R.string.sign_out_body)) },
+            confirmButton = {
+                TextButton(onClick = { confirming = false; onSignOut() }, colors = ButtonDefaults.textButtonColors(contentColor = colors.alarmText)) {
+                    Text(stringResource(R.string.sign_out))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }, colors = ButtonDefaults.textButtonColors(contentColor = colors.ink)) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            containerColor = colors.leaf,
+            titleContentColor = colors.ink,
+            textContentColor = colors.ink,
+        )
     }
 }
 
@@ -65,7 +112,7 @@ fun Shell() {
  * switching tabs saves and restores each tab's stack; re-selecting the open tab pops it to its root.
  */
 @Composable
-fun PhoneShell(nav: NavHostController = rememberNavController()) {
+fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}) {
     val entry by nav.currentBackStackEntryAsState()
     val hierarchy = entry?.destination?.hierarchy
     val current = PhoneTabs.indexOfFirst { tab -> hierarchy?.any { it.route == tab.graph } == true }.coerceAtLeast(0)
@@ -90,6 +137,7 @@ fun PhoneShell(nav: NavHostController = rememberNavController()) {
                         SectionScreen(tab) {
                             if (tab == Destination.Aircraft) {
                                 PhoneRow(stringResource(R.string.section_docs), onClick = { nav.navigate(DOCUMENTS_ON_PHONE) })
+                                PhoneRow(stringResource(R.string.settings_title), onClick = { nav.navigate(SETTINGS_ON_PHONE) })
                             }
                         }
                     }
@@ -97,6 +145,14 @@ fun PhoneShell(nav: NavHostController = rememberNavController()) {
                         composable(DOCUMENTS_ON_PHONE) {
                             val up: () -> Unit = { nav.popBackStack() }
                             SectionScreen(Destination.Documents, back = stringResource(R.string.section_aircraft) to up)
+                        }
+                        composable(SETTINGS_ON_PHONE) {
+                            val up: () -> Unit = { nav.popBackStack() }
+                            val colors = MyTailLogTheme.colors
+                            Column(Modifier.fillMaxSize().background(colors.section(Section.Aircraft).board)) {
+                                PhoneHeader(stringResource(R.string.settings_title), Section.Aircraft, back = stringResource(R.string.section_aircraft) to up)
+                                PhoneLeaf { account() }
+                            }
                         }
                     }
                 }
@@ -144,7 +200,7 @@ private fun EmptyText(destination: Destination) {
 /** Tablet: the binder Rail beside the board, which holds a list-detail scaffold of leaves (05 §5.4). */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun TabletShell() {
+fun TabletShell(account: @Composable () -> Unit = {}) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val destination = TabletSections[selected]
     val colors = MyTailLogTheme.colors
@@ -173,7 +229,14 @@ fun TabletShell() {
             ListDetailPaneScaffold(
                 directive = navigator.scaffoldDirective,
                 value = navigator.scaffoldValue,
-                listPane = { AnimatedPane { TabletLeaf { EmptyText(destination) } } },
+                listPane = {
+                    AnimatedPane {
+                        TabletLeaf {
+                            // Settings lives in the RailFoot's Account (06 §9) once that lands; until then, under Aircraft.
+                            if (destination == Destination.Aircraft) account() else EmptyText(destination)
+                        }
+                    }
+                },
                 detailPane = { AnimatedPane { TabletLeaf {} } },
                 modifier = Modifier.padding(start = 22.dp, end = 22.dp, bottom = 22.dp),
             )

@@ -3,6 +3,13 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Lets the Custom Tab for Apple / Google sign-in find a browser that supports it (Android 11+). -->
+    <queries>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+    </queries>
+
     <!-- allowBackup off: the session is sealed with a Keystore key that can't be restored on
          another device. outbox.db joins Auto Backup when the offline store lands (05 §6.2). -->
     <application
@@ -16,10 +23,25 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- OAuth return from the Custom Tab (05 §8.4), same scheme as the Capacitor app. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.mytaillog.app" android:host="auth" android:path="/callback" />
+            </intent-filter>
+            <!-- Email sign-in link (05 §8.4). Verified against https://mytaillog.com/.well-known/assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="mytaillog.com" android:path="/app/auth/callback" />
             </intent-filter>
         </activity>
     </application>

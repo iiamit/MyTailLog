@@ -57,6 +57,44 @@ class ApiTest {
         assertEquals(AuthFailure.NoSignal, e.failure)
     }
 
+    private val sessionJson = """{"access_token":"a","refresh_token":"r","expires_at":99,"user":{"id":"u1"}}"""
+
+    @Test
+    fun emailLinkCarriesThePkceChallengeAndReturn() = runTest {
+        AuthApi(client(HttpStatusCode.OK, "{}"), "https://x", "k").sendCode("a@b.c", Pkce("ch", "https://mytaillog.com/app/auth/callback"))
+        val req = requests.single()
+        assertEquals("https://mytaillog.com/app/auth/callback", req.url.parameters["redirect_to"])
+        assertEquals("""{"email":"a@b.c","create_user":true,"code_challenge":"ch","code_challenge_method":"s256"}""", (req.body as TextContent).text)
+    }
+
+    @Test
+    fun tokenGrantsAndTheirFailures() = runTest {
+        val api = AuthApi(client(HttpStatusCode.OK, sessionJson), "https://x", "k")
+        api.exchangeCode("c1", "v1")
+        api.signInWithIdToken("google", "idt", "raw")
+        api.refresh("r")
+        assertEquals(listOf("pkce", "id_token", "refresh_token"), requests.map { it.url.parameters["grant_type"] })
+        assertEquals("""{"provider":"google","id_token":"idt","nonce":"raw"}""", (requests[1].body as TextContent).text)
+
+        val bad = AuthApi(client(HttpStatusCode.BadRequest, """{"error_code":"invalid_credentials"}"""), "https://x", "k")
+        assertEquals(AuthFailure.WrongPassword, assertFailsWith<AuthException> { bad.signInWithPassword("a@b.c", "x") }.failure)
+        assertEquals(AuthFailure.SessionEnded, assertFailsWith<AuthException> { bad.refresh("r") }.failure)
+    }
+
+    @Test
+    fun signUpWithoutSessionMeansConfirmByEmail() = runTest {
+        val api = AuthApi(client(HttpStatusCode.OK, """{"id":"u1","email":"a@b.c"}"""), "https://x", "k")
+        assertEquals(null, api.signUp("a@b.c", "longenough", "Dana"))
+        val withSession = AuthApi(client(HttpStatusCode.OK, sessionJson), "https://x", "k")
+        assertEquals("u1", withSession.signUp("a@b.c", "longenough", "Dana")?.user?.id)
+    }
+
+    @Test
+    fun authorizeUrlNamesProviderReturnAndChallenge() {
+        val url = AuthApi(client(HttpStatusCode.OK, "{}"), "https://x.supabase.co/", "k").authorizeUrl("apple", Pkce("ch", "com.mytaillog.app://auth/callback"))
+        assertEquals("https://x.supabase.co/auth/v1/authorize?provider=apple&redirect_to=com.mytaillog.app%3A%2F%2Fauth%2Fcallback&code_challenge=ch&code_challenge_method=s256", url)
+    }
+
     @Test
     fun pullSendsCursorAndBearer() = runTest {
         val api = HttpSyncApi(client(HttpStatusCode.OK, """{"changes":[],"nextCursor":12,"hasMore":false}"""), "https://mytaillog.com") { "tok" }
