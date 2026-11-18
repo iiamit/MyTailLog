@@ -1,0 +1,3197 @@
+{
+  "rule": "09 §3.6 situation, §3.4 line ahead, 12 §4 verdict",
+  "algoVersion": 1,
+  "cases": [
+    {
+      "name": "setup: no annual on record",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": null,
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-172",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": null,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "setup",
+        "verdict": {
+          "text": "Nothing to show yet. Scan or add your logbooks to see what's due.",
+          "emphasis": [],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2026-11-18",
+          "rings": [],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "setup: no meter reading",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ]
+      },
+      "expected": {
+        "situation": "setup",
+        "verdict": {
+          "text": "Nothing to show yet. Scan or add your logbooks to see what's due.",
+          "emphasis": [],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2026-11-18",
+          "rings": [],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "one overdue item",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-10-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-02-10",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-173",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "1 item is overdue: Transponder check lapsed 18 days ago.",
+          "emphasis": [
+            [
+              0,
+              17
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-elt",
+              "line": "avionics",
+              "date": "2027-02-28",
+              "dateKind": "calendar",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "one overdue item with a scope (IFR only)",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-174",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "1 item has lapsed: VOR check, 7 days ago (IFR only).",
+          "emphasis": [
+            [
+              0,
+              17
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-vor",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "one overdue item by hours",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-x",
+            "kind": "custom",
+            "label": "Vacuum pump",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 63,
+            "last_done_date": "2025-01-01",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-175",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "1 item is overdue: Vacuum pump lapsed 2.3 hours ago.",
+          "emphasis": [
+            [
+              0,
+              17
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-x",
+              "line": "airframe",
+              "date": "2026-11-18",
+              "dateKind": "projected",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "one overdue, lapsed 1 day ago",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-18",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-176",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "1 item is overdue: VOR check lapsed 1 day ago.",
+          "emphasis": [
+            [
+              0,
+              17
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-vor",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "three overdue items",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-10-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2025-09-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-177",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "3 items are overdue.",
+          "emphasis": [
+            [
+              0,
+              19
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-elt",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-vor",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "due soon by hours",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.5,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-178",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "Nothing tracked is overdue. Next: oil change in about 9.7 hours.",
+          "emphasis": [
+            [
+              0,
+              26
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": [
+            "mx:mx-oil_change"
+          ]
+        }
+      }
+    },
+    {
+      "name": "due soon by date",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-05-02",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-179",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "Nothing tracked is overdue. Next: transponder check in 43 days.",
+          "emphasis": [
+            [
+              0,
+              26
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-05-31",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "due soon: a regulatory item leads over an advisory one",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-05-02",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2405,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-180",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "Nothing tracked is overdue. Next: transponder check in 43 days.",
+          "emphasis": [
+            [
+              0,
+              26
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-05-31",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": [
+            "mx:mx-oil_change"
+          ]
+        }
+      }
+    },
+    {
+      "name": "all clear, but a VOR check is within 90 days",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-11-08",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-181",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is overdue. Next: VOR check, Dec 8, 2026.",
+          "emphasis": [
+            [
+              0,
+              26
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-vor",
+              "line": "avionics",
+              "date": "2026-12-08",
+              "dateKind": "calendar",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "all clear beyond 90 days",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-05-02",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-05-02",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-182",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is due in the next 90 days. Next: annual, May 31, 2027.",
+          "emphasis": [
+            [
+              0,
+              42
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-05-31",
+              "dateKind": "calendar",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-elt",
+              "line": "avionics",
+              "date": "2027-05-31",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "all clear, next by projected hours",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-07-02",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-hundred_hour",
+            "kind": "hundred_hour",
+            "label": "100-hour inspection (91.409)",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": 100,
+            "last_done_date": "2026-11-01",
+            "last_done_hours": 2160,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-183",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is due in the next 90 days. Next: 100-hour inspection, about Jun 2027.",
+          "emphasis": [
+            [
+              0,
+              42
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-hundred_hour",
+              "line": "airframe",
+              "date": "2027-06-27",
+              "dateKind": "projected",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-07-31",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "annual month: items ride along",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2025-12-03",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-04-01",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-184",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "annual_month",
+        "verdict": {
+          "text": "The annual is due by Dec 31, 2026. 2 items can ride along.",
+          "emphasis": [
+            [
+              0,
+              33
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-01-17",
+          "rings": [
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-pitot_static",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "annual month alone",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2025-12-03",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-185",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "annual_month",
+        "verdict": {
+          "text": "The annual is due by Dec 31, 2026.",
+          "emphasis": [
+            [
+              0,
+              33
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-01-17",
+          "rings": [
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "in the shop: a visit with its provider",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "planned_visit": [
+          {
+            "id": "v-1",
+            "status": "in_shop",
+            "week_of": "2026-11-16",
+            "visit_date": "2026-11-17",
+            "provider_id": "sp-1"
+          }
+        ],
+        "planned_visit_item": [
+          {
+            "visit_id": "v-1",
+            "item_key": "mx:mx-transponder"
+          },
+          {
+            "visit_id": "v-1",
+            "item_key": "mx:mx-pitot_static"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-1",
+            "name": "AeroCheck Instruments"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-186",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "in_shop",
+        "verdict": {
+          "text": "N734DM is at AeroCheck Instruments for transponder check and pitot-static check, since Nov 17, 2026.",
+          "emphasis": [
+            [
+              0,
+              34
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-01-17",
+          "rings": [
+            {
+              "itemKey": "mx:mx-pitot_static",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "in the shop by the owner, no visit: the plain verdict",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": "in_shop"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-187",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "in_shop",
+        "verdict": {
+          "text": "1 item has lapsed: VOR check, 7 days ago (IFR only).",
+          "emphasis": [
+            [
+              0,
+              17
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-01-17",
+          "rings": [
+            {
+              "itemKey": "mx:mx-vor",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "preparing a sale: a live buyer room",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-02-10",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "record_room": [
+          {
+            "audience": "buyer",
+            "expires_at": "2027-01-15T00:00:00Z",
+            "revoked_at": null
+          },
+          {
+            "audience": "buyer",
+            "expires_at": "2027-03-01T00:00:00Z",
+            "revoked_at": "2026-11-01T00:00:00Z"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-188",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "preparing_sale",
+        "verdict": {
+          "text": "A buyer's record room is open until Jan 15, 2027. 1 item is due before then.",
+          "emphasis": [
+            [
+              0,
+              48
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-elt",
+              "line": "avionics",
+              "date": "2027-02-28",
+              "dateKind": "calendar",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "an expired buyer room does not set the situation",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-02-10",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "record_room": [
+          {
+            "audience": "buyer",
+            "expires_at": "2026-11-01T00:00:00Z",
+            "revoked_at": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-189",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is due in the next 90 days. Next: ELT inspection, Feb 28, 2027.",
+          "emphasis": [
+            [
+              0,
+              42
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-elt",
+              "line": "avionics",
+              "date": "2027-02-28",
+              "dateKind": "calendar",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "unconfirmed entries waiting: a second line, verdict unchanged",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "log_entry": [
+          {
+            "id": "e-ai-0",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-1",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-2",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-3",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-4",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-5",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-6",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-7",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-8",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-9",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-10",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-11",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-12",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-13",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-14",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-15",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-16",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          },
+          {
+            "id": "e-ai-17",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-12",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          }
+        ],
+        "item_completion": [
+          {
+            "id": "c-vor",
+            "maintenance_item_id": "mx-vor",
+            "ad_compliance_id": null,
+            "log_entry_id": null,
+            "done_date": "2026-10-12",
+            "done_hours": null
+          },
+          {
+            "id": "c-vor-ai",
+            "maintenance_item_id": "mx-vor",
+            "ad_compliance_id": null,
+            "log_entry_id": "e-ai-0",
+            "done_date": "2026-11-12",
+            "done_hours": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-190",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "1 item has lapsed: VOR check, 7 days ago (IFR only).",
+          "emphasis": [
+            [
+              0,
+              17
+            ]
+          ],
+          "lines": [
+            "18 entries read by AI are waiting for you. They don't count until you confirm them."
+          ]
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-vor",
+              "line": "avionics",
+              "date": "2026-11-18",
+              "dateKind": "calendar",
+              "status": "overdue"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "one unconfirmed entry waiting",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-02-10",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "log_entry": [
+          {
+            "id": "e-ai",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": null,
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-191",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is due in the next 90 days. Next: ELT inspection, Feb 28, 2027.",
+          "emphasis": [
+            [
+              0,
+              42
+            ]
+          ],
+          "lines": [
+            "1 entry read by AI is waiting for you. It doesn't count until you confirm it."
+          ]
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-elt",
+              "line": "avionics",
+              "date": "2027-02-28",
+              "dateKind": "calendar",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "stale tach reading",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-09-02-192",
+            "reading_date": "2026-09-02",
+            "tach": 2160.1,
+            "hobbs": null,
+            "airframe": null,
+            "source": "manual"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-hundred_hour",
+            "kind": "hundred_hour",
+            "label": "100-hour inspection (91.409)",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": 100,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is due in the next 90 days. Next: annual, Jun 30, 2027.",
+          "emphasis": [
+            [
+              0,
+              42
+            ]
+          ],
+          "lines": [
+            "Hours are from your last tach reading on Sep 2. Log a flight to update."
+          ]
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": [
+            "mx:mx-hundred_hour"
+          ]
+        }
+      }
+    },
+    {
+      "name": "stale reading only matters for meters items count on",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-09-02-193",
+            "reading_date": "2026-09-02",
+            "tach": 2160.1,
+            "hobbs": null,
+            "airframe": null,
+            "source": "manual"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is due in the next 90 days. Next: annual, Jun 30, 2027.",
+          "emphasis": [
+            [
+              0,
+              42
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "a squawk marked Ground",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "squawk": [
+          {
+            "id": "sq-g",
+            "description": "Nose strut flat.",
+            "severity": "high",
+            "status": "open"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-194",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "all_clear",
+        "verdict": {
+          "text": "Nothing tracked is due in the next 90 days. Next: annual, Jun 30, 2027.",
+          "emphasis": [
+            [
+              0,
+              42
+            ]
+          ],
+          "lines": [
+            "A squawk is marked Ground: Nose strut flat."
+          ]
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": []
+        }
+      }
+    },
+    {
+      "name": "a line-ahead ring for each dated item, undated listed",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.5,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-n",
+            "kind": "custom",
+            "label": "Paint touch-up",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": null,
+            "last_done_date": null,
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-prop_overhaul",
+            "kind": "prop_overhaul",
+            "label": "Propeller overhaul (advisory)",
+            "regulatory": false,
+            "interval_months": 72,
+            "interval_hours": null,
+            "last_done_date": "2021-05-20",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-195",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "situation": "attention",
+        "verdict": {
+          "text": "Nothing tracked is overdue. Next: transponder check in 43 days.",
+          "emphasis": [
+            [
+              0,
+              26
+            ]
+          ],
+          "lines": []
+        },
+        "lineAhead": {
+          "from": "2026-11-18",
+          "to": "2027-11-18",
+          "rings": [
+            {
+              "itemKey": "mx:mx-oil_change",
+              "line": "engine",
+              "date": "2026-12-11",
+              "dateKind": "projected",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-transponder",
+              "line": "avionics",
+              "date": "2026-12-31",
+              "dateKind": "calendar",
+              "status": "due_soon"
+            },
+            {
+              "itemKey": "mx:mx-prop_overhaul",
+              "line": "prop",
+              "date": "2027-05-20",
+              "dateKind": "calendar",
+              "status": "current"
+            },
+            {
+              "itemKey": "mx:mx-annual",
+              "line": "airframe",
+              "date": "2027-06-30",
+              "dateKind": "calendar",
+              "status": "current"
+            }
+          ],
+          "undated": [
+            "mx:mx-n"
+          ]
+        }
+      }
+    }
+  ]
+}
