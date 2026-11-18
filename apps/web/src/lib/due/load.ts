@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Preferences } from "@/lib/database.types";
 import { todayIn } from "@/lib/mapModel";
-import type { DueInput } from "@/lib/due/engine";
+import { cache } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { computeStatus, type DueInput } from "@/lib/due/engine";
 
 export type LoadedDueInput = {
   input: DueInput;
@@ -67,3 +69,12 @@ export async function loadDueInput(supabase: SupabaseClient<Database>, id: strin
     preferences: (profile.data?.preferences as Preferences | null | undefined) ?? null,
   };
 }
+
+/**
+ * One engine run per request, shared by the v2 layout's rail and the Status screens so their counts always agree
+ * (W-STATUS-01). Null when the caller cannot see the aircraft; throws when a read fails.
+ */
+export const dueSnapshot = cache(async (id: string, userId: string) => {
+  const loaded = await loadDueInput(await createClient(), id, userId);
+  return loaded ? { loaded, snap: computeStatus(loaded.input, loaded.today) } : null;
+});

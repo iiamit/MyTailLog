@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAircraftShellContext } from "@/lib/aircraftContext";
-import { computeStatus, fmtDate } from "@/lib/due/engine";
-import { loadDueInput } from "@/lib/due/load";
+import { fmtDate } from "@/lib/due/engine";
+import { dueSnapshot } from "@/lib/due/load";
 import { aircraftTail } from "@/lib/v2/landing";
 import { fmtMeter, lanesFor, parseFilter, ratePhrase } from "@/lib/v2/status";
 import { Board, BoardHead, Leaf, Leaves, SourceMat, Spine } from "@/ui/Board";
@@ -33,7 +33,8 @@ export default async function StatusPage({
   if (!context || !auth.user) notFound();
   const a = `/aircraft/${id}`;
 
-  const loaded = await loadDueInput(supabase, id, auth.user.id).catch(() => undefined);
+  const due = await dueSnapshot(id, auth.user.id).catch(() => undefined);
+  const loaded = due === undefined ? undefined : (due?.loaded ?? null);
   const head = (actions?: React.ReactNode) => (
     <>
       <BoardHead title="Status" subTabs={[{ label: "What's due", href: `${a}/status`, current: true }]} actions={actions} />
@@ -60,7 +61,7 @@ export default async function StatusPage({
   }
   if (!loaded) notFound();
 
-  const snap = computeStatus(loaded.input, loaded.today);
+  const snap = due!.snap;
   const tach = snap.meters.tach;
   const readout = tach.face != null && tach.asOf ? `Tach ${fmtMeter(tach.face)}, read ${fmtDate(tach.asOf)}` : null;
   const actions = (

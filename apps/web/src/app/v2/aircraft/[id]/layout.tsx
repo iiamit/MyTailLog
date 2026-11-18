@@ -17,10 +17,10 @@ export default async function V2AircraftLayout({
   const context = await getAircraftShellContext(supabase, id);
   if (!context) notFound();
 
-  const [counts, { data: fleet }, { data: auth }] = await Promise.all([
-    loadRailCounts(supabase, context),
+  const { data: auth } = await supabase.auth.getUser();
+  const [counts, { data: fleet }] = await Promise.all([
+    loadRailCounts(supabase, context, auth.user?.id ?? null),
     supabase.from("aircraft").select("id, tail_number, make, model").order("tail_number"),
-    supabase.auth.getUser(),
   ]);
   const { data: profile } = auth.user
     ? await supabase.from("profile").select("full_name").eq("id", auth.user.id).maybeSingle()

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import type { AircraftShellContext } from "@/lib/aircraftContext";
+import { dueSnapshot } from "@/lib/due/load";
 
 /** Counts behind the six SectionTabs (03 §13). Confirmed data only; a failed count drops its line, never the tab. */
 export type RailCounts = {
@@ -31,6 +32,7 @@ export type RailTab = {
 export async function loadRailCounts(
   supabase: SupabaseClient<Database>,
   ctx: AircraftShellContext,
+  userId: string | null,
 ): Promise<RailCounts> {
   const id = ctx.id;
   const count = (q: PromiseLike<{ count: number | null; error: unknown }>) =>
@@ -64,9 +66,11 @@ export async function loadRailCounts(
       : Promise.resolve(null),
   ]);
   const pages = pageRows.error ? null : (pageRows.data ?? []);
+  // Same engine run as the Status board, so the rail never disagrees with the verdict; unknown on failure.
+  const due = userId ? await dueSnapshot(id, userId).catch(() => null) : null;
   return {
-    overdue: ctx.annun?.overdue ?? null,
-    dueSoon: ctx.annun?.due ?? null,
+    overdue: due?.snap.counts.overdue ?? null,
+    dueSoon: due?.snap.counts.dueSoon ?? null,
     pages: pages ? pages.length : null,
     booksWithPages: pages ? new Set(pages.map((p) => p.logbook_id)).size : null,
     confirmedEntries,
