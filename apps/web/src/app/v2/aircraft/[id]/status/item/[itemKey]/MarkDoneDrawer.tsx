@@ -78,7 +78,7 @@ export function MarkDoneDrawer({
           The page: add it later. Your note is replaced by the page when it is scanned and confirmed.
         </p>
         {preview && (
-          <p className="rounded-s bg-leaf-2 px-4 py-3.5 text-body" aria-live="polite">
+          <p className="rounded-[var(--radius-s)] bg-leaf-2 px-4 py-3.5 text-body" aria-live="polite">
             {preview}
           </p>
         )}

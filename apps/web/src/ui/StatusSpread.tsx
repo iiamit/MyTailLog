@@ -126,7 +126,7 @@ export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filte
                   replace
                   scroll={false}
                   aria-current={filter === f ? "true" : undefined}
-                  className={`state-layer inline-flex min-h-[34px] items-center gap-2 rounded-pill border px-3 text-caption ${
+                  className={`state-layer inline-flex min-h-[34px] items-center gap-2 rounded-full border px-3 text-caption ${
                     filter === f ? "border-ink bg-ink text-leaf" : "border-control-border text-ink"
                   }`}
                 >
@@ -138,7 +138,7 @@ export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filte
             <table className="w-full border-collapse">
               <thead>
                 <tr className="text-left text-label text-ink-3">
-                  <th scope="col" className="border-b border-rule-2 pr-3 pb-2 font-bold">Item</th>
+                  <th scope="col" className="w-[40%] border-b border-rule-2 pr-3 pb-2 font-bold">Item</th>
                   <th scope="col" className="border-b border-rule-2 pr-3 pb-2 font-bold whitespace-nowrap">Calendar limit</th>
                   <th scope="col" className="border-b border-rule-2 pr-3 pb-2 font-bold whitespace-nowrap">Hours limit</th>
                   <th scope="col" className="border-b border-rule-2 pr-3 pb-2 text-right font-bold">Left</th>
@@ -228,12 +228,14 @@ function DueRow({
   const hrs = hoursCell(item, today);
   const first = firstBadge(item);
   const action = rowAction(item, aircraftId);
-  const cell = `border-b border-rule py-[11px] pr-3 align-top ${selected ? "bg-leaf-2" : "group-hover:bg-leaf-2"}`;
-  const selRing = selected ? "shadow-[inset_0_2px_0_var(--board),inset_0_-2px_0_var(--board)]" : "";
+  // Table rows cannot paint a box-shadow, so the selection rule sits on each cell.
+  const cell = `border-b border-rule py-[11px] pr-3 align-top ${
+    selected ? "bg-leaf-2 shadow-[inset_0_2px_0_var(--board),inset_0_-2px_0_var(--board)]" : "group-hover:bg-leaf-2"
+  }`;
   const href = `/aircraft/${aircraftId}/status/item/${item.key}`;
   const detail = [item.rule, item.ifrOnly ? "IFR only" : null].filter(Boolean).join(" · ");
   return (
-    <tr id={`row-${item.key}`} className={`group cursor-pointer ${selRing}`} onClick={(e) => !(e.target as HTMLElement).closest("a,button") && onSelect()}>
+    <tr id={`row-${item.key}`} className="group cursor-pointer" onClick={(e) => !(e.target as HTMLElement).closest("a,button") && onSelect()}>
       <td className={`${cell} ${selected ? "pl-3" : ""}`}>
         <Link href={href} aria-current={selected ? "true" : undefined} className="text-body-strong hover:underline">
           {item.label}
@@ -345,7 +347,7 @@ export function ItemMat({ item, aircraftId }: { item: DueItem | null; aircraftId
           {ld.trust && <TrustMark level={ld.trust} onMat />}
         </p>
         {/* eslint-disable-next-line @next/next/no-img-element -- signed, per-user page image; next/image would cache it across users */}
-        <img src={src} alt={`${page ? `${page.book} logbook, page ${page.page}` : "Logbook page"}, behind ${item.label}`} className="h-auto w-full rounded-s" />
+        <img src={src} alt={`${page ? `${page.book} logbook, page ${page.page}` : "Logbook page"}, behind ${item.label}`} className="h-auto w-full rounded-[var(--radius-s)]" />
         <div>
           <a href={src} target="_blank" rel="noopener" className={buttonClass("on-mat", "s")}>
             Zoom
@@ -357,7 +359,7 @@ export function ItemMat({ item, aircraftId }: { item: DueItem | null; aircraftId
   const reason = noPageReason(item);
   return (
     <SourceMat title={item.label}>
-      <div className="rounded-s bg-leaf-2 px-4 py-3.5 text-body text-ink">
+      <div className="rounded-[var(--radius-s)] bg-leaf-2 px-4 py-3.5 text-body text-ink">
         No page behind this yet. {reason.text}{" "}
         {reason.documents && (
           <Link href={`/aircraft/${aircraftId}/documents`} className="font-semibold underline">

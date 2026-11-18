@@ -134,7 +134,7 @@ export default async function ItemPage({
       <Leaf label={item.label}>
         {back}
         {sp.done === "1" && (
-          <p role="status" className="mb-3 rounded-s bg-leaf-2 px-4 py-3 text-body">
+          <p role="status" className="mb-3 rounded-[var(--radius-s)] bg-leaf-2 px-4 py-3 text-body">
             Marked {item.label} done.{item.firstDate ? ` Next due ${fmtDate(item.firstDate)}.` : ""}
           </p>
         )}
@@ -168,7 +168,9 @@ export default async function ItemPage({
                   {hrs && item.hours ? (
                     <>
                       {hrs.limit}
-                      {hrs.note ? `, ${hrs.note}` : ""} · {item.hours.remaining <= 0 ? `${(-item.hours.remaining).toFixed(1)} h over` : `${item.hours.remaining.toFixed(1)} h`}
+                      {hrs.note ? `, ${hrs.note}` : ""}
+                      {/* the "no recent flying" note already says what is left */}
+                      {hrs.note?.endsWith("to date it") ? "" : ` · ${item.hours.remaining <= 0 ? `${(-item.hours.remaining).toFixed(1)} h over` : `${item.hours.remaining.toFixed(1)} h`}`}
                       {first === "hours" && <FirstBadge />}
                     </>
                   ) : (

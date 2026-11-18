@@ -26,15 +26,15 @@ export function StatusMark({ kind, label, compact }: { kind: MarkKind; label?: s
     <span
       className={`inline-flex items-center gap-[7px] font-bold whitespace-nowrap ${compact ? "text-caption" : "text-small"} ${TEXT[kind]}`}
     >
-      <span aria-hidden className={`inline-block shrink-0 rounded-round ${compact ? "size-2.5" : "size-3"} ${MARK[kind]}`} />
+      <span aria-hidden className={`inline-block shrink-0 rounded-full ${compact ? "size-2.5" : "size-3"} ${MARK[kind]}`} />
       {label ?? (kind === "advisory" ? "Advisory" : kind === "neutral" ? "" : STATUS_WORD[kind])}
     </span>
   );
 }
 
 const TRUST_MARK: Record<Trust, [string, string]> = {
-  ai_read: ["rounded-round border-2 border-dotted border-ink-3", "rounded-round border-2 border-dotted border-on-cover"],
-  confirmed: ["rounded-round bg-ink", "rounded-round bg-on-cover"],
+  ai_read: ["rounded-full border-2 border-dotted border-ink-3", "rounded-full border-2 border-dotted border-on-cover"],
+  confirmed: ["rounded-full bg-ink", "rounded-full bg-on-cover"],
   signed: ["rotate-45 rounded-[1px] bg-ink", "rotate-45 rounded-[1px] bg-on-cover"],
 };
 
@@ -51,7 +51,7 @@ export function TrustMark({ level, label, onMat }: { level: Trust; label?: strin
 /** "first" on the limit that bites first (02 §5.6). */
 export function FirstBadge() {
   return (
-    <span className="ml-1.5 rounded-s border border-ink px-1 align-[1px] text-label text-ink">
+    <span className="ml-1.5 rounded-[var(--radius-s)] border border-ink px-1 align-[1px] text-label text-ink">
       first<span className="sr-only"> comes first</span>
     </span>
   );
