@@ -7,6 +7,7 @@ fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\
 
 val releaseSupabaseUrl = providers.gradleProperty("mytaillog.supabaseUrl")
 val releaseSupabaseKey = providers.gradleProperty("mytaillog.supabaseKey")
+val releaseApiUrl = providers.gradleProperty("mytaillog.apiUrl")
 // The Google Cloud *Web* OAuth client ID that Supabase's Google provider uses (Credential Manager's serverClientId).
 // Not a secret. Blank: "Continue with Google" uses the OAuth Custom Tab instead.
 val googleWebClientId = providers.gradleProperty("mytaillog.googleWebClientId")
@@ -35,11 +36,14 @@ android {
             // The TEST Supabase project. The publishable key is public by design.
             buildConfigField("String", "SUPABASE_URL", quoted("https://arpirbajxbrjbkldteaz.supabase.co"))
             buildConfigField("String", "SUPABASE_KEY", quoted("sb_publishable_ud1Z3aaPzJVCVvedMIgOKQ_EWdVln9D"))
+            // The web app deployed against the TEST project; serves /api/aircraft/{id}/status.
+            buildConfigField("String", "API_URL", quoted("https://mfb-test.mytaillog.com"))
         }
         release {
             // No defaults: a release must name its project explicitly (checked in preReleaseBuild below).
             buildConfigField("String", "SUPABASE_URL", quoted(releaseSupabaseUrl.getOrElse("")))
             buildConfigField("String", "SUPABASE_KEY", quoted(releaseSupabaseKey.getOrElse("")))
+            buildConfigField("String", "API_URL", quoted(releaseApiUrl.getOrElse("")))
             isMinifyEnabled = false
         }
     }
@@ -50,9 +54,10 @@ android {
 tasks.matching { it.name == "preReleaseBuild" }.configureEach {
     val url = releaseSupabaseUrl
     val key = releaseSupabaseKey
+    val api = releaseApiUrl
     doFirst {
-        check(url.isPresent && key.isPresent) {
-            "Release builds need -Pmytaillog.supabaseUrl and -Pmytaillog.supabaseKey (see apps/android/README.md)."
+        check(url.isPresent && key.isPresent && api.isPresent) {
+            "Release builds need -Pmytaillog.supabaseUrl, -Pmytaillog.supabaseKey and -Pmytaillog.apiUrl (see apps/android/README.md)."
         }
     }
 }

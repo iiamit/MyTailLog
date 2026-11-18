@@ -37,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -61,10 +62,10 @@ import com.mytaillog.design.section
 
 /** Signed in: the phone binder below 700dp, the rail and list-detail at 700dp and wider. */
 @Composable
-fun Shell(email: String? = null, onSignOut: () -> Unit = {}) {
+fun Shell(email: String? = null, onSignOut: () -> Unit = {}, status: StatusHost? = null) {
     val account: @Composable () -> Unit = { AccountSettings(email, onSignOut) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (isTablet(maxWidth.value.toInt())) TabletShell(account) else PhoneShell(account = account)
+        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status) else PhoneShell(account = account, status = status)
     }
 }
 
@@ -112,7 +113,7 @@ fun AccountSettings(email: String?, onSignOut: () -> Unit) {
  * switching tabs saves and restores each tab's stack; re-selecting the open tab pops it to its root.
  */
 @Composable
-fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}) {
+fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}, status: StatusHost? = null) {
     val entry by nav.currentBackStackEntryAsState()
     val hierarchy = entry?.destination?.hierarchy
     val current = PhoneTabs.indexOfFirst { tab -> hierarchy?.any { it.route == tab.graph } == true }.coerceAtLeast(0)
@@ -124,7 +125,11 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             PhoneTabBar(
-                items = PhoneTabs.map { TabItem(it.section, stringResource(it.tabLabel), it.icon) },
+                items = PhoneTabs.map { tab ->
+                    // 06 §1.3: Status carries an alarm badge with the overdue count.
+                    val overdue = if (tab == Destination.Status) status?.ui?.snapshot?.body?.counts?.overdue ?: 0 else 0
+                    TabItem(tab.section, stringResource(tab.tabLabel), tab.icon, overdue, pluralStringResource(R.plurals.status_tab_overdue, overdue, overdue))
+                },
                 selected = current,
                 onSelect = { i -> nav.selectTab(PhoneTabs[i], reselect = i == current) },
             )
@@ -134,12 +139,19 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
             PhoneTabs.forEach { tab ->
                 navigation(startDestination = tab.root, route = tab.graph) {
                     composable(tab.root) {
+                        if (tab == Destination.Status && status != null) {
+                            StatusPhone(status, onSeeAll = { nav.navigate(STATUS_ALL_ITEMS) }, onReview = { nav.selectTab(Destination.Logbooks, reselect = false) })
+                            return@composable
+                        }
                         SectionScreen(tab) {
                             if (tab == Destination.Aircraft) {
                                 PhoneRow(stringResource(R.string.section_docs), onClick = { nav.navigate(DOCUMENTS_ON_PHONE) })
                                 PhoneRow(stringResource(R.string.settings_title), onClick = { nav.navigate(SETTINGS_ON_PHONE) })
                             }
                         }
+                    }
+                    if (tab == Destination.Status && status != null) {
+                        composable(STATUS_ALL_ITEMS) { AllItemsPhone(status, onBack = { nav.popBackStack() }) }
                     }
                     if (tab == Destination.Aircraft) {
                         composable(DOCUMENTS_ON_PHONE) {
@@ -200,7 +212,7 @@ private fun EmptyText(destination: Destination) {
 /** Tablet: the binder Rail beside the board, which holds a list-detail scaffold of leaves (05 §5.4). */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun TabletShell(account: @Composable () -> Unit = {}) {
+fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val destination = TabletSections[selected]
     val colors = MyTailLogTheme.colors
@@ -226,6 +238,8 @@ fun TabletShell(account: @Composable () -> Unit = {}) {
                 modifier = Modifier.padding(start = 22.dp, top = 20.dp, bottom = 14.dp).semantics { heading() },
             )
             val navigator = rememberListDetailPaneScaffoldNavigator<Nothing>()
+            var selectedItem by rememberSaveable { mutableStateOf<String?>(null) }
+            val statusHere = status.takeIf { destination == Destination.Status }
             ListDetailPaneScaffold(
                 directive = navigator.scaffoldDirective,
                 value = navigator.scaffoldValue,
@@ -233,11 +247,15 @@ fun TabletShell(account: @Composable () -> Unit = {}) {
                     AnimatedPane {
                         TabletLeaf {
                             // Settings lives in the RailFoot's Account (06 §9) once that lands; until then, under Aircraft.
-                            if (destination == Destination.Aircraft) account() else EmptyText(destination)
+                            when {
+                                statusHere != null -> StatusTabletList(statusHere, selectedItem) { selectedItem = it }
+                                destination == Destination.Aircraft -> account()
+                                else -> EmptyText(destination)
+                            }
                         }
                     }
                 },
-                detailPane = { AnimatedPane { TabletLeaf {} } },
+                detailPane = { AnimatedPane { TabletLeaf { statusHere?.let { StatusTabletDetail(it, selectedItem) } } } },
                 modifier = Modifier.padding(start = 22.dp, end = 22.dp, bottom = 22.dp),
             )
         }

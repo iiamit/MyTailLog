@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -53,6 +54,7 @@ fun PhoneHeader(
     section: Section,
     modifier: Modifier = Modifier,
     back: Pair<String, () -> Unit>? = null,
+    syncLine: SyncLine? = null,
 ) {
     val s = MyTailLogTheme.colors.section(section)
     Column(
@@ -79,12 +81,32 @@ fun PhoneHeader(
                 Text(parent, color = s.onBoard, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(600)))
             }
         }
+        if (syncLine != null) {
+            Row(
+                Modifier
+                    .heightIn(min = Tokens.Size.phoneTouchMin)
+                    .focusRing()
+                    .clickable(indication = StateLayerIndication(s.onBoard), interactionSource = null, role = Role.Button, onClick = syncLine.onClick)
+                    .semantics(mergeDescendants = true) { contentDescription = syncLine.spoken },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(syncLine.tail, color = s.onBoard, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight(600)))
+                Icon(LucideIcons.ChevronDown, contentDescription = null, tint = s.onBoard, modifier = Modifier.size(16.dp))
+                if (syncLine.state != null) {
+                    Text("· ${syncLine.state}", color = s.onBoard2, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight(500)))
+                }
+            }
+        }
         Text(title, color = s.onBoard, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
     }
 }
 
-/** One tab of the PhoneTabBar. */
-data class TabItem(val section: Section, val label: String, val icon: ImageVector)
+/** SyncLine (06 §1.1, §1.3): "N734DM ⌄ · synced 9:38", one button that opens the aircraft switcher. */
+data class SyncLine(val tail: String, val state: String?, val spoken: String, val onClick: () -> Unit)
+
+/** One tab of the PhoneTabBar. [badge] above zero shows as an alarm count, read after the label as [badgeSpoken] (06 §1.3). */
+data class TabItem(val section: Section, val label: String, val icon: ImageVector, val badge: Int = 0, val badgeSpoken: String? = null)
 
 /**
  * PhoneTabBar (02 §9.4): coloured tabs hanging from the cover ground; the open tab is 58dp
@@ -133,7 +155,25 @@ private fun RowScope.PhoneTab(item: TabItem, selected: Boolean, onClick: () -> U
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
     ) {
-        Icon(item.icon, contentDescription = null, tint = s.onBoard, modifier = Modifier.size(21.dp))
+        Box {
+            Icon(item.icon, contentDescription = null, tint = s.onBoard, modifier = Modifier.size(21.dp))
+            if (item.badge > 0) {
+                val c = MyTailLogTheme.colors
+                Box(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 10.dp, y = (-6).dp)
+                        .heightIn(min = 18.dp)
+                        .clip(RoundedCornerShape(Tokens.Radius.s))
+                        .background(c.alarm)
+                        .padding(horizontal = 5.dp)
+                        .clearAndSetSemantics { item.badgeSpoken?.let { contentDescription = it } },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(item.badge.toString(), color = c.onAlarm, style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
         Text(item.label, color = s.onBoard, style = MaterialTheme.typography.labelSmall, maxLines = 1)
     }
 }

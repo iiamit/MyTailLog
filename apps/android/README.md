@@ -33,7 +33,13 @@ The installed Capacitor build has the same id; uninstall it first (`adb uninstal
 
 `BuildConfig.SUPABASE_URL` / `SUPABASE_KEY`:
 - **debug** points at the TEST project (`https://arpirbajxbrjbkldteaz.supabase.co`, publishable key in `app/build.gradle.kts`).
-- **release** has no default. Pass `-Pmytaillog.supabaseUrl=… -Pmytaillog.supabaseKey=…` (or put them in `~/.gradle/gradle.properties`); `preReleaseBuild` fails without them.
+- **release** has no default. Pass `-Pmytaillog.supabaseUrl=… -Pmytaillog.supabaseKey=… -Pmytaillog.apiUrl=…` (or put them in `~/.gradle/gradle.properties`); `preReleaseBuild` fails without them.
+
+`BuildConfig.API_URL` is the web app that serves `/api/*`: debug uses `https://mfb-test.mytaillog.com` (deployed against the TEST project).
+
+## Status (phase 1: 06 M-STATUS-01, 02, 05, 08; T-STATUS-01)
+
+`StatusViewModel` reads the aircraft list through PostgREST (role from `owner_id`, `aircraft_share`, `is_demo`) and `GET /api/aircraft/{id}/status`, the server's snapshot (09 §3.12), through `core:api`'s `StatusApi`; snapshots are cached in memory until the phase 3 mirror. Wording per row is in `StatusText.kt` (unit-tested against a live sample in `app/src/test/resources/status-n734dm.json`); the Verdict comes from the server. Not yet: Mark done, Plan ahead, suggested visits, the page viewer behind PageCite, the AircraftSwitcher sheet (a menu stands in).
 
 The session is stored in DataStore, encrypted with a Tink AES-256-GCM key held in Android Keystore (05 §8.1). `Account` refreshes it under one lock when it expires within a minute (on every return to the foreground and on `accessToken()`); a refresh token the server refuses signs out with "You've been signed out. Sign in again to keep syncing."
 

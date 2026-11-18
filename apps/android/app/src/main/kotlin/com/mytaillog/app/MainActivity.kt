@@ -25,6 +25,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mytaillog.core.api.StatusApi
 import com.mytaillog.design.MyTailLogTheme
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -38,7 +40,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val app = application as MyTailLogApp
         if (savedInstanceState == null) authReturn = intent?.data?.toString()
-        setContent { MyTailLogTheme { AppRoot(app.account, authReturn) { authReturn = null } } }
+        setContent { MyTailLogTheme { AppRoot(app.account, app.statusApi, authReturn) { authReturn = null } } }
     }
 
     // singleTask: the Custom Tab redirect and App Links come back here instead of stacking a second activity.
@@ -49,7 +51,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppRoot(account: Account, authReturn: String?, onReturnHandled: () -> Unit) {
+private fun AppRoot(account: Account, statusApi: StatusApi, authReturn: String?, onReturnHandled: () -> Unit) {
     // (loaded, signedIn): the cover shows until the stored session has been read.
     val state by remember { account.session.map { true to it } }
         .collectAsStateWithLifecycle(initialValue = false to null)
@@ -64,7 +66,13 @@ private fun AppRoot(account: Account, authReturn: String?, onReturnHandled: () -
         !loaded -> Box(Modifier.fillMaxSize().background(MyTailLogTheme.colors.cover))
         signedIn -> {
             LaunchedEffect(authReturn) { if (authReturn != null) onReturnHandled() } // already signed in: drop it
-            Shell(email = session.user.email, onSignOut = {
+            // One Status model per signed-in user, so another account never sees the last one's aircraft.
+            val user = session.user
+            val model = viewModel(key = "status-${user.id}") {
+                StatusViewModel({ statusApi.aircraft(user.id, user.email) }, statusApi::status)
+            }
+            val ui by model.ui.collectAsStateWithLifecycle()
+            Shell(email = user.email, status = StatusHost(ui, model::refresh, model::select), onSignOut = {
                 scope.launch {
                     account.signOut()
                     clearGoogleChoice(context)

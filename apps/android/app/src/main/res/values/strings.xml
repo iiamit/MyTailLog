@@ -69,4 +69,53 @@
     <string name="sign_out_title">Sign out of MyTailLog on this phone?</string>
     <string name="sign_out_body">The records stay on the server.</string>
     <string name="cancel">Cancel</string>
+
+    <!-- Status (06 M-STATUS-01, 02, 05, 08; 12 §4, §7, §10) -->
+    <string name="status_error">We could not work out what is due right now.</string>
+    <string name="retry">Retry</string>
+    <string name="status_group_overdue">Overdue</string>
+    <string name="status_group_near">Next 60 days</string>
+    <string name="status_group_later">Later</string>
+    <string name="status_group_no_record">No record</string>
+    <string name="status_group_coming_up">Coming up</string>
+    <plurals name="status_tracked">
+        <item quantity="one">%d tracked</item>
+        <item quantity="other">%d tracked</item>
+    </plurals>
+    <plurals name="status_see_all">
+        <item quantity="one">See all %d item</item>
+        <item quantity="other">See all %d items</item>
+    </plurals>
+    <plurals name="status_all_items">
+        <item quantity="one">All %d item</item>
+        <item quantity="other">All %d items</item>
+    </plurals>
+    <plurals name="status_pages_waiting">
+        <item quantity="one">%d page waits for review.</item>
+        <item quantity="other">%d pages wait for review.</item>
+    </plurals>
+    <plurals name="status_tab_overdue">
+        <item quantity="one">%d overdue</item>
+        <item quantity="other">%d overdue</item>
+    </plurals>
+    <string name="status_nothing_tracked_bold">Nothing is tracked yet.</string>
+    <string name="status_nothing_tracked">Nothing is tracked yet. Set up the standard inspections to see what\'s due.</string>
+    <string name="status_scan_hint">Scan the logbooks so we can find when they were last done.</string>
+    <string name="status_meter_line">%1$s, read %2$s.</string>
+    <string name="status_rate_line">Flying about %1$s hours a week.</string>
+    <string name="status_boundary">Worked out from your confirmed entries. The paper logbooks are the record.</string>
+    <string name="status_viewer">You can view %1$s. The owner can make changes.</string>
+    <string name="status_demo">This is the demo aircraft. Add your own from the hangar.</string>
+    <string name="status_switch">%1$s, %2$s. Switch aircraft</string>
+    <string name="first">first</string>
+    <string name="first_spoken">comes first</string>
+    <string name="your_note">your note</string>
+    <string name="item_due">Due</string>
+    <string name="item_about">About</string>
+    <string name="item_last_done">Last done</string>
+    <string name="item_usually">Usually</string>
+    <string name="item_page_heading">The page that says so</string>
+    <string name="item_no_completion">No page shows this being done yet.</string>
+    <string name="item_waiting">A newer entry is waiting for review. The due date does not move until you confirm it.</string>
+    <string name="close">Close</string>
 </resources>
