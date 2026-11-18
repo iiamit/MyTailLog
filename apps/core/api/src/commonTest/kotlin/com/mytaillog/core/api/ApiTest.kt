@@ -61,7 +61,7 @@ class ApiTest {
     fun pullSendsCursorAndBearer() = runTest {
         val api = HttpSyncApi(client(HttpStatusCode.OK, """{"changes":[],"nextCursor":12,"hasMore":false}"""), "https://mytaillog.com") { "tok" }
         val page = api.pull(cursor = 12)
-        assertEquals(12, page.nextCursor)
+        assertEquals(12L, page.nextCursor)
         val req = requests.single()
         assertEquals("/api/sync/pull", req.url.encodedPath)
         assertEquals("12", req.url.parameters["cursor"])

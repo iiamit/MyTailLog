@@ -126,10 +126,10 @@ private fun RowScope.PhoneTab(item: TabItem, selected: Boolean, onClick: () -> U
             .offset(y = if (selected) (-8).dp else 0.dp)
             .height(if (selected) 58.dp else Tokens.Size.phoneTabbar)
             .focusRing(r)
+            .alpha(if (selected) 1f else 0.92f)
             .clip(shape)
             .background(s.board)
-            .selectable(selected, interactionSource = null, indication = StateLayerIndication(s.onBoard), role = Role.Tab, onClick = onClick)
-            .alpha(if (selected) 1f else 0.92f),
+            .selectable(selected, interactionSource = null, indication = StateLayerIndication(s.onBoard), role = Role.Tab, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
     ) {

@@ -44,9 +44,11 @@ class SessionStore(private val context: Context) {
         .map { prefs -> prefs[key]?.let(::open) }
         .flowOn(Dispatchers.IO)
 
-    suspend fun save(session: Session) = withContext(Dispatchers.IO) {
-        val sealed = aead.encrypt(json.encodeToString(Session.serializer(), session).encodeToByteArray(), AD)
-        context.sessionData.edit { it[key] = Base64.encodeToString(sealed, Base64.NO_WRAP) }
+    suspend fun save(session: Session) {
+        withContext(Dispatchers.IO) {
+            val sealed = aead.encrypt(json.encodeToString(Session.serializer(), session).encodeToByteArray(), AD)
+            context.sessionData.edit { it[key] = Base64.encodeToString(sealed, Base64.NO_WRAP) }
+        }
     }
 
     private fun open(sealed: String): Session? = runCatching {

@@ -39,6 +39,6 @@ class MutationsTest {
                {"table":"page","op":"delete","id":"p1","seq":8}],"nextCursor":8,"hasMore":false}""",
         )
         assertEquals(SyncChange.Op.Delete, page.changes[1].op)
-        assertEquals(8, page.nextCursor)
+        assertEquals(8L, page.nextCursor)
     }
 }

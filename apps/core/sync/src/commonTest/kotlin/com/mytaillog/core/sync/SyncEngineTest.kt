@@ -36,7 +36,7 @@ class SyncEngineTest {
         val sink = MemorySink()
         assertEquals(2, SyncEngine(api, sink).pull())
         assertEquals(listOf(0L, 3L), api.cursors)
-        assertEquals(7, sink.stored)
+        assertEquals(7L, sink.stored)
     }
 
     @Test

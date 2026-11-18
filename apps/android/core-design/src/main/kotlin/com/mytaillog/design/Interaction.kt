@@ -21,7 +21,6 @@ import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Modifier.Node
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.launch
@@ -36,7 +35,7 @@ class StateLayerIndication(private val contentColor: Color) : IndicationNodeFact
     override fun hashCode() = contentColor.hashCode()
 }
 
-private class StateLayerNode(private val source: InteractionSource, private val color: Color) : Node(), DrawModifierNode {
+private class StateLayerNode(private val source: InteractionSource, private val color: Color) : Modifier.Node(), DrawModifierNode {
     private var pressed = 0
     private var hovered = 0
 

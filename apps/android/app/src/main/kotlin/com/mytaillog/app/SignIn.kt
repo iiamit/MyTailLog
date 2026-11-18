@@ -75,7 +75,7 @@ class SignInModel(private val auth: AuthApi, private val onSession: suspend (Ses
         private set
     var busy by mutableStateOf(false)
         private set
-    @StringRes var error by mutableStateOf<Int?>(null)
+    var error by mutableStateOf<Int?>(null)
         private set
     var sentAt by mutableLongStateOf(0L)
         private set
@@ -85,14 +85,14 @@ class SignInModel(private val auth: AuthApi, private val onSession: suspend (Ses
     val canSend get() = !busy && email.trim().let { it.contains('@') && it.length >= 3 }
     val canVerify get() = !busy && code.length == 6
 
-    fun send(again: Boolean = false) = run {
+    fun send(again: Boolean = false) = launchAuth {
         auth.sendCode(email.trim())
         codeStep = true
         sentAt = System.currentTimeMillis()
         sentAgain = again
     }
 
-    fun verify() = run { onSession(auth.verifyCode(email.trim(), code)) }
+    fun verify() = launchAuth { onSession(auth.verifyCode(email.trim(), code)) }
 
     fun useDifferentEmail() {
         codeStep = false
@@ -101,7 +101,7 @@ class SignInModel(private val auth: AuthApi, private val onSession: suspend (Ses
         sentAgain = false
     }
 
-    private fun run(block: suspend () -> Unit) {
+    private fun launchAuth(block: suspend () -> Unit) {
         if (busy) return
         busy = true
         error = null

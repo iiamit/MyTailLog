@@ -95,7 +95,8 @@ fun PhoneShell(nav: NavHostController = rememberNavController()) {
                     }
                     if (tab == Destination.Aircraft) {
                         composable(DOCUMENTS_ON_PHONE) {
-                            SectionScreen(Destination.Documents, back = stringResource(R.string.section_aircraft) to { nav.popBackStack() })
+                            val up: () -> Unit = { nav.popBackStack() }
+                            SectionScreen(Destination.Documents, back = stringResource(R.string.section_aircraft) to up)
                         }
                     }
                 }

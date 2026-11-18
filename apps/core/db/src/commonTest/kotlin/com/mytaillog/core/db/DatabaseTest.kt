@@ -18,11 +18,11 @@ class DatabaseTest {
     @Test
     fun mirrorAppliesPagesAndKeepsTheCursor() {
         val store = MirrorStore(MirrorDatabase(inMemoryDriver(MirrorDatabase.Schema)))
-        assertEquals(0, store.cursor())
+        assertEquals(0L, store.cursor())
         val row = JsonObject(mapOf("id" to JsonPrimitive("s1")))
         store.apply(PullPage(listOf(SyncChange("squawk", "s1", SyncChange.Op.Upsert, 4, row)), nextCursor = 4, hasMore = true))
         store.apply(PullPage(listOf(SyncChange("squawk", "s1", SyncChange.Op.Delete, 9)), nextCursor = 9, hasMore = false))
-        assertEquals(9, store.cursor())
+        assertEquals(9L, store.cursor())
     }
 
     @Test
