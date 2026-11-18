@@ -79,3 +79,8 @@ and behavior, then apply the same SQL to **production** and verify it there.
 Record which file was applied to each project in the release notes. Do not use
 `supabase db push` against these projects unless their migration histories have
 first been reconciled with the repository.
+
+Before applying, replay every migration on a throwaway local Postgres:
+`supabase/tests/run-migrations.sh` (Postgres 15+ binaries, e.g.
+`brew install postgresql@17`). It stubs the Supabase objects
+(`tests/bootstrap.sql`), seeds rows before 0069, and runs `tests/checks.sql`.

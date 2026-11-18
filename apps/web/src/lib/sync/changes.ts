@@ -31,6 +31,17 @@ export const SYNCED_TABLES = [
   // change rows carry no aircraft), and the extractor's equipment proposals.
   "ad_reference",
   "equipment_proposal",
+  // 0084: direction D (09 §5.2). The snapshot's row id is its `id` column.
+  "item_completion",
+  "service_provider",
+  "planned_visit",
+  "planned_visit_item",
+  "visit_suggestion_dismissal",
+  "logbook_gap",
+  "squawk_photo",
+  "scan_batch",
+  "time_check_dismissal",
+  "aircraft_status_snapshot",
 ] as const;
 
 export type ChangeRow = { seq: number; table_name: string; row_id: string; op: "I" | "U" | "D" };

@@ -14,6 +14,7 @@ export const DOCUMENT_TYPES: DocumentType[] = [
   "form_8130_3",
   "ica",
   "maintenance_manual",
+  "insurance",
   "other",
 ];
 
@@ -28,6 +29,7 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   form_8130_3: "Form 8130-3",
   ica: "ICA",
   maintenance_manual: "Maintenance manuals",
+  insurance: "Insurance",
   other: "Other",
 };
 
