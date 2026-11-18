@@ -69,10 +69,15 @@ struct TokenTests {
     @Test func bundledFontsResolveForEveryRole() {
         for type in [DType.boardTitle, .lede, .heading, .body, .bodyStrong, .small, .caption, .paper, .tabLabel] {
             for bold in [false, true] {
-                #expect(UIFont(name: type.postScriptName(boldText: bold), size: 17) != nil, "\(type.postScriptName(boldText: bold))")
+                let font = type.uiFont(boldText: bold, traits: UITraitCollection(preferredContentSizeCategory: .large))
+                let family = type == .paper ? "Literata" : "Libre Franklin"
+                #expect(font.familyName == family, "\(type) → \(font.familyName)")
+                // CoreText omits an axis left at its default; only Literata's default (400) is ever requested.
+                let wght = (CTFontCopyVariation(font as CTFont) as? [Int: Double])?[0x7767_6874] ?? 400
+                #expect(wght == Double(type.weight(boldText: bold)), "\(type) bold=\(bold) wght=\(String(describing: wght))")
             }
         }
-        #expect(DType.paper.postScriptName() == "Literata-Regular")
+        #expect(DType.bodyStrong.weight(boldText: true) > DType.bodyStrong.weight())
         #expect(DType.body.size == 17)
     }
 }

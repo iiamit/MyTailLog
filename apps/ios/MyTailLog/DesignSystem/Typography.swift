@@ -20,7 +20,7 @@ enum DType {
     }
 
     /// The Dynamic Type style each role scales with (01 §5 table).
-    var textStyle: Font.TextStyle {
+    var textStyle: UIFont.TextStyle {
         switch self {
         case .boardTitle: .largeTitle
         case .lede: .title3
@@ -35,26 +35,38 @@ enum DType {
     /// iOS maps body to the system `.body` size, 17pt (14-decisions A5); the tokens' 16 is the Android/web value.
     var size: CGFloat { self == .body || self == .bodyStrong ? 17 : role.size }
 
-    /// PostScript name of the named instance in the bundled variable font.
-    func postScriptName(boldText: Bool = false) -> String {
-        var weight = role.weight
+    /// The bundled fonts are variable and their named instances carry no PostScript names,
+    /// so only each file's default face resolves by name; the weight is set on the wght axis.
+    var postScriptName: String { role.family == .paper ? "Literata-Regular" : "LibreFranklin-Thin" }
+
+    func weight(boldText: Bool = false) -> Int {
         // Bold Text: 400 → 600, 600 → 700, 700 → 800 (05 §19).
-        if boldText { weight = [400: 600, 500: 600, 600: 700, 700: 800][weight] ?? weight }
-        let name = [400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold", 800: "ExtraBold"][weight] ?? "Regular"
-        return "\(role.family == .paper ? "Literata" : "LibreFranklin")-\(name)"
+        boldText ? [400: 600, 500: 600, 600: 700, 700: 800][role.weight] ?? role.weight : role.weight
+    }
+
+    /// Scaled for the given Dynamic Type size.
+    func uiFont(boldText: Bool = false, traits: UITraitCollection? = nil) -> UIFont {
+        let wght = 0x7767_6874 // 'wght'
+        let base = UIFont(name: postScriptName, size: size) ?? .systemFont(ofSize: size)
+        let desc = base.fontDescriptor.addingAttributes(
+            [UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [wght: weight(boldText: boldText)]])
+        return UIFontMetrics(forTextStyle: textStyle)
+            .scaledFont(for: UIFont(descriptor: desc, size: size), compatibleWith: traits)
     }
 
     /// Tabular figures everywhere (01 §5).
-    func font(boldText: Bool = false) -> Font {
-        Font.custom(postScriptName(boldText: boldText), size: size, relativeTo: textStyle).monospacedDigit()
+    func font(boldText: Bool = false, traits: UITraitCollection? = nil) -> Font {
+        Font(uiFont(boldText: boldText, traits: traits)).monospacedDigit()
     }
 }
 
 private struct DFontModifier: ViewModifier {
     let type: DType
     @Environment(\.legibilityWeight) private var legibilityWeight
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize // re-render when the size changes
     func body(content: Content) -> some View {
-        content.font(type.font(boldText: legibilityWeight == .bold))
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
+        content.font(type.font(boldText: legibilityWeight == .bold, traits: traits))
     }
 }
 
