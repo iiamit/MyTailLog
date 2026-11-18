@@ -165,7 +165,8 @@ function buildSwift(tokens) {
   const dims = (group) =>
     tokens
       .filter((t) => t.path[0] === group && /^[\d.]+(px)?$/.test(String(t.value)))
-      .map((t) => `        public static let ${camel(t.path.slice(1))}: CGFloat = ${px(t.value)}`);
+      // Swift identifiers cannot start with a digit (space.1 -> Space.s1).
+      .map((t) => `        public static let ${camel(t.path.slice(1)).replace(/^(\d)/, "s$1")}: CGFloat = ${px(t.value)}`);
   const phoneType = tokens
     .filter((t) => t.path[0] === "type" && t.path[1] === "phone")
     .map((t) => {
@@ -179,7 +180,7 @@ function buildSwift(tokens) {
   return `// ${HEADER}
 import SwiftUI
 
-public struct RGBA { let r, g, b: Double; let a: Double
+public struct RGBA: Sendable { let r, g, b: Double; let a: Double
     init(_ r: Double, _ g: Double, _ b: Double, _ a: Double) { self.r = r / 255; self.g = g / 255; self.b = b / 255; self.a = a } }
 
 public extension Color {
@@ -190,7 +191,7 @@ public extension Color {
     }
 }
 
-public struct TypeRole { public enum Family { case app, paper }
+public struct TypeRole: Sendable { public enum Family: Sendable { case app, paper }
     public let family: Family; public let size: CGFloat; public let weight: Int; public let lineHeight: CGFloat }
 
 public enum Tokens {
