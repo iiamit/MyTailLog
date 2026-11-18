@@ -1,0 +1,84 @@
+# XcodeGen spec. `xcodegen generate` (in apps/ios) writes MyTailLog.xcodeproj and MyTailLog/Info.plist; neither is committed.
+name: MyTailLog
+options:
+  bundleIdPrefix: com.mytaillog
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+targets:
+  MyTailLog:
+    type: application
+    platform: iOS
+    sources:
+      - path: MyTailLog
+        excludes: ["Info.plist"]
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mytaillog.app
+        PRODUCT_NAME: MyTailLog
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        CODE_SIGN_STYLE: Automatic
+    preBuildScripts:
+      - name: Check Supabase config
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ -z "${SUPABASE_HOST}" ] || [ -z "${SUPABASE_PUBLISHABLE_KEY}" ]; then
+            echo "error: SUPABASE_HOST and SUPABASE_PUBLISHABLE_KEY are empty for ${CONFIGURATION}. Create apps/ios/Config/Release.local.xcconfig (see Config/Release.xcconfig)."
+            exit 1
+          fi
+    info:
+      path: MyTailLog/Info.plist
+      properties:
+        CFBundleDisplayName: MyTailLog
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        SupabaseHost: $(SUPABASE_HOST)
+        SupabasePublishableKey: $(SUPABASE_PUBLISHABLE_KEY)
+        UIAppFonts: [LibreFranklin.ttf, Literata.ttf]
+        UILaunchScreen:
+          UIColorName: LaunchCover
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        ITSAppUsesNonExemptEncryption: false
+  MyTailLogTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [MyTailLogTests]
+    dependencies:
+      - target: MyTailLog
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mytaillog.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/MyTailLog.app/MyTailLog
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  MyTailLog:
+    build:
+      targets:
+        MyTailLog: all
+    test:
+      config: Debug
+      targets: [MyTailLogTests]
+    run:
+      config: Debug
+    archive:
+      config: Release

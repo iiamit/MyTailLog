@@ -1,0 +1,4 @@
+// Debug talks to the TEST Supabase project. A publishable key is public by design, so it is committed.
+// Host only: "//" starts a comment in xcconfig files, so the https scheme is added in code.
+SUPABASE_HOST = arpirbajxbrjbkldteaz.supabase.co
+SUPABASE_PUBLISHABLE_KEY = sb_publishable_ud1Z3aaPzJVCVvedMIgOKQ_EWdVln9D
