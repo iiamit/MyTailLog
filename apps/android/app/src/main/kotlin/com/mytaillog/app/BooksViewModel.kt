@@ -32,14 +32,17 @@ data class BooksUi(
 }
 
 /**
- * Loads the aircraft's map and rows and sends review and gap writes through push.
- * shortcut: online only, cached in memory; the outbox and mirror (phase 3) make these offline-first.
+ * Loads the aircraft's map and rows and sends review and gap writes through push. A write that can't
+ * reach the server goes to the outbox ([queue]) and uploads later (07 B-OFFLINE).
+ * shortcut: reads stay online with an in-memory copy; the map and rows aren't derived from the mirror yet.
  */
 class BooksViewModel(
     private val load: suspend (String) -> Books,
     private val push: suspend (List<Mutation>) -> List<PushResult>,
     private val loadEvidence: suspend (String, String) -> GapEvidence,
     private val loadImage: suspend (String, Boolean) -> ByteArray,
+    private val queue: ((List<Mutation>) -> Unit)? = null,
+    private val unqueue: ((List<String>) -> Unit)? = null,
 ) : ViewModel() {
     private val state = MutableStateFlow(BooksUi())
     val ui: StateFlow<BooksUi> = state.asStateFlow()
@@ -77,15 +80,21 @@ class BooksViewModel(
     fun messageShown() = state.update { it.copy(message = null) }
 
     /**
-     * Sends [mutations] in one push and reloads. Returns the results when every change landed, null
-     * otherwise (the message says why: no signal, no permission, or changed elsewhere).
+     * Sends [mutations] in one push and reloads. Returns the results when every change landed, an empty
+     * list when they were kept on this phone for later, null otherwise (the message says why: no
+     * permission, or changed elsewhere).
      */
     suspend fun write(mutations: List<Mutation>): List<PushResult>? {
         val results = try {
             push(mutations)
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            if (queue != null && e !is com.mytaillog.core.api.SyncHttpException) {
+                queue(mutations)
+                state.update { it.copy(message = SAVED_ON_PHONE) }
+                return emptyList()
+            }
             state.update { it.copy(message = WRITE_FAILED) }
             return null
         }
@@ -94,6 +103,9 @@ class BooksViewModel(
         state.update { it.copy(message = if (bad.status == PushResult.Status.Conflict) WRITE_CONFLICT else bad.error ?: WRITE_FAILED) }
         return null
     }
+
+    /** Undo of a write that is still on this phone: take it out of the outbox. */
+    fun unqueue(ids: List<String>) = unqueue?.invoke(ids)
 
     suspend fun evidence(gapId: String): GapEvidence? {
         val id = state.value.aircraft?.aircraft?.id ?: return null
@@ -121,6 +133,7 @@ class BooksViewModel(
     }
 
     companion object {
+        const val SAVED_ON_PHONE = "Saved on this phone. It uploads when you have signal."
         const val WRITE_FAILED = "That didn't save. Check your signal and try again."
         const val WRITE_CONFLICT = "This changed on another device. The latest is loaded; check it and try again."
     }

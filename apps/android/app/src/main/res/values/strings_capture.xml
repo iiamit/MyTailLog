@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Capture and offline copy: 06 M-SCAN-*, M-FLIGHT-02/03, M-SYS-01, §1.3; 07 B-OFFLINE, B-UPLOAD, B-ALLOWANCE. -->
+<resources>
+    <string name="add_scan">Scan logbook pages</string>
+    <string name="add_flight">Log a flight</string>
+    <string name="capture_channel">Uploads</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="try_again">Try again</string>
+    <string name="syncing">Syncing</string>
+    <string name="on_this_phone_note">On this phone. It uploads when you have signal.</string>
+    <string name="status_on_phone_tach">Tach %1$s · On this phone</string>
+
+    <!-- M-SCAN-01 -->
+    <string name="scan_title">Scan pages</string>
+    <string name="scan_which_book">Which logbook?</string>
+    <string name="scan_no_books">No logbooks yet. Add one on the web.</string>
+    <string name="scan_where">Adds to the end. %1$d pages so far, so these start at page %2$d. Put them in date order later if you like.</string>
+    <string name="scan_handwritten">Handwritten entries</string>
+    <string name="scan_handwritten_note">Reads cursive as well as typed text. Turn off for printed pages; they come back faster.</string>
+    <string name="scan_open_camera">Open the camera</string>
+    <string name="scan_system_scanner">Use the system scanner</string>
+    <string name="scan_choose_photos">Choose photos</string>
+    <string name="scan_no_system_scanner">The system scanner isn\'t available on this phone. Use the camera or choose photos.</string>
+
+    <!-- M-SCAN-02 -->
+    <string name="scan_camera_title">%1$s · %2$d taken</string>
+    <string name="scan_hint_hold">Page found. Hold still.</string>
+    <string name="scan_hint_looking">Looking for the page edges</string>
+    <string name="scan_hint_back">Move back so the whole page fits</string>
+    <string name="scan_hint_light">More light, or turn on the torch</string>
+    <string name="scan_page_found">Page found</string>
+    <string name="scan_page_taken">Page %1$d taken</string>
+    <string name="scan_torch">Torch</string>
+    <string name="scan_shutter">Take photo</string>
+    <string name="scan_done_spoken">Done, %1$d pages</string>
+    <string name="scan_review_strip">%1$d pages taken. Review them</string>
+    <string name="scan_delete_page">Delete</string>
+    <string name="scan_keep_title">Keep the %1$d pages you took?</string>
+    <string name="scan_keep_them">Keep them</string>
+    <string name="scan_delete_them">Delete them</string>
+    <string name="scan_fifty">That\'s 50 pages. Upload these before shooting more?</string>
+    <string name="scan_upload_these">Upload these</string>
+    <string name="scan_continue">Continue</string>
+    <string name="scan_low_storage">Your phone is almost full. Pages may not save.</string>
+    <string name="scan_camera_denied">MyTailLog needs the camera to photograph pages. You can allow it in Settings.</string>
+    <string name="scan_photos_instead">Choose photos instead</string>
+    <string name="scan_not_saved">That page didn\'t save. Take it again.</string>
+
+    <!-- M-SCAN-03 -->
+    <string name="queue_title">Pages in progress</string>
+    <plurals name="queue_link">
+        <item quantity="one">1 page on this phone · Pages in progress</item>
+        <item quantity="other">%1$d pages on this phone · Pages in progress</item>
+    </plurals>
+    <string name="queue_on_phone">On this phone</string>
+    <string name="queue_uploading">Uploading %1$d of %2$d</string>
+    <string name="queue_upload_later">They upload when you have signal.</string>
+    <string name="queue_waiting_to_upload">Waiting to upload.</string>
+    <string name="queue_upload_now">Upload now</string>
+    <string name="queue_not_uploaded">Not uploaded.</string>
+    <string name="queue_remove">Remove from this phone</string>
+    <string name="queue_being_read">Being read</string>
+    <string name="queue_read_of">%1$d of %2$d read</string>
+    <string name="queue_as_of">as of %1$s</string>
+    <string name="queue_wait_allowance">Waiting for tomorrow\'s allowance</string>
+    <string name="queue_own_key">Use your own key in Settings to read them now.</string>
+    <string name="queue_failed">%1$d pages couldn\'t be read.</string>
+    <string name="queue_dupes">Already scanned?</string>
+    <string name="queue_dupe_line">This looks like a page you already have.</string>
+    <string name="queue_keep_both">Keep both</string>
+    <string name="queue_skip">Skip this one</string>
+    <string name="queue_review">Waiting for your review</string>
+    <string name="queue_review_button">Review</string>
+    <string name="queue_review_empty">Pages arrive here once they are read. You can put the phone away; we will tell you.</string>
+    <string name="queue_allowance">%1$d of %2$d pages read in the last 24 hours</string>
+    <string name="queue_allowance_note">Each page frees up 24 hours after it was read.</string>
+
+    <!-- M-FLIGHT-02 / 03 -->
+    <string name="tach_title">Tach</string>
+    <string name="tach_looking">Looking for the hour meter</string>
+    <string name="tach_found">Hour meter found. Last reading was %1$s.</string>
+    <string name="tach_slow">Can\'t read it yet. Move closer, or type it.</string>
+    <string name="tach_type_it">Type it</string>
+    <string name="tach_still">Read this frame</string>
+    <string name="tach_confirm_title">Log a flight</string>
+    <string name="tach_from_photo">Read from your photo. Check it against the meter.</string>
+    <string name="tach_allow_camera">Allow the camera in Settings to read the tach from a photo.</string>
+    <string name="tach_label">Tach</string>
+    <string name="tach_this_flight">+%1$s hours this flight</string>
+    <string name="tach_date_today">Date: today</string>
+    <string name="tach_save">Save flight</string>
+
+    <!-- M-SYS-01 and §1.3 -->
+    <string name="sync_title">Waiting to upload</string>
+    <string name="sync_all_done">Everything you\'ve recorded has reached the server.</string>
+    <string name="sync_now">Sync now</string>
+    <plurals name="sync_conflict_bar">
+        <item quantity="one">1 change needs you to decide.</item>
+        <item quantity="other">%1$d changes need you to decide.</item>
+    </plurals>
+    <string name="sync_compare">Compare</string>
+    <string name="sync_two_places">Changed in two places</string>
+    <string name="sync_conflict_why">Someone changed this on the web or another phone while yours was waiting.</string>
+    <string name="sync_keep_both">Keep both changes</string>
+    <string name="sync_keep_mine">Keep mine</string>
+    <string name="sync_take_theirs">Take theirs</string>
+    <string name="sync_decide_later">Decide later</string>
+    <string name="sync_kept_both">Kept both changes. Uploading.</string>
+    <string name="sync_kept_mine">Kept yours. Uploading.</string>
+    <string name="sync_took_theirs">Took theirs. Yours is discarded.</string>
+    <string name="sync_not_saved">Not saved</string>
+    <string name="sync_discard_change">Discard this change</string>
+    <string name="sync_waiting">Waiting</string>
+    <string name="sync_discard">Discard</string>
+    <string name="sync_discard_title">Discard this change? It hasn\'t reached the server and can\'t be recovered.</string>
+    <string name="sync_activity">What sync did</string>
+    <plurals name="sync_pages_row">
+        <item quantity="one">1 page · %2$s</item>
+        <item quantity="other">%1$d pages · %2$s</item>
+    </plurals>
+    <plurals name="sign_out_unsent">
+        <item quantity="one">1 change on this phone hasn\'t uploaded. Signing out deletes it.</item>
+        <item quantity="other">%1$d changes on this phone haven\'t uploaded. Signing out deletes them.</item>
+    </plurals>
+</resources>

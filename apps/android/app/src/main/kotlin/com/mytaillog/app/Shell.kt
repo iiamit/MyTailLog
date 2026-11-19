@@ -31,6 +31,10 @@ import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mytaillog.design.AddButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -62,19 +66,20 @@ import com.mytaillog.design.section
 
 /** Signed in: the phone binder below 700dp, the rail and list-detail at 700dp and wider. */
 @Composable
-fun Shell(email: String? = null, onSignOut: () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null) {
-    val account: @Composable () -> Unit = { AccountSettings(email, onSignOut) }
+fun Shell(email: String? = null, onSignOut: () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null, capture: CaptureHost? = null) {
+    val unsent = capture?.store?.sync?.collectAsStateWithLifecycle()?.value?.let { it.waiting + it.pages } ?: 0
+    val account: @Composable () -> Unit = { AccountSettings(email, onSignOut, unsent) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status, books) else PhoneShell(account = account, status = status, books = books)
+        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status, books) else PhoneShell(account = account, status = status, books = books, capture = capture)
     }
 }
 
 /**
  * The account part of Settings (06 M-SYS-02) until that screen lands: who is signed in and
- * **Sign out** in alarm text, confirmed first (05 §8.6, nothing unsent: there is no outbox yet).
+ * **Sign out** in alarm text, confirmed first (05 §8.6), naming what hasn't uploaded: sign-out deletes this phone's copy.
  */
 @Composable
-fun AccountSettings(email: String?, onSignOut: () -> Unit) {
+fun AccountSettings(email: String?, onSignOut: () -> Unit, unsent: Long = 0) {
     val colors = MyTailLogTheme.colors
     var confirming by rememberSaveable { mutableStateOf(false) }
     Column {
@@ -90,7 +95,7 @@ fun AccountSettings(email: String?, onSignOut: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirming = false },
             title = { Text(stringResource(R.string.sign_out_title)) },
-            text = { Text(stringResource(R.string.sign_out_body)) },
+            text = { Text(if (unsent > 0) pluralStringResource(R.plurals.sign_out_unsent, unsent.toInt(), unsent.toInt()) else stringResource(R.string.sign_out_body)) },
             confirmButton = {
                 TextButton(onClick = { confirming = false; onSignOut() }, colors = ButtonDefaults.textButtonColors(contentColor = colors.alarmText)) {
                     Text(stringResource(R.string.sign_out))
@@ -113,17 +118,30 @@ fun AccountSettings(email: String?, onSignOut: () -> Unit) {
  * switching tabs saves and restores each tab's stack; re-selecting the open tab pops it to its root.
  */
 @Composable
-fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null) {
+fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null, capture: CaptureHost? = null) {
     val entry by nav.currentBackStackEntryAsState()
     val hierarchy = entry?.destination?.hierarchy
     val current = PhoneTabs.indexOfFirst { tab -> hierarchy?.any { it.route == tab.graph } == true }.coerceAtLeast(0)
     val visible = if (entry?.destination?.route == DOCUMENTS_ON_PHONE) Section.Docs else PhoneTabs[current].section
-    // Review is a full-screen cover: dark, no tab bar (06 §1.2).
-    val cover = entry?.destination?.route?.startsWith(BOOKS_REVIEW) == true
+    // Review and the cameras are full-screen covers: dark, no tab bar (06 §1.2).
+    val route = entry?.destination?.route
+    val cover = route?.startsWith(BOOKS_REVIEW) == true || route == SCAN_CAMERA || route == TACH_CAMERA
+    val aircraft = status?.ui?.current
+    var adding by rememberSaveable { mutableStateOf(false) }
+    var scanning by rememberSaveable { mutableStateOf(false) }
+    val atRoot = route == Destination.Status.root || route == Destination.Logbooks.root
+    val captureNav = capture?.let { h ->
+        CaptureNav(h, openSync = { nav.navigate("${PhoneTabs[current].graph}/$SYNC") }, openQueue = { nav.navigate(SCAN_QUEUE) })
+    }
     SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover)
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalCaptureNav provides captureNav) {
     Scaffold(
         containerColor = MyTailLogTheme.colors.section(visible).board,
+        floatingActionButton = {
+            // Add (02 §9.8) on the Status and Logbooks homes; never for viewers (07 B-VIEWER).
+            if (capture != null && atRoot && aircraft?.canEdit == true) AddButton({ adding = true })
+        },
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (!cover) PhoneTabBar(
@@ -160,6 +178,29 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
                         composable(STATUS_ALL_ITEMS) { AllItemsPhone(status, onBack = { nav.popBackStack() }) }
                     }
                     if (tab == Destination.Logbooks && books != null) booksRoutes(nav, books)
+                    if (capture != null) {
+                        val up: () -> Unit = { nav.popBackStack() }
+                        composable("${tab.graph}/$SYNC") { WaitingScreen(capture, tab.section, stringResource(tab.title), up) }
+                        if (tab == Destination.Logbooks) {
+                            composable(SCAN_CAMERA) {
+                                val t = capture.target
+                                if (t == null) { LaunchedEffect(Unit) { up() }; return@composable }
+                                ScanCameraScreen(
+                                    capture, t,
+                                    onDone = { nav.navigate(SCAN_QUEUE) { popUpTo(SCAN_CAMERA) { inclusive = true } } },
+                                    onCancel = up,
+                                    onSystemScanner = { up(); scanning = true },
+                                    onPhotos = { up(); scanning = true },
+                                )
+                            }
+                            composable(SCAN_QUEUE) {
+                                aircraft?.let { a -> ScanQueueScreen(capture, a, onBack = up, onReview = { nav.navigate(BOOKS_REVIEW) }) }
+                            }
+                        }
+                        if (tab == Destination.Status) composable(TACH_CAMERA) {
+                            aircraft?.let { a -> TachScreen(capture, a, lastTach(status, capture.store, a.aircraft.id), onClose = up) }
+                        }
+                    }
                     if (tab == Destination.Aircraft) {
                         composable(DOCUMENTS_ON_PHONE) {
                             val up: () -> Unit = { nav.popBackStack() }
@@ -178,6 +219,33 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
             }
         }
     }
+    if (capture != null && aircraft != null) {
+        if (adding) AddSheet(
+            onScan = { scanning = true },
+            onFlight = { nav.navigate(TACH_CAMERA) },
+            onDismiss = { adding = false },
+        )
+        if (scanning) ScanSetupSheet(
+            capture, aircraft, remember(aircraft.aircraft.id) { scanBooks(capture.store, aircraft.aircraft.id, books?.ui?.value?.books?.logbooks) },
+            onCamera = { capture.target = it; nav.navigate(SCAN_CAMERA) },
+            onImported = { nav.navigate(SCAN_QUEUE) },
+            onDismiss = { scanning = false },
+        )
+    }
+    }
+}
+
+const val SCAN_CAMERA = "logbooks/camera"
+const val SCAN_QUEUE = "logbooks/queue"
+const val TACH_CAMERA = "status/tach"
+const val SYNC = "sync"
+
+/** The last tach the phone knows (05 §16 plausibility): the snapshot's meter, or a newer reading saved here. */
+fun lastTach(status: StatusHost?, store: OfflineStore, aircraftId: String): LastTach {
+    val m = status?.ui?.snapshot?.body?.takeIf { it.aircraftId == aircraftId }?.meters?.get("tach")
+    val server = m?.face ?: m?.stitched
+    val local = store.localTach(aircraftId)
+    return if (local != null && (server == null || local > server)) LastTach(local, java.time.LocalDate.now().toString(), onPhone = true) else LastTach(server, m?.asOf)
 }
 
 fun NavHostController.selectTab(tab: Destination, reselect: Boolean) {

@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Pages and the tach (05 §15, §16). The camera is optional: photos and the system scanner still work. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Uploads run as a dataSync foreground job with "Uploading 2 pages to N734DM" (05 §7.2, §9). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Lets the Custom Tab for Apple / Google sign-in find a browser that supports it (Android 11+). -->
     <queries>
@@ -44,5 +53,11 @@
                 <data android:scheme="https" android:host="mytaillog.com" android:path="/app/auth/callback" />
             </intent-filter>
         </activity>
+
+        <!-- WorkManager's foreground service declares the type the upload job uses. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 </manifest>

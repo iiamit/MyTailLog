@@ -117,7 +117,7 @@ fun undoPage(aircraftId: String, page: com.mytaillog.core.api.PageRow, entries: 
         BookWrites.reviewPage(aircraftId, page.id, "unreviewed", base(entries.size) ?: page.updatedAt)
 }
 
-private class Done(val label: String, val count: Int, val undo: List<Mutation>)
+private class Done(val label: String, val count: Int, val undo: List<Mutation>, val queued: List<String> = emptyList())
 
 /**
  * M-REVIEW-01..03 (phone, full screen, no tab bar) and T-REVIEW-01 ([wide]: page list | scan | fields).
@@ -162,11 +162,14 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
         if (page == null || !ready || busy || !ui.canEdit) return
         busy = true
         scope.launch {
-            val results = vm.write(confirmPage(aircraftId, page, entries, outcomes))
+            val writes = confirmPage(aircraftId, page, entries, outcomes)
+            val results = vm.write(writes)
             busy = false
             if (results != null) {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                done = Done(pageLabel(b, page.id) ?: "", entries.size, undoPage(aircraftId, page, entries, results))
+                // Kept on this phone (empty results): undo takes them back out of the outbox.
+                done = if (results.isEmpty()) Done(pageLabel(b, page.id) ?: "", entries.size, emptyList(), writes.map { it.id })
+                else Done(pageLabel(b, page.id) ?: "", entries.size, undoPage(aircraftId, page, entries, results))
                 confirmed += entries.size
                 index++
             }
@@ -175,6 +178,7 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
     fun undo() {
         val d = done ?: return
         done = null
+        if (d.queued.isNotEmpty()) { vm.unqueue(d.queued); confirmed -= d.count; index = (index - 1).coerceAtLeast(0); return }
         scope.launch { if (vm.write(d.undo) != null) { confirmed -= d.count; index = (index - 1).coerceAtLeast(0) } }
     }
 
