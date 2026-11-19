@@ -65,8 +65,8 @@ const ACCOUNT_MOVES: Record<string, string> = {
   "/profile": "/account/settings",
   "/profile/credentials": "/account/settings#signing",
 };
+// /start is not moved: v1 reads the last annual straight from a scanned page, which /setup does not do yet.
 const AIRCRAFT_MOVES: Record<string, string> = {
-  start: "setup",
   compliance: "maintenance/ads",
   "compliance/explore": "maintenance/ads/find",
   squawks: "maintenance/squawks",

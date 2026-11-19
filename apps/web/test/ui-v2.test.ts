@@ -48,7 +48,7 @@ test("today's routes move to their v2 homes (03 §10)", () => {
   assert.equal(v1ToV2("/profile", q()), "/account/settings");
   assert.equal(v1ToV2("/profile/credentials", q()), "/account/settings#signing");
   assert.equal(v1ToV2("/aircraft/enroll", q()), "/aircraft/new");
-  assert.equal(v1ToV2("/aircraft/a/start", q()), "/aircraft/a/setup");
+  assert.equal(v1ToV2("/aircraft/a/start", q()), null, "v1 setup keeps its inline annual read");
   assert.equal(v1ToV2("/aircraft/a/compliance", q()), "/aircraft/a/maintenance/ads");
   assert.equal(v1ToV2("/aircraft/a/compliance/explore", q()), "/aircraft/a/maintenance/ads/find");
   assert.equal(v1ToV2("/aircraft/a/meters/", q()), "/aircraft/a/hours");
