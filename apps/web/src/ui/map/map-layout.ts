@@ -409,7 +409,7 @@ export function layoutMap(m: MapModel, o: LayoutOptions): Layout {
       for (const g of segments.filter((sg) => sg.gapId)) {
         if (want.some((w) => w.key === `gap:${g.gapId}`)) continue;
         const mg = m.gaps.find((x) => x.id === g.gapId)!;
-        const before = !m.stops.some((s) => s.lineId === mg.lineId && s.date < mg.from);
+        const before = !m.stops.some((s) => s.lineId === mg.lineId && s.date <= mg.from);
         const text = mg.status === "no_pages_exist" ? "No pages exist (you marked this)"
           : before ? `No pages yet before ${mg.to.slice(0, 4)}` : `No pages, ${mg.from.slice(0, 4)} to ${mg.to.slice(0, 4)}`;
         const pieces = segments.filter((sg) => sg.gapId === g.gapId);
