@@ -459,18 +459,31 @@ export async function mergeContinuation(
  * to `confirmed` (never touching disputed pages).
  * Returns row `{ confirmed, remaining }`.
  */
+/** Ids confirmClean may confirm: clean entries not sitting on a page flagged for a look. */
+export function bulkConfirmable<T extends Parameters<typeof isEntryClean>[0] & { id: string; page_id: string | null }>(
+  rows: T[],
+  lookPages: Set<string>,
+): string[] {
+  return rows.filter((e) => isEntryClean(e) && !(e.page_id && lookPages.has(e.page_id))).map((e) => e.id);
+}
+
 export async function confirmClean(supabase: Db, ctx: WriteCtx): Promise<WriteResult> {
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
   const { data: entries, error } = await supabase
     .from("log_entry")
-    .select("id, confidence, field_confidence, is_continuation")
+    .select("id, page_id, confidence, field_confidence, is_continuation")
     .eq("aircraft_id", ctx.aircraftId)
     .eq("owner_confirmed", false);
   if (error) return { status: "error", message: error.message };
+  // A page flagged for a look (09 §3.9.2) is reviewed by hand, never bulk-confirmed.
+  const { data: flagged, error: pageErr } = await supabase
+    .from("page").select("id").eq("aircraft_id", ctx.aircraftId).eq("needs_look", true);
+  if (pageErr) return { status: "error", message: pageErr.message };
+  const lookPages = new Set((flagged ?? []).map((p) => p.id));
 
   const rows = entries ?? [];
-  const cleanIds = rows.filter(isEntryClean).map((e) => e.id);
+  const cleanIds = bulkConfirmable(rows, lookPages);
   const remaining = rows.length - cleanIds.length;
   if (cleanIds.length === 0) return { status: "ok", row: { confirmed: 0, remaining } };
 

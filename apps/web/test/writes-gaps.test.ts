@@ -52,3 +52,11 @@ test("gap mutations are in the push catalogue with the base rule", () => {
   assert.ok("ok" in validateMutation({ id: "m", type: "gap.setStatus", aircraftId: "ac", payload: { gapId: "g", status: "open" }, base: gap.updated_at }));
   assert.ok("ok" in validateMutation({ id: "m", type: "gap.create", aircraftId: "ac", payload: { id: "g2", logbookId: "lb", fromDate: "1983-01-01", toDate: "1991-01-01" } }));
 });
+
+test("bulk confirm skips clean entries on a page flagged for a look", async () => {
+  const { bulkConfirmable } = await import("../src/lib/writes/entries");
+  const row = (id: string, page_id: string | null, confidence = 0.95) =>
+    ({ id, page_id, confidence, field_confidence: null, is_continuation: false });
+  const ids = bulkConfirmable([row("a", "p-ok"), row("b", "p-look"), row("c", null), row("d", "p-ok", 0.4)], new Set(["p-look"]));
+  assert.deepEqual(ids, ["a", "c"]);
+});
