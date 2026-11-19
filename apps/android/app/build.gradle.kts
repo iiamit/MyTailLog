@@ -12,6 +12,28 @@ val releaseApiUrl = providers.gradleProperty("mytaillog.apiUrl")
 // Not a secret. Blank: "Continue with Google" uses the OAuth Custom Tab instead.
 val googleWebClientId = providers.gradleProperty("mytaillog.googleWebClientId")
 
+// FCM (05 §10). The Firebase client values come from app/google-services.json (git-ignored, the same file the
+// Capacitor app used) or -Pmytaillog.firebase*. Neither: the app builds and says "this build can't get reminders".
+// Read by hand rather than through the google-services plugin, so FCM is the only Firebase piece that ships.
+val firebase: Map<String, String> = run {
+    val props = listOf("AppId", "ApiKey", "ProjectId", "SenderId").associateWith { providers.gradleProperty("mytaillog.firebase$it").orNull }
+    if (props.values.all { !it.isNullOrBlank() }) return@run props.mapValues { it.value!! }
+    val file = file("google-services.json")
+    if (!file.exists()) return@run emptyMap()
+    @Suppress("UNCHECKED_CAST")
+    val json = groovy.json.JsonSlurper().parse(file) as Map<String, Any?>
+    val info = json["project_info"] as Map<String, Any?>
+    val client = (json["client"] as List<Map<String, Any?>>).firstOrNull {
+        ((it["client_info"] as Map<String, Any?>)["android_client_info"] as Map<String, Any?>)["package_name"] == "com.mytaillog.app"
+    } ?: return@run emptyMap()
+    mapOf(
+        "AppId" to (client["client_info"] as Map<String, Any?>)["mobilesdk_app_id"].toString(),
+        "ApiKey" to ((client["api_key"] as List<Map<String, Any?>>).first()["current_key"]).toString(),
+        "ProjectId" to info["project_id"].toString(),
+        "SenderId" to info["project_number"].toString(),
+    )
+}
+
 android {
     namespace = "com.mytaillog.app"
     compileSdk = 37
@@ -24,6 +46,9 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", quoted(googleWebClientId.getOrElse("")))
+        listOf("AppId" to "FIREBASE_APP_ID", "ApiKey" to "FIREBASE_API_KEY", "ProjectId" to "FIREBASE_PROJECT_ID", "SenderId" to "FIREBASE_SENDER_ID").forEach { (k, field) ->
+            buildConfigField("String", field, quoted(firebase[k] ?: ""))
+        }
     }
 
     buildFeatures {
@@ -92,6 +117,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
     // The record room's QR code (06 M-SHARE-02): ZXing's encoder, pure Java, about 0.5 MB.
     implementation("com.google.zxing:core:3.5.3")
+    // Phase 6 (05 §10–13): home-screen widgets and FCM delivery only (no analytics).
+    implementation("androidx.glance:glance-appwidget:1.2.0")
+    implementation("com.google.firebase:firebase-messaging:25.1.3")
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

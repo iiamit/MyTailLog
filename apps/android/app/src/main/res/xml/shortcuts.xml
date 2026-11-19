@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher long-press shortcuts and App Actions (05 §13.3). Each opens the 05 §5.5 route for the last opened
+     aircraft. OPEN_APP_FEATURE is best effort: the assistant passes the bound shortcut id as the "feature" extra. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <capability android:name="actions.intent.OPEN_APP_FEATURE">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.mytaillog.app"
+            android:targetClass="com.mytaillog.app.MainActivity">
+            <parameter android:name="feature" android:key="feature" />
+        </intent>
+    </capability>
+
+    <shortcut
+        android:shortcutId="flight"
+        android:icon="@drawable/ic_shortcut_flight"
+        android:shortcutShortLabel="@string/shortcut_flight"
+        android:shortcutLongLabel="@string/shortcut_flight">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="https://mytaillog.com/app/flight"
+            android:targetPackage="com.mytaillog.app"
+            android:targetClass="com.mytaillog.app.MainActivity" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding android:key="feature" android:value="@array/feature_flight" />
+        </capability-binding>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="due"
+        android:icon="@drawable/ic_shortcut_due"
+        android:shortcutShortLabel="@string/shortcut_due"
+        android:shortcutLongLabel="@string/shortcut_due">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="https://mytaillog.com/app/status"
+            android:targetPackage="com.mytaillog.app"
+            android:targetClass="com.mytaillog.app.MainActivity" />
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding android:key="feature" android:value="@array/feature_due" />
+        </capability-binding>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="scan"
+        android:icon="@drawable/ic_shortcut_scan"
+        android:shortcutShortLabel="@string/shortcut_scan"
+        android:shortcutLongLabel="@string/shortcut_scan">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="https://mytaillog.com/app/scan"
+            android:targetPackage="com.mytaillog.app"
+            android:targetClass="com.mytaillog.app.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="squawk"
+        android:icon="@drawable/ic_shortcut_squawk"
+        android:shortcutShortLabel="@string/shortcut_squawk"
+        android:shortcutLongLabel="@string/shortcut_squawk">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="https://mytaillog.com/app/squawk/new"
+            android:targetPackage="com.mytaillog.app"
+            android:targetClass="com.mytaillog.app.MainActivity" />
+    </shortcut>
+</shortcuts>
