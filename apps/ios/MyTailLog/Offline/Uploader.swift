@@ -65,16 +65,24 @@ final class Uploader {
     }
 
     /// Start every held file that is due (oldest first, thumbnails before their page).
-    func drain() async {
-        guard store.uploader === self, !store.isOffline else { return }
+    /// Returns whether a squawk photo or document reached the server (its waiting change can now be pushed).
+    @discardableResult
+    func drain() async -> Bool {
+        guard store.uploader === self, !store.isOffline else { return false }
+        var sentRecord = false
         for job in store.files where job.status == "held" && live[job.id] == nil && !starting.contains(job.id) {
             if let at = nextTry[job.id], at > Date() { continue }
             // The list was read before earlier awaits; another drain may have moved this job on.
             guard store.uploader === self, store.files.first(where: { $0.id == job.id })?.status == "held", live[job.id] == nil, !starting.contains(job.id) else { continue }
             starting.insert(job.id)
-            await start(job)
+            if job.kind == OfflineStore.squawkPhoto || job.kind == OfflineStore.document {
+                if await sendRecord(job) { sentRecord = true }
+            } else {
+                await start(job)
+            }
             starting.remove(job.id)
         }
+        return sentRecord
     }
 
     private func start(_ job: FileJob) async {
@@ -120,6 +128,37 @@ final class Uploader {
         }
     }
 
+    /// Squawk photos and documents go up in-process through their routes (the blob and documents routes take the bytes
+    /// themselves, so there is no signed URL to hand a background session). A photo waits until its squawk is on the server.
+    private func sendRecord(_ job: FileJob) async -> Bool {
+        if job.kind == OfflineStore.squawkPhoto, let squawk = job.meta.squawkId, store.items.contains(where: { $0.id == squawk }) { return false }
+        guard let bytes = try? Data(contentsOf: store.fileURL(job)) else { failed(job, "Not uploaded: the file is no longer on this phone."); return false }
+        let api = RecordsAPI(apiURL: store.apiURL, token: store.token)
+        do {
+            if job.kind == OfflineStore.squawkPhoto {
+                try await api.squawkPhoto(aircraftId: job.aircraftId, squawkId: job.meta.squawkId ?? "", photoId: job.meta.photoId ?? job.id, jpeg: bytes)
+            } else {
+                let id = try await api.document(aircraftId: job.aircraftId, meta: job.meta, bytes: bytes)
+                // The phone's copy becomes the offline copy under the server's id (documents are never purged).
+                let to = store.docURL(id, fileName: job.meta.fileName)
+                try? FileManager.default.createDirectory(at: to.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? FileManager.default.moveItem(at: store.fileURL(job), to: to)
+            }
+            guard store.uploader === self else { return false }
+            nextTry[job.id] = nil
+            store.recordFileDone(job)
+            return true
+        } catch let e as RecordsAPI.Failure {
+            guard store.uploader === self else { return false }
+            // A refusal (4xx) won't change on retry: it is listed with its reason at once.
+            failed(job, "Not uploaded: \(e.message)", countAttempt: true, permanent: (400..<500).contains(e.status))
+        } catch {
+            guard store.uploader === self else { return false }
+            failed(job, "Not uploaded yet: no connection.", countAttempt: false)
+        }
+        return false
+    }
+
     private func progress(_ id: String, _ p: Double) {
         // A row per tenth is plenty for the queue's bar; every callback would write outbox.db hundreds of times.
         guard live[id] != nil, let job = store.files.first(where: { $0.id == id }), p - job.progress >= 0.1 || p >= 1 else { return }
@@ -142,10 +181,10 @@ final class Uploader {
         }
     }
 
-    private func failed(_ job: FileJob, _ reason: String, countAttempt: Bool = true) {
+    private func failed(_ job: FileJob, _ reason: String, countAttempt: Bool = true, permanent: Bool = false) {
         let attempts = Int(job.attempts) + (countAttempt ? 1 : 0)
         nextTry[job.id] = Date().addingTimeInterval(UploadBackoff.delay(afterAttempts: max(attempts, 1)))
-        store.setFile(job.id, attempts >= UploadBackoff.maxAttempts ? "failed" : "held", error: reason, attempt: countAttempt)
+        store.setFile(job.id, permanent || attempts >= UploadBackoff.maxAttempts ? "failed" : "held", error: reason, attempt: countAttempt)
     }
 
     /// URLSession delegate callbacks arrive on its own queue; they hop to the main actor through these closures.

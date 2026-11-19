@@ -128,6 +128,25 @@ final class OfflineStore {
         return array.compactMap { row in (try? JSONEncoder().encode(row)).flatMap { try? JSONDecoder().decode(T.self, from: $0) } }
     }
 
+    /// Every row of `table` for one aircraft as the server sent it; tables the mirror keeps untyped (component, document,
+    /// weight_balance…) come from unknown_record (05 §6.2).
+    func rawRows(_ table: String, aircraftId: String) -> [[String: AnyJSON]] {
+        guard !closed else { return [] }
+        let raw = core.isTyped(table: table) ? core.rowsJson(table: table, aircraftId: aircraftId)
+            : core.unknownRowsJson(table: table, aircraftId: aircraftId)
+        return (try? JSONDecoder().decode([[String: AnyJSON]].self, from: Data(raw.utf8))) ?? []
+    }
+
+    func rawRow(_ table: String, id: String) -> [String: AnyJSON]? {
+        raw(table, id: id).flatMap { try? JSONDecoder().decode([String: AnyJSON].self, from: Data($0.utf8)) }
+    }
+
+    /// Whether a change carries the base `updated_at` of the row it edits (the core's catalogue, 05 §6.4).
+    func needsBase(_ type: String, _ payload: [String: Any]) -> Bool {
+        guard !closed, let data = try? JSONSerialization.data(withJSONObject: payload) else { return false }
+        return core.needsBase(type: type, payload: String(decoding: data, as: UTF8.self))
+    }
+
     func aircraftRows<T: Decodable>(as: T.Type = T.self) -> [T] { closed ? [] : decode(core.aircraftJson()) ?? [] }
     func raw(_ table: String, id: String) -> String? { closed ? nil : core.rawJson(table: table, id: id) }
     var hasPulled: Bool { !closed && core.cursor() > 0 }
@@ -188,9 +207,52 @@ final class OfflineStore {
         reload()
     }
 
-    /// Paths are stored relative to Outbox/pages so a restored backup (new container path) still finds them.
-    func fileURL(_ job: FileJob) -> URL { pagesDir.appending(path: job.localPath) }
+    /// Paths are stored relative to their folder so a restored backup (new container path) still finds them.
+    func fileURL(_ job: FileJob) -> URL {
+        switch job.kind {
+        case Self.squawkPhoto: squawkPhotoURL(job.localPath)
+        case Self.document: dir.appending(path: "Outbox/docs/\(job.localPath)")
+        default: pagesDir.appending(path: job.localPath)
+        }
+    }
     var pagesDir: URL { dir.appending(path: "Outbox/pages", directoryHint: .isDirectory) }
+
+    // MARK: Squawk photos and documents (05 §7.2 file jobs of kind squawk_photo and document)
+
+    static let squawkPhoto = "squawk_photo"
+    static let document = "document"
+
+    /// A squawk photo kept on this phone; it stays after upload so the squawk shows it offline.
+    func squawkPhotoURL(_ name: String) -> URL { dir.appending(path: "squawk_photos/\(name)") }
+
+    /// A document's offline copy, by its server id and the file's extension.
+    func docURL(_ id: String, fileName: String?) -> URL {
+        let ext = fileName.flatMap { $0.contains(".") ? $0.split(separator: ".").last : nil }
+            .map { String($0.lowercased().filter { $0.isLetter || $0.isNumber }.prefix(8)) } ?? ""
+        return dir.appending(path: "docs/\(id).\(ext.isEmpty ? "bin" : ext)")
+    }
+
+    /// Held squawk photos and documents still to upload.
+    var recordFiles: [FileJob] { files.filter { $0.kind == Self.squawkPhoto || $0.kind == Self.document } }
+
+    /// Keeps `bytes` at `url` and records its upload job. Returns the job id.
+    @discardableResult
+    func addRecordFile(kind: String, aircraftId: String, url: URL, bytes: Data, meta: FileMeta) throws -> String {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try bytes.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        let id = UUID().uuidString.lowercased()
+        try addFile(id: id, kind: kind, aircraftId: aircraftId, path: url, bytes: bytes.count, meta: meta)
+        revision += 1
+        return id
+    }
+
+    /// A squawk photo or document reached the server: its job goes; the file stays as the offline copy.
+    func recordFileDone(_ job: FileJob) {
+        guard !closed else { return }
+        _ = core.removeFile(id: job.id)
+        reload()
+        revision += 1
+    }
 
     func removeFileJob(_ job: FileJob) {
         guard !closed else { return }
@@ -293,9 +355,15 @@ final class OfflineStore {
             await uploader?.drain()
             guard !closed else { return }
             let before = core.cursor()
-            let report = try await core.sync()
+            var report = try await core.sync()
             guard !closed else { return }
             reload()
+            // A squawk that just landed lets its photos go up; their rows then follow in a second push.
+            if !recordFiles.isEmpty, await uploader?.drain() == true, !closed {
+                report = try await core.sync()
+                guard !closed else { return }
+                reload()
+            }
             settleFiles()
             failed = false
             if !report.offline {

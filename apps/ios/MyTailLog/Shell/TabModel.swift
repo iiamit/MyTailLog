@@ -8,6 +8,10 @@ final class TabModel {
     /// Bumped when an already-open tab is tapped at its root; the leaf scrolls to the top.
     private(set) var scrollToTop: [Section: Int] = [:]
 
+    /// Set by the Add sheet's "Scan logbook pages": Logbooks opens M-SCAN-01 when it shows, and clears it.
+    var scanPending = false
+    func requestScan() { scanPending = true }
+
     init(selected: Section = .status) {
         self.selected = selected
     }

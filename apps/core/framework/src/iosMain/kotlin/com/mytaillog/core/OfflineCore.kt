@@ -135,6 +135,23 @@ class OfflineCore(dir: String, baseUrl: String) {
         return JsonArray(rows.map { Json.parseToJsonElement(it) }).toString()
     }
 
+    /** Rows the mirror keeps as raw JSON (05 §6.2 unknown_record: component, document, weight_balance…) for one aircraft. */
+    fun unknownRowsJson(table: String, aircraftId: String): String {
+        val rows = mirrorDriver.executeQuery(null, "SELECT raw FROM unknown_record WHERE table_name = ?", { cur ->
+            val out = mutableListOf<String>()
+            while (cur.next().value) cur.getString(0)?.let(out::add)
+            QueryResult.Value(out)
+        }, 1) { bindString(0, table) }.value
+        return JsonArray(rows.map { Json.parseToJsonElement(it) }.filter {
+            (it as? kotlinx.serialization.json.JsonObject)?.get("aircraft_id")?.let { a -> (a as? kotlinx.serialization.json.JsonPrimitive)?.content } == aircraftId
+        }).toString()
+    }
+
+    fun isTyped(table: String): Boolean = MirrorTables.isTyped(table)
+
+    /** Whether a change of [type] carries the base `updated_at` of the row it edits (05 §6.4). */
+    fun needsBase(type: String, payload: String): Boolean = com.mytaillog.core.domain.Mutations.needsBase(type, Json.parseToJsonElement(payload).jsonObject)
+
     /** Every aircraft row in the mirror, as a JSON array. */
     fun aircraftJson(): String {
         val rows = mirrorDriver.executeQuery(null, "SELECT _raw FROM aircraft ORDER BY tail_number", { cur ->

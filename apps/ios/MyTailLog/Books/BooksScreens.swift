@@ -114,6 +114,11 @@ struct BooksHome: View {
                 }
             }
             .padding(.horizontal, Tokens.Space.s4)
+            .task(id: tabs.scanPending) {
+                guard tabs.scanPending else { return }
+                tabs.scanPending = false
+                if model.canEdit { scanBook = ScanChoice(logbookId: nil) }
+            }
             .sheet(item: $scanBook) { choice in
                 ScanBookSheet(books: model, offline: offline, preselect: choice.logbookId) { session in
                     scanning = ScanCameraModel(session: session)
