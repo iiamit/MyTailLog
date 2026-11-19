@@ -27,6 +27,8 @@ TypeScript server, the web client and the Kotlin Multiplatform core
 
 - Due engine (phase 1): `due-*.json`, `status-thresholds.json`, `projection.json`,
   `verdict.json` from `scripts/build-due-fixtures.ts`.
+- Visits (phase 4): `visits.json` (09 §3.5 suggested visits and §4.3 VisitView, with the
+  unconfirmed-gate cases) from the same script. Phones mirror the grouping too (09 §8 question 2).
 - Map (phase 2): from `scripts/build-map-fixtures.ts`, run by
   `apps/web/test/map-fixtures.test.ts` and `apps/core/.../MapFixturesTest.kt`.
   - `map-grouping.json` — stops and interchanges (09 §3.7, the phones' offline subset §3.12 item 7).

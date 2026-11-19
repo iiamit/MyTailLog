@@ -2,14 +2,13 @@ package com.mytaillog.core.domain.due
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
 import kotlin.math.ceil
 import kotlin.math.floor
 
 // Kotlin port of apps/web/src/lib/due/engine.ts (09 §3.1–3.4, 3.6; 12 §4). Same rules,
 // same output; packages/shared/fixtures/*.json pins both. Change one, change both.
 
-const val ALGO_VERSION = 1
+const val ALGO_VERSION = 2
 
 // --- Input: database rows (snake_case) -------------------------------------------
 
@@ -22,6 +21,7 @@ const val ALGO_VERSION = 1
     @SerialName("enrollment_airframe") val enrollmentAirframe: Double? = null,
     @SerialName("expected_hours_per_week") val expectedHoursPerWeek: Double? = null,
     @SerialName("situation_override") val situationOverride: String? = null,
+    @SerialName("home_base") val homeBase: String? = null,
 )
 
 @Serializable data class MaintenanceItemRow(
@@ -40,6 +40,9 @@ const val ALGO_VERSION = 1
     @SerialName("provider_id") val providerId: String? = null,
     @SerialName("ifr_only") val ifrOnly: Boolean = false,
     @SerialName("expires_on") val expiresOn: String? = null,
+    @SerialName("shop_kind") val shopKind: String? = null,
+    @SerialName("visit_window_days") val visitWindowDays: Int? = null,
+    @SerialName("visit_window_hours") val visitWindowHours: Double? = null,
 )
 
 @Serializable data class AdComplianceRow(
@@ -63,6 +66,9 @@ const val ALGO_VERSION = 1
     val type: String,
     val title: String? = null,
     @SerialName("expires_on") val expiresOn: String? = null,
+    @SerialName("shop_kind") val shopKind: String? = null,
+    @SerialName("visit_window_days") val visitWindowDays: Int? = null,
+    @SerialName("visit_window_hours") val visitWindowHours: Double? = null,
     @SerialName("renews_every_months") val renewsEveryMonths: Int? = null,
     @SerialName("track_expiry") val trackExpiry: Boolean,
     @SerialName("remind_lead_days") val remindLeadDays: Int? = null,
@@ -122,10 +128,22 @@ const val ALGO_VERSION = 1
     @SerialName("visit_date") val visitDate: String? = null,
     @SerialName("provider_id") val providerId: String? = null,
     val airport: String? = null,
+    @SerialName("from_suggestion_key") val fromSuggestionKey: String? = null,
 )
 
-@Serializable data class PlannedVisitItemRow(@SerialName("visit_id") val visitId: String, @SerialName("item_key") val itemKey: String)
-@Serializable data class ServiceProviderRow(val id: String, val name: String)
+@Serializable data class PlannedVisitItemRow(
+    @SerialName("visit_id") val visitId: String,
+    @SerialName("item_key") val itemKey: String,
+    @SerialName("done_completion_id") val doneCompletionId: String? = null,
+)
+@Serializable data class ServiceProviderRow(
+    val id: String,
+    val name: String,
+    val kind: String? = null,
+    val airport: String? = null,
+    @SerialName("is_default") val isDefault: Boolean = false,
+)
+@Serializable data class DismissalRow(@SerialName("suggestion_key") val suggestionKey: String)
 @Serializable data class RecordRoomRow(val audience: String, @SerialName("expires_at") val expiresAt: String, @SerialName("revoked_at") val revokedAt: String? = null)
 @Serializable data class SquawkRow(val id: String, val description: String, val severity: String? = null, val status: String)
 
@@ -145,6 +163,7 @@ const val ALGO_VERSION = 1
     @SerialName("service_provider") val serviceProvider: List<ServiceProviderRow> = emptyList(),
     @SerialName("record_room") val recordRoom: List<RecordRoomRow> = emptyList(),
     val squawk: List<SquawkRow> = emptyList(),
+    @SerialName("visit_suggestion_dismissal") val visitSuggestionDismissal: List<DismissalRow> = emptyList(),
 )
 
 // --- Output: API shapes (09 §4.3) ----------------------------------------------------
@@ -209,7 +228,22 @@ const val ALGO_VERSION = 1
 
 @Serializable data class Ring(val itemKey: String, val line: String, val date: String, val dateKind: String, val status: String)
 @Serializable data class Verdict(val text: String, val emphasis: List<List<Int>>, val lines: List<String>)
-@Serializable data class Visits(val suggested: List<JsonElement> = emptyList(), val planned: List<JsonElement> = emptyList())
+@Serializable data class EarlyBy(val days: Int? = null, val hours: Int? = null)
+@Serializable data class VisitItem(val key: String, val earlyBy: EarlyBy?, val status: String, val done: Boolean)
+@Serializable data class AtRisk(val itemKey: String, val firstDate: String)
+@Serializable data class VisitView(
+    val id: String?,
+    val suggestionKey: String?,
+    val status: String,
+    val weekOf: String,
+    val visitDate: String?,
+    val place: String,
+    val providerIds: List<String>,
+    val items: List<VisitItem>,
+    val clearsBeforeLapse: Int,
+    val atRisk: List<AtRisk>,
+)
+@Serializable data class Visits(val suggested: List<VisitView> = emptyList(), val planned: List<VisitView> = emptyList())
 @Serializable data class LineAhead(val from: String, val to: String, val rings: List<Ring>, val undated: List<String>)
 @Serializable data class Counts(val overdue: Int, val dueSoon: Int, val noRecord: Int, val pagesToReview: Int, val pagesBeingRead: Int, val openSquawks: Int)
 
@@ -445,7 +479,7 @@ private class LastOf(val last: LastDone?, val waiting: String?, val hadRows: Boo
 
 private val RANK = mapOf("overdue" to 0, "due_soon" to 1, "current" to 2, "no_record" to 3)
 
-fun computeStatus(input: DueInput, today: String): StatusBody {
+fun computeStatus(input: DueInput, today: String, horizonMonths: Int = 12, visitLimit: Int = 2): StatusBody {
     val a = input.aircraft
     val entries = input.logEntry
     val books = input.logbook.associate { it.id to it.type }
@@ -666,7 +700,7 @@ fun computeStatus(input: DueInput, today: String): StatusBody {
     )
 
     return StatusBody(
-        a.id, ALGO_VERSION, today, situation, verdict, meters, rate, items, Visits(),
+        a.id, ALGO_VERSION, today, situation, verdict, meters, rate, items, computeVisits(input, items, rate, today, horizonMonths, visitLimit),
         LineAhead(today, to, rings, undated),
         Counts(
             items.count { it.status == "overdue" }, items.count { it.status == "due_soon" }, items.count { it.status == "no_record" },
@@ -675,6 +709,119 @@ fun computeStatus(input: DueInput, today: String): StatusBody {
             openSquawks.size,
         ),
     )
+}
+
+// --- Visits (09 §3.5 suggested, §4.3 VisitView) ----------------------------------------------
+
+private val DEFAULT_SHOP = mapOf(
+    "transponder" to "avionics_shop", "pitot_static" to "avionics_shop", "vor" to "self", "engine_tbo" to "engine_shop", "prop_overhaul" to "prop_shop",
+)
+private val NEVER_BUNDLED = setOf("engine_tbo", "prop_overhaul")
+private const val VISIT_WINDOW_DAYS = 60
+private const val VISIT_WINDOW_HOURS = 25.0
+private val LIVE_VISIT = setOf("planned", "in_shop", "awaiting_records")
+
+private fun isoDow(d: String): Int = IntMath.floorMod(Dates.between("1970-01-01", d) + 3, 7) + 1
+private fun mondayOnOrBefore(d: String) = Dates.addDays(d, (1 - isoDow(d)).toLong())
+private fun mondayOnOrAfter(d: String) = Dates.addDays(d, ((8 - isoDow(d)) % 7).toLong())
+
+/** `sha1(place + '|' + sorted(item_keys).join(',') + '|' + M)`, first 16 hex (09 §3.5). */
+fun suggestionKey(place: String, itemKeys: List<String>, weekOf: String): String =
+    com.mytaillog.core.domain.map.Sha1.hex("$place|${itemKeys.sorted().joinToString(",")}|$weekOf").take(16)
+
+private class Member(val key: String, val item: DueItem?, val done: Boolean)
+private class Group(val place: String, val weekOf: String, val members: List<DueItem>, val squawks: List<String>)
+
+private fun computeVisits(input: DueInput, items: List<DueItem>, rate: Rate, today: String, horizonMonths: Int, limit: Int): Visits {
+    val providers = input.serviceProvider
+    val providerById = providers.associateBy { it.id }
+    val mxById = input.maintenanceItem.associateBy { it.id }
+    val byKey = items.associateBy { it.key }
+    val home = input.aircraft.homeBase?.trim()?.uppercase()?.ifEmpty { null } ?: "home"
+    fun mxOf(i: DueItem) = if (i.source == "maintenance") mxById[i.key.substring(3)] else null
+    fun shopKind(i: DueItem) = mxOf(i)?.shopKind ?: DEFAULT_SHOP[i.kind] ?: "mechanic"
+    fun providerOf(i: DueItem) = i.providerId?.let { providerById[it] } ?: providers.firstOrNull { it.isDefault && it.kind == shopKind(i) }
+    fun placeOf(p: ServiceProviderRow?) = p?.airport?.trim()?.uppercase()?.ifEmpty { null } ?: home
+    fun flown(to: String) = rate.hoursPerDay * maxOf(0, Dates.between(today, to))
+    fun early(i: DueItem, weekOf: String): EarlyBy? {
+        if (i.status == "overdue" || i.firstDate == null) return null
+        val at = Dates.addDays(weekOf, 2)
+        if (i.first == "hours" && i.hours != null) {
+            val h = floor(i.hours.remaining - flown(at) + 0.5).toInt()
+            return if (h > 0) EarlyBy(hours = h) else null
+        }
+        val d = Dates.between(at, i.firstDate)
+        return if (d > 0) EarlyBy(days = d) else null
+    }
+    fun view(id: String?, key: String?, status: String, weekOf: String, visitDate: String?, place: String, providerIds: List<String?>, members: List<Member>): VisitView {
+        val due = members.filter { it.item != null && !it.done && it.item.status != "overdue" }
+        return VisitView(
+            id, key, status, weekOf, visitDate, place, providerIds.filterNotNull().distinct(),
+            members.map { m ->
+                VisitItem(m.key, if (m.item != null && !m.done) early(m.item, weekOf) else null,
+                    m.item?.status ?: if (m.key.startsWith("squawk:")) "open" else "no_record", m.done)
+            },
+            due.size,
+            due.filter { it.item!!.firstDate!! < weekOf }.map { AtRisk(it.key, it.item!!.firstDate!!) },
+        )
+    }
+
+    val planned = input.plannedVisit.filter { it.status in LIVE_VISIT }
+        .sortedWith(compareBy<PlannedVisitRow> { it.weekOf }.thenBy { it.id })
+        .map { v ->
+            val members = input.plannedVisitItem.filter { it.visitId == v.id }.sortedBy { it.itemKey }
+                .map { Member(it.itemKey, byKey[it.itemKey], it.doneCompletionId != null) }
+            val own = v.providerId?.let { providerById[it] }
+            view(v.id, v.fromSuggestionKey, v.status, v.weekOf, v.visitDate,
+                own?.airport?.trim()?.uppercase()?.ifEmpty { null } ?: v.airport?.trim()?.uppercase()?.ifEmpty { null } ?: home,
+                listOf(v.providerId) + members.map { m -> m.item?.let { providerOf(it)?.id } }, members)
+        }
+
+    val horizon = Dates.addMonths(today, horizonMonths)
+    val cands = items.filter {
+        it.source != "document" && it.status != "no_record" && it.firstDate != null && it.firstDate <= horizon &&
+            it.kind !in NEVER_BUNDLED && it.visitId == null
+    }
+    val order = compareBy<DueItem> { it.firstDate }.thenBy { it.key }
+    val shops = cands.filter { shopKind(it) != "self" }.sortedWith(order)
+    val selfs = cands.filter { shopKind(it) == "self" }.sortedWith(order)
+    val liveIds = input.plannedVisit.filter { it.status == "planned" || it.status == "in_shop" }.map { it.id }.toSet()
+    val inLiveVisit = input.plannedVisitItem.filter { it.visitId in liveIds }.map { it.itemKey }.toSet()
+    val squawks = input.squawk.filter { it.status != "resolved" && (it.severity == "medium" || it.severity == "high") && "squawk:${it.id}" !in inLiveVisit }
+        .map { "squawk:${it.id}" }.sorted()
+    val nextMonday = mondayOnOrAfter(Dates.addDays(today, 1))
+    val used = mutableSetOf<String>()
+    val groups = mutableListOf<Group>()
+    for (a in shops) {
+        if (a.key in used) continue
+        val place = placeOf(providerOf(a))
+        val anchor = if (a.status == "overdue") today else a.firstDate!!
+        val members = mutableListOf<DueItem>()
+        for (b in shops) {
+            if (b.key in used || placeOf(providerOf(b)) != place) continue
+            val mx = mxOf(b)
+            val inDays = b.firstDate!! <= Dates.addDays(anchor, (mx?.visitWindowDays ?: VISIT_WINDOW_DAYS).toLong())
+            val inHours = b.hours != null && b.hours.remaining - flown(anchor) <= (mx?.visitWindowHours ?: VISIT_WINDOW_HOURS)
+            if (b === a || inDays || inHours) { members.add(b); used.add(b.key) }
+        }
+        val weekOf = if (members.any { it.status == "overdue" }) mondayOnOrAfter(Dates.addDays(today, 2)) else {
+            val soonest = members.filter { it.status != "overdue" }.map { it.firstDate!! }.sorted().first()
+            mondayOnOrBefore(Dates.addDays(soonest, -5)).let { if (it < nextMonday) nextMonday else it }
+        }
+        for (s in selfs) if (s.key !in used && (s.status == "overdue" || s.firstDate!! <= Dates.addDays(weekOf, 34))) { members.add(s); used.add(s.key) }
+        groups.add(Group(place, weekOf, members, if (groups.isEmpty()) squawks else emptyList()))
+    }
+    val dismissed = input.visitSuggestionDismissal.map { it.suggestionKey }.toSet()
+    val suggested = groups
+        .filter { it.members.size + it.squawks.size >= 2 }
+        .map { g -> g to suggestionKey(g.place, g.members.map { it.key } + g.squawks, g.weekOf) }
+        .filter { it.second !in dismissed }
+        .take(limit)
+        .map { (g, key) ->
+            view(null, key, "suggested", g.weekOf, null, g.place, g.members.map { providerOf(it)?.id },
+                g.members.map { Member(it.key, it, false) } + g.squawks.map { Member(it, null, false) })
+        }
+    return Visits(suggested, planned)
 }
 
 // --- Verdict (12 §4) -----------------------------------------------------------------------

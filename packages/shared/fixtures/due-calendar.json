@@ -1,6 +1,6 @@
 {
   "rule": "09 §3.2 calendar limit, §3.1 unconfirmed gate",
-  "algoVersion": 1,
+  "algoVersion": 2,
   "cases": [
     {
       "name": "annual: calendar month, due end of the 12th month",

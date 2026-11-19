@@ -1,0 +1,3169 @@
+{
+  "rule": "09 §3.5 suggested visits, §4.3 VisitView, §3.1 unconfirmed gate",
+  "algoVersion": 2,
+  "cases": [
+    {
+      "name": "worked example: two suggested visits, week of Dec 7 and Feb 22",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null,
+          "home_base": "KBED"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-torres",
+            "name": "M. Torres",
+            "kind": "mechanic",
+            "airport": "KBED",
+            "is_default": true
+          },
+          {
+            "id": "sp-aero",
+            "name": "AeroCheck Instruments",
+            "kind": "avionics_shop",
+            "airport": "KBED",
+            "is_default": true
+          }
+        ],
+        "ad_compliance": [
+          {
+            "kind": "ad",
+            "reference": "2011-10-09",
+            "recurring": true,
+            "status": "complied",
+            "interval_months": null,
+            "interval_hours": 100,
+            "complied_date": "2026-03-01",
+            "complied_hours": 2118.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "reference_entry_id": null,
+            "provider_id": null,
+            "id": "ad-seat"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-torres",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt_battery",
+            "kind": "elt_battery",
+            "label": "ELT battery",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": null,
+            "last_done_date": null,
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": "2027-02-28"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-172",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "137f14bd8c39fc75",
+              "status": "suggested",
+              "weekOf": "2026-12-07",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres",
+                "sp-aero"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-oil_change",
+                  "earlyBy": {
+                    "hours": 1
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-pitot_static",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-vor",
+                  "earlyBy": null,
+                  "status": "overdue",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 3,
+              "atRisk": []
+            },
+            {
+              "id": null,
+              "suggestionKey": "16a3ebf7eb353142",
+              "status": "suggested",
+              "weekOf": "2027-02-22",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-elt_battery",
+                  "earlyBy": {
+                    "days": 4
+                  },
+                  "status": "current",
+                  "done": false
+                },
+                {
+                  "key": "ad:ad-seat",
+                  "earlyBy": {
+                    "hours": 12
+                  },
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-vor",
+            "status": "overdue",
+            "firstDate": "2026-11-11",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-oil_change",
+            "status": "due_soon",
+            "firstDate": "2026-12-12",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-pitot_static",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-elt_battery",
+            "status": "current",
+            "firstDate": "2027-02-28",
+            "visitId": null
+          },
+          {
+            "key": "ad:ad-seat",
+            "status": "current",
+            "firstDate": "2027-03-23",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "a dismissed suggestion stays away; the other remains",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null,
+          "home_base": "KBED"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-torres",
+            "name": "M. Torres",
+            "kind": "mechanic",
+            "airport": "KBED",
+            "is_default": true
+          },
+          {
+            "id": "sp-aero",
+            "name": "AeroCheck Instruments",
+            "kind": "avionics_shop",
+            "airport": "KBED",
+            "is_default": true
+          }
+        ],
+        "ad_compliance": [
+          {
+            "kind": "ad",
+            "reference": "2011-10-09",
+            "recurring": true,
+            "status": "complied",
+            "interval_months": null,
+            "interval_hours": 100,
+            "complied_date": "2026-03-01",
+            "complied_hours": 2118.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "reference_entry_id": null,
+            "provider_id": null,
+            "id": "ad-seat"
+          }
+        ],
+        "visit_suggestion_dismissal": [
+          {
+            "suggestion_key": "137f14bd8c39fc75"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-torres",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt_battery",
+            "kind": "elt_battery",
+            "label": "ELT battery",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": null,
+            "last_done_date": null,
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": "2027-02-28"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-173",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "16a3ebf7eb353142",
+              "status": "suggested",
+              "weekOf": "2027-02-22",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-elt_battery",
+                  "earlyBy": {
+                    "days": 4
+                  },
+                  "status": "current",
+                  "done": false
+                },
+                {
+                  "key": "ad:ad-seat",
+                  "earlyBy": {
+                    "hours": 12
+                  },
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-vor",
+            "status": "overdue",
+            "firstDate": "2026-11-11",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-oil_change",
+            "status": "due_soon",
+            "firstDate": "2026-12-12",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-pitot_static",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-elt_battery",
+            "status": "current",
+            "firstDate": "2027-02-28",
+            "visitId": null
+          },
+          {
+            "key": "ad:ad-seat",
+            "status": "current",
+            "firstDate": "2027-03-23",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "unconfirmed: a newer AI-read transponder entry does not change the visits",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null,
+          "home_base": "KBED"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-torres",
+            "name": "M. Torres",
+            "kind": "mechanic",
+            "airport": "KBED",
+            "is_default": true
+          },
+          {
+            "id": "sp-aero",
+            "name": "AeroCheck Instruments",
+            "kind": "avionics_shop",
+            "airport": "KBED",
+            "is_default": true
+          }
+        ],
+        "ad_compliance": [
+          {
+            "kind": "ad",
+            "reference": "2011-10-09",
+            "recurring": true,
+            "status": "complied",
+            "interval_months": null,
+            "interval_hours": 100,
+            "complied_date": "2026-03-01",
+            "complied_hours": 2118.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "reference_entry_id": null,
+            "provider_id": null,
+            "id": "ad-seat"
+          }
+        ],
+        "log_entry": [
+          {
+            "id": "e-ai-x",
+            "logbook_id": "lb-avionics",
+            "page_id": null,
+            "entry_date": "2026-11-01",
+            "tach": null,
+            "hobbs": null,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          }
+        ],
+        "item_completion": [
+          {
+            "id": "c-ai-x",
+            "maintenance_item_id": "mx-transponder",
+            "ad_compliance_id": null,
+            "log_entry_id": "e-ai-x",
+            "done_date": "2026-11-01",
+            "done_hours": null
+          },
+          {
+            "id": "c-x",
+            "maintenance_item_id": "mx-transponder",
+            "ad_compliance_id": null,
+            "log_entry_id": null,
+            "done_date": "2024-12-03",
+            "done_hours": null
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-torres",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt_battery",
+            "kind": "elt_battery",
+            "label": "ELT battery",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": null,
+            "last_done_date": null,
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": "2027-02-28"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-174",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "137f14bd8c39fc75",
+              "status": "suggested",
+              "weekOf": "2026-12-07",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres",
+                "sp-aero"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-oil_change",
+                  "earlyBy": {
+                    "hours": 1
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-pitot_static",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-vor",
+                  "earlyBy": null,
+                  "status": "overdue",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 3,
+              "atRisk": []
+            },
+            {
+              "id": null,
+              "suggestionKey": "16a3ebf7eb353142",
+              "status": "suggested",
+              "weekOf": "2027-02-22",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-elt_battery",
+                  "earlyBy": {
+                    "days": 4
+                  },
+                  "status": "current",
+                  "done": false
+                },
+                {
+                  "key": "ad:ad-seat",
+                  "earlyBy": {
+                    "hours": 12
+                  },
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-vor",
+            "status": "overdue",
+            "firstDate": "2026-11-11",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-oil_change",
+            "status": "due_soon",
+            "firstDate": "2026-12-12",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-pitot_static",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-elt_battery",
+            "status": "current",
+            "firstDate": "2027-02-28",
+            "visitId": null
+          },
+          {
+            "key": "ad:ad-seat",
+            "status": "current",
+            "firstDate": "2027-03-23",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "unconfirmed: an AI-read tach does not change the visits",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null,
+          "home_base": "KBED"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-torres",
+            "name": "M. Torres",
+            "kind": "mechanic",
+            "airport": "KBED",
+            "is_default": true
+          },
+          {
+            "id": "sp-aero",
+            "name": "AeroCheck Instruments",
+            "kind": "avionics_shop",
+            "airport": "KBED",
+            "is_default": true
+          }
+        ],
+        "ad_compliance": [
+          {
+            "kind": "ad",
+            "reference": "2011-10-09",
+            "recurring": true,
+            "status": "complied",
+            "interval_months": null,
+            "interval_hours": 100,
+            "complied_date": "2026-03-01",
+            "complied_hours": 2118.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "reference_entry_id": null,
+            "provider_id": null,
+            "id": "ad-seat"
+          }
+        ],
+        "log_entry": [
+          {
+            "id": "e-ai-t",
+            "logbook_id": "lb-airframe",
+            "page_id": null,
+            "entry_date": "2026-11-15",
+            "tach": 2215,
+            "hobbs": 2420.8,
+            "airframe": null,
+            "trust": "ai_read",
+            "replaced_by_entry_id": null,
+            "signature_name": null
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-torres",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt_battery",
+            "kind": "elt_battery",
+            "label": "ELT battery",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": null,
+            "last_done_date": null,
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": "2027-02-28"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-175",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "137f14bd8c39fc75",
+              "status": "suggested",
+              "weekOf": "2026-12-07",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres",
+                "sp-aero"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-oil_change",
+                  "earlyBy": {
+                    "hours": 1
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-pitot_static",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-vor",
+                  "earlyBy": null,
+                  "status": "overdue",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 3,
+              "atRisk": []
+            },
+            {
+              "id": null,
+              "suggestionKey": "16a3ebf7eb353142",
+              "status": "suggested",
+              "weekOf": "2027-02-22",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-elt_battery",
+                  "earlyBy": {
+                    "days": 4
+                  },
+                  "status": "current",
+                  "done": false
+                },
+                {
+                  "key": "ad:ad-seat",
+                  "earlyBy": {
+                    "hours": 12
+                  },
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-vor",
+            "status": "overdue",
+            "firstDate": "2026-11-11",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-oil_change",
+            "status": "due_soon",
+            "firstDate": "2026-12-12",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-pitot_static",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-elt_battery",
+            "status": "current",
+            "firstDate": "2027-02-28",
+            "visitId": null
+          },
+          {
+            "key": "ad:ad-seat",
+            "status": "current",
+            "firstDate": "2027-03-23",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "a per-item window of 0 days keeps an item out",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null,
+          "home_base": "KBED"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-torres",
+            "name": "M. Torres",
+            "kind": "mechanic",
+            "airport": "KBED",
+            "is_default": true
+          },
+          {
+            "id": "sp-aero",
+            "name": "AeroCheck Instruments",
+            "kind": "avionics_shop",
+            "airport": "KBED",
+            "is_default": true
+          }
+        ],
+        "ad_compliance": [
+          {
+            "kind": "ad",
+            "reference": "2011-10-09",
+            "recurring": true,
+            "status": "complied",
+            "interval_months": null,
+            "interval_hours": 100,
+            "complied_date": "2026-03-01",
+            "complied_hours": 2118.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "reference_entry_id": null,
+            "provider_id": null,
+            "id": "ad-seat"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-torres",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": false,
+            "expires_on": null,
+            "visit_window_days": 0
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt_battery",
+            "kind": "elt_battery",
+            "label": "ELT battery",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": null,
+            "last_done_date": null,
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": "2027-02-28"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-176",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "a380e5e722744088",
+              "status": "suggested",
+              "weekOf": "2026-12-07",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-torres",
+                "sp-aero"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-oil_change",
+                  "earlyBy": {
+                    "hours": 1
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-pitot_static",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-vor",
+                  "earlyBy": null,
+                  "status": "overdue",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            },
+            {
+              "id": null,
+              "suggestionKey": "36d9410dcdd39b0d",
+              "status": "suggested",
+              "weekOf": "2026-12-21",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-aero",
+                "sp-torres"
+              ],
+              "items": [
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 8
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-elt_battery",
+                  "earlyBy": {
+                    "days": 67
+                  },
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-vor",
+            "status": "overdue",
+            "firstDate": "2026-11-11",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-oil_change",
+            "status": "due_soon",
+            "firstDate": "2026-12-12",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-pitot_static",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-elt_battery",
+            "status": "current",
+            "firstDate": "2027-02-28",
+            "visitId": null
+          },
+          {
+            "key": "ad:ad-seat",
+            "status": "current",
+            "firstDate": "2027-03-23",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "different places never share a visit",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null,
+          "home_base": "KBED"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-torres",
+            "name": "M. Torres",
+            "kind": "mechanic",
+            "airport": "KBED",
+            "is_default": true
+          },
+          {
+            "id": "sp-aero",
+            "name": "AeroCheck Instruments",
+            "kind": "avionics_shop",
+            "airport": "KORH",
+            "is_default": true
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-177",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-oil_change",
+            "status": "due_soon",
+            "firstDate": "2026-12-12",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "no providers: everything is at home and groups",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2370.8,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-178",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "86430ca1256ab7d1",
+              "status": "suggested",
+              "weekOf": "2026-12-07",
+              "visitDate": null,
+              "place": "home",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-oil_change",
+                  "earlyBy": {
+                    "hours": 1
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 22
+                  },
+                  "status": "due_soon",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-oil_change",
+            "status": "due_soon",
+            "firstDate": "2026-12-12",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "an overdue shop item: the visit is the Monday on or after today + 2 days",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2025-09-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-179",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "4c9a84171240d7ec",
+              "status": "suggested",
+              "weekOf": "2026-11-23",
+              "visitDate": null,
+              "place": "home",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-elt",
+                  "earlyBy": null,
+                  "status": "overdue",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 36
+                  },
+                  "status": "due_soon",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 1,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-elt",
+            "status": "overdue",
+            "firstDate": "2026-09-30",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "hours window: an item due in 70 days by hours rides along",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-11-01",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-hundred_hour",
+            "kind": "hundred_hour",
+            "label": "100-hour inspection (91.409)",
+            "regulatory": true,
+            "interval_months": null,
+            "interval_hours": 100,
+            "last_done_date": "2026-11-01",
+            "last_done_hours": 2095.3,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-180",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "38b257c6a567347a",
+              "status": "suggested",
+              "weekOf": "2026-12-21",
+              "visitDate": null,
+              "place": "home",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 8
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-hundred_hour",
+                  "earlyBy": {
+                    "hours": 20
+                  },
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-hundred_hour",
+            "status": "current",
+            "firstDate": "2027-02-07",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-11-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "engine overhaul is never bundled",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-engine_tbo",
+            "kind": "engine_tbo",
+            "label": "Engine TBO (advisory)",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 2000,
+            "last_done_date": "2004-01-01",
+            "last_done_hours": 180,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-181",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-engine_tbo",
+            "status": "current",
+            "firstDate": "2026-12-23",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "a self check joins when due by the visit week + 34 days",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-11-15",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-182",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "e1eb459cba1b36a5",
+              "status": "suggested",
+              "weekOf": "2026-12-21",
+              "visitDate": null,
+              "place": "home",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 8
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-vor",
+                  "earlyBy": null,
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": [
+                {
+                  "itemKey": "mx:mx-vor",
+                  "firstDate": "2026-12-15"
+                }
+              ]
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-vor",
+            "status": "current",
+            "firstDate": "2026-12-15",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "self checks and squawks never anchor a visit",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-11-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-vor",
+            "kind": "vor",
+            "label": "VOR check (91.171) — IFR",
+            "regulatory": true,
+            "interval_months": 1,
+            "interval_hours": null,
+            "last_done_date": "2026-10-12",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "squawk": [
+          {
+            "id": "sq-w",
+            "description": "Left brake soft",
+            "severity": "medium",
+            "status": "open"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-183",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-vor",
+            "status": "overdue",
+            "firstDate": "2026-11-11",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-11-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "a Watch squawk rides along with one item; Low and resolved ones do not",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "squawk": [
+          {
+            "id": "sq-w",
+            "description": "Left brake soft",
+            "severity": "medium",
+            "status": "open"
+          },
+          {
+            "id": "sq-l",
+            "description": "Nav light dim",
+            "severity": "low",
+            "status": "open"
+          },
+          {
+            "id": "sq-r",
+            "description": "Old",
+            "severity": "high",
+            "status": "resolved"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-184",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "d23376c0d27b86f5",
+              "status": "suggested",
+              "weekOf": "2026-12-21",
+              "visitDate": null,
+              "place": "home",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 8
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "squawk:sq-w",
+                  "earlyBy": null,
+                  "status": "open",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 1,
+              "atRisk": []
+            }
+          ],
+          "planned": []
+        },
+        "items": [
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "planned visit: its items leave the suggestions; at risk and done shown",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": 3,
+          "situation_override": null,
+          "home_base": "KBED"
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "service_provider": [
+          {
+            "id": "sp-aero",
+            "name": "AeroCheck Instruments",
+            "kind": "avionics_shop",
+            "airport": "KBED",
+            "is_default": true
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000002",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": "sp-aero",
+            "ifr_only": true,
+            "expires_on": null
+          },
+          {
+            "id": "mx-elt",
+            "kind": "elt",
+            "label": "ELT inspection (91.207)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2025-12-10",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-oil_change",
+            "kind": "oil_change",
+            "label": "Oil change",
+            "regulatory": false,
+            "interval_months": null,
+            "interval_hours": 50,
+            "last_done_date": "2026-09-01",
+            "last_done_hours": 2385,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          }
+        ],
+        "planned_visit": [
+          {
+            "id": "v-1",
+            "status": "planned",
+            "week_of": "2027-01-04",
+            "visit_date": null,
+            "provider_id": "sp-aero",
+            "airport": null,
+            "from_suggestion_key": "abc"
+          },
+          {
+            "id": "v-2",
+            "status": "done",
+            "week_of": "2026-06-08",
+            "visit_date": "2026-06-10",
+            "provider_id": null
+          }
+        ],
+        "planned_visit_item": [
+          {
+            "visit_id": "v-1",
+            "item_key": "mx:00000000-0000-4000-8000-000000000001",
+            "done_completion_id": null
+          },
+          {
+            "visit_id": "v-1",
+            "item_key": "mx:00000000-0000-4000-8000-000000000002",
+            "done_completion_id": "c-9"
+          },
+          {
+            "visit_id": "v-1",
+            "item_key": "squawk:sq-w",
+            "done_completion_id": null
+          }
+        ],
+        "squawk": [
+          {
+            "id": "sq-w",
+            "description": "Left brake soft",
+            "severity": "medium",
+            "status": "open"
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-185",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "dce519105f8bbc42",
+              "status": "suggested",
+              "weekOf": "2026-12-21",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-elt",
+                  "earlyBy": {
+                    "days": 8
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-oil_change",
+                  "earlyBy": {
+                    "hours": 9
+                  },
+                  "status": "current",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": [
+            {
+              "id": "v-1",
+              "suggestionKey": "abc",
+              "status": "planned",
+              "weekOf": "2027-01-04",
+              "visitDate": null,
+              "place": "KBED",
+              "providerIds": [
+                "sp-aero"
+              ],
+              "items": [
+                {
+                  "key": "mx:00000000-0000-4000-8000-000000000001",
+                  "earlyBy": null,
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:00000000-0000-4000-8000-000000000002",
+                  "earlyBy": null,
+                  "status": "due_soon",
+                  "done": true
+                },
+                {
+                  "key": "squawk:sq-w",
+                  "earlyBy": null,
+                  "status": "open",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 1,
+              "atRisk": [
+                {
+                  "itemKey": "mx:00000000-0000-4000-8000-000000000001",
+                  "firstDate": "2026-12-31"
+                }
+              ]
+            }
+          ]
+        },
+        "items": [
+          {
+            "key": "mx:00000000-0000-4000-8000-000000000001",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": "v-1"
+          },
+          {
+            "key": "mx:00000000-0000-4000-8000-000000000002",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": "v-1"
+          },
+          {
+            "key": "mx:mx-elt",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-oil_change",
+            "status": "current",
+            "firstDate": "2027-01-14",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "awaiting records: still listed, its items back in the suggestions",
+      "today": "2026-11-18",
+      "input": {
+        "aircraft": {
+          "id": "ac-n734dm",
+          "tail_number": "N734DM",
+          "enrollment_date": null,
+          "enrollment_tach": null,
+          "enrollment_hobbs": null,
+          "enrollment_airframe": null,
+          "expected_hours_per_week": null,
+          "situation_override": null
+        },
+        "logbook": [
+          {
+            "id": "lb-airframe",
+            "type": "airframe"
+          },
+          {
+            "id": "lb-engine",
+            "type": "engine"
+          },
+          {
+            "id": "lb-prop",
+            "type": "prop"
+          },
+          {
+            "id": "lb-avionics",
+            "type": "avionics"
+          }
+        ],
+        "maintenance_item": [
+          {
+            "id": "mx-annual",
+            "kind": "annual",
+            "label": "Annual inspection (91.409)",
+            "regulatory": true,
+            "interval_months": 12,
+            "interval_hours": null,
+            "last_done_date": "2026-06-10",
+            "last_done_hours": 2100,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-transponder",
+            "kind": "transponder",
+            "label": "Transponder test (91.413)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": false,
+            "expires_on": null
+          },
+          {
+            "id": "mx-pitot_static",
+            "kind": "pitot_static",
+            "label": "Pitot-static / altimeter (91.411)",
+            "regulatory": true,
+            "interval_months": 24,
+            "interval_hours": null,
+            "last_done_date": "2024-12-03",
+            "last_done_hours": null,
+            "next_due_date": null,
+            "next_due_hours": null,
+            "meter": null,
+            "line": null,
+            "provider_id": null,
+            "ifr_only": true,
+            "expires_on": null
+          }
+        ],
+        "planned_visit": [
+          {
+            "id": "v-3",
+            "status": "awaiting_records",
+            "week_of": "2026-11-09",
+            "visit_date": null,
+            "provider_id": null
+          }
+        ],
+        "planned_visit_item": [
+          {
+            "visit_id": "v-3",
+            "item_key": "mx:mx-transponder",
+            "done_completion_id": null
+          }
+        ],
+        "hours_reading": [
+          {
+            "id": "hr-2026-11-10-186",
+            "reading_date": "2026-11-10",
+            "tach": 2165.3,
+            "hobbs": 2410.8,
+            "airframe": null,
+            "source": "manual"
+          }
+        ]
+      },
+      "expected": {
+        "visits": {
+          "suggested": [
+            {
+              "id": null,
+              "suggestionKey": "284ddfa09d2433be",
+              "status": "suggested",
+              "weekOf": "2026-12-21",
+              "visitDate": null,
+              "place": "home",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-pitot_static",
+                  "earlyBy": {
+                    "days": 8
+                  },
+                  "status": "due_soon",
+                  "done": false
+                },
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 8
+                  },
+                  "status": "due_soon",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 2,
+              "atRisk": []
+            }
+          ],
+          "planned": [
+            {
+              "id": "v-3",
+              "suggestionKey": null,
+              "status": "awaiting_records",
+              "weekOf": "2026-11-09",
+              "visitDate": null,
+              "place": "home",
+              "providerIds": [],
+              "items": [
+                {
+                  "key": "mx:mx-transponder",
+                  "earlyBy": {
+                    "days": 50
+                  },
+                  "status": "due_soon",
+                  "done": false
+                }
+              ],
+              "clearsBeforeLapse": 1,
+              "atRisk": []
+            }
+          ]
+        },
+        "items": [
+          {
+            "key": "mx:mx-pitot_static",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-transponder",
+            "status": "due_soon",
+            "firstDate": "2026-12-31",
+            "visitId": null
+          },
+          {
+            "key": "mx:mx-annual",
+            "status": "current",
+            "firstDate": "2027-06-30",
+            "visitId": null
+          }
+        ]
+      }
+    }
+  ]
+}

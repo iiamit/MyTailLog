@@ -1,6 +1,6 @@
 {
   "rule": "09 §3.2 status",
-  "algoVersion": 1,
+  "algoVersion": 2,
   "cases": [
     {
       "name": "90 days left is due soon",

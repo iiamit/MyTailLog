@@ -331,15 +331,20 @@ export function buildMapModel(input: MapInput, today: string, opts: MapOptions =
     }
   rings.sort((a, b) => cmp(a.date, b.date) || cmp(a.itemKey, b.itemKey));
 
-  // --- Visits: planned and in-shop visits in range (suggested visits arrive with phase 4) ---
-  const visits: MapVisit[] = (input.planned_visit ?? [])
-    .filter((v) => (v.status === "planned" || v.status === "in_shop") && inRange(v.week_of))
-    .map((v) => ({
-      id: v.id, suggestionKey: null, state: v.status as "planned" | "in_shop", weekOf: v.week_of,
-      itemKeys: (input.planned_visit_item ?? []).filter((x) => x.visit_id === v.id).map((x) => x.item_key).sort(cmp),
-      label: v.status === "in_shop" ? "In the shop" : "Planned",
-    }))
-    .sort((a, b) => cmp(a.weekOf, b.weekOf) || cmp(a.id ?? "", b.id ?? ""));
+  // --- Visits: planned and in-shop visits in range, then the engine's suggestions (09 §3.4, §3.5) ---
+  const visits: MapVisit[] = [
+    ...(input.planned_visit ?? [])
+      .filter((v) => (v.status === "planned" || v.status === "in_shop") && inRange(v.week_of))
+      .map((v) => ({
+        id: v.id, suggestionKey: null, state: v.status as "planned" | "in_shop", weekOf: v.week_of,
+        itemKeys: (input.planned_visit_item ?? []).filter((x) => x.visit_id === v.id).map((x) => x.item_key).sort(cmp),
+        label: v.status === "in_shop" ? "In the shop" : "Planned",
+      })),
+    ...status.visits.suggested.filter((v) => inRange(v.weekOf)).map((v) => ({
+      id: null, suggestionKey: v.suggestionKey, state: "suggested" as const, weekOf: v.weekOf,
+      itemKeys: v.items.map((i) => i.key).sort(cmp), label: "Suggested",
+    })),
+  ].sort((a, b) => cmp(a.weekOf, b.weekOf) || cmp(a.id ?? "", b.id ?? "") || cmp(a.suggestionKey ?? "", b.suggestionKey ?? ""));
 
   // Long histories get the piecewise scale with a break at today − 12 months (10 §4).
   const scaleBreak = from <= addMonths(today, -60) ? addMonths(today, -12) : null;

@@ -102,6 +102,10 @@ const views: Record<string, { rule: string; view: View }> = {
     rule: "09 §3.3 projection and first",
     view: (b) => ({ rate: b.rate, items: b.items.map(pick(["key", "status", "calendar", "hours", "first", "firstDate"])) }),
   },
+  visits: {
+    rule: "09 §3.5 suggested visits, §4.3 VisitView, §3.1 unconfirmed gate",
+    view: (b) => ({ visits: b.visits, items: b.items.map(pick(["key", "status", "firstDate", "visitId"])) }),
+  },
   verdict: {
     rule: "09 §3.6 situation, §3.4 line ahead, 12 §4 verdict",
     view: (b) => ({ situation: b.situation, verdict: b.verdict, lineAhead: b.lineAhead }),
@@ -109,6 +113,26 @@ const views: Record<string, { rule: string; view: View }> = {
 };
 
 type Case = { name: string; today?: string; input: DueInput };
+
+// 09 §3.5 worked example: N734DM on Nov 18, 2026 at 3 h a week (owner's estimate), based at KBED.
+const torres = { id: "sp-torres", name: "M. Torres", kind: "mechanic", airport: "KBED", is_default: true };
+const aero = { id: "sp-aero", name: "AeroCheck Instruments", kind: "avionics_shop", airport: "KBED", is_default: true };
+const worked = (o: Partial<DueInput> = {}, xpdr: Partial<MaintenanceItemRow> = {}): DueInput => ready({
+  aircraft: aircraft({ expected_hours_per_week: 3, home_base: "KBED" }),
+  service_provider: [torres, aero],
+  ad_compliance: [ad({ id: "ad-seat", reference: "2011-10-09", interval_hours: 100, complied_date: "2026-03-01", complied_hours: 2118.8 })],
+  ...o,
+  maintenance_item: [
+    mx("oil_change", { last_done_date: "2026-09-01", last_done_hours: 2370.8, provider_id: "sp-torres" }),
+    mx("transponder", { last_done_date: "2024-12-03", provider_id: "sp-aero", ...xpdr }),
+    mx("pitot_static", { last_done_date: "2024-12-03", provider_id: "sp-aero" }),
+    mx("vor", { last_done_date: "2026-10-12" }),
+    mx("elt_battery", { expires_on: "2027-02-28" }),
+  ],
+});
+// Ids that pass planned_visit_item's item_key check (uuid shape).
+const U1 = "00000000-0000-4000-8000-000000000001";
+const U2 = "00000000-0000-4000-8000-000000000002";
 const cases: Record<string, Case[]> = {
   "due-calendar": [
     { name: "annual: calendar month, due end of the 12th month", input: ready({}, "2025-12-03") },
@@ -290,6 +314,108 @@ const cases: Record<string, Case[]> = {
       }),
     },
     { name: "ADS-B estimates never feed the rate", input: ready({ hours_reading: [reading("2026-11-10", 2165.3), reading("2026-10-01", 2160, null, "adsb_estimate"), reading("2026-09-01", 2150, null, "adsb_estimate")], maintenance_item: [mx("hundred_hour", { last_done_date: "2026-06-10", last_done_hours: 2100 })] }) },
+  ],
+
+  visits: [
+    { name: "worked example: two suggested visits, week of Dec 7 and Feb 22", input: worked() },
+    { name: "a dismissed suggestion stays away; the other remains", input: worked({ visit_suggestion_dismissal: [{ suggestion_key: "137f14bd8c39fc75" }] }) },
+    {
+      name: "unconfirmed: a newer AI-read transponder entry does not change the visits",
+      input: worked({
+        log_entry: [entry("e-ai-x", { logbook_id: "lb-avionics", entry_date: "2026-11-01", trust: "ai_read" })],
+        item_completion: [done("c-ai-x", "mx-transponder", "2026-11-01", null, "e-ai-x"), done("c-x", "mx-transponder", "2024-12-03")],
+      }),
+    },
+    {
+      name: "unconfirmed: an AI-read tach does not change the visits",
+      input: worked({ log_entry: [entry("e-ai-t", { entry_date: "2026-11-15", tach: 2215, hobbs: 2420.8, trust: "ai_read" })] }),
+    },
+    { name: "a per-item window of 0 days keeps an item out", input: worked({}, { visit_window_days: 0 }) },
+    {
+      name: "different places never share a visit",
+      input: ready({
+        aircraft: aircraft({ expected_hours_per_week: 3, home_base: "KBED" }),
+        service_provider: [torres, { ...aero, airport: "KORH" }],
+        maintenance_item: [mx("oil_change", { last_done_date: "2026-09-01", last_done_hours: 2370.8 }), mx("transponder", { last_done_date: "2024-12-03" })],
+      }),
+    },
+    {
+      name: "no providers: everything is at home and groups",
+      input: ready({
+        aircraft: aircraft({ expected_hours_per_week: 3 }),
+        maintenance_item: [mx("oil_change", { last_done_date: "2026-09-01", last_done_hours: 2370.8 }), mx("transponder", { last_done_date: "2024-12-03" })],
+      }),
+    },
+    {
+      name: "an overdue shop item: the visit is the Monday on or after today + 2 days",
+      input: ready({ maintenance_item: [mx("elt", { last_done_date: "2025-09-03" }), mx("transponder", { last_done_date: "2024-12-03" })] }),
+    },
+    {
+      name: "hours window: an item due in 70 days by hours rides along",
+      input: ready({
+        aircraft: aircraft({ expected_hours_per_week: 3 }),
+        maintenance_item: [mx("transponder", { last_done_date: "2024-12-03" }), mx("hundred_hour", { last_done_date: "2026-11-01", last_done_hours: 2095.3 })],
+      }, "2026-11-01"),
+    },
+    {
+      name: "engine overhaul is never bundled",
+      input: ready({
+        aircraft: aircraft({ expected_hours_per_week: 3 }),
+        maintenance_item: [mx("transponder", { last_done_date: "2024-12-03" }), mx("engine_tbo", { last_done_date: "2004-01-01", last_done_hours: 180 })],
+      }),
+    },
+    {
+      name: "a self check joins when due by the visit week + 34 days",
+      input: ready({ maintenance_item: [mx("transponder", { last_done_date: "2024-12-03" }), mx("vor", { last_done_date: "2026-11-15" })] }),
+    },
+    {
+      name: "self checks and squawks never anchor a visit",
+      input: ready({
+        maintenance_item: [mx("vor", { last_done_date: "2026-10-12" })],
+        squawk: [{ id: "sq-w", description: "Left brake soft", severity: "medium", status: "open" }],
+      }, "2026-11-10"),
+    },
+    {
+      name: "a Watch squawk rides along with one item; Low and resolved ones do not",
+      input: ready({
+        maintenance_item: [mx("transponder", { last_done_date: "2024-12-03" })],
+        squawk: [
+          { id: "sq-w", description: "Left brake soft", severity: "medium", status: "open" },
+          { id: "sq-l", description: "Nav light dim", severity: "low", status: "open" },
+          { id: "sq-r", description: "Old", severity: "high", status: "resolved" },
+        ],
+      }),
+    },
+    {
+      name: "planned visit: its items leave the suggestions; at risk and done shown",
+      input: ready({
+        aircraft: aircraft({ expected_hours_per_week: 3, home_base: "KBED" }),
+        service_provider: [aero],
+        maintenance_item: [
+          mx("transponder", { id: U1, last_done_date: "2024-12-03", provider_id: "sp-aero" }),
+          mx("pitot_static", { id: U2, last_done_date: "2024-12-03", provider_id: "sp-aero" }),
+          mx("elt", { last_done_date: "2025-12-10" }), mx("oil_change", { last_done_date: "2026-09-01", last_done_hours: 2385 }),
+        ],
+        planned_visit: [
+          { id: "v-1", status: "planned", week_of: "2027-01-04", visit_date: null, provider_id: "sp-aero", airport: null, from_suggestion_key: "abc" },
+          { id: "v-2", status: "done", week_of: "2026-06-08", visit_date: "2026-06-10", provider_id: null },
+        ],
+        planned_visit_item: [
+          { visit_id: "v-1", item_key: `mx:${U1}`, done_completion_id: null },
+          { visit_id: "v-1", item_key: `mx:${U2}`, done_completion_id: "c-9" },
+          { visit_id: "v-1", item_key: "squawk:sq-w", done_completion_id: null },
+        ],
+        squawk: [{ id: "sq-w", description: "Left brake soft", severity: "medium", status: "open" }],
+      }),
+    },
+    {
+      name: "awaiting records: still listed, its items back in the suggestions",
+      input: ready({
+        maintenance_item: [mx("transponder", { last_done_date: "2024-12-03" }), mx("pitot_static", { last_done_date: "2024-12-03" })],
+        planned_visit: [{ id: "v-3", status: "awaiting_records", week_of: "2026-11-09", visit_date: null, provider_id: null }],
+        planned_visit_item: [{ visit_id: "v-3", item_key: "mx:mx-transponder", done_completion_id: null }],
+      }),
+    },
   ],
 
   verdict: [
