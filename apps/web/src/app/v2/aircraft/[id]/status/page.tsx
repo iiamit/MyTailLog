@@ -101,7 +101,7 @@ export default async function StatusPage({
   );
   const rate = ratePhrase(snap.rate);
   const waiting = snap.counts.pagesToReview;
-  const notifyOn = loaded.preferences?.notify_due !== false;
+  const notifyOn = loaded.preferences?.notify_due === true; // same rule as the reminder cron: off unless switched on
 
   const foot = (
     <div className="mt-5 space-y-2 text-small text-ink-3">
