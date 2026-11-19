@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
   };
   const design = params.get("design");
   if (design === "v2") res.cookies.set(UI_COOKIE, "v2", opts);
-  if (design === "v1") res.cookies.delete(UI_COOKIE);
+  // An explicit v1, not a deleted cookie: with the new design on by default (phase 6) no cookie means v2.
+  if (design === "v1") res.cookies.set(UI_COOKIE, "v1", opts);
   if (params.has("theme")) res.cookies.set(THEME_COOKIE, parseTheme(params.get("theme") ?? undefined), opts);
   return res;
 }

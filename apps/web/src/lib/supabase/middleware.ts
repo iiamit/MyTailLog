@@ -10,7 +10,8 @@ import {
   isFreshAccount,
   sourceFromLanding,
 } from "@/lib/signupSource";
-import { UI_COOKIE, v2Rewrite } from "@/lib/uiV2";
+import { publicOrigin } from "@/lib/publicOrigin";
+import { UI_COOKIE, v1ToV2, v2Rewrite, v2ToV1, wantsV2 } from "@/lib/uiV2";
 
 /**
  * Refreshes the Supabase auth session on every request and redirects
@@ -51,6 +52,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/aircraft") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/hangar") ||
+    pathname === "/account" ||
+    pathname.startsWith("/account/") || // not /account-deletion, which is public
     pathname.startsWith("/v2");
 
   if (!user && isProtected) {
@@ -70,14 +74,25 @@ export async function updateSession(request: NextRequest) {
 }
 
 /**
- * Owners who opted into the new design see the /v2 tree at the same URLs. `?ui=v1` on one request shows
- * the current design for that page (the v2 shell links there for screens it doesn't cover yet).
+ * The new design (default from phase 6, wantsV2) serves the /v2 tree at the same URLs and moves today's routes to
+ * their new homes (308, 03 §10). `?ui=v1` on one request shows the current design for that page (the v2 shell links
+ * there for screens it doesn't cover yet). Owners who switched back are sent from new-only URLs to their v1 page.
  */
 function withUiV2(request: NextRequest, response: NextResponse) {
-  if (request.cookies.get(UI_COOKIE)?.value !== "v2" || request.nextUrl.searchParams.get("ui") === "v1") {
-    return response;
+  const { pathname, searchParams } = request.nextUrl;
+  const redirectTo = (to: string, status: number) => {
+    const res = NextResponse.redirect(new URL(to, publicOrigin(request)), status);
+    response.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  };
+  if (!wantsV2(request.cookies.get(UI_COOKIE)?.value)) {
+    const back = v2ToV1(pathname, searchParams);
+    return back ? redirectTo(back, 307) : response;
   }
-  const target = v2Rewrite(request.nextUrl.pathname);
+  if (searchParams.get("ui") === "v1") return response;
+  const moved = v1ToV2(pathname, searchParams);
+  if (moved) return redirectTo(moved, 308);
+  const target = v2Rewrite(pathname);
   if (!target) return response;
   const url = request.nextUrl.clone();
   url.pathname = target;
