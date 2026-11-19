@@ -913,6 +913,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -1673,6 +1686,14 @@
     ],
     "visits": [
      {
+      "id": "094b388f1a8ec071",
+      "state": "suggested",
+      "x": 701.2,
+      "y": 36,
+      "w": 20,
+      "h": 264
+     },
+     {
       "id": "v-dec",
       "state": "planned",
       "x": 704.7,
@@ -1776,13 +1797,6 @@
     ],
     "labels": [
      {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 718,
-      "y": 33,
-      "anchor": "start"
-     },
-     {
       "for": "ring:mx:mx-vor",
       "text": "VOR check",
       "x": 702,
@@ -1790,18 +1804,18 @@
       "anchor": "end"
      },
      {
-      "for": "ring:mx:mx-pitot_static",
-      "text": "Pitot-static check",
-      "x": 712.6,
-      "y": 265,
+      "for": "visit:094b388f1a8ec071",
+      "text": "Suggested, week of Nov 23",
+      "x": 703.2,
+      "y": 28,
       "anchor": "end"
      },
      {
       "for": "interchange:7f19e2fdc1787d4d",
       "text": "Annual, Aug 2011",
-      "x": 458,
+      "x": 442,
       "y": 28,
-      "anchor": "start"
+      "anchor": "end"
      },
      {
       "for": "interchange:44bd21ca88076c57",
@@ -1809,27 +1823,6 @@
       "x": 521.5,
       "y": 318.4,
       "anchor": "end"
-     },
-     {
-      "for": "interchange:ae2d865fcb65fe63",
-      "text": "Annual, Dec 2024",
-      "x": 597.9,
-      "y": 28,
-      "anchor": "start"
-     },
-     {
-      "for": "interchange:b58ae6d40d2df221",
-      "text": "Annual, Jul 2025",
-      "x": 604.5,
-      "y": 238.4,
-      "anchor": "start"
-     },
-     {
-      "for": "interchange:b482dde54e6664fa",
-      "text": "Annual, Jul 2026",
-      "x": 687.7,
-      "y": 158.4,
-      "anchor": "start"
      },
      {
       "for": "stop:790963b17842fd34",
@@ -1853,7 +1846,7 @@
       "anchor": "start"
      }
     ],
-    "more": 6
+    "more": 11
    }
   },
   {
@@ -2767,6 +2760,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -3528,6 +3534,14 @@
     ],
     "visits": [
      {
+      "id": "094b388f1a8ec071",
+      "state": "suggested",
+      "x": 701.2,
+      "y": 36,
+      "w": 20,
+      "h": 264
+     },
+     {
       "id": "v-dec",
       "state": "planned",
       "x": 704.7,
@@ -3631,13 +3645,6 @@
     ],
     "labels": [
      {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 718,
-      "y": 33,
-      "anchor": "start"
-     },
-     {
       "for": "ring:mx:mx-vor",
       "text": "VOR check",
       "x": 718,
@@ -3652,10 +3659,10 @@
       "anchor": "end"
      },
      {
-      "for": "ring:mx:mx-transponder",
-      "text": "Transponder check",
-      "x": 712.6,
-      "y": 265,
+      "for": "visit:094b388f1a8ec071",
+      "text": "Suggested, week of Nov 23",
+      "x": 703.2,
+      "y": 28,
       "anchor": "end"
      },
      {
@@ -3676,21 +3683,7 @@
       "for": "interchange:ae2d865fcb65fe63",
       "text": "Annual, Dec 2024",
       "x": 597.9,
-      "y": 28,
-      "anchor": "start"
-     },
-     {
-      "for": "interchange:b58ae6d40d2df221",
-      "text": "Annual, Jul 2025",
-      "x": 604.5,
       "y": 235.7,
-      "anchor": "start"
-     },
-     {
-      "for": "interchange:b482dde54e6664fa",
-      "text": "Annual, Jul 2026",
-      "x": 687.7,
-      "y": 155.7,
       "anchor": "start"
      },
      {
@@ -3729,7 +3722,7 @@
       "anchor": "start"
      }
     ],
-    "more": 3
+    "more": 7
    }
   },
   {
@@ -4642,6 +4635,19 @@
       }
      ],
      "visits": [
+      {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
       {
        "id": "v-dec",
        "suggestionKey": null,
@@ -5910,6 +5916,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -6098,6 +6117,14 @@
     ],
     "visits": [
      {
+      "id": "094b388f1a8ec071",
+      "state": "suggested",
+      "x": 107.7,
+      "y": 28,
+      "w": 20,
+      "h": 159
+     },
+     {
       "id": "v-dec",
       "state": "planned",
       "x": 129.3,
@@ -6192,13 +6219,6 @@
     ],
     "labels": [
      {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 118,
-      "y": 25,
-      "anchor": "start"
-     },
-     {
       "for": "ring:mx:mx-vor",
       "text": "VOR check",
       "x": 118,
@@ -6210,6 +6230,13 @@
       "text": "Transponder check",
       "x": 184.2,
       "y": 152,
+      "anchor": "start"
+     },
+     {
+      "for": "visit:094b388f1a8ec071",
+      "text": "Suggested, week of Nov 23",
+      "x": 125.7,
+      "y": 20,
       "anchor": "start"
      },
      {
@@ -6227,7 +6254,7 @@
       "anchor": "start"
      }
     ],
-    "more": 2
+    "more": 3
    }
   },
   {
@@ -7141,6 +7168,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -7329,6 +7369,14 @@
     ],
     "visits": [
      {
+      "id": "094b388f1a8ec071",
+      "state": "suggested",
+      "x": 53.9,
+      "y": 18,
+      "w": 20,
+      "h": 132
+     },
+     {
       "id": "v-dec",
       "state": "planned",
       "x": 64.9,
@@ -7385,16 +7433,8 @@
       "anchor": "middle"
      }
     ],
-    "labels": [
-     {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 68,
-      "y": 15,
-      "anchor": "start"
-     }
-    ],
-    "more": 1
+    "labels": [],
+    "more": 3
    }
   },
   {
@@ -8308,6 +8348,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -9069,6 +9122,14 @@
     ],
     "visits": [
      {
+      "id": "094b388f1a8ec071",
+      "state": "suggested",
+      "x": 46,
+      "y": 91,
+      "w": 144,
+      "h": 20
+     },
+     {
       "id": "v-dec",
       "state": "planned",
       "x": 166,
@@ -9216,7 +9277,7 @@
       "anchor": "start"
      }
     ],
-    "more": 9
+    "more": 10
    }
   },
   {
@@ -9447,7 +9508,19 @@
        "kind": "oil_change"
       }
      ],
-     "visits": [],
+     "visits": [
+      {
+       "id": null,
+       "suggestionKey": "7e8e2b162cfb6b00",
+       "state": "suggested",
+       "weekOf": "2026-12-21",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change"
+       ],
+       "label": "Suggested"
+      }
+     ],
      "undatedEntries": 0
     },
     "options": {
@@ -9642,7 +9715,16 @@
       "status": "current"
      }
     ],
-    "visits": [],
+    "visits": [
+     {
+      "id": "7e8e2b162cfb6b00",
+      "state": "suggested",
+      "x": 708.1,
+      "y": 36,
+      "w": 20,
+      "h": 104
+     }
+    ],
     "eras": [],
     "squawks": [],
     "today": {
@@ -9704,18 +9786,18 @@
     ],
     "labels": [
      {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 728.6,
-      "y": 33,
-      "anchor": "start"
+      "for": "visit:7e8e2b162cfb6b00",
+      "text": "Suggested, week of Dec 21",
+      "x": 710.1,
+      "y": 28,
+      "anchor": "end"
      },
      {
       "for": "interchange:ed9b3ccfcfc7f391",
       "text": "Annual, Apr 2022",
-      "x": 500.5,
+      "x": 484.5,
       "y": 28,
-      "anchor": "start"
+      "anchor": "end"
      },
      {
       "for": "interchange:57b20ea564732c69",
@@ -9728,7 +9810,7 @@
       "for": "gap:g-4321-before",
       "text": "No pages yet before 2022",
       "x": 296.3,
-      "y": 37,
+      "y": 69.4,
       "anchor": "middle"
      },
      {
@@ -9739,7 +9821,7 @@
       "anchor": "start"
      }
     ],
-    "more": 0
+    "more": 1
    }
   },
   {
@@ -9970,7 +10052,19 @@
        "kind": "oil_change"
       }
      ],
-     "visits": [],
+     "visits": [
+      {
+       "id": null,
+       "suggestionKey": "7e8e2b162cfb6b00",
+       "state": "suggested",
+       "weekOf": "2026-12-21",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change"
+       ],
+       "label": "Suggested"
+      }
+     ],
      "undatedEntries": 0
     },
     "options": {
@@ -10166,7 +10260,16 @@
       "status": "current"
      }
     ],
-    "visits": [],
+    "visits": [
+     {
+      "id": "7e8e2b162cfb6b00",
+      "state": "suggested",
+      "x": 708.1,
+      "y": 36,
+      "w": 20,
+      "h": 104
+     }
+    ],
     "eras": [],
     "squawks": [],
     "today": {
@@ -10228,18 +10331,18 @@
     ],
     "labels": [
      {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 728.6,
-      "y": 33,
-      "anchor": "start"
+      "for": "visit:7e8e2b162cfb6b00",
+      "text": "Suggested, week of Dec 21",
+      "x": 710.1,
+      "y": 28,
+      "anchor": "end"
      },
      {
       "for": "interchange:ed9b3ccfcfc7f391",
       "text": "Annual, Apr 2022",
-      "x": 500.5,
+      "x": 484.5,
       "y": 28,
-      "anchor": "start"
+      "anchor": "end"
      },
      {
       "for": "interchange:57b20ea564732c69",
@@ -10263,7 +10366,7 @@
       "anchor": "start"
      }
     ],
-    "more": 0
+    "more": 1
    }
   },
   {
@@ -10494,7 +10597,19 @@
        "kind": "oil_change"
       }
      ],
-     "visits": [],
+     "visits": [
+      {
+       "id": null,
+       "suggestionKey": "7e8e2b162cfb6b00",
+       "state": "suggested",
+       "weekOf": "2026-12-21",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change"
+       ],
+       "label": "Suggested"
+      }
+     ],
      "undatedEntries": 0
     },
     "options": {
@@ -10888,7 +11003,19 @@
        "kind": "oil_change"
       }
      ],
-     "visits": [],
+     "visits": [
+      {
+       "id": null,
+       "suggestionKey": "7e8e2b162cfb6b00",
+       "state": "suggested",
+       "weekOf": "2026-12-21",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change"
+       ],
+       "label": "Suggested"
+      }
+     ],
      "undatedEntries": 0
     },
     "options": {
@@ -10978,7 +11105,16 @@
       "status": "current"
      }
     ],
-    "visits": [],
+    "visits": [
+     {
+      "id": "7e8e2b162cfb6b00",
+      "state": "suggested",
+      "x": 150.8,
+      "y": 28,
+      "w": 20,
+      "h": 69
+     }
+    ],
     "eras": [],
     "squawks": [],
     "today": {
@@ -11069,6 +11205,13 @@
       "text": "Annual",
       "x": 184.2,
       "y": 25,
+      "anchor": "start"
+     },
+     {
+      "for": "visit:7e8e2b162cfb6b00",
+      "text": "Suggested, week of Dec 21",
+      "x": 168.8,
+      "y": 115.4,
       "anchor": "start"
      },
      {
@@ -11310,7 +11453,19 @@
        "kind": "oil_change"
       }
      ],
-     "visits": [],
+     "visits": [
+      {
+       "id": null,
+       "suggestionKey": "7e8e2b162cfb6b00",
+       "state": "suggested",
+       "weekOf": "2026-12-21",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change"
+       ],
+       "label": "Suggested"
+      }
+     ],
      "undatedEntries": 0
     },
     "options": {
@@ -11400,7 +11555,16 @@
       "status": "current"
      }
     ],
-    "visits": [],
+    "visits": [
+     {
+      "id": "7e8e2b162cfb6b00",
+      "state": "suggested",
+      "x": 75.9,
+      "y": 18,
+      "w": 20,
+      "h": 60
+     }
+    ],
     "eras": [],
     "squawks": [],
     "today": {
@@ -11455,6 +11619,13 @@
       "text": "Annual",
       "x": 101.7,
       "y": 15,
+      "anchor": "start"
+     },
+     {
+      "for": "visit:7e8e2b162cfb6b00",
+      "text": "Suggested, week of Dec 21",
+      "x": 93.9,
+      "y": 96.4,
       "anchor": "start"
      }
     ],
@@ -11689,7 +11860,19 @@
        "kind": "oil_change"
       }
      ],
-     "visits": [],
+     "visits": [
+      {
+       "id": null,
+       "suggestionKey": "7e8e2b162cfb6b00",
+       "state": "suggested",
+       "weekOf": "2026-12-21",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change"
+       ],
+       "label": "Suggested"
+      }
+     ],
      "undatedEntries": 0
     },
     "options": {
@@ -11885,7 +12068,16 @@
       "status": "current"
      }
     ],
-    "visits": [],
+    "visits": [
+     {
+      "id": "7e8e2b162cfb6b00",
+      "state": "suggested",
+      "x": 46,
+      "y": 85.7,
+      "w": 64,
+      "h": 20
+     }
+    ],
     "eras": [],
     "squawks": [],
     "today": {
@@ -11956,7 +12148,7 @@
       "anchor": "start"
      }
     ],
-    "more": 2
+    "more": 3
    }
   },
   {
@@ -20442,6 +20634,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -21907,6 +22112,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -22140,6 +22358,14 @@
     ],
     "visits": [
      {
+      "id": "094b388f1a8ec071",
+      "state": "suggested",
+      "x": 106.2,
+      "y": 28,
+      "w": 20,
+      "h": 159
+     },
+     {
       "id": "v-dec",
       "state": "planned",
       "x": 123.4,
@@ -22222,13 +22448,6 @@
     ],
     "labels": [
      {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 118,
-      "y": 25,
-      "anchor": "start"
-     },
-     {
       "for": "ring:mx:mx-vor",
       "text": "VOR check",
       "x": 118,
@@ -22240,6 +22459,13 @@
       "text": "Transponder check",
       "x": 171,
       "y": 152,
+      "anchor": "start"
+     },
+     {
+      "for": "visit:094b388f1a8ec071",
+      "text": "Suggested, week of Nov 23",
+      "x": 124.2,
+      "y": 20,
       "anchor": "start"
      },
      {
@@ -22264,7 +22490,7 @@
       "anchor": "start"
      }
     ],
-    "more": 2
+    "more": 3
    }
   },
   {
@@ -23178,6 +23404,19 @@
      ],
      "visits": [
       {
+       "id": null,
+       "suggestionKey": "094b388f1a8ec071",
+       "state": "suggested",
+       "weekOf": "2026-11-23",
+       "itemKeys": [
+        "mx:mx-annual",
+        "mx:mx-oil_change",
+        "mx:mx-vor",
+        "squawk:sq-open"
+       ],
+       "label": "Suggested"
+      },
+      {
        "id": "v-dec",
        "suggestionKey": null,
        "state": "planned",
@@ -23939,6 +24178,14 @@
     ],
     "visits": [
      {
+      "id": "094b388f1a8ec071",
+      "state": "suggested",
+      "x": 701.2,
+      "y": 36,
+      "w": 20,
+      "h": 264
+     },
+     {
       "id": "v-dec",
       "state": "planned",
       "x": 704.7,
@@ -24042,13 +24289,6 @@
     ],
     "labels": [
      {
-      "for": "ring:mx:mx-annual",
-      "text": "Annual",
-      "x": 718,
-      "y": 33,
-      "anchor": "start"
-     },
-     {
       "for": "ring:mx:mx-vor",
       "text": "VOR check",
       "x": 702,
@@ -24056,18 +24296,18 @@
       "anchor": "end"
      },
      {
-      "for": "ring:mx:mx-pitot_static",
-      "text": "Pitot-static check",
-      "x": 712.6,
-      "y": 265,
+      "for": "visit:094b388f1a8ec071",
+      "text": "Suggested, week of Nov 23",
+      "x": 703.2,
+      "y": 28,
       "anchor": "end"
      },
      {
       "for": "interchange:7f19e2fdc1787d4d",
       "text": "Annual, Aug 2011",
-      "x": 458,
+      "x": 442,
       "y": 28,
-      "anchor": "start"
+      "anchor": "end"
      },
      {
       "for": "interchange:44bd21ca88076c57",
@@ -24075,27 +24315,6 @@
       "x": 521.5,
       "y": 318.4,
       "anchor": "end"
-     },
-     {
-      "for": "interchange:ae2d865fcb65fe63",
-      "text": "Annual, Dec 2024",
-      "x": 597.9,
-      "y": 28,
-      "anchor": "start"
-     },
-     {
-      "for": "interchange:b58ae6d40d2df221",
-      "text": "Annual, Jul 2025",
-      "x": 604.5,
-      "y": 238.4,
-      "anchor": "start"
-     },
-     {
-      "for": "interchange:b482dde54e6664fa",
-      "text": "Annual, Jul 2026",
-      "x": 687.7,
-      "y": 158.4,
-      "anchor": "start"
      },
      {
       "for": "stop:790963b17842fd34",
@@ -24119,7 +24338,7 @@
       "anchor": "start"
      }
     ],
-    "more": 6
+    "more": 11
    }
   }
  ]

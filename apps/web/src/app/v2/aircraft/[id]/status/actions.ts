@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { todayIn } from "@/lib/mapModel";
 import { failMessage, type WriteCtx } from "@/lib/writes/entries";
 import * as maintenance from "@/lib/writes/maintenance";
+import { recordVisitCompletion } from "@/lib/writes/visits";
 import type { Meter } from "@/lib/hobbsTach";
 
 async function session(aircraftId: string) {
@@ -46,11 +47,12 @@ export async function markItemDone(aircraftId: string, itemId: string, _prev: Ma
 
   const r = await maintenance.markDone(supabase, ctx, { itemId, date, hours, meter });
   if (r.status !== "ok") return { error: failMessage(r) };
-  const { error } = await supabase.from("item_completion").insert({
+  const { data: completion, error } = await supabase.from("item_completion").insert({
     aircraft_id: aircraftId, maintenance_item_id: itemId, done_date: date, done_hours: hours,
     meter: hours != null ? meter : null, source: "mark_done", created_by: user.id,
-  });
+  }).select("id").maybeSingle();
   if (error) return { error: "The item was updated, but its history could not be saved. Try again." };
+  if (completion) await recordVisitCompletion(supabase, aircraftId, `mx:${itemId}`, completion.id);
   revalidatePath(`/aircraft/${aircraftId}/status`);
   redirect(`/aircraft/${aircraftId}/status/item/mx:${itemId}?done=1`);
 }

@@ -307,11 +307,13 @@ fun buildMapModel(input: MapInput, due: DueInput, today: String, opts: MapOption
     }
     rings.sortWith(compareBy({ it.date }, { it.itemKey }))
 
-    // Visits.
-    val visits = input.plannedVisit.filter { (it.status == "planned" || it.status == "in_shop") && inRange(it.weekOf) }.map { v ->
+    // Visits: planned and in-shop in range, then the engine's suggestions (09 §3.4, §3.5).
+    val visits = (input.plannedVisit.filter { (it.status == "planned" || it.status == "in_shop") && inRange(it.weekOf) }.map { v ->
         MapVisit(v.id, null, v.status, v.weekOf, input.plannedVisitItem.filter { it.visitId == v.id }.map { it.itemKey }.sorted(),
             if (v.status == "in_shop") "In the shop" else "Planned")
-    }.sortedWith(compareBy({ it.weekOf }, { it.id ?: "" }))
+    } + status.visits.suggested.filter { inRange(it.weekOf) }.map { v ->
+        MapVisit(null, v.suggestionKey, "suggested", v.weekOf, v.items.map { it.key }.sorted(), "Suggested")
+    }).sortedWith(compareBy({ it.weekOf }, { it.id ?: "" }, { it.suggestionKey ?: "" }))
 
     val scaleBreak = if (from <= Dates.addMonths(today, -60)) Dates.addMonths(today, -12) else null
     return MapModel(

@@ -1773,6 +1773,19 @@
     ],
     "visits": [
      {
+      "id": null,
+      "suggestionKey": "094b388f1a8ec071",
+      "state": "suggested",
+      "weekOf": "2026-11-23",
+      "itemKeys": [
+       "mx:mx-annual",
+       "mx:mx-oil_change",
+       "mx:mx-vor",
+       "squawk:sq-open"
+      ],
+      "label": "Suggested"
+     },
+     {
       "id": "v-dec",
       "suggestionKey": null,
       "state": "planned",
@@ -3268,7 +3281,19 @@
       "kind": "oil_change"
      }
     ],
-    "visits": [],
+    "visits": [
+     {
+      "id": null,
+      "suggestionKey": "7e8e2b162cfb6b00",
+      "state": "suggested",
+      "weekOf": "2026-12-21",
+      "itemKeys": [
+       "mx:mx-annual",
+       "mx:mx-oil_change"
+      ],
+      "label": "Suggested"
+     }
+    ],
     "undatedEntries": 0
    }
   },
@@ -6385,6 +6410,19 @@
      }
     ],
     "visits": [
+     {
+      "id": null,
+      "suggestionKey": "094b388f1a8ec071",
+      "state": "suggested",
+      "weekOf": "2026-11-23",
+      "itemKeys": [
+       "mx:mx-annual",
+       "mx:mx-oil_change",
+       "mx:mx-vor",
+       "squawk:sq-open"
+      ],
+      "label": "Suggested"
+     },
      {
       "id": "v-dec",
       "suggestionKey": null,

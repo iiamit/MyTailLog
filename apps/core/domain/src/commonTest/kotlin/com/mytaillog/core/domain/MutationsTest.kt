@@ -11,8 +11,10 @@ import kotlin.test.assertTrue
 class MutationsTest {
     @Test
     fun catalogueMatchesTheServerCount() {
-        // 47 types in apps/web/src/lib/sync/mutations.ts at the time of writing (gap.setStatus, gap.create added).
-        assertEquals(47, Mutations.catalogue.size)
+        // 47 types in apps/web/src/lib/sync/mutations.ts plus the 12 phase 4 types of PHASE4_MUTATIONS (lib/writes/index.ts).
+        assertEquals(59, Mutations.catalogue.size)
+        assertTrue(Mutations.needsBase("visit.setStatus", JsonObject(emptyMap())))
+        assertFalse(Mutations.needsBase("visit.create", JsonObject(emptyMap())))
     }
 
     @Test

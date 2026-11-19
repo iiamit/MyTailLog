@@ -1,7 +1,9 @@
 import type { Aircraft } from "@/lib/database.types";
 import { LOGBOOK_TYPES } from "@/lib/logbooks";
-import type { Db, WriteCtx, WriteResult } from "./entries";
+import { isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 import { seedStandard } from "./maintenance";
+
+const NO_EDIT = "You don't have edit access to this aircraft.";
 
 // The ONE implementation of enrollment (CONTRACT §3 C3 `aircraft.enroll`).
 // Called by the web server action (cookie client) and POST /api/aircraft/enroll
@@ -88,6 +90,40 @@ export async function updateAircraftDetails(supabase: Db, ctx: WriteCtx, input: 
     .eq("id", ctx.aircraftId).eq("owner_id", ctx.userId).select("id").maybeSingle();
   if (error) return { status: "error", message: error.message };
   if (!data) return { status: "error", message: "Only the aircraft owner can edit these details.", httpStatus: 403 };
+  return { status: "ok", row: data };
+}
+
+/** Load the aircraft for a base check (09 §5.5). */
+async function aircraftVersion(supabase: Db, ctx: WriteCtx) {
+  const { data } = await supabase.from("aircraft").select("*").eq("id", ctx.aircraftId).maybeSingle();
+  return data;
+}
+
+/** `aircraft.setExpectedHours` (base, editors): "Usual flying", the third projection fallback (09 §2.14, §3.3). */
+export async function setExpectedHours(supabase: Db, ctx: WriteCtx, input: { hoursPerWeek: number | null }, base?: string): Promise<WriteResult> {
+  const h = input.hoursPerWeek;
+  if (h !== null && !(typeof h === "number" && Number.isFinite(h) && h >= 0 && h <= 60))
+    return { status: "error", message: "Hours a week must be between 0 and 60.", httpStatus: 400 };
+  const row = await aircraftVersion(supabase, ctx);
+  if (!row) return { status: "error", message: "Aircraft not found.", httpStatus: 404 };
+  if (isStale(row.updated_at, base)) return { status: "conflict", row };
+  // Aircraft rows are owner-update only; this definer function lets editors change this one column (0090).
+  const { error } = await supabase.rpc("set_expected_hours", { target_aircraft: ctx.aircraftId, hours_per_week: h === null ? null : Math.round(h * 10) / 10 });
+  if (error) return { status: "error", message: error.code === "42501" ? NO_EDIT : error.message, httpStatus: error.code === "42501" ? 403 : 400 };
+  return { status: "ok", row: await aircraftVersion(supabase, ctx) };
+}
+
+/** `aircraft.setSituation` (base, owner): "I'm selling it" / "It's in the shop", or clear (09 §2.14, §3.6). */
+export async function setSituation(supabase: Db, ctx: WriteCtx, input: { situation: "preparing_sale" | "in_shop" | null }, base?: string): Promise<WriteResult> {
+  if (input.situation !== null && input.situation !== "preparing_sale" && input.situation !== "in_shop")
+    return { status: "error", message: "Unknown situation.", httpStatus: 400 };
+  const row = await aircraftVersion(supabase, ctx);
+  if (!row) return { status: "error", message: "Aircraft not found.", httpStatus: 404 };
+  if (isStale(row.updated_at, base)) return { status: "conflict", row };
+  const { data, error } = await supabase.from("aircraft").update({ situation_override: input.situation })
+    .eq("id", ctx.aircraftId).eq("owner_id", ctx.userId).select("*").maybeSingle();
+  if (error) return { status: "error", message: error.message };
+  if (!data) return { status: "error", message: "Only the aircraft owner can change this.", httpStatus: 403 };
   return { status: "ok", row: data };
 }
 

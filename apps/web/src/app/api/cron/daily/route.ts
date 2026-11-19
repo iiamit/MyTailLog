@@ -1,3 +1,4 @@
+import { advanceVisits } from "@/lib/writes/visits";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createHash } from "node:crypto";
 import { syncUserHours } from "@/lib/mfbSync";
@@ -74,7 +75,15 @@ export async function POST(req: Request) {
     console.error(`[cron] onboarding failed: ${(error as Error).message}`);
   }
 
-  return json({ usersSynced, emailsSent, onboardingSent });
+  // Planned visits whose week has passed wait for their records (09 §2.5). UTC day, as the rest of this job.
+  let visitsAwaitingRecords = 0;
+  try {
+    visitsAwaitingRecords = await advanceVisits(supabase, new Date().toISOString().slice(0, 10));
+  } catch (error) {
+    console.error(`[cron] visits failed: ${(error as Error).message}`);
+  }
+
+  return json({ usersSynced, emailsSent, onboardingSent, visitsAwaitingRecords });
 }
 
 // --- Sync pass -------------------------------------------------------------

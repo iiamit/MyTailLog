@@ -10,7 +10,7 @@
 // ===========================================================================
 
 /** Bump when any rule here changes (09 §2.15 `algo_version`). */
-export const ALGO_VERSION = 1;
+export const ALGO_VERSION = 2;
 
 // --- Input: database row shapes (snake_case, as stored) ---------------------
 
@@ -26,6 +26,7 @@ export type AircraftRow = {
   enrollment_airframe?: number | null;
   expected_hours_per_week?: number | null;
   situation_override?: "preparing_sale" | "in_shop" | null;
+  home_base?: string | null;
 };
 export type MaintenanceItemRow = {
   id: string;
@@ -43,6 +44,9 @@ export type MaintenanceItemRow = {
   provider_id?: string | null;
   ifr_only?: boolean;
   expires_on?: string | null;
+  shop_kind?: string | null;
+  visit_window_days?: number | null;
+  visit_window_hours?: number | null;
 };
 export type AdComplianceRow = {
   id: string;
@@ -106,9 +110,10 @@ export type PlannedVisitRow = {
   visit_date: string | null;
   provider_id: string | null;
   airport?: string | null;
+  from_suggestion_key?: string | null;
 };
-export type PlannedVisitItemRow = { visit_id: string; item_key: string };
-export type ServiceProviderRow = { id: string; name: string };
+export type PlannedVisitItemRow = { visit_id: string; item_key: string; done_completion_id?: string | null };
+export type ServiceProviderRow = { id: string; name: string; kind?: string | null; airport?: string | null; is_default?: boolean };
 export type RecordRoomRow = { audience: string; expires_at: string; revoked_at: string | null };
 export type SquawkRow = { id: string; description: string; severity: string | null; status: string };
 
@@ -128,6 +133,7 @@ export type DueInput = {
   service_provider?: ServiceProviderRow[];
   record_room?: RecordRoomRow[];
   squawk?: SquawkRow[];
+  visit_suggestion_dismissal?: { suggestion_key: string }[];
 };
 
 // --- Output: API shapes (camelCase, 09 §4.3) --------------------------------
@@ -193,6 +199,22 @@ export type DueItem = {
   reminder: { nextAt: string | null; kind: string | null; snoozedUntil: string | null };
 };
 export type Ring = { itemKey: string; line: string; date: string; dateKind: "calendar" | "projected"; status: DueStatus };
+export type VisitStatus = "suggested" | "planned" | "in_shop" | "awaiting_records" | "done" | "cancelled";
+/** 09 §4.3 VisitView. Squawks riding along have status "open"; `done` marks an item with a completion at this visit. */
+export type VisitView = {
+  id: string | null;
+  suggestionKey: string | null;
+  status: VisitStatus;
+  weekOf: string;
+  visitDate: string | null;
+  place: string;
+  providerIds: string[];
+  items: { key: string; earlyBy: { days?: number; hours?: number } | null; status: DueStatus | "open"; done: boolean }[];
+  clearsBeforeLapse: number;
+  atRisk: { itemKey: string; firstDate: string }[];
+};
+/** Status shows 2 suggestions within 12 months; Plan ahead up to 6 within 24 (09 §3.5 step 10). */
+export type VisitOptions = { horizonMonths?: number; limit?: number };
 export type Verdict = {
   text: string;
   emphasis: [number, number][];
@@ -208,7 +230,7 @@ export type StatusBody = {
   meters: Record<MeterName, MeterView>;
   rate: Rate;
   items: DueItem[];
-  visits: { suggested: unknown[]; planned: unknown[] };
+  visits: { suggested: VisitView[]; planned: VisitView[] };
   lineAhead: { from: string; to: string; rings: Ring[]; undated: string[] };
   counts: { overdue: number; dueSoon: number; noRecord: number; pagesToReview: number; pagesBeingRead: number; openSquawks: number };
 };
@@ -429,7 +451,7 @@ function selectRate(readings: Reading[], resets: Reset[], today: string, perWeek
 
 type LastDone = NonNullable<DueItem["lastDone"]>;
 
-export function computeStatus(input: DueInput, today: string): StatusBody {
+export function computeStatus(input: DueInput, today: string, visitOpts: VisitOptions = {}): StatusBody {
   const a = input.aircraft;
   const entries = input.log_entry ?? [];
   const books = new Map((input.logbook ?? []).map((b) => [b.id, b.type]));
@@ -684,7 +706,7 @@ export function computeStatus(input: DueInput, today: string): StatusBody {
     meters,
     rate,
     items,
-    visits: { suggested: [], planned: [] },
+    visits: computeVisits(input, items, rate, today, visitOpts),
     lineAhead: { from: today, to, rings, undated },
     counts: {
       overdue: items.filter((i) => i.status === "overdue").length,
@@ -695,6 +717,161 @@ export function computeStatus(input: DueInput, today: string): StatusBody {
       openSquawks: openSquawks.length,
     },
   };
+}
+
+// --- Visits (09 §3.5 suggested, §4.3 VisitView) ------------------------------------
+
+/** 09 §2.3 back-fill defaults for `shop_kind`, used when it is null. */
+const DEFAULT_SHOP: Record<string, string> = {
+  transponder: "avionics_shop", pitot_static: "avionics_shop", vor: "self", engine_tbo: "engine_shop", prop_overhaul: "prop_shop",
+};
+const NEVER_BUNDLED = new Set(["engine_tbo", "prop_overhaul"]);
+const VISIT_WINDOW_DAYS = 60;
+const VISIT_WINDOW_HOURS = 25;
+const LIVE_VISIT = new Set(["planned", "in_shop", "awaiting_records"]);
+
+/** ISO weekday, Monday 1 … Sunday 7. */
+const isoDow = (d: string) => ((new Date(ms(d)).getUTCDay() + 6) % 7) + 1;
+const mondayOnOrBefore = (d: string) => addDays(d, 1 - isoDow(d));
+const mondayOnOrAfter = (d: string) => addDays(d, (8 - isoDow(d)) % 7);
+
+/** SHA-1 of a UTF-8 string, lowercase hex. Pure (the engine also runs in the browser, so no node:crypto). */
+export function sha1Hex(text: string): string {
+  const msg = new TextEncoder().encode(text);
+  const len = Math.ceil((msg.length + 9) / 64) * 64;
+  const buf = new Uint8Array(len);
+  buf.set(msg);
+  buf[msg.length] = 0x80;
+  const view = new DataView(buf.buffer);
+  view.setUint32(len - 4, (msg.length * 8) >>> 0);
+  view.setUint32(len - 8, Math.floor((msg.length * 8) / 2 ** 32));
+  const h = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+  const w = new Uint32Array(80);
+  const rol = (x: number, n: number) => (x << n) | (x >>> (32 - n));
+  for (let o = 0; o < len; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = view.getUint32(o + 4 * i);
+    for (let i = 16; i < 80; i++) w[i] = rol(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+    let [a, b, c, d, e] = h;
+    for (let i = 0; i < 80; i++) {
+      const [f, k] = i < 20 ? [(b & c) | (~b & d), 0x5a827999] : i < 40 ? [b ^ c ^ d, 0x6ed9eba1]
+        : i < 60 ? [(b & c) | (b & d) | (c & d), 0x8f1bbcdc] : [b ^ c ^ d, 0xca62c1d6];
+      const t = (rol(a, 5) + f + e + k + w[i]) >>> 0;
+      e = d; d = c; c = rol(b, 30) >>> 0; b = a; a = t;
+    }
+    h[0] = (h[0] + a) >>> 0; h[1] = (h[1] + b) >>> 0; h[2] = (h[2] + c) >>> 0; h[3] = (h[3] + d) >>> 0; h[4] = (h[4] + e) >>> 0;
+  }
+  return h.map((x) => x.toString(16).padStart(8, "0")).join("");
+}
+
+/** `sha1(place + '|' + sorted(item_keys).join(',') + '|' + M)`, first 16 hex (09 §3.5). */
+export const suggestionKey = (place: string, itemKeys: string[], weekOf: string) =>
+  sha1Hex(`${place}|${[...itemKeys].sort(cmp).join(",")}|${weekOf}`).slice(0, 16);
+
+type VisitItem = VisitView["items"][number];
+
+function computeVisits(input: DueInput, items: DueItem[], rate: Rate, today: string, opts: VisitOptions): StatusBody["visits"] {
+  const providers = input.service_provider ?? [];
+  const providerById = new Map(providers.map((p) => [p.id, p]));
+  const mxById = new Map((input.maintenance_item ?? []).map((m) => [m.id, m]));
+  const byKey = new Map(items.map((i) => [i.key, i]));
+  const home = input.aircraft.home_base?.trim().toUpperCase() || "home";
+  const mxOf = (i: DueItem) => (i.source === "maintenance" ? mxById.get(i.key.slice(3)) : undefined);
+  const shopKind = (i: DueItem) => mxOf(i)?.shop_kind ?? DEFAULT_SHOP[i.kind] ?? "mechanic";
+  /** item provider → the default provider for its kind → none (09 §3.5 "Groups by place"). */
+  const providerOf = (i: DueItem) => (i.providerId ? providerById.get(i.providerId) : undefined)
+    ?? providers.find((p) => p.is_default && p.kind === shopKind(i));
+  const placeOf = (p: ServiceProviderRow | undefined) => p?.airport?.trim().toUpperCase() || home;
+  const flown = (to: string) => rate.hoursPerDay * Math.max(0, daysBetween(today, to));
+  const early = (i: DueItem, weekOf: string): VisitItem["earlyBy"] => {
+    if (i.status === "overdue" || !i.firstDate) return null;
+    const at = addDays(weekOf, 2);
+    if (i.first === "hours" && i.hours) {
+      const h = Math.floor(i.hours.remaining - flown(at) + 0.5);
+      return h > 0 ? { hours: h } : null;
+    }
+    const d = daysBetween(at, i.firstDate);
+    return d > 0 ? { days: d } : null;
+  };
+  const view = (v: { id: string | null; key: string | null; status: VisitStatus; weekOf: string; visitDate: string | null; place: string;
+    providerIds: (string | null | undefined)[]; members: { key: string; item?: DueItem; done: boolean }[] }): VisitView => {
+    const due = v.members.filter((m) => m.item && !m.done && m.item.status !== "overdue");
+    return {
+      id: v.id, suggestionKey: v.key, status: v.status, weekOf: v.weekOf, visitDate: v.visitDate, place: v.place,
+      providerIds: [...new Set(v.providerIds.filter((p): p is string => !!p))],
+      items: v.members.map((m) => ({
+        key: m.key, earlyBy: m.item && !m.done ? early(m.item, v.weekOf) : null,
+        status: m.item ? m.item.status : m.key.startsWith("squawk:") ? "open" : "no_record", done: m.done,
+      })),
+      clearsBeforeLapse: due.length,
+      atRisk: due.filter((m) => m.item!.firstDate! < v.weekOf).map((m) => ({ itemKey: m.key, firstDate: m.item!.firstDate! })),
+    };
+  };
+
+  // Planned: every visit not yet done or cancelled, earliest week first.
+  const planned = (input.planned_visit ?? []).filter((v) => LIVE_VISIT.has(v.status))
+    .sort((p, q) => cmp(p.week_of, q.week_of) || cmp(p.id, q.id))
+    .map((v) => {
+      const rows = (input.planned_visit_item ?? []).filter((x) => x.visit_id === v.id).sort((p, q) => cmp(p.item_key, q.item_key));
+      const members = rows.map((x) => ({ key: x.item_key, item: byKey.get(x.item_key), done: !!x.done_completion_id }));
+      const own = v.provider_id ? providerById.get(v.provider_id) : undefined;
+      return view({
+        id: v.id, key: v.from_suggestion_key ?? null, status: v.status as VisitStatus, weekOf: v.week_of, visitDate: v.visit_date,
+        place: own?.airport?.trim().toUpperCase() || v.airport?.trim().toUpperCase() || home,
+        providerIds: [v.provider_id, ...members.map((m) => (m.item ? providerOf(m.item)?.id : null))], members,
+      });
+    });
+
+  // Suggested (09 §3.5): computed, never stored.
+  const horizon = addMonths(today, opts.horizonMonths ?? 12);
+  const limit = opts.limit ?? 2;
+  const cands = items.filter((i) => i.source !== "document" && i.status !== "no_record" && i.firstDate != null &&
+    i.firstDate <= horizon && !NEVER_BUNDLED.has(i.kind) && !i.visitId);
+  const shops = cands.filter((i) => shopKind(i) !== "self").sort((p, q) => cmp(p.firstDate!, q.firstDate!) || cmp(p.key, q.key));
+  const selfs = cands.filter((i) => shopKind(i) === "self").sort((p, q) => cmp(p.firstDate!, q.firstDate!) || cmp(p.key, q.key));
+  const inLiveVisit = new Set((input.planned_visit_item ?? [])
+    .filter((x) => (input.planned_visit ?? []).some((v) => v.id === x.visit_id && (v.status === "planned" || v.status === "in_shop")))
+    .map((x) => x.item_key));
+  const squawks = (input.squawk ?? []).filter((s) => s.status !== "resolved" && (s.severity === "medium" || s.severity === "high") &&
+    !inLiveVisit.has(`squawk:${s.id}`)).map((s) => `squawk:${s.id}`).sort(cmp);
+  const nextMonday = mondayOnOrAfter(addDays(today, 1));
+  const used = new Set<string>();
+  const groups: { place: string; weekOf: string; members: DueItem[]; squawks: string[] }[] = [];
+  for (const a of shops) {
+    if (used.has(a.key)) continue;
+    const place = placeOf(providerOf(a));
+    const anchor = a.status === "overdue" ? today : a.firstDate!;
+    const members: DueItem[] = [];
+    for (const b of shops) {
+      if (used.has(b.key) || placeOf(providerOf(b)) !== place) continue;
+      const mx = mxOf(b);
+      const inDays = b.firstDate! <= addDays(anchor, mx?.visit_window_days ?? VISIT_WINDOW_DAYS);
+      // shortcut: hours flown are counted to the anchor date (the visit week is not known until the group is), 09 §3.5 step 3.
+      const inHours = !!b.hours && b.hours.remaining - flown(anchor) <= (mx?.visit_window_hours ?? VISIT_WINDOW_HOURS);
+      if (b === a || inDays || inHours) { members.push(b); used.add(b.key); }
+    }
+    const soonest = members.filter((m) => m.status !== "overdue").map((m) => m.firstDate!).sort(cmp)[0];
+    let weekOf: string;
+    if (members.some((m) => m.status === "overdue")) weekOf = mondayOnOrAfter(addDays(today, 2));
+    else {
+      weekOf = mondayOnOrBefore(addDays(soonest, -5));
+      if (weekOf < nextMonday) weekOf = nextMonday;
+    }
+    for (const s of selfs)
+      if (!used.has(s.key) && (s.status === "overdue" || s.firstDate! <= addDays(weekOf, 34))) { members.push(s); used.add(s.key); }
+    groups.push({ place, weekOf, members, squawks: groups.length ? [] : squawks });
+  }
+  const dismissed = new Set((input.visit_suggestion_dismissal ?? []).map((d) => d.suggestion_key));
+  const suggested = groups
+    .filter((g) => g.members.length + g.squawks.length >= 2)
+    .map((g) => ({ g, key: suggestionKey(g.place, [...g.members.map((m) => m.key), ...g.squawks], g.weekOf) }))
+    .filter(({ key }) => !dismissed.has(key))
+    .slice(0, limit)
+    .map(({ g, key }) => view({
+      id: null, key, status: "suggested", weekOf: g.weekOf, visitDate: null, place: g.place,
+      providerIds: g.members.map((m) => providerOf(m)?.id),
+      members: [...g.members.map((m) => ({ key: m.key, item: m, done: false })), ...g.squawks.map((k) => ({ key: k, done: false }))],
+    }));
+  return { suggested, planned };
 }
 
 // --- Verdict (12 §4) -----------------------------------------------------------

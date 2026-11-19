@@ -1,6 +1,6 @@
 {
   "rule": "09 §3.2 hours limit, §3.1 meters",
-  "algoVersion": 1,
+  "algoVersion": 2,
   "cases": [
     {
       "name": "oil: hobbs countdown, due soon by hours",

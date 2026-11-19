@@ -1,6 +1,6 @@
 {
   "rule": "09 §3.3 projection and first",
-  "algoVersion": 1,
+  "algoVersion": 2,
   "cases": [
     {
       "name": "trailing 90 days of tach",

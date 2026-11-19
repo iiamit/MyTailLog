@@ -28,7 +28,7 @@ import kotlin.test.fail
  * (fixtures/README.md): every key it names must equal the Kotlin output, arrays element by element.
  */
 class DueFixturesTest {
-    private val files = listOf("due-calendar", "due-hours", "status-thresholds", "projection", "verdict")
+    private val files = listOf("due-calendar", "due-hours", "status-thresholds", "projection", "verdict", "visits")
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = true; encodeDefaults = true }
 
     @Test
