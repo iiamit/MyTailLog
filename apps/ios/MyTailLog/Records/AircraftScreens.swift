@@ -71,6 +71,7 @@ struct AircraftHome: View {
             let sub = [plane?["serial_number"]?.text.map { "S/N \($0)" }, plane?["home_base"]?.text].compactMap { $0 }.joined(separator: " · ")
             RecRow(name.isEmpty ? recs.tail : name, lines: sub.isEmpty ? [] : [sub], action: { nav.open(.details) })
             ViewerLine(recs: recs)
+            AddButtonRoom()
         }
         .refreshable { await recs.offline.sync() }
         .task(id: "\(recs.online)\(recs.offline.lastSyncAt?.timeIntervalSince1970 ?? 0)") {

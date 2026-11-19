@@ -29,6 +29,7 @@ struct MaintHome: View {
                 case .squawks: SquawksView(recs: recs)
                 }
                 ViewerLine(recs: recs)
+                AddButtonRoom()
             }
             .refreshable { await recs.offline.sync() }
         }

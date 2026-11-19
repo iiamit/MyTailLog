@@ -3,6 +3,12 @@ import SwiftUI
 // Where phase 4 meets the shell: the pushed record screens on each phone stack, the tablet's two leaves, the AddButton
 // and the Add sheet (06 M-FLIGHT-01).
 
+/// Room under a top-level phone leaf's last row so the AddButton never covers it.
+struct AddButtonRoom: View {
+    @Environment(\.recNav) private var nav
+    var body: some View { if !nav.tablet { Color.clear.frame(height: Tokens.Size.phoneAddButton + Tokens.Space.s4) } }
+}
+
 /// One phase 4 screen by its route, on the phone or in the tablet's right leaf.
 struct RecordScreen: View {
     let recs: Recs
@@ -162,7 +168,7 @@ struct AddHost: ViewModifier {
                     }
                     .buttonStyle(.plain)
                     .padding(.trailing, Tokens.Space.s2 + Tokens.Space.s4)
-                    .padding(.bottom, Tokens.Space.s4)
+                    .padding(.bottom, Tokens.Space.s4 + Tokens.Size.phoneTabbar)
                     .accessibilityLabel("Add")
                     .keyboardShortcut("n", modifiers: .command)
                 }

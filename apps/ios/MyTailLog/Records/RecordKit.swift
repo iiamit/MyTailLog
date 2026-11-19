@@ -24,6 +24,8 @@ struct RecLeaf<Content: View, Footer: View>: View {
                 if let recs { ToastBar(recs: recs) }
                 footerBar
             }
+            // The phone's tab bar is drawn over the stack (PhoneShell's inset doesn't reach the tab's content).
+            .padding(.bottom, nav.tablet ? 0 : Tokens.Size.phoneTabbar)
         }
     }
 
@@ -297,7 +299,7 @@ struct DateRow: View {
                 }
             } else {
                 Text("Not set").dFont(.body).foregroundStyle(Tokens.Colors.ink3)
-                Button("Set") { date = todayISO() }.dFont(.bodyStrong).frame(minHeight: 44)
+                Button("Set") { date = todayISO() }.dFont(.bodyStrong).foregroundStyle(Tokens.Colors.ink).frame(minHeight: 44)
             }
         }
         .frame(minHeight: Tokens.Size.phoneRowMin)

@@ -296,6 +296,7 @@ private struct SquawkWords: View {
                 }
                 .padding(.horizontal, Tokens.Space.s4)
             }
+            .scrollDismissesKeyboard(.immediately)
             .background(Tokens.Colors.leaf)
             .safeAreaInset(edge: .bottom) {
                 Button("Add squawk", action: save).buttonStyle(.primary)
@@ -305,6 +306,8 @@ private struct SquawkWords: View {
             .navigationTitle("New squawk")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // The severity rows sit under the keyboard on small phones: Done puts it away.
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { focused = false } }
                 ToolbarItem(placement: .cancellationAction) {
                     Button { if dirty { asking = true } else { back() } } label: {
                         HStack(spacing: 2) { Icon("chevron-left"); Text("Photo") }

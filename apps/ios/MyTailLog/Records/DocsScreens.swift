@@ -278,7 +278,7 @@ struct PickedDoc: Identifiable {
     let mime: String
     let bytes: Data
     var tooBig: Bool { bytes.count > maxDocBytes }
-    var mb: String { String(format: "%.1f MB", Double(bytes.count) / 1_048_576) }
+    var mb: String { ByteCountFormatter.string(fromByteCount: Int64(bytes.count), countStyle: .file) }
 }
 
 /// Pages from the document camera as one PDF.
@@ -319,7 +319,6 @@ struct AddDocSheet: View {
                     }
                 }
             }
-            Note("What is it?").padding(.top, Tokens.Space.s3)
             ChoiceRow(label: "What is it?", options: [("", "Choose")] + docTypes, selection: $type)
             TextBox(label: "Name it (optional)", text: $name)
             if expiringTypes.contains(type) { DateRow(label: "Expires", date: $expires, pastOnly: false, clearable: true) }
