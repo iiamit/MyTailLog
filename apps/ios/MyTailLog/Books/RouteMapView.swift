@@ -34,9 +34,11 @@ struct RouteMapView: View {
             .frame(width: size.width, height: size.height)
             .contentShape(Rectangle())
             .onTapGesture { tap($0) }
+            .accessibilityHidden(true)
+            // Real views over the drawing, so each element's frame is where it is drawn; taps still reach the Canvas.
+            .overlay(alignment: .topLeading) { children.allowsHitTesting(false) }
             .accessibilityElement(children: .contain)
             .accessibilityLabel(mapName)
-            .accessibilityChildren { children }
             .accessibilityRotor("Stops") { rotorEntries(.stop) }
             .accessibilityRotor("Visits") { rotorEntries(.visit) }
             .accessibilityRotor("Gaps") { rotorEntries(.gap) }
@@ -54,7 +56,7 @@ struct RouteMapView: View {
 
     private var children: some View {
         ZStack(alignment: .topLeading) {
-            Color.clear
+            Color.clear.accessibilityHidden(true)
             ForEach(elements) { e in
                 let rect = r(e)
                 Color.clear
@@ -79,7 +81,9 @@ struct RouteMapView: View {
     /// Several within one 44pt target ask which (M-BOOKS-01).
     private func tap(_ point: CGPoint) {
         let u = (x: Double(point.x) / k, y: Double(point.y) / (k * (vertical ? zoom : 1)))
-        let found = hits(elements, at: u, reach: 22 / k)
+        // A tap right on one element opens it; only a near miss between several asks.
+        let direct = hits(elements, at: u, reach: 0)
+        let found = direct.count == 1 ? direct : hits(elements, at: u, reach: 22 / k)
         if found.count == 1 { open(found[0]) } else if found.count > 1 { choices = Array(found.prefix(6)) }
     }
 

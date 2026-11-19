@@ -149,9 +149,8 @@ struct MapPane: View {
             if let map = model.map {
                 let data = only.map { map.only(lineId: $0) } ?? map
                 let layout = width > 0 ? data.layout(MapLayoutOptions(size: "phone", renderedWidth: width, allEras: only != nil)) : nil
-                HStack {
-                    if let layout { MapColumnHeads(layout: layout) }
-                    Spacer(minLength: 0)
+                ZStack(alignment: .trailing) {
+                    if let layout { MapColumnHeads(layout: layout).frame(maxWidth: .infinity, alignment: .leading) }
                     bookMenu(map)
                 }
                 .frame(height: 44)
@@ -162,6 +161,7 @@ struct MapPane: View {
                         VStack(alignment: .leading, spacing: Tokens.Space.s2) {
                             if map.stops.isEmpty { noPages }
                             RouteMapView(data: data, layout: layout, elements: elements, zoom: zoom, open: select)
+                                .padding(.horizontal, Tokens.Space.s3)
                             footer(map, layout)
                         }
                         .padding(.bottom, 72)
@@ -188,7 +188,9 @@ struct MapPane: View {
                 .accessibilityLabel("Loading the map")
             }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width - 2 * Tokens.Space.s3 } action: { width = max($0, 0) }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Measured from the space offered, never from the map drawn at that width.
+        .background { GeometryReader { g in Color.clear.onChange(of: g.size.width, initial: true) { _, w in width = max(w - 2 * Tokens.Space.s3, 0) } } }
         .background(Tokens.Colors.leaf)
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: Tokens.Radius.s, topTrailingRadius: Tokens.Radius.s))
         .padding(.horizontal, Tokens.Space.s2)
@@ -200,6 +202,7 @@ struct MapPane: View {
             }
             .buttonStyle(FillButtonStyle(fill: Tokens.Colors.ink, content: Tokens.Colors.leaf, shape: Capsule()))
             .padding(Tokens.Space.s5)
+            .padding(.bottom, Tokens.Space.s8) // clear of the tab bar, whose open tab rises into the leaf
             .accessibilityLabel("Show as list")
         }
     }

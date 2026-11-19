@@ -93,6 +93,8 @@ final class ReviewSession {
     /// The selected field: (entry id, field key). Selecting one lights its ink.
     var selected: (entry: String, key: String)?
     var showFields = false
+    /// The doubtful-field panel (M-REVIEW-02) is open; selection alone only lights the ink.
+    var opened = false
     var busy = false
     var problem: String?
     var toast: BooksModel.Confirmation?
@@ -123,13 +125,14 @@ final class ReviewSession {
         return (e, f)
     }
 
-    func select(_ entry: String, _ key: String) { selected = (entry, key) }
+    func select(_ entry: String, _ key: String) { selected = (entry, key); opened = true }
 
     /// Records an outcome and moves to the next doubtful field still open (M-REVIEW-02 "After an outcome").
     func decide(_ outcome: FieldOutcome) {
         guard let page, let s = selected else { return }
         outcomes[page.id, default: [:]][s.entry, default: [:]][s.key] = outcome
         selectFirstDoubt()
+        opened = false
     }
 
     func selectFirstDoubt() {
@@ -144,11 +147,13 @@ final class ReviewSession {
         let i = selected.flatMap { s in all.firstIndex { $0.0 == s.entry && $0.1 == s.key } } ?? -1
         let next = all[min(max(i + by, 0), all.count - 1)]
         selected = (next.0, next.1)
+        opened = true
     }
 
     func go(_ i: Int) {
         index = min(max(i, 0), ids.count)
         showFields = false
+        opened = false
         problem = nil
         selectFirstDoubt()
     }
@@ -261,9 +266,9 @@ struct ReviewFlow: View {
             .interactiveDismissDisabled()
             .environment(\.section, .books)
         }
-        .onChange(of: session.selected?.key) { _, key in
+        .onChange(of: session.opened) { _, open in
             // The doubtful field opens at half height so the zoomed ink stays above it (M-REVIEW-02).
-            if key != nil, session.selectedField?.1.doubtful == true, detent == .fraction(0.34) { detent = .fraction(0.5) }
+            if open, detent == .fraction(0.34) { detent = .fraction(0.5) }
         }
     }
 }
@@ -312,7 +317,8 @@ struct ReviewPage: View {
     var body: some View {
         if let page = session.page {
             PageImage(model: session.model, pageId: page.id) { image in
-                ZoomableScan(image: image, highlights: highlights, focus: session.selectedField?.1.box)
+                ZoomableScan(image: image, highlights: highlights, focus: session.opened ? session.selectedField?.1.box : nil,
+                             focusLift: doubtStyle == .doubt ? 0.25 : 0)
             }
             .padding(Tokens.Space.s2)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -356,7 +362,7 @@ struct ReviewDrawer: View {
             if session.done {
                 endOfQueue
             } else if let page = session.page {
-                if let (e, f) = session.selectedField, !desk {
+                if session.opened, let (e, f) = session.selectedField, !desk {
                     FieldPanel(session: session, entry: e, field: f)
                 } else {
                     ScrollView { fields(page).padding(Tokens.Space.s4) }
@@ -564,7 +570,7 @@ struct FieldPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Tokens.Space.s3) {
                 if !desk {
-                    Button { session.selected = nil } label: {
+                    Button { session.opened = false } label: {
                         HStack(spacing: 2) { Icon("chevron-left"); Text("Entry").dFont(.bodyStrong) }.frame(minHeight: 44)
                     }
                     .buttonStyle(.plain)

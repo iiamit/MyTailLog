@@ -107,6 +107,8 @@ struct ZoomableScan: View {
     let image: UIImage
     var highlights: [ScanHighlight] = []
     var focus: FieldBox?
+    /// Moves the focused ink up by this share of the view, above a drawer covering the lower part.
+    var focusLift: CGFloat = 0
     @State private var scale: CGFloat = 1
     @State private var base: CGFloat = 1
     @State private var offset: CGSize = .zero
@@ -138,7 +140,7 @@ struct ZoomableScan: View {
                     }
                 }
                 .onChange(of: focus, initial: true) { _, box in
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: Tokens.Motion.durationBase)) { zoom(to: box, fitW, fitH) }
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: Tokens.Motion.durationBase)) { zoom(to: box, fitW, fitH, lift: g.size.height * focusLift) }
                 }
                 .accessibilityZoomAction { action in
                     set(action.direction == .zoomIn ? min(scale + 1, 5) : max(scale - 1, 1), scale > 2 ? offset : .zero)
@@ -152,11 +154,11 @@ struct ZoomableScan: View {
     }
 
     /// 2.5× centred on the box, or fit when there is none.
-    private func zoom(to box: FieldBox?, _ w: CGFloat, _ h: CGFloat) {
+    private func zoom(to box: FieldBox?, _ w: CGFloat, _ h: CGFloat, lift: CGFloat) {
         guard let box else { set(1, .zero); return }
         let s: CGFloat = 2.5
         let cx = (box.x + box.w / 2 - 0.5) * w, cy = (box.y + box.h / 2 - 0.5) * h
-        set(s, CGSize(width: -cx * s, height: -cy * s))
+        set(s, CGSize(width: -cx * s, height: -cy * s - lift))
     }
 }
 
