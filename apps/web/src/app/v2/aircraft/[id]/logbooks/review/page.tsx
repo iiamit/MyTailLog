@@ -92,7 +92,7 @@ export default async function ReviewAllPage({
               <p className="mt-1 text-body text-ink-2">Every entry read so far is confirmed.</p>
               {sp.done && <p role="status" className="mt-2 text-body">{sp.done}</p>}
               <div className="mt-4">
-                <Button href={`${a}/capture`}>Add pages</Button>
+                <Button href={`${a}/logbooks/add`}>Add pages</Button>
               </div>
             </>
           ) : (

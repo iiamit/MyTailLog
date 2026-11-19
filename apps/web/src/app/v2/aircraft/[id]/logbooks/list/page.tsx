@@ -65,7 +65,7 @@ export default async function ListPage({
         id={id}
         books={books}
         current="map"
-        actions={context.canEdit ? <Button variant="on-board" href={`${a}/capture`}>Add pages</Button> : null}
+        actions={context.canEdit ? <Button variant="on-board" href={`${a}/logbooks/add`}>Add pages</Button> : null}
         spine={{ context: zoom ? `${zoom.from.slice(0, 4)} to ${zoom.to.slice(0, 4)}` : "whole life", window: zoom, linkLabel: "Open the map" }}
       />
       <Leaves split="1.9fr 1fr">

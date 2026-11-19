@@ -35,7 +35,27 @@ export async function registerBackgroundDrain(): Promise<void> {
   }
 }
 
+// Batches this tab has created; the POST is idempotent on the id, so a reload just creates it again harmlessly.
+const createdBatches = new Set<string>();
+
+async function ensureBatch(page: QueuedPage): Promise<boolean> {
+  const b = page.batch;
+  if (!b || createdBatches.has(b.id)) return true;
+  try {
+    const res = await fetch(`/api/aircraft/${page.aircraftId}/batches`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: b.id, logbookId: page.logbookId, source: b.source, expectedPages: b.expectedPages, isHandwritten: page.isHandwritten }),
+    });
+    if (res.ok) createdBatches.add(b.id);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function uploadOne(page: QueuedPage): Promise<boolean> {
+  if (!(await ensureBatch(page))) return false;
   // The server route writes the blobs (service creds) and inserts the row (RLS),
   // so this works whatever the storage backend is. The drain runs in the page
   // context, so the request carries the signed-in session cookie.
@@ -47,6 +67,9 @@ async function uploadOne(page: QueuedPage): Promise<boolean> {
   if (page.pageSequence != null) fd.set("pageSequence", String(page.pageSequence));
   fd.set("capturedAt", page.capturedAt);
   fd.set("isHandwritten", String(page.isHandwritten));
+  // With a batch the page joins the server reading queue and the server numbers it on arrival.
+  if (page.batch) fd.set("batchId", page.batch.id);
+  if (page.phash) fd.set("phash", page.phash);
 
   try {
     const res = await fetch(`/api/aircraft/${page.aircraftId}/capture`, {
@@ -64,7 +87,7 @@ async function uploadOne(page: QueuedPage): Promise<boolean> {
  * prevents overlapping drains. Successfully uploaded pages are removed from the
  * queue; failures stay for the next attempt.
  */
-export async function drainQueue(): Promise<DrainResult> {
+export async function drainQueue(onUploaded?: (page: QueuedPage) => void): Promise<DrainResult> {
   if (draining) return { uploaded: 0, failed: 0 };
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return { uploaded: 0, failed: 0 };
@@ -74,10 +97,13 @@ export async function drainQueue(): Promise<DrainResult> {
   try {
     const pending = await listQueued();
     for (const page of pending) {
+      // A camera session still open: its pages wait until "Done" says how many there are.
+      if (page.batch && page.batch.expectedPages == null) continue;
       const ok = await uploadOne(page);
       if (ok) {
         await removeQueued(page.id);
         result.uploaded++;
+        onUploaded?.(page);
       } else {
         result.failed++;
       }

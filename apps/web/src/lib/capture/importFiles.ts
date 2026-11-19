@@ -34,7 +34,12 @@ export function isSupportedFile(file: File): boolean {
     name.endsWith(".pdf") ||
     name.endsWith(".jpg") ||
     name.endsWith(".jpeg") ||
-    name.endsWith(".png")
+    name.endsWith(".png") ||
+    // iPhone photos. Decoded where the browser can (Safari); elsewhere the file is reported as unreadable.
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
   );
 }
 

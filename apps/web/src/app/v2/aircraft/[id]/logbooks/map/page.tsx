@@ -36,7 +36,7 @@ export default async function MapPage({
   const a = `/aircraft/${id}`;
   const base = `${a}/logbooks/map`;
   const canEdit = context.canEdit;
-  const actions = canEdit ? <Button variant="on-board" href={`${a}/capture`}>Add pages</Button> : null;
+  const actions = canEdit ? <Button variant="on-board" href={`${a}/logbooks/add`}>Add pages</Button> : null;
 
   if (!model || !due) {
     return (
@@ -263,7 +263,7 @@ export default async function MapPage({
           </HungSection>
           {canEdit ? (
             <HungSection title="What to do">
-              <GapActions aircraftId={id} gapId={ev.gap.id} status={ev.gap.status} note={ev.gap.note} scanHref={`${a}/capture`} />
+              <GapActions aircraftId={id} gapId={ev.gap.id} status={ev.gap.status} note={ev.gap.note} scanHref={`${a}/logbooks/add`} />
             </HungSection>
           ) : (
             ev.gap.note && (
@@ -371,7 +371,7 @@ export default async function MapPage({
             <p className="mt-2 text-body text-ink-2">
               No confirmed entries yet. Add pages and confirm them to draw the map.{" "}
               {canEdit && (
-                <Link className="font-semibold text-board-ink underline decoration-dotted" href={`${a}/capture`}>
+                <Link className="font-semibold text-board-ink underline decoration-dotted" href={`${a}/logbooks/add`}>
                   Add pages
                 </Link>
               )}

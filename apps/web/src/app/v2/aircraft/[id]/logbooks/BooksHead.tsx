@@ -21,8 +21,7 @@ export function BooksHead({
   const waiting = books.due?.snap.counts.pagesToReview ?? 0;
   const tabs = [
     { label: "Map", href: `${a}/logbooks/map`, current: current === "map" },
-    // shortcut: Pages (W-BOOKS-05) is still today's library until its v2 screen lands.
-    { label: "Pages", href: `${a}/pages`, current: current === "pages" },
+    { label: "Pages", href: `${a}/logbooks/pages`, current: current === "pages" },
     ...(books.context.canEdit
       ? [{ label: "Review", href: `${a}/logbooks/review`, current: current === "review", count: waiting || undefined, countLabel: `${waiting} waiting` }]
       : []),

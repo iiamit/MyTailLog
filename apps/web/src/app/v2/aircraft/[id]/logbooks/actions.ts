@@ -6,7 +6,8 @@ import * as entries from "@/lib/writes/entries";
 import * as pages from "@/lib/writes/pages";
 import * as gaps from "@/lib/writes/gaps";
 import { isEntryClean } from "@/lib/extraction/schema";
-import { nextWaiting } from "@/lib/v2/books";
+import { BOOK_NAME, nextWaiting } from "@/lib/v2/books";
+import { insertAfter } from "@/lib/v2/capture";
 
 // Thin wrappers over lib/writes (the same functions POST /api/sync/push dispatches), as the Status actions are:
 // resolve the session, call the one implementation, revalidate the Logbooks screens and the rail.
@@ -176,4 +177,74 @@ export async function confirmClean(aircraftId: string): Promise<{ ok: true; entr
     .in("id", [...new Set(clean.map((e) => e.page_id).filter((p): p is string => !!p))].slice(0, 500));
   refresh(aircraftId);
   return { ok: true, entries: Number((r.row as { confirmed?: number } | null)?.confirmed ?? clean.length), ids: clean.map((e) => e.id), pages: (flipped ?? []).map((p) => p.id) };
+}
+
+// --- Pages library and Add pages (W-BOOKS-05, W-BOOKS-06) ----------------------------------------------------------
+
+type Done = { ok: true; n: number } | Fail;
+const counted = (r: Extract<entries.WriteResult, { status: "ok" }>, k: string) => Number((r.row as Record<string, unknown> | null)?.[k] ?? 0);
+
+async function pageWrite(aircraftId: string, run: (s: NonNullable<Awaited<ReturnType<typeof session>>>) => Promise<entries.WriteResult>, k: string): Promise<Done> {
+  const s = await session(aircraftId);
+  if (!s) return NOT_SIGNED_IN;
+  const r = await run(s);
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
+  refresh(aircraftId);
+  return { ok: true, n: counted(r, k) };
+}
+
+/** "Read again": back into the server reading queue. */
+export async function readPagesAgain(aircraftId: string, pageIds: string[]): Promise<Done> {
+  return pageWrite(aircraftId, (s) => pages.requeue(s.supabase, s.ctx, { pageIds }), "queued");
+}
+
+/** "Move to another book": pages and the entries read from them. */
+export async function movePagesTo(aircraftId: string, pageIds: string[], logbookId: string): Promise<Done> {
+  return pageWrite(aircraftId, (s) => pages.movePages(s.supabase, s.ctx, { pageIds, logbookId }), "moved");
+}
+
+/** "Delete": pages, their entries and their scans (page.delete). */
+export async function deletePagesNow(aircraftId: string, pageIds: string[]): Promise<Done> {
+  return pageWrite(aircraftId, (s) => pages.deletePages(s.supabase, s.ctx, { pageIds }), "deleted");
+}
+
+/** "Done reordering" (page.reorder) for one volume. */
+export async function savePageOrder(aircraftId: string, logbookId: string, orderedIds: string[]): Promise<Done> {
+  const r = await pageWrite(aircraftId, (s) => pages.reorder(s.supabase, s.ctx, { logbookId, orderedIds }), "none");
+  return "error" in r ? r : { ok: true, n: orderedIds.length };
+}
+
+/** "Place them: After page {n}" (W-BOOKS-06): pages that arrived at the end move to sit after paper position `after`. */
+export async function placePagesAfter(aircraftId: string, logbookId: string, newIds: string[], after: number): Promise<Done> {
+  const r = await pageWrite(aircraftId, async (s) => {
+    const { data } = await s.supabase.from("page").select("id").eq("aircraft_id", aircraftId).eq("logbook_id", logbookId)
+      .order("page_sequence", { ascending: true, nullsFirst: false }).order("created_at", { ascending: true }).limit(2000);
+    const ids = (data ?? []).map((p) => p.id);
+    const here = new Set(ids);
+    return pages.reorder(s.supabase, s.ctx, { logbookId, orderedIds: insertAfter(ids, newIds.filter((id) => here.has(id)), after) });
+  }, "none");
+  return "error" in r ? r : { ok: true, n: newIds.length };
+}
+
+export type DuplicatePair = { pageId: string; label: string; of: { pageId: string; label: string; scannedAt: string } };
+
+/** Pages held for "Keep both" / "Skip this one" (09 §3.9.3), each with the page it looks like. */
+export async function pendingDuplicates(aircraftId: string): Promise<DuplicatePair[]> {
+  const s = await session(aircraftId);
+  if (!s) return [];
+  const { data: held } = await s.supabase.from("page").select("id, logbook_id, page_sequence, duplicate_of_page_id")
+    .eq("aircraft_id", aircraftId).not("duplicate_of_page_id", "is", null).in("extraction_status", ["queued", "pending"]).limit(100);
+  if (!held?.length) return [];
+  const [{ data: originals }, { data: books }] = await Promise.all([
+    s.supabase.from("page").select("id, logbook_id, page_sequence, created_at").in("id", held.map((h) => h.duplicate_of_page_id!)),
+    s.supabase.from("logbook").select("id, type, title").eq("aircraft_id", aircraftId),
+  ]);
+  const label = (logbookId: string, seq: number | null) => {
+    const b = (books ?? []).find((x) => x.id === logbookId);
+    return `${b?.title || BOOK_NAME[b?.type ?? "other"] || "Logbook"}${seq != null ? ` p. ${seq}` : ""}`;
+  };
+  return held.flatMap((h) => {
+    const o = (originals ?? []).find((x) => x.id === h.duplicate_of_page_id);
+    return o ? [{ pageId: h.id, label: label(h.logbook_id, h.page_sequence), of: { pageId: o.id, label: label(o.logbook_id, o.page_sequence), scannedAt: o.created_at } }] : [];
+  });
 }

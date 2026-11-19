@@ -369,3 +369,48 @@ export async function duplicateDecision(
   }
   return { status: "ok", row: null };
 }
+
+const idList = (x: unknown) => (Array.isArray(x) ? x.filter((v): v is string => typeof v === "string").slice(0, MAX_DELETE) : []);
+
+/**
+ * "Read again" (W-BOOKS-05): put pages back in the server reading queue. The reader replaces their unconfirmed
+ * entries and keeps confirmed ones (pipeline.ts). Pages being read right now are left alone.
+ */
+export async function requeue(supabase: Db, ctx: WriteCtx, input: { pageIds: unknown }): Promise<WriteResult> {
+  const ids = idList(input.pageIds);
+  if (!ids.length) return { status: "error", message: "No pages were named.", httpStatus: 400 };
+  if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
+  const { data, error } = await supabase.from("page")
+    .update({ extraction_status: "queued", extraction_error: null, read_attempts: 0, read_after: null, queued_by: ctx.userId })
+    .eq("aircraft_id", ctx.aircraftId).in("id", ids).neq("extraction_status", "processing").select("id");
+  if (error) return { status: "error", message: error.message };
+  return { status: "ok", row: { queued: data?.length ?? 0 } };
+}
+
+/**
+ * "Move to another book" (W-BOOKS-05): misfiled pages and the entries read from them go to `logbookId`, after its
+ * last page, keeping their order. The scan stays where it is stored (page.storage_path names it).
+ */
+export async function movePages(supabase: Db, ctx: WriteCtx, input: { pageIds: unknown; logbookId: string }): Promise<WriteResult> {
+  const ids = idList(input.pageIds);
+  if (!ids.length) return { status: "error", message: "No pages were named.", httpStatus: 400 };
+  if (!UUID.test(input.logbookId ?? "")) return { status: "error", message: "Choose a logbook.", httpStatus: 400 };
+  if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
+  const [{ data: book }, { data: pages }] = await Promise.all([
+    supabase.from("logbook").select("id").eq("id", input.logbookId).eq("aircraft_id", ctx.aircraftId).maybeSingle(),
+    supabase.from("page").select("id, page_sequence").eq("aircraft_id", ctx.aircraftId).in("id", ids)
+      .order("page_sequence", { ascending: true, nullsFirst: false }),
+  ]);
+  if (!book) return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
+  if (!pages?.length) return { status: "error", message: "Those pages are no longer here.", httpStatus: 404 };
+  let seq = (await nextSequence(supabase, input.logbookId)) ?? 1;
+  for (const p of pages) {
+    const { error } = await supabase.from("page").update({ logbook_id: input.logbookId, page_sequence: seq++ })
+      .eq("id", p.id).eq("aircraft_id", ctx.aircraftId);
+    if (error) return { status: "error", message: `Couldn't move the pages: ${error.message}` };
+  }
+  const { error } = await supabase.from("log_entry").update({ logbook_id: input.logbookId })
+    .eq("aircraft_id", ctx.aircraftId).in("page_id", pages.map((p) => p.id));
+  if (error) return { status: "error", message: `Moved the pages but not their entries: ${error.message}` };
+  return { status: "ok", row: { moved: pages.length } };
+}
