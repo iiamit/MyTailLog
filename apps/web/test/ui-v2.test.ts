@@ -11,6 +11,11 @@ test("v2 rewrites only the routes the new design covers", () => {
   assert.equal(v2Rewrite("/aircraft/abc/status/item/"), null, "an item route needs its key");
   assert.equal(v2Rewrite("/aircraft/abc/status/plan"), null, "deeper screens stay v1 until built");
   assert.equal(v2Rewrite("/aircraft/abc/review"), null);
+  for (const p of ["maintenance/items", "maintenance/ads", "maintenance/ads/find", "maintenance/squawks", "maintenance/annual",
+    "maintenance/records-check", "hours", "oil", "equipment", "weight-balance", "details"])
+    assert.equal(v2Rewrite(`/aircraft/abc/${p}`), `/v2/aircraft/abc/${p}`, p);
+  assert.equal(v2Rewrite("/aircraft/abc/maintenance/nope"), null);
+  assert.equal(v2Rewrite("/aircraft/abc/meters"), null, "v1-only paths keep rendering v1");
   assert.equal(v2Rewrite("/aircraft/enroll"), null);
   assert.equal(v2Rewrite("/dashboard"), null);
   assert.equal(v2Rewrite("/r/token"), null);
