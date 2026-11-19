@@ -187,9 +187,11 @@ export async function upsert(
     const loaded = await loadRecord(supabase, ctx, input.id);
     if ("status" in loaded) return loaded;
     if (isStale(loaded.row.updated_at, base)) return { status: "conflict", row: loaded.row };
+    // W-MAINT-02: a first planned due set when tracking an open AD survives later edits until a compliance derives one.
+    const keepPlanned = picked.fields.status === "open" && row.next_due_date == null && row.next_due_hours == null;
     const { data, error } = await supabase
       .from("ad_compliance")
-      .update(row)
+      .update(keepPlanned ? { ...row, next_due_date: loaded.row.next_due_date, next_due_hours: loaded.row.next_due_hours } : row)
       .eq("id", input.id)
       .eq("aircraft_id", ctx.aircraftId)
       .select("*")
