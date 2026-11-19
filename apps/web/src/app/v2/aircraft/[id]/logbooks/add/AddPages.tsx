@@ -224,7 +224,7 @@ export function AddPages({
           {map && <div className="mt-2 -mx-2">{map}</div>}
         </section>
 
-        <div className="mt-5 grid gap-4 border-t-2 border-ink pt-4">
+        <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-4 border-t-2 border-ink pt-4">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             <label className="grid gap-1 text-label">
               Into
@@ -352,12 +352,12 @@ export function AddPages({
                   </li>
                 ))}
               </ul>
-              {lowQuality > 0 && <p className="mt-2 text-small text-ink-2">{plural(lowQuality, "page")} look low quality. They&apos;ll still be read.</p>}
+              {lowQuality > 0 && <p className="mt-2 text-small text-ink-2">{lowQuality === 1 ? "1 page looks low quality. It'll still be read." : `${plural(lowQuality, "page")} look low quality. They'll still be read.`}</p>}
             </HungSection>
           )}
           {dups.length > 0 && (
             <HungSection title="Already have it?" count={`${dups.length}`}>
-              <p className="text-body">{plural(dups.length, "page")} look like pages you already have.</p>
+              <p className="text-body">{dups.length === 1 ? "1 page looks like one you already have." : `${plural(dups.length, "page")} look like pages you already have.`}</p>
               <ul className="mt-2 space-y-3">
                 {dups.map((d) => <Duplicate key={d.pageId} d={d} onDone={poll} />)}
               </ul>

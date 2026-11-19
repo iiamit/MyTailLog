@@ -206,7 +206,7 @@ export function PagesGrid({
           )}
         </div>
       )}
-      <p aria-live="polite" className="mb-2 min-h-5 text-small">{said}</p>
+      <p aria-live="polite" className="mb-2 text-small empty:mb-0">{said}</p>
       {err && <p role="alert" className="mb-2 text-small font-semibold text-alarm-text">{err}</p>}
       <div role="grid" aria-label={`${bookLabel} pages`} aria-multiselectable={canEdit || undefined}>
         <div role="row" className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-x-3.5 gap-y-[18px]">
@@ -268,7 +268,7 @@ export function PagesGrid({
       </div>
       {ask === "again" && (
         <Confirm
-          text={`Read ${plural(selected.size, "page")} again? Their unconfirmed entries are replaced. Confirmed entries are kept.`}
+          text={`Read ${plural(selected.size, "page")} again? ${selected.size === 1 ? "Its" : "Their"} unconfirmed entries are replaced. Confirmed entries are kept.`}
           action="Read again"
           onClose={() => setAsk(null)}
           onConfirm={() => run(() => readPagesAgain(aircraftId, [...selected]), (n) => `${plural(n, "page")} wait${n === 1 ? "s" : ""} to be read again.`)}
