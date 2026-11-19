@@ -10,6 +10,7 @@ import { fmtDate } from "@/lib/due/engine";
 import { StaticMap } from "@/ui/map/StaticMap";
 import { StatusMark } from "@/ui/Marks";
 import { buttonClass } from "@/ui/Button";
+import { SummaryArticle } from "@/ui/share/Articles";
 
 export const metadata = { title: "Shared aircraft records — MyTailLog", robots: { index: false, follow: false } };
 
@@ -287,64 +288,6 @@ async function Entries({ room, books, book, q, page, base }: { room: Room; books
       )}
       <p className="mt-5 text-small text-ink-3">{BOUNDARY}</p>
     </>
-  );
-}
-
-/** W-SHARE-04's article, as the room's Summary tab. */
-function SummaryArticle({ m, pdf }: { m: SummaryModel; pdf: string }) {
-  const th = "pb-1 pr-3 text-left font-semibold";
-  return (
-    <article className="max-w-[880px]">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-heading">{m.title}</h2>
-        <a className={buttonClass("secondary", "s")} href={pdf} target="_blank" rel="noopener noreferrer">Open as PDF</a>
-      </div>
-      <p className="text-small text-ink-3">Generated {m.generatedOn}</p>
-      <p className="mt-2 text-body text-ink-2">{m.identity}</p>
-      <p className="mt-3 text-lede">{m.verdict}</p>
-      <h3 className="mt-6 text-section">Inspections, items and recurring ADs ({m.items.length})</h3>
-      <div className="overflow-x-auto">
-        <table className="mt-2 w-full min-w-[560px] text-small">
-          <thead className="text-caption text-ink-3"><tr><th className={th}>Item</th><th className={th}>Last done</th><th className={th}>Next due</th><th className={th}>Left</th><th className={th}>Status</th><th className={th}>Page</th></tr></thead>
-          <tbody>
-            {m.items.map((i) => (
-              <tr key={i.key} className="border-t border-rule align-top">
-                <td className="py-1.5 pr-3 font-semibold">{i.label}</td><td className="py-1.5 pr-3">{i.lastDone}</td><td className="py-1.5 pr-3">{i.nextDue}</td>
-                <td className="py-1.5 pr-3">{i.left}</td><td className="py-1.5 pr-3"><StatusMark kind={i.statusKey} compact /></td><td className="py-1.5 whitespace-nowrap">{i.page ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {m.squawksShown && (
-        <>
-          <h3 className="mt-6 text-section">Open squawks ({m.squawks.length})</h3>
-          {m.squawks.length ? (
-            <ul className="mt-1 text-body">{m.squawks.map((q, i) => <li key={i} className="border-t border-rule py-1.5">{q.reported} · {q.severity} · {q.description}{q.reporter ? ` · ${q.reporter}` : ""}</li>)}</ul>
-          ) : <p className="mt-1 text-body text-ink-2">No open squawks.</p>}
-        </>
-      )}
-      <h3 className="mt-6 text-section">ADs ({m.ads.length})</h3>
-      {m.ads.length ? (
-        <ul className="mt-1 text-body">{m.ads.map((a) => <li key={a.reference} className="border-t border-rule py-1.5">{a.reference}{a.title ? ` · ${a.title}` : ""} · {a.status}{a.complied ? ` · ${a.complied}` : ""}{a.page ? ` · ${a.page}` : ""}</li>)}</ul>
-      ) : <p className="mt-1 text-body text-ink-2">No ADs recorded.</p>}
-      {m.equipment.length > 0 && (
-        <>
-          <h3 className="mt-6 text-section">Installed equipment</h3>
-          <ul className="mt-1 text-body">{m.equipment.map((e, i) => <li key={i} className="border-t border-rule py-1.5">{[e.name, e.make, e.partNumber, e.serial && `S/N ${e.serial}`].filter(Boolean).join(" · ")}</li>)}</ul>
-        </>
-      )}
-      {m.wb && (
-        <>
-          <h3 className="mt-6 text-section">Weight and balance</h3>
-          <p className="mt-1 text-body">
-            Revised {m.wb.revised}. Empty weight {m.wb.emptyWeight ?? "—"} lb, arm {m.wb.arm ?? "—"} in, useful load {m.wb.usefulLoad ?? "—"} lb.{m.wb.mayBeStale ? " May be stale." : ""}
-          </p>
-        </>
-      )}
-      <p className="mt-6 text-small text-ink-3">Page column: AF Airframe, EN Engine, PR Propeller, AV Avionics logbook page; Docs a document.</p>
-      <p className="mt-1 text-small text-ink-3">{m.footer}</p>
-    </article>
   );
 }
 

@@ -14,7 +14,7 @@ const sw = (w: string) => ({ strokeWidth: w, vectorEffect: "non-scaling-stroke" 
  * every stop a plain link to `stopHref`, no client routing into the owner's screens. Two drawings: the horizontal map,
  * and the phone's vertical one below 640px so labels stay at reading size (10 §8.4).
  */
-export function StaticMap({ model, stopHref, selected, label }: { model: MapModel; stopHref: (stopId: string) => string; selected?: string | null; label: string }) {
+export function StaticMap({ model, stopHref, selected, label }: { model: MapModel; stopHref?: (stopId: string) => string; selected?: string | null; label: string }) {
   return (
     <figure role="group" aria-label={label} className="m-0">
       <div className="max-[639px]:hidden"><Drawing model={model} size="routemap" stopHref={stopHref} selected={selected} /></div>
@@ -23,7 +23,7 @@ export function StaticMap({ model, stopHref, selected, label }: { model: MapMode
   );
 }
 
-function Drawing({ model, size, stopHref, selected }: { model: MapModel; size: MapSize; stopHref: (id: string) => string; selected?: string | null }) {
+function Drawing({ model, size, stopHref, selected }: { model: MapModel; size: MapSize; stopHref?: (id: string) => string; selected?: string | null }) {
   const L = layoutMap(model, { size });
   const book = new Map(model.lines.map((l) => [l.lineId, l.logbook]));
   const stopById = new Map(model.stops.map((s) => [s.id, s]));
@@ -60,11 +60,11 @@ function Drawing({ model, size, stopHref, selected }: { model: MapModel; size: M
         const ms = stopById.get(s.ids[0] ?? s.id);
         const isSel = selected != null && s.ids.includes(selected);
         return (
-          <a key={s.id} href={stopHref(s.ids[0] ?? s.id)} aria-label={`${ms?.label ?? "Entry"}, ${ms ? fmt(ms.date) : ""}${s.count > 1 ? `, ${s.count} stops` : ""}. Open it.`} aria-current={isSel ? "true" : undefined}>
+          <Stop key={s.id} href={stopHref?.(s.ids[0] ?? s.id)} label={`${ms?.label ?? "Entry"}, ${ms ? fmt(ms.date) : ""}${s.count > 1 ? `, ${s.count} stops` : ""}. Open it.`} current={isSel}>
             <circle cx={s.x} cy={s.y} r={12} fill="transparent" />
             {isSel && <circle cx={s.x} cy={s.y} r={s.r + 4} fill="none" stroke="var(--color-board-ink)" style={sw("2px")} />}
             <circle cx={s.x} cy={s.y} r={s.r} fill="var(--color-leaf)" stroke="var(--color-ink)" style={sw(isSel ? "3.5px" : "var(--map-stop-stroke)")} />
-          </a>
+          </Stop>
         );
       })}
       {L.labels.filter((l) => !l.for.startsWith("visit:")).map((l) => (
@@ -77,4 +77,9 @@ function Drawing({ model, size, stopHref, selected }: { model: MapModel; size: M
       ))}
     </svg>
   );
+}
+
+/** A stop is a link when the map has somewhere to send it, otherwise just a drawing. */
+function Stop({ href, label, current, children }: { href?: string; label: string; current: boolean; children: React.ReactNode }) {
+  return href ? <a href={href} aria-label={label} aria-current={current ? "true" : undefined}>{children}</a> : <g aria-hidden>{children}</g>;
 }
