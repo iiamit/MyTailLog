@@ -2,7 +2,9 @@ import SwiftUI
 
 /// The open aircraft's logbooks: the map model, books, pages and entries, page images, and the writes Logbooks sends.
 /// What was loaded stays on screen while a refresh runs or after one fails; `failed` with nothing loaded is the error state.
-/// shortcut: in memory and online only until the phase 3 mirror; the map comes from the server instead of the device copy.
+/// Books, pages and entries come from the phone's mirror (05 §6.1) once it has synced; the map comes from the server
+/// and its last copy is kept on the phone for offline. `fromPhone` says the server couldn't be asked.
+/// shortcut: the map is not computed on the phone (09 §3.12 item 7); offline it is the last one the server drew.
 @MainActor @Observable
 final class BooksModel {
     let aircraft: AircraftAccess
@@ -12,6 +14,8 @@ final class BooksModel {
     private(set) var entries: [EntryRow] = []
     private(set) var loading = true
     private(set) var failed = false
+    /// Shown from the phone's copy because the server couldn't be reached.
+    private(set) var fromPhone = false
 
     /// Viewers and the demo read everything and change nothing (06 §1.5).
     var canEdit: Bool { aircraft.role != .viewer }
@@ -21,10 +25,12 @@ final class BooksModel {
     private let api: StatusAPI
     private let token: @Sendable () async throws -> String
     private let images = NSCache<NSString, UIImage>()
+    let offline: OfflineStore?
 
-    init(aircraft: AircraftAccess, api: StatusAPI, token: @escaping @Sendable () async throws -> String) {
+    init(aircraft: AircraftAccess, api: StatusAPI, offline: OfflineStore? = nil, token: @escaping @Sendable () async throws -> String) {
         self.aircraft = aircraft
         self.api = api
+        self.offline = offline
         self.token = token
         Task { await refresh() }
     }
@@ -32,17 +38,63 @@ final class BooksModel {
     func refresh() async {
         loading = true
         failed = false
+        let id = aircraft.id, api = api
+        // The mirror first (it is what this phone holds), synced first when there is signal.
+        if let offline {
+            await offline.sync()
+            readMirror(offline)
+        }
         do {
-            let t = try await token(), id = aircraft.id, api = api
-            async let m = api.map(token: t, aircraftId: id)
-            async let b = api.logbooks(token: t, aircraftId: id)
-            async let p = api.pages(token: t, aircraftId: id)
-            async let e = api.entries(token: t, aircraftId: id)
-            (map, logbooks, pages, entries) = try await (m, b, p, e)
+            let t = try await token()
+            let m = try await api.map(token: t, aircraftId: id)
+            map = m
+            saveMap(m)
+            fromPhone = false
+            if offline?.hasPulled != true || logbooks.isEmpty {
+                async let b = api.logbooks(token: t, aircraftId: id)
+                async let p = api.pages(token: t, aircraftId: id)
+                async let e = api.entries(token: t, aircraftId: id)
+                (logbooks, pages, entries) = try await (b, p, e)
+            }
         } catch {
-            failed = true
+            map = map ?? loadMap()
+            fromPhone = true
+            failed = logbooks.isEmpty && map == nil
         }
         loading = false
+    }
+
+    /// Logbooks, pages and entries from mirror.db, shaped like the server's rows (`_raw`).
+    func readMirror(_ offline: OfflineStore) {
+        guard offline.hasPulled else { return }
+        let id = aircraft.id
+        let b: [LogbookRow] = offline.rows("logbook", aircraftId: id)
+        guard !b.isEmpty else { return }
+        logbooks = b
+        pages = (offline.rows("page", aircraftId: id) as [PageRow]).sorted { ($0.page_sequence ?? .max, $0.id) < ($1.page_sequence ?? .max, $1.id) }
+        entries = (offline.rows("log_entry", aircraftId: id) as [MirrorEntry]).filter { $0.replaced_by_entry_id == nil }.map(\.entry)
+            .sorted { ($0.entry_date ?? "~") < ($1.entry_date ?? "~") }
+    }
+
+    private var mapURL: URL? { offline?.dir.appending(path: "Cache/map-\(aircraft.id).json") }
+    private func saveMap(_ m: MapData) { if let url = mapURL, let data = try? JSONEncoder().encode(m) { try? data.write(to: url) } }
+    private func loadMap() -> MapData? { mapURL.flatMap { try? Data(contentsOf: $0) }.flatMap { try? JSONDecoder().decode(MapData.self, from: $0) } }
+
+    /// The lands-in line for a page of `logbook` dated in a year (05 §15.1): open gaps on its map line, then its pages' dates.
+    func placement(logbook: LogbookRow) -> (Int?) -> String? {
+        let lines = Set(map?.lines.filter { $0.logbookId == logbook.id }.map(\.lineId) ?? [])
+        let gaps = map?.gaps.filter { lines.contains($0.lineId) && $0.status == "open" }.map { LandsIn.Gap(from: $0.from, to: $0.to) } ?? []
+        let dated = pages.filter { $0.logbook_id == logbook.id }.compactMap { p in
+            p.page_sequence.flatMap { seq in p.landing_date.map { LandsIn.Page(sequence: seq, landingDate: $0) } }
+        }
+        let name = logbook.name
+        return { LandsIn.line(year: $0, logbook: name, gaps: gaps, pages: dated) }
+    }
+
+    /// Reading progress and the allowance; nil offline or on failure.
+    func readingQueue() async -> ReadingQueue? {
+        guard offline?.isOffline != true, let t = try? await token() else { return nil }
+        return try? await api.readingQueue(token: t, aircraftId: aircraft.id)
     }
 
     func logbook(_ id: String) -> LogbookRow? { logbooks.first { $0.id == id } }

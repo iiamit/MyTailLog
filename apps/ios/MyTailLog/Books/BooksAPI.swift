@@ -174,3 +174,16 @@ extension StatusAPI {
         return try JSONDecoder().decode(Answer.self, from: data).results
     }
 }
+
+/// A mirror `log_entry` row: the entry plus whether a correction replaced it (the server query filters those out).
+struct MirrorEntry: Decodable {
+    let entry: EntryRow
+    let replaced_by_entry_id: String?
+
+    private enum K: String, CodingKey { case replaced_by_entry_id }
+
+    init(from decoder: Decoder) throws {
+        entry = try EntryRow(from: decoder)
+        replaced_by_entry_id = try decoder.container(keyedBy: K.self).decodeIfPresent(String.self, forKey: .replaced_by_entry_id)
+    }
+}

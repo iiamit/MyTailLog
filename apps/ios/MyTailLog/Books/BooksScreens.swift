@@ -40,10 +40,17 @@ struct BooksHome: View {
     @State private var sheet: MapSheet?
     @State private var cover: BooksCover?
     @State private var pending: BooksCover?
+    @State private var scanBook: ScanChoice?
+    @State private var scanning: ScanCameraModel?
     @Environment(TabModel.self) private var tabs
+    @Environment(OfflineStore.self) private var offline: OfflineStore?
+
+    /// M-SCAN-01's preselected book (nil: the last used).
+    struct ScanChoice: Identifiable { let logbookId: String?; var id: String { logbookId ?? "" } }
 
     var body: some View {
         VStack(spacing: Tokens.Space.s2) {
+            captureRow
             Picker("Logbooks pages", selection: $tab) {
                 Text("Map").tag(BooksTab.map)
                 Text("Pages").tag(BooksTab.pages)
@@ -84,6 +91,40 @@ struct BooksHome: View {
         }
     }
 
+    /// Scan pages (editors) and Pages in progress while anything is held or being read (M-SCAN-01, M-SCAN-03).
+    @ViewBuilder private var captureRow: some View {
+        if let offline {
+            let held = offline.heldPages.filter { $0.aircraftId == model.aircraft.id }.count
+            let reading = model.readingNow.count
+            HStack(spacing: Tokens.Space.s3) {
+                if model.canEdit {
+                    Button { scanBook = ScanChoice(logbookId: nil) } label: {
+                        Label { Text("Scan pages") } icon: { Icon("camera", size: 18) }
+                    }
+                    .buttonStyle(.secondary)
+                }
+                if held + reading > 0 {
+                    NavigationLink(value: SyncRoute.scanQueue) {
+                        Text(held > 0 ? "\(held) on this phone" : "\(reading) being read").dFont(.bodyStrong)
+                            .frame(maxWidth: .infinity, minHeight: Tokens.Size.phoneButton)
+                            .foregroundStyle(Tokens.Colors.ink)
+                            .background(Tokens.Colors.leaf, in: RoundedRectangle(cornerRadius: Tokens.Radius.m))
+                    }
+                    .accessibilityHint("Opens pages in progress")
+                }
+            }
+            .padding(.horizontal, Tokens.Space.s4)
+            .sheet(item: $scanBook) { choice in
+                ScanBookSheet(books: model, offline: offline, preselect: choice.logbookId) { session in
+                    scanning = ScanCameraModel(session: session)
+                }
+            }
+            .fullScreenCover(item: $scanning) { cam in
+                ScanCameraScreen(model: cam) { tabs.paths[.books, default: NavigationPath()].append(SyncRoute.scanQueue) }
+            }
+        }
+    }
+
     @ViewBuilder private var content: some View {
         switch tab {
         case .map:
@@ -106,7 +147,11 @@ struct BooksHome: View {
                 let ids = model.pages.filter { $0.logbook_id == book }.map(\.id)
                 show(.pages(ids.isEmpty ? [id] : ids, current: id, box: box))
             },
-            review: { id in show(.review(start: id)) })
+            review: { id in show(.review(start: id)) },
+            scan: offline == nil ? nil : { id in
+                sheet = nil
+                Task { try? await Task.sleep(for: .milliseconds(450)); scanBook = ScanChoice(logbookId: id) }
+            })
     }
 
     /// A cover can't present while a sheet is up: close the sheet first, then present from its onDismiss.

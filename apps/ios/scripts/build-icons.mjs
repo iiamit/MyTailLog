@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const lucide = process.env.LUCIDE_ICONS ?? join(here, "../../web/node_modules/lucide-react/dist/esm/icons");
 const out = join(here, "../MyTailLog/Resources/Assets.xcassets/Icons");
-const ICONS = ["list-checks", "book-open", "wrench", "plane", "file-text", "share-2", "chevron-down", "chevrons-up-down", "mail", "key-round", "circle-user-round", "chevron-right", "chevron-left", "calendar", "gauge", "x", "chevron-up", "circle-help", "list", "zoom-in", "pencil", "check"];
+const ICONS = ["list-checks", "book-open", "wrench", "plane", "file-text", "share-2", "chevron-down", "chevrons-up-down", "mail", "key-round", "circle-user-round", "chevron-right", "chevron-left", "calendar", "gauge", "x", "chevron-up", "circle-help", "list", "zoom-in", "pencil", "check", "camera", "scan-line", "route", "cloud-upload", "wifi-off", "flashlight", "keyboard", "images", "refresh-cw", "circle-check", "plus"];
 
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, "Contents.json"), JSON.stringify({ info: { author: "xcode", version: 1 } }, null, 2) + "\n");

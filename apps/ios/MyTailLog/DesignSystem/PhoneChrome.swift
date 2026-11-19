@@ -4,10 +4,23 @@ import SwiftUI
 struct AircraftLine: Equatable {
     var tail: String?
     var lastSync: Date?
+    var syncing = false
+    var offline = false
+    var failed = false
+    var waiting = 0
+    var conflicts = 0
 
     var tailText: String { tail ?? "No aircraft yet" }
 
+    /// An alarm slip state: a conflict to decide or a failed sync.
+    var alarm: Bool { conflicts > 0 || failed }
+
     var syncText: String {
+        if conflicts > 0 { return "\(conflicts) to decide" }
+        if failed { return "sync failed" }
+        if syncing { return "syncing" }
+        if waiting > 0 { return "\(waiting) waiting" }
+        if offline { return "offline" }
         guard let lastSync else { return "not synced yet" }
         let calendar = Calendar.current
         if calendar.isDateInToday(lastSync) { return "synced \(lastSync.formatted(date: .omitted, time: .shortened))" }
@@ -48,7 +61,14 @@ struct PhoneHeader: View {
                     HStack(spacing: Tokens.Space.s1) {
                         Text(line.tailText).dFont(.small).fontWeight(.semibold).lineLimit(1).layoutPriority(1)
                         Icon("chevron-down", size: 16)
-                        Text("· \(line.syncText)").dFont(.small).lineLimit(1)
+                        Text("·").dFont(.small)
+                        if line.syncing { ProgressView().controlSize(.mini).tint(section.onBoard2) }
+                        if line.offline && !line.alarm && line.waiting == 0 { Icon("wifi-off", size: 14) }
+                        if line.waiting > 0 && !line.alarm { Icon("cloud-upload", size: 14) }
+                        Text(line.syncText).dFont(.small).lineLimit(1)
+                            .foregroundStyle(line.alarm ? Tokens.Colors.onAlarm : section.onBoard2)
+                            .padding(.horizontal, line.alarm ? 4 : 0)
+                            .background(line.alarm ? Tokens.Colors.alarm : .clear, in: RoundedRectangle(cornerRadius: 3))
                     }
                     .foregroundStyle(section.onBoard2)
                     .frame(minHeight: Tokens.Size.phoneTouchMin)
@@ -197,7 +217,21 @@ struct AccountButton<Label: View>: View {
     @ViewBuilder var label: Label
     @Environment(SessionStore.self) private var store
     @Environment(StatusModel.self) private var status: StatusModel?
+    @Environment(OfflineStore.self) private var offline: OfflineStore?
     @State private var confirming = false
+
+    /// "3 changes and 2 pages" not yet on the server, or nil.
+    private var unsent: String? {
+        guard let offline else { return nil }
+        let c = offline.items.count, p = offline.heldPages.count
+        guard c + p > 0 else { return nil }
+        return [c > 0 ? SyncBars.plural(c, "change") : nil, p > 0 ? SyncBars.plural(p, "page") : nil].compactMap { $0 }.joined(separator: " and ")
+    }
+
+    private var signOutQuestion: String {
+        unsent.map { "\($0) \($0.hasPrefix("1 ") && !$0.contains(" and ") ? "hasn't" : "haven't") reached the server. Signing out deletes them from this phone." }
+            ?? "Sign out of MyTailLog on this phone? The records stay on the server."
+    }
 
     var body: some View {
         Group {
@@ -218,10 +252,15 @@ struct AccountButton<Label: View>: View {
             }
         }
         .buttonStyle(.plain)
-        .confirmationDialog("Sign out of MyTailLog on this phone? The records stay on the server.",
-                            isPresented: $confirming, titleVisibility: .visible) {
-            Button("Sign out") { Task { await store.signOut() } }
-            Button("Cancel", role: .cancel) {}
+        .confirmationDialog(signOutQuestion, isPresented: $confirming, titleVisibility: .visible) {
+            if unsent == nil {
+                Button("Sign out") { Task { await store.signOut() } }
+            } else {
+                // 05 §8.6: unsent work is never deleted without saying so.
+                Button("Sync now") { Task { await offline?.sync() } }
+                Button("Delete them and sign out", role: .destructive) { Task { await store.signOut() } }
+            }
+            Button(unsent == nil ? "Cancel" : "Keep working", role: .cancel) {}
         }
     }
 }

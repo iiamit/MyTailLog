@@ -6,6 +6,8 @@ struct BooksActions {
     var entry: (String) -> Void = { _ in }
     var page: (_ pageId: String, _ box: FieldBox?) -> Void = { _, _ in }
     var review: (_ pageId: String?) -> Void = { _ in }
+    /// M-SCAN-01 with a logbook preselected (a gap's "Scan these pages"); nil where scanning isn't offered.
+    var scan: ((_ logbookId: String?) -> Void)?
 }
 
 /// Title row of a map sheet: 18/800 and Close (44).
@@ -172,7 +174,6 @@ struct VisitSheet: View {
 }
 
 /// M-BOOKS-04: a gap explains itself from the other books, counts pages already waiting, and takes the owner's answer.
-/// shortcut: no "Scan these pages" until capture (phase 3).
 struct GapSheet: View {
     let model: BooksModel
     let gap: MapData.Gap
@@ -198,6 +199,13 @@ struct GapSheet: View {
                 } else {
                     Skeleton(fraction: 0.9, height: 40)
                     ForEach(0..<3) { _ in Skeleton(fraction: 1, height: 44) }
+                }
+                if model.canEdit, let scan = actions.scan, gap.status == "open" {
+                    // M-BOOKS-04 primary: one tap from a gap to the scan sheet with its book chosen.
+                    Button { scan(model.map?.lines.first { $0.lineId == gap.lineId }?.logbookId) } label: {
+                        Label { Text("Scan these pages") } icon: { Icon("camera") }
+                    }
+                    .buttonStyle(.primary)
                 }
                 if model.canEdit {
                     HStack(spacing: Tokens.Space.s3) {

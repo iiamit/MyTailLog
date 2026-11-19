@@ -78,6 +78,11 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
+        # Capture (05 §15.3, §16): the page camera and the hour-meter camera; photos come through PhotosPicker (no permission).
+        NSCameraUsageDescription: MyTailLog uses the camera to photograph logbook pages and read the hour meter. Meter photos stay on your phone.
+        # Background work (05 §9): uploads continue in a background URLSession; sync runs in these tasks.
+        UIBackgroundModes: [fetch, processing]
+        BGTaskSchedulerPermittedIdentifiers: [com.mytaillog.sync.refresh, com.mytaillog.sync.process]
   MyTailLogTests:
     type: bundle.unit-test
     platform: iOS

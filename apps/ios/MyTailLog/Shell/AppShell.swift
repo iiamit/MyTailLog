@@ -11,6 +11,8 @@ struct RootView: View {
     @State private var status: StatusModel?
     /// The open aircraft's logbooks; a new one when the aircraft changes.
     @State private var books: BooksModel?
+    /// The signed-in user's offline store (05 §6): mirror, outbox, held pages.
+    @State private var offline: OfflineStore?
 
     var body: some View {
         Group {
@@ -25,32 +27,88 @@ struct RootView: View {
         .environment(tabs)
         .environment(status)
         .environment(books)
-        .environment(\.aircraftLine, status?.line ?? AircraftLine())
+        .environment(offline)
+        .environment(\.aircraftLine, line)
         .task(id: scenePhase) {
-            guard scenePhase == .active else { return }
-            await store.refreshIfNeeded()
+            switch scenePhase {
+            case .active:
+                await store.refreshIfNeeded()
+                // Foreground: push, then pull, when the last sync is over a minute old (05 §6.7).
+                if let offline, (offline.lastSyncAt?.timeIntervalSinceNow ?? -.infinity) < -60 { offline.schedule(after: 0) }
+            case .background:
+                AppDelegate.schedule()
+            default: break
+            }
         }
         .task(id: store.session?.userId) {
-            status = store.session?.userId.map(makeStatus)
+            if let userId = store.session?.userId {
+                let o = OfflineStore.open(userId: userId, apiURL: statusAPI.apiURL)
+                let store = store
+                o.token = { try await store.currentSession().accessToken }
+                offline = o
+                status = makeStatus(userId: userId, offline: o)
+                o.schedule(after: 0) // launch: push, then pull
+            } else {
+                // Signed out (05 §8.6): this user's device copy goes.
+                offline?.wipe()
+                offline = nil
+                status = nil
+            }
         }
         .task(id: status?.current?.id) {
             books = status?.current.map(makeBooks)
         }
+        .onChange(of: offline?.revision) {
+            if let offline { books?.readMirror(offline) }
+        }
+    }
+
+    /// The tail line with the sync state (06 §1.3).
+    private var line: AircraftLine {
+        var l = status?.line ?? AircraftLine()
+        if let offline {
+            l.lastSync = offline.lastSyncAt ?? l.lastSync
+            l.syncing = offline.syncing
+            l.offline = offline.isOffline
+            l.failed = offline.failed
+            l.waiting = offline.waiting.count + offline.heldPages.count
+            l.conflicts = offline.conflicts.count
+        }
+        return l
     }
 
     private func makeBooks(_ aircraft: AircraftAccess) -> BooksModel {
         let store = store
-        return BooksModel(aircraft: aircraft, api: statusAPI, token: { try await store.currentSession().accessToken })
+        return BooksModel(aircraft: aircraft, api: statusAPI, offline: offline, token: { try await store.currentSession().accessToken })
     }
 
-    private func makeStatus(userId: String) -> StatusModel {
+    /// Online first, the phone's copy when the server can't be reached (05 §6.1; the snapshot stays the authority).
+    private func makeStatus(userId: String, offline: OfflineStore) -> StatusModel {
         let api = statusAPI, store = store
         return StatusModel(
             loadAircraft: {
-                let session = try await store.currentSession()
-                return try await api.aircraft(token: session.accessToken, userId: userId, email: session.email)
+                do {
+                    let session = try await store.currentSession()
+                    let list = try await api.aircraft(token: session.accessToken, userId: userId, email: session.email)
+                    await offline.saveAircraft(list)
+                    return list
+                } catch {
+                    let cached = await offline.cachedAircraft()
+                    if cached.isEmpty { throw error }
+                    return cached
+                }
             },
-            loadStatus: { id in try await api.status(token: store.currentSession().accessToken, aircraftId: id) })
+            loadStatus: { id in
+                do {
+                    let data = try await api.statusData(token: store.currentSession().accessToken, aircraftId: id)
+                    let snap = try JSONDecoder().decode(StatusSnapshot.self, from: data)
+                    await offline.saveStatus(data, aircraftId: id)
+                    return snap
+                } catch {
+                    guard let cached = await offline.cachedStatus(id) else { throw error }
+                    return cached
+                }
+            })
     }
 }
 
@@ -64,7 +122,7 @@ struct PhoneShell: View {
             ForEach(Section.phoneTabs) { section in
                 Tab(section.title, image: section.icon, value: section) {
                     NavigationStack(path: tabs.path(section)) {
-                        PhoneSectionScreen(section: section)
+                        PhoneSectionScreen(section: section).modifier(SyncDestinations())
                     }
                 }
             }
@@ -106,6 +164,7 @@ struct PhoneBoard<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             PhoneHeader(title: title, back: back)
+            if back == nil { SyncBars() }
             content
         }
         .background(section.board.ignoresSafeArea())
@@ -127,7 +186,7 @@ struct TabletShell: View {
                 .toolbar(.hidden, for: .navigationBar)
         } detail: {
             NavigationStack(path: tabs.path(tabs.selected)) {
-                TabletBoard(section: tabs.selected)
+                TabletBoard(section: tabs.selected).modifier(SyncDestinations())
             }
             .id(tabs.selected)
         }
