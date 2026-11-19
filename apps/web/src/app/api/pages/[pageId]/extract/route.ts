@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
+import { readQueuedPages } from "@/lib/extraction/queue";
 import { extractPage } from "@/lib/extraction/pipeline";
 import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 
@@ -43,6 +44,19 @@ export async function POST(
   const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: page.aircraft_id });
   if (!canEdit) {
     return NextResponse.json({ error: "You don't have edit access to this aircraft." }, { status: 403 });
+  }
+
+  // Re-read through the server queue (09 §4.1, "Crop and re-read"): the reader
+  // worker reads it on the caller's allowance. Without `queue` the old
+  // synchronous read stays, for the Capacitor app and the v1 screens.
+  const body = (await req.json().catch(() => null)) as { queue?: unknown } | null;
+  if (body?.queue === true) {
+    const { error } = await supabase.from("page")
+      .update({ extraction_status: "queued", queued_by: user.id, read_attempts: 0, read_after: null, extraction_error: null })
+      .eq("id", page.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    after(() => readQueuedPages().catch((e) => console.error("reader kick failed", e)));
+    return NextResponse.json({ status: "queued" });
   }
 
   const gate = await prepareAi(supabase, user.id);

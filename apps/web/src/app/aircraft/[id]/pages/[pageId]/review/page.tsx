@@ -5,6 +5,7 @@ import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { ReviewClient, type ReviewEntry } from "./ReviewClient";
 import { ReextractButton } from "./ReextractButton";
+import { v1ExtractionStatus } from "@/lib/pageStatus";
 
 
 export default async function ReviewPage({
@@ -215,7 +216,7 @@ export default async function ReviewPage({
         storagePath={page.storage_path}
         rawText={page.ocr_text}
         reviewStatus={page.review_status}
-        extractionStatus={page.extraction_status}
+        extractionStatus={v1ExtractionStatus(page.extraction_status)}
         detectedPageCount={page.detected_page_count}
         unreadRotatedContent={page.unread_rotated_content ?? false}
         entries={reviewEntries}

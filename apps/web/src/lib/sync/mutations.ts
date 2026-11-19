@@ -22,6 +22,10 @@ export const MUTATIONS = {
   "page.reorder": { base: "never" },
   "page.delete": { base: "never" },
   "page.extract": { base: "never", online: true },
+  // Phase 3 capture (09 §5.3, 05 §7.2): register an uploaded page, open a scan batch, answer a duplicate question.
+  "page.register": { base: "never" },
+  "batch.create": { base: "never" },
+  "page.duplicateDecision": { base: "never" },
   "gap.setStatus": { base: "always" },
   "gap.create": { base: "never" },
   "reading.create": { base: "never" },

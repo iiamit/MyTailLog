@@ -39,6 +39,9 @@ export const writes: Record<MutationType, WriteFn> = {
   "page.review": pages.setReview,
   "page.reorder": pages.reorder,
   "page.delete": pages.deletePages,
+  "page.register": pages.register,
+  "batch.create": pages.createBatch,
+  "page.duplicateDecision": pages.duplicateDecision,
   "gap.setStatus": gaps.setStatus,
   "gap.create": gaps.create,
 
