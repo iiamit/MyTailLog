@@ -2,3 +2,5 @@
 // Host only: "//" starts a comment in xcconfig files, so the https scheme is added in code.
 SUPABASE_HOST = arpirbajxbrjbkldteaz.supabase.co
 SUPABASE_PUBLISHABLE_KEY = sb_publishable_ud1Z3aaPzJVCVvedMIgOKQ_EWdVln9D
+// The TEST app API (apps/web), which serves /api/aircraft/{id}/status.
+API_HOST = mfb-test.mytaillog.com

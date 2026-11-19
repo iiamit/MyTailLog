@@ -179,6 +179,13 @@ final class SessionStore {
         }
     }
 
+    /// The session for an API call, refreshed first when it is about to expire.
+    func currentSession() async throws -> Session {
+        await refreshIfNeeded()
+        guard let session else { throw AuthError.server }
+        return session
+    }
+
     /// shortcut: phase 0 has no outbox, so this is the "nothing unsent" path of 05 §8.6; add the unsent-work prompt with sync.
     func signOut() async {
         if let session { await auth.signOut(session) }

@@ -39,37 +39,41 @@ enum DType {
     /// so only each file's default face resolves by name; the weight is set on the wght axis.
     var postScriptName: String { role.family == .paper ? "Literata-Regular" : "LibreFranklin-Thin" }
 
-    func weight(boldText: Bool = false) -> Int {
+    /// `base` overrides the role's weight (the Verdict's bold runs are 800).
+    func weight(boldText: Bool = false, base: Int? = nil) -> Int {
+        let w = base ?? role.weight
         // Bold Text: 400 → 600, 600 → 700, 700 → 800 (05 §19).
-        boldText ? [400: 600, 500: 600, 600: 700, 700: 800][role.weight] ?? role.weight : role.weight
+        return boldText ? [400: 600, 500: 600, 600: 700, 700: 800][w] ?? w : w
     }
 
     /// Scaled for the given Dynamic Type size.
-    func uiFont(boldText: Bool = false, traits: UITraitCollection? = nil) -> UIFont {
+    func uiFont(boldText: Bool = false, traits: UITraitCollection? = nil, weight base: Int? = nil) -> UIFont {
         let wght = 0x7767_6874 // 'wght'
-        let base = UIFont(name: postScriptName, size: size) ?? .systemFont(ofSize: size)
-        let desc = base.fontDescriptor.addingAttributes(
-            [UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [wght: weight(boldText: boldText)]])
+        let base0 = UIFont(name: postScriptName, size: size) ?? .systemFont(ofSize: size)
+        let desc = base0.fontDescriptor.addingAttributes(
+            [UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [wght: weight(boldText: boldText, base: base)]])
         return UIFontMetrics(forTextStyle: textStyle)
             .scaledFont(for: UIFont(descriptor: desc, size: size), compatibleWith: traits)
     }
 
     /// Tabular figures everywhere (01 §5).
-    func font(boldText: Bool = false, traits: UITraitCollection? = nil) -> Font {
-        Font(uiFont(boldText: boldText, traits: traits)).monospacedDigit()
+    func font(boldText: Bool = false, traits: UITraitCollection? = nil, weight: Int? = nil) -> Font {
+        Font(uiFont(boldText: boldText, traits: traits, weight: weight)).monospacedDigit()
     }
 }
 
 private struct DFontModifier: ViewModifier {
     let type: DType
+    let weight: Int?
     @Environment(\.legibilityWeight) private var legibilityWeight
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize // re-render when the size changes
     func body(content: Content) -> some View {
         let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
-        content.font(type.font(boldText: legibilityWeight == .bold, traits: traits))
+        content.font(type.font(boldText: legibilityWeight == .bold, traits: traits, weight: weight))
     }
 }
 
 extension View {
-    func dFont(_ type: DType) -> some View { modifier(DFontModifier(type: type)) }
+    /// `weight` overrides the role's (02 gives some components a role at another weight, e.g. a DueRow value 700).
+    func dFont(_ type: DType, weight: Int? = nil) -> some View { modifier(DFontModifier(type: type, weight: weight)) }
 }

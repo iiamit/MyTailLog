@@ -4,6 +4,8 @@ The native SwiftUI app for direction D (spec: `docs/redesign/handoff`, especiall
 
 Phase 0: app shell (D's PhoneTabBar over a hidden system tab bar, one `NavigationStack` per tab, PhoneHeader and PhoneLeaf per section; on iPad a `NavigationSplitView` with the binder Rail), the theme (tokens, fonts, button styles), and sign-in (M-AUTH-01) against Supabase Auth: Apple, Google, email link and code, password.
 
+Phase 1: Status. The phone home (M-STATUS-01/02) with the Verdict, the line ahead and the due groups; All items (M-STATUS-08) and Item detail (M-STATUS-05) pushed in the Status tab; on iPad the two leaves of T-STATUS-01 (a row selects, the right leaf shows that item). The overdue count badges the Status tab; the tail line and the RailPlate switch aircraft.
+
 ## Generate, build, test
 The Xcode project is generated from `project.yml` and is not committed.
 
@@ -14,11 +16,11 @@ xcodegen generate                # writes MyTailLog.xcodeproj and MyTailLog/Info
 xcodebuild test -scheme MyTailLog -destination 'platform=iOS Simulator,name=iPhone 17'
 xcodebuild build -scheme MyTailLog -destination 'platform=iOS Simulator,name=iPad Pro 11-inch (M5)'
 ```
-Re-run `xcodegen generate` after adding or removing files. Tests use Swift Testing (`MyTailLogTests`, hosted in the app so the bundled fonts are registered).
+Re-run `xcodegen generate` after adding or removing files. Tests use Swift Testing (`MyTailLogTests`, hosted in the app so the bundled fonts are registered). `MyTailLogTests/Fixtures/status-n734dm.json` is a real snapshot, the same file as Android's test resource.
 
 ## Configuration
-- **Debug** reads `Config/Debug.xcconfig`: the TEST Supabase project and its publishable key (public by design).
-- **Release** reads `Config/Release.xcconfig`, which includes `Config/Release.local.xcconfig` (not committed). Create it with `SUPABASE_HOST = <ref>.supabase.co` and `SUPABASE_PUBLISHABLE_KEY = sb_publishable_…`; a build with empty values stops with an error.
+- **Debug** reads `Config/Debug.xcconfig`: the TEST Supabase project and its publishable key (public by design), and `API_HOST`, the TEST app API that serves the status snapshot.
+- **Release** reads `Config/Release.xcconfig`, which includes `Config/Release.local.xcconfig` (not committed). Create it with `SUPABASE_HOST = <ref>.supabase.co`, `SUPABASE_PUBLISHABLE_KEY = sb_publishable_…` and `API_HOST = <app API host>`; a build with empty values stops with an error.
 - The host has no scheme because `//` starts a comment in xcconfig files; the app adds `https://`.
 
 ## Sign-in (05 §8)
@@ -34,11 +36,17 @@ Re-run `xcodegen generate` after adding or removing files. Tests use Swift Testi
 - **Icons:** Lucide 0.469 glyphs as template SVGs in `Assets.xcassets/Icons`, written by `node apps/ios/scripts/build-icons.mjs` (needs `apps/web/node_modules`, or `LUCIDE_ICONS=<dir>`).
 - **Shared core:** `Core/CoreBridge.swift` is the seam for the Kotlin Multiplatform core (`apps/core`). The app uses `InMemoryCore` until the XCFramework is ready; then add a conforming type that wraps it and pass it in `MyTailLogApp`.
 
+## Status (phase 1)
+- **Data:** `Status/StatusAPI.swift` lists the aircraft through PostgREST under RLS (role: owner, editor from `aircraft_share` by email, else viewer; the demo aircraft is read-only) and fetches `GET /api/aircraft/{id}/status` with the Supabase access token. The server is the authority; the app never works out what is due. Snapshots are cached in memory (`StatusModel`) until the phase 3 mirror.
+- **Wording:** `Status/StatusText.swift` is a port of Android's `StatusText.kt` (groups, row values, spoken rows, item detail lines, line-ahead geometry). Change both together.
+- **Not yet:** Mark done, swipe and long-press actions, the SourceMat page and history line, visit caps, Plan ahead (phase 5), offline and conflict bars (phase 3).
+
 ## Layout
 ```
 App/            entry point
 Auth/           AuthClient (URLSession to /auth/v1), AuthFlow (PKCE, nonce, return URLs), SessionStore + Keychain, SignInView (M-AUTH-01)
 Core/           CoreBridge protocol and the in-memory stand-in
-DesignSystem/   generated Tokens, Section, Typography, Buttons, PhoneChrome (PhoneHeader, PhoneLeaf, PhoneTabBar)
+DesignSystem/   generated Tokens, Section, Typography, Buttons, PhoneChrome (PhoneHeader, PhoneLeaf, PhoneTabBar), Records (Verdict, StatusMark, TrustMark, PageCite, LineChip, rows)
+Status/         StatusAPI, StatusModel, StatusText, the Status screens and the LineAhead
 Shell/          TabModel, RootView, phone and tablet shells, Rail
 ```
