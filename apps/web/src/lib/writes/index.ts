@@ -17,6 +17,7 @@ import * as visits from "./visits";
 import * as providers from "./providers";
 import * as timeChecks from "./timeChecks";
 import * as aircraft from "./aircraft";
+import * as reminders from "./reminders";
 
 export type { Db, WriteCtx, WriteResult, WriteFn } from "./_stubs";
 
@@ -119,4 +120,7 @@ export const writes: Record<MutationType | Phase4MutationType, WriteFn> = {
   "timeCheck.dismiss": timeChecks.dismiss,
   "aircraft.setExpectedHours": aircraft.setExpectedHours,
   "aircraft.setSituation": aircraft.setSituation,
+
+  // phase 6
+  "reminder.snooze": reminders.snooze,
 };

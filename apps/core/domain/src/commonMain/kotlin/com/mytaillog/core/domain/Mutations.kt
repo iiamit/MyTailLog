@@ -36,6 +36,8 @@ object Mutations {
         always("visit.update", "visit.setStatus", "provider.delete", "squawkPhoto.delete", "document.setExpiry",
             "aircraft.setExpectedHours", "aircraft.setSituation")
         ifId("provider.upsert")
+        // Phase 6: "Remind me <date>" (09 §5.3); any role may send it, stored per user.
+        never("reminder.snooze")
     }
 
     fun isKnown(type: String): Boolean = type in catalogue

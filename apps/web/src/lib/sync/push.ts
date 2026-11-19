@@ -1,5 +1,5 @@
 import { writes, type Db } from "@/lib/writes";
-import { alreadyApplied, type Mutation, type PushResult } from "@/lib/sync/mutations";
+import { alreadyApplied, isAnyRole, type Mutation, type PushResult } from "@/lib/sync/mutations";
 
 // Apply one validated mutation: edit check, dispatch to the ONE write function,
 // idempotency fallback. Shared by POST /api/sync/push and the legacy
@@ -26,7 +26,7 @@ export async function applyMutation(supabase: Db, userId: string, canEdit: EditC
   // The device only ever queues for aircraft it may edit — but it is the device
   // saying so. Same function RLS uses; a viewer's write would otherwise match
   // zero rows and look like success.
-  if (!(await canEdit(m.aircraftId))) {
+  if (!isAnyRole(m.type) && !(await canEdit(m.aircraftId))) {
     return { id: m.id, status: "error", error: "You don't have permission to edit this aircraft." };
   }
   try {

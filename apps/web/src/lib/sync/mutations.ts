@@ -73,9 +73,11 @@ export const MUTATIONS = {
   "timeCheck.dismiss": { base: "never" },
   "aircraft.setExpectedHours": { base: "always" },
   "aircraft.setSituation": { base: "always" },
+  // phase 6: "Remind me <date>" (09 §5.3). Stored per user, so viewers may send it too.
+  "reminder.snooze": { base: "never", anyRole: true },
   "aircraft.enroll": { base: "never", online: true },
   "backup.run": { base: "never", online: true },
-} as const satisfies Record<string, { base: "never" | "always" | "ifId"; online?: boolean }>;
+} as const satisfies Record<string, { base: "never" | "always" | "ifId"; online?: boolean; anyRole?: boolean }>;
 
 export type MutationType = keyof typeof MUTATIONS;
 export const MUTATION_TYPES = Object.keys(MUTATIONS) as MutationType[];
@@ -105,6 +107,11 @@ export const MAX_MUTATIONS = 100;
 export function needsBase(type: MutationType, payload: Record<string, unknown>): boolean {
   const rule = MUTATIONS[type].base;
   return rule === "always" || (rule === "ifId" && typeof payload.id === "string" && payload.id !== "");
+}
+
+/** Any role may send it, viewers included: it writes only the sender's own rows (09 §5.3). */
+export function isAnyRole(type: MutationType): boolean {
+  return (MUTATIONS[type] as { anyRole?: boolean }).anyRole === true;
 }
 
 /** Needs the network right now — the push endpoint cannot run it later. */
