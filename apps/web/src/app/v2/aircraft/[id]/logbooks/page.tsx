@@ -1,5 +1,7 @@
-import { sectionLanding } from "@/lib/v2/landing";
+import { redirect } from "next/navigation";
 
-const landing = sectionLanding("logbooks");
-export const generateMetadata = landing.generateMetadata;
-export default landing.Page;
+/** `/logbooks` opens the map (03 §10). */
+export default async function LogbooksIndex({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  redirect(`/aircraft/${id}/logbooks/map`);
+}

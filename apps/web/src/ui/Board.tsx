@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Route } from "lucide-react";
 import type { Section } from "@/lib/uiV2";
+import type { MapModel } from "@/lib/mapModel";
+import { SpineStrip } from "@/ui/SpineStrip";
 
 /** The open section's coloured field (02 §3.8). Sets the section for every child through data-section. */
 export function Board({ section, children }: { section: Section; children: React.ReactNode }) {
@@ -59,35 +61,64 @@ export function BoardHead({
 }
 
 /**
- * The spine (02 §4.2) in its loading/empty form: the four logbook lines without marks. The drawn life,
- * marks and window arrive with the MapModel in phase 2 (10-line-map.md).
+ * The spine (02 §4.2, 10 §8.1): the whole life under the board head with the window this screen covers. Without a
+ * model it draws its loading form (four lines, no marks).
  */
-export function Spine({ tail, context, href }: { tail: string; context: string; href: string }) {
+export function Spine({
+  tail,
+  context,
+  href,
+  model,
+  window,
+  linkLabel = "Open the map",
+  statusHref,
+  windowDescription,
+}: {
+  tail: string;
+  context: string;
+  href: string;
+  model?: MapModel | null;
+  window?: { from: string; to: string } | null;
+  linkLabel?: string;
+  statusHref?: string;
+  windowDescription?: string;
+}) {
   const lines = [8, 16, 24, 32];
+  const life = model ? `${model.range.from.slice(0, 4)} to ${model.range.to.slice(0, 4)}` : null;
   return (
     <div className="spine mb-2.5 grid grid-cols-[auto_1fr_auto] items-center gap-3.5 rounded-leaf bg-leaf px-3.5 pt-1.5 pb-1 text-ink shadow-leaf">
       <div className="text-[13px] leading-[1.2]">
         <div className="font-bold text-ink-2">{tail}</div>
         <div className="font-medium text-ink-3">{context}</div>
       </div>
-      <svg aria-hidden viewBox="0 0 100 40" preserveAspectRatio="none" className="h-10 w-full">
-        {lines.map((y) => (
-          <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="var(--color-rule)" strokeWidth="3" vectorEffect="non-scaling-stroke" />
-        ))}
-      </svg>
-      <Link href={href} className="flex items-center gap-1.5 text-[13px] leading-[1.2] font-semibold text-board-ink">
-        <Route aria-hidden size={16} /> Open the map
+      {model ? (
+        <SpineStrip model={model} window={window} mapHref={href.split("?")[0]} statusHref={statusHref ?? href} />
+      ) : (
+        <svg aria-hidden viewBox="0 0 100 40" preserveAspectRatio="none" className="h-10 w-full">
+          {lines.map((y) => (
+            <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="var(--color-rule)" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+          ))}
+        </svg>
+      )}
+      <Link
+        href={href}
+        aria-label={life ? `${linkLabel}. The whole life of ${tail}, ${life}${windowDescription ? `, with ${windowDescription}` : ""}.` : undefined}
+        className="flex items-center gap-1.5 text-[13px] leading-[1.2] font-semibold text-board-ink"
+      >
+        <Route aria-hidden size={16} /> {linkLabel}
       </Link>
     </div>
   );
 }
 
 /** The two-sheet spread (02 §3.11). Below 900px it collapses to one column; the source moves to a drawer. */
-export function Leaves({ split = "1.62fr 1fr", children }: { split?: string; children: React.ReactNode }) {
+export function Leaves({ split = "1.62fr 1fr", mapFirst, children }: { split?: string; mapFirst?: boolean; children: React.ReactNode }) {
+  // mapFirst: below 1180px a RouteMap leaf takes the whole width and the mat steps aside, as it does below 900px.
+  // The map's 13px labels need about 600px of drawing to place without overlap (10 §7, §14 checks 1024).
   return (
     <div
       style={{ "--split": split } as React.CSSProperties}
-      className="grid min-h-0 flex-1 gap-2.5 [grid-template-columns:var(--split)] max-[1179px]:[grid-template-columns:1fr_1fr] max-[899px]:[grid-template-columns:1fr]"
+      className={`grid min-h-0 flex-1 gap-2.5 [grid-template-columns:var(--split)] ${mapFirst ? "max-[1179px]:[grid-template-columns:1fr] max-[1179px]:[&>*:nth-child(2)]:hidden" : "max-[1179px]:[grid-template-columns:1fr_1fr]"} max-[899px]:[grid-template-columns:1fr]`}
     >
       {children}
     </div>

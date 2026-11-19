@@ -7,6 +7,7 @@ import { fmtDate } from "@/lib/due/engine";
 import { dueSnapshot } from "@/lib/due/load";
 import { aircraftTail } from "@/lib/v2/landing";
 import { fmtMeter, lanesFor, parseFilter, ratePhrase } from "@/lib/v2/status";
+import { buildMapModel } from "@/lib/mapModel";
 import { Board, BoardHead, Leaf, Leaves, SourceMat, Spine } from "@/ui/Board";
 import { Button } from "@/ui/Button";
 import { StatusSpread } from "@/ui/StatusSpread";
@@ -38,7 +39,15 @@ export default async function StatusPage({
   const head = (actions?: React.ReactNode) => (
     <>
       <BoardHead title="Status" subTabs={[{ label: "What's due", href: `${a}/status`, current: true }]} actions={actions} />
-      <Spine tail={context.reg} context="The next twelve months" href={`${a}/logbooks`} />
+      <Spine
+        tail={context.reg}
+        context="The next twelve months"
+        href={`${a}/logbooks/map`}
+        model={due ? buildMapModel(due.loaded.input, due.loaded.today) : null}
+        window={due ? { from: due.snap.today, to: due.snap.lineAhead.to } : null}
+        statusHref={`${a}/status`}
+        windowDescription="the next twelve months bracketed"
+      />
     </>
   );
 
@@ -93,7 +102,7 @@ export default async function StatusPage({
             {" "}
             {waiting === 1 ? "1 page is" : `${waiting} pages are`} waiting for review.{" "}
             {context.canEdit && (
-              <Link href={`${a}/review`} className="font-semibold text-board-ink underline decoration-dotted">
+              <Link href={`${a}/logbooks/review`} className="font-semibold text-board-ink underline decoration-dotted">
                 Review {waiting === 1 ? "1 page" : `${waiting} pages`}
               </Link>
             )}
