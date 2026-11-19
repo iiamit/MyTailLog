@@ -1,6 +1,11 @@
 -- mirror.db: server rows, rebuildable from cursor 0 (05 §6.2).
--- Typed tables per synced table arrive with the phases that read them; until then
--- every pulled row lands in unknown_record, as 05 §6.2 prescribes for tables the app doesn't know yet.
+-- One typed table per synced table the phones read now (13 §5 phase 3). Every
+-- table has the columns the screens query, typed; `_raw` (the full JSON row as
+-- received, so a column the server added before this build knew it survives);
+-- `_seq` (the change_log seq that last wrote it). `aircraft_id` is the row's
+-- aircraft (the aircraft's own id for `aircraft`). The column lists are mirrored
+-- in MirrorTables.kt; MirrorStoreTest checks the two agree. Rows of any other
+-- table land in unknown_record until a build knows them.
 
 CREATE TABLE sync_state (
     key TEXT NOT NULL PRIMARY KEY,
@@ -14,6 +19,94 @@ CREATE TABLE unknown_record (
     seq INTEGER NOT NULL,
     PRIMARY KEY (table_name, id)
 );
+
+CREATE TABLE aircraft (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    tail_number TEXT, owner_id TEXT, make TEXT, model TEXT, year INTEGER, home_base TEXT, situation_override TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+
+CREATE TABLE logbook (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    type TEXT, component_ref TEXT, title TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX logbook_aircraft ON logbook(aircraft_id);
+
+CREATE TABLE page (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    logbook_id TEXT, batch_id TEXT, page_sequence INTEGER, extraction_status TEXT, review_status TEXT,
+    needs_look INTEGER, landing_date TEXT, thumbnail_path TEXT, duplicate_of_page_id TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX page_logbook ON page(logbook_id, page_sequence);
+CREATE INDEX page_batch ON page(batch_id);
+
+CREATE TABLE log_entry (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    page_id TEXT, logbook_id TEXT, entry_date TEXT, tach REAL, hobbs REAL, airframe REAL, description TEXT,
+    owner_confirmed INTEGER, trust TEXT, replaced_by_entry_id TEXT, is_continuation INTEGER,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX log_entry_logbook ON log_entry(logbook_id, entry_date);
+CREATE INDEX log_entry_page ON log_entry(page_id);
+
+CREATE TABLE maintenance_item (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    kind TEXT, label TEXT, regulatory INTEGER, interval_months INTEGER, interval_hours REAL,
+    last_done_date TEXT, last_done_hours REAL, next_due_date TEXT, next_due_hours REAL, meter TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX maintenance_item_aircraft ON maintenance_item(aircraft_id);
+
+CREATE TABLE ad_compliance (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    kind TEXT, reference TEXT, title TEXT, status TEXT, complied_date TEXT, next_due_date TEXT, next_due_hours REAL,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX ad_compliance_aircraft ON ad_compliance(aircraft_id);
+
+CREATE TABLE item_completion (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    maintenance_item_id TEXT, ad_compliance_id TEXT, log_entry_id TEXT, done_date TEXT, done_hours REAL,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX item_completion_aircraft ON item_completion(aircraft_id);
+
+CREATE TABLE logbook_gap (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    logbook_id TEXT, from_date TEXT, to_date TEXT, status TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX logbook_gap_aircraft ON logbook_gap(aircraft_id);
+
+CREATE TABLE hours_reading (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    reading_date TEXT, tach REAL, hobbs REAL, airframe REAL, source TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX hours_reading_aircraft ON hours_reading(aircraft_id, reading_date);
+
+CREATE TABLE scan_batch (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    logbook_id TEXT, source TEXT, expected_pages INTEGER, created_at TEXT, completed_at TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX scan_batch_aircraft ON scan_batch(aircraft_id);
+
+CREATE TABLE squawk (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    description TEXT, severity TEXT, status TEXT, reported_at TEXT,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX squawk_aircraft ON squawk(aircraft_id);
+
+CREATE TABLE aircraft_status_snapshot (
+    id TEXT NOT NULL PRIMARY KEY, aircraft_id TEXT NOT NULL, updated_at TEXT,
+    computed_at TEXT, inputs_seq INTEGER,
+    _raw TEXT NOT NULL, _seq INTEGER NOT NULL
+);
+CREATE INDEX aircraft_status_snapshot_aircraft ON aircraft_status_snapshot(aircraft_id);
 
 stateValue:
 SELECT value FROM sync_state WHERE key = ?;
@@ -29,3 +122,17 @@ DELETE FROM unknown_record WHERE table_name = ? AND id = ?;
 
 countUnknown:
 SELECT count(*) FROM unknown_record;
+
+clearUnknown:
+DELETE FROM unknown_record;
+
+clearState:
+DELETE FROM sync_state;
+
+-- Typed reads the phase 3 screens need now; more arrive with their screens.
+
+pagesInBatch:
+SELECT id, logbook_id, page_sequence, extraction_status, needs_look, duplicate_of_page_id FROM page WHERE batch_id = ? ORDER BY page_sequence, id;
+
+batchesForAircraft:
+SELECT id, logbook_id, source, expected_pages, created_at, completed_at FROM scan_batch WHERE aircraft_id = ? ORDER BY created_at DESC;

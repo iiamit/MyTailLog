@@ -10,8 +10,8 @@ kotlin {
         minSdk = 29
         withHostTest {}
     }
-    iosArm64()
-    iosSimulatorArm64()
+    // The engine tests run on real SQLite; :db gets -lsqlite3 from the SQLDelight plugin, this module states it.
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target -> target.binaries.all { linkerOpts("-lsqlite3") } }
 
     sourceSets {
         commonMain.dependencies {
@@ -21,6 +21,13 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
+        }
+        // The engine is tested against real in-memory SQLite (mirror.db + outbox.db).
+        getByName("androidHostTest").dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
+        }
+        iosTest.dependencies {
+            implementation(libs.sqldelight.native.driver)
         }
     }
 }

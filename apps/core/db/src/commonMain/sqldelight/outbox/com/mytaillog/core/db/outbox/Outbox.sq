@@ -1,33 +1,107 @@
--- outbox.db: unsent work, never rebuildable (05 §6.2, §6.4).
+-- outbox.db: unsent work, never rebuildable (05 §6.2, §6.4). A conflict record is a
+-- mutation in status `conflict` with the server's row (05 §6.6).
 
 CREATE TABLE mutation (
-    id TEXT NOT NULL PRIMARY KEY,        -- UUIDv7, the idempotency key
+    id TEXT NOT NULL PRIMARY KEY,        -- UUIDv7, the idempotency key; for inserts, the new row's id
     aircraft_id TEXT NOT NULL,
     type TEXT NOT NULL,
     payload TEXT NOT NULL,               -- JSON
-    target_table TEXT,
+    target_table TEXT,                   -- the row it changes (blocking, and where the returned row lands)
     target_id TEXT,
     base TEXT,                           -- updated_at of the server row; null for inserts
     base_row TEXT,                       -- that server row, for the three-way diff
     label TEXT NOT NULL,                 -- owner-readable
-    created_at TEXT NOT NULL,
+    created_at INTEGER NOT NULL,         -- epoch ms; creation order
     attempts INTEGER NOT NULL DEFAULT 0,
-    next_try_at TEXT,
+    next_try_at INTEGER,                 -- epoch ms; null = now
     status TEXT NOT NULL DEFAULT 'pending', -- pending | sending | conflict | refused | blocked
     error TEXT,
     server_row TEXT,
-    depends_on TEXT
+    depends_on TEXT,                     -- a mutation or file_job id that must land first
+    resolution TEXT                      -- keep_both on a re-push from "Keep both changes"
+);
+CREATE INDEX mutation_order ON mutation(created_at, id);
+
+-- Pages, documents and photos waiting to upload (05 §7.2). The transfer is platform code.
+CREATE TABLE file_job (
+    id TEXT NOT NULL PRIMARY KEY,
+    kind TEXT NOT NULL,                  -- page | page_thumb | meter_photo | squawk_photo | document
+    aircraft_id TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    bytes INTEGER NOT NULL,
+    sha256 TEXT,
+    meta TEXT NOT NULL,                  -- JSON: logbookId, batchId, phash, capturedAt, …
+    status TEXT NOT NULL DEFAULT 'held', -- held | uploading | uploaded | registered | failed
+    progress REAL NOT NULL DEFAULT 0,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    error TEXT,
+    created_at INTEGER NOT NULL
+);
+
+-- What sync did, for M-SYS-01 (last 200).
+CREATE TABLE activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    text TEXT NOT NULL,
+    ref TEXT
 );
 
 enqueue:
-INSERT INTO mutation(id, aircraft_id, type, payload, target_table, target_id, base, base_row, label, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO mutation(id, aircraft_id, type, payload, target_table, target_id, base, base_row, label, created_at, depends_on)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+all:
+SELECT * FROM mutation ORDER BY created_at, id;
 
 pending:
 SELECT * FROM mutation WHERE status = 'pending' ORDER BY created_at, id;
+
+byId:
+SELECT * FROM mutation WHERE id = ?;
 
 remove:
 DELETE FROM mutation WHERE id = ?;
 
 setStatus:
 UPDATE mutation SET status = ?, error = ?, server_row = ? WHERE id = ?;
+
+markSending:
+UPDATE mutation SET status = 'sending' WHERE id IN ?;
+
+-- A push the process died during: nothing was acknowledged, so it is still unsent.
+recoverSending:
+UPDATE mutation SET status = 'pending' WHERE status = 'sending';
+
+retryLater:
+UPDATE mutation SET status = 'pending', attempts = attempts + 1, next_try_at = ? WHERE id = ?;
+
+rebase:
+UPDATE mutation SET base = ?, base_row = ?, payload = ?, resolution = ?, status = 'pending', server_row = NULL, error = NULL, attempts = 0, next_try_at = NULL WHERE id = ?;
+
+countByStatus:
+SELECT status, count(*) AS n FROM mutation GROUP BY status;
+
+addFile:
+INSERT INTO file_job(id, kind, aircraft_id, local_path, bytes, sha256, meta, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+fileById:
+SELECT * FROM file_job WHERE id = ?;
+
+filesToUpload:
+SELECT * FROM file_job WHERE status IN ('held', 'uploading') ORDER BY created_at, id;
+
+setFileStatus:
+UPDATE file_job SET status = ?, progress = ?, error = ?, attempts = attempts + ? WHERE id = ?;
+
+removeFile:
+DELETE FROM file_job WHERE id = ?;
+
+log:
+INSERT INTO activity(at, kind, text, ref) VALUES (?, ?, ?, ?);
+
+trimActivity:
+DELETE FROM activity WHERE id NOT IN (SELECT id FROM activity ORDER BY id DESC LIMIT 200);
+
+recentActivity:
+SELECT * FROM activity ORDER BY id DESC LIMIT ?;
