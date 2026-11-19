@@ -7,6 +7,7 @@ import * as squawks from "../src/lib/writes/squawks";
 import * as documents from "../src/lib/writes/documents";
 import * as timeChecks from "../src/lib/writes/timeChecks";
 import * as aircraftWrites from "../src/lib/writes/aircraft";
+import * as compliance from "../src/lib/writes/compliance";
 import { writes, PHASE4_MUTATIONS, type Db } from "../src/lib/writes";
 import { computeTimeChecks, isDigitSwap, type TimeCheckInput } from "../src/lib/timeCheck";
 import { newLinkToken, isLinkToken, pickLinkInput, linkMailto, linkActive } from "../src/lib/mechanicLink";
@@ -340,4 +341,15 @@ test("aircraft: editors set usual flying through the definer function; only the 
   const r = await aircraftWrites.setSituation(owner.db, { aircraftId: "ac", userId: "owner" }, { situation: "preparing_sale" }, base);
   assert.equal(r.status, "ok");
   assert.equal(owner.tables.aircraft[0].situation_override, "preparing_sale");
+});
+
+test("editing an open AD keeps the next due chosen when it was tracked; not applicable clears it", async () => {
+  const row = { id: "ad1", aircraft_id: "ac", updated_at: "2026-11-18T10:00:00.000Z", next_due_date: "2027-03-01", next_due_hours: null };
+  const { db, tables } = fake(true, { ad_compliance: [row] });
+  const record = { kind: "ad", reference: "2015-19-07", status: "open", title: "Seat rails" };
+  assert.equal((await compliance.upsert(db, ctx, { id: "ad1", record })).status, "ok");
+  assert.equal(tables.ad_compliance[0].next_due_date, "2027-03-01");
+  assert.equal(tables.ad_compliance[0].title, "Seat rails");
+  await compliance.upsert(db, ctx, { id: "ad1", record: { ...record, status: "not_applicable", reason: "pump removed" } });
+  assert.equal(tables.ad_compliance[0].next_due_date, null);
 });

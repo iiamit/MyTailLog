@@ -187,7 +187,28 @@ const PRIORITY: Record<DueStatus, number> = { overdue: 0, due_soon: 1, current: 
  * Places rings on their lanes and greedily places labels above, then below, the lane (10 §7). Rings closer
  * than 14 units on one lane alternate ±8 units; a label that fits nowhere is dropped and counted in `more`.
  */
-export function layoutLineAhead(rings: RingInput[], lanes: string[], from: string, to: string): { rings: PlacedRing[]; more: number } {
+export type LaBox = [number, number, number, number];
+
+/** Where each visit cap's label sits on the line ahead, so ring labels keep clear of it. */
+export function capBoxes(caps: { date: string; lines: string[]; label: string }[], lanes: string[], from: string, to: string): LaBox[] {
+  return caps.flatMap((c) => {
+    const ys = c.lines.filter((l) => lanes.includes(l)).map((l) => LA.laneTop + lanes.indexOf(l) * LA.laneGap);
+    if (!ys.length) return [];
+    const x = xFor(c.date, from, to);
+    const y1 = Math.min(...ys) - 10;
+    const w = c.label.length * CHAR_W;
+    // Only the label: a ring label may cross the cap's thin outline, but two labels must never overprint.
+    return [[x - w / 2, y1 - 17, x + w / 2, y1 - 3]] as LaBox[];
+  });
+}
+
+export function layoutLineAhead(
+  rings: RingInput[],
+  lanes: string[],
+  from: string,
+  to: string,
+  obstacles: LaBox[] = [],
+): { rings: PlacedRing[]; more: number } {
   const laneY = (line: string) => LA.laneTop + lanes.indexOf(line) * LA.laneGap;
   const placed: PlacedRing[] = [];
   const lastX = new Map<string, { x: number; flip: number }>();
@@ -202,8 +223,8 @@ export function layoutLineAhead(rings: RingInput[], lanes: string[], from: strin
     placed.push({ ...r, x, y, laneY: ly, labelX: null, labelY: null, anchor: "start" });
   }
 
-  type Box = [number, number, number, number];
-  const boxes: Box[] = placed.map((p) => [p.x - 10, p.y - 10, p.x + 10, p.y + 10]);
+  type Box = LaBox;
+  const boxes: Box[] = [...obstacles, ...placed.map((p): Box => [p.x - 10, p.y - 10, p.x + 10, p.y + 10])];
   boxes.push([LA.todayX - 1, 0, LA.todayX + 1, LA.height]); // today line
   boxes.push([0, LA.tickY - 12, LA.width, LA.height]); // axis
   const hits = (b: Box) => boxes.some((o) => b[0] < o[2] + 3 && b[2] + 3 > o[0] && b[1] < o[3] + 3 && b[3] + 3 > o[1]);

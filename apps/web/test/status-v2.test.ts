@@ -6,7 +6,7 @@ import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared
 import { computeStatus, type DueInput, type DueItem } from "../src/lib/due/engine";
 import {
   calendarCell, filterCounts, groupItems, groupOf, historyRows, hoursCell, lanesFor, layoutLineAhead, leftText,
-  markDonePreview, monthTicks, noPageReason, ratePhrase, rowAction, LA,
+  markDonePreview, monthTicks, noPageReason, ratePhrase, rowAction, LA, capBoxes,
 } from "../src/lib/v2/status";
 import { verdictParts, Verdict } from "../src/ui/Verdict";
 import { StatusMark } from "../src/ui/Marks";
@@ -163,4 +163,17 @@ test("due table: every state has a word, page cites or 'your note', viewers get 
   assert.doesNotMatch(viewer, /Mark done|Log a VOR check|Add date/);
   assert.match(spread(false, "no_record"), /No date/);
   assert.match(spread(true, "no_record"), />Add date</);
+});
+
+test("ring labels keep clear of a visit cap and its label", () => {
+  const lanes = ["airframe", "avionics"];
+  const [from, to] = ["2026-11-18", "2027-11-18"];
+  const ring = { key: "mx:a", line: "airframe", date: "2026-11-18", status: "overdue" as const, label: "Annual, lapsed 111 days ago", projected: false, left: "" };
+  const obstacles = capBoxes([{ date: "2026-11-23", lines: ["airframe", "avionics"], label: "Visit 1, Nov 23" }], lanes, from, to);
+  const [placed] = layoutLineAhead([ring], lanes, from, to, obstacles).rings;
+  assert.ok(placed.labelX != null && placed.labelY != null);
+  const w = ring.label.length * 7;
+  const x0 = placed.anchor === "start" ? placed.labelX! : placed.labelX! - w;
+  const box = [x0, placed.labelY! - 11, x0 + w, placed.labelY! + 3];
+  for (const o of obstacles) assert.ok(box[2] <= o[0] || box[0] >= o[2] || box[3] <= o[1] || box[1] >= o[3], "no overlap");
 });

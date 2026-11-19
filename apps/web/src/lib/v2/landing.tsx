@@ -43,34 +43,6 @@ const LANDINGS: Record<string, Landing> = {
       { label: "Ask", detail: "Questions answered from your entries", path: "ask" },
     ],
   },
-  maintenance: {
-    section: "maint",
-    title: "Maintenance",
-    intro: "Tracked items, ADs and SBs, and squawks.",
-    links: [
-      { label: "ADs and SBs", detail: "Applicable directives and their compliance", path: "compliance" },
-      { label: "Squawks", detail: "Open and resolved squawks", path: "squawks" },
-      { label: "Records check", detail: "Gaps and questions in the records", path: "audit" },
-    ],
-  },
-  hours: {
-    section: "aircraft",
-    title: "Aircraft",
-    intro: "Hours, oil, equipment and weight and balance.",
-    links: [
-      { label: "Hours and meters", detail: "Tach, hobbs and meter changes", path: "meters" },
-      { label: "Oil analysis", detail: "Lab samples and trends", path: "oil-analysis" },
-      { label: "Equipment", detail: "What is installed, with its entries", path: "equipment" },
-      { label: "Weight and balance", detail: "Revisions and the current figures", path: "weight-balance" },
-      { label: "Details", detail: "Tail, serials and home base", path: "details" },
-    ],
-  },
-  documents: {
-    section: "docs",
-    title: "Documents",
-    intro: "Registration, insurance, forms and manuals kept with the aircraft.",
-    links: [{ label: "Records Vault", detail: "Every document on file", path: "documents" }],
-  },
   share: {
     section: "share",
     title: "Share",

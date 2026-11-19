@@ -1,5 +1,7 @@
-import { sectionLanding } from "@/lib/v2/landing";
+import { redirect } from "next/navigation";
 
-const landing = sectionLanding("maintenance");
-export const generateMetadata = landing.generateMetadata;
-export default landing.Page;
+/** 03 §9: Maintenance opens on its first sub-tab. */
+export default async function MaintenanceIndex({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  redirect(`/aircraft/${id}/maintenance/items`);
+}

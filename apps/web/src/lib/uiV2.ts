@@ -33,7 +33,7 @@ export function sectionFor(segment: string | null | undefined): Section | null {
 // Per-aircraft paths the v2 tree serves. The section landings exist for every section from phase 0; deeper
 // screens are added here as their phase lands, so an unbuilt screen keeps working in v1.
 const V2_AIRCRAFT =
-  /^\/aircraft\/([^/]+)(?:\/(?:status|logbooks|maintenance|hours|documents|share)|\/status\/item\/[^/]+|\/logbooks\/(?:map|list|pages|add|review(?:\/[^/]+)?|entries\/(?!new\/?$)[^/]+))?\/?$/;
+  /^\/aircraft\/([^/]+)(?:\/(?:status|logbooks|maintenance|hours|oil|equipment|weight-balance|details|documents|share)|\/status\/item\/[^/]+|\/logbooks\/(?:map|list|pages|add|review(?:\/[^/]+)?|entries\/(?!new\/?$)[^/]+)|\/maintenance\/(?:items|ads(?:\/find)?|squawks|annual|records-check))?\/?$/;
 
 /** The internal /v2 path for a request, or null when v1 should render it. */
 export function v2Rewrite(pathname: string): string | null {

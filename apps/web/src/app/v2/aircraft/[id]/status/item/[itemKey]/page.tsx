@@ -96,9 +96,9 @@ export default async function ItemPage({
   // (91.171(d) fields, method of compliance, new expiry) in their home screens until those drawers land.
   const generic = source === "maintenance" && item.kind !== "vor";
   const home =
-    source === "ad" ? { label: "Open in ADs and SBs", href: `${a}/compliance?ui=v1` }
+    source === "ad" ? { label: "Open in ADs and SBs", href: `${a}/maintenance/ads?ad=${rowId}` }
     : source === "document" ? { label: "Open in Documents", href: `${a}/documents` }
-    : { label: "Edit the rule", href: `${a}/maintenance?ui=v1` };
+    : { label: "Edit the rule", href: `${a}/maintenance/items?item=${rowId}` };
   const actionHref = generic ? `${self}?panel=done` : home.href;
   const drawerOpen = context.canEdit && sp.panel === "done" && generic && !!mx;
 
