@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { THEME_COOKIE, parseTheme } from "@/lib/uiV2";
 import { franklin, literata } from "@/app/fontsV2";
+import { Shortcuts } from "@/ui/Shortcuts";
 
 /** Scope for the new design: tokens.css and v2.css apply inside [data-ui="v2"] only. */
 export default async function V2Layout({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export default async function V2Layout({ children }: { children: React.ReactNode
         Skip to the board
       </a>
       {children}
+      <Shortcuts />
     </div>
   );
 }

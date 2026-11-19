@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { v2Rewrite, sectionFor, safeNext, parseTheme } from "../src/lib/uiV2";
+import { v2Rewrite, sectionFor, safeNext, parseTheme, wantsV2, UI_V2_DEFAULT, v1ToV2, v2ToV1 } from "../src/lib/uiV2";
 
 test("v2 rewrites only the routes the new design covers", () => {
   assert.equal(v2Rewrite("/aircraft/abc"), "/v2/aircraft/abc");
@@ -25,6 +25,59 @@ test("v2 rewrites only the routes the new design covers", () => {
   assert.equal(v2Rewrite("/aircraft/enroll"), null);
   assert.equal(v2Rewrite("/dashboard"), null);
   assert.equal(v2Rewrite("/r/token"), null);
+});
+
+test("the new design is the default; a browser's own choice wins", () => {
+  assert.equal(wantsV2(undefined, true), true);
+  assert.equal(wantsV2("v1", true), false, "Switch back keeps v1");
+  assert.equal(wantsV2("v2", false), true, "Try the new design still works when the default is flipped off");
+  assert.equal(wantsV2(undefined, false), false);
+  assert.equal(UI_V2_DEFAULT, true);
+});
+
+test("account-level and setup screens live in the v2 tree", () => {
+  for (const p of ["/hangar", "/account", "/account/settings", "/account/data", "/aircraft/new", "/aircraft/abc/setup"])
+    assert.equal(v2Rewrite(p), `/v2${p}`, p);
+  assert.equal(v2Rewrite("/account-deletion"), null);
+  assert.equal(v2Rewrite("/account/other"), null);
+});
+
+test("today's routes move to their v2 homes (03 §10)", () => {
+  const q = (s = "") => new URLSearchParams(s);
+  assert.equal(v1ToV2("/dashboard", q()), "/hangar");
+  assert.equal(v1ToV2("/profile", q()), "/account/settings");
+  assert.equal(v1ToV2("/profile/credentials", q()), "/account/settings#signing");
+  assert.equal(v1ToV2("/aircraft/enroll", q()), "/aircraft/new");
+  assert.equal(v1ToV2("/aircraft/a/start", q()), "/aircraft/a/setup");
+  assert.equal(v1ToV2("/aircraft/a/compliance", q()), "/aircraft/a/maintenance/ads");
+  assert.equal(v1ToV2("/aircraft/a/compliance/explore", q()), "/aircraft/a/maintenance/ads/find");
+  assert.equal(v1ToV2("/aircraft/a/meters/", q()), "/aircraft/a/hours");
+  assert.equal(v1ToV2("/aircraft/a/capture", q("logbook=x")), "/aircraft/a/logbooks/add?capture=1");
+  assert.equal(v1ToV2("/aircraft/a/pages/p1/review", q()), "/aircraft/a/logbooks/review/p1");
+  assert.equal(v1ToV2("/aircraft/a/entries/e1", q()), "/aircraft/a/logbooks/entries/e1");
+  assert.equal(v1ToV2("/aircraft/a/timeline", q("entry=e1")), "/aircraft/a/logbooks/map?stop=e1");
+  assert.equal(v1ToV2("/aircraft/a/timeline", q()), "/aircraft/a/logbooks/map");
+  assert.equal(v1ToV2("/aircraft/a/audit", q()), "/aircraft/a/maintenance/records-check");
+  assert.equal(v1ToV2("/aircraft/a/export", q()), "/account/data?aircraft=a#export");
+  for (const p of ["/aircraft/a/entries/new", "/aircraft/a/import", "/aircraft/a/ask", "/aircraft/a/status", "/aircraft/a",
+    "/r/token", "/r/token/page/p", "/m/token", "/help", "/"])
+    assert.equal(v1ToV2(p, q()), null, `${p} is unchanged or still v1`);
+  // Every destination is a route the v2 tree serves.
+  for (const p of ["/aircraft/a/compliance", "/aircraft/a/squawks", "/aircraft/a/upload", "/aircraft/a/pages", "/aircraft/a/review",
+    "/aircraft/a/oil-analysis", "/aircraft/a/duplicates", "/aircraft/a/annual", "/aircraft/a/summary", "/aircraft/a/prebuy", "/profile"]) {
+    const to = v1ToV2(p, q())!;
+    assert.ok(v2Rewrite(to.split(/[?#]/)[0]), `${p} → ${to} is served by v2`);
+  }
+});
+
+test("owners who switched back are sent from new-only URLs to their v1 page", () => {
+  const q = (s = "") => new URLSearchParams(s);
+  assert.equal(v2ToV1("/hangar", q()), "/dashboard");
+  assert.equal(v2ToV1("/account/settings", q()), "/profile");
+  assert.equal(v2ToV1("/account/data", q("aircraft=a")), "/aircraft/a/export");
+  assert.equal(v2ToV1("/aircraft/new", q()), "/aircraft/enroll");
+  assert.equal(v2ToV1("/aircraft/a/setup", q()), "/aircraft/a/start");
+  assert.equal(v2ToV1("/aircraft/a/status", q()), null);
 });
 
 test("sections follow the binder tabs", () => {
@@ -82,8 +135,34 @@ test("opt-in redirect uses the public site URL, not the container address", asyn
     const res = await GET(new NextRequest("http://0.0.0.0:8080/api/ui?design=v2&next=/dashboard"));
     assert.equal(res.headers.get("location"), "https://mfb-test.mytaillog.com/dashboard");
     assert.match(res.headers.get("set-cookie") ?? "", /mtl_ui=v2/);
+    const back = await GET(new NextRequest("http://0.0.0.0:8080/api/ui?design=v1&next=/dashboard"));
+    assert.match(back.headers.get("set-cookie") ?? "", /mtl_ui=v1;/, "Switch back pins v1; no cookie now means v2");
   } finally {
     if (prev === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
     else process.env.NEXT_PUBLIC_SITE_URL = prev;
   }
+});
+
+test("notification deep links open the matching web route (03 §10.3)", async () => {
+  const { appLinkToWeb } = await import("../src/ui/NotificationInbox");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/status/item/mx:9"), "/aircraft/a1/status/item/mx:9");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/status/visit/v1"), "/aircraft/a1/status/plan?visit=v1");
+  assert.equal(appLinkToWeb("https://mytaillog.com/app/aircraft/a1/books/map?at=2020-05-01"), "/aircraft/a1/logbooks/map?from=2018-05-01&to=2022-05-01");
+  assert.equal(appLinkToWeb("/app/aircraft/a1/books/entry/e1"), "/aircraft/a1/logbooks/entries/e1");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/maint/squawk/s1"), "/aircraft/a1/maintenance/squawks?squawk=s1");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/books/review?batch=b1"), "/aircraft/a1/logbooks/review?batch=b1");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/whatever"), "/aircraft/a1/status");
+  assert.equal(appLinkToWeb("mytaillog://settings"), "/hangar");
+  assert.equal(appLinkToWeb(null), "/hangar");
+});
+
+test("g then a letter goes to a section of this aircraft, g t to the hangar (03 §8)", async () => {
+  const { goTarget } = await import("../src/ui/Shortcuts");
+  assert.equal(goTarget("/aircraft/a1/maintenance/squawks", "s"), "/aircraft/a1/status");
+  assert.equal(goTarget("/v2/aircraft/a1/status", "L"), "/aircraft/a1/logbooks");
+  assert.equal(goTarget("/aircraft/a1/status", "h"), "/aircraft/a1/share");
+  assert.equal(goTarget("/hangar", "t"), "/hangar");
+  assert.equal(goTarget("/hangar", "s"), null, "no aircraft, no section");
+  assert.equal(goTarget("/aircraft/new", "s"), null);
+  assert.equal(goTarget("/aircraft/a1/status", "z"), null);
 });

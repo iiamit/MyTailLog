@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { sectionFor, type Section } from "@/lib/uiV2";
+import { inField, openShortcutSheet, singleKeysOn } from "@/ui/Shortcuts";
+import { NotificationInbox, useUnread } from "@/ui/NotificationInbox";
 import type { RailTab } from "@/lib/v2/rail";
 
 export type RailAircraft = { id: string; tail: string; model: string };
@@ -32,6 +34,7 @@ type Props = {
   aircraft: RailAircraft[];
   canEdit: boolean;
   userShortName: string;
+  isAdmin?: boolean;
 };
 
 const ADD_ITEMS: { key: string; label: string; detail: string; section: Section; icon: typeof Plane; path: string }[] = [
@@ -43,21 +46,18 @@ const ADD_ITEMS: { key: string; label: string; detail: string; section: Section;
   { key: "W", label: "Write a logbook entry", detail: "Sign it with a code sent by email", section: "books", icon: Pencil, path: "entries/new" },
 ];
 
-const inField = (t: EventTarget | null) =>
-  t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
-
 /** The binder cover (02 §3.1–3.7): plate and switcher, six section tabs, Search / Add / Account. */
-export function Rail({ aircraftId, tail, plateLine, tabs, aircraft, canEdit, userShortName }: Props) {
+export function Rail({ aircraftId, tail, plateLine, tabs, aircraft, canEdit, userShortName, isAdmin }: Props) {
   const segments = useSelectedLayoutSegments();
   const open = sectionFor(segments[0]);
   const router = useRouter();
   const [menu, setMenu] = useState<null | "switch" | "add" | "account">(null);
   const a = `/aircraft/${aircraftId}`;
 
-  // `/` search, `N` add, letters inside the add menu (03 §8). Never while typing.
+  // `N` add and the letters inside the add menu (03 §8); `/`, `?` and `g` live in Shortcuts. Never while typing.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || inField(e.target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || inField(e.target) || !singleKeysOn()) return;
       if (menu === "add") {
         const item = ADD_ITEMS.find((i) => i.key === e.key.toUpperCase());
         if (item) {
@@ -67,10 +67,7 @@ export function Rail({ aircraftId, tail, plateLine, tabs, aircraft, canEdit, use
         }
         return;
       }
-      if (e.key === "/") {
-        e.preventDefault();
-        router.push(`${a}/ask`);
-      } else if ((e.key === "n" || e.key === "N") && canEdit) {
+      if ((e.key === "n" || e.key === "N") && canEdit) {
         e.preventDefault();
         setMenu("add");
       }
@@ -122,10 +119,10 @@ export function Rail({ aircraftId, tail, plateLine, tabs, aircraft, canEdit, use
             </Link>
           ))}
           <hr className="my-1 border-rule" />
-          <Link role="menuitem" href="/dashboard" className="state-layer flex min-h-11 items-center gap-2.5 px-[14px] text-[15px] font-semibold">
+          <Link role="menuitem" href="/hangar" className="state-layer flex min-h-11 items-center gap-2.5 px-[14px] text-[15px] font-semibold">
             <Warehouse aria-hidden size={18} /> Hangar
           </Link>
-          <Link role="menuitem" href="/aircraft/enroll" className="state-layer flex min-h-11 items-center gap-2.5 px-[14px] text-[15px] font-semibold">
+          <Link role="menuitem" href="/aircraft/new" className="state-layer flex min-h-11 items-center gap-2.5 px-[14px] text-[15px] font-semibold">
             <Plus aria-hidden size={18} /> Add an aircraft
           </Link>
         </div>
@@ -217,25 +214,15 @@ export function Rail({ aircraftId, tail, plateLine, tabs, aircraft, canEdit, use
             </div>
           </Popover>
         )}
-        <Popover
+        <AccountButton
           open={menu === "account"}
+          onToggle={() => setMenu(menu === "account" ? null : "account")}
           onClose={() => setMenu(null)}
-          placement="up"
-          trigger={(ref) => (
-            <button
-              ref={ref}
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={menu === "account"}
-              onClick={() => setMenu(menu === "account" ? null : "account")}
-              className="state-layer flex h-[42px] items-center gap-2.5 rounded-tab px-3 text-[15px] font-semibold"
-            >
-              <CircleUserRound aria-hidden size={18} /> <span className="truncate">{userShortName}</span>
-            </button>
-          )}
-        >
-          <AccountMenu next={`${a}/status`} />
-        </Popover>
+          name={userShortName}
+          next={`${a}/status`}
+          aircraftId={aircraftId}
+          isAdmin={isAdmin}
+        />
       </nav>
     </aside>
   );
@@ -270,17 +257,99 @@ export function PhoneTabs({ tail, tabs }: { tail: string; tabs: RailTab[] }) {
   );
 }
 
-function AccountMenu({ next }: { next: string }) {
+/**
+ * The account button and its menu (03 §5.3), with the notification inbox one step in (§5.4). An ink dot (not the
+ * alarm colour) marks unread notifications.
+ */
+export function AccountButton({
+  open,
+  onToggle,
+  onClose,
+  name,
+  ...menu
+}: { open: boolean; onToggle: () => void; onClose: () => void; name: string } & Omit<Parameters<typeof AccountMenu>[0], "unread" | "onInbox">) {
+  const [unread, setUnread] = useUnread();
+  const [inbox, setInbox] = useState(false);
+  const close = () => {
+    setInbox(false);
+    onClose();
+  };
+  return (
+    <Popover
+      open={open}
+      onClose={close}
+      placement="up"
+      trigger={(ref) => (
+        <button
+          ref={ref}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={unread ? `${name}, ${unread} unread notifications` : undefined}
+          onClick={() => (open ? close() : onToggle())}
+          className="state-layer flex h-[42px] items-center gap-2.5 rounded-tab px-3 text-[15px] font-semibold"
+        >
+          <span className="relative">
+            <CircleUserRound aria-hidden size={18} />
+            {!!unread && <span aria-hidden className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-on-cover ring-2 ring-cover" />}
+          </span>
+          <span className="truncate">{name}</span>
+        </button>
+      )}
+    >
+      {inbox ? <NotificationInbox onRead={setUnread} /> : <AccountMenu {...menu} unread={unread} onInbox={() => setInbox(true)} />}
+    </Popover>
+  );
+}
+
+function AccountMenu({
+  next,
+  aircraftId,
+  isAdmin,
+  unread,
+  onInbox,
+}: {
+  next: string;
+  aircraftId?: string;
+  isAdmin?: boolean;
+  unread: number | null;
+  onInbox: () => void;
+}) {
   const router = useRouter();
   const item = "state-layer flex min-h-11 w-full items-center px-4 text-left text-[15px] font-semibold";
   return (
-    <div role="menu" aria-label="Account" className="w-[260px] py-2">
-      <Link role="menuitem" href="/profile" className={item}>
+    <div role="menu" aria-label="Account" className="max-h-[80vh] w-[280px] overflow-auto py-2">
+      <button role="menuitem" type="button" className={item} onClick={onInbox}>
+        Notifications
+        {!!unread && <span className="ml-auto rounded-leaf bg-ink px-1.5 text-[13px] font-bold text-leaf">{unread}</span>}
+      </button>
+      <Link role="menuitem" href="/account/settings" className={item}>
         Settings
       </Link>
-      <Link role="menuitem" href="/dashboard" className={item}>
+      <Link role="menuitem" href={aircraftId ? `/account/data?aircraft=${aircraftId}` : "/account/data"} className={item}>
+        Import and export
+      </Link>
+      <Link role="menuitem" href="/hangar" className={item}>
         Hangar
       </Link>
+      <button role="menuitem" type="button" className={item} onClick={openShortcutSheet}>
+        Keyboard shortcuts <KeyHint light>?</KeyHint>
+      </button>
+      <hr className="my-1 border-rule" />
+      <Link role="menuitem" href="/help" className={item}>
+        Help
+      </Link>
+      <Link role="menuitem" href="/whats-new" className={item}>
+        What&apos;s new
+      </Link>
+      <Link role="menuitem" href="/developers" className={item}>
+        Developer API
+      </Link>
+      {isAdmin && (
+        <Link role="menuitem" href="/admin" className={item}>
+          Admin
+        </Link>
+      )}
       <p className="px-4 pt-3 pb-1 text-[13px] font-bold text-ink-3">Appearance</p>
       {(["system", "light", "dark"] as const).map((t) => (
         <a key={t} role="menuitem" href={`/api/ui?theme=${t}&next=${encodeURIComponent(next)}`} className={item}>
@@ -297,7 +366,7 @@ function AccountMenu({ next }: { next: string }) {
         className={item}
         onClick={async () => {
           await createClient().auth.signOut();
-          router.push("/");
+          router.push("/login");
           router.refresh();
         }}
       >
@@ -307,7 +376,7 @@ function AccountMenu({ next }: { next: string }) {
   );
 }
 
-function KeyHint({ children, dark, light }: { children: React.ReactNode; dark?: boolean; light?: boolean }) {
+export function KeyHint({ children, dark, light }: { children: React.ReactNode; dark?: boolean; light?: boolean }) {
   return (
     <span
       aria-hidden
@@ -321,7 +390,7 @@ function KeyHint({ children, dark, light }: { children: React.ReactNode; dark?: 
 }
 
 /** Leaf-coloured menu anchored to its trigger. Escape and outside clicks close it and return focus. */
-function Popover({
+export function Popover({
   open,
   onClose,
   trigger,
