@@ -11,17 +11,21 @@ struct BooksTablet: View {
     @State private var cover: BooksCover?
     @State private var pending: BooksCover?
     @State private var gap: MapData.Gap?
+    @State private var scanBook: ScanChoice?
     @Environment(TabModel.self) private var tabs
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
-            Picker("Logbooks pages", selection: $tab) {
-                Text("Map").tag(BooksTab.map)
-                Text("Pages").tag(BooksTab.pages)
-                Text(model.queue.isEmpty ? "Review" : "Review \(model.queue.count)").tag(BooksTab.review)
+            HStack(spacing: Tokens.Space.s4) {
+                Picker("Logbooks pages", selection: $tab) {
+                    Text("Map").tag(BooksTab.map)
+                    Text("Pages").tag(BooksTab.pages)
+                    Text(model.queue.isEmpty ? "Review" : "Review \(model.queue.count)").tag(BooksTab.review)
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 420)
+                ScanRow(model: model, scanBook: $scanBook).frame(maxWidth: 360)
             }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 420)
             switch tab {
             case .map: map
             case .pages: TabletLeaf { PagesContent(model: model, actions: actions, review: { tab = .review }) }
@@ -53,7 +57,11 @@ struct BooksTablet: View {
                 let book = model.page(id)?.logbook_id
                 cover = .pages(model.pages.filter { $0.logbook_id == book }.map(\.id), current: id, box: box)
             },
-            review: { id in if gap == nil { cover = .review(start: id) } else { pending = .review(start: id); gap = nil } })
+            review: { id in if gap == nil { cover = .review(start: id) } else { pending = .review(start: id); gap = nil } },
+            scan: model.canEdit ? { id in
+                gap = nil
+                Task { try? await Task.sleep(for: .milliseconds(450)); scanBook = ScanChoice(logbookId: id) }
+            } : nil)
     }
 
     /// The stops behind the selection: one for a stop, one per book for a visit.

@@ -41,12 +41,8 @@ struct BooksHome: View {
     @State private var cover: BooksCover?
     @State private var pending: BooksCover?
     @State private var scanBook: ScanChoice?
-    @State private var scanning: ScanCameraModel?
     @Environment(TabModel.self) private var tabs
     @Environment(OfflineStore.self) private var offline: OfflineStore?
-
-    /// M-SCAN-01's preselected book (nil: the last used).
-    struct ScanChoice: Identifiable { let logbookId: String?; var id: String { logbookId ?? "" } }
 
     var body: some View {
         VStack(spacing: Tokens.Space.s2) {
@@ -91,44 +87,7 @@ struct BooksHome: View {
         }
     }
 
-    /// Scan pages (editors) and Pages in progress while anything is held or being read (M-SCAN-01, M-SCAN-03).
-    @ViewBuilder private var captureRow: some View {
-        if let offline {
-            let held = offline.heldPages.filter { $0.aircraftId == model.aircraft.id }.count
-            let reading = model.readingNow.count
-            HStack(spacing: Tokens.Space.s3) {
-                if model.canEdit {
-                    Button { scanBook = ScanChoice(logbookId: nil) } label: {
-                        Label { Text("Scan pages") } icon: { Icon("camera", size: 18) }
-                    }
-                    .buttonStyle(.secondary)
-                }
-                if held + reading > 0 {
-                    NavigationLink(value: SyncRoute.scanQueue) {
-                        Text(held > 0 ? "\(held) on this phone" : "\(reading) being read").dFont(.bodyStrong)
-                            .frame(maxWidth: .infinity, minHeight: Tokens.Size.phoneButton)
-                            .foregroundStyle(Tokens.Colors.ink)
-                            .background(Tokens.Colors.leaf, in: RoundedRectangle(cornerRadius: Tokens.Radius.m))
-                    }
-                    .accessibilityHint("Opens pages in progress")
-                }
-            }
-            .padding(.horizontal, Tokens.Space.s4)
-            .task(id: tabs.scanPending) {
-                guard tabs.scanPending else { return }
-                tabs.scanPending = false
-                if model.canEdit { scanBook = ScanChoice(logbookId: nil) }
-            }
-            .sheet(item: $scanBook) { choice in
-                ScanBookSheet(books: model, offline: offline, preselect: choice.logbookId) { session in
-                    scanning = ScanCameraModel(session: session)
-                }
-            }
-            .fullScreenCover(item: $scanning) { cam in
-                ScanCameraScreen(model: cam) { tabs.paths[.books, default: NavigationPath()].append(SyncRoute.scanQueue) }
-            }
-        }
-    }
+    private var captureRow: some View { ScanRow(model: model, scanBook: $scanBook).padding(.horizontal, Tokens.Space.s4) }
 
     @ViewBuilder private var content: some View {
         switch tab {
@@ -647,5 +606,55 @@ struct EntriesListScreen: View {
         }
         .buttonStyle(RowButtonStyle())
         .overlay(alignment: .bottom) { Rule() }
+    }
+}
+
+/// M-SCAN-01's preselected book (nil: the last used).
+struct ScanChoice: Identifiable { let logbookId: String?; var id: String { logbookId ?? "" } }
+
+/// Scan pages (editors) and Pages in progress while anything is held or being read (M-SCAN-01, M-SCAN-03), on the
+/// phone's Logbooks and the tablet's. Opens M-SCAN-01 when the Add sheet asked for it.
+struct ScanRow: View {
+    let model: BooksModel
+    @Binding var scanBook: ScanChoice?
+    @State private var scanning: ScanCameraModel?
+    @Environment(TabModel.self) private var tabs
+    @Environment(OfflineStore.self) private var offline: OfflineStore?
+
+    var body: some View {
+        if let offline {
+            let held = offline.heldPages.filter { $0.aircraftId == model.aircraft.id }.count
+            let reading = model.readingNow.count
+            HStack(spacing: Tokens.Space.s3) {
+                if model.canEdit {
+                    Button { scanBook = ScanChoice(logbookId: nil) } label: {
+                        Label { Text("Scan pages") } icon: { Icon("camera", size: 18) }
+                    }
+                    .buttonStyle(.secondary)
+                }
+                if held + reading > 0 {
+                    NavigationLink(value: SyncRoute.scanQueue) {
+                        Text(held > 0 ? "\(held) on this phone" : "\(reading) being read").dFont(.bodyStrong)
+                            .frame(maxWidth: .infinity, minHeight: Tokens.Size.phoneButton)
+                            .foregroundStyle(Tokens.Colors.ink)
+                            .background(Tokens.Colors.leaf, in: RoundedRectangle(cornerRadius: Tokens.Radius.m))
+                    }
+                    .accessibilityHint("Opens pages in progress")
+                }
+            }
+            .task(id: tabs.scanPending) {
+                guard tabs.scanPending else { return }
+                tabs.scanPending = false
+                if model.canEdit { scanBook = ScanChoice(logbookId: nil) }
+            }
+            .sheet(item: $scanBook) { choice in
+                ScanBookSheet(books: model, offline: offline, preselect: choice.logbookId) { session in
+                    scanning = ScanCameraModel(session: session)
+                }
+            }
+            .fullScreenCover(item: $scanning) { cam in
+                ScanCameraScreen(model: cam) { tabs.paths[.books, default: NavigationPath()].append(SyncRoute.scanQueue) }
+            }
+        }
     }
 }

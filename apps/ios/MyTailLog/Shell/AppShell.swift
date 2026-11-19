@@ -77,7 +77,7 @@ struct RootView: View {
             l.syncing = offline.syncing
             l.offline = offline.isOffline
             l.failed = offline.failed
-            l.waiting = offline.waiting.count + offline.heldPages.count
+            l.waiting = offline.waiting.count + offline.heldPages.count + offline.heldDocuments.count
             l.conflicts = offline.conflicts.count
         }
         return l
@@ -164,6 +164,8 @@ struct PhoneSectionScreen: View {
                 MaintHome(recs: recs).id(recs.id)
             } else if section == .aircraft, let recs {
                 AircraftHome(recs: recs).id(recs.id)
+            } else if section == .share, let recs {
+                ShareHome(recs: recs).id(recs.id)
             } else {
                 PhoneLeaf {
                     Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
@@ -235,7 +237,7 @@ struct TabletBoard: View {
                 StatusTablet(model: status)
             } else if section == .books, let books {
                 BooksTablet(model: books).id(books.aircraft.id)
-            } else if [.maint, .aircraft, .docs].contains(section), let recs {
+            } else if [.maint, .aircraft, .docs, .share].contains(section), let recs {
                 RecordsTablet(section: section, recs: recs).id(recs.id)
             } else {
                 TabletLeaf {

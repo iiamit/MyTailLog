@@ -54,7 +54,7 @@ struct SyncBars: View {
     static func text(_ s: OfflineStore) -> String? {
         let c = s.conflicts.count
         if c > 0 { return c == 1 ? "1 change needs you to decide." : "\(c) changes need you to decide." }
-        let changes = s.waiting.filter { $0.type != "page.register" && $0.type != "batch.create" }.count
+        let changes = s.waiting.filter { $0.type != "page.register" && $0.type != "batch.create" }.count + s.heldDocuments.count
         let pages = s.heldPages.count
         if s.isOffline {
             if pages > 0 && changes == 0 { return "\(plural(pages, "page")) on this phone. They upload when you have signal." }
@@ -127,7 +127,7 @@ struct WaitingScreen: View {
     }
 
     private var summary: some View {
-        let changes = offline.waiting.count, pages = offline.heldPages.count
+        let changes = offline.waiting.count + offline.heldDocuments.count, pages = offline.heldPages.count
         return VStack(alignment: .leading, spacing: Tokens.Space.s2) {
             Text(changes + pages == 0
                  ? (offline.conflicts.isEmpty && offline.refused.isEmpty ? "Everything you've recorded has reached the server." : "Nothing else is waiting.")
@@ -148,8 +148,24 @@ struct WaitingScreen: View {
     @ViewBuilder private var waitingGroup: some View {
         let rows = offline.waiting
         let pages = offline.heldPages
-        if !rows.isEmpty || !pages.isEmpty {
-            GroupHeader(title: "Waiting", count: "\(rows.count + pages.count)")
+        let docs = offline.heldDocuments
+        if !rows.isEmpty || !pages.isEmpty || !docs.isEmpty {
+            GroupHeader(title: "Waiting", count: "\(rows.count + pages.count + docs.count)")
+            ForEach(docs) { job in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(job.meta.title ?? job.meta.fileName ?? "Document").dFont(.bodyStrong)
+                    if job.status == "failed" {
+                        Text(job.error ?? "This document didn't upload.").dFont(.small).foregroundStyle(Tokens.Colors.alarmText)
+                        HStack {
+                            Button("Try again") { offline.uploader?.retry(job) }.buttonStyle(.secondary)
+                            Button("Remove from this phone", role: .destructive) { offline.removeFileJob(job); offline.reload() }.buttonStyle(.quiet)
+                        }
+                    } else {
+                        Text(job.status == "uploading" ? "Document · Uploading" : "Document · On this phone").dFont(.small).foregroundStyle(Tokens.Colors.ink3)
+                    }
+                }
+                .frame(minHeight: Tokens.Size.phoneRowMin, alignment: .leading)
+            }
             if !pages.isEmpty {
                 VStack(alignment: .leading, spacing: Tokens.Space.s1) {
                     Text(SyncBars.plural(pages.count, "page")).dFont(.bodyStrong)

@@ -67,9 +67,22 @@ struct StatusItemScreen: View {
 struct StatusTablet: View {
     let model: StatusModel
     @State private var selected: String?
+    /// Plan ahead (T-STATUS-02) and a visit replace the two leaves; back pops them.
+    @State private var stack: [RecRoute] = []
     @Environment(TabModel.self) private var tabs
+    @Environment(Recs.self) private var recs: Recs?
 
     var body: some View {
+        if let recs, let route = stack.last {
+            RecordScreen(recs: recs, route: route).id(route)
+                .environment(\.recNav, RecNav(open: { stack.append($0) }, back: { _ = stack.popLast() }, tablet: true))
+                .onChange(of: recs.id) { stack = [] }
+        } else {
+            leaves.environment(\.recNav, RecNav(open: { stack.append($0) }, back: {}, tablet: true))
+        }
+    }
+
+    private var leaves: some View {
         HStack(spacing: Tokens.Space.s4) {
             TabletLeaf {
                 StatusContent(model: model, mode: .tablet, selected: selected) { route in
@@ -115,6 +128,8 @@ struct StatusContent: View {
     var selected: String?
     let open: (StatusRoute) -> Void
     @Environment(TabModel.self) private var tabs
+    @Environment(\.recNav) private var nav
+    @Environment(Recs.self) private var recs: Recs?
 
     var body: some View {
         if let snap = model.snapshot {
@@ -144,8 +159,9 @@ struct StatusContent: View {
         }
         if snap.situation != "setup" && !snap.items.isEmpty {
             VStack(alignment: .leading, spacing: Tokens.Space.s1) {
-                LineAheadView(snapshot: snap) { open(.item($0)) }
+                LineAheadView(snapshot: snap, plan: recs == nil ? nil : { nav.open(.plan) }) { open(.item($0)) }
                 ForEach(snap.undatedLines, id: \.self) { Small($0) }
+                if recs != nil { PhoneRow(title: "Plan ahead") { nav.open(.plan) } }
             }
         }
         VStack(alignment: .leading, spacing: 0) {
@@ -166,6 +182,7 @@ struct StatusContent: View {
                 let n = snap.items.count
                 PhoneRow(title: n == 1 ? "See all 1 item" : "See all \(n) items") { open(.all) }
             }
+            if recs != nil { VisitRows(snapshot: snap) }
         }
         VStack(alignment: .leading, spacing: Tokens.Space.s2) {
             Small("Worked out from your confirmed entries. The paper logbooks are the record.")

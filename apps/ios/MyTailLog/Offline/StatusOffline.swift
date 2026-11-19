@@ -31,10 +31,16 @@ extension OfflineStore {
     func saveStatus(_ data: Data, aircraftId: String) { try? data.write(to: statusURL(aircraftId)) }
 
     func cachedStatus(_ aircraftId: String) -> StatusSnapshot? {
-        struct Row: Decodable { let snapshot: StatusSnapshot }
-        let mirrored = (rows("aircraft_status_snapshot", aircraftId: aircraftId) as [Row]).first?.snapshot
-        let cached = (try? Data(contentsOf: statusURL(aircraftId))).flatMap { try? JSONDecoder().decode(StatusSnapshot.self, from: $0) }
-        return [mirrored, cached].compactMap { $0 }.max { ($0.computedAt ?? "") < ($1.computedAt ?? "") }
+        cachedStatusData(aircraftId).flatMap { try? JSONDecoder().decode(StatusSnapshot.self, from: $0) }
+    }
+
+    /// The newest snapshot this phone has, as JSON (the mirror's or the last one fetched): what core's planDate reads.
+    func cachedStatusData(_ aircraftId: String) -> Data? {
+        struct Row: Decodable { let snapshot: AnyJSON }
+        let mirrored = (rows("aircraft_status_snapshot", aircraftId: aircraftId) as [Row]).first.flatMap { try? JSONEncoder().encode($0.snapshot) }
+        let cached = try? Data(contentsOf: statusURL(aircraftId))
+        func at(_ d: Data) -> String { (try? JSONDecoder().decode(StatusSnapshot.self, from: d))?.computedAt ?? "" }
+        return [mirrored, cached].compactMap { $0 }.filter { (try? JSONDecoder().decode(StatusSnapshot.self, from: $0)) != nil }.max { at($0) < at($1) }
     }
 }
 

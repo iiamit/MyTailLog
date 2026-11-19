@@ -13,6 +13,8 @@ struct StatusSnapshot: Decodable, Equatable, Sendable {
     let lineAhead: LineAhead
     let counts: Counts
     let computedAt: String?
+    /// Suggested and booked visits over Status's 12 months (09 §3.5); older snapshots have none.
+    var visits: Visits? = nil
 
     struct Verdict: Decodable, Equatable, Sendable {
         let text: String
@@ -71,6 +73,8 @@ struct DueItem: Decodable, Equatable, Identifiable, Sendable {
     let lastDone: LastDone?
     /// A newer completion waits for review; it moves nothing until confirmed (02 §5.8).
     let waitingEntryId: String?
+    /// The shop that usually does it (a visit's default "Where?").
+    var providerId: String? = nil
 
     var id: String { key }
 

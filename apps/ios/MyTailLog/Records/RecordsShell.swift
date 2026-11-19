@@ -28,6 +28,10 @@ struct RecordScreen: View {
         case .details: DetailsScreen(recs: recs)
         case .documents: DocumentsScreen(recs: recs)
         case .doc(let id): DocViewer(recs: recs, id: id)
+        case .plan: PlanAheadScreen(recs: recs)
+        case .visit(let key): VisitScreen(recs: recs, key: key)
+        case .link(let id, let made): LinkScreen(recs: recs, roomId: id, made: made)
+        case .links: LinksScreen(recs: recs)
         }
     }
 }
@@ -38,12 +42,14 @@ struct RecordDestinations: ViewModifier {
     @Environment(TabModel.self) private var tabs
 
     func body(content: Content) -> some View {
-        content
+        // Pushed screens take their environment from the stack, not the root, so they get the same nav explicitly.
+        let nav = RecNav(open: { [tabs] r in tabs.paths[tabs.selected, default: NavigationPath()].append(r) },
+                         back: { [tabs] in if tabs.paths[tabs.selected]?.isEmpty == false { tabs.paths[tabs.selected]?.removeLast() } })
+        return content
             .navigationDestination(for: RecRoute.self) { route in
-                if let recs { RecordScreen(recs: recs, route: route).id(route) }
+                if let recs { RecordScreen(recs: recs, route: route).id(route).environment(\.recNav, nav) }
             }
-            .environment(\.recNav, RecNav(open: { [tabs] r in tabs.paths[tabs.selected, default: NavigationPath()].append(r) },
-                                          back: { [tabs] in if tabs.paths[tabs.selected]?.isEmpty == false { tabs.paths[tabs.selected]?.removeLast() } }))
+            .environment(\.recNav, nav)
     }
 }
 
@@ -61,6 +67,7 @@ struct RecordsTablet: View {
                 switch section {
                 case .maint: MaintHome(recs: recs)
                 case .aircraft: AircraftHome(recs: recs)
+                case .share: ShareHome(recs: recs)
                 default: DocumentsScreen(recs: recs, pushed: false)
                 }
             }
@@ -84,6 +91,7 @@ private extension Section {
         switch self {
         case .maint: "Choose a squawk, an AD or an item to see it here."
         case .aircraft: "Choose hours, equipment, weight and balance, oil or details to see them here."
+        case .share: "Make a link, or open Live links, to see it here."
         default: "Choose a document to see it here."
         }
     }
@@ -98,8 +106,6 @@ enum AddAction: Identifiable {
 /// The Add sheet (06 M-FLIGHT-01) in its fixed order; viewers get only "Report a squawk" (07 B-VIEWER).
 struct AddSheet: View {
     let recs: Recs
-    /// shortcut: the tablet's Logbooks has no scan entry yet (phase 3), so the row shows on the phone only.
-    var canScan = true
     let pick: (AddAction) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -117,7 +123,7 @@ struct AddSheet: View {
             }
             row(.maint, "flag", "Report a squawk", "A photo first, then a few words", .squawk)
             if recs.canEdit {
-                if canScan { row(.books, "camera", "Scan logbook pages", "Adds to the end of a logbook", .scan) }
+                row(.books, "camera", "Scan logbook pages", "Adds to the end of a logbook", .scan)
                 row(.docs, "file-plus-2", "Add a document", "Insurance, registration, a Form 337", .document)
             }
             Note("Each colour is the tab where it will be filed.").padding(.top, Tokens.Space.s2)
@@ -175,7 +181,7 @@ struct AddHost: ViewModifier {
             }
             .sheet(isPresented: $presented) {
                 if let recs {
-                    AddSheet(recs: recs, canScan: showButton) { a in
+                    AddSheet(recs: recs) { a in
                         if a == .scan { tabs.selected = .books; tabs.requestScan() } else { action = a }
                     }
                     .presentationDetents([.medium, .large])

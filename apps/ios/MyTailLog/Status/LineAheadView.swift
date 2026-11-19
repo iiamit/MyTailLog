@@ -3,9 +3,11 @@ import SwiftUI
 /// LineAhead, phone variant (02 §4.5, 06 M-STATUS-01): the four book lines, solid up to today then dotted, the due rings
 /// on their book's line. Tap a ring to open its item; rings that overlap ask which. VoiceOver hears one summary with an
 /// action per ring; the rows below are the full equivalent.
-/// shortcut: no visit caps (the server sends no visits yet) and tapping the empty line opens nothing until Plan ahead (phase 5).
+/// Tapping the line away from a ring opens Plan ahead (M-STATUS-03).
+/// shortcut: no visit caps here; the Visits rows under the due list reach them. Draw them when the tablet map needs them.
 struct LineAheadView: View {
     let snapshot: StatusSnapshot
+    var plan: (() -> Void)?
     let open: (String) -> Void
     @State private var width: CGFloat = 0
     @State private var choices: [String] = []
@@ -30,6 +32,7 @@ struct LineAheadView: View {
                 ForEach(ringKeys, id: \.self) { key in
                     Button("Open \(labels[key] ?? key)") { open(key) }
                 }
+                if let plan { Button("Plan ahead", action: plan) }
             }
             .confirmationDialog("Open an item", isPresented: Binding { !choices.isEmpty } set: { if !$0 { choices = [] } },
                                 titleVisibility: .hidden) {
@@ -57,7 +60,7 @@ struct LineAheadView: View {
             guard let c = center(ring, width), hypot(c.x - point.x, c.y - point.y) <= 22, !hits.contains(ring.itemKey) else { continue }
             hits.append(ring.itemKey)
         }
-        if hits.count == 1 { open(hits[0]) } else if hits.count > 1 { choices = hits }
+        if hits.count == 1 { open(hits[0]) } else if hits.count > 1 { choices = hits } else { plan?() }
     }
 
     private func draw(_ ctx: GraphicsContext, _ size: CGSize) {
