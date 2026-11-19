@@ -7,7 +7,7 @@ plugins {
 kotlin {
     android {
         namespace = "com.mytaillog.core.db"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 29
         withHostTest {}
     }

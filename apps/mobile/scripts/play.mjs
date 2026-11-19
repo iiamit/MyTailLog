@@ -7,7 +7,9 @@ import { resolve } from 'node:path'
 const packageName = 'com.mytaillog.app'
 const base = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/edits`
 const keyFile = process.env.MYTAILLOG_PLAY_CREDENTIALS || `${homedir()}/.config/mytaillog/android/play-service-account.json`
-const bundleFile = resolve('android/app/build/outputs/bundle/release/app-release.aab')
+// MYTAILLOG_ANDROID_DIR=../android uploads the native app (apps/android) instead of the Capacitor one.
+const androidDir = process.env.MYTAILLOG_ANDROID_DIR || 'android'
+const bundleFile = resolve(androidDir, 'app/build/outputs/bundle/release/app-release.aab')
 
 function draftReleases(releases, versionCode) {
   return [
@@ -119,8 +121,8 @@ async function main(mode) {
       return
     }
 
-    const gradle = await readFile('android/app/build.gradle', 'utf8')
-    const versionCode = gradle.match(/\bversionCode\s+(\d+)/)?.[1]
+    const gradle = await readFile(resolve(androidDir, 'app', androidDir === 'android' ? 'build.gradle' : 'build.gradle.kts'), 'utf8')
+    const versionCode = gradle.match(/\bversionCode\s*=?\s*(\d+)/)?.[1]
     if (!versionCode) throw new Error('Could not find Android versionCode')
     const internal = (tracks.tracks || []).find(track => track.track === 'internal')
     if (!internal) throw new Error('Play has no internal testing track')
