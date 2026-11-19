@@ -29,6 +29,9 @@ TypeScript server, the web client and the Kotlin Multiplatform core
   `verdict.json` from `scripts/build-due-fixtures.ts`.
 - Visits (phase 4): `visits.json` (09 §3.5 suggested visits and §4.3 VisitView, with the
   unconfirmed-gate cases) from the same script. Phones mirror the grouping too (09 §8 question 2).
+- Plan ahead (phase 5): `plan-date.json` (09 §3.3 meter on a date, §4.4) from the same script. Each `input`
+  carries `_plan: { date, hoursPerWeek }` (null = the rate in use); the status under it is computed with Plan
+  ahead's visit options (24 months, up to 6). `expected` is the §4.4 body. Run by `DueFixturesTest.kt` via `PlanDate.kt`.
 - Map (phase 2): from `scripts/build-map-fixtures.ts`, run by
   `apps/web/test/map-fixtures.test.ts` and `apps/core/.../MapFixturesTest.kt`.
   - `map-grouping.json` — stops and interchanges (09 §3.7, the phones' offline subset §3.12 item 7).

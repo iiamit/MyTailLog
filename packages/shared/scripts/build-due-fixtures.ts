@@ -9,6 +9,7 @@ import {
   type MaintenanceItemRow, type HoursReadingRow, type LogEntryRow, type ItemCompletionRow,
   type AdComplianceRow, type DocumentRow,
 } from "../../../apps/web/src/lib/due/engine";
+import { planDate } from "../../../apps/web/src/lib/due/plan";
 
 const TODAY = "2026-11-18";
 const FIXTURES = new URL("../fixtures/", import.meta.url);
@@ -110,9 +111,15 @@ const views: Record<string, { rule: string; view: View }> = {
     rule: "09 §3.6 situation, §3.4 line ahead, 12 §4 verdict",
     view: (b) => ({ situation: b.situation, verdict: b.verdict, lineAhead: b.lineAhead }),
   },
+  // input._plan = { date, hoursPerWeek|null }; status is computed with Plan ahead's visit options (24 months, 6).
+  "plan-date": {
+    rule: "09 §3.3 meter on a date, §4.4 plan ahead, 08 C-PLAN-01",
+    view: (b) => b,
+  },
 };
+const PLAN_VISITS = { horizonMonths: 24, limit: 6 };
 
-type Case = { name: string; today?: string; input: DueInput };
+type Case = { name: string; today?: string; input: DueInput & { _plan?: { date: string; hoursPerWeek: number | null } } };
 
 // 09 §3.5 worked example: N734DM on Nov 18, 2026 at 3 h a week (owner's estimate), based at KBED.
 const torres = { id: "sp-torres", name: "M. Torres", kind: "mechanic", airport: "KBED", is_default: true };
@@ -466,7 +473,50 @@ const cases: Record<string, Case[]> = {
     { name: "a squawk marked Ground", input: ready({ squawk: [{ id: "sq-g", description: "Nose strut flat.", severity: "high", status: "open" }] }) },
     { name: "a line-ahead ring for each dated item, undated listed", input: ready({ aircraft: aircraft({ expected_hours_per_week: 3 }), maintenance_item: [mx("oil_change", { last_done_date: "2026-09-01", last_done_hours: 2370.5 }), mx("transponder", { last_done_date: "2024-12-03" }), mx("custom", { id: "mx-n", label: "Paint touch-up" }), mx("prop_overhaul", { last_done_date: "2021-05-20" })] }) },
   ],
+
+  "plan-date": [
+    // 08 C-PLAN-01 acceptance at the reference: lapsed VOR; lapses oil, transponder, pitot-static, ELT battery;
+    // still in date the seat-rail AD and the annual; insurance with no date cannot be checked.
+    { name: "worked example: Mar 1, 2027 at the usual 3 h a week", input: { ...plannable(), _plan: { date: "2027-03-01", hoursPerWeek: null } } },
+    { name: "a typed rate replaces the usual one for this screen", input: { ...plannable(), _plan: { date: "2027-03-01", hoursPerWeek: 8 } } },
+    { name: "no flying: only calendar limits can lapse", input: { ...plannable(), _plan: { date: "2027-03-01", hoursPerWeek: 0 } } },
+    { name: "the chosen date is today: today's state", input: { ...plannable(), _plan: { date: TODAY, hoursPerWeek: null } } },
+    {
+      name: "no recent flying and no estimate: hours-only items cannot be checked",
+      input: { ...ready({ maintenance_item: [mx("hundred_hour", { last_done_date: "2026-06-10", last_done_hours: 2100 }), mx("transponder", { last_done_date: "2024-12-03" })] }), _plan: { date: "2027-03-01", hoursPerWeek: null } },
+    },
+    {
+      name: "unconfirmed: an AI-read tach and a newer AI-read transponder entry change nothing",
+      input: {
+        ...plannable({
+          log_entry: [entry("e-ai-t", { entry_date: "2026-11-15", tach: 2215, trust: "ai_read" }), entry("e-ai-x", { logbook_id: "lb-avionics", entry_date: "2026-11-01", trust: "ai_read" })],
+          item_completion: [done("c-ai-x", "mx-transponder", "2026-11-01", null, "e-ai-x"), done("c-x", "mx-transponder", "2024-12-03")],
+        }),
+        _plan: { date: "2027-03-01", hoursPerWeek: null },
+      },
+    },
+    {
+      name: "a planned visit covers its items; the rest point at suggestions",
+      input: {
+        ...plannable({
+          planned_visit: [{ id: "v-1", status: "planned", week_of: "2027-01-04", visit_date: null, provider_id: "sp-aero", airport: null, from_suggestion_key: null }],
+          planned_visit_item: [{ visit_id: "v-1", item_key: "mx:mx-transponder", done_completion_id: null }, { visit_id: "v-1", item_key: "mx:mx-pitot_static", done_completion_id: null }],
+        }),
+        _plan: { date: "2027-03-01", hoursPerWeek: null },
+      },
+    },
+  ],
 };
+
+/** The worked example plus the annual and ELT inspection and an insurance policy with no date on file. */
+function plannable(o: Partial<DueInput> = {}): DueInput {
+  const w = worked(o);
+  return {
+    ...w,
+    maintenance_item: [...(w.maintenance_item ?? []), mx("elt", { last_done_date: "2026-07-10" })],
+    document: [doc({ id: "doc-ins", type: "insurance", title: "Insurance policy" })],
+  };
+}
 
 export function build(): Record<string, string> {
   const out: Record<string, string> = {};
@@ -480,7 +530,11 @@ export function build(): Record<string, string> {
         if (names.has(c.name)) throw new Error(`${file}: duplicate case "${c.name}"`);
         names.add(c.name);
         const today = c.today ?? TODAY;
-        return { name: c.name, today, input: c.input, expected: view(computeStatus(c.input, today)) };
+        const plan = c.input._plan;
+        const expected = plan
+          ? planDate(computeStatus(c.input, today, PLAN_VISITS), plan.date, plan.hoursPerWeek)
+          : view(computeStatus(c.input, today));
+        return { name: c.name, today, input: c.input, expected };
       }),
     };
     out[`${file}.json`] = JSON.stringify(body, null, 2) + "\n";
