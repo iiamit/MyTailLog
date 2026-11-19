@@ -141,6 +141,7 @@ fun BooksBoard(title: String, vm: BooksViewModel, ui: BooksUi, back: Pair<String
     val colors = MyTailLogTheme.colors
     Column(Modifier.fillMaxSize().background(colors.section(Section.Books).board)) {
         PhoneHeader(title, Section.Books, back = back)
+        CaptureBar(queueLink = back == null)
         MessageBar(ui.message, vm::messageShown)
         content()
     }

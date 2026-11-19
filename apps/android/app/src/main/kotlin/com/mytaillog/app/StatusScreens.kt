@@ -92,7 +92,7 @@ import java.time.Instant
 import java.time.ZoneId
 
 /** What the shell hands the Status screens: the state and the two things they can ask for. */
-class StatusHost(val ui: StatusUi, val refresh: () -> Unit, val select: (String) -> Unit)
+class StatusHost(val ui: StatusUi, val refresh: () -> Unit, val select: (String) -> Unit, val onPhoneTach: Double? = null)
 
 private enum class Mode { Home, All, Tablet }
 
@@ -150,7 +150,7 @@ private fun StatusBoard(title: String, host: StatusHost, back: Pair<String, () -
     Column(Modifier.fillMaxSize().background(colors.section(Section.Status).board)) {
         Box {
             val current = host.ui.current
-            val state = syncState(host.ui.snapshot?.computedAt, Instant.now(), ZoneId.systemDefault())
+            val state = withOutbox(syncState(host.ui.snapshot?.computedAt, Instant.now(), ZoneId.systemDefault()))
             PhoneHeader(
                 title, Section.Status, back = back,
                 syncLine = current?.let { a ->
@@ -159,6 +159,7 @@ private fun StatusBoard(title: String, host: StatusHost, back: Pair<String, () -
             )
             AircraftMenu(host, switching) { switching = false }
         }
+        CaptureBar()
         PhoneLeaf { content() }
     }
 }
@@ -231,6 +232,8 @@ private fun LazyListScope.statusContent(
         }
     }
     items(body.verdict.lines) { line -> Small(line, Modifier.padding(top = Tokens.Space.s2)) }
+    // 09 §3.12: a reading saved on this phone shows with its marker until the next pull brings the server's.
+    host.onPhoneTach?.let { t -> item { Small(stringResource(R.string.status_on_phone_tach, hours1(t)), Modifier.padding(top = Tokens.Space.s2)) } }
     if (nothingTracked) item { Small(stringResource(R.string.status_scan_hint), Modifier.padding(top = Tokens.Space.s2)) }
     freshness(snap.computedAt, Instant.now(), ZoneId.systemDefault())?.let { item { Small(it, Modifier.padding(top = Tokens.Space.s2)) } }
     if (ui.failed) item { StatusError(host.refresh, compact = true) }

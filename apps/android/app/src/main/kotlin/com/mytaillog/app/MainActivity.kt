@@ -69,18 +69,39 @@ private fun AppRoot(app: MyTailLogApp, authReturn: String?, onReturnHandled: () 
             LaunchedEffect(authReturn) { if (authReturn != null) onReturnHandled() } // already signed in: drop it
             // One Status model per signed-in user, so another account never sees the last one's aircraft.
             val user = session.user
+            // The user's offline store (05 §6): sync on open and hourly, uploads whenever there is a network.
+            val store = remember(user.id) { app.offline(user.id) }
+            val capture = remember(store) { CaptureHost(store, app.captureApi, context.applicationContext) }
+            LaunchedEffect(store) {
+                SyncWorker.periodic(context)
+                SyncWorker.now(context)
+            }
+            val cache = java.io.File(store.dir, "cache/snapshots")
             val model = viewModel(key = "status-${user.id}") {
-                StatusViewModel({ statusApi.aircraft(user.id, user.email) }, statusApi::status)
+                StatusViewModel(
+                    { lastKnown(java.io.File(cache, "aircraft.json"), { statusApi.aircraft(user.id, user.email) }, ::encodeAircraft, ::decodeAircraft) },
+                    { id -> lastKnown(java.io.File(cache, "status-$id.json"), { statusApi.status(id) }, ::encodeStatus, ::decodeStatus) },
+                )
             }
             val ui by model.ui.collectAsStateWithLifecycle()
+            val sync by store.sync.collectAsStateWithLifecycle()
+            // After a sync lands, Status asks for the server's snapshot again (it replaces "On this phone" values).
+            val openedAt = remember(store) { sync.lastSync }
+            LaunchedEffect(sync.lastSync) { if (sync.lastSync != openedAt) model.refresh() }
+            val onPhoneTach = remember(ui.currentId, sync.version) { ui.currentId?.let { lastTach(null, store, it) }?.takeIf { it.onPhone }?.value }
             val books = viewModel(key = "books-${user.id}") {
-                BooksViewModel(app.booksApi::load, app.syncApi::push, app.booksApi::evidence, app.booksApi::pageImage)
+                BooksViewModel(
+                    app.booksApi::load, app.syncApi::push, app.booksApi::evidence, app.booksApi::pageImage,
+                    queue = { queueBookWrites(store, it); capture.kick() },
+                    unqueue = { ids -> ids.forEach(store::discard) },
+                )
             }
             // Logbooks follows the aircraft Status has open (one switcher, 06 §1.3).
             LaunchedEffect(ui.current) { books.show(ui.current) }
-            Shell(email = user.email, status = StatusHost(ui, model::refresh, model::select), books = books, onSignOut = {
+            Shell(email = user.email, status = StatusHost(ui, model::refresh, model::select, onPhoneTach), books = books, capture = capture, onSignOut = {
                 scope.launch {
                     account.signOut()
+                    app.forget(user.id)
                     clearGoogleChoice(context)
                 }
             })

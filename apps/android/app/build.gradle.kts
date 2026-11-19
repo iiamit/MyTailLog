@@ -65,6 +65,9 @@ tasks.matching { it.name == "preReleaseBuild" }.configureEach {
 dependencies {
     implementation(project(":core-design"))
     implementation("com.mytaillog.core:api")
+    // The offline store and sync engine (05 §6); the app opens the two SQLite files per user.
+    implementation("com.mytaillog.core:sync")
+    implementation(libs.sqldelight.android.driver)
     implementation(libs.activity.compose)
     implementation(libs.navigation.compose)
     implementation(libs.lifecycle.viewmodel.compose)
@@ -79,11 +82,21 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("androidx.browser:browser:1.8.0")
+    // Capture and offline (05 §9, §15, §16). Edge detection is our own Kotlin (PageFinder), not OpenCV:
+    // the OpenCV AAR is 112 MB and its native code can't run in the JVM unit tests.
+    implementation("androidx.camera:camera-camera2:1.7.0")
+    implementation("androidx.camera:camera-lifecycle:1.7.0")
+    implementation("androidx.camera:camera-view:1.7.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation("androidx.work:work-testing:2.11.2")
+    testImplementation(libs.sqldelight.sqlite.driver)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
