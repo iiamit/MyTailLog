@@ -31,7 +31,7 @@ test("record room: owner creates a link, a visitor opens it, revocation closes i
     const opened = await visitor.get(url!);
     expect(opened.status()).toBe(200);
     expect(await opened.text()).toContain(scratch.tail);
-    const entries = await visitor.get(`${url}?tab=${book!.id}`);
+    const entries = await visitor.get(`${url}?tab=logbooks&book=${book!.id}`);
     const html = await entries.text();
     expect(html).toContain("Confirmed inspection");
     expect(html).not.toContain("Unconfirmed note");

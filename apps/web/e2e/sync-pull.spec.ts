@@ -43,6 +43,10 @@ async function drainToTip(api: APIRequestContext, from = 0): Promise<number> {
   throw new Error("feed never reached its tip in 100 pages");
 }
 
+// Draining the shared harness account (which also sees the demo aircraft and its seeded pages) takes longer
+// than the default 30 s.
+test.describe.configure({ timeout: 120_000 });
+
 // An API context inherits the project's signed-in `storageState`, so anonymity
 // has to be stated explicitly — otherwise these requests silently carry the
 // harness session and assert nothing.
