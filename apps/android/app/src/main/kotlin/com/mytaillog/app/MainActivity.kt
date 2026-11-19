@@ -98,7 +98,7 @@ private fun AppRoot(app: MyTailLogApp, authReturn: String?, onReturnHandled: () 
             }
             // Logbooks follows the aircraft Status has open (one switcher, 06 §1.3).
             LaunchedEffect(ui.current) { books.show(ui.current) }
-            Shell(email = user.email, status = StatusHost(ui, model::refresh, model::select, onPhoneTach), books = books, capture = capture, onSignOut = {
+            Shell(email = user.email, status = StatusHost(ui, model::refresh, model::select, onPhoneTach), books = books, capture = capture, records = app.recordsApi, onSignOut = {
                 scope.launch {
                     account.signOut()
                     app.forget(user.id)

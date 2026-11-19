@@ -49,6 +49,9 @@ object PageImages {
         return PreparedPage(jpeg(big, 85), jpeg(scaled(big, THUMB_EDGE), 80), dHash(gray9x8(big)), big)
     }
 
+    /** A squawk photo (C-SQ-02): long edge 2048, re-encoded so no EXIF (location) survives. */
+    fun photo(b: Bitmap): ByteArray = jpeg(scaled(b, 2048), 85)
+
     fun rotate(b: Bitmap, degrees: Int): Bitmap =
         if (degrees % 360 == 0) b else Bitmap.createBitmap(b, 0, 0, b.width, b.height, Matrix().apply { postRotate(degrees.toFloat()) }, true)
 

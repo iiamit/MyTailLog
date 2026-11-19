@@ -166,7 +166,7 @@ private fun StatusBoard(title: String, host: StatusHost, back: Pair<String, () -
 
 /** shortcut: a menu of tail numbers until the AircraftSwitcher sheet (M-SWITCH-01) lands with the hangar. */
 @Composable
-private fun AircraftMenu(host: StatusHost, expanded: Boolean, onDismiss: () -> Unit) {
+fun AircraftMenu(host: StatusHost, expanded: Boolean, onDismiss: () -> Unit) {
     val colors = MyTailLogTheme.colors
     DropdownMenu(expanded, onDismiss, containerColor = colors.leaf) {
         host.ui.aircraft.forEach { a ->

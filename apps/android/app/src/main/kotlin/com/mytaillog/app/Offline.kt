@@ -83,6 +83,8 @@ class OfflineStore(
     private val outboxDriver: SqlDriver,
     api: SyncApi,
     private val uploads: PageUploads,
+    /** Squawk photos and documents (phase 4); null in tests that only scan pages. */
+    private val records: RecordUploads? = null,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
     val mirror = MirrorStore(mirrorDriver)
@@ -126,7 +128,9 @@ class OfflineStore(
         var retry = false
         try {
             retry = uploadPages()
-            val r = engine.sync()
+            var r = engine.sync()
+            // A squawk photo needs its squawk on the server, so files go after the first push; their rows after them.
+            if (!r.offline) uploadRecordFiles().let { (sent, left) -> retry = retry || left; if (sent) r = engine.sync() }
             retry = retry || r.offline
             if (!r.offline) {
                 val t = now()
@@ -272,10 +276,73 @@ class OfflineStore(
     // ---------------------------------------------------------------------------------------
 
     /** Queue a change; the base row for a later three-way diff comes from the mirror. */
-    fun enqueue(m: Mutation, label: String, target: RowRef? = null) {
-        engine.enqueue(m, label, target, target?.let { mirror.raw(it.table, it.id) })
+    fun enqueue(m: Mutation, label: String, target: RowRef? = null, dependsOn: String? = null) {
+        engine.enqueue(m, label, target, target?.let { mirror.raw(it.table, it.id) }, dependsOn)
         refresh()
     }
+
+    // ---------------------------------------------------------------------------------------
+    // Squawk photos and documents (05 §7.2 file jobs of kind squawk_photo and document)
+    // ---------------------------------------------------------------------------------------
+
+    /** Keeps [bytes] in [file] and records the job; [meta] carries what the upload needs. Returns the job id. */
+    fun addFile(kind: String, aircraftId: String, file: File, bytes: ByteArray, meta: JsonObject): String {
+        val jobId = UUID.randomUUID().toString()
+        file.parentFile?.mkdirs()
+        writeAtomically(file, bytes)
+        q.addFile(jobId, kind, aircraftId, file.path, bytes.size.toLong(), null, meta.toString(), now())
+        refresh()
+        return jobId
+    }
+
+    fun recordFiles() = q.filesToUpload().executeAsList().filter { it.kind == SQUAWK_PHOTO || it.kind == DOCUMENT }
+
+    /** Uploads held squawk photos (once their squawk is on the server) and documents. (any sent, any left for later) */
+    private suspend fun uploadRecordFiles(): Pair<Boolean, Boolean> {
+        val api = records ?: return false to false
+        var sent = false
+        for (f in recordFiles()) {
+            if (f.attempts >= MAX_TRIES) continue
+            val meta = Json.parseToJsonElement(f.meta).jsonObject
+            fun s(k: String) = meta[k]?.jsonPrimitive?.contentOrNull
+            try {
+                val bytes = File(f.local_path).readBytes()
+                if (f.kind == SQUAWK_PHOTO) {
+                    val squawkId = s("squawkId") ?: continue
+                    if (q.byId(squawkId).executeAsOneOrNull() != null) continue // its squawk.create hasn't landed yet
+                    api.squawkPhoto(f.aircraft_id, squawkId, s("photoId")!!, bytes)
+                } else {
+                    val row = api.document(f.aircraft_id, meta, bytes)
+                    mirror.upsertRow("document", row)
+                    // The phone's copy becomes the offline copy under the server's id (documents are never purged).
+                    row["id"]?.jsonPrimitive?.contentOrNull?.let { id -> File(f.local_path).renameTo(docFile(id, s("fileName"))) }
+                }
+                q.removeFile(f.id)
+                sent = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: UploadHttpException) {
+                q.setFileStatus(HELD, 0.0, e.message, if (e.permanent) MAX_TRIES else 1, f.id)
+            } catch (_: Exception) {
+                return sent to true
+            }
+        }
+        refresh()
+        return sent to recordFiles().any { it.attempts < MAX_TRIES }
+    }
+
+    val docsDir get() = File(dir, "docs").apply { mkdirs() }
+
+    /** Where a document's offline copy lives, by its server id and the file's extension. */
+    fun docFile(id: String, fileName: String?): File = File(docsDir, id + "." + (fileName?.substringAfterLast('.', "bin")?.lowercase()?.filter { it.isLetterOrDigit() }?.take(8)?.ifBlank { "bin" } ?: "bin"))
+
+    /** Rows of a table the mirror keeps as raw JSON (05 §6.2 unknown_record), for one aircraft. */
+    fun unknownRows(table: String, aircraftId: String?): List<JsonObject> =
+        mirrorDriver.executeQuery(null, "SELECT raw FROM unknown_record WHERE table_name = ?", { c ->
+            val out = mutableListOf<JsonObject>()
+            while (c.next().value) out += Json.parseToJsonElement(c.getString(0)!!).jsonObject
+            QueryResult.Value(out)
+        }, 1) { bindString(0, table) }.value.filter { aircraftId == null || it["aircraft_id"]?.jsonPrimitive?.contentOrNull == aircraftId }
 
     /** Discard a change that hasn't reached the server (asks first, M-SYS-01). Never one being sent. */
     fun discard(mutationId: String) {
@@ -333,6 +400,8 @@ class OfflineStore(
     companion object {
         const val MAX_TRIES = 5L
         private const val HELD = "held"
+        const val SQUAWK_PHOTO = "squawk_photo"
+        const val DOCUMENT = "document"
         private const val LAST_SYNC = "last_sync"
 
         fun writeAtomically(f: File, bytes: ByteArray) {
