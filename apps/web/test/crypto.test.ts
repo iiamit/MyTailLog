@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { encryptSecret, decryptSecret } from "../src/lib/crypto";
+import { encryptSecret, decryptSecret, tryDecryptSecret } from "../src/lib/crypto";
 
 // crypto.key() reads ENCRYPTION_KEY lazily (only inside encrypt/decrypt), so
 // setting it here — after the hoisted import but before any test runs — is fine.
@@ -51,4 +51,17 @@ test("crypto: a short key still works (L1 warns, does not throw)", () => {
   } finally {
     process.env.ENCRYPTION_KEY = prev;
   }
+});
+
+test("crypto: tryDecryptSecret reads a value sealed under another key as null", () => {
+  const enc = encryptSecret("room-token");
+  const prev = process.env.ENCRYPTION_KEY;
+  process.env.ENCRYPTION_KEY = "a-different-key-that-is-also-32-chars-long!!";
+  try {
+    assert.throws(() => decryptSecret(enc));
+    assert.equal(tryDecryptSecret(enc), null);
+  } finally {
+    process.env.ENCRYPTION_KEY = prev;
+  }
+  assert.equal(tryDecryptSecret(enc), "room-token");
 });

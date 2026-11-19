@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { createLink, linkUrl } from "@/lib/mechanicLink";
-import { decryptSecret } from "@/lib/crypto";
+import { tryDecryptSecret } from "@/lib/crypto";
 
 // Mechanic links (09 §4.12). Online only and never queued (14-decisions.md D1).
 //   POST { kind: 'squawk', squawkIds, recipientLabel, providerId?, expiresInDays: 7|30|90, includePhotos, includeReporter }
@@ -42,7 +42,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     : { data: [] as { link_id: string; created_at: string }[] };
   return NextResponse.json((links ?? []).map((l) => {
     const mine = (views ?? []).filter((v) => v.link_id === l.id).map((v) => v.created_at).sort();
-    const token = decryptSecret(l.token_enc);
+    const token = tryDecryptSecret(l.token_enc);
     return {
       id: l.id, kind: l.kind, squawkIds: l.squawk_ids, visitId: l.visit_id, recipientLabel: l.recipient_label, providerId: l.provider_id,
       includePhotos: l.include_photos, includeReporter: l.include_reporter, url: token ? linkUrl(token) : null,

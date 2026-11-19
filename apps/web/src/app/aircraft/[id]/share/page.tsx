@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ShareClient, type ShareRow } from "./ShareClient";
 import { RoomsPanel, type RoomRow } from "./RoomsPanel";
-import { decryptSecret } from "@/lib/crypto";
+import { tryDecryptSecret } from "@/lib/crypto";
 import { roomActive, roomUrl } from "@/lib/recordRoom";
 import { documentTypeLabel } from "@/lib/documents";
 
@@ -50,7 +50,7 @@ export default async function SharePage({
   ]);
   const roomRows: RoomRow[] = (rooms ?? []).map((r) => {
     const mine = (views ?? []).filter((v) => v.room_id === r.id);
-    const token = decryptSecret(r.token_enc);
+    const token = tryDecryptSecret(r.token_enc);
     return {
       id: r.id,
       label: r.label,

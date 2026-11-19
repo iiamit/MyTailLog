@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { createRoom, roomJson, roomOpens, roomUrl, ROOM_LIST_COLS, type Room } from "@/lib/recordRoom";
-import { decryptSecret } from "@/lib/crypto";
+import { tryDecryptSecret } from "@/lib/crypto";
 import { loadDueInput } from "@/lib/due/load";
 import { computeStatus } from "@/lib/due/engine";
 
@@ -55,7 +55,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     ? await supabase.from("record_room_view").select("room_id, session_key, section, created_at").in("room_id", roomIds)
     : { data: [] as { room_id: string; session_key: string | null; section: string | null; created_at: string }[] };
   return NextResponse.json((rooms ?? []).map((r) => {
-    const token = decryptSecret(r.token_enc);
+    const token = tryDecryptSecret(r.token_enc);
     return roomJson(r as Room, token ? roomUrl(token) : null, roomOpens((views ?? []).filter((v) => v.room_id === r.id)));
   }), { headers: noStore });
 }

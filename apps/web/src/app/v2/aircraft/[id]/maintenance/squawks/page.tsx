@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAircraftShellContext } from "@/lib/aircraftContext";
 import { dueSnapshot } from "@/lib/due/load";
 import { buildMapModel } from "@/lib/mapModel";
-import { decryptSecret } from "@/lib/crypto";
+import { tryDecryptSecret } from "@/lib/crypto";
 import { linkActive, linkUrl } from "@/lib/mechanicLink";
 import { aircraftTail } from "@/lib/v2/landing";
 import { maintTabs } from "@/lib/v2/tabs";
@@ -385,7 +385,7 @@ export default async function SquawksPage({
               <ul className="mt-2 divide-y divide-rule">
                 {links.map((l) => {
                   const live = linkActive(l);
-                  const token = live ? decryptSecret(l.token_enc) : null;
+                  const token = live ? tryDecryptSecret(l.token_enc) : null;
                   return (
                     <li key={l.id} className={`flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-small ${live ? "" : "text-ink-3"}`}>
                       <span className="min-w-0 flex-1">
