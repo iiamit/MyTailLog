@@ -478,9 +478,13 @@ export function groupByYear<T extends { entry_date: string | null }>(rows: T[]):
 
 /** Split text around search terms for <b> highlighting. */
 export function highlight(text: string, q: string | undefined): { text: string; hit: boolean }[] {
-  const terms = (q ?? "").split(/\s+/).filter((t) => t.length > 1).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  if (!terms.length) return [{ text, hit: false }];
-  return text.split(new RegExp(`(${terms.join("|")})`, "gi")).filter(Boolean).map((p) => ({ text: p, hit: terms.some((t) => new RegExp(`^${t}$`, "i").test(p)) }));
+  const words = (q ?? "").split(/\s+/).filter((t) => t.length > 1).slice(0, 10);
+  if (!words.length) return [{ text, hit: false }];
+  const lower = new Set(words.map((t) => t.toLowerCase()));
+  // Terms are escaped literals in one alternation (capped at 10), so there is no backtracking risk.
+  const escaped = words.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return text.split(new RegExp(`(${escaped.join("|")})`, "gi")).filter(Boolean).map((p) => ({ text: p, hit: lower.has(p.toLowerCase()) }));
 }
 
 // --- Page highlights (02 §6.1) ------------------------------------------------------------------------------------

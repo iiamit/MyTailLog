@@ -29,6 +29,8 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyTailLog">
+        <!-- The launcher, App Links and share targets need an exported activity; it holds no privileged entry points. -->
+        <!-- nosemgrep: java.android.security.exported_activity.exported_activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
