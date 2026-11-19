@@ -42,7 +42,14 @@ export default async function StatusPage({
   const loaded = due === undefined ? undefined : (due?.loaded ?? null);
   const head = (actions?: React.ReactNode) => (
     <>
-      <BoardHead title="Status" subTabs={[{ label: "What's due", href: `${a}/status`, current: true }]} actions={actions} />
+      <BoardHead
+        title="Status"
+        subTabs={[
+          { label: "What's due", href: `${a}/status`, current: true },
+          { label: "Plan ahead", href: `${a}/status/plan` },
+        ]}
+        actions={actions}
+      />
       <Spine
         tail={context.reg}
         context="The next twelve months"

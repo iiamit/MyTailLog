@@ -129,6 +129,21 @@ export function buildSummary(s: ShareInput, opts: { includeSquawks?: boolean; in
   };
 }
 
+/** The summary as plain text, for "Copy as text" (W-SHARE-04): the same article, one line per row, pages kept. */
+export function summaryText(m: SummaryModel): string {
+  const out = [m.title, `Generated ${m.generatedOn}`, m.identity, "", m.verdict, "", `Inspections, items and recurring ADs (${m.items.length})`];
+  for (const i of m.items) out.push(`- ${i.label}: ${i.status}. Last done ${i.lastDone}; next due ${i.nextDue}${i.left ? ` (${i.left})` : ""}${i.page ? ` [${i.page}]` : ""}`);
+  if (m.squawksShown) {
+    out.push("", `Open squawks (${m.squawks.length})`);
+    for (const q of m.squawks) out.push(`- ${q.reported} · ${q.severity} · ${q.description}${q.reporter ? ` (${q.reporter})` : ""}`);
+  }
+  out.push("", `ADs (${m.ads.length})`);
+  for (const a of m.ads) out.push(`- ${a.reference}${a.title ? ` ${a.title}` : ""}: ${a.status}${a.complied ? `, ${a.complied}` : ""}${a.page ? ` [${a.page}]` : ""}`);
+  if (m.wb) out.push("", `Weight and balance: revised ${m.wb.revised}, empty ${m.wb.emptyWeight ?? "—"} lb, useful load ${m.wb.usefulLoad ?? "—"} lb${m.wb.mayBeStale ? " (may be stale)" : ""}`);
+  out.push("", "Page column: AF Airframe, EN Engine, PR Propeller, AV Avionics logbook page; Docs a document.", m.footer);
+  return out.join("\n");
+}
+
 // --- Dossier ------------------------------------------------------------------------
 
 export type Footnote = { n: number; kind: "gap" | "overhaul" | "annual" | "major"; text: string; quote: string | null };

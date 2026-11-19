@@ -136,9 +136,23 @@ function LifeMap({ m }: { m: DossierModel }) {
   const u = (pt: number) => pt / k; // printed points → viewBox units
   const book = new Map(m.map.lines.map((l) => [l.lineId, l.logbook]));
   const color = (lineId: string) => C.line[book.get(lineId) ?? "other"] ?? C.ink;
+  // A gap's number sits over the gap, at the first point along it that clears every visit box and stop (the midpoint
+  // of a long gap often lands on a box signed across several books).
+  const fs = L.fontSize;
+  const blocked: [number, number, number, number][] = [
+    ...L.interchanges.map((x): [number, number, number, number] => [x.x, x.y, x.x + x.w, x.y + x.h]),
+    ...L.stops.map((st): [number, number, number, number] => [st.x - st.r, st.y - st.r, st.x + st.r, st.y + st.r]),
+  ];
+  const clear = (b: [number, number, number, number]) => blocked.every((o) => b[2] + u(2) < o[0] || b[0] - u(2) > o[2] || b[3] < o[1] || b[1] > o[3]);
   const gapMarks = [...new Set(L.segments.filter((g) => g.gapId).map((g) => g.gapId!))].map((id) => {
     const ps = L.segments.filter((g) => g.gapId === id);
-    return { n: m.marks[`gap:${id}`], x: (ps[0].x1 + ps[ps.length - 1].x2) / 2, y: ps[0].y1 };
+    const n = m.marks[`gap:${id}`];
+    const [x1, x2, y] = [ps[0].x1, ps[ps.length - 1].x2, ps[0].y1 - u(4)];
+    const w = String(n ?? "").length * fs * 0.62;
+    const box = (x: number): [number, number, number, number] => [x - w / 2, y - fs, x + w / 2, y];
+    const x = [0.5, 0.35, 0.65, 0.2, 0.8, 0.08, 0.92].map((t) => x1 + (x2 - x1) * t).find((cx) => clear(box(cx))) ?? (x1 + x2) / 2;
+    if (n) blocked.push(box(x));
+    return { n, x, y: ps[0].y1 };
   });
   const stopMarks = L.stops.flatMap((st) => {
     const n = st.ids.map((id) => m.marks[`stop:${id}`]).filter(Boolean);

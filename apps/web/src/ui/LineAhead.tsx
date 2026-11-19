@@ -27,6 +27,8 @@ export function LineAhead({
   caps = [],
   selectedCap,
   onSelectCap,
+  marker,
+  title = "The line ahead: the next twelve months on each logbook line",
 }: {
   from: string;
   to: string;
@@ -39,15 +41,20 @@ export function LineAhead({
   caps?: CapInput[];
   selectedCap?: string | null;
   onSelectCap?: (key: string) => void;
+  /** Plan ahead's DateScrubber (10 §8.3): the window from today to the date, a 2px ink line and its pill. */
+  marker?: MarkerInput;
+  title?: string;
 }) {
   const { rings: placed, more } = layoutLineAhead(rings, lanes, from, to, capBoxes(caps, lanes, from, to));
-  const ticks = monthTicks(from, to);
+  // The scrubber's pill sits on the axis; ticks under it give way.
+  const pillX = marker ? xFor(marker.date, from, to) : null;
+  const ticks = monthTicks(from, to).filter((t) => pillX == null || Math.abs(t.x - pillX) > marker!.label.length * 3.3 + 24);
   const laneY = (i: number) => LA.laneTop + i * LA.laneGap;
   const top = laneY(0) - 20;
   const bottom = laneY(lanes.length - 1) + 20;
   const names = new Map(rings.map((r) => [r.key, r.name]));
   return (
-    <figure role="group" aria-label="The line ahead: the next twelve months on each logbook line" className="m-0 mb-1">
+    <figure role="group" aria-label={title} className="m-0 mb-1">
       <svg viewBox={`0 0 ${LA.width} ${LA.height}`} className="block h-auto w-full" aria-describedby="line-ahead-summary">
         {lanes.map((l, i) => (
           <g key={l} aria-hidden>
@@ -58,6 +65,9 @@ export function LineAhead({
             <line x1={LA.todayX} x2={LA.horizonX} y1={laneY(i)} y2={laneY(i)} stroke={LINE_TOKEN[l]} style={{ strokeWidth: "var(--map-line-stroke)" }} strokeLinecap="round" strokeDasharray="0.1 11" />
           </g>
         ))}
+        {marker && (
+          <rect aria-hidden x={LA.todayX} y={top} width={Math.max(0, xFor(marker.date, from, to) - LA.todayX)} height={LA.tickY - 12 - top} fill="var(--board-ink)" fillOpacity={0.12} />
+        )}
         <line aria-hidden x1={LA.todayX} x2={LA.todayX} y1={top} y2={bottom} stroke="var(--color-ink)" strokeWidth="1.5" />
         {ticks.map((t) => (
           <text key={`${t.x}-${t.label}`} aria-hidden x={t.x} y={LA.tickY} textAnchor={t.anchor} fill="var(--color-ink-3)" className="text-map-tick">
@@ -151,6 +161,7 @@ export function LineAhead({
             </g>
           );
         })}
+        {marker && <Marker x={xFor(marker.date, from, to)} top={top} m={marker} />}
       </svg>
       <figcaption id="line-ahead-summary" className="sr-only">
         {summary}
@@ -161,5 +172,45 @@ export function LineAhead({
         </p>
       )}
     </figure>
+  );
+}
+
+export type MarkerInput = {
+  date: string;
+  label: string;
+  /** The slider's spoken value, e.g. "March 1, 2027, 5 items lapse". */
+  valueText: string;
+  /** Days from today: now, and the window's end. */
+  value: number;
+  max: number;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+};
+
+/** The DateScrubber's line and pill (10 §8.3), the slider's handle; the pill stays inside the drawing at either end. */
+function Marker({ x, top, m }: { x: number; top: number; m: MarkerInput }) {
+  const w = m.label.length * 6.6 + 14;
+  const px = Math.min(Math.max(x - w / 2, LA.nameCol), LA.width - w);
+  return (
+    <g
+      role="slider"
+      tabIndex={0}
+      aria-label="Date to plan for"
+      aria-valuemin={0}
+      aria-valuemax={m.max}
+      aria-valuenow={m.value}
+      aria-valuetext={m.valueText}
+      data-scrubber
+      style={{ outline: "none" }}
+      onKeyDown={m.onKeyDown}
+      className="cursor-ew-resize outline-none [&:focus-visible>.focus]:visible"
+    >
+      <line x1={x} x2={x} y1={top} y2={LA.tickY - 17} stroke="var(--color-ink)" strokeWidth="2" />
+      <rect x={x - 8} y={top} width={16} height={LA.tickY - 17 - top} fill="transparent" />
+      <rect className="focus invisible" x={px - 3} y={LA.tickY - 20} width={w + 6} height={26} rx={6} fill="none" stroke="var(--color-focus)" strokeWidth="2" />
+      <rect x={px} y={LA.tickY - 17} width={w} height={20} rx={4} fill="var(--color-ink)" />
+      <text x={px + w / 2} y={LA.tickY - 3} textAnchor="middle" fill="var(--color-leaf)" className="text-caption font-semibold" aria-hidden>
+        {m.label}
+      </text>
+    </g>
   );
 }
