@@ -16,6 +16,7 @@ import * as gaps from "./gaps";
 import * as visits from "./visits";
 import * as providers from "./providers";
 import * as timeChecks from "./timeChecks";
+import * as aircraft from "./aircraft";
 
 export type { Db, WriteCtx, WriteResult, WriteFn } from "./_stubs";
 
@@ -36,6 +37,8 @@ export const PHASE4_MUTATIONS = {
   "squawkPhoto.delete": { base: "always" },
   "document.setExpiry": { base: "always" },
   "timeCheck.dismiss": { base: "never" },
+  "aircraft.setExpectedHours": { base: "always" },
+  "aircraft.setSituation": { base: "always" },
 } as const satisfies Record<string, { base: "never" | "always" | "ifId" }>;
 export type Phase4MutationType = keyof typeof PHASE4_MUTATIONS;
 
@@ -111,4 +114,6 @@ export const writes: Record<MutationType | Phase4MutationType, WriteFn> = {
   "squawkPhoto.delete": squawks.removePhoto,
   "document.setExpiry": documents.setExpiry,
   "timeCheck.dismiss": timeChecks.dismiss,
+  "aircraft.setExpectedHours": aircraft.setExpectedHours,
+  "aircraft.setSituation": aircraft.setSituation,
 };

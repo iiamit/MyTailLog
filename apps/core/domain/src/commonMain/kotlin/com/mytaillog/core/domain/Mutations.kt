@@ -33,7 +33,8 @@ object Mutations {
         online("page.extract", "mx.scan", "equipment.scan", "aircraft.enroll", "backup.run")
         // Phase 4 (09 §5.3), from PHASE4_MUTATIONS in apps/web/src/lib/writes/index.ts.
         never("visit.create", "visitSuggestion.dismiss", "squawkPhoto.create", "timeCheck.dismiss")
-        always("visit.update", "visit.setStatus", "provider.delete", "squawkPhoto.delete", "document.setExpiry")
+        always("visit.update", "visit.setStatus", "provider.delete", "squawkPhoto.delete", "document.setExpiry",
+            "aircraft.setExpectedHours", "aircraft.setSituation")
         ifId("provider.upsert")
     }
 

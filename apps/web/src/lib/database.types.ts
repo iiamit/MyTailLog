@@ -1096,6 +1096,10 @@ export type Database = {
         Args: { target_aircraft: string };
         Returns: boolean;
       };
+      set_expected_hours: {
+        Args: { target_aircraft: string; hours_per_week: number | null };
+        Returns: string;
+      };
       sign_authored_entry: {
         Args: {
           p_challenge_id: string; p_code: string;

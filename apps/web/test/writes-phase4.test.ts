@@ -6,6 +6,7 @@ import * as providers from "../src/lib/writes/providers";
 import * as squawks from "../src/lib/writes/squawks";
 import * as documents from "../src/lib/writes/documents";
 import * as timeChecks from "../src/lib/writes/timeChecks";
+import * as aircraftWrites from "../src/lib/writes/aircraft";
 import { pickPhotoReading } from "../src/lib/writes/meters";
 import { writes, PHASE4_MUTATIONS, type Db } from "../src/lib/writes";
 import { computeTimeChecks, isDigitSwap, type TimeCheckInput } from "../src/lib/timeCheck";
@@ -59,7 +60,16 @@ function fake(editor: boolean, tables: Record<string, Row[]> = {}) {
     };
     return q;
   };
-  const db = { rpc: async () => ({ data: editor }), from } as unknown as Db;
+  // can_edit_aircraft answers `editor`; set_expected_hours (0090) refuses non-editors like the definer function does.
+  const rpc = async (name: string, args: Record<string, unknown>) => {
+    if (name !== "set_expected_hours") return { data: editor, error: null };
+    if (!editor) return { data: null, error: { code: "42501", message: "denied" } };
+    const row = (tables.aircraft ?? []).find((a) => a.id === args.target_aircraft);
+    if (row) row.expected_hours_per_week = args.hours_per_week;
+    log.push({ table: "aircraft", op: "rpc", value: args });
+    return { data: "2026-11-18T11:00:00.000Z", error: null };
+  };
+  const db = { rpc, from } as unknown as Db;
   return { db, log, tables, writes: () => log.filter((l) => l.op !== "select") };
 }
 const ctx = { aircraftId: "ac", userId: "u" };
@@ -78,6 +88,7 @@ test("viewers are refused every phase 4 write, and nothing is written", async ()
     squawk: [{ id: "s", aircraft_id: "ac", reported_by: "someone-else" }],
     squawk_photo: [{ id: "ph", aircraft_id: "ac", squawk_id: "s", created_by: "someone-else", updated_at: "2026-11-18T10:00:00.000Z" }],
     log_entry: [{ id: "e", aircraft_id: "ac" }],
+    aircraft: [{ id: "ac", owner_id: "owner", updated_at: "2026-11-18T10:00:00.000Z" }],
   });
   const base = "2026-11-18T10:00:00.000Z";
   const calls: [string, (db: Db) => Promise<unknown>][] = [
@@ -89,6 +100,7 @@ test("viewers are refused every phase 4 write, and nothing is written", async ()
     ["provider.delete", (db) => providers.remove(db, ctx, { providerId: "p" }, base)],
     ["document.setExpiry", (db) => documents.setExpiry(db, ctx, { documentId: "d", trackExpiry: true, expiresOn: "2027-01-01" }, base)],
     ["timeCheck.dismiss", (db) => timeChecks.dismiss(db, ctx, { id: "t", component: "engine", entryId: "e", written: 1, calculated: 2, action: "agree" })],
+    ["aircraft.setExpectedHours", (db) => aircraftWrites.setExpectedHours(db, ctx, { hoursPerWeek: 3 }, base)],
     ["squawkPhoto.delete (someone else's)", (db) => squawks.removePhoto(db, ctx, { photoId: "ph" }, base)],
   ];
   for (const [name, call] of calls) {
@@ -322,4 +334,22 @@ test("phase 4 catalogue: every type has a write, and the Kotlin mirror lists it 
     assert.equal(typeof writes[type as keyof typeof writes], "function", type);
     assert.match(kt, new RegExp(`${fn[base]}\\([^)]*"${type.replace(".", "\\.")}"`), `${type} as ${base} in Mutations.kt`);
   }
+});
+
+test("aircraft: editors set usual flying through the definer function; only the owner sets the situation", async () => {
+  const seed = () => ({ aircraft: [{ id: "ac", owner_id: "owner", updated_at: "2026-11-18T10:00:00.000Z", expected_hours_per_week: null }] });
+  const base = "2026-11-18T10:00:00.000Z";
+  const f = fake(true, seed());
+  assert.equal((await aircraftWrites.setExpectedHours(f.db, ctx, { hoursPerWeek: 3.04 }, base)).status, "ok");
+  assert.equal(f.tables.aircraft[0].expected_hours_per_week, 3);
+  assert.equal((await aircraftWrites.setExpectedHours(f.db, ctx, { hoursPerWeek: 61 }, base)).status, "error");
+  assert.equal((await aircraftWrites.setExpectedHours(f.db, ctx, { hoursPerWeek: 2 }, "2026-11-18T09:00:00.000Z")).status, "conflict");
+  // An editor who is not the owner: the owner-only update matches no row.
+  const ed = fake(true, seed());
+  assert.equal((await aircraftWrites.setSituation(ed.db, ctx, { situation: "in_shop" }, base)).status, "error");
+  assert.equal(ed.tables.aircraft[0].situation_override, undefined);
+  const owner = fake(true, seed());
+  const r = await aircraftWrites.setSituation(owner.db, { aircraftId: "ac", userId: "owner" }, { situation: "preparing_sale" }, base);
+  assert.equal(r.status, "ok");
+  assert.equal(owner.tables.aircraft[0].situation_override, "preparing_sale");
 });
