@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { openRoom, roomEntries, logRoomView, ROOM_ENTRY_LIMIT } from "@/lib/recordRoom";
+import { openRoom, roomEntries, logRoomView, roomRateLimited, visitorOf, ROOM_ENTRY_LIMIT } from "@/lib/recordRoom";
 import { loadSummary, SummaryArticle } from "@/components/MaintenanceSummary";
 
 export const metadata = { title: "Shared aircraft records — MyTailLog", robots: { index: false, follow: false } };
@@ -21,6 +20,8 @@ export default async function RecordRoomPage({
 }) {
   const { token } = await params;
   const { tab: tabParam, q = "" } = await searchParams;
+  const visitor = visitorOf(await headers());
+  if (roomRateLimited(visitor)) return <Inactive title="Too many requests" line="Wait a minute, then reload the page." />;
   const room = await openRoom(token);
   if (!room) return <Inactive />;
 
@@ -34,16 +35,6 @@ export default async function RecordRoomPage({
   ]);
   if (!aircraft) return <Inactive />;
 
-  // The owner previewing their own link isn't a view.
-  const { data: { user } } = await (await createClient()).auth.getUser();
-  if (user?.id !== aircraft.owner_id) {
-    const h = await headers();
-    await logRoomView(room, `/${tabParam ?? ""}`, {
-      ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-      userAgent: h.get("user-agent"),
-    });
-  }
-
   const tabs = [
     ...(room.include_summary ? [{ key: "summary", label: "Summary" }] : []),
     ...(books ?? []).map((b) => ({ key: b.id, label: b.title || LOGBOOK_LABEL[b.type] || b.type })),
@@ -51,6 +42,9 @@ export default async function RecordRoomPage({
   ];
   const tab = tabs.find((t) => t.key === tabParam)?.key ?? tabs[0]?.key;
   const base = `/r/${token}`;
+
+  const section = !tab ? null : tab === "summary" ? "summary" : tab === "docs" ? "documents" : `logbook:${tab}`;
+  await logRoomView(room, `/${tabParam ?? ""}`, visitor, section);
   const desc = [aircraft.year, aircraft.make, aircraft.model].filter(Boolean).join(" ");
 
   return (
@@ -145,11 +139,11 @@ async function Entries({ room, logbookId, q, base }: { room: NonNullable<Awaited
   );
 }
 
-function Inactive() {
+function Inactive({ title = "This link is no longer active", line = "Ask the owner for a new one." }: { title?: string; line?: string }) {
   return (
     <main className="mx-auto max-w-xl px-6 py-16 text-center">
-      <h1 className="font-display text-[22px] font-semibold">This link is no longer active</h1>
-      <p className="mt-2 text-[13.5px] text-dim">Ask the owner for a new one.</p>
+      <h1 className="font-display text-[22px] font-semibold">{title}</h1>
+      <p className="mt-2 text-[13.5px] text-dim">{line}</p>
       <Footer />
     </main>
   );
