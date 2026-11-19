@@ -19,7 +19,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const m = buildDossier(share, { preparedFor: q.get("for")?.trim().slice(0, 80) || null });
     if (q.get("format") === "json") return NextResponse.json(m, { headers: { "Cache-Control": "private, no-store" } });
     return pdfResponse(await dossierPdf(m), `${m.tail}-pre-buy-dossier.pdf`);
-  } catch {
-    return NextResponse.json({ error: "We could not make the dossier right now. Try again.", code: "dossier_failed" }, { status: 500 });
+  } catch (err) {
+    console.error("[pdf] dossier failed", err);
+    // EXPOSE_SERVER_ERRORS is set only on the test backend (apphosting.mfb_test.yaml), never in production.
+    const detail = process.env.EXPOSE_SERVER_ERRORS === "1" ? { detail: String(err) } : {};
+    return NextResponse.json({ ...detail, error: "We could not make the dossier right now. Try again.", code: "dossier_failed" }, { status: 500 });
   }
 }

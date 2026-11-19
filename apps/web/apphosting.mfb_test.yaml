@@ -84,3 +84,8 @@ env:
   - variable: GCS_BUCKET
     value: test-disabled
     availability: [RUNTIME]
+  # Test backend only: API errors include the underlying message so failures can be diagnosed
+  # without log access. Never set this in apphosting.yaml (production).
+  - variable: EXPOSE_SERVER_ERRORS
+    value: "1"
+    availability: [RUNTIME]
