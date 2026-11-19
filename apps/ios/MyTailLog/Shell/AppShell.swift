@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 /// Signed out: M-AUTH-01. Signed in: the phone shell at compact width, the binder split view at regular width (05 §3.3).
 struct RootView: View {
@@ -26,12 +27,35 @@ struct RootView: View {
                 PhoneShell()
             }
         }
+        // Inside the environment below: these read the shell's models.
+        .background { if store.session != nil { KeyCommands(tablet: sizeClass == .regular) } }
+        // Notifications and Reminders (06 M-SYS-05) over either shell.
+        .sheet(item: Bindable(tabs).sheet) { s in
+            AccountSheetView(sheet: s, api: notifyAPI, tails: tails) { LinkInbox.shared.pending = $0 }
+        }
+        // Log a flight and Report a squawk asked for by a link, an intent or ⇧⌘F.
+        .fullScreenCover(item: Bindable(tabs).addRequest) { a in
+            if let recs { if a == .flight { LogFlightFlow(recs: recs) } else { NewSquawk(recs: recs) } }
+        }
         .environment(tabs)
         .environment(status)
         .environment(books)
         .environment(offline)
         .environment(recs)
         .environment(\.aircraftLine, line)
+        // One route table (05 §5.5): links from notifications, widgets, intents, Spotlight and Universal Links.
+        .task(id: "\(String(describing: links.pending))|\(status?.aircraft.count ?? -1)") { follow() }
+        .onChange(of: status?.currentId) { _, id in
+            SharedSnapshots.lastOpened = id
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        // System search (05 §14): this aircraft's confirmed entries and tracked items, after each pull.
+        .task(id: "\(books?.aircraft.id ?? "")|\(books?.entries.count ?? -1)|\(status?.snapshot?.computedAt ?? "")") {
+            guard let books, let snap = status?.snapshot, snap.aircraftId == books.aircraft.id else { return }
+            await Spotlight.index(aircraftId: books.aircraft.id, Spotlight.records(
+                aircraftId: books.aircraft.id, tail: books.aircraft.tailNumber, entries: books.entries, logbooks: books.logbooks,
+                pages: books.pages, items: snap.items))
+        }
         .task(id: scenePhase) {
             switch scenePhase {
             case .active:
@@ -51,11 +75,18 @@ struct RootView: View {
                 offline = o
                 status = makeStatus(userId: userId, offline: o)
                 o.schedule(after: 0) // launch: push, then pull
+                Push.shared.api = notifyAPI
+                await Push.shared.start()
             } else {
                 // Signed out (05 §8.6): this user's device copy goes.
                 offline?.wipe()
                 offline = nil
                 status = nil
+                // The widgets, Spotlight and the Live Activity forget this user too.
+                SharedSnapshots.clear()
+                WidgetCenter.shared.reloadAllTimelines()
+                ReadingLive.shared.endAll()
+                await Spotlight.clear()
             }
         }
         .task(id: status?.current?.id) {
@@ -67,6 +98,26 @@ struct RootView: View {
         .onChange(of: offline?.revision) {
             if let offline { books?.readMirror(offline) }
         }
+    }
+
+    private var links: LinkInbox { LinkInbox.shared }
+
+    private var notifyAPI: NotifyAPI {
+        let store = store
+        return NotifyAPI(apiURL: statusAPI.apiURL, token: { try await store.currentSession().accessToken })
+    }
+
+    private var tails: [String: String] {
+        Dictionary((status?.aircraft ?? []).map { ($0.id, $0.tailNumber) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    /// Opens a pending link once the aircraft list is known, switching aircraft first when the link names another.
+    private func follow() {
+        guard let link = links.pending, store.session != nil, let status, !status.loading || !status.aircraft.isEmpty else { return }
+        links.pending = nil
+        if let id = link.aircraftId, id != status.currentId, status.aircraft.contains(where: { $0.id == id }) { status.select(id) }
+        if link.target == .review { ReadingLive.shared.endAll() }
+        tabs.go(landing(link, tablet: sizeClass == .regular))
     }
 
     /// The tail line with the sync state (06 §1.3).
@@ -104,6 +155,7 @@ struct RootView: View {
                     let session = try await store.currentSession()
                     let list = try await api.aircraft(token: session.accessToken, userId: userId, email: session.email)
                     await offline.saveAircraft(list)
+                    SharedSnapshots.saveAircraft(list.map { .init(id: $0.id, tail: $0.tailNumber) })
                     return list
                 } catch {
                     let cached = await offline.cachedAircraft()
@@ -116,6 +168,9 @@ struct RootView: View {
                     let data = try await api.statusData(token: store.currentSession().accessToken, aircraftId: id)
                     let snap = try JSONDecoder().decode(StatusSnapshot.self, from: data)
                     await offline.saveStatus(data, aircraftId: id)
+                    // The widgets' copy (05 §11.2): written after every load; the server's body is confirmed data only.
+                    SharedSnapshots.saveStatus(data, aircraftId: id)
+                    WidgetCenter.shared.reloadAllTimelines()
                     return snap
                 } catch {
                     guard let cached = await offline.cachedStatus(id) else { throw error }
@@ -211,7 +266,7 @@ struct TabletShell: View {
                 .toolbar(.hidden, for: .navigationBar)
         } detail: {
             NavigationStack(path: tabs.path(tabs.selected)) {
-                TabletBoard(section: tabs.selected).modifier(SyncDestinations())
+                TabletBoard(section: tabs.selected).modifier(SyncDestinations()).modifier(RecordDestinations())
             }
             .id(tabs.selected)
         }
@@ -319,6 +374,7 @@ struct Rail: View {
                 .frame(maxWidth: .infinity, minHeight: Tokens.Size.tabMin, alignment: .leading)
         }
         .buttonStyle(FillButtonStyle(fill: section.board, content: section.onBoard, shape: shape))
+        .hoverEffect(.highlight)
         .padding(.trailing, selected ? 0 : Tokens.Space.s3)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }

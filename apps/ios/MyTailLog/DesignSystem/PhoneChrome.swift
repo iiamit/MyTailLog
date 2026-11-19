@@ -218,6 +218,7 @@ struct AccountButton<Label: View>: View {
     @Environment(SessionStore.self) private var store
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(OfflineStore.self) private var offline: OfflineStore?
+    @Environment(TabModel.self) private var tabs
     @State private var confirming = false
 
     /// "3 changes and 2 pages" not yet on the server, or nil.
@@ -226,6 +227,13 @@ struct AccountButton<Label: View>: View {
         let c = offline.items.count + offline.heldDocuments.count, p = offline.heldPages.count
         guard c + p > 0 else { return nil }
         return [c > 0 ? SyncBars.plural(c, "change") : nil, p > 0 ? SyncBars.plural(p, "page") : nil].compactMap { $0 }.joined(separator: " and ")
+    }
+
+    /// Notifications and Reminders (06 M-SYS-05), then Sign out.
+    @ViewBuilder private var accountItems: some View {
+        Button("Notifications") { tabs.sheet = .inbox }
+        Button("Reminders") { tabs.sheet = .reminders }
+        Button("Sign out") { confirming = true }
     }
 
     private var signOutQuestion: String {
@@ -243,15 +251,16 @@ struct AccountButton<Label: View>: View {
                         }
                     }
                     Divider()
-                    Button("Sign out") { confirming = true }
+                    accountItems
                 } label: { label }
-                .accessibilityHint("Switch aircraft or sign out")
+                .accessibilityHint("Switch aircraft, notifications, reminders or sign out")
             } else {
-                Button { confirming = true } label: { label }
-                    .accessibilityHint("Account")
+                Menu { accountItems } label: { label }
+                    .accessibilityHint("Notifications, reminders or sign out")
             }
         }
         .buttonStyle(.plain)
+        .hoverEffect()
         .confirmationDialog(signOutQuestion, isPresented: $confirming, titleVisibility: .visible) {
             if unsent == nil {
                 Button("Sign out") { Task { await store.signOut() } }

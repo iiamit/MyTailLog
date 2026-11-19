@@ -78,6 +78,13 @@ struct BooksHome: View {
             .presentationBackgroundInteraction(.enabled(upThrough: .height(360)))
             .presentationBackground(Tokens.Colors.leaf)
         }
+        // A link to Review (05 §5.5) opens the flow here; it also ends the reading Live Activity (05 §12).
+        .task(id: tabs.reviewPending) {
+            guard tabs.reviewPending else { return }
+            tabs.reviewPending = false
+            ReadingLive.shared.endAll()
+            cover = .review(start: nil)
+        }
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .pages(let ids, let current, let box):
@@ -653,7 +660,11 @@ struct ScanRow: View {
                 }
             }
             .fullScreenCover(item: $scanning) { cam in
-                ScanCameraScreen(model: cam) { tabs.paths[.books, default: NavigationPath()].append(SyncRoute.scanQueue) }
+                ScanCameraScreen(model: cam) {
+                    tabs.paths[.books, default: NavigationPath()].append(SyncRoute.scanQueue)
+                    ReadingLive.shared.start(aircraftId: model.aircraft.id, tail: model.aircraft.tailNumber, logbook: cam.session.logbook.name,
+                                             batchId: cam.session.batchId, offline: offline, books: model)
+                }
             }
         }
     }

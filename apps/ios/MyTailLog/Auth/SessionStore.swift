@@ -188,6 +188,8 @@ final class SessionStore {
 
     /// shortcut: phase 0 has no outbox, so this is the "nothing unsent" path of 05 §8.6; add the unsent-work prompt with sync.
     func signOut() async {
+        // This phone stops getting the account's reminders while the session can still say so (06 M-SYS-05).
+        await Push.shared.stop()
         if let session { await auth.signOut(session) }
         await forget()
     }
