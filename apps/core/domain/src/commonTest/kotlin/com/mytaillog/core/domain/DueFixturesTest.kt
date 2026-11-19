@@ -2,6 +2,7 @@ package com.mytaillog.core.domain
 
 import com.mytaillog.core.domain.due.DueInput
 import com.mytaillog.core.domain.due.computeStatus
+import com.mytaillog.core.domain.due.planDate
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -28,7 +29,7 @@ import kotlin.test.fail
  * (fixtures/README.md): every key it names must equal the Kotlin output, arrays element by element.
  */
 class DueFixturesTest {
-    private val files = listOf("due-calendar", "due-hours", "status-thresholds", "projection", "verdict", "visits")
+    private val files = listOf("due-calendar", "due-hours", "status-thresholds", "projection", "verdict", "visits", "plan-date")
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = true; encodeDefaults = true }
 
     @Test
@@ -42,9 +43,19 @@ class DueFixturesTest {
                 val o = c.jsonObject
                 val label = "$name: ${o["name"]!!.jsonPrimitive.content}"
                 val input = json.decodeFromJsonElement(DueInput.serializer(), o["input"]!!)
-                val actual = json.encodeToJsonElement(
+                val today = o["today"]!!.jsonPrimitive.content
+                // plan-date: input._plan = { date, hoursPerWeek }, status with Plan ahead's visit options (24 months, 6).
+                val plan = o["input"]!!.jsonObject["_plan"]?.jsonObject
+                val actual = if (plan != null) json.encodeToJsonElement(
+                    com.mytaillog.core.domain.due.PlanResult.serializer(),
+                    planDate(
+                        computeStatus(input, today, horizonMonths = 24, visitLimit = 6),
+                        plan["date"]!!.jsonPrimitive.content,
+                        plan["hoursPerWeek"]!!.jsonPrimitive.doubleOrNull,
+                    ),
+                ) else json.encodeToJsonElement(
                     com.mytaillog.core.domain.due.StatusBody.serializer(),
-                    computeStatus(input, o["today"]!!.jsonPrimitive.content),
+                    computeStatus(input, today),
                 )
                 diff(o["expected"]!!, actual, "")?.let { failures.add("$label at $it") }
                 total++

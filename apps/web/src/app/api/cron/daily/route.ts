@@ -83,7 +83,18 @@ export async function POST(req: Request) {
     console.error(`[cron] visits failed: ${(error as Error).message}`);
   }
 
-  return json({ usersSynced, emailsSent, onboardingSent, visitsAwaitingRecords });
+  // View log trim (09 §6): weekly, Sundays UTC, drop record-room and mechanic-link views older than 2 years.
+  let viewsTrimmed = 0;
+  if (new Date().getUTCDay() === 0) {
+    const before = new Date(Date.now() - 730 * 86_400_000).toISOString();
+    for (const table of ["record_room_view", "mechanic_link_view"] as const) {
+      const { count, error } = await supabase.from(table).delete({ count: "exact" }).lt("created_at", before);
+      if (error) console.error(`[cron] ${table} trim failed: ${error.message}`);
+      else viewsTrimmed += count ?? 0;
+    }
+  }
+
+  return json({ usersSynced, emailsSent, onboardingSent, visitsAwaitingRecords, viewsTrimmed });
 }
 
 // --- Sync pass -------------------------------------------------------------

@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { openRoom, roomEntries, logRoomView, ROOM_ENTRY_LIMIT } from "@/lib/recordRoom";
-import { loadSummary, SummaryArticle } from "@/components/MaintenanceSummary";
+import { openRoom, roomEntries, logRoomView, roomRateLimited, visitorOf, ROOM_ENTRY_LIMIT } from "@/lib/recordRoom";
+import { buildSummary, loadShareInput, type SummaryModel } from "@/lib/share/model";
 
 export const metadata = { title: "Shared aircraft records — MyTailLog", robots: { index: false, follow: false } };
 
@@ -21,6 +20,8 @@ export default async function RecordRoomPage({
 }) {
   const { token } = await params;
   const { tab: tabParam, q = "" } = await searchParams;
+  const visitor = visitorOf(await headers());
+  if (roomRateLimited(visitor)) return <Inactive title="Too many requests" line="Wait a minute, then reload the page." />;
   const room = await openRoom(token);
   if (!room) return <Inactive />;
 
@@ -34,16 +35,6 @@ export default async function RecordRoomPage({
   ]);
   if (!aircraft) return <Inactive />;
 
-  // The owner previewing their own link isn't a view.
-  const { data: { user } } = await (await createClient()).auth.getUser();
-  if (user?.id !== aircraft.owner_id) {
-    const h = await headers();
-    await logRoomView(room, `/${tabParam ?? ""}`, {
-      ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-      userAgent: h.get("user-agent"),
-    });
-  }
-
   const tabs = [
     ...(room.include_summary ? [{ key: "summary", label: "Summary" }] : []),
     ...(books ?? []).map((b) => ({ key: b.id, label: b.title || LOGBOOK_LABEL[b.type] || b.type })),
@@ -51,6 +42,9 @@ export default async function RecordRoomPage({
   ];
   const tab = tabs.find((t) => t.key === tabParam)?.key ?? tabs[0]?.key;
   const base = `/r/${token}`;
+
+  const section = !tab ? null : tab === "summary" ? "summary" : tab === "docs" ? "documents" : `logbook:${tab}`;
+  await logRoomView(room, `/${tabParam ?? ""}`, visitor, section);
   const desc = [aircraft.year, aircraft.make, aircraft.model].filter(Boolean).join(" ");
 
   return (
@@ -82,7 +76,7 @@ export default async function RecordRoomPage({
       </nav>
 
       <div className="mt-5">
-        {tab === "summary" && <SummaryArticle data={await loadSummary(svc, aircraft)} />}
+        {tab === "summary" && <RoomSummary base={base} m={await roomSummary(room, aircraft.owner_id)} />}
         {tab === "docs" && (
           <ul className="divide-y divide-line">
             {(docs ?? []).map((d) => (
@@ -145,11 +139,48 @@ async function Entries({ room, logbookId, q, base }: { room: NonNullable<Awaited
   );
 }
 
-function Inactive() {
+/** The v2 summary model: confirmed and signed entries only (09 §3.1), squawks and reporters only when included. */
+async function roomSummary(room: NonNullable<Awaited<ReturnType<typeof openRoom>>>, ownerId: string): Promise<SummaryModel | null> {
+  const share = await loadShareInput(createServiceClient(), room.aircraft_id, ownerId);
+  return share && buildSummary(share, { includeSquawks: room.include_squawks, includeReporters: room.include_reporters });
+}
+
+// shortcut: a plain rendering of W-SHARE-04 until the v2 recipient view (W-SHARE-02) replaces this page.
+function RoomSummary({ m, base }: { m: SummaryModel | null; base: string }) {
+  if (!m) return <p className="text-[13px] text-faint">The summary could not be loaded.</p>;
+  const th = "py-1 pr-3 text-left font-medium text-faint";
+  return (
+    <article className="text-[13px] text-dim">
+      <p className="text-ink">{m.identity}</p>
+      <p className="mt-2 font-semibold text-ink">{m.verdict}</p>
+      <h2 className="mb-2 mt-6 text-[15px] font-bold text-ink">Inspections, items and recurring ADs ({m.items.length})</h2>
+      <table className="w-full text-[12.5px]">
+        <thead><tr><th className={th}>Item</th><th className={th}>Last done</th><th className={th}>Next due</th><th className={th}>Left</th><th className={th}>Status</th><th className={th}>Page</th></tr></thead>
+        <tbody>
+          {m.items.map((i) => (
+            <tr key={i.key} className="border-t border-line"><td className="py-1 pr-3 text-ink">{i.label}</td><td className="pr-3">{i.lastDone}</td><td className="pr-3">{i.nextDue}</td><td className="pr-3">{i.left}</td><td className="pr-3">{i.status}</td><td className="readout">{i.page ?? "—"}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      {m.squawksShown && (
+        <>
+          <h2 className="mb-2 mt-6 text-[15px] font-bold text-ink">Open squawks ({m.squawks.length})</h2>
+          {m.squawks.length ? m.squawks.map((q, i) => <p key={i}>{q.reported} · {q.severity} · {q.description}{q.reporter ? ` · ${q.reporter}` : ""}</p>) : <p>No open squawks.</p>}
+        </>
+      )}
+      <h2 className="mb-2 mt-6 text-[15px] font-bold text-ink">ADs ({m.ads.length})</h2>
+      {m.ads.map((a) => <p key={a.reference}>{a.reference} {a.title ? `· ${a.title} ` : ""}· {a.status} · {a.complied}</p>)}
+      <p className="mt-6"><a className="text-accent" href={`${base}/summary`} target="_blank" rel="noopener noreferrer">Open as PDF ↗</a></p>
+      <p className="mt-3 text-[12px] text-faint">{m.footer}</p>
+    </article>
+  );
+}
+
+function Inactive({ title = "This link is no longer active", line = "Ask the owner for a new one." }: { title?: string; line?: string }) {
   return (
     <main className="mx-auto max-w-xl px-6 py-16 text-center">
-      <h1 className="font-display text-[22px] font-semibold">This link is no longer active</h1>
-      <p className="mt-2 text-[13.5px] text-dim">Ask the owner for a new one.</p>
+      <h1 className="font-display text-[22px] font-semibold">{title}</h1>
+      <p className="mt-2 text-[13.5px] text-dim">{line}</p>
       <Footer />
     </main>
   );
