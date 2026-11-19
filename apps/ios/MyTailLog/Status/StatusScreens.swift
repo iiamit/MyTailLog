@@ -55,7 +55,7 @@ struct StatusItemScreen: View {
         let item = model.snapshot?.items.first { $0.key == key }
         PhoneBoard(section: .status, title: item?.label ?? "Status", back: "Status") {
             PhoneLeaf {
-                if let item, let snap = model.snapshot { ItemDetail(item: item, snapshot: snap) }
+                if let item, let snap = model.snapshot { ItemDetail(item: item, snapshot: snap, titled: false) }
             }
         }
     }
@@ -82,6 +82,8 @@ struct StatusTablet: View {
                     ItemDetail(item: item, snapshot: snap)
                 }
             }
+            // The list leads; the selected item's leaf stays narrower so rows keep their two columns in portrait.
+            .frame(maxWidth: 380)
         }
     }
 }
@@ -140,8 +142,10 @@ struct StatusContent: View {
             if model.failed { StatusError(retry: retry, compact: true) }
         }
         if snap.situation != "setup" && !snap.items.isEmpty {
-            LineAheadView(snapshot: snap) { open(.item($0)) }
-            ForEach(snap.undatedLines, id: \.self) { Small($0) }
+            VStack(alignment: .leading, spacing: Tokens.Space.s1) {
+                LineAheadView(snapshot: snap) { open(.item($0)) }
+                ForEach(snap.undatedLines, id: \.self) { Small($0) }
+            }
         }
         VStack(alignment: .leading, spacing: 0) {
             if snap.counts.pagesToReview > 0 && mode != .tablet {
@@ -353,14 +357,18 @@ struct FlowLayout: Layout {
 struct ItemDetail: View {
     let item: DueItem
     let snapshot: StatusSnapshot
+    /// The phone's pushed screen already names the item in its header; the tablet's right leaf does not.
+    var titled = true
 
     var body: some View {
         let both = item.calendar != nil && item.hours != nil
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s3) {
-                Text(item.label).dFont(.heading).foregroundStyle(Tokens.Colors.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityAddTraits(.isHeader)
+                if titled {
+                    Text(item.label).dFont(.heading).foregroundStyle(Tokens.Colors.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 StatusMark(kind: markKind(item.status), label: item.overdueText ?? statusWord(item.status))
             }
             Text(([item.rule] + item.qualifiers).joined(separator: " · ")).dFont(.small).foregroundStyle(Tokens.Colors.ink3)

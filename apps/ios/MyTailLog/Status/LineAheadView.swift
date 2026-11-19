@@ -62,9 +62,10 @@ struct LineAheadView: View {
 
     private func draw(_ ctx: GraphicsContext, _ size: CGSize) {
         let w = size.width, today = LineGeometry.past * w
-        // The chart's labels are type.map, capped so they keep to the fixed line geometry at large sizes.
+        // The chart's labels stay at the default size so they keep to the fixed line geometry; the summary and the
+        // rows below carry the same facts at the reader's text size.
         let font = DType.caption.font(boldText: legibilityWeight == .bold,
-                                      traits: UITraitCollection(preferredContentSizeCategory: .extraExtraLarge))
+                                      traits: UITraitCollection(preferredContentSizeCategory: .large))
         func label(_ s: String) -> GraphicsContext.ResolvedText {
             ctx.resolve(Text(s).font(font).foregroundStyle(Tokens.Colors.ink3))
         }
