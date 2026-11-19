@@ -39,6 +39,42 @@ export function pickReading(
   return { reading_date: date, tach: src.tach ?? null, hobbs: src.hobbs ?? null, airframe: src.airframe ?? null };
 }
 
+/** Readings the owner made (by hand or from a photo of the tach, 09 §2.10): the ones this page edits and deletes. */
+export const OWNER_SOURCES = ["manual", "tach_photo"];
+
+export type PhotoReadingInput = {
+  source?: "manual" | "tach_photo"; ocrValue?: number | null; ocrConfidence?: number | null;
+  ocrCandidates?: { value: number; confidence: number; bbox: number[] }[] | null; ownerEdited?: boolean; photoBlobId?: string | null;
+};
+
+/** The tach-photo half of `reading.create` (extended, 09 §5.3). Read on the phone; the server only checks the shape. */
+export function pickPhotoReading(aircraftId: string, src: PhotoReadingInput, tach: number | null):
+  | { source: string; photo_path: string | null; ocr_value: number | null; ocr_confidence: number | null;
+      ocr_candidates: HoursReading["ocr_candidates"]; owner_edited: boolean }
+  | { error: string } {
+  if (src.source == null || src.source === "manual") {
+    return { source: "manual", photo_path: null, ocr_value: null, ocr_confidence: null, ocr_candidates: null, owner_edited: false };
+  }
+  if (src.source !== "tach_photo") return { error: "Unknown reading source." };
+  if (!validNumber(src.ocrValue)) return { error: "The photo's reading is unreadable." };
+  const conf = src.ocrConfidence ?? null;
+  if (conf !== null && !(typeof conf === "number" && conf >= 0 && conf <= 1)) return { error: "The photo's confidence is unreadable." };
+  const cands = src.ocrCandidates ?? null;
+  if (cands !== null && !(Array.isArray(cands) && cands.length <= 10 && cands.every((c) =>
+    c && validNumber(c.value) && typeof c.confidence === "number" && Array.isArray(c.bbox) && c.bbox.length === 4 && c.bbox.every((n) => typeof n === "number"))))
+    return { error: "The photo's candidates are unreadable." };
+  const blob = src.photoBlobId ?? null;
+  if (blob !== null && !(typeof blob === "string" && /^[0-9A-Za-z-]{8,64}$/.test(blob))) return { error: "The photo is missing its id." };
+  return {
+    source: "tach_photo",
+    photo_path: blob ? `${aircraftId}/meters/${blob}.jpg` : null,
+    ocr_value: src.ocrValue ?? null,
+    ocr_confidence: conf,
+    ocr_candidates: cands as HoursReading["ocr_candidates"],
+    owner_edited: src.ownerEdited ?? (src.ocrValue != null && tach != null && src.ocrValue !== tach),
+  };
+}
+
 export type ResetInput = { meter: Meter; date: string; prior: number | null; next: number; notes?: string | null };
 
 /** Validate a meter replacement: a known meter, a date, non-negative readings. */
@@ -73,13 +109,15 @@ export function pickReset(
 export async function addReading(
   supabase: Db,
   ctx: WriteCtx,
-  input: { id?: string } & ReadingInput,
+  input: { id?: string } & ReadingInput & PhotoReadingInput,
 ): Promise<WriteResult> {
   const picked = pickReading(input);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
+  const photo = pickPhotoReading(ctx.aircraftId, input, picked.tach);
+  if ("error" in photo) return { status: "error", message: photo.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
-  const row = { aircraft_id: ctx.aircraftId, ...picked, source: "manual", synced_by: ctx.userId };
+  const row = { aircraft_id: ctx.aircraftId, ...picked, ...photo, synced_by: ctx.userId };
   const { data, error } = input.id
     ? await supabase
         .from("hours_reading")
@@ -110,7 +148,7 @@ async function loadReading(
     .select("*")
     .eq("id", readingId)
     .eq("aircraft_id", ctx.aircraftId)
-    .eq("source", "manual")
+    .in("source", OWNER_SOURCES)
     .maybeSingle();
   if (error) return { status: "error", message: error.message };
   if (!row) return { status: "error", message: "Reading not found.", httpStatus: 404 };
@@ -140,7 +178,7 @@ export async function updateReading(
     .update(picked)
     .eq("id", input.readingId)
     .eq("aircraft_id", ctx.aircraftId)
-    .eq("source", "manual")
+    .in("source", OWNER_SOURCES)
     .select("*")
     .maybeSingle();
   if (error) return { status: "error", message: error.message };
@@ -162,7 +200,7 @@ export async function deleteReading(
     .delete()
     .eq("id", input.readingId)
     .eq("aircraft_id", ctx.aircraftId)
-    .eq("source", "manual")
+    .in("source", OWNER_SOURCES)
     .select("id");
   if (error) return { status: "error", message: error.message };
   if (!data?.length) return { status: "error", message: "Reading not found.", httpStatus: 404 };

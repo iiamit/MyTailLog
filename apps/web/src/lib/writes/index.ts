@@ -13,7 +13,31 @@ import * as oil from "./oil";
 import * as weightBalance from "./weightBalance";
 import * as gaps from "./gaps";
 
+import * as visits from "./visits";
+import * as providers from "./providers";
+import * as timeChecks from "./timeChecks";
+
 export type { Db, WriteCtx, WriteResult, WriteFn } from "./_stubs";
+
+/**
+ * Phase 4 push types (09 §5.3) with their base rule, written here because lib/sync/mutations.ts
+ * belongs to the sync stream. To switch them on, copy each row into MUTATIONS there (and the
+ * Kotlin mirror in apps/core/domain Mutations.kt already lists them). Until then the push route
+ * answers "Unknown change type" for them, while the write functions below are live for the web.
+ */
+export const PHASE4_MUTATIONS = {
+  "visit.create": { base: "never" },
+  "visit.update": { base: "always" },
+  "visit.setStatus": { base: "always" },
+  "visitSuggestion.dismiss": { base: "never" },
+  "provider.upsert": { base: "ifId" },
+  "provider.delete": { base: "always" },
+  "squawkPhoto.create": { base: "never" },
+  "squawkPhoto.delete": { base: "always" },
+  "document.setExpiry": { base: "always" },
+  "timeCheck.dismiss": { base: "never" },
+} as const satisfies Record<string, { base: "never" | "always" | "ifId" }>;
+export type Phase4MutationType = keyof typeof PHASE4_MUTATIONS;
 
 // The dispatch table: MutationType → the ONE write function (CONTRACT §2, §4).
 // POST /api/sync/push and the legacy /actions route look up `writes[type]`.
@@ -25,7 +49,7 @@ export type { Db, WriteCtx, WriteResult, WriteFn } from "./_stubs";
 // Online-only types (page.extract, mx.scan, equipment.scan, aircraft.enroll,
 // backup.run) stay on their Bearer routes; validateMutation refuses them
 // before dispatch, so their stub rows never run.
-export const writes: Record<MutationType, WriteFn> = {
+export const writes: Record<MutationType | Phase4MutationType, WriteFn> = {
   ...stubs,
 
   // writes-c1
@@ -75,4 +99,16 @@ export const writes: Record<MutationType, WriteFn> = {
   "document.delete": documents.remove,
   "wb.upsert": weightBalance.upsert,
   "wb.delete": weightBalance.remove,
+
+  // phase 4 (PHASE4_MUTATIONS)
+  "visit.create": visits.create,
+  "visit.update": visits.update,
+  "visit.setStatus": visits.setStatus,
+  "visitSuggestion.dismiss": visits.dismissSuggestion,
+  "provider.upsert": providers.upsert,
+  "provider.delete": providers.remove,
+  "squawkPhoto.create": squawks.addPhoto,
+  "squawkPhoto.delete": squawks.removePhoto,
+  "document.setExpiry": documents.setExpiry,
+  "timeCheck.dismiss": timeChecks.dismiss,
 };

@@ -89,7 +89,7 @@ function withUiV2(request: NextRequest, response: NextResponse) {
 /** First touch: set mtl_src for an anonymous visitor from a tagged link or another site. */
 function withSourceCookie(request: NextRequest, response: NextResponse) {
   // A record room's visitor is attributed by its footer link (?ref=record-room), not the mail client that opened /r.
-  if (request.cookies.has(SOURCE_COOKIE) || request.nextUrl.pathname.startsWith("/r/")) return response;
+  if (request.cookies.has(SOURCE_COOKIE) || request.nextUrl.pathname.startsWith("/r/") || request.nextUrl.pathname.startsWith("/m/")) return response;
   const source = sourceFromLanding(request.nextUrl, request.headers.get("referer"), request.nextUrl.hostname);
   if (source) {
     response.cookies.set(SOURCE_COOKIE, encodeSource(source), {

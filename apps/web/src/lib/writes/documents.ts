@@ -98,6 +98,42 @@ export async function update(
   return patchDocument(supabase, ctx, input.documentId, picked.fields);
 }
 
+type Expiry = Pick<DocumentRecord, "track_expiry" | "expires_on" | "renews_every_months" | "remind_lead_days">;
+/** 09 §2.7 defaults when the owner turns tracking on. */
+const RENEWS_DEFAULT: Partial<Record<string, number>> = { registration: 84, insurance: 12, radio_license: 120 };
+
+/**
+ * Validate `{trackExpiry, expiresOn?, renewsEveryMonths?, remindLeadDays?}` (09 §2.7). The expiry date
+ * is always the owner's (typed or read off the paper), never computed; tracking without one is "no record".
+ */
+export function pickExpiry(input: Record<string, unknown>, type: string): { fields: Expiry } | { error: string } {
+  if (typeof input.trackExpiry !== "boolean") return { error: "Say whether to track its expiry." };
+  const expiresOn = input.expiresOn ?? null;
+  if (expiresOn !== null && expiresOn !== "" && !(typeof expiresOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(expiresOn)))
+    return { error: "Expiry must be a full date." };
+  const int = (v: unknown, lo: number, hi: number) =>
+    v == null || v === "" ? null : Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi ? (v as number) : NaN;
+  const renews = "renewsEveryMonths" in input ? int(input.renewsEveryMonths, 1, 120) : input.trackExpiry ? RENEWS_DEFAULT[type] ?? null : null;
+  const lead = int(input.remindLeadDays, 0, 365);
+  if (Number.isNaN(renews)) return { error: "Renews every must be 1 to 120 months." };
+  if (Number.isNaN(lead)) return { error: "Remind me must be 0 to 365 days ahead." };
+  return { fields: { track_expiry: input.trackExpiry, expires_on: (expiresOn as string) || null, renews_every_months: renews, remind_lead_days: lead } };
+}
+
+/** `document.setExpiry` (base): a tracked document is a `doc:` due item on Status (09 §3.2). */
+export async function setExpiry(
+  supabase: Db,
+  ctx: WriteCtx,
+  input: { documentId: string; trackExpiry: boolean; expiresOn?: string | null; renewsEveryMonths?: number | null; remindLeadDays?: number | null },
+  base?: string,
+): Promise<WriteResult> {
+  const loaded = await loadDocument(supabase, ctx, input.documentId, base);
+  if ("status" in loaded) return loaded;
+  const picked = pickExpiry(input, loaded.row.type);
+  if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
+  return patchDocument(supabase, ctx, input.documentId, picked.fields);
+}
+
 /**
  * Attach a Vault document to a log entry, or detach it (`entryId = null`) so it
  * drops back to the Vault. Both rows must belong to the aircraft — RLS scopes
