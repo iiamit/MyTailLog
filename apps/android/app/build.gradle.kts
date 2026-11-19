@@ -90,6 +90,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.11.2")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
+    // The record room's QR code (06 M-SHARE-02): ZXing's encoder, pure Java, about 0.5 MB.
+    implementation("com.google.zxing:core:3.5.3")
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
