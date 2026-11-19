@@ -4,7 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -74,6 +80,52 @@ fun DButton(
             Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
         }
         Text(busyText ?: text, color = content, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/**
+ * SubTabs (06 §1.1): a segmented control on the board, 36 visual and 44 hit. The selected segment is
+ * a leaf chip with ink text; the others are on-board text. TalkBack hears tabs with their position.
+ */
+@Composable
+fun SubTabs(items: List<String>, selected: Int, onSelect: (Int) -> Unit, section: Section, modifier: Modifier = Modifier) {
+    val c = MyTailLogTheme.colors
+    val s = c.section(section)
+    Row(
+        modifier
+            .fillMaxWidth()
+            .height(Tokens.Size.phoneTouchMin)
+            .padding(horizontal = Tokens.Space.s4)
+            .selectableGroup(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        items.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .focusRing()
+                    .selectable(on, role = Role.Tab, interactionSource = null, indication = StateLayerIndication(s.onBoard)) { onSelect(i) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(Tokens.Radius.m))
+                        .background(if (on) c.leaf else s.board),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label,
+                        color = if (on) c.ink else s.onBoard,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight(if (on) 800 else 600)),
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
     }
 }
 

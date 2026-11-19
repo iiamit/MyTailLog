@@ -62,10 +62,10 @@ import com.mytaillog.design.section
 
 /** Signed in: the phone binder below 700dp, the rail and list-detail at 700dp and wider. */
 @Composable
-fun Shell(email: String? = null, onSignOut: () -> Unit = {}, status: StatusHost? = null) {
+fun Shell(email: String? = null, onSignOut: () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null) {
     val account: @Composable () -> Unit = { AccountSettings(email, onSignOut) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status) else PhoneShell(account = account, status = status)
+        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status, books) else PhoneShell(account = account, status = status, books = books)
     }
 }
 
@@ -113,18 +113,20 @@ fun AccountSettings(email: String?, onSignOut: () -> Unit) {
  * switching tabs saves and restores each tab's stack; re-selecting the open tab pops it to its root.
  */
 @Composable
-fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}, status: StatusHost? = null) {
+fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null) {
     val entry by nav.currentBackStackEntryAsState()
     val hierarchy = entry?.destination?.hierarchy
     val current = PhoneTabs.indexOfFirst { tab -> hierarchy?.any { it.route == tab.graph } == true }.coerceAtLeast(0)
     val visible = if (entry?.destination?.route == DOCUMENTS_ON_PHONE) Section.Docs else PhoneTabs[current].section
-    SystemBarIcons(darkStatusIcons = visible == Section.Books)
+    // Review is a full-screen cover: dark, no tab bar (06 §1.2).
+    val cover = entry?.destination?.route?.startsWith(BOOKS_REVIEW) == true
+    SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover)
 
     Scaffold(
         containerColor = MyTailLogTheme.colors.section(visible).board,
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            PhoneTabBar(
+            if (!cover) PhoneTabBar(
                 items = PhoneTabs.map { tab ->
                     // 06 §1.3: Status carries an alarm badge with the overdue count.
                     val overdue = if (tab == Destination.Status) status?.ui?.snapshot?.body?.counts?.overdue ?: 0 else 0
@@ -143,6 +145,10 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
                             StatusPhone(status, onSeeAll = { nav.navigate(STATUS_ALL_ITEMS) }, onReview = { nav.selectTab(Destination.Logbooks, reselect = false) })
                             return@composable
                         }
+                        if (tab == Destination.Logbooks && books != null) {
+                            BooksPhone(books, booksNav(nav))
+                            return@composable
+                        }
                         SectionScreen(tab) {
                             if (tab == Destination.Aircraft) {
                                 PhoneRow(stringResource(R.string.section_docs), onClick = { nav.navigate(DOCUMENTS_ON_PHONE) })
@@ -153,6 +159,7 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
                     if (tab == Destination.Status && status != null) {
                         composable(STATUS_ALL_ITEMS) { AllItemsPhone(status, onBack = { nav.popBackStack() }) }
                     }
+                    if (tab == Destination.Logbooks && books != null) booksRoutes(nav, books)
                     if (tab == Destination.Aircraft) {
                         composable(DOCUMENTS_ON_PHONE) {
                             val up: () -> Unit = { nav.popBackStack() }
@@ -212,7 +219,7 @@ private fun EmptyText(destination: Destination) {
 /** Tablet: the binder Rail beside the board, which holds a list-detail scaffold of leaves (05 §5.4). */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null) {
+fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val destination = TabletSections[selected]
     val colors = MyTailLogTheme.colors
@@ -237,6 +244,10 @@ fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(start = 22.dp, top = 20.dp, bottom = 14.dp).semantics { heading() },
             )
+            if (destination == Destination.Logbooks && books != null) {
+                Box(Modifier.padding(start = 22.dp, end = 22.dp, bottom = 22.dp)) { TabletBooks(books) }
+                return@Column
+            }
             val navigator = rememberListDetailPaneScaffoldNavigator<Nothing>()
             var selectedItem by rememberSaveable { mutableStateOf<String?>(null) }
             val statusHere = status.takeIf { destination == Destination.Status }
