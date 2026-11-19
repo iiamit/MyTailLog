@@ -78,7 +78,20 @@ export async function collectBackupData(
     if (result.error) throw new Error(`Backup could not read ${name}: ${result.error.message}`);
   }
 
+  // Direction D tables (09 §6), keyed by table name so a query can't land under the wrong key.
+  const extra = {
+    service_providers: "service_provider", item_completions: "item_completion", planned_visits: "planned_visit",
+    planned_visit_items: "planned_visit_item", logbook_gaps: "logbook_gap", hours_readings: "hours_reading", squawks: "squawk",
+  } as const;
+  const extraRows: Record<string, Row[]> = {};
+  await Promise.all(Object.entries(extra).map(async ([key, table]) => {
+    const { data: rows, error } = await supabase.from(table).select("*").eq("aircraft_id", aircraftId);
+    if (error) throw new Error(`Backup could not read ${table}: ${error.message}`);
+    extraRows[key] = (rows ?? []) as Row[];
+  }));
+
   const data: BackupData = {
+    ...extraRows,
     aircraft: aircraft.data as Row,
     logbooks: (logbooks.data ?? []) as Row[],
     log_entries: (entries.data ?? []) as Row[],
@@ -128,6 +141,13 @@ export function buildManifest(data: BackupData, tail: string, scans: number): Ba
       maintenance_items: data.maintenance_items.length,
       documents: data.documents.length,
       meter_resets: data.meter_resets?.length ?? 0,
+      service_providers: data.service_providers?.length ?? 0,
+      item_completions: data.item_completions?.length ?? 0,
+      planned_visits: data.planned_visits?.length ?? 0,
+      planned_visit_items: data.planned_visit_items?.length ?? 0,
+      logbook_gaps: data.logbook_gaps?.length ?? 0,
+      hours_readings: data.hours_readings?.length ?? 0,
+      squawks: data.squawks?.length ?? 0,
       scans,
     },
   };

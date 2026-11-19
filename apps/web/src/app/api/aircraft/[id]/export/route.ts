@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { logbookLabel } from "@/lib/logbooks";
 import { buildSummary, loadShareInput } from "@/lib/share/model";
 
@@ -26,7 +26,7 @@ export async function GET(
   const { id } = await params;
   const type = new URL(req.url).searchParams.get("type") ?? "entries";
 
-  const supabase = await createClient();
+  const supabase = await createSyncClient(req); // cookie on the web, Bearer from the apps (09 §4)
   const {
     data: { user },
   } = await supabase.auth.getUser();
