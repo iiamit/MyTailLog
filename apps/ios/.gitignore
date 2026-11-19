@@ -3,3 +3,4 @@
 Config/Release.local.xcconfig
 build/
 MyTailLog/Info.plist
+MyTailLog/MyTailLog.entitlements
