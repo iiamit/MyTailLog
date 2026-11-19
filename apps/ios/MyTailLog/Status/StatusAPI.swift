@@ -163,12 +163,12 @@ struct StatusAPI: Sendable {
         try await get(apiURL.appending(path: "api/aircraft/\(aircraftId)/status"), token, apiKey: false)
     }
 
-    private func rest(_ table: String, _ query: [String: String]) -> URL {
+    func rest(_ table: String, _ query: [String: String]) -> URL {
         supabaseURL.appending(path: "rest/v1/\(table)")
             .appending(queryItems: query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) })
     }
 
-    private func get<T: Decodable>(_ url: URL, _ token: String, apiKey sendKey: Bool = true) async throws -> T {
+    func get<T: Decodable>(_ url: URL, _ token: String, apiKey sendKey: Bool = true) async throws -> T {
         var request = URLRequest(url: url, timeoutInterval: 20)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         if sendKey { request.setValue(apiKey, forHTTPHeaderField: "apikey") }

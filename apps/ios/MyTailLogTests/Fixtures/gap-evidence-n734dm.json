@@ -1,0 +1,58 @@
+{
+ "gap": {
+  "id": "4636fcdb-dda9-582d-b7bc-3b2fbd1a1d68",
+  "logbook": "airframe",
+  "from": "1978-06-02",
+  "to": "1998-04-18",
+  "status": "open",
+  "note": null,
+  "source": "coverage_rule"
+ },
+ "otherBooks": [
+  {
+   "logbook": "engine",
+   "entries": 0,
+   "annuals": 0,
+   "tachFrom": null,
+   "tachTo": null,
+   "pageRange": null
+  },
+  {
+   "logbook": "prop",
+   "entries": 0,
+   "annuals": 0,
+   "tachFrom": null,
+   "tachTo": null,
+   "pageRange": null
+  },
+  {
+   "logbook": "avionics",
+   "entries": 0,
+   "annuals": 0,
+   "tachFrom": null,
+   "tachTo": null,
+   "pageRange": null
+  }
+ ],
+ "hoursFlownApprox": null,
+ "unconfirmedPagesInGap": 0,
+ "verdict": "The other books show 0 entries in those years.",
+ "neighbourPages": {
+  "before": {
+   "pageId": "744bf643-8272-52cd-9620-9ecb28570d1b",
+   "logbook": "airframe",
+   "volume": null,
+   "pageNumber": 1,
+   "label": "Airframe p. 1",
+   "entryId": "228d67d3-1e28-49d6-ae0a-c9302f9ff516"
+  },
+  "after": {
+   "pageId": "26f0632a-28a3-521d-91de-5e971f905308",
+   "logbook": "airframe",
+   "volume": null,
+   "pageNumber": 2,
+   "label": "Airframe p. 2",
+   "entryId": "14d1d281-062e-4c8d-be5e-34637be192db"
+  }
+ }
+}

@@ -21,8 +21,14 @@ targets:
     configFiles:
       Debug: Config/Debug.xcconfig
       Release: Config/Release.xcconfig
+    # The KMP core (05 §4.2). Build it first: cd apps/core && ./gradlew :framework:assembleMyTailLogCoreXCFramework
+    dependencies:
+      - framework: ../core/framework/build/XCFrameworks/release/MyTailLogCore.xcframework
+        embed: false
     settings:
       base:
+        # The core is a static framework; SQLDelight's native driver links the system SQLite.
+        OTHER_LDFLAGS: ["$(inherited)", "-lsqlite3"]
         PRODUCT_BUNDLE_IDENTIFIER: com.mytaillog.app
         PRODUCT_NAME: MyTailLog
         TARGETED_DEVICE_FAMILY: "1,2"
