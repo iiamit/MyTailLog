@@ -41,14 +41,10 @@ export default async function SetupPage({ params }: { params: Promise<{ id: stri
   const items = DEFAULT_SEED_KINDS.map((kind) => ({ kind, item: due?.snap.items.find((i) => i.kind === kind && i.source === "maintenance") ?? null }));
   const annual = items[0].item;
   const annualKnown = Boolean(annual?.lastDone?.date);
-  const year = Number(today.slice(0, 4));
 
   return (
     <Board section="status">
       <BoardHead title={`Set up ${context.reg}`} spine={false} actions={<Button variant="on-board" href={`${a}/status`}>Skip for now</Button>} />
-      <p className="px-1 pb-2 text-small text-on-board-2">
-        {year} to {year + 1}
-      </p>
       <Leaves split="1.4fr 1fr">
         <Leaf label="Setup">
           <p className="mb-4 max-w-[56ch] text-lede">Three answers and your status is ready. The rest of the logbooks can come later.</p>

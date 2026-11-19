@@ -25,7 +25,7 @@ const INSPECTIONS: [string, string][] = [
 export default async function NewAircraftPage() {
   const { user, profile, fleet } = await loadHangarUser("/aircraft/new");
   return (
-    <HangarShell user={user} profile={profile} fleet={fleet}>
+    <HangarShell user={user} profile={profile} fleet={fleet} hangarOpen>
       <Board section="setup">
         <BoardHead title="Add an aircraft" spine={false} actions={<Button variant="on-board" href="/hangar">Cancel</Button>} />
         <Leaves split="1.45fr 1fr">

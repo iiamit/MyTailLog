@@ -97,7 +97,9 @@ export function YouSection({ fullName, email }: { fullName: string; email: strin
           setEmailMsg(error ? { ok: false, text: error.message } : { ok: true, text: `We sent a link to ${newEmail}. The change happens when you open it.` });
         }}
       >
-        <Field label="Email" help={`Now ${email}.`}>
+        <p className="text-label">Email</p>
+        <p className="-mt-1 text-body">{email}</p>
+        <Field label="New email address" help="We send a link there; the change happens when you open it.">
           <input type="email" required value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="new@example.com" autoComplete="email" className={fieldClass} />
         </Field>
         <span className="flex flex-wrap items-center gap-3">

@@ -88,7 +88,7 @@ export default async function HangarPage() {
   );
 
   return (
-    <HangarShell user={user} profile={profile} fleet={fleet}>
+    <HangarShell user={user} profile={profile} fleet={fleet} hangarOpen>
       <Board section="setup">
         <BoardHead
           title={empty ? "Welcome to MyTailLog" : "Hangar"}

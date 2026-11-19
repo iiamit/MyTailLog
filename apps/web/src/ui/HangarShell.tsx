@@ -30,17 +30,20 @@ export function HangarShell({
   user,
   profile,
   fleet,
+  hangarOpen,
   children,
 }: {
   user: User;
   profile: { full_name: string | null; is_admin: boolean | null } | null;
   fleet: { id: string; tail_number: string; make: string | null; model: string | null }[];
+  /** The Hangar tab is open on /hangar and /aircraft/new, not on account screens (03 §3.5). */
+  hangarOpen?: boolean;
   children: React.ReactNode;
 }) {
   const aircraft: RailAircraft[] = fleet.map((a) => ({ id: a.id, tail: a.tail_number, model: [a.make, a.model].filter(Boolean).join(" ") }));
   return (
     <div className="flex h-dvh max-md:flex-col">
-      <HangarRail userName={shortName(profile?.full_name, user.email)} aircraft={aircraft} isAdmin={Boolean(profile?.is_admin)} />
+      <HangarRail userName={shortName(profile?.full_name, user.email)} aircraft={aircraft} isAdmin={Boolean(profile?.is_admin)} hangarOpen={hangarOpen} />
       <HangarPhoneBar />
       <div className="min-h-0 min-w-0 flex-1">{children}</div>
     </div>

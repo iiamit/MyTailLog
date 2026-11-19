@@ -11,10 +11,9 @@ import type { RailAircraft } from "@/ui/Rail";
  * The rail outside an aircraft (03 §3.5): the MyTailLog plate, one Hangar tab, the aircraft list, Add and account.
  * shortcut: Search or ask is per aircraft today, so the hangar rail leaves it out until a fleet-wide search exists.
  */
-export function HangarRail({ userName, aircraft, isAdmin }: { userName: string; aircraft: RailAircraft[]; isAdmin?: boolean }) {
+export function HangarRail({ userName, aircraft, isAdmin, hangarOpen }: { userName: string; aircraft: RailAircraft[]; isAdmin?: boolean; hangarOpen?: boolean }) {
   const path = usePathname().replace(/^\/v2/, "");
   const [menu, setMenu] = useState<null | "add" | "account">(null);
-  const hangarOpen = path === "/hangar" || path === "/aircraft/new";
   return (
     <aside className="rail flex h-dvh shrink-0 flex-col gap-1 bg-cover pt-[18px] pb-4 pl-[14px] text-on-cover max-lg:w-[184px] lg:w-[216px] max-md:hidden">
       <div className="pt-0.5 pr-[14px] pb-3.5 pl-1">

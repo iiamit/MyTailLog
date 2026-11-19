@@ -8,6 +8,8 @@ import { AircraftSelect, AutoBackups, BackupDownload } from "./DataClient";
 
 export const metadata: Metadata = { title: "Import and export" };
 
+const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
+
 const CSV: [string, string][] = [
   ["entries", "Entries"],
   ["ad", "ADs and SBs"],
@@ -97,8 +99,8 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
                 <HungSection title="Everything" first>
                   <p className="mb-1 text-body font-semibold">Full backup, .zip</p>
                   <p className="mb-3 text-body text-ink-2">
-                    {counts[0].toLocaleString("en-US")} scans, every entry ({counts[1].toLocaleString("en-US")}), {counts[2].toLocaleString("en-US")} documents,
-                    with a README describing each file. Re-imports in one step.
+                    {plural(counts[0], "scan")}, {plural(counts[1], "entry", "entries")} and {plural(counts[2], "document")}, with a README describing each
+                    file. Re-imports in one step.
                   </p>
                   <BackupDownload aircraftId={current.id} />
                 </HungSection>

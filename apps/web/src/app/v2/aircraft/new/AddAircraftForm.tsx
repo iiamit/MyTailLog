@@ -104,10 +104,10 @@ export function AddAircraftForm() {
       </HungSection>
       <HungSection title="From the registry">
         <div className="grid gap-4 sm:grid-cols-2">
-          {reg("make", "Make", { placeholder: "Cessna" })}
-          {reg("model", "Model", { placeholder: "172N" })}
-          {reg("year", "Year", { type: "number", placeholder: "1978" })}
-          {reg("serial_number", "Airframe serial", { placeholder: "17269841" })}
+          {reg("make", "Make")}
+          {reg("model", "Model")}
+          {reg("year", "Year", { type: "number" })}
+          {reg("serial_number", "Airframe serial")}
         </div>
         {engine && <p className="mt-3 text-small text-ink-2">Engine on the registry: {engine}</p>}
       </HungSection>
@@ -120,7 +120,7 @@ export function AddAircraftForm() {
             <input name="prop_serials" className={fieldClass} />
           </Field>
           <Field label="Home airport" help="Private to you.">
-            <input name="home_base" placeholder="KXYZ" className={fieldClass} />
+            <input name="home_base" className={fieldClass} />
           </Field>
         </div>
       </HungSection>
