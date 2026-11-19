@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Handoff Package</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<style>
+  .ho { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 40px; align-items: start; }
+  .ho-nav { position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow: auto; padding-right: 6px; }
+  .ho-nav h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--g-ink-3); margin: 18px 0 6px; font-weight: 700; }
+  .ho-nav h2:first-child { margin-top: 0; }
+  .ho-nav ol { list-style: none; margin: 0; padding: 0; }
+  .ho-nav a { display: grid; grid-template-columns: 30px 1fr; gap: 4px; padding: 6px 8px; border-radius: 6px; color: var(--g-ink-2); text-decoration: none; font-size: 15px; line-height: 1.3; }
+  .ho-nav a span { font-variant-numeric: tabular-nums; color: var(--g-ink-3); }
+  .ho-nav a:hover { background: var(--g-surface); color: var(--g-ink); }
+  .ho-nav a[aria-current="page"] { background: var(--g-surface); color: var(--g-ink); font-weight: 600; box-shadow: inset 3px 0 0 var(--g-ink); }
+  .ho-tools { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 0 0 18px; font-size: 15px; color: var(--g-ink-3); }
+  .ho-doc { background: var(--g-surface); border: 1px solid var(--g-line); border-radius: 8px; padding: 34px clamp(18px, 4vw, 48px) 48px; min-width: 0; }
+  .ho-doc > :first-child { margin-top: 0; }
+  .ho-doc h1 { font-size: 32px; line-height: 1.15; margin: 0 0 14px; letter-spacing: -.01em; }
+  .ho-doc h2 { font-size: 23px; line-height: 1.25; margin: 40px 0 10px; padding-top: 18px; border-top: 1px solid var(--g-line); }
+  .ho-doc h3 { font-size: 19px; margin: 28px 0 8px; }
+  .ho-doc h4 { font-size: 17px; margin: 22px 0 6px; }
+  .ho-doc p, .ho-doc li { max-width: 80ch; }
+  .ho-doc li { margin: 3px 0; }
+  .ho-doc code { font-family: "Atkinson Hyperlegible Mono", ui-monospace, Consolas, monospace; font-size: .88em; background: var(--g-bg); border: 1px solid var(--g-line); border-radius: 4px; padding: 0 4px; }
+  .ho-doc pre { background: var(--g-bg); border: 1px solid var(--g-line); border-radius: 6px; padding: 14px 16px; overflow: auto; font-size: 14px; line-height: 1.5; }
+  .ho-doc pre code { background: none; border: 0; padding: 0; }
+  .ho-tw { overflow-x: auto; margin: 14px 0; border: 1px solid var(--g-line); border-radius: 6px; }
+  .ho-doc table { border-collapse: collapse; width: 100%; font-size: 15px; line-height: 1.45; }
+  .ho-doc th, .ho-doc td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--g-line); }
+  .ho-doc th { background: var(--g-bg); font-weight: 700; white-space: nowrap; }
+  .ho-doc tr:last-child td { border-bottom: 0; }
+  .ho-doc blockquote { margin: 14px 0; padding: 4px 16px; border-left: 3px solid var(--g-line-2); color: var(--g-ink-2); }
+  .ho-doc input[type="checkbox"] { margin-right: 6px; }
+  .ho-doc h2 a.ho-anchor, .ho-doc h3 a.ho-anchor { opacity: 0; margin-left: 8px; text-decoration: none; color: var(--g-ink-3); }
+  .ho-doc h2:hover a.ho-anchor, .ho-doc h3:hover a.ho-anchor { opacity: 1; }
+  .ho-err { color: var(--g-bad); }
+  @media (max-width: 900px) {
+    .ho { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .ho-nav { position: static; max-height: none; }
+    .ho-nav ol { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 10px; }
+    .ho-doc { padding: 22px 16px 32px; }
+    .ho-doc h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a>
+  <a href="../analysis.html">Analysis</a>
+  <a href="../d/index.html">D · Tabbed Binder</a>
+  <a href="../d/web.html">D web screens</a>
+  <a href="../d/mobile.html">D phone and tablet</a>
+  <a href="index.html" aria-current="page">Handoff package</a>
+</div></nav>
+
+<main class="g-wrap">
+  <h1 class="g-h1">Handoff package: direction D for web, iOS and Android</h1>
+  <p class="g-lede">The full specification for a coding agent to build direction D. It covers product rules, tokens, components, every screen on web, phone and tablet, the flows, capabilities, data and API, the line map, accessibility, motion, copy, and a phased build plan. The same files are in the repository at <code>docs/redesign/handoff/</code>; give the agent that folder.</p>
+  <div class="ho">
+    <nav class="ho-nav" aria-label="Documents" id="ho-nav"></nav>
+    <div>
+      <div class="ho-tools" id="ho-tools"></div>
+      <article class="ho-doc" id="ho-doc" aria-live="polite"><p>Loading…</p></article>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+<script>
+(function () {
+  var GROUPS = [
+    ["Start here", [["README.md", "", "Read me first"], ["00-product-principles.md", "00", "Product principles"], ["14-decisions.md", "14", "Decisions register"], ["13-build-plan.md", "13", "Build plan"], ["screen-index.md", "", "Screen index"]]],
+    ["Design language", [["01-design-tokens.md", "01", "Design tokens"], ["tokens.json", "", "tokens.json"], ["02-components.md", "02", "Components"], ["10-line-map.md", "10", "The line map"], ["11-accessibility-and-motion.md", "11", "Accessibility and motion"], ["12-copy-and-voice.md", "12", "Copy and voice"]]],
+    ["Screens", [["03-information-architecture.md", "03", "Information architecture (web)"], ["04-web-screens.md", "04", "Web screens"], ["05-mobile-architecture.md", "05", "Native mobile architecture"], ["06-mobile-screens.md", "06", "Phone and tablet screens"]]],
+    ["Behaviour and data", [["07-flows.md", "07", "Flows"], ["08-capabilities.md", "08", "Capabilities"], ["09-data-and-api.md", "09", "Data and API"]]]
+  ];
+  var FILES = {};
+  GROUPS.forEach(function (g) { g[1].forEach(function (f) { FILES[f[0]] = f; }); });
+  var nav = document.getElementById("ho-nav"), doc = document.getElementById("ho-doc"), tools = document.getElementById("ho-tools");
+  nav.innerHTML = GROUPS.map(function (g) {
+    return "<h2>" + g[0] + "</h2><ol>" + g[1].map(function (f) {
+      return '<li><a href="#' + f[0] + '" data-f="' + f[0] + '"><span>' + (f[1] || "·") + "</span>" + f[2] + "</a></li>";
+    }).join("") + "</ol>";
+  }).join("");
+  function slug(t) { return t.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-"); }
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function current() {
+    var h = decodeURIComponent(location.hash.slice(1)), parts = h.split("::");
+    return { file: FILES[parts[0]] ? parts[0] : "README.md", anchor: parts[1] || "" };
+  }
+  var cache = {};
+  function load() {
+    var c = current();
+    [].forEach.call(nav.querySelectorAll("a"), function (a) { a.toggleAttribute("aria-current", a.dataset.f === c.file); if (a.dataset.f === c.file) a.setAttribute("aria-current", "page"); });
+    var label = document.createElement("span"), dl = document.createElement("a");
+    label.textContent = "docs/redesign/handoff/" + c.file;
+    dl.href = FILES[c.file][0]; dl.download = ""; dl.textContent = "Download this file";
+    tools.replaceChildren(label, dl);
+    var p = cache[c.file] ? Promise.resolve(cache[c.file]) : fetch(c.file).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+    p.then(function (text) {
+      cache[c.file] = text;
+      if (/\.json$/.test(c.file)) { doc.innerHTML = "<h1>tokens.json</h1><p>Machine-readable design tokens (W3C Design Tokens format). Dark values sit in <code>$extensions[\"com.mytaillog.dark\"]</code>. See 01-design-tokens.md.</p><pre><code>" + esc(text) + "</code></pre>"; }
+      else {
+        doc.innerHTML = marked.parse(text, { gfm: true });
+        [].forEach.call(doc.querySelectorAll("table"), function (t) { var w = document.createElement("div"); w.className = "ho-tw"; t.parentNode.insertBefore(w, t); w.appendChild(t); });
+        var used = {};
+        [].forEach.call(doc.querySelectorAll("h1,h2,h3,h4"), function (h) {
+          var s = slug(h.textContent) || "s"; if (used[s]) s += "-" + (++used[s]); else used[s] = 1;
+          h.id = s;
+          if (h.tagName !== "H1") { var a = document.createElement("a"); a.className = "ho-anchor"; a.href = "#" + c.file + "::" + s; a.textContent = "#"; a.setAttribute("aria-label", "Link to this section"); h.appendChild(a); }
+        });
+        [].forEach.call(doc.querySelectorAll("a[href]"), function (a) {
+          var href = a.getAttribute("href");
+          if (/^(https?:|#|mailto:)/.test(href)) { if (/^#/.test(href) && !/::/.test(href) && href.length > 1 && !FILES[href.slice(1)]) a.setAttribute("href", "#" + c.file + "::" + href.slice(1)); return; }
+          var m = href.match(/^([\w.-]+\.(?:md|json))(?:#(.*))?$/);
+          if (m && FILES[m[1]]) a.setAttribute("href", "#" + m[1] + (m[2] ? "::" + m[2] : ""));
+        });
+      }
+      document.title = "Handoff Package";
+      if (c.anchor) { var t = document.getElementById(c.anchor); if (t) { t.scrollIntoView(); return; } }
+      window.scrollTo(0, 0);
+    }).catch(function (e) { doc.innerHTML = '<p class="ho-err">Could not load ' + esc(c.file) + " (" + esc(String(e.message || e)) + "). Open it from docs/redesign/handoff/ in the repository.</p>"; });
+  }
+  window.addEventListener("hashchange", load);
+  load();
+})();
+</script>
+</body>
+</html>

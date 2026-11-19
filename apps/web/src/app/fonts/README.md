@@ -10,3 +10,10 @@ Each font's SIL Open Font License and copyright notice are included alongside it
 The complete upstream fonts retain their character coverage. `next/font/local`
 emits and preloads them from our own origin; no font service is contacted during
 builds. Keep the existing CSS variables and `display: swap` when updating them.
+
+Direction D (redesign, `ui_v2`) adds, from `google/fonts` `main` on 2026-11-18:
+
+- `LibreFranklin.ttf`: `librefranklin/LibreFranklin[wght].ttf` (weight 100–900). The app voice.
+- `Literata.ttf`: `literata/Literata[opsz,wght].ttf` (weight 200–900, optical size 7–72). Transcribed text only.
+
+They load through `next/font/local` as `--font-libre-franklin` and `--font-literata`, which `src/ui/tokens.css` reads.

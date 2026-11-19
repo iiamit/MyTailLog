@@ -66,6 +66,11 @@ export function isLegacyPlaintext(stored: string | null): boolean {
  * is assumed to be legacy plaintext and returned as-is (migration tolerance) —
  * logged once so any straggler is visible while the sweep re-encrypts it.
  */
+/** decryptSecret for display lists: a value sealed under another key reads as null instead of throwing. */
+export function tryDecryptSecret(stored: string | null): string | null {
+  try { return decryptSecret(stored); } catch { return null; }
+}
+
 export function decryptSecret(stored: string | null): string | null {
   if (stored == null) return null;
   if (!stored.startsWith(PREFIX)) {

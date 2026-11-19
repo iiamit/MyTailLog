@@ -1,0 +1,71 @@
+/* Direction D — "Tabbed Binder with a Route Map"
+   Built on direction B (the tabbed records binder: cover rail, section boards, white leaves, record beside its page).
+   D adds C's line diagram, redrawn in the binder's ink:
+   - the spine: a thin map of the aircraft's whole life across the top of every board, the binder's index by time;
+   - the route map: the full network on a leaf (Logbooks › Map), stops open their pages on the right leaf;
+   - the line ahead: the next 12 to 24 months drawn on the same lines, due items as rings, shop visits as proposed interchanges.
+   All B rules hold. Everything below is scoped to .db and only adds. */
+@import url("../b/system.css");
+
+.db {
+  /* logbook inks: printer's inks, never used for status or sections */
+  --l-air: #23318f;      /* airframe, blue-black */
+  --l-eng: #a8326b;      /* engine, mulberry */
+  --l-prop: #4a4f57;     /* propeller, graphite */
+  --l-avi: #0f7fa6;      /* avionics, cerulean */
+  --l-other: #8a8f97;
+  --map-ground: var(--leaf);
+}
+
+/* ---------- the spine: a strip of the whole life under every board head ---------- */
+.db .d-spine { background: var(--leaf); border-radius: 3px; margin: 0 0 10px; padding: 6px 14px 4px; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+.db .d-spine .lab { font: 700 13px/1.2 var(--f-app); color: var(--ink-2); white-space: nowrap; }
+.db .d-spine .lab small { display: block; font-weight: 500; color: var(--ink-3); }
+.db .d-spine svg { width: 100%; height: 40px; display: block; overflow: visible; }
+.db .d-spine .go { font: 600 13px/1.2 var(--f-app); color: var(--board-ink); white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+
+/* ---------- map vocabulary (SVG) ---------- */
+.db .d-map { width: 100%; height: auto; display: block; overflow: visible; }
+.db .d-map .ln { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.db .d-map .ln.thin { stroke-width: 3; }
+.db .d-map .air { stroke: var(--l-air); } .db .d-map .eng { stroke: var(--l-eng); } .db .d-map .prop { stroke: var(--l-prop); } .db .d-map .avi { stroke: var(--l-avi); }
+.db .d-map .ln.future { stroke-dasharray: 0.1 11; stroke-width: 6; }
+.db .d-map .ln.thin.future { stroke-dasharray: 0.1 7; stroke-width: 3; }
+.db .d-map .ln.gap { stroke-width: 2; stroke-dasharray: 6 6; stroke-linecap: butt; }
+.db .d-map .stop { fill: var(--leaf); stroke: var(--ink); stroke-width: 2.5; }
+.db .d-map .stop.unconf { stroke-dasharray: 2 2.5; }
+.db .d-map .cap { fill: var(--leaf); stroke: var(--ink); stroke-width: 2.5; }
+.db .d-map .cap.plan { stroke: var(--ink); stroke-dasharray: 4 4; fill: var(--leaf-2); }
+.db .d-map .cap.sel { stroke-width: 4; }
+.db .d-map .ring { fill: var(--leaf); stroke: var(--ink); stroke-width: 3; }           /* current: black ring */
+.db .d-map .ring.soon { stroke: var(--alarm); }                                         /* due soon: vermilion ring */
+.db .d-map .ring.bad { fill: var(--alarm); stroke: var(--alarm); }                      /* overdue: solid vermilion */
+.db .d-map .ring.unk { stroke: var(--ink-3); stroke-dasharray: 3 3; }                   /* no record */
+.db .d-map .today { stroke: var(--ink); stroke-width: 1.5; }
+.db .d-map .win { fill: var(--board); fill-opacity: .12; stroke: var(--board); stroke-width: 1.5; }
+.db .d-map .axis { stroke: var(--rule); stroke-width: 1; }
+.db .d-map text { font: 600 13px var(--f-app); fill: var(--ink); }
+.db .d-map text.s { font-weight: 500; fill: var(--ink-2); }
+.db .d-map text.f { font-weight: 500; font-size: 12px; fill: var(--ink-3); }
+.db .d-map text.nm { font-weight: 700; }
+.db .d-map text.alarm { fill: var(--alarm); }
+.db .d-map text.paper { font: 500 13px var(--f-paper); fill: var(--ink-2); }
+
+/* .z: for a map whose viewBox is wider than the leaf it sits on, so labels still render at 12 to 13px */
+.db .d-map.z text { font-size: 15px; } .db .d-map.z text.f { font-size: 14px; } .db .d-map.z text.paper { font-size: 15px; }
+
+/* a logbook ink chip, for rows and citations that belong to a book */
+.db .d-line { display: inline-flex; align-items: center; gap: 6px; font: 600 13px/1.2 var(--f-app); color: var(--ink-2); white-space: nowrap; }
+.db .d-line::before { content: ""; width: 16px; height: 5px; border-radius: 3px; background: var(--lc, var(--l-other)); }
+.db .d-line.air { --lc: var(--l-air); } .db .d-line.eng { --lc: var(--l-eng); } .db .d-line.prop { --lc: var(--l-prop); } .db .d-line.avi { --lc: var(--l-avi); }
+.db .d-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 13px; color: var(--ink-3); }
+.db .d-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.db .d-key-solid { width: 22px; height: 4px; background: var(--ink); border-radius: 2px; }
+.db .d-key-gap { width: 22px; height: 0; border-top: 2px dashed var(--ink); }
+.db .d-key-future { width: 22px; height: 4px; background: radial-gradient(circle, var(--ink) 1.6px, transparent 1.8px) 0 50% / 7px 4px repeat-x; }
+.db .d-key-ring { width: 12px; height: 12px; border-radius: 50%; border: 2.5px solid var(--ink); }
+.db .d-key-ring.soon { border-color: var(--alarm); }
+.db .d-key-cap { width: 12px; height: 20px; border-radius: 6px; border: 2.5px solid var(--ink); }
+
+/* phone: the map runs top to bottom, one column per book */
+.db .dm-vmap { width: 100%; height: auto; display: block; }

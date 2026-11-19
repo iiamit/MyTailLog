@@ -11,7 +11,16 @@ import {
   mineFields,
   changedFields,
   alreadyApplied,
+  isAnyRole,
 } from "../src/lib/sync/mutations";
+
+test("reminder.snooze: any role may push it, and it is the only such type (09 §5.3)", () => {
+  assert.equal(isAnyRole("reminder.snooze"), true);
+  assert.equal(needsBase("reminder.snooze", {}), false);
+  assert.deepEqual(MUTATION_TYPES.filter(isAnyRole), ["reminder.snooze"]);
+  const v = validateMutation({ id: "s1", type: "reminder.snooze", aircraftId: "ac", payload: { itemKey: "mx:a", dueSignature: "2027-01-31|" } });
+  assert.ok("ok" in v);
+});
 
 // The pure half of POST /api/sync/push (CONTRACT §2–3): the envelope, the base
 // rule, legacy-action translation and the "did my retry already land?" check.

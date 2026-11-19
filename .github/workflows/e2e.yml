@@ -68,6 +68,8 @@ jobs:
       - run: npm run e2e
         env:
           CI: "true"
+          # The suite covers the old design, which production keeps as the default (apphosting.yaml).
+          UI_V2_DEFAULT: "off"
           TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
           TEST_SUPABASE_SECRET_KEY: ${{ secrets.TEST_SUPABASE_SECRET_KEY }}

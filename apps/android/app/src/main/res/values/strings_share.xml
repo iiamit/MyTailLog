@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 5, plan and share (06 M-STATUS-03/04, M-SHARE-01..03; 12 copy and voice). -->
+<resources>
+    <!-- Plan ahead (M-STATUS-03, T-STATUS-02) -->
+    <string name="plan_title">Plan ahead</string>
+    <string name="status_whats_due">What\'s due</string>
+    <string name="plan_pace">%1$s h a week</string>
+    <string name="plan_pace_none">No pace set, so hours limits aren\'t counted</string>
+    <string name="plan_set_hours">Set hours</string>
+    <string name="plan_lapsed_by">Lapsed by %1$s</string>
+    <string name="plan_covered_by">covered by</string>
+    <string name="plan_lapsed_already">lapsed already</string>
+    <string name="plan_due">due %1$s</string>
+    <string name="plan_visit_link">%1$s visit</string>
+    <string name="plan_no_visit">No visit yet</string>
+    <string name="plan_open_visit">Open the %1$s visit</string>
+    <string name="plan_no_date">%1$s still has no date on file.</string>
+    <string name="plan_no_pace">%1$s goes by hours. Set your hours to see when it lapses.</string>
+    <string name="plan_hours_title">Hours by %1$s</string>
+    <string name="plan_hours_field">Hours you expect to fly</string>
+    <string name="plan_pace_unknown">There\'s no recent flying on record, so hours limits wait for your estimate.</string>
+    <string name="plan_pace_recent">Your recent pace is about %1$s hours a week.</string>
+    <string name="plan_use_this">Use this</string>
+    <string name="plan_line_spoken">Plan date, %1$s. %2$s. Swipe up or down to move a week.</string>
+    <string name="plan_nothing_lapses">Nothing tracked lapses</string>
+    <plurals name="plan_items_lapse">
+        <item quantity="one">%1$s item lapses</item>
+        <item quantity="other">%1$s items lapse</item>
+    </plurals>
+
+    <!-- One visit (M-STATUS-04) -->
+    <string name="visit_group">Visits</string>
+    <string name="visit_title">Week of %1$s</string>
+    <string name="visit_title_none">Visit</string>
+    <string name="visit_at">At %1$s</string>
+    <string name="visit_in_this">In this visit</string>
+    <string name="visit_gone">This visit isn\'t suggested any more. Its items may have been done or booked.</string>
+    <string name="visit_viewer">You can view this aircraft. The owner or an editor books visits.</string>
+    <string name="visit_book">Book this visit</string>
+    <string name="visit_book_it">Book it</string>
+    <string name="visit_change">Change</string>
+    <string name="visit_change_title">Change the visit</string>
+    <string name="visit_save">Save</string>
+    <string name="visit_which_week">Which week?</string>
+    <string name="visit_week_of">Week of %1$s</string>
+    <string name="visit_where">Where?</string>
+    <string name="visit_add_shop">Add a shop</string>
+    <string name="visit_shop_name">Shop or mechanic</string>
+    <string name="visit_shop_kind">What kind</string>
+    <string name="visit_booked">Booked.</string>
+    <string name="visit_booked_offline">Booked on this phone. It uploads when you have signal.</string>
+    <string name="visit_cancel">Cancel the visit</string>
+    <string name="visit_cancel_title">Cancel the %1$s visit?</string>
+    <string name="visit_cancel_body">The items stay on your due list.</string>
+    <string name="visit_keep">Keep it</string>
+    <string name="visit_cancelled">Visit cancelled. Its items are back on your due list.</string>
+    <string name="visit_send">Send to the shop</string>
+    <string name="visit_send_to">Send to %1$s</string>
+    <string name="visit_sending">Making the link</string>
+    <string name="visit_send_offline">Sending the list needs signal.</string>
+    <string name="visit_send_subject">%1$s, visit the week of %2$s</string>
+    <string name="shop_mechanic">Mechanic</string>
+    <string name="shop_avionics">Avionics shop</string>
+    <string name="shop_engine">Engine shop</string>
+    <string name="shop_prop">Prop shop</string>
+
+    <!-- Who is it for (M-SHARE-01) -->
+    <string name="share_who">Who is it for?</string>
+    <string name="share_ia">My IA, for the annual</string>
+    <string name="share_ia_sub">What falls due, ADs, squawks, gaps</string>
+    <string name="share_buyer">A buyer, for a pre-buy</string>
+    <string name="share_buyer_sub">Every book and document, a dossier</string>
+    <string name="share_insurer">My insurer</string>
+    <string name="share_insurer_sub">Hours, inspections, equipment</string>
+    <string name="share_people">A co-owner or mechanic</string>
+    <string name="share_people_sub">Invite them to edit or view</string>
+    <string name="share_opens_first">What %1$s opens first</string>
+    <string name="share_your_ia">your IA</string>
+    <string name="share_the_buyer">the buyer</string>
+    <string name="share_the_insurer">the insurer</string>
+    <string name="share_they">they</string>
+    <string name="share_as_of">%1$s records as of %2$s</string>
+    <string name="share_opens_line_ahead">The line ahead: what falls due, and what rides along with the annual.</string>
+    <string name="share_room_tabs">Status · Logbooks · Maint. · Documents</string>
+    <string name="share_gap_marked">The %1$s to %2$s gap is marked. Read only.</string>
+    <string name="share_read_only">Read only.</string>
+    <string name="share_options">Change what it holds</string>
+    <string name="share_hide_options">Done changing</string>
+    <string name="share_label">Name it</string>
+    <string name="share_include_summary">The maintenance summary</string>
+    <string name="share_logbooks">Logbooks</string>
+    <string name="share_include_scans">With the page scans</string>
+    <string name="share_documents">Documents</string>
+    <string name="share_include_squawks">Open squawks</string>
+    <string name="share_expires">Expires after</string>
+    <string name="share_holds_nothing">Include at least one thing to share.</string>
+    <string name="share_make_link">Make the link</string>
+    <string name="share_making">Making it</string>
+    <string name="share_needs_signal">Making a link needs signal, so it works the moment you send it.</string>
+    <string name="share_owner_only">Only the owner can make links or invite people.</string>
+    <string name="share_review">Review</string>
+    <plurals name="share_unconfirmed">
+        <item quantity="one">1 page isn\'t confirmed yet. It won\'t be in the room until you confirm it.</item>
+        <item quantity="other">%1$d pages aren\'t confirmed yet. They won\'t be in the room until you confirm them.</item>
+    </plurals>
+    <plurals name="share_live_links">
+        <item quantity="one">Live links %1$d</item>
+        <item quantity="other">Live links %1$d</item>
+    </plurals>
+    <string name="share_files">Files</string>
+    <string name="share_summary">Share a summary</string>
+    <string name="share_dossier">Get the pre-buy dossier</string>
+    <string name="share_due_csv">Export the due list</string>
+    <string name="share_file_failed">That file couldn\'t be made. Try again.</string>
+    <string name="share_files_need_signal">These are made on the server, so they need signal.</string>
+
+    <!-- Link made, one link (M-SHARE-02, M-SHARE-03) -->
+    <string name="share_link_made">Link made</string>
+    <string name="share_link">Link</string>
+    <string name="share_link_missing">This link isn\'t on this phone. Open Share with signal to load it.</string>
+    <string name="share_room_note">A read-only record room. No account needed.</string>
+    <string name="share_qr_big">Show full screen</string>
+    <string name="share_qr_spoken">QR code for %1$s</string>
+    <string name="share_copy">Copy</string>
+    <string name="share_copied">Link copied.</string>
+    <string name="share_kv_expires">Expires</string>
+    <string name="share_kv_opens_on">Opens on</string>
+    <string name="share_kv_holds">Holds</string>
+    <string name="share_extend">Keep it open 30 more days</string>
+    <string name="share_extended">Open 30 more days.</string>
+    <string name="share_send_link">Send the link</string>
+    <string name="share_send_text">The records of %1$s, read only: %2$s</string>
+    <string name="share_opens_logged">Opens are logged in Share. Revoke it there any time.</string>
+    <string name="share_opens">Opens</string>
+    <string name="share_opens_offline">The open log loads when you have signal.</string>
+    <string name="share_not_opened">Not opened yet.</string>
+    <string name="share_revoke">Revoke link</string>
+    <string name="share_revoke_title">Revoke this link?</string>
+    <string name="share_revoke_body">Whoever has it won\'t be able to open it again.</string>
+    <string name="share_revoked">Link revoked.</string>
+    <string name="share_revoke_offline">Revoking needs signal, so it takes effect the moment you do it.</string>
+
+    <!-- Links and people (M-SHARE-03) -->
+    <string name="share_links_title">Links and people</string>
+    <string name="share_live">Live links</string>
+    <string name="share_no_live">No live links.</string>
+    <string name="share_show_ended">Expired and revoked (%1$d)</string>
+    <string name="share_hide_ended">Hide expired and revoked (%1$d)</string>
+    <string name="share_list_offline">This is the list as of your last signal.</string>
+    <string name="share_people_group">People</string>
+    <string name="share_you">You</string>
+    <string name="share_make_role">Make %1$s</string>
+    <string name="share_role_changed">Role changed.</string>
+    <string name="share_remove_access">Remove access</string>
+    <string name="share_remove_title">Remove %1$s?</string>
+    <string name="share_remove_body">They won\'t see %1$s any more.</string>
+    <string name="share_removed">Access removed.</string>
+    <string name="share_people_offline">People load when you have signal.</string>
+    <string name="share_invite">Invite someone</string>
+    <string name="share_invite_title">Invite someone</string>
+    <string name="share_email">Email</string>
+    <string name="share_role_editor">Editor</string>
+    <string name="share_role_editor_sub">Can add and change records</string>
+    <string name="share_role_viewer">Viewer</string>
+    <string name="share_role_viewer_sub">Can read and report squawks</string>
+    <string name="share_send_invite">Send invitation</string>
+    <string name="share_invited">They have access. Signing in with that email shows the aircraft.</string>
+    <string name="share_invite_offline">Inviting needs signal.</string>
+    <string name="share_invite_subject">%1$s on MyTailLog</string>
+    <string name="share_invite_text">I\'ve shared %1$s with you on MyTailLog. Sign in with %2$s to see it: %3$s</string>
+</resources>

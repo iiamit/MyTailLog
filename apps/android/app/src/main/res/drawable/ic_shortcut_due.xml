@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcut tile (05 §13): Status blue; Lucide list-checks. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:pathData="M24 0a24 24 0 1 1 0 48a24 24 0 1 1 0-48z" android:fillColor="#FF2A3DBE" />
+    <group android:translateX="12" android:translateY="12">
+        <path android:pathData="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8" android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    </group>
+</vector>

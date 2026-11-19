@@ -152,6 +152,15 @@ export async function prepareAi(supabase: Supabase, userId: string): Promise<AiG
   return { provider, apiKey, ownKey };
 }
 
+/** The shared key is switched off or its daily $ ceiling is spent: reading waits for everyone without their own key. */
+export async function sharedAiPaused(supabase: Supabase): Promise<boolean> {
+  const { data: configured } = await ledger().from("app_setting").select("value").eq("key", "shared_ai_provider").maybeSingle();
+  if ((configured?.value ?? process.env.AI_SHARED_PROVIDER) === "disabled") return true;
+  if (SHARED_DAILY_USD <= 0) return false;
+  const { data: spentToday } = await supabase.rpc("shared_key_cost_today");
+  return Number(spentToday ?? 0) >= SHARED_DAILY_USD;
+}
+
 // The ledger is written ONLY by the service-role client (RLS-bypass), never the
 // user's client — direct client inserts are revoked (migration 0032). This is
 // what makes the shared-key $ ceiling (shared_key_cost_today) trustworthy: a

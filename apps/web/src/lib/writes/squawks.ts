@@ -82,7 +82,7 @@ async function patchSquawk(
 export async function create(
   supabase: Db,
   ctx: WriteCtx,
-  input: { id?: string; description: string; severity?: unknown; reportedAt?: string | null },
+  input: { id?: string; description: string; severity?: unknown; reportedAt?: string | null; photoBlobIds?: string[] },
 ): Promise<WriteResult> {
   const description = typeof input.description === "string" ? input.description.trim() : "";
   if (!description) return { status: "error", message: "Describe the issue.", httpStatus: 400 };
@@ -108,7 +108,14 @@ export async function create(
     .select("*")
     .maybeSingle();
   if (error) return { status: "error", message: error.message };
-  if (data) return { status: "ok", row: data };
+  if (data) {
+    // 09 §5.3 `squawk.create` (extended): photos uploaded with the report, one row each (blob id = photo id).
+    for (const blobId of Array.isArray(input.photoBlobIds) ? input.photoBlobIds.slice(0, 20) : []) {
+      const r = await addPhoto(supabase, ctx, { id: blobId, squawkId: data.id, blobId });
+      if (r.status !== "ok") return r;
+    }
+    return { status: "ok", row: data };
+  }
   const { data: existing } = await supabase
     .from("squawk")
     .select("*")
@@ -171,7 +178,7 @@ export async function update(
   return patchSquawk(supabase, ctx, input.squawkId, picked.fields);
 }
 
-/** Nothing references squawk(id) (checked the migrations), so a delete is final. */
+/** A delete is final: squawk_photo rows cascade (0076) and their images are removed here. */
 export async function remove(
   supabase: Db,
   ctx: WriteCtx,
@@ -180,6 +187,8 @@ export async function remove(
 ): Promise<WriteResult> {
   const loaded = await loadSquawk(supabase, ctx, input.squawkId, base);
   if ("status" in loaded) return loaded;
+  const { data: photos } = await supabase.from("squawk_photo").select("storage_path, thumbnail_path")
+    .eq("squawk_id", input.squawkId).eq("aircraft_id", ctx.aircraftId);
   const { data, error } = await supabase
     .from("squawk")
     .delete()
@@ -188,5 +197,68 @@ export async function remove(
     .select("id");
   if (error) return { status: "error", message: error.message };
   if (!data?.length) return { status: "error", message: "Squawk not found.", httpStatus: 404 };
+  await dropBlobs((photos ?? []).flatMap((p) => [p.storage_path, p.thumbnail_path]));
+  return { status: "ok", row: null };
+}
+
+// ---------------------------------------------------------------------------
+// Photos (09 §2.8, §5.3 `squawkPhoto.create`, `squawkPhoto.delete`)
+// ---------------------------------------------------------------------------
+
+const BLOB_ID = /^[0-9A-Za-z-]{8,64}$/;
+
+/** Where a squawk photo lives (09 §6): under the aircraft, so the storage policies cover it. */
+export const squawkPhotoPath = (aircraftId: string, squawkId: string, blobId: string) =>
+  `${aircraftId}/squawks/${squawkId}/${blobId}.jpg`;
+
+/** Best-effort image cleanup after the row is gone; storage loads lazily so the unit tests never touch it. */
+async function dropBlobs(paths: (string | null)[]) {
+  const list = paths.filter((p): p is string => !!p);
+  if (!list.length) return;
+  try {
+    const { removeBlobs } = await import("@/lib/storage");
+    await removeBlobs(list);
+  } catch {
+    // An orphaned image is harmless and invisible (the row is what grants access to it).
+  }
+}
+
+/** The reporter or an editor may add a photo; everyone else (other viewers) is refused (RLS squawk_photo_add). */
+export async function addPhoto(
+  supabase: Db,
+  ctx: WriteCtx,
+  input: { id: string; squawkId: string; blobId: string; takenAt?: string | null },
+): Promise<WriteResult> {
+  if (typeof input.id !== "string" || !BLOB_ID.test(input.id) || typeof input.blobId !== "string" || !BLOB_ID.test(input.blobId))
+    return { status: "error", message: "The photo is missing its id.", httpStatus: 400 };
+  if (input.takenAt != null && Number.isNaN(Date.parse(input.takenAt))) return { status: "error", message: "The photo's time is unreadable.", httpStatus: 400 };
+  const { data: squawk } = await supabase.from("squawk").select("id, reported_by")
+    .eq("id", input.squawkId).eq("aircraft_id", ctx.aircraftId).maybeSingle();
+  if (!squawk) return { status: "error", message: "Squawk not found.", httpStatus: 404 };
+  if (squawk.reported_by !== ctx.userId && !(await canEdit(supabase, ctx.aircraftId)))
+    return { status: "error", message: "You can add photos only to squawks you reported.", httpStatus: 403 };
+  const { data: existing } = await supabase.from("squawk_photo").select("*").eq("id", input.id).maybeSingle();
+  if (existing) return existing.aircraft_id === ctx.aircraftId ? { status: "ok", row: existing } : { status: "error", message: "Photo not found.", httpStatus: 404 };
+  const { data, error } = await supabase.from("squawk_photo").insert({
+    id: input.id, aircraft_id: ctx.aircraftId, squawk_id: input.squawkId,
+    storage_path: squawkPhotoPath(ctx.aircraftId, input.squawkId, input.blobId),
+    taken_at: input.takenAt ?? null, created_by: ctx.userId,
+  }).select("*").maybeSingle();
+  if (error) return { status: "error", message: error.message };
+  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
+  return { status: "ok", row: data };
+}
+
+/** The photo's creator or an editor may delete it. */
+export async function removePhoto(supabase: Db, ctx: WriteCtx, input: { photoId: string }, base?: string): Promise<WriteResult> {
+  const { data: row } = await supabase.from("squawk_photo").select("*").eq("id", input.photoId).eq("aircraft_id", ctx.aircraftId).maybeSingle();
+  if (!row) return { status: "error", message: "Photo not found.", httpStatus: 404 };
+  if (row.created_by !== ctx.userId && !(await canEdit(supabase, ctx.aircraftId)))
+    return { status: "error", message: NO_EDIT, httpStatus: 403 };
+  if (isStale(row.updated_at, base)) return { status: "conflict", row };
+  const { data, error } = await supabase.from("squawk_photo").delete().eq("id", input.photoId).eq("aircraft_id", ctx.aircraftId).select("id");
+  if (error) return { status: "error", message: error.message };
+  if (!data?.length) return { status: "error", message: NO_EDIT, httpStatus: 403 };
+  await dropBlobs([row.storage_path, row.thumbnail_path]);
   return { status: "ok", row: null };
 }

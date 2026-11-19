@@ -1,0 +1,6442 @@
+{
+ "rule": "09 §3.7, §4.6 MapModel; 10 §2",
+ "algoVersion": 1,
+ "cases": [
+  {
+   "name": "N734DM",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n734dm",
+     "tail_number": "N734DM",
+     "year": 1978,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-avi",
+      "type": "avionics",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-1",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1978-06-02",
+      "entry_date": "1978-06-02",
+      "trust": "signed",
+      "description": "Delivered. Weight and balance, equipment list.",
+      "tach": 0
+     },
+     {
+      "id": "e-2",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1979-09-15",
+      "entry_date": "1979-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 88.5,
+      "mechanic_cert_number": "IA 1979",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-3",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1980-01-15",
+      "entry_date": "1980-01-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 177,
+      "mechanic_cert_number": "IA 1980",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-4",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1981-02-15",
+      "entry_date": "1981-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 265.5,
+      "mechanic_cert_number": "IA 1981",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-5",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1982-03-15",
+      "entry_date": "1982-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 354,
+      "mechanic_cert_number": "IA 1982",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-6",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1991-03-15",
+      "entry_date": "1991-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1150.5,
+      "mechanic_cert_number": "IA 1991",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-7",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1993-05-15",
+      "entry_date": "1993-05-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1327.5,
+      "mechanic_cert_number": "IA 1993",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-8",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1995-07-15",
+      "entry_date": "1995-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1504.5,
+      "mechanic_cert_number": "IA 1995",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-9",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1997-09-15",
+      "entry_date": "1997-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1681.5,
+      "mechanic_cert_number": "IA 1997",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-10",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1999-02-15",
+      "entry_date": "1999-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1858.5,
+      "mechanic_cert_number": "IA 1999",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-11",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2001-04-15",
+      "entry_date": "2001-04-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2035.5,
+      "mechanic_cert_number": "IA 2001",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-12",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2003-06-15",
+      "entry_date": "2003-06-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2212.5,
+      "mechanic_cert_number": "IA 2003",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-13",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2005-08-15",
+      "entry_date": "2005-08-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2389.5,
+      "mechanic_cert_number": "IA 2005",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-14",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2007-01-15",
+      "entry_date": "2007-01-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2566.5,
+      "mechanic_cert_number": "IA 2007",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-15",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2009-03-15",
+      "entry_date": "2009-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2743.5,
+      "mechanic_cert_number": "IA 2009",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-16",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-17",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection, engine.",
+      "entry_kind": "annual",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-18",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection, propeller.",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-19",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2013-07-15",
+      "entry_date": "2013-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3097.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-20",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2015-09-15",
+      "entry_date": "2015-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3274.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-21",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2017-02-15",
+      "entry_date": "2017-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3451.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-22",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2019-04-15",
+      "entry_date": "2019-04-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3628.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-23",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-15",
+      "entry_date": "2020-05-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3717,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-24",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2021-06-15",
+      "entry_date": "2021-06-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3805.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-25",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2022-07-15",
+      "entry_date": "2022-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3894,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-26",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2023-08-15",
+      "entry_date": "2023-08-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3982.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-27",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-28",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection, engine.",
+      "entry_kind": "annual",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-29",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection, propeller.",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-30",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2025-07-20",
+      "entry_date": "2025-07-20",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 4159.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-31",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2025-07-20",
+      "entry_date": "2025-07-20",
+      "trust": "confirmed",
+      "description": "Annual, propeller checked.",
+      "tach": 4159.5,
+      "mechanic_cert_number": "A&P 3105582  ia"
+     },
+     {
+      "id": "e-32",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2005-09-14",
+      "entry_date": "2005-09-14",
+      "trust": "confirmed",
+      "description": "Engine overhauled by Lycoming, zero time.",
+      "entry_kind": "engine_overhaul",
+      "tach": 2390,
+      "mechanic_cert_number": "RS LYCR123K"
+     },
+     {
+      "id": "e-33",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2007-05-02",
+      "entry_date": "2007-05-02",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 2570.4
+     },
+     {
+      "id": "e-34",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2009-04-11",
+      "entry_date": "2009-04-11",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 2740
+     },
+     {
+      "id": "e-35",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-06-01",
+      "entry_date": "2024-06-01",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 4120.2
+     },
+     {
+      "id": "e-36",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2025-06-10",
+      "entry_date": "2025-06-10",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 4160
+     },
+     {
+      "id": "e-37",
+      "logbook_id": "lb-avi",
+      "page_id": "p-lb-avi-2019-03-12",
+      "entry_date": "2019-03-12",
+      "trust": "confirmed",
+      "description": "Installed Garmin GTN 650 per STC.",
+      "entry_kind": "install",
+      "tach": 3891.2,
+      "mechanic_cert_number": "CRS #ST4R881K"
+     },
+     {
+      "id": "e-38",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2019-03-12",
+      "entry_date": "2019-03-12",
+      "trust": "confirmed",
+      "description": "Form 337 for GTN 650 installation.",
+      "entry_kind": "major_alteration",
+      "tach": 3891.2,
+      "mechanic_cert_number": "CRS #ST4R881K"
+     },
+     {
+      "id": "e-39",
+      "logbook_id": "lb-avi",
+      "page_id": "p-lb-avi-2023-02-11",
+      "entry_date": "2023-02-11",
+      "trust": "confirmed",
+      "description": "Transponder and encoder tests.",
+      "tach": 4010.3
+     },
+     {
+      "id": "e-40",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2026-07-18",
+      "entry_date": "2026-07-18",
+      "trust": "ai_read",
+      "description": "Annual inspection.",
+      "entry_kind": "annual",
+      "tach": 4219.6,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-41",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2026-07-18",
+      "entry_date": "2026-07-18",
+      "trust": "ai_read",
+      "description": "Annual, engine.",
+      "entry_kind": "annual",
+      "tach": 4219.6,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-42",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2026-09-30",
+      "entry_date": "2026-09-30",
+      "trust": "ai_read",
+      "description": "Oil changed.",
+      "entry_kind": "oil_change",
+      "tach": 4240.1
+     },
+     {
+      "id": "e-43",
+      "logbook_id": "lb-air",
+      "page_id": null,
+      "entry_date": "2025-01-05",
+      "trust": "confirmed",
+      "description": "Owner note: oil added.",
+      "replaced_by_entry_id": "e-1"
+     },
+     {
+      "id": "e-44",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2025-02-01",
+      "entry_date": "2025-02-01",
+      "trust": "confirmed",
+      "is_continuation": true
+     },
+     {
+      "id": "e-45",
+      "logbook_id": "lb-air",
+      "page_id": "p-queued",
+      "entry_date": "2026-11-10",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-46",
+      "logbook_id": "lb-oth",
+      "page_id": "p-lb-oth-2024-03-01",
+      "entry_date": "2024-03-01",
+      "trust": "confirmed",
+      "description": "Insurance certificate."
+     },
+     {
+      "id": "e-47",
+      "logbook_id": "lb-air",
+      "page_id": "p-landing",
+      "entry_date": null,
+      "trust": "confirmed",
+      "description": "Wheel bearing repacked."
+     },
+     {
+      "id": "e-48",
+      "logbook_id": "lb-air",
+      "page_id": "p-nodate",
+      "entry_date": null,
+      "trust": "confirmed",
+      "description": "Tire replaced."
+     }
+    ],
+    "page": [
+     {
+      "id": "p-queued",
+      "logbook_id": "lb-air",
+      "page_sequence": 60,
+      "extraction_status": "queued"
+     },
+     {
+      "id": "p-landing",
+      "logbook_id": "lb-air",
+      "page_sequence": 61,
+      "extraction_status": "extracted",
+      "landing_date": "2026-03-14"
+     }
+    ],
+    "maintenance_item": [
+     {
+      "id": "mx-annual",
+      "kind": "annual",
+      "label": "Annual inspection (91.409)",
+      "regulatory": true,
+      "interval_months": 12,
+      "interval_hours": null,
+      "last_done_date": "2025-07-20",
+      "last_done_hours": 4168.3
+     },
+     {
+      "id": "mx-oil_change",
+      "kind": "oil_change",
+      "label": "Oil change",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 50,
+      "last_done_date": "2026-08-20",
+      "last_done_hours": 4205.6
+     },
+     {
+      "id": "mx-transponder",
+      "kind": "transponder",
+      "label": "Transponder test (91.413)",
+      "regulatory": true,
+      "interval_months": 24,
+      "interval_hours": null,
+      "last_done_date": "2024-12-03",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-pitot_static",
+      "kind": "pitot_static",
+      "label": "Pitot-static / altimeter (91.411)",
+      "regulatory": true,
+      "interval_months": 24,
+      "interval_hours": null,
+      "last_done_date": "2024-12-03",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-vor",
+      "kind": "vor",
+      "label": "VOR check (91.171) — IFR",
+      "regulatory": true,
+      "interval_months": 1,
+      "interval_hours": null,
+      "last_done_date": "2026-10-11",
+      "last_done_hours": null,
+      "ifr_only": true
+     },
+     {
+      "id": "mx-engine_tbo",
+      "kind": "engine_tbo",
+      "label": "Engine TBO (advisory)",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 2000,
+      "last_done_date": "2005-09-14",
+      "last_done_hours": 2390
+     },
+     {
+      "id": "mx-elt_battery",
+      "kind": "elt_battery",
+      "label": "ELT battery",
+      "regulatory": true,
+      "interval_months": null,
+      "interval_hours": null,
+      "last_done_date": null,
+      "last_done_hours": null,
+      "expires_on": "2027-02-28"
+     }
+    ],
+    "item_completion": [
+     {
+      "id": "c-tbo",
+      "maintenance_item_id": "mx-engine_tbo",
+      "ad_compliance_id": null,
+      "log_entry_id": "e-32",
+      "done_date": "2005-09-14",
+      "done_hours": 2390
+     },
+     {
+      "id": "c-tbo-ai",
+      "maintenance_item_id": "mx-engine_tbo",
+      "ad_compliance_id": null,
+      "log_entry_id": "e-ai-overhaul",
+      "done_date": "2026-09-01",
+      "done_hours": 4230
+     }
+    ],
+    "hours_reading": [
+     {
+      "id": "hr-0",
+      "reading_date": "2026-08-04",
+      "tach": 4186.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-1",
+      "reading_date": "2026-08-11",
+      "tach": 4189.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-2",
+      "reading_date": "2026-08-18",
+      "tach": 4192.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-3",
+      "reading_date": "2026-08-25",
+      "tach": 4195.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-4",
+      "reading_date": "2026-09-01",
+      "tach": 4198.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-5",
+      "reading_date": "2026-09-08",
+      "tach": 4201.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-6",
+      "reading_date": "2026-09-15",
+      "tach": 4204.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-7",
+      "reading_date": "2026-09-22",
+      "tach": 4207.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-8",
+      "reading_date": "2026-09-29",
+      "tach": 4210.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-9",
+      "reading_date": "2026-10-06",
+      "tach": 4213.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-10",
+      "reading_date": "2026-10-13",
+      "tach": 4216.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-11",
+      "reading_date": "2026-10-20",
+      "tach": 4219.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-12",
+      "reading_date": "2026-10-27",
+      "tach": 4222.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-13",
+      "reading_date": "2026-11-03",
+      "tach": 4225.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-14",
+      "reading_date": "2026-11-10",
+      "tach": 4228.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-15",
+      "reading_date": "2026-11-17",
+      "tach": 4231.5,
+      "hobbs": null,
+      "source": "manual"
+     }
+    ],
+    "logbook_gap": [
+     {
+      "id": "g-air",
+      "logbook_id": "lb-air",
+      "from_date": "1982-03-15",
+      "to_date": "1991-02-15",
+      "status": "open"
+     },
+     {
+      "id": "g-air-before",
+      "logbook_id": "lb-air",
+      "from_date": "1970-01-01",
+      "to_date": "1978-06-02",
+      "status": "dismissed"
+     },
+     {
+      "id": "g-eng",
+      "logbook_id": "lb-eng",
+      "from_date": "2011-08-22",
+      "to_date": "2024-06-01",
+      "status": "asked_previous_owner"
+     },
+     {
+      "id": "g-prop",
+      "logbook_id": "lb-prop",
+      "from_date": "2011-08-22",
+      "to_date": "2024-12-03",
+      "status": "no_pages_exist"
+     },
+     {
+      "id": "g-filled",
+      "logbook_id": "lb-eng",
+      "from_date": "2007-05-02",
+      "to_date": "2009-04-11",
+      "status": "filled"
+     }
+    ],
+    "squawk": [
+     {
+      "id": "sq-open",
+      "description": "Left brake feels soft.",
+      "severity": "medium",
+      "status": "open",
+      "reported_at": "2026-10-01T15:00:00Z"
+     },
+     {
+      "id": "sq-done",
+      "description": "Prop spinner crack.",
+      "severity": "low",
+      "status": "resolved",
+      "reported_at": "2025-06-01T12:00:00Z",
+      "resolved_at": "2025-07-20T12:00:00Z",
+      "resolved_log_entry_id": "e-31"
+     }
+    ],
+    "planned_visit": [
+     {
+      "id": "v-dec",
+      "status": "planned",
+      "week_of": "2026-12-07",
+      "visit_date": null,
+      "provider_id": null,
+      "airport": "KBED"
+     }
+    ],
+    "planned_visit_item": [
+     {
+      "visit_id": "v-dec",
+      "item_key": "mx:mx-transponder"
+     },
+     {
+      "visit_id": "v-dec",
+      "item_key": "mx:mx-pitot_static"
+     }
+    ]
+   },
+   "expected": {
+    "today": "2026-11-18",
+    "range": {
+     "from": "1978-06-02",
+     "to": "2027-11-18",
+     "scaleBreak": "2025-11-18"
+    },
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "1978-06-02",
+        "to": "2026-07-18"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2005-09-14",
+        "to": "2026-09-30"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": "2011-08-22",
+        "to": "2025-07-20"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-avi",
+      "logbook": "avionics",
+      "logbookId": "lb-avi",
+      "name": "Avionics",
+      "volumes": [
+       {
+        "id": "lb-avi",
+        "label": "Avionics",
+        "from": "2019-03-12",
+        "to": "2023-02-11"
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "790963b17842fd34",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1978-06-02",
+      "entryIds": [
+       "e-1"
+      ],
+      "trust": "signed",
+      "pageIds": [
+       "p-lb-air-1978-06-02"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "28ee00404d131920",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1979-09-15",
+      "entryIds": [
+       "e-2"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1979-09-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "600c62c072c85769",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1980-01-15",
+      "entryIds": [
+       "e-3"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1980-01-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "356cbab5ab8050b5",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1981-02-15",
+      "entryIds": [
+       "e-4"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1981-02-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "a60689e3a8abc667",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1982-03-15",
+      "entryIds": [
+       "e-5"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1982-03-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "7f7ab538ef823505",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1991-03-15",
+      "entryIds": [
+       "e-6"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1991-03-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "0933e96486bad0fa",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1993-05-15",
+      "entryIds": [
+       "e-7"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1993-05-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "e5bba924a1126283",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1995-07-15",
+      "entryIds": [
+       "e-8"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1995-07-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "7399a2b9e2615116",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1997-09-15",
+      "entryIds": [
+       "e-9"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1997-09-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c4bec32b7eb0cc81",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1999-02-15",
+      "entryIds": [
+       "e-10"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1999-02-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "9d21a8da84759e40",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2001-04-15",
+      "entryIds": [
+       "e-11"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2001-04-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "06795c019832a147",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2003-06-15",
+      "entryIds": [
+       "e-12"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2003-06-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c0fe76de99579998",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2005-08-15",
+      "entryIds": [
+       "e-13"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2005-08-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c41088030e08766d",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2007-01-15",
+      "entryIds": [
+       "e-14"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2007-01-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "01ee6af6ca20ac03",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2009-03-15",
+      "entryIds": [
+       "e-15"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2009-03-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "5701279fe49a4d00",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-16"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2011-08-22"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "59050aff371c10eb",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2013-07-15",
+      "entryIds": [
+       "e-19"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2013-07-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "9404cf9b346421b1",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2015-09-15",
+      "entryIds": [
+       "e-20"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2015-09-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "797e76dd46445c83",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2017-02-15",
+      "entryIds": [
+       "e-21"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2017-02-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "bd9288ee26d992bf",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2019-03-12",
+      "entryIds": [
+       "e-38"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2019-03-12"
+      ],
+      "label": "Major alteration",
+      "major": true
+     },
+     {
+      "id": "9436d65f3d95bac3",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2019-04-15",
+      "entryIds": [
+       "e-22"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2019-04-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "8cae882f08c11405",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-15",
+      "entryIds": [
+       "e-23"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-05-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "f5fbb846f9ba192c",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2021-06-15",
+      "entryIds": [
+       "e-24"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2021-06-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "062d3d90fb300281",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2022-07-15",
+      "entryIds": [
+       "e-25"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2022-07-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "80c387bfc38ed912",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2023-08-15",
+      "entryIds": [
+       "e-26"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2023-08-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "fe2184c3060c5d75",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2024-12-03",
+      "entryIds": [
+       "e-27"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2024-12-03"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "031f43d6957d6cd8",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2025-07-20",
+      "entryIds": [
+       "e-30"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2025-07-20"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "531cbc7fbb23b913",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2026-03-14",
+      "entryIds": [
+       "e-47"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-landing"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "57909d6b2550a88e",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2026-07-18",
+      "entryIds": [
+       "e-40"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-air-2026-07-18"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "1c1f5860871db48e",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2005-09-14",
+      "entryIds": [
+       "e-32"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2005-09-14"
+      ],
+      "label": "Engine overhaul",
+      "major": true
+     },
+     {
+      "id": "d72522ddf223b767",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2007-05-02",
+      "entryIds": [
+       "e-33"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2007-05-02"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "686d3812a5bb619d",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2009-04-11",
+      "entryIds": [
+       "e-34"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2009-04-11"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c7cccfa34efd2e41",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-17"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2011-08-22"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "2f4edf585d8086b9",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2024-06-01",
+      "entryIds": [
+       "e-35"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2024-06-01"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "e5f7a74030431bdd",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2024-12-03",
+      "entryIds": [
+       "e-28"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2024-12-03"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "43452cce15587ed7",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2025-06-10",
+      "entryIds": [
+       "e-36"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2025-06-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "f21721dc9de8cbcf",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2026-07-18",
+      "entryIds": [
+       "e-41"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-eng-2026-07-18"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "3a3b9ba78458e540",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2026-09-30",
+      "entryIds": [
+       "e-42"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-eng-2026-09-30"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "894ad4c5d498ff41",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-18"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2011-08-22"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "98bea5653df4327b",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2024-12-03",
+      "entryIds": [
+       "e-29"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2024-12-03"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "62e1a8f5a7ff2eba",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2025-07-20",
+      "entryIds": [
+       "e-31"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2025-07-20"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "6e51aeed806fdce8",
+      "lineId": "lb-avi",
+      "logbook": "avionics",
+      "date": "2019-03-12",
+      "entryIds": [
+       "e-37"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-avi-2019-03-12"
+      ],
+      "label": "Installation",
+      "major": true
+     },
+     {
+      "id": "21ee77a1e9aeb187",
+      "lineId": "lb-avi",
+      "logbook": "avionics",
+      "date": "2023-02-11",
+      "entryIds": [
+       "e-39"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-avi-2023-02-11"
+      ],
+      "label": null,
+      "major": false
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "7f19e2fdc1787d4d",
+      "date": "2011-08-22",
+      "stopIds": [
+       "5701279fe49a4d00",
+       "c7cccfa34efd2e41",
+       "894ad4c5d498ff41"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "44bd21ca88076c57",
+      "date": "2019-03-12",
+      "stopIds": [
+       "bd9288ee26d992bf",
+       "6e51aeed806fdce8"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-avi"
+      ],
+      "trust": "confirmed",
+      "label": null
+     },
+     {
+      "id": "ae2d865fcb65fe63",
+      "date": "2024-12-03",
+      "stopIds": [
+       "fe2184c3060c5d75",
+       "e5f7a74030431bdd",
+       "98bea5653df4327b"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "b58ae6d40d2df221",
+      "date": "2025-07-20",
+      "stopIds": [
+       "031f43d6957d6cd8",
+       "62e1a8f5a7ff2eba"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "b482dde54e6664fa",
+      "date": "2026-07-18",
+      "stopIds": [
+       "57909d6b2550a88e",
+       "f21721dc9de8cbcf"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng"
+      ],
+      "trust": "ai_read",
+      "label": "Annual"
+     }
+    ],
+    "gaps": [
+     {
+      "id": "g-air",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "from": "1982-03-15",
+      "to": "1991-02-15",
+      "status": "open",
+      "unconfirmedPages": 0
+     },
+     {
+      "id": "g-eng",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "from": "2011-08-22",
+      "to": "2024-06-01",
+      "status": "asked_previous_owner",
+      "unconfirmedPages": 0
+     },
+     {
+      "id": "g-prop",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "from": "2011-08-22",
+      "to": "2024-12-03",
+      "status": "no_pages_exist",
+      "unconfirmedPages": 0
+     }
+    ],
+    "eras": [
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "from": "2005-09-14",
+      "to": null,
+      "label": "1,842 h since overhaul",
+      "anchorEntryId": "e-32"
+     }
+    ],
+    "squawks": [
+     {
+      "id": "sq-done",
+      "date": "2025-07-20",
+      "open": false,
+      "line": "prop",
+      "lineId": "lb-prop"
+     },
+     {
+      "id": "sq-open",
+      "date": "2026-10-01",
+      "open": true,
+      "line": "airframe",
+      "lineId": "lb-air"
+     }
+    ],
+    "rings": [
+     {
+      "itemKey": "mx:mx-annual",
+      "line": "airframe",
+      "lineId": "lb-air",
+      "date": "2026-11-18",
+      "dateKind": "calendar",
+      "status": "overdue",
+      "label": "Annual",
+      "kind": "annual"
+     },
+     {
+      "itemKey": "mx:mx-vor",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2026-11-18",
+      "dateKind": "calendar",
+      "status": "overdue",
+      "label": "VOR check",
+      "kind": "vor"
+     },
+     {
+      "itemKey": "mx:mx-pitot_static",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2026-12-31",
+      "dateKind": "calendar",
+      "status": "due_soon",
+      "label": "Pitot-static check",
+      "kind": "pitot_static"
+     },
+     {
+      "itemKey": "mx:mx-transponder",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2026-12-31",
+      "dateKind": "calendar",
+      "status": "due_soon",
+      "label": "Transponder check",
+      "kind": "transponder"
+     },
+     {
+      "itemKey": "mx:mx-oil_change",
+      "line": "engine",
+      "lineId": "lb-eng",
+      "date": "2027-01-14",
+      "dateKind": "projected",
+      "status": "current",
+      "label": "Oil change",
+      "kind": "oil_change"
+     },
+     {
+      "itemKey": "mx:mx-elt_battery",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2027-02-28",
+      "dateKind": "calendar",
+      "status": "current",
+      "label": "ELT battery",
+      "kind": "elt_battery"
+     }
+    ],
+    "visits": [
+     {
+      "id": null,
+      "suggestionKey": "094b388f1a8ec071",
+      "state": "suggested",
+      "weekOf": "2026-11-23",
+      "itemKeys": [
+       "mx:mx-annual",
+       "mx:mx-oil_change",
+       "mx:mx-vor",
+       "squawk:sq-open"
+      ],
+      "label": "Suggested"
+     },
+     {
+      "id": "v-dec",
+      "suggestionKey": null,
+      "state": "planned",
+      "weekOf": "2026-12-07",
+      "itemKeys": [
+       "mx:mx-pitot_static",
+       "mx:mx-transponder"
+      ],
+      "label": "Planned"
+     }
+    ],
+    "undatedEntries": 1
+   }
+  },
+  {
+   "name": "N734DM, engine and prop only, 2005 to 2015",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n734dm",
+     "tail_number": "N734DM",
+     "year": 1978,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-avi",
+      "type": "avionics",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-1",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1978-06-02",
+      "entry_date": "1978-06-02",
+      "trust": "signed",
+      "description": "Delivered. Weight and balance, equipment list.",
+      "tach": 0
+     },
+     {
+      "id": "e-2",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1979-09-15",
+      "entry_date": "1979-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 88.5,
+      "mechanic_cert_number": "IA 1979",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-3",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1980-01-15",
+      "entry_date": "1980-01-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 177,
+      "mechanic_cert_number": "IA 1980",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-4",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1981-02-15",
+      "entry_date": "1981-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 265.5,
+      "mechanic_cert_number": "IA 1981",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-5",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1982-03-15",
+      "entry_date": "1982-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 354,
+      "mechanic_cert_number": "IA 1982",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-6",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1991-03-15",
+      "entry_date": "1991-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1150.5,
+      "mechanic_cert_number": "IA 1991",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-7",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1993-05-15",
+      "entry_date": "1993-05-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1327.5,
+      "mechanic_cert_number": "IA 1993",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-8",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1995-07-15",
+      "entry_date": "1995-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1504.5,
+      "mechanic_cert_number": "IA 1995",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-9",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1997-09-15",
+      "entry_date": "1997-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1681.5,
+      "mechanic_cert_number": "IA 1997",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-10",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1999-02-15",
+      "entry_date": "1999-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1858.5,
+      "mechanic_cert_number": "IA 1999",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-11",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2001-04-15",
+      "entry_date": "2001-04-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2035.5,
+      "mechanic_cert_number": "IA 2001",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-12",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2003-06-15",
+      "entry_date": "2003-06-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2212.5,
+      "mechanic_cert_number": "IA 2003",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-13",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2005-08-15",
+      "entry_date": "2005-08-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2389.5,
+      "mechanic_cert_number": "IA 2005",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-14",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2007-01-15",
+      "entry_date": "2007-01-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2566.5,
+      "mechanic_cert_number": "IA 2007",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-15",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2009-03-15",
+      "entry_date": "2009-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2743.5,
+      "mechanic_cert_number": "IA 2009",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-16",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-17",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection, engine.",
+      "entry_kind": "annual",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-18",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection, propeller.",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-19",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2013-07-15",
+      "entry_date": "2013-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3097.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-20",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2015-09-15",
+      "entry_date": "2015-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3274.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-21",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2017-02-15",
+      "entry_date": "2017-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3451.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-22",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2019-04-15",
+      "entry_date": "2019-04-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3628.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-23",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-15",
+      "entry_date": "2020-05-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3717,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-24",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2021-06-15",
+      "entry_date": "2021-06-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3805.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-25",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2022-07-15",
+      "entry_date": "2022-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3894,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-26",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2023-08-15",
+      "entry_date": "2023-08-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3982.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-27",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-28",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection, engine.",
+      "entry_kind": "annual",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-29",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection, propeller.",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-30",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2025-07-20",
+      "entry_date": "2025-07-20",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 4159.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-31",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2025-07-20",
+      "entry_date": "2025-07-20",
+      "trust": "confirmed",
+      "description": "Annual, propeller checked.",
+      "tach": 4159.5,
+      "mechanic_cert_number": "A&P 3105582  ia"
+     },
+     {
+      "id": "e-32",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2005-09-14",
+      "entry_date": "2005-09-14",
+      "trust": "confirmed",
+      "description": "Engine overhauled by Lycoming, zero time.",
+      "entry_kind": "engine_overhaul",
+      "tach": 2390,
+      "mechanic_cert_number": "RS LYCR123K"
+     },
+     {
+      "id": "e-33",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2007-05-02",
+      "entry_date": "2007-05-02",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 2570.4
+     },
+     {
+      "id": "e-34",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2009-04-11",
+      "entry_date": "2009-04-11",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 2740
+     },
+     {
+      "id": "e-35",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-06-01",
+      "entry_date": "2024-06-01",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 4120.2
+     },
+     {
+      "id": "e-36",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2025-06-10",
+      "entry_date": "2025-06-10",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 4160
+     },
+     {
+      "id": "e-37",
+      "logbook_id": "lb-avi",
+      "page_id": "p-lb-avi-2019-03-12",
+      "entry_date": "2019-03-12",
+      "trust": "confirmed",
+      "description": "Installed Garmin GTN 650 per STC.",
+      "entry_kind": "install",
+      "tach": 3891.2,
+      "mechanic_cert_number": "CRS #ST4R881K"
+     },
+     {
+      "id": "e-38",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2019-03-12",
+      "entry_date": "2019-03-12",
+      "trust": "confirmed",
+      "description": "Form 337 for GTN 650 installation.",
+      "entry_kind": "major_alteration",
+      "tach": 3891.2,
+      "mechanic_cert_number": "CRS #ST4R881K"
+     },
+     {
+      "id": "e-39",
+      "logbook_id": "lb-avi",
+      "page_id": "p-lb-avi-2023-02-11",
+      "entry_date": "2023-02-11",
+      "trust": "confirmed",
+      "description": "Transponder and encoder tests.",
+      "tach": 4010.3
+     },
+     {
+      "id": "e-40",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2026-07-18",
+      "entry_date": "2026-07-18",
+      "trust": "ai_read",
+      "description": "Annual inspection.",
+      "entry_kind": "annual",
+      "tach": 4219.6,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-41",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2026-07-18",
+      "entry_date": "2026-07-18",
+      "trust": "ai_read",
+      "description": "Annual, engine.",
+      "entry_kind": "annual",
+      "tach": 4219.6,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-42",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2026-09-30",
+      "entry_date": "2026-09-30",
+      "trust": "ai_read",
+      "description": "Oil changed.",
+      "entry_kind": "oil_change",
+      "tach": 4240.1
+     },
+     {
+      "id": "e-43",
+      "logbook_id": "lb-air",
+      "page_id": null,
+      "entry_date": "2025-01-05",
+      "trust": "confirmed",
+      "description": "Owner note: oil added.",
+      "replaced_by_entry_id": "e-1"
+     },
+     {
+      "id": "e-44",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2025-02-01",
+      "entry_date": "2025-02-01",
+      "trust": "confirmed",
+      "is_continuation": true
+     },
+     {
+      "id": "e-45",
+      "logbook_id": "lb-air",
+      "page_id": "p-queued",
+      "entry_date": "2026-11-10",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-46",
+      "logbook_id": "lb-oth",
+      "page_id": "p-lb-oth-2024-03-01",
+      "entry_date": "2024-03-01",
+      "trust": "confirmed",
+      "description": "Insurance certificate."
+     },
+     {
+      "id": "e-47",
+      "logbook_id": "lb-air",
+      "page_id": "p-landing",
+      "entry_date": null,
+      "trust": "confirmed",
+      "description": "Wheel bearing repacked."
+     },
+     {
+      "id": "e-48",
+      "logbook_id": "lb-air",
+      "page_id": "p-nodate",
+      "entry_date": null,
+      "trust": "confirmed",
+      "description": "Tire replaced."
+     }
+    ],
+    "page": [
+     {
+      "id": "p-queued",
+      "logbook_id": "lb-air",
+      "page_sequence": 60,
+      "extraction_status": "queued"
+     },
+     {
+      "id": "p-landing",
+      "logbook_id": "lb-air",
+      "page_sequence": 61,
+      "extraction_status": "extracted",
+      "landing_date": "2026-03-14"
+     }
+    ],
+    "maintenance_item": [
+     {
+      "id": "mx-annual",
+      "kind": "annual",
+      "label": "Annual inspection (91.409)",
+      "regulatory": true,
+      "interval_months": 12,
+      "interval_hours": null,
+      "last_done_date": "2025-07-20",
+      "last_done_hours": 4168.3
+     },
+     {
+      "id": "mx-oil_change",
+      "kind": "oil_change",
+      "label": "Oil change",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 50,
+      "last_done_date": "2026-08-20",
+      "last_done_hours": 4205.6
+     },
+     {
+      "id": "mx-transponder",
+      "kind": "transponder",
+      "label": "Transponder test (91.413)",
+      "regulatory": true,
+      "interval_months": 24,
+      "interval_hours": null,
+      "last_done_date": "2024-12-03",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-pitot_static",
+      "kind": "pitot_static",
+      "label": "Pitot-static / altimeter (91.411)",
+      "regulatory": true,
+      "interval_months": 24,
+      "interval_hours": null,
+      "last_done_date": "2024-12-03",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-vor",
+      "kind": "vor",
+      "label": "VOR check (91.171) — IFR",
+      "regulatory": true,
+      "interval_months": 1,
+      "interval_hours": null,
+      "last_done_date": "2026-10-11",
+      "last_done_hours": null,
+      "ifr_only": true
+     },
+     {
+      "id": "mx-engine_tbo",
+      "kind": "engine_tbo",
+      "label": "Engine TBO (advisory)",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 2000,
+      "last_done_date": "2005-09-14",
+      "last_done_hours": 2390
+     },
+     {
+      "id": "mx-elt_battery",
+      "kind": "elt_battery",
+      "label": "ELT battery",
+      "regulatory": true,
+      "interval_months": null,
+      "interval_hours": null,
+      "last_done_date": null,
+      "last_done_hours": null,
+      "expires_on": "2027-02-28"
+     }
+    ],
+    "item_completion": [
+     {
+      "id": "c-tbo",
+      "maintenance_item_id": "mx-engine_tbo",
+      "ad_compliance_id": null,
+      "log_entry_id": "e-32",
+      "done_date": "2005-09-14",
+      "done_hours": 2390
+     },
+     {
+      "id": "c-tbo-ai",
+      "maintenance_item_id": "mx-engine_tbo",
+      "ad_compliance_id": null,
+      "log_entry_id": "e-ai-overhaul",
+      "done_date": "2026-09-01",
+      "done_hours": 4230
+     }
+    ],
+    "hours_reading": [
+     {
+      "id": "hr-0",
+      "reading_date": "2026-08-04",
+      "tach": 4186.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-1",
+      "reading_date": "2026-08-11",
+      "tach": 4189.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-2",
+      "reading_date": "2026-08-18",
+      "tach": 4192.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-3",
+      "reading_date": "2026-08-25",
+      "tach": 4195.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-4",
+      "reading_date": "2026-09-01",
+      "tach": 4198.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-5",
+      "reading_date": "2026-09-08",
+      "tach": 4201.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-6",
+      "reading_date": "2026-09-15",
+      "tach": 4204.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-7",
+      "reading_date": "2026-09-22",
+      "tach": 4207.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-8",
+      "reading_date": "2026-09-29",
+      "tach": 4210.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-9",
+      "reading_date": "2026-10-06",
+      "tach": 4213.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-10",
+      "reading_date": "2026-10-13",
+      "tach": 4216.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-11",
+      "reading_date": "2026-10-20",
+      "tach": 4219.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-12",
+      "reading_date": "2026-10-27",
+      "tach": 4222.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-13",
+      "reading_date": "2026-11-03",
+      "tach": 4225.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-14",
+      "reading_date": "2026-11-10",
+      "tach": 4228.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-15",
+      "reading_date": "2026-11-17",
+      "tach": 4231.5,
+      "hobbs": null,
+      "source": "manual"
+     }
+    ],
+    "logbook_gap": [
+     {
+      "id": "g-air",
+      "logbook_id": "lb-air",
+      "from_date": "1982-03-15",
+      "to_date": "1991-02-15",
+      "status": "open"
+     },
+     {
+      "id": "g-air-before",
+      "logbook_id": "lb-air",
+      "from_date": "1970-01-01",
+      "to_date": "1978-06-02",
+      "status": "dismissed"
+     },
+     {
+      "id": "g-eng",
+      "logbook_id": "lb-eng",
+      "from_date": "2011-08-22",
+      "to_date": "2024-06-01",
+      "status": "asked_previous_owner"
+     },
+     {
+      "id": "g-prop",
+      "logbook_id": "lb-prop",
+      "from_date": "2011-08-22",
+      "to_date": "2024-12-03",
+      "status": "no_pages_exist"
+     },
+     {
+      "id": "g-filled",
+      "logbook_id": "lb-eng",
+      "from_date": "2007-05-02",
+      "to_date": "2009-04-11",
+      "status": "filled"
+     }
+    ],
+    "squawk": [
+     {
+      "id": "sq-open",
+      "description": "Left brake feels soft.",
+      "severity": "medium",
+      "status": "open",
+      "reported_at": "2026-10-01T15:00:00Z"
+     },
+     {
+      "id": "sq-done",
+      "description": "Prop spinner crack.",
+      "severity": "low",
+      "status": "resolved",
+      "reported_at": "2025-06-01T12:00:00Z",
+      "resolved_at": "2025-07-20T12:00:00Z",
+      "resolved_log_entry_id": "e-31"
+     }
+    ],
+    "planned_visit": [
+     {
+      "id": "v-dec",
+      "status": "planned",
+      "week_of": "2026-12-07",
+      "visit_date": null,
+      "provider_id": null,
+      "airport": "KBED"
+     }
+    ],
+    "planned_visit_item": [
+     {
+      "visit_id": "v-dec",
+      "item_key": "mx:mx-transponder"
+     },
+     {
+      "visit_id": "v-dec",
+      "item_key": "mx:mx-pitot_static"
+     }
+    ],
+    "_options": {
+     "only": [
+      "engine",
+      "prop"
+     ],
+     "from": "2005-01-01",
+     "to": "2015-12-31"
+    }
+   },
+   "expected": {
+    "today": "2026-11-18",
+    "range": {
+     "from": "2005-01-01",
+     "to": "2015-12-31",
+     "scaleBreak": "2025-11-18"
+    },
+    "lines": [
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2005-09-14",
+        "to": "2026-09-30"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": "2011-08-22",
+        "to": "2025-07-20"
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "1c1f5860871db48e",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2005-09-14",
+      "entryIds": [
+       "e-32"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2005-09-14"
+      ],
+      "label": "Engine overhaul",
+      "major": true
+     },
+     {
+      "id": "d72522ddf223b767",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2007-05-02",
+      "entryIds": [
+       "e-33"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2007-05-02"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "686d3812a5bb619d",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2009-04-11",
+      "entryIds": [
+       "e-34"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2009-04-11"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c7cccfa34efd2e41",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-17"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2011-08-22"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "894ad4c5d498ff41",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-18"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2011-08-22"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "f45122b5ecb640ee",
+      "date": "2011-08-22",
+      "stopIds": [
+       "c7cccfa34efd2e41",
+       "894ad4c5d498ff41"
+      ],
+      "lineIds": [
+       "lb-eng",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     }
+    ],
+    "gaps": [
+     {
+      "id": "g-eng",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "from": "2011-08-22",
+      "to": "2024-06-01",
+      "status": "asked_previous_owner",
+      "unconfirmedPages": 0
+     },
+     {
+      "id": "g-prop",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "from": "2011-08-22",
+      "to": "2024-12-03",
+      "status": "no_pages_exist",
+      "unconfirmedPages": 0
+     }
+    ],
+    "eras": [
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "from": "2005-09-14",
+      "to": null,
+      "label": "1,842 h since overhaul",
+      "anchorEntryId": "e-32"
+     }
+    ],
+    "squawks": [],
+    "rings": [],
+    "visits": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "hangar: N4321J",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n4321j",
+     "tail_number": "N4321J",
+     "year": 2009,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-1001",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2022-04-02",
+      "entry_date": "2022-04-02",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1802.3,
+      "mechanic_cert_number": "IA 4477"
+     },
+     {
+      "id": "e-1002",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2022-04-02",
+      "entry_date": "2022-04-02",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1802.3
+     },
+     {
+      "id": "e-1003",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2023-04-11",
+      "entry_date": "2023-04-11",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1890
+     },
+     {
+      "id": "e-1004",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2024-04-20",
+      "entry_date": "2024-04-20",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1975.5,
+      "mechanic_cert_number": "IA 4477"
+     },
+     {
+      "id": "e-1005",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-04-20",
+      "entry_date": "2024-04-20",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1975.8,
+      "mechanic_cert_number": "IA 4477"
+     },
+     {
+      "id": "e-1006",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-04-21",
+      "entry_date": "2024-04-21",
+      "trust": "confirmed",
+      "entry_kind": "oil_change",
+      "tach": 1975.9
+     },
+     {
+      "id": "e-1007",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-04-22",
+      "entry_date": "2024-04-22",
+      "trust": "confirmed",
+      "entry_kind": "oil_change",
+      "tach": 1976
+     },
+     {
+      "id": "e-1008",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2025-04-18",
+      "entry_date": "2025-04-18",
+      "trust": "ai_read",
+      "entry_kind": "annual",
+      "tach": 2050.1
+     }
+    ],
+    "maintenance_item": [
+     {
+      "id": "mx-annual",
+      "kind": "annual",
+      "label": "Annual inspection (91.409)",
+      "regulatory": true,
+      "interval_months": 12,
+      "interval_hours": null,
+      "last_done_date": "2025-12-01",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-oil_change",
+      "kind": "oil_change",
+      "label": "Oil change",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 50,
+      "last_done_date": "2026-10-01",
+      "last_done_hours": 2121
+     }
+    ],
+    "hours_reading": [
+     {
+      "id": "hr-0",
+      "reading_date": "2026-09-01",
+      "tach": 2118,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-1",
+      "reading_date": "2026-09-08",
+      "tach": 2120,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-2",
+      "reading_date": "2026-09-15",
+      "tach": 2122,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-3",
+      "reading_date": "2026-09-22",
+      "tach": 2124,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-4",
+      "reading_date": "2026-09-29",
+      "tach": 2126,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-5",
+      "reading_date": "2026-10-06",
+      "tach": 2128,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-6",
+      "reading_date": "2026-10-13",
+      "tach": 2130,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-7",
+      "reading_date": "2026-10-20",
+      "tach": 2132,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-8",
+      "reading_date": "2026-10-27",
+      "tach": 2134,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-9",
+      "reading_date": "2026-11-03",
+      "tach": 2136,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-10",
+      "reading_date": "2026-11-10",
+      "tach": 2138,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-11",
+      "reading_date": "2026-11-17",
+      "tach": 2140,
+      "hobbs": null,
+      "source": "manual"
+     }
+    ],
+    "logbook_gap": [
+     {
+      "id": "g-4321-before",
+      "logbook_id": "lb-air",
+      "from_date": "2009-01-01",
+      "to_date": "2022-04-02",
+      "status": "open"
+     }
+    ]
+   },
+   "expected": {
+    "today": "2026-11-18",
+    "range": {
+     "from": "2009-01-01",
+     "to": "2027-11-18",
+     "scaleBreak": "2025-11-18"
+    },
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2022-04-02",
+        "to": "2025-04-18"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2022-04-02",
+        "to": "2024-04-22"
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "b022dcd693e93fb7",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2022-04-02",
+      "entryIds": [
+       "e-1001"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2022-04-02"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "25fc18f9ff975c06",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2023-04-11",
+      "entryIds": [
+       "e-1003"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2023-04-11"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "f32d669c9577924a",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2024-04-20",
+      "entryIds": [
+       "e-1004"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2024-04-20"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "1ed2b7ffcb8d5c8c",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2025-04-18",
+      "entryIds": [
+       "e-1008"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-air-2025-04-18"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "df90b2d7b41357e2",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2022-04-02",
+      "entryIds": [
+       "e-1002"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2022-04-02"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "56dd7e45fdb1baf9",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2024-04-20",
+      "entryIds": [
+       "e-1005"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2024-04-20"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "01742d3f3e4f7e13",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2024-04-21",
+      "entryIds": [
+       "e-1006"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2024-04-21"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "a054d8197d72aa97",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2024-04-22",
+      "entryIds": [
+       "e-1007"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2024-04-22"
+      ],
+      "label": null,
+      "major": false
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "ed9b3ccfcfc7f391",
+      "date": "2022-04-02",
+      "stopIds": [
+       "b022dcd693e93fb7",
+       "df90b2d7b41357e2"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "57b20ea564732c69",
+      "date": "2024-04-20",
+      "stopIds": [
+       "f32d669c9577924a",
+       "56dd7e45fdb1baf9"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     }
+    ],
+    "gaps": [
+     {
+      "id": "g-4321-before",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "from": "2009-01-01",
+      "to": "2022-04-02",
+      "status": "open",
+      "unconfirmedPages": 0
+     }
+    ],
+    "eras": [],
+    "squawks": [],
+    "rings": [
+     {
+      "itemKey": "mx:mx-annual",
+      "line": "airframe",
+      "lineId": "lb-air",
+      "date": "2026-12-31",
+      "dateKind": "calendar",
+      "status": "due_soon",
+      "label": "Annual",
+      "kind": "annual"
+     },
+     {
+      "itemKey": "mx:mx-oil_change",
+      "line": "engine",
+      "lineId": "lb-eng",
+      "date": "2027-03-07",
+      "dateKind": "projected",
+      "status": "current",
+      "label": "Oil change",
+      "kind": "oil_change"
+     }
+    ],
+    "visits": [
+     {
+      "id": null,
+      "suggestionKey": "7e8e2b162cfb6b00",
+      "state": "suggested",
+      "weekOf": "2026-12-21",
+      "itemKeys": [
+       "mx:mx-annual",
+       "mx:mx-oil_change"
+      ],
+      "label": "Suggested"
+     }
+    ],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "nothing scanned",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n100ns",
+     "tail_number": "N100NS",
+     "year": 1998,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [],
+    "maintenance_item": [
+     {
+      "id": "mx-annual",
+      "kind": "annual",
+      "label": "Annual inspection (91.409)",
+      "regulatory": true,
+      "interval_months": 12,
+      "interval_hours": null,
+      "last_done_date": "2026-03-10",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-oil_change",
+      "kind": "oil_change",
+      "label": "Oil change",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 50,
+      "last_done_date": "2026-09-01",
+      "last_done_hours": 980
+     }
+    ],
+    "hours_reading": [
+     {
+      "id": "hr-0",
+      "reading_date": "2026-09-15",
+      "tach": 992,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-1",
+      "reading_date": "2026-09-22",
+      "tach": 994,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-2",
+      "reading_date": "2026-09-29",
+      "tach": 996,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-3",
+      "reading_date": "2026-10-06",
+      "tach": 998,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-4",
+      "reading_date": "2026-10-13",
+      "tach": 1000,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-5",
+      "reading_date": "2026-10-20",
+      "tach": 1002,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-6",
+      "reading_date": "2026-10-27",
+      "tach": 1004,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-7",
+      "reading_date": "2026-11-03",
+      "tach": 1006,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-8",
+      "reading_date": "2026-11-10",
+      "tach": 1008,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-9",
+      "reading_date": "2026-11-17",
+      "tach": 1010,
+      "hobbs": null,
+      "source": "manual"
+     }
+    ]
+   },
+   "expected": {
+    "today": "2026-11-18",
+    "range": {
+     "from": "2026-11-18",
+     "to": "2027-11-18",
+     "scaleBreak": null
+    },
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [],
+    "interchanges": [],
+    "gaps": [],
+    "eras": [],
+    "squawks": [],
+    "rings": [
+     {
+      "itemKey": "mx:mx-oil_change",
+      "line": "engine",
+      "lineId": "lb-eng",
+      "date": "2027-01-27",
+      "dateKind": "projected",
+      "status": "current",
+      "label": "Oil change",
+      "kind": "oil_change"
+     },
+     {
+      "itemKey": "mx:mx-annual",
+      "line": "airframe",
+      "lineId": "lb-air",
+      "date": "2027-03-31",
+      "dateKind": "calendar",
+      "status": "current",
+      "label": "Annual",
+      "kind": "annual"
+     }
+    ],
+    "visits": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "twin",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n58tw",
+     "tail_number": "N58TW",
+     "year": 2014,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng-l",
+      "type": "engine",
+      "component_ref": "L",
+      "title": "Left engine"
+     },
+     {
+      "id": "lb-eng-r",
+      "type": "engine",
+      "component_ref": "R",
+      "title": "Right engine"
+     },
+     {
+      "id": "lb-prop-l",
+      "type": "prop",
+      "component_ref": "L",
+      "title": null
+     },
+     {
+      "id": "lb-prop-r",
+      "type": "prop",
+      "component_ref": "R",
+      "title": null
+     },
+     {
+      "id": "lb-air2",
+      "type": "airframe",
+      "component_ref": null,
+      "title": "Vol. 2"
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-2001",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2015-05-10",
+      "entry_date": "2015-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1200,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2002",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2016-05-10",
+      "entry_date": "2016-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1340,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2003",
+      "logbook_id": "lb-eng-l",
+      "page_id": "p-lb-eng-l-2016-05-10",
+      "entry_date": "2016-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1340,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2004",
+      "logbook_id": "lb-eng-r",
+      "page_id": "p-lb-eng-r-2016-05-10",
+      "entry_date": "2016-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1340,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2005",
+      "logbook_id": "lb-prop-l",
+      "page_id": "p-lb-prop-l-2016-05-10",
+      "entry_date": "2016-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1340,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2006",
+      "logbook_id": "lb-prop-r",
+      "page_id": "p-lb-prop-r-2016-05-10",
+      "entry_date": "2016-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1340,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2007",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2017-05-10",
+      "entry_date": "2017-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1480,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2008",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2018-05-10",
+      "entry_date": "2018-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1620,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2009",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2019-05-10",
+      "entry_date": "2019-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1760,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2010",
+      "logbook_id": "lb-eng-l",
+      "page_id": "p-lb-eng-l-2019-05-10",
+      "entry_date": "2019-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1760,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2011",
+      "logbook_id": "lb-eng-r",
+      "page_id": "p-lb-eng-r-2019-05-10",
+      "entry_date": "2019-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1760,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2012",
+      "logbook_id": "lb-prop-l",
+      "page_id": "p-lb-prop-l-2019-05-10",
+      "entry_date": "2019-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1760,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2013",
+      "logbook_id": "lb-prop-r",
+      "page_id": "p-lb-prop-r-2019-05-10",
+      "entry_date": "2019-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1760,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2014",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-10",
+      "entry_date": "2020-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 1900,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2015",
+      "logbook_id": "lb-air2",
+      "page_id": "p-lb-air2-2021-05-10",
+      "entry_date": "2021-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2040,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2016",
+      "logbook_id": "lb-air2",
+      "page_id": "p-lb-air2-2022-05-10",
+      "entry_date": "2022-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2180,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2017",
+      "logbook_id": "lb-eng-l",
+      "page_id": "p-lb-eng-l-2022-05-10",
+      "entry_date": "2022-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2180,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2018",
+      "logbook_id": "lb-eng-r",
+      "page_id": "p-lb-eng-r-2022-05-10",
+      "entry_date": "2022-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2180,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2019",
+      "logbook_id": "lb-prop-l",
+      "page_id": "p-lb-prop-l-2022-05-10",
+      "entry_date": "2022-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2180,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2020",
+      "logbook_id": "lb-prop-r",
+      "page_id": "p-lb-prop-r-2022-05-10",
+      "entry_date": "2022-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2180,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2021",
+      "logbook_id": "lb-air2",
+      "page_id": "p-lb-air2-2023-05-10",
+      "entry_date": "2023-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2320,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2022",
+      "logbook_id": "lb-air2",
+      "page_id": "p-lb-air2-2024-05-10",
+      "entry_date": "2024-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2460,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2023",
+      "logbook_id": "lb-air2",
+      "page_id": "p-lb-air2-2025-05-10",
+      "entry_date": "2025-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2600,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2024",
+      "logbook_id": "lb-eng-l",
+      "page_id": "p-lb-eng-l-2025-05-10",
+      "entry_date": "2025-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2600,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2025",
+      "logbook_id": "lb-eng-r",
+      "page_id": "p-lb-eng-r-2025-05-10",
+      "entry_date": "2025-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2600,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2026",
+      "logbook_id": "lb-prop-l",
+      "page_id": "p-lb-prop-l-2025-05-10",
+      "entry_date": "2025-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2600,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2027",
+      "logbook_id": "lb-prop-r",
+      "page_id": "p-lb-prop-r-2025-05-10",
+      "entry_date": "2025-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2600,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2028",
+      "logbook_id": "lb-air2",
+      "page_id": "p-lb-air2-2026-05-10",
+      "entry_date": "2026-05-10",
+      "trust": "confirmed",
+      "entry_kind": "annual",
+      "tach": 2740,
+      "mechanic_cert_number": "IA 2290114"
+     },
+     {
+      "id": "e-2029",
+      "logbook_id": "lb-eng-r",
+      "page_id": "p-lb-eng-r-2019-11-02",
+      "entry_date": "2019-11-02",
+      "trust": "confirmed",
+      "entry_kind": "engine_overhaul",
+      "tach": 1730,
+      "description": "Right engine overhauled."
+     }
+    ],
+    "maintenance_item": [
+     {
+      "id": "mx-annual",
+      "kind": "annual",
+      "label": "Annual inspection (91.409)",
+      "regulatory": true,
+      "interval_months": 12,
+      "interval_hours": null,
+      "last_done_date": "2026-05-10",
+      "last_done_hours": null
+     }
+    ],
+    "item_completion": [],
+    "hours_reading": [
+     {
+      "id": "hr-0",
+      "reading_date": "2026-09-01",
+      "tach": 2856,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-1",
+      "reading_date": "2026-09-08",
+      "tach": 2860,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-2",
+      "reading_date": "2026-09-15",
+      "tach": 2864,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-3",
+      "reading_date": "2026-09-22",
+      "tach": 2868,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-4",
+      "reading_date": "2026-09-29",
+      "tach": 2872,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-5",
+      "reading_date": "2026-10-06",
+      "tach": 2876,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-6",
+      "reading_date": "2026-10-13",
+      "tach": 2880,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-7",
+      "reading_date": "2026-10-20",
+      "tach": 2884,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-8",
+      "reading_date": "2026-10-27",
+      "tach": 2888,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-9",
+      "reading_date": "2026-11-03",
+      "tach": 2892,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-10",
+      "reading_date": "2026-11-10",
+      "tach": 2896,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-11",
+      "reading_date": "2026-11-17",
+      "tach": 2900,
+      "hobbs": null,
+      "source": "manual"
+     }
+    ]
+   },
+   "expected": {
+    "today": "2026-11-18",
+    "range": {
+     "from": "2015-05-10",
+     "to": "2027-11-18",
+     "scaleBreak": "2025-11-18"
+    },
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Vol. 1",
+        "from": "2015-05-10",
+        "to": "2020-05-10"
+       },
+       {
+        "id": "lb-air2",
+        "label": "Vol. 2",
+        "from": "2021-05-10",
+        "to": "2026-05-10"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng-l",
+      "logbook": "engine",
+      "logbookId": "lb-eng-l",
+      "name": "Engine 1",
+      "volumes": [
+       {
+        "id": "lb-eng-l",
+        "label": "Left engine",
+        "from": "2016-05-10",
+        "to": "2025-05-10"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng-r",
+      "logbook": "engine",
+      "logbookId": "lb-eng-r",
+      "name": "Engine 2",
+      "volumes": [
+       {
+        "id": "lb-eng-r",
+        "label": "Right engine",
+        "from": "2016-05-10",
+        "to": "2025-05-10"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop-l",
+      "logbook": "prop",
+      "logbookId": "lb-prop-l",
+      "name": "Propeller 1",
+      "volumes": [
+       {
+        "id": "lb-prop-l",
+        "label": "Propeller 1",
+        "from": "2016-05-10",
+        "to": "2025-05-10"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop-r",
+      "logbook": "prop",
+      "logbookId": "lb-prop-r",
+      "name": "Propeller 2",
+      "volumes": [
+       {
+        "id": "lb-prop-r",
+        "label": "Propeller 2",
+        "from": "2016-05-10",
+        "to": "2025-05-10"
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "93710e0f812fbe66",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2015-05-10",
+      "entryIds": [
+       "e-2001"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2015-05-10"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "b62b7761be2a2076",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2016-05-10",
+      "entryIds": [
+       "e-2002"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2016-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "a0a2adad549a936a",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2017-05-10",
+      "entryIds": [
+       "e-2007"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2017-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "852459b01bb69ae0",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2018-05-10",
+      "entryIds": [
+       "e-2008"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2018-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "99e7e572c63f9ef5",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2019-05-10",
+      "entryIds": [
+       "e-2009"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2019-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "fc3e165721ec5adc",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-10",
+      "entryIds": [
+       "e-2014"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "3e9f1ec4c1df50a3",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2021-05-10",
+      "entryIds": [
+       "e-2015"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air2-2021-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "1684915c211e28ee",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2022-05-10",
+      "entryIds": [
+       "e-2016"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air2-2022-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "79f25acae5fcd7d2",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2023-05-10",
+      "entryIds": [
+       "e-2021"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air2-2023-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "348fb2bfd2ef0ccb",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2024-05-10",
+      "entryIds": [
+       "e-2022"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air2-2024-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "80c1c287ffcb177a",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2025-05-10",
+      "entryIds": [
+       "e-2023"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air2-2025-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "bab13b627fcec4f5",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2026-05-10",
+      "entryIds": [
+       "e-2028"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air2-2026-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "02759c8375030302",
+      "lineId": "lb-eng-l",
+      "logbook": "engine",
+      "date": "2016-05-10",
+      "entryIds": [
+       "e-2003"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-l-2016-05-10"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "4e8ccb5bcf01bff1",
+      "lineId": "lb-eng-l",
+      "logbook": "engine",
+      "date": "2019-05-10",
+      "entryIds": [
+       "e-2010"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-l-2019-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "3bf2db79ab6fccb9",
+      "lineId": "lb-eng-l",
+      "logbook": "engine",
+      "date": "2022-05-10",
+      "entryIds": [
+       "e-2017"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-l-2022-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "0caffbe87c7848eb",
+      "lineId": "lb-eng-l",
+      "logbook": "engine",
+      "date": "2025-05-10",
+      "entryIds": [
+       "e-2024"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-l-2025-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "44e1560c1626ab79",
+      "lineId": "lb-eng-r",
+      "logbook": "engine",
+      "date": "2016-05-10",
+      "entryIds": [
+       "e-2004"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-r-2016-05-10"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "caf4496d814c6653",
+      "lineId": "lb-eng-r",
+      "logbook": "engine",
+      "date": "2019-05-10",
+      "entryIds": [
+       "e-2011"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-r-2019-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "506060d86fe08728",
+      "lineId": "lb-eng-r",
+      "logbook": "engine",
+      "date": "2019-11-02",
+      "entryIds": [
+       "e-2029"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-r-2019-11-02"
+      ],
+      "label": "Engine overhaul",
+      "major": true
+     },
+     {
+      "id": "c69d0fa2425919ca",
+      "lineId": "lb-eng-r",
+      "logbook": "engine",
+      "date": "2022-05-10",
+      "entryIds": [
+       "e-2018"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-r-2022-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "0b7cc883c74f70c3",
+      "lineId": "lb-eng-r",
+      "logbook": "engine",
+      "date": "2025-05-10",
+      "entryIds": [
+       "e-2025"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-r-2025-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "596ccf33a0f131db",
+      "lineId": "lb-prop-l",
+      "logbook": "prop",
+      "date": "2016-05-10",
+      "entryIds": [
+       "e-2005"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-l-2016-05-10"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "046807f9acac59db",
+      "lineId": "lb-prop-l",
+      "logbook": "prop",
+      "date": "2019-05-10",
+      "entryIds": [
+       "e-2012"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-l-2019-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c04d65416417c4bf",
+      "lineId": "lb-prop-l",
+      "logbook": "prop",
+      "date": "2022-05-10",
+      "entryIds": [
+       "e-2019"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-l-2022-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "e5388d843106601f",
+      "lineId": "lb-prop-l",
+      "logbook": "prop",
+      "date": "2025-05-10",
+      "entryIds": [
+       "e-2026"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-l-2025-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "d2814876c3a4a96d",
+      "lineId": "lb-prop-r",
+      "logbook": "prop",
+      "date": "2016-05-10",
+      "entryIds": [
+       "e-2006"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-r-2016-05-10"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "80273465e08cb8f1",
+      "lineId": "lb-prop-r",
+      "logbook": "prop",
+      "date": "2019-05-10",
+      "entryIds": [
+       "e-2013"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-r-2019-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "39e36cf7f266e2a6",
+      "lineId": "lb-prop-r",
+      "logbook": "prop",
+      "date": "2022-05-10",
+      "entryIds": [
+       "e-2020"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-r-2022-05-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c124dd1ebbe6aeab",
+      "lineId": "lb-prop-r",
+      "logbook": "prop",
+      "date": "2025-05-10",
+      "entryIds": [
+       "e-2027"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-r-2025-05-10"
+      ],
+      "label": null,
+      "major": false
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "0bf0d40d4b3f0500",
+      "date": "2016-05-10",
+      "stopIds": [
+       "b62b7761be2a2076",
+       "02759c8375030302",
+       "44e1560c1626ab79",
+       "596ccf33a0f131db",
+       "d2814876c3a4a96d"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng-l",
+       "lb-eng-r",
+       "lb-prop-l",
+       "lb-prop-r"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "4e2bc30f9821724b",
+      "date": "2019-05-10",
+      "stopIds": [
+       "99e7e572c63f9ef5",
+       "4e8ccb5bcf01bff1",
+       "caf4496d814c6653",
+       "046807f9acac59db",
+       "80273465e08cb8f1"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng-l",
+       "lb-eng-r",
+       "lb-prop-l",
+       "lb-prop-r"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "813ad424ec113261",
+      "date": "2022-05-10",
+      "stopIds": [
+       "1684915c211e28ee",
+       "3bf2db79ab6fccb9",
+       "c69d0fa2425919ca",
+       "c04d65416417c4bf",
+       "39e36cf7f266e2a6"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng-l",
+       "lb-eng-r",
+       "lb-prop-l",
+       "lb-prop-r"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "cc5eba7845e28c54",
+      "date": "2025-05-10",
+      "stopIds": [
+       "80c1c287ffcb177a",
+       "0caffbe87c7848eb",
+       "0b7cc883c74f70c3",
+       "e5388d843106601f",
+       "c124dd1ebbe6aeab"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng-l",
+       "lb-eng-r",
+       "lb-prop-l",
+       "lb-prop-r"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     }
+    ],
+    "gaps": [],
+    "eras": [
+     {
+      "lineId": "lb-eng-r",
+      "logbook": "engine",
+      "from": "2019-11-02",
+      "to": null,
+      "label": "1,170 h since overhaul",
+      "anchorEntryId": "e-2029"
+     }
+    ],
+    "squawks": [],
+    "rings": [
+     {
+      "itemKey": "mx:mx-annual",
+      "line": "airframe",
+      "lineId": "lb-air",
+      "date": "2027-05-31",
+      "dateKind": "calendar",
+      "status": "current",
+      "label": "Annual",
+      "kind": "annual"
+     }
+    ],
+    "visits": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "unconfirmed: an AI-read overhaul and transponder test move no ring, visit or era",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n734dm",
+     "tail_number": "N734DM",
+     "year": 1978,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-avi",
+      "type": "avionics",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-1",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1978-06-02",
+      "entry_date": "1978-06-02",
+      "trust": "signed",
+      "description": "Delivered. Weight and balance, equipment list.",
+      "tach": 0
+     },
+     {
+      "id": "e-2",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1979-09-15",
+      "entry_date": "1979-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 88.5,
+      "mechanic_cert_number": "IA 1979",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-3",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1980-01-15",
+      "entry_date": "1980-01-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 177,
+      "mechanic_cert_number": "IA 1980",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-4",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1981-02-15",
+      "entry_date": "1981-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 265.5,
+      "mechanic_cert_number": "IA 1981",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-5",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1982-03-15",
+      "entry_date": "1982-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 354,
+      "mechanic_cert_number": "IA 1982",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-6",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1991-03-15",
+      "entry_date": "1991-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1150.5,
+      "mechanic_cert_number": "IA 1991",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-7",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1993-05-15",
+      "entry_date": "1993-05-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1327.5,
+      "mechanic_cert_number": "IA 1993",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-8",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1995-07-15",
+      "entry_date": "1995-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1504.5,
+      "mechanic_cert_number": "IA 1995",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-9",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1997-09-15",
+      "entry_date": "1997-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1681.5,
+      "mechanic_cert_number": "IA 1997",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-10",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-1999-02-15",
+      "entry_date": "1999-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 1858.5,
+      "mechanic_cert_number": "IA 1999",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-11",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2001-04-15",
+      "entry_date": "2001-04-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2035.5,
+      "mechanic_cert_number": "IA 2001",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-12",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2003-06-15",
+      "entry_date": "2003-06-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2212.5,
+      "mechanic_cert_number": "IA 2003",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-13",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2005-08-15",
+      "entry_date": "2005-08-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2389.5,
+      "mechanic_cert_number": "IA 2005",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-14",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2007-01-15",
+      "entry_date": "2007-01-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2566.5,
+      "mechanic_cert_number": "IA 2007",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-15",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2009-03-15",
+      "entry_date": "2009-03-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2743.5,
+      "mechanic_cert_number": "IA 2009",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-16",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-17",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection, engine.",
+      "entry_kind": "annual",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-18",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2011-08-22",
+      "entry_date": "2011-08-22",
+      "trust": "confirmed",
+      "description": "Annual inspection, propeller.",
+      "tach": 2920.5,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-19",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2013-07-15",
+      "entry_date": "2013-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3097.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-20",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2015-09-15",
+      "entry_date": "2015-09-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3274.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-21",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2017-02-15",
+      "entry_date": "2017-02-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3451.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-22",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2019-04-15",
+      "entry_date": "2019-04-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3628.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-23",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-15",
+      "entry_date": "2020-05-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3717,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-24",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2021-06-15",
+      "entry_date": "2021-06-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3805.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-25",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2022-07-15",
+      "entry_date": "2022-07-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3894,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-26",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2023-08-15",
+      "entry_date": "2023-08-15",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 3982.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-27",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-28",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection, engine.",
+      "entry_kind": "annual",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-29",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2024-12-03",
+      "entry_date": "2024-12-03",
+      "trust": "confirmed",
+      "description": "Annual inspection, propeller.",
+      "tach": 4071,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-30",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2025-07-20",
+      "entry_date": "2025-07-20",
+      "trust": "confirmed",
+      "description": "Annual inspection completed.",
+      "entry_kind": "annual",
+      "tach": 4159.5,
+      "mechanic_cert_number": "A&P 3105582 IA",
+      "signature_name": "D. Alvarez"
+     },
+     {
+      "id": "e-31",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2025-07-20",
+      "entry_date": "2025-07-20",
+      "trust": "confirmed",
+      "description": "Annual, propeller checked.",
+      "tach": 4159.5,
+      "mechanic_cert_number": "A&P 3105582  ia"
+     },
+     {
+      "id": "e-32",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2005-09-14",
+      "entry_date": "2005-09-14",
+      "trust": "confirmed",
+      "description": "Engine overhauled by Lycoming, zero time.",
+      "entry_kind": "engine_overhaul",
+      "tach": 2390,
+      "mechanic_cert_number": "RS LYCR123K"
+     },
+     {
+      "id": "e-33",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2007-05-02",
+      "entry_date": "2007-05-02",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 2570.4
+     },
+     {
+      "id": "e-34",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2009-04-11",
+      "entry_date": "2009-04-11",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 2740
+     },
+     {
+      "id": "e-35",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2024-06-01",
+      "entry_date": "2024-06-01",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 4120.2
+     },
+     {
+      "id": "e-36",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2025-06-10",
+      "entry_date": "2025-06-10",
+      "trust": "confirmed",
+      "description": "Oil and filter changed.",
+      "entry_kind": "oil_change",
+      "tach": 4160
+     },
+     {
+      "id": "e-37",
+      "logbook_id": "lb-avi",
+      "page_id": "p-lb-avi-2019-03-12",
+      "entry_date": "2019-03-12",
+      "trust": "confirmed",
+      "description": "Installed Garmin GTN 650 per STC.",
+      "entry_kind": "install",
+      "tach": 3891.2,
+      "mechanic_cert_number": "CRS #ST4R881K"
+     },
+     {
+      "id": "e-38",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2019-03-12",
+      "entry_date": "2019-03-12",
+      "trust": "confirmed",
+      "description": "Form 337 for GTN 650 installation.",
+      "entry_kind": "major_alteration",
+      "tach": 3891.2,
+      "mechanic_cert_number": "CRS #ST4R881K"
+     },
+     {
+      "id": "e-39",
+      "logbook_id": "lb-avi",
+      "page_id": "p-lb-avi-2023-02-11",
+      "entry_date": "2023-02-11",
+      "trust": "confirmed",
+      "description": "Transponder and encoder tests.",
+      "tach": 4010.3
+     },
+     {
+      "id": "e-40",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2026-07-18",
+      "entry_date": "2026-07-18",
+      "trust": "ai_read",
+      "description": "Annual inspection.",
+      "entry_kind": "annual",
+      "tach": 4219.6,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-41",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2026-07-18",
+      "entry_date": "2026-07-18",
+      "trust": "ai_read",
+      "description": "Annual, engine.",
+      "entry_kind": "annual",
+      "tach": 4219.6,
+      "mechanic_cert_number": "A&P 3105582 IA"
+     },
+     {
+      "id": "e-42",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2026-09-30",
+      "entry_date": "2026-09-30",
+      "trust": "ai_read",
+      "description": "Oil changed.",
+      "entry_kind": "oil_change",
+      "tach": 4240.1
+     },
+     {
+      "id": "e-43",
+      "logbook_id": "lb-air",
+      "page_id": null,
+      "entry_date": "2025-01-05",
+      "trust": "confirmed",
+      "description": "Owner note: oil added.",
+      "replaced_by_entry_id": "e-1"
+     },
+     {
+      "id": "e-44",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2025-02-01",
+      "entry_date": "2025-02-01",
+      "trust": "confirmed",
+      "is_continuation": true
+     },
+     {
+      "id": "e-45",
+      "logbook_id": "lb-air",
+      "page_id": "p-queued",
+      "entry_date": "2026-11-10",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-46",
+      "logbook_id": "lb-oth",
+      "page_id": "p-lb-oth-2024-03-01",
+      "entry_date": "2024-03-01",
+      "trust": "confirmed",
+      "description": "Insurance certificate."
+     },
+     {
+      "id": "e-47",
+      "logbook_id": "lb-air",
+      "page_id": "p-landing",
+      "entry_date": null,
+      "trust": "confirmed",
+      "description": "Wheel bearing repacked."
+     },
+     {
+      "id": "e-48",
+      "logbook_id": "lb-air",
+      "page_id": "p-nodate",
+      "entry_date": null,
+      "trust": "confirmed",
+      "description": "Tire replaced."
+     },
+     {
+      "id": "e-49",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2026-11-01",
+      "entry_date": "2026-11-01",
+      "trust": "ai_read",
+      "entry_kind": "engine_overhaul",
+      "tach": 4240
+     },
+     {
+      "id": "e-50",
+      "logbook_id": "lb-avi",
+      "page_id": "p-lb-avi-2026-11-02",
+      "entry_date": "2026-11-02",
+      "trust": "ai_read",
+      "description": "Transponder test"
+     }
+    ],
+    "page": [
+     {
+      "id": "p-queued",
+      "logbook_id": "lb-air",
+      "page_sequence": 60,
+      "extraction_status": "queued"
+     },
+     {
+      "id": "p-landing",
+      "logbook_id": "lb-air",
+      "page_sequence": 61,
+      "extraction_status": "extracted",
+      "landing_date": "2026-03-14"
+     }
+    ],
+    "maintenance_item": [
+     {
+      "id": "mx-annual",
+      "kind": "annual",
+      "label": "Annual inspection (91.409)",
+      "regulatory": true,
+      "interval_months": 12,
+      "interval_hours": null,
+      "last_done_date": "2025-07-20",
+      "last_done_hours": 4168.3
+     },
+     {
+      "id": "mx-oil_change",
+      "kind": "oil_change",
+      "label": "Oil change",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 50,
+      "last_done_date": "2026-08-20",
+      "last_done_hours": 4205.6
+     },
+     {
+      "id": "mx-transponder",
+      "kind": "transponder",
+      "label": "Transponder test (91.413)",
+      "regulatory": true,
+      "interval_months": 24,
+      "interval_hours": null,
+      "last_done_date": "2024-12-03",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-pitot_static",
+      "kind": "pitot_static",
+      "label": "Pitot-static / altimeter (91.411)",
+      "regulatory": true,
+      "interval_months": 24,
+      "interval_hours": null,
+      "last_done_date": "2024-12-03",
+      "last_done_hours": null
+     },
+     {
+      "id": "mx-vor",
+      "kind": "vor",
+      "label": "VOR check (91.171) — IFR",
+      "regulatory": true,
+      "interval_months": 1,
+      "interval_hours": null,
+      "last_done_date": "2026-10-11",
+      "last_done_hours": null,
+      "ifr_only": true
+     },
+     {
+      "id": "mx-engine_tbo",
+      "kind": "engine_tbo",
+      "label": "Engine TBO (advisory)",
+      "regulatory": false,
+      "interval_months": null,
+      "interval_hours": 2000,
+      "last_done_date": "2005-09-14",
+      "last_done_hours": 2390
+     },
+     {
+      "id": "mx-elt_battery",
+      "kind": "elt_battery",
+      "label": "ELT battery",
+      "regulatory": true,
+      "interval_months": null,
+      "interval_hours": null,
+      "last_done_date": null,
+      "last_done_hours": null,
+      "expires_on": "2027-02-28"
+     }
+    ],
+    "item_completion": [
+     {
+      "id": "c-tbo",
+      "maintenance_item_id": "mx-engine_tbo",
+      "ad_compliance_id": null,
+      "log_entry_id": "e-32",
+      "done_date": "2005-09-14",
+      "done_hours": 2390
+     },
+     {
+      "id": "c-tbo-ai",
+      "maintenance_item_id": "mx-engine_tbo",
+      "ad_compliance_id": null,
+      "log_entry_id": "e-ai-overhaul",
+      "done_date": "2026-09-01",
+      "done_hours": 4230
+     },
+     {
+      "id": "c-xpdr",
+      "maintenance_item_id": "mx-transponder",
+      "ad_compliance_id": null,
+      "log_entry_id": null,
+      "done_date": "2024-12-03",
+      "done_hours": null
+     },
+     {
+      "id": "c-xpdr-ai",
+      "maintenance_item_id": "mx-transponder",
+      "ad_compliance_id": null,
+      "log_entry_id": "e-50",
+      "done_date": "2026-11-02",
+      "done_hours": null
+     }
+    ],
+    "hours_reading": [
+     {
+      "id": "hr-0",
+      "reading_date": "2026-08-04",
+      "tach": 4186.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-1",
+      "reading_date": "2026-08-11",
+      "tach": 4189.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-2",
+      "reading_date": "2026-08-18",
+      "tach": 4192.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-3",
+      "reading_date": "2026-08-25",
+      "tach": 4195.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-4",
+      "reading_date": "2026-09-01",
+      "tach": 4198.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-5",
+      "reading_date": "2026-09-08",
+      "tach": 4201.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-6",
+      "reading_date": "2026-09-15",
+      "tach": 4204.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-7",
+      "reading_date": "2026-09-22",
+      "tach": 4207.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-8",
+      "reading_date": "2026-09-29",
+      "tach": 4210.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-9",
+      "reading_date": "2026-10-06",
+      "tach": 4213.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-10",
+      "reading_date": "2026-10-13",
+      "tach": 4216.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-11",
+      "reading_date": "2026-10-20",
+      "tach": 4219.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-12",
+      "reading_date": "2026-10-27",
+      "tach": 4222.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-13",
+      "reading_date": "2026-11-03",
+      "tach": 4225.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-14",
+      "reading_date": "2026-11-10",
+      "tach": 4228.5,
+      "hobbs": null,
+      "source": "manual"
+     },
+     {
+      "id": "hr-15",
+      "reading_date": "2026-11-17",
+      "tach": 4231.5,
+      "hobbs": null,
+      "source": "manual"
+     }
+    ],
+    "logbook_gap": [
+     {
+      "id": "g-air",
+      "logbook_id": "lb-air",
+      "from_date": "1982-03-15",
+      "to_date": "1991-02-15",
+      "status": "open"
+     },
+     {
+      "id": "g-air-before",
+      "logbook_id": "lb-air",
+      "from_date": "1970-01-01",
+      "to_date": "1978-06-02",
+      "status": "dismissed"
+     },
+     {
+      "id": "g-eng",
+      "logbook_id": "lb-eng",
+      "from_date": "2011-08-22",
+      "to_date": "2024-06-01",
+      "status": "asked_previous_owner"
+     },
+     {
+      "id": "g-prop",
+      "logbook_id": "lb-prop",
+      "from_date": "2011-08-22",
+      "to_date": "2024-12-03",
+      "status": "no_pages_exist"
+     },
+     {
+      "id": "g-filled",
+      "logbook_id": "lb-eng",
+      "from_date": "2007-05-02",
+      "to_date": "2009-04-11",
+      "status": "filled"
+     }
+    ],
+    "squawk": [
+     {
+      "id": "sq-open",
+      "description": "Left brake feels soft.",
+      "severity": "medium",
+      "status": "open",
+      "reported_at": "2026-10-01T15:00:00Z"
+     },
+     {
+      "id": "sq-done",
+      "description": "Prop spinner crack.",
+      "severity": "low",
+      "status": "resolved",
+      "reported_at": "2025-06-01T12:00:00Z",
+      "resolved_at": "2025-07-20T12:00:00Z",
+      "resolved_log_entry_id": "e-31"
+     }
+    ],
+    "planned_visit": [
+     {
+      "id": "v-dec",
+      "status": "planned",
+      "week_of": "2026-12-07",
+      "visit_date": null,
+      "provider_id": null,
+      "airport": "KBED"
+     }
+    ],
+    "planned_visit_item": [
+     {
+      "visit_id": "v-dec",
+      "item_key": "mx:mx-transponder"
+     },
+     {
+      "visit_id": "v-dec",
+      "item_key": "mx:mx-pitot_static"
+     }
+    ]
+   },
+   "expected": {
+    "today": "2026-11-18",
+    "range": {
+     "from": "1978-06-02",
+     "to": "2027-11-18",
+     "scaleBreak": "2025-11-18"
+    },
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "1978-06-02",
+        "to": "2026-07-18"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2005-09-14",
+        "to": "2026-11-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": "2011-08-22",
+        "to": "2025-07-20"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-avi",
+      "logbook": "avionics",
+      "logbookId": "lb-avi",
+      "name": "Avionics",
+      "volumes": [
+       {
+        "id": "lb-avi",
+        "label": "Avionics",
+        "from": "2019-03-12",
+        "to": "2026-11-02"
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "790963b17842fd34",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1978-06-02",
+      "entryIds": [
+       "e-1"
+      ],
+      "trust": "signed",
+      "pageIds": [
+       "p-lb-air-1978-06-02"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "28ee00404d131920",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1979-09-15",
+      "entryIds": [
+       "e-2"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1979-09-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "600c62c072c85769",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1980-01-15",
+      "entryIds": [
+       "e-3"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1980-01-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "356cbab5ab8050b5",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1981-02-15",
+      "entryIds": [
+       "e-4"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1981-02-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "a60689e3a8abc667",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1982-03-15",
+      "entryIds": [
+       "e-5"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1982-03-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "7f7ab538ef823505",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1991-03-15",
+      "entryIds": [
+       "e-6"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1991-03-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "0933e96486bad0fa",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1993-05-15",
+      "entryIds": [
+       "e-7"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1993-05-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "e5bba924a1126283",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1995-07-15",
+      "entryIds": [
+       "e-8"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1995-07-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "7399a2b9e2615116",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1997-09-15",
+      "entryIds": [
+       "e-9"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1997-09-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c4bec32b7eb0cc81",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "1999-02-15",
+      "entryIds": [
+       "e-10"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-1999-02-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "9d21a8da84759e40",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2001-04-15",
+      "entryIds": [
+       "e-11"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2001-04-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "06795c019832a147",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2003-06-15",
+      "entryIds": [
+       "e-12"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2003-06-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c0fe76de99579998",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2005-08-15",
+      "entryIds": [
+       "e-13"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2005-08-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c41088030e08766d",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2007-01-15",
+      "entryIds": [
+       "e-14"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2007-01-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "01ee6af6ca20ac03",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2009-03-15",
+      "entryIds": [
+       "e-15"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2009-03-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "5701279fe49a4d00",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-16"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2011-08-22"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "59050aff371c10eb",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2013-07-15",
+      "entryIds": [
+       "e-19"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2013-07-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "9404cf9b346421b1",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2015-09-15",
+      "entryIds": [
+       "e-20"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2015-09-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "797e76dd46445c83",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2017-02-15",
+      "entryIds": [
+       "e-21"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2017-02-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "bd9288ee26d992bf",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2019-03-12",
+      "entryIds": [
+       "e-38"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2019-03-12"
+      ],
+      "label": "Major alteration",
+      "major": true
+     },
+     {
+      "id": "9436d65f3d95bac3",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2019-04-15",
+      "entryIds": [
+       "e-22"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2019-04-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "8cae882f08c11405",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-15",
+      "entryIds": [
+       "e-23"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-05-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "f5fbb846f9ba192c",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2021-06-15",
+      "entryIds": [
+       "e-24"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2021-06-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "062d3d90fb300281",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2022-07-15",
+      "entryIds": [
+       "e-25"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2022-07-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "80c387bfc38ed912",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2023-08-15",
+      "entryIds": [
+       "e-26"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2023-08-15"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "fe2184c3060c5d75",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2024-12-03",
+      "entryIds": [
+       "e-27"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2024-12-03"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "031f43d6957d6cd8",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2025-07-20",
+      "entryIds": [
+       "e-30"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2025-07-20"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "531cbc7fbb23b913",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2026-03-14",
+      "entryIds": [
+       "e-47"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-landing"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "57909d6b2550a88e",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2026-07-18",
+      "entryIds": [
+       "e-40"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-air-2026-07-18"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "1c1f5860871db48e",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2005-09-14",
+      "entryIds": [
+       "e-32"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2005-09-14"
+      ],
+      "label": "Engine overhaul",
+      "major": true
+     },
+     {
+      "id": "d72522ddf223b767",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2007-05-02",
+      "entryIds": [
+       "e-33"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2007-05-02"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "686d3812a5bb619d",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2009-04-11",
+      "entryIds": [
+       "e-34"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2009-04-11"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "c7cccfa34efd2e41",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-17"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2011-08-22"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "2f4edf585d8086b9",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2024-06-01",
+      "entryIds": [
+       "e-35"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2024-06-01"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "e5f7a74030431bdd",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2024-12-03",
+      "entryIds": [
+       "e-28"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2024-12-03"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "43452cce15587ed7",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2025-06-10",
+      "entryIds": [
+       "e-36"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2025-06-10"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "f21721dc9de8cbcf",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2026-07-18",
+      "entryIds": [
+       "e-41"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-eng-2026-07-18"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "3a3b9ba78458e540",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2026-09-30",
+      "entryIds": [
+       "e-42"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-eng-2026-09-30"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "e10570935d538957",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2026-11-01",
+      "entryIds": [
+       "e-49"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-eng-2026-11-01"
+      ],
+      "label": "Engine overhaul",
+      "major": true
+     },
+     {
+      "id": "894ad4c5d498ff41",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2011-08-22",
+      "entryIds": [
+       "e-18"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2011-08-22"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "98bea5653df4327b",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2024-12-03",
+      "entryIds": [
+       "e-29"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2024-12-03"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "62e1a8f5a7ff2eba",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2025-07-20",
+      "entryIds": [
+       "e-31"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2025-07-20"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "6e51aeed806fdce8",
+      "lineId": "lb-avi",
+      "logbook": "avionics",
+      "date": "2019-03-12",
+      "entryIds": [
+       "e-37"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-avi-2019-03-12"
+      ],
+      "label": "Installation",
+      "major": true
+     },
+     {
+      "id": "21ee77a1e9aeb187",
+      "lineId": "lb-avi",
+      "logbook": "avionics",
+      "date": "2023-02-11",
+      "entryIds": [
+       "e-39"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-avi-2023-02-11"
+      ],
+      "label": null,
+      "major": false
+     },
+     {
+      "id": "cf5cda0b07c281cb",
+      "lineId": "lb-avi",
+      "logbook": "avionics",
+      "date": "2026-11-02",
+      "entryIds": [
+       "e-50"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-avi-2026-11-02"
+      ],
+      "label": null,
+      "major": false
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "7f19e2fdc1787d4d",
+      "date": "2011-08-22",
+      "stopIds": [
+       "5701279fe49a4d00",
+       "c7cccfa34efd2e41",
+       "894ad4c5d498ff41"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "44bd21ca88076c57",
+      "date": "2019-03-12",
+      "stopIds": [
+       "bd9288ee26d992bf",
+       "6e51aeed806fdce8"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-avi"
+      ],
+      "trust": "confirmed",
+      "label": null
+     },
+     {
+      "id": "ae2d865fcb65fe63",
+      "date": "2024-12-03",
+      "stopIds": [
+       "fe2184c3060c5d75",
+       "e5f7a74030431bdd",
+       "98bea5653df4327b"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "b58ae6d40d2df221",
+      "date": "2025-07-20",
+      "stopIds": [
+       "031f43d6957d6cd8",
+       "62e1a8f5a7ff2eba"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": "Annual"
+     },
+     {
+      "id": "b482dde54e6664fa",
+      "date": "2026-07-18",
+      "stopIds": [
+       "57909d6b2550a88e",
+       "f21721dc9de8cbcf"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng"
+      ],
+      "trust": "ai_read",
+      "label": "Annual"
+     }
+    ],
+    "gaps": [
+     {
+      "id": "g-air",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "from": "1982-03-15",
+      "to": "1991-02-15",
+      "status": "open",
+      "unconfirmedPages": 0
+     },
+     {
+      "id": "g-eng",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "from": "2011-08-22",
+      "to": "2024-06-01",
+      "status": "asked_previous_owner",
+      "unconfirmedPages": 0
+     },
+     {
+      "id": "g-prop",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "from": "2011-08-22",
+      "to": "2024-12-03",
+      "status": "no_pages_exist",
+      "unconfirmedPages": 0
+     }
+    ],
+    "eras": [
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "from": "2005-09-14",
+      "to": null,
+      "label": "1,842 h since overhaul",
+      "anchorEntryId": "e-32"
+     }
+    ],
+    "squawks": [
+     {
+      "id": "sq-done",
+      "date": "2025-07-20",
+      "open": false,
+      "line": "prop",
+      "lineId": "lb-prop"
+     },
+     {
+      "id": "sq-open",
+      "date": "2026-10-01",
+      "open": true,
+      "line": "airframe",
+      "lineId": "lb-air"
+     }
+    ],
+    "rings": [
+     {
+      "itemKey": "mx:mx-annual",
+      "line": "airframe",
+      "lineId": "lb-air",
+      "date": "2026-11-18",
+      "dateKind": "calendar",
+      "status": "overdue",
+      "label": "Annual",
+      "kind": "annual"
+     },
+     {
+      "itemKey": "mx:mx-vor",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2026-11-18",
+      "dateKind": "calendar",
+      "status": "overdue",
+      "label": "VOR check",
+      "kind": "vor"
+     },
+     {
+      "itemKey": "mx:mx-pitot_static",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2026-12-31",
+      "dateKind": "calendar",
+      "status": "due_soon",
+      "label": "Pitot-static check",
+      "kind": "pitot_static"
+     },
+     {
+      "itemKey": "mx:mx-transponder",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2026-12-31",
+      "dateKind": "calendar",
+      "status": "due_soon",
+      "label": "Transponder check",
+      "kind": "transponder"
+     },
+     {
+      "itemKey": "mx:mx-oil_change",
+      "line": "engine",
+      "lineId": "lb-eng",
+      "date": "2027-01-14",
+      "dateKind": "projected",
+      "status": "current",
+      "label": "Oil change",
+      "kind": "oil_change"
+     },
+     {
+      "itemKey": "mx:mx-elt_battery",
+      "line": "avionics",
+      "lineId": "lb-avi",
+      "date": "2027-02-28",
+      "dateKind": "calendar",
+      "status": "current",
+      "label": "ELT battery",
+      "kind": "elt_battery"
+     }
+    ],
+    "visits": [
+     {
+      "id": null,
+      "suggestionKey": "094b388f1a8ec071",
+      "state": "suggested",
+      "weekOf": "2026-11-23",
+      "itemKeys": [
+       "mx:mx-annual",
+       "mx:mx-oil_change",
+       "mx:mx-vor",
+       "squawk:sq-open"
+      ],
+      "label": "Suggested"
+     },
+     {
+      "id": "v-dec",
+      "suggestionKey": null,
+      "state": "planned",
+      "weekOf": "2026-12-07",
+      "itemKeys": [
+       "mx:mx-pitot_static",
+       "mx:mx-transponder"
+      ],
+      "label": "Planned"
+     }
+    ],
+    "undatedEntries": 1
+   }
+  }
+ ]
+}

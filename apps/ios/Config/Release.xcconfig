@@ -1,0 +1,9 @@
+// Release values live in Release.local.xcconfig next to this file, which is not committed:
+//   SUPABASE_HOST = <project-ref>.supabase.co
+//   SUPABASE_PUBLISHABLE_KEY = sb_publishable_...
+//   API_HOST = <app API host>
+// A Release build stops with an error when they are missing (preBuildScripts in project.yml).
+SUPABASE_HOST =
+SUPABASE_PUBLISHABLE_KEY =
+API_HOST =
+#include? "Release.local.xcconfig"

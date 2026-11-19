@@ -1,9 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { createSyncClient } from "@/lib/supabase/sync";
 import { logbookLabel } from "@/lib/logbooks";
+import { buildSummary, loadShareInput } from "@/lib/share/model";
 
 export const runtime = "nodejs";
 
-// CSV export of a data set (?type=entries|ad|equipment|maintenance). Plain text
+// CSV export of a data set (?type=entries|ad|equipment|maintenance|due). Plain text
 // generation — no dependency. RLS scopes every query to the owner.
 
 function csv(rows: (string | number | null)[][]): string {
@@ -25,7 +26,7 @@ export async function GET(
   const { id } = await params;
   const type = new URL(req.url).searchParams.get("type") ?? "entries";
 
-  const supabase = await createClient();
+  const supabase = await createSyncClient(req); // cookie on the web, Bearer from the apps (09 §4)
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -101,6 +102,14 @@ export async function GET(
         m.label, m.kind, m.regulatory ? "yes" : "no", m.interval_months, m.interval_hours,
         m.last_done_date, m.last_done_hours, m.next_due_date, m.next_due_hours, m.notes,
       ]),
+    ];
+  } else if (type === "due") {
+    // The due list (09 §6, C-DATA-02): the summary's rows, so confirmed and signed entries only (09 §3.1).
+    const share = await loadShareInput(supabase, id, user.id);
+    if (!share) return new Response("Aircraft not found.", { status: 404 });
+    rows = [
+      ["Item", "Status", "Last done", "Next due", "Left", "Page"],
+      ...buildSummary(share).items.map((i) => [i.label, i.status, i.lastDone, i.nextDue, i.left, i.page]),
     ];
   } else {
     return new Response("Unknown export type.", { status: 400 });

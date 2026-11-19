@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paint Scheme — MyTailLog direction A</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible+Mono:wght@400;500;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<link rel="stylesheet" href="system.css">
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a>
+  <a href="../analysis.html">Analysis</a>
+  <a href="index.html" aria-current="page">A · Paint Scheme</a>
+  <a href="../b/index.html">B · Section Tabs</a>
+  <a href="../c/index.html">C · Line Diagram</a>
+  <a href="../d/index.html">D · Tabbed Binder</a>
+</div></nav>
+<nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
+  <a href="index.html" aria-current="page">Direction overview</a><a href="web1.html">Web: status, capture, review</a><a href="web2.html">Web: records, aircraft, sharing</a><a href="mobile.html">Phone and tablet</a>
+</div></nav>
+
+<main class="g-wrap">
+<!--A-INTRO-->
+<h1 class="g-h1">Direction A: Paint Scheme</h1>
+<p class="g-lede">The app wears the owner's aircraft. The header is painted in the plane's own colours, the tail number is the logo, and the cheatline under it becomes the one chart on the home screen: everything coming due, laid along the stripe.</p>
+<ul class="g-index">
+  <li><a href="#a-idea">The idea</a></li>
+  <li><a href="#a-home">Home screens</a></li>
+  <li><a href="#a-system">Colour and type</a></li>
+  <li><a href="#a-ia">Navigation</a></li>
+  <li><a href="#a-flows">What changes in the workflows</a></li>
+  <li><a href="web1.html">Web screens, part 1</a></li><li><a href="web2.html">Web screens, part 2</a></li>
+  <li><a href="mobile.html">Phone and tablet screens</a></li>
+</ul>
+<!--/A-INTRO-->
+
+<h2 class="g-h2" id="a-idea">The idea</h2>
+<div class="g-cols"><div class="g-prose">
+<p>Owners are attached to their aircraft, not to software. Every competitor dresses the app in the same navy cockpit; direction A dresses it in the owner's own airplane. At setup the owner picks the paint scheme (presets for common factory schemes, or two colours taken from a photo), and the header, the tail-number wordmark and the stripe under it take those colours. N734DM wears petrol and capri with a gold pinstripe; the Cherokee in the same hangar wears burgundy.</p>
+<p>The stripe is not decoration. On the home screen it becomes the horizon: twelve months laid along the cheatline, with date-limited items riding the dark stripe and hour-limited items riding the light one, hours projected to dates from recent flying. One look answers "what is coming, and is it a date or hours that bites first".</p>
+</div><div>
+<dl class="g-kv"><dt>Best for</dt><dd>Owners who check status often and want the app to feel like theirs; the most glanceable of the three.</dd><dt>Density</dt><dd>Low to medium. One main column, large type, generous white.</dd><dt>Signature</dt><dd>The cheatline horizon on Today, the due list and Pick a date.</dd><dt>Honest risks</dt><dd>Owner-chosen colours can fight contrast, so the system darkens or lightens a picked colour until text on it passes 4.5:1, and status colours never come from the paint. A crowded year can overload the horizon; flags group by week and the list below remains the full record.</dd></dl>
+</div></div>
+
+<h2 class="g-h2" id="a-home">Home, on the web and on the phone</h2>
+
+<figure class="g-shot" id="a-web-today">
+  <figcaption><b>Today (web)</b><span>The first thing on screen is a sentence, not a dashboard. Under it, the cheatline runs twelve months to the right: date-limited items ride the dark stripe, hour-limited items ride the light one.</span></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav">
+        <a href="#" aria-current="page">Today</a>
+        <a href="#">Logbooks <span class="count">6</span></a>
+        <a href="#">Maintenance</a>
+        <a href="#">Aircraft</a>
+        <a href="#">Share</a>
+      </nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+
+    <main class="a-page">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:48px;align-items:end">
+        <div>
+          <h1 class="a-h1" style="max-width:20ch">One check has lapsed, for IFR only. Next is an oil change, in 9.7 hours.</h1>
+          <p class="a-sub">Worked out from 212 entries you confirmed and the tach reading from Saturday. Your paper logbooks are still the record.</p>
+        </div>
+        <div class="a-panel" style="padding:18px 22px">
+          <div class="a-meters">
+            <div class="a-meter"><div class="v">4212.4</div><div class="l">Tach, read Nov 14</div></div>
+            <div class="a-meter"><div class="v">4680.4</div><div class="l">Hobbs</div></div>
+            <a class="a-btn ghost" href="#" style="align-self:center"><i data-lucide="plane-landing"></i>Log a flight</a>
+          </div>
+        </div>
+      </div>
+
+      <section class="a-hz" aria-label="Next twelve months">
+        <div class="a-hz-lane">
+          <div class="a-flag bad left" style="--x:0%"><b>VOR check lapsed</b><span>Nov 11, IFR only</span></div>
+          <div class="a-flag soon" style="--x:11.8%"><b>Transponder, static</b><span>Dec 31, in 43 days</span></div>
+          <div class="a-flag ok tier2" style="--x:28%"><b>ELT battery</b><span>Feb 28</span></div>
+          <div class="a-flag ok" style="--x:69.9%"><b>Annual, ELT inspection</b><span>Jul 31, in 255 days</span></div>
+        </div>
+        <div style="position:relative">
+          <div class="a-hz-ticks top" aria-hidden="true">
+            <span style="left:3.6%">Dec</span><span style="left:12.1%">Jan</span><span style="left:20.5%">Feb</span><span style="left:28.2%">Mar</span><span style="left:36.7%">Apr</span><span style="left:44.9%">May</span><span style="left:53.4%">Jun</span><span style="left:61.6%">Jul</span><span style="left:70.1%">Aug</span><span style="left:78.6%">Sep</span><span style="left:86.8%">Oct</span><span style="left:95.3%">Nov 2027</span>
+          </div>
+          <div class="a-hz-band"></div>
+          <div class="a-hz-band hrs"></div>
+          <div class="a-hz-pin"></div>
+          <div class="a-hz-ticks" aria-hidden="true">
+            <span style="left:25%">25 h</span><span style="left:50%">50 h</span><span style="left:75%">75 h</span><span style="left:96%">100 h of flying</span>
+          </div>
+          <div class="a-now" style="--x:0%"></div>
+        </div>
+        <div class="a-hz-lane below">
+          <div class="a-flag down soon" style="--x:9.7%"><b>Oil and filter</b><span>9.7 h left, about Dec 12</span></div>
+          <div class="a-flag down ok" style="--x:55.9%"><b>AD 2011-10-09 seat rails</b><span>55.9 h left, about Apr 2027</span></div>
+          <div class="a-flag down ok" style="--x:82%;border-left-style:dashed"><b>Engine TBO</b><span>590.6 h left, off this scale</span></div>
+        </div>
+      </section>
+
+      <div class="a-grid2" style="margin-top:14px">
+        <section>
+          <div class="a-sechead"><h2 class="a-h2">Needs you</h2><a href="#">All 11 tracked items</a></div>
+          <div class="a-rows">
+            <div class="a-row">
+              <span class="a-mark bad"><i data-lucide="triangle-alert"></i></span>
+              <div><div class="t">VOR check</div><div class="d">Lapsed 7 days ago. Needed for IFR only. <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 61</a></div></div>
+              <div class="due"><b>Nov 11</b>every 30 days</div>
+              <a class="a-btn sm" href="#">Log a check</a>
+            </div>
+            <div class="a-row">
+              <span class="a-mark soon"><i data-lucide="clock-3"></i></span>
+              <div><div class="t">Oil and filter change</div><div class="d">Due at tach 4222.1. You fly about 3 hours a week. <a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 38</a></div></div>
+              <div class="due"><b>9.7 h</b>about Dec 12</div>
+              <a class="a-btn sm ghost" href="#">Mark done</a>
+            </div>
+            <div class="a-row">
+              <span class="a-mark soon"><i data-lucide="clock-3"></i></span>
+              <div><div class="t">Transponder and pitot-static</div><div class="d">Both certified together on Dec 3, 2024. <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 58</a></div></div>
+              <div class="due"><b>Dec 31</b>in 43 days</div>
+              <a class="a-btn sm ghost" href="#">Mark done</a>
+            </div>
+          </div>
+        </section>
+        <aside style="display:grid;gap:22px">
+          <div class="a-panel">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="a-h3">6 pages are waiting for you</h3><span class="muted" style="font-size:15px">scanned Sunday</span></div>
+            <p class="ink2" style="margin:6px 0 14px;font-size:16px">4 read cleanly. 2 have a date or a tach value worth a second look.</p>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px">
+              <div class="scan" style="--lh:9px;--top:14px"></div><div class="scan" style="--lh:9px;--top:14px"></div><div class="scan engine" style="--lh:9px;--top:14px"></div><div class="scan engine" style="--lh:9px;--top:14px"></div><div class="scan" style="--lh:9px;--top:14px;outline:3px solid var(--soon-fill)"></div><div class="scan prop" style="--lh:9px;--top:14px;outline:3px solid var(--soon-fill)"></div>
+            </div>
+            <a class="a-btn" href="#" style="width:100%">Review 6 pages</a>
+          </div>
+          <div>
+            <div class="a-sechead" style="border-bottom-width:1px"><h3 class="a-h3">Open squawks</h3><a href="#">Add</a></div>
+            <div class="a-row" style="grid-template-columns:1fr auto;padding:12px 0"><div><div class="t" style="font-size:17px">Left brake feels soft</div><div class="d">Watch · reported Nov 8</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+            <div class="a-row" style="grid-template-columns:1fr auto;padding:12px 0"><div><div class="t" style="font-size:17px">Nav light lens cracked</div><div class="d">Low · reported Oct 21</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-today">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head">
+        <div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">1978 Cessna 172N · synced 4 min ago</div></div>
+        <span class="ico"><i data-lucide="search"></i></span>
+      </div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">One check has lapsed, IFR only. Oil change in 9.7 hours.</h1>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:center;margin-top:16px;padding:14px 16px" class="am-card">
+          <div class="a-meter"><div class="v" style="font-size:25px">4212.4</div><div class="l">Tach</div></div>
+          <div class="a-meter"><div class="v" style="font-size:25px">4680.4</div><div class="l">Hobbs</div></div>
+          <span class="a-btn sm ghost">Log flight</span>
+        </div>
+        <h2 class="am-h2">Coming up <a href="#">All items</a></h2>
+        <div style="display:grid;grid-template-columns:14px 1fr;gap:14px">
+          <div style="display:grid;grid-template-columns:8px 4px;gap:2px;padding:6px 0"><i style="background:var(--s1);border-radius:2px 2px 0 0"></i><i style="background:var(--s2)"></i></div>
+          <div>
+            <div class="am-row"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t">VOR check</div><div class="d">Lapsed Nov 11 · IFR only</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+            <div class="am-row"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Oil and filter</div><div class="d">About Dec 12</div></div><div class="r"><b>9.7 h</b></div></div>
+            <div class="am-row"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Transponder, pitot-static</div><div class="d">By Dec 31</div></div><div class="r"><b>43 days</b></div></div>
+            <div class="am-row" style="border-bottom:0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">Annual inspection</div><div class="d">By Jul 31, 2027</div></div><div class="r"><b>255 days</b></div></div>
+          </div>
+        </div>
+      </div>
+      <nav class="am-tabs">
+        <a class="on" href="#"><i data-lucide="sun"></i>Today</a>
+        <a href="#"><i data-lucide="book-open"></i>Logbooks<span class="dot">6</span></a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Today (phone)</b><span>Same sentence, then the meters, then the stripe turned on its side.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-add">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi-off"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head">
+        <div><div class="tail">N734DM</div><div class="sub">1978 Cessna 172N</div></div>
+      </div>
+      <div class="a-stripe"></div>
+      <div class="am-body"><h1 class="am-h1" style="opacity:.5">One check has lapsed, IFR only.</h1></div>
+      <div class="am-scrim"></div>
+      <div class="am-sheet">
+        <div style="display:grid;gap:10px">
+          <div class="am-btn"><i data-lucide="plane-landing"></i>Log a flight</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="am-btn ghost"><i data-lucide="scan-line"></i>Scan pages</div>
+            <div class="am-btn ghost"><i data-lucide="droplet"></i>Add oil</div>
+            <div class="am-btn ghost"><i data-lucide="flag"></i>Squawk</div>
+            <div class="am-btn ghost"><i data-lucide="file-plus-2"></i>Document</div>
+          </div>
+          <div class="am-btn quiet">Write a logbook entry</div>
+        </div>
+        <p class="a-note" style="margin:8px 0 0;justify-content:center"><i data-lucide="wifi-off"></i>Offline. Everything here saves on this phone and uploads later.</p>
+      </div>
+    </div></div>
+    <figcaption><b>The add sheet</b><span>One thumb-reach button replaces four menu items. It works offline.</span></figcaption>
+  </figure>
+</div>
+
+<h2 class="g-h2" id="a-system">Colour and type</h2>
+<div class="g-swatches"><div class="g-sw"><i style="background:#0c3f52"></i><span><b>Main stripe</b>#0c3f52<br>header, primary action, date limits</span></div><div class="g-sw"><i style="background:#2a9fc4"></i><span><b>Second stripe</b>#2a9fc4<br>hour limits</span></div><div class="g-sw"><i style="background:#c9a54a"></i><span><b>Pinstripe</b>#c9a54a<br>today, current place</span></div><div class="g-sw"><i style="background:#f5f6f3"></i><span><b>Gloss white</b>#f5f6f3<br>page ground</span></div><div class="g-sw"><i style="background:#11171a"></i><span><b>Ink</b>#11171a<br>text</span></div><div class="g-sw"><i style="background:#1b7445"></i><span><b>Current</b>#1b7445<br>with a check mark</span></div><div class="g-sw"><i style="background:#efb02e"></i><span><b>Due soon</b>#efb02e<br>with a clock mark</span></div><div class="g-sw"><i style="background:#b0241c"></i><span><b>Overdue</b>#b0241c<br>with a warning mark</span></div></div>
+<div class="g-cols"><div class="g-prose"><p><b>Archivo, expanded,</b> sets the tail number and headings, the way registration letters are painted wide on a fuselage. <b>Atkinson Hyperlegible Next</b> (drawn by the Braille Institute for low-vision readers) carries everything else at 17px, and its mono cut sets only meter readings, so numbers that are compared line up. Nothing on the web drops below 14px.</p></div>
+<div class="g-prose"><p>Status is always a round mark plus a word: a check, a clock, a warning sign, or a dash for "needs information". Kind tags say which limit applies ("Date", "Hours"). Every derived value carries a page chip, dashed when the entry is still only read by AI.</p></div></div>
+<h2 class="g-h2" id="a-ia">Navigation</h2>
+<div class="g-prose"><p>Web: the painted header holds the aircraft switcher, five destinations (Today, Logbooks, Maintenance, Aircraft, Share), one Search-or-ask field and one Add button. Phone: Today, Logbooks, a centred Add, Due and More. Settings live behind the avatar. The full mapping from today's fifteen sidebar items is on the <a href="../index.html#ia">overview page</a>.</p></div>
+<h2 class="g-h2" id="a-flows">What changes in the workflows</h2>
+<ul class="g-prose"><li><b>Status is a sentence, then a stripe, then a short list</b> of what needs the owner, each with an action in the row.</li><li><b>Add is one button</b> in the header and the thumb of the phone: log a flight (photograph the tach), scan pages, add oil, squawk, document, write an entry.</li><li><b>Review is a desk:</b> the page large on the left, one field at a time on the right, the least certain first, its ink outlined in the scheme's gold.</li><li><b>Share starts from the person</b> (your IA, a buyer, an insurer) and builds the right link or document.</li></ul>
+<p class="g-prose">See every screen: <a href="web1.html">web, status to review</a> · <a href="web2.html">web, records to sharing</a> · <a href="mobile.html">phone and tablet</a>.</p>
+</main>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="../shared/gallery.js"></script>
+</body>
+</html>

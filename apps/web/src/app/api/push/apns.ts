@@ -147,33 +147,3 @@ function isDead(status: number, body: string): boolean {
   if (status === 410) return true;
   return status === 400 && /BadDeviceToken|DeviceTokenNotForTopic/.test(body);
 }
-
-// --- Copy -------------------------------------------------------------------
-
-/** What one aircraft contributes to a notification: its tail and what's due. */
-export type PushGroup = { tail: string; labels: string[] };
-
-/**
- * The lock-screen wording. Owner's language: no counts of "items" without
- * naming them where they fit, no dates, no jargon. Tested in
- * apps/web/test/push-alert.test.ts.
- */
-export function pushAlert(groups: PushGroup[]): PushMessage | null {
-  const total = groups.reduce((n, g) => n + g.labels.length, 0);
-  if (total === 0) return null;
-  const noun = total === 1 ? "1 item" : `${total} items`;
-
-  if (groups.length === 1) {
-    const g = groups[0];
-    return { title: `${g.tail} — ${noun} coming due`, body: list(g.labels) };
-  }
-  return {
-    title: `${noun} coming due`,
-    body: groups.map((g) => `${g.tail}: ${g.labels.length}`).join(" · "),
-  };
-}
-
-function list(labels: string[]): string {
-  if (labels.length <= 3) return labels.join(", ");
-  return `${labels.slice(0, 3).join(", ")} and ${labels.length - 3} more`;
-}

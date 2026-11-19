@@ -10,6 +10,8 @@ import {
   isFreshAccount,
   sourceFromLanding,
 } from "@/lib/signupSource";
+import { publicOrigin } from "@/lib/publicOrigin";
+import { UI_COOKIE, v1ToV2, v2Rewrite, v2ToV1, wantsV2 } from "@/lib/uiV2";
 
 /**
  * Refreshes the Supabase auth session on every request and redirects
@@ -49,28 +51,60 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/aircraft") ||
     pathname.startsWith("/profile") ||
-    pathname.startsWith("/admin");
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/hangar") ||
+    pathname === "/account" ||
+    pathname.startsWith("/account/") || // not /account-deletion, which is public
+    pathname.startsWith("/v2");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    url.searchParams.set("next", pathname.startsWith("/v2/") ? pathname.slice(3) : pathname);
     return withSourceCookie(request, NextResponse.redirect(url));
   }
 
   if (user && request.cookies.has(SOURCE_COOKIE)) {
     await claimSource(user.id, user.created_at, request.cookies.get(SOURCE_COOKIE)?.value);
     response.cookies.delete(SOURCE_COOKIE);
-    return response;
+    return withUiV2(request, response);
   }
 
-  return user ? response : withSourceCookie(request, response);
+  return user ? withUiV2(request, response) : withSourceCookie(request, response);
+}
+
+/**
+ * The new design (default from phase 6, wantsV2) serves the /v2 tree at the same URLs and moves today's routes to
+ * their new homes (308, 03 §10). `?ui=v1` on one request shows the current design for that page (the v2 shell links
+ * there for screens it doesn't cover yet). Owners who switched back are sent from new-only URLs to their v1 page.
+ */
+function withUiV2(request: NextRequest, response: NextResponse) {
+  const { pathname, searchParams } = request.nextUrl;
+  const redirectTo = (to: string, status: number) => {
+    const res = NextResponse.redirect(new URL(to, publicOrigin(request)), status);
+    response.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  };
+  if (!wantsV2(request.cookies.get(UI_COOKIE)?.value)) {
+    const back = v2ToV1(pathname, searchParams);
+    return back ? redirectTo(back, 307) : response;
+  }
+  if (searchParams.get("ui") === "v1") return response;
+  const moved = v1ToV2(pathname, searchParams);
+  if (moved) return redirectTo(moved, 308);
+  const target = v2Rewrite(pathname);
+  if (!target) return response;
+  const url = request.nextUrl.clone();
+  url.pathname = target;
+  const rewritten = NextResponse.rewrite(url, { request });
+  response.cookies.getAll().forEach((c) => rewritten.cookies.set(c));
+  return rewritten;
 }
 
 /** First touch: set mtl_src for an anonymous visitor from a tagged link or another site. */
 function withSourceCookie(request: NextRequest, response: NextResponse) {
   // A record room's visitor is attributed by its footer link (?ref=record-room), not the mail client that opened /r.
-  if (request.cookies.has(SOURCE_COOKIE) || request.nextUrl.pathname.startsWith("/r/")) return response;
+  if (request.cookies.has(SOURCE_COOKIE) || request.nextUrl.pathname.startsWith("/r/") || request.nextUrl.pathname.startsWith("/m/")) return response;
   const source = sourceFromLanding(request.nextUrl, request.headers.get("referer"), request.nextUrl.hostname);
   if (source) {
     response.cookies.set(SOURCE_COOKIE, encodeSource(source), {

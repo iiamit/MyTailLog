@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phone and tablet — MyTailLog direction A</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible+Mono:wght@400;500;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<link rel="stylesheet" href="system.css">
+<style>
+/* ---- page-local phone components, built from system.css tokens ---- */
+.da .am-sys.dark { background: var(--ink); color: #fff; }
+.da .am-head.push { padding: 2px 18px 12px 6px; }
+.da .am-head .bk { display: flex; align-items: center; gap: 2px; min-height: 44px; padding: 0 10px 0 2px; color: var(--on-s1); font-weight: 600; font-size: 17px; }
+.da .am-head .bk svg, .da .am-head .bk [data-lucide] { width: 26px; height: 26px; }
+.da .am-head .id { text-align: right; line-height: 1.2; }
+.da .am-head .id b { display: block; font: 800 19px/1 var(--f-d); font-stretch: 122%; letter-spacing: .035em; }
+.da .am-head .id span { font-size: 13px; color: var(--on-s1-2); display: inline-flex; gap: 4px; align-items: center; margin-top: 4px; }
+.da .am-head .id span svg { width: 13px; height: 13px; }
+.da .am-foot { position: absolute; left: 0; right: 0; bottom: 0; background: var(--paint); border-top: 1px solid var(--line); padding: 12px 20px 30px; display: grid; gap: 6px; }
+.da .am-foot .a-note { justify-content: center; margin: 2px 0 0; font-size: 14px; }
+.da .am-btn.ink { background: var(--ink); color: #fff; }
+.da .am-btn.light { background: #fff; color: var(--s1); }
+.da .am-btn.sm { white-space: nowrap; height: 44px; font-size: 16px; border-radius: 10px; width: auto; padding: 0 16px; }
+.da .am-btn small { display: block; font-size: 14px; font-weight: 500; color: var(--on-s1-2); margin-top: 3px; }
+.da .am-lead { font-size: 16px; color: var(--ink-2); margin: 8px 0 0; line-height: 1.45; }
+.da .am-sh-t { font: 700 22px/1.2 var(--f-d); font-stretch: 106%; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.da .am-x { width: 44px; height: 44px; border-radius: 22px; background: var(--shade); display: grid; place-items: center; color: var(--ink-2); flex: none; }
+.da .am-chips { display: flex; gap: 8px; overflow: hidden; }
+.da .am-chip { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--line-2); background: var(--skin); font-size: 15px; font-weight: 600; color: var(--ink-2); white-space: nowrap; flex: none; }
+.da .am-chip b { font-family: var(--f-n); color: var(--ink); }
+.da .am-chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.da .am-chip.on b { color: #fff; }
+.da .am-seg { display: flex; width: 100%; }
+.da .am-seg > * { flex: 1; text-align: center; height: 44px; padding: 0 6px; display: grid; place-items: center; font-size: 16px; }
+.da .am-lbl { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 16px; }
+.da .am-lbl b { font-size: 17px; }
+.da .am-delta { font-size: 15px; color: var(--ink-2); margin-top: 8px; }
+.da .am-set { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 58px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.da .am-set .t { font-weight: 700; font-size: 17px; line-height: 1.25; }
+.da .am-set .d { font-size: 15px; color: var(--ink-2); line-height: 1.3; margin-top: 2px; }
+.da .am-radio { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line-2); background: var(--skin); flex: none; }
+.da .am-radio.on { border: 7px solid var(--s1); }
+.da .am-ico { width: 44px; height: 44px; border-radius: 10px; background: var(--s1-tint); color: var(--s1); display: grid; place-items: center; flex: none; }
+.da .am-toast { background: var(--ink); color: #fff; border-radius: 12px; padding: 12px 16px; display: flex; gap: 10px; align-items: center; font-size: 16px; line-height: 1.35; }
+.da .am-toast svg { color: var(--ok-bg); }
+/* trust levels, the same three words everywhere */
+.da .a-trust { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.da .a-trust svg, .da .a-trust [data-lucide] { width: 16px; height: 16px; }
+.da .a-trust.ai { color: var(--soon); }
+.da .a-trust.me { color: var(--s1); }
+.da .a-trust.ap { color: var(--ok); }
+.da .a-or { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; font-size: 15px; color: var(--ink-3); }
+.da .a-or::before, .da .a-or::after { content: ""; height: 1px; background: var(--line-2); }
+/* aircraft card in its own paint (hangar) */
+.da .am-hc { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--skin); }
+.da .am-hc .hd { background: var(--s1); color: var(--on-s1); padding: 14px 16px 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.da .am-hc .hd b { font: 800 26px/1 var(--f-d); font-stretch: 122%; letter-spacing: .035em; display: block; }
+.da .am-hc .hd span { font-size: 14px; color: var(--on-s1-2); }
+.da .am-hc .hd em { font-style: normal; font-size: 13px; font-weight: 700; border: 1px solid currentColor; border-radius: 4px; padding: 1px 7px; color: var(--on-s1-2); white-space: nowrap; }
+.da .am-hc .bd { padding: 14px 16px 6px; }
+.da .am-hc .say { font: 700 19px/1.25 var(--f-d); font-stretch: 104%; margin: 0; }
+.da .am-hc .ft { display: flex; justify-content: space-between; align-items: center; min-height: 48px; border-top: 1px solid var(--line); margin-top: 12px; font-size: 16px; font-weight: 600; color: var(--s1); }
+.da .am-sw { border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); background: var(--skin); }
+.da .am-sw .p { background: var(--s1); height: 30px; }
+.da .am-sw .n { padding: 7px 10px 8px; font-size: 14px; font-weight: 600; color: var(--ink); }
+.da .am-sw.on { box-shadow: 0 0 0 3px var(--ink); border-color: var(--ink); }
+/* signature, compact: the cheatline stood on its side. Dark stripe carries date limits, light stripe hour limits, gold is now */
+.da .am-vh { position: relative; padding-left: 38px; }
+.da .am-vh::before { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 10px; background: var(--s1); }
+.da .am-vh::after { content: ""; position: absolute; left: 17px; top: 0; bottom: 0; width: 5px; background: var(--s2); }
+.da .am-vh > * { position: relative; }
+.da .am-vh .am-row::before { content: ""; position: absolute; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--skin); z-index: 1; box-sizing: border-box; }
+.da .am-vh .am-row.cal::before { left: -36px; border: 3px solid var(--s1); }
+.da .am-vh .am-row.hrs::before { left: -26px; border: 3px solid var(--s2); }
+.da .am-vh .now { height: 30px; display: flex; align-items: center; z-index: 2; }
+.da .am-vh .now::before { content: ""; position: absolute; left: -38px; right: 0; top: 14px; height: 3px; background: var(--s3); }
+.da .am-vh .now span { position: relative; background: var(--s3); color: var(--ink); font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 3px; }
+.da .am-vh .then::before { background: var(--ink); }
+.da .am-vh .then span { background: var(--ink); color: #fff; }
+.da .am-vh .grp { font-size: 15px; font-weight: 700; color: var(--ink-2); padding: 16px 0 2px; }
+.da .am-vh.past::before, .da .am-vh.past::after { opacity: 1; }
+/* phone review fields */
+.da .am-fld { display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 16px; }
+.da .am-fld .k { font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.da .am-fld .v { font-weight: 600; }
+.da .am-fld.sel { background: var(--soon-bg); box-shadow: 0 0 0 2px var(--soon-fill); border-radius: 10px; border-bottom-color: transparent; padding: 14px 12px; margin: 4px -12px; }
+/* camera surfaces (photo stand-ins drawn in SVG from ink tokens) */
+.da.am-cam, .da .am-cam { background: var(--ink); color: #fff; }
+.da .am-camtop { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; min-height: 56px; }
+.da .am-camtop .x { width: 44px; height: 44px; border-radius: 22px; background: rgba(255,255,255,.14); display: grid; place-items: center; }
+.da .am-camtop .txt { font-weight: 700; font-size: 17px; }
+.da .am-camtop .lk { font-weight: 600; font-size: 16px; color: #fff; padding: 0 8px; min-height: 44px; display: flex; align-items: center; }
+.da .am-shut { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #fff; display: grid; place-items: center; }
+.da .am-shut::after { content: ""; width: 60px; height: 60px; border-radius: 50%; background: #fff; }
+.da .am-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.14); color: #fff; font-size: 15px; font-weight: 600; padding: 8px 14px; border-radius: 20px; }
+.da .am-pill.gold { background: var(--s3); color: var(--ink); }
+.da .am-ph { border-radius: 10px; background: var(--ink-2); overflow: hidden; }
+.da .a-qr { border: 1px solid var(--line-2); border-radius: 12px; background: var(--skin); display: grid; place-items: center; color: var(--ink); }
+.da .a-qr svg, .da .a-qr [data-lucide] { width: 150px; height: 150px; stroke-width: 1.3; }
+/* lock screen */
+.da.am-lock { background: var(--ink); color: #fff; }
+.da .am-notif { background: var(--skin); color: var(--ink); border-radius: 18px; padding: 12px 14px 14px; box-shadow: 0 10px 30px -12px rgba(0,0,0,.6); }
+.da .am-notif .h { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-3); margin-bottom: 6px; }
+.da .am-notif .h b { color: var(--ink-2); font-weight: 700; flex: 1; }
+.da .am-notif .ap { width: 24px; height: 24px; border-radius: 6px; background: var(--s1); color: var(--on-s1); display: grid; place-items: center; }
+.da .am-notif .ap svg { width: 15px; height: 15px; }
+.da .am-notif .t { font-weight: 700; font-size: 16px; line-height: 1.3; }
+.da .am-notif .d { font-size: 15px; line-height: 1.4; color: var(--ink-2); margin-top: 2px; }
+/* tablet header: the web header at 1024 */
+.da .at-top { background: var(--s1); color: var(--on-s1); height: 68px; display: flex; align-items: center; gap: 18px; padding: 0 22px; }
+.da .at-top .a-tail b { font-size: 26px; }
+.da .at-top .a-nav { flex: 1; gap: 0; align-self: stretch; }
+.da .at-top .a-nav a { padding: 0 12px; font-size: 16px; }
+.da .at-top .sq { width: 44px; height: 44px; border-radius: 8px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); display: grid; place-items: center; color: var(--on-s1); }
+.da .at-pane { padding: 26px 28px; overflow: hidden; }
+</style>
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a><a href="../analysis.html">Analysis</a>
+  <a href="../a/index.html" aria-current="page">A · Paint Scheme</a><a href="../b/index.html">B · Section Tabs</a><a href="../c/index.html">C · Line Diagram</a>
+  <a href="../d/index.html">D · Tabbed Binder</a>
+</div></nav>
+<nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
+  <a href="index.html">Direction overview</a><a href="web1.html">Web: status, capture, review</a><a href="web2.html">Web: records, aircraft, sharing</a><a href="mobile.html" aria-current="page">Phone and tablet</a>
+</div></nav>
+<main class="g-wrap">
+  <h1 class="g-h1">Paint Scheme on the phone and tablet</h1>
+  <p class="g-lede">The phone is for one hand at the aircraft: the painted header says whose records these are and whether they are in sync, the sentence says what to do, and the stripe stands on its side to order what is coming due.</p>
+  <ul class="g-index">
+    <li><a href="#a-m-signin">Sign in</a></li><li><a href="#a-m-hangar">Hangar</a></li><li><a href="#a-m-add-aircraft">Add an aircraft</a></li>
+    <li><a href="#a-m-home">Home</a></li><li><a href="#a-m-home-clear">Home, all clear</a></li><li><a href="#a-m-home-offline">Home, offline</a></li><li><a href="#a-m-lock">Lock screen</a></li>
+    <li><a href="#a-m-add-sheet">Add sheet</a></li><li><a href="#a-m-tach-photo">Photograph the tach</a></li><li><a href="#a-m-log-confirm">Confirm the reading</a></li><li><a href="#a-m-log-saved">Flight saved</a></li>
+    <li><a href="#a-m-sq-photo">Squawk photo</a></li><li><a href="#a-m-sq-words">Squawk words</a></li><li><a href="#a-m-sq-detail">Squawk detail</a></li>
+    <li><a href="#a-m-scan-book">Choose the logbook</a></li><li><a href="#a-m-scan-cam">Camera</a></li><li><a href="#a-m-queue">The queue</a></li><li><a href="#a-m-notify">Pages are read</a></li>
+    <li><a href="#a-m-rev-page">Review a page</a></li><li><a href="#a-m-rev-field">A doubtful field</a></li><li><a href="#a-m-rev-done">Page confirmed</a></li>
+    <li><a href="#a-m-due">Due list</a></li><li><a href="#a-m-item">Item detail</a></li><li><a href="#a-m-mark-done">Mark done</a></li><li><a href="#a-m-vor">VOR check</a></li><li><a href="#a-m-pick-date">Pick a date</a></li><li><a href="#a-m-ads">ADs</a></li>
+    <li><a href="#a-m-books">Logbooks</a></li><li><a href="#a-m-timeline">Timeline</a></li><li><a href="#a-m-entry">Entry</a></li><li><a href="#a-m-ask">Search and Ask</a></li>
+    <li><a href="#a-m-aircraft">Aircraft</a></li><li><a href="#a-m-docs">Documents</a></li>
+    <li><a href="#a-m-share-who">Share</a></li><li><a href="#a-m-link-made">Link made</a></li>
+    <li><a href="#a-m-sync">Waiting to upload</a></li><li><a href="#a-m-settings">Settings</a></li>
+    <li><a href="#a-t-home">Tablet home</a></li><li><a href="#a-t-review">Tablet review</a></li><li><a href="#a-t-due">Tablet due list</a></li>
+  </ul>
+
+<!-- ================= GETTING IN ================= -->
+<h2 class="g-h2" id="a-getting-in">Getting in</h2>
+<p class="g-prose">The owner signs in once and lands in a hangar where each aircraft wears its own paint and says its one-line verdict. Today the fleet card reads "CURRENT" with no timestamp, and a second aircraft cannot be added on the phone at all. Here the sync time sits under the title, and adding an aircraft is a sheet with a registry lookup and a paint scheme.</p>
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-signin">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head" style="display:block;padding:44px 24px 30px">
+        <div class="tail" style="font-size:34px">MyTailLog</div>
+        <div class="sub" style="font-size:16px;margin-top:10px">An index of your aircraft's paper logbooks</div>
+      </div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding:28px 24px 0">
+        <h1 class="am-h1">Sign in</h1>
+        <p class="am-lead" style="margin-bottom:22px">Photograph the logbooks, confirm what was read, and see what falls due next. Free and open source.</p>
+        <div style="display:grid;gap:10px">
+          <div class="am-btn ink">Continue with Apple</div>
+          <div class="am-btn ghost">Continue with Google</div>
+        </div>
+        <div class="a-or" style="margin:22px 0 16px">or use your email</div>
+        <div class="a-field"><label>Email</label><div class="a-input focus">dana@example.com</div></div>
+        <div class="am-btn" style="margin-top:14px"><i data-lucide="mail"></i>Email me a sign-in link</div>
+        <div class="am-btn quiet">Use a password instead</div>
+      </div>
+      <p class="a-note" style="padding:0 24px 34px;margin:0;justify-content:center"><i data-lucide="info"></i>New here? The same steps make your account.</p>
+    </div></div>
+    <figcaption><b>Sign in</b><span>Apple, Google, an emailed link or a password. One calm line says what the app is.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-hangar">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys light"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-nav" style="padding:8px 20px 6px">
+        <div><div class="am-h1" style="font-size:31px">Hangar</div><div class="muted" style="font-size:14px;margin-top:2px">Synced 9:37 today</div></div>
+        <span class="a-avatar" style="width:44px;height:44px;background:var(--s1);color:var(--on-s1)">DM</span>
+      </div>
+      <div class="am-body" style="padding-top:10px;display:grid;gap:14px;align-content:start">
+        <div class="am-hc">
+          <div class="hd"><div><b>N734DM</b><span>1978 Cessna 172N</span></div><em>Demo aircraft</em></div>
+          <div class="a-stripe"></div>
+          <div class="bd">
+            <p class="say">One check has lapsed, for IFR only. Next is an oil change, in 9.7 hours.</p>
+            <div style="display:flex;gap:8px;margin-top:12px"><span class="a-st bad"><i data-lucide="triangle-alert"></i>1 lapsed</span><span class="a-st soon"><i data-lucide="clock-3"></i>3 due soon</span></div>
+            <div class="ft"><span>6 pages to review</span><i data-lucide="chevron-right"></i></div>
+          </div>
+        </div>
+        <div class="da scheme-burgundy am-hc">
+          <div class="hd"><div><b>N4321J</b><span>1966 Piper Cherokee 140</span></div><em>Shared with you</em></div>
+          <div class="a-stripe"></div>
+          <div class="bd">
+            <p class="say">Nothing tracked is overdue. Two items are coming due.</p>
+            <div style="display:flex;gap:8px;margin-top:12px"><span class="a-st soon"><i data-lucide="clock-3"></i>2 due soon</span></div>
+            <div class="ft" style="color:var(--ink-2);font-weight:500"><span>You are an editor</span><i data-lucide="chevron-right"></i></div>
+          </div>
+        </div>
+        <div>
+          <div class="am-row"><span class="am-ico"><i data-lucide="plus"></i></span><div><div class="t">Add an aircraft</div><div class="d">Look it up by tail number</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+          <div class="am-row" style="border-bottom:0"><span class="am-ico"><i data-lucide="archive"></i></span><div><div class="t">Restore from a backup</div><div class="d">A MyTailLog .zip from Files</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        </div>
+      </div>
+    </div></div>
+    <figcaption><b>Hangar</b><span>Each aircraft in its own paint with its home sentence. N4321J wears burgundy.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-add-aircraft">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys light"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-nav" style="padding:8px 20px 6px"><div class="am-h1" style="font-size:31px">Hangar</div><span class="a-avatar" style="width:44px;height:44px;background:var(--s1);color:var(--on-s1)">DM</span></div>
+      <div class="am-body"><p class="am-lead">Your hangar is empty. Add the aircraft you fly.</p></div>
+      <div class="am-scrim"></div>
+      <div class="am-sheet">
+        <div class="am-sh-t">Add an aircraft<span class="am-x"><i data-lucide="x"></i></span></div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end">
+          <div class="a-field"><label>Tail number</label><div class="a-input num" style="font-size:20px;font-weight:700">N734DM</div></div>
+          <div class="am-btn ghost sm" style="height:48px">Look up</div>
+        </div>
+        <div class="am-card" style="margin-top:12px;padding:12px 14px">
+          <span class="a-st ok plain" style="padding-top:0"><i data-lucide="circle-check"></i>Found in the FAA registry</span>
+          <dl class="a-kv" style="font-size:15px;margin-top:6px;gap:4px 16px">
+            <dt>Aircraft</dt><dd>1978 Cessna 172N</dd><dt>Serial</dt><dd class="num">17269841</dd><dt>Engine</dt><dd>Lycoming O-320-H2AD</dd><dt>Registered to</dt><dd>Dana Morgan</dd>
+          </dl>
+        </div>
+        <div class="a-label" style="margin:14px 0 8px">Paint scheme for the header</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div class="am-sw on"><div class="p"></div><div class="a-stripe"></div><div class="n">Petrol</div></div>
+          <div class="da scheme-burgundy am-sw"><div class="p"></div><div class="a-stripe"></div><div class="n">Burgundy</div></div>
+          <div class="da scheme-graphite am-sw"><div class="p"></div><div class="a-stripe"></div><div class="n">Graphite</div></div>
+        </div>
+        <p class="a-note" style="margin:14px 0 12px"><i data-lucide="book-open"></i>Makes five logbooks: Airframe, Engine, Propeller, Avionics and Other.</p>
+        <div class="am-btn">Add N734DM</div>
+      </div>
+    </div></div>
+    <figcaption><b>Add an aircraft</b><span>Tail number, registry match, a paint scheme, then one button. Works on the phone now.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= A GLANCE ================= -->
+<h2 class="g-h2" id="a-glance">A glance at the aircraft</h2>
+<p class="g-prose">Standing at the aircraft, the owner wants one sentence and the next few items in order. Today's phone status spends its first screen on a countdown ring, shows no "as of" time, and hides offline or pending changes once inside an aircraft. Here the header always carries the sync state, the stripe stands on its side so lapsed items sit above the gold "today" line, and the home changes with the aircraft's situation.</p>
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-home">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head">
+        <div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">1978 Cessna 172N · synced 4 min ago</div></div>
+        <span class="ico"><i data-lucide="search"></i></span>
+      </div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">One check has lapsed, IFR only. Oil change in 9.7 hours.</h1>
+        <div class="am-card" style="display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:center;margin-top:16px;padding:14px 16px">
+          <div class="a-meter"><div class="v" style="font-size:25px">4212.4</div><div class="l">Tach, Nov 14</div></div>
+          <div class="a-meter"><div class="v" style="font-size:25px">4680.4</div><div class="l">Hobbs</div></div>
+          <span class="a-btn sm ghost" style="height:44px">Log flight</span>
+        </div>
+        <h2 class="am-h2">Coming up <a href="#">All 11</a></h2>
+        <div class="am-vh">
+          <div class="am-row cal"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t">VOR check</div><div class="d">Lapsed Nov 11 · IFR only</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+          <div class="now"><span>Today, Nov 18</span></div>
+          <div class="am-row hrs"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Oil and filter</div><div class="d">About Dec 12</div></div><div class="r"><b>9.7 h</b></div></div>
+          <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Transponder, pitot-static</div><div class="d">By Dec 31</div></div><div class="r"><b>43 days</b></div></div>
+        </div>
+        <div class="am-card" style="display:flex;gap:12px;align-items:center;margin-top:10px;padding:10px 14px">
+          <span class="am-ico"><i data-lucide="scan-line"></i></span><div style="flex:1"><div style="font-weight:700">6 pages to review</div><div class="muted" style="font-size:15px">4 read cleanly, 2 need a look</div></div><i data-lucide="chevron-right" class="muted"></i>
+        </div>
+      </div>
+      <nav class="am-tabs">
+        <a class="on" href="#"><i data-lucide="sun"></i>Today</a>
+        <a href="#"><i data-lucide="book-open"></i>Logbooks<span class="dot">6</span></a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Home</b><span>The sentence, the meters, then the stripe on its side: the lapsed VOR check sits above the gold today line.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-home-clear">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head">
+        <div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">1978 Cessna 172N · synced just now</div></div>
+        <span class="ico"><i data-lucide="search"></i></span>
+      </div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Nothing tracked is overdue. Transponder and pitot-static are next, by Dec 31.</h1>
+        <div class="am-card" style="margin-top:16px">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span class="am-ico"><i data-lucide="list-checks"></i></span>
+            <div><div style="font-weight:700;line-height:1.3">Book both checks in one visit</div><div class="ink2" style="font-size:15px;line-height:1.4;margin-top:3px">AeroCheck Instruments did them together on Dec 3, 2024. Both fall due on Dec 31.</div></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;padding-left:56px"><span class="am-btn ghost sm">Plan the visit</span><span class="am-btn quiet sm" style="height:44px">Not now</span></div>
+        </div>
+        <h2 class="am-h2">Coming up <a href="#">All 11</a></h2>
+        <div class="am-vh">
+          <div class="now"><span>Today, Nov 18</span></div>
+          <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Transponder, pitot-static</div><div class="d">By Dec 31</div></div><div class="r"><b>43 days</b></div></div>
+          <div class="am-row cal"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">ELT battery</div><div class="d">By Feb 28</div></div><div class="r"><b>102 days</b></div></div>
+          <div class="am-row hrs" style="border-bottom:0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">Oil and filter</div><div class="d">Changed today · about Mar 10</div></div><div class="r"><b>50.0 h</b></div></div>
+        </div>
+      </div>
+      <nav class="am-tabs">
+        <a class="on" href="#"><i data-lucide="sun"></i>Today</a>
+        <a href="#"><i data-lucide="book-open"></i>Logbooks</a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Home, all clear</b><span>New: the home follows the situation. With nothing lapsed, it leads with the next visit and suggests doing two checks together.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-home-offline">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi-off"></i><i data-lucide="battery-medium"></i></i></div>
+      <div class="am-head">
+        <div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">Offline · last synced 7:52 am</div></div>
+        <span class="ico"><i data-lucide="search"></i></span>
+      </div>
+      <div class="a-stripe"></div>
+      <div class="am-offline"><i data-lucide="wifi-off"></i><span style="flex:1">3 changes saved on this phone</span><span style="text-decoration:underline;text-underline-offset:3px">View</span></div>
+      <div class="am-body">
+        <h1 class="am-h1">One check has lapsed, IFR only. Oil change in 7.3 hours.</h1>
+        <p class="am-lead" style="font-size:15px">Worked out on this phone, including the flight you saved at 9:12.</p>
+        <div class="am-card" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;padding:14px 16px">
+          <div class="a-meter"><div class="v" style="font-size:25px">4214.8</div><div class="l">Tach, today</div></div>
+          <div class="a-meter"><div class="v" style="font-size:25px">4683.1</div><div class="l">Hobbs, today</div></div>
+        </div>
+        <h2 class="am-h2">Waiting to upload</h2>
+        <div class="am-row"><span class="am-ico"><i data-lucide="plane-landing"></i></span><div><div class="t">Flight, +2.4 h on the tach</div><div class="d">Saved 9:12 am</div></div><i data-lucide="cloud-upload" class="muted"></i></div>
+        <div class="am-row"><span class="am-ico"><i data-lucide="droplet"></i></span><div><div class="t">Oil added, 1 qt</div><div class="d">Saved 9:12 am</div></div><i data-lucide="cloud-upload" class="muted"></i></div>
+        <div class="am-row" style="border-bottom:0"><span class="am-ico"><i data-lucide="image"></i></span><div><div class="t">Photo on a squawk</div><div class="d">2.1 MB · saved 9:20 am</div></div><i data-lucide="cloud-upload" class="muted"></i></div>
+        <p class="a-note" style="margin:12px 0 0"><i data-lucide="info"></i>Reading pages, Ask and adding an aircraft need a connection. Everything else works here.</p>
+      </div>
+      <nav class="am-tabs">
+        <a class="on" href="#"><i data-lucide="sun"></i>Today</a>
+        <a href="#"><i data-lucide="book-open"></i>Logbooks<span class="dot">6</span></a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Home, offline</b><span>Offline and pending changes now show inside the aircraft. The sentence is recomputed on the phone from what is saved there.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-lock">
+    <div class="g-device"><div class="artboard da am am-lock">
+      <div class="am-sys dark" style="background:transparent"><span>Verizon</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div style="text-align:center;padding-top:20px">
+        <i data-lucide="lock" style="width:20px;height:20px;margin:0 auto;opacity:.8"></i>
+        <div style="font-size:19px;font-weight:600;margin-top:8px">Wednesday, November 18</div>
+        <div style="font:600 92px/1 var(--f-d);font-stretch:96%;letter-spacing:-.02em;margin-top:2px">9:41</div>
+      </div>
+      <div style="margin:16px auto 0;width:300px;background:rgba(255,255,255,.12);border-radius:16px;padding:10px 14px;display:flex;gap:12px;align-items:center">
+        <i data-lucide="plane" style="width:22px;height:22px;opacity:.85"></i>
+        <div style="line-height:1.3"><div style="font:800 16px/1.2 var(--f-d);font-stretch:122%;letter-spacing:.035em">N734DM</div><div style="font-size:15px">Oil in 9.7 h · VOR lapsed</div></div>
+      </div>
+      <div style="position:absolute;left:12px;right:12px;bottom:96px;display:grid;gap:8px">
+        <div class="am-notif">
+          <div class="h"><span class="ap"><i data-lucide="plane"></i></span><b>MyTailLog</b><span>now</span></div>
+          <div class="t">N734DM: transponder and pitot-static are due by Dec 31</div>
+          <div class="d">43 days left. Both were last done on Dec 3, 2024 by AeroCheck Instruments, Airframe p. 58. One visit covers both.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+            <span class="am-btn ghost sm" style="width:100%">Snooze 7 days</span><span class="am-btn sm" style="width:100%">Open</span>
+          </div>
+        </div>
+        <div class="am-notif" style="opacity:.92;padding:10px 14px">
+          <div class="h" style="margin-bottom:2px"><span class="ap"><i data-lucide="plane"></i></span><b>MyTailLog</b><span>Mon</span></div>
+          <div class="t" style="font-size:15px">Oil change in 9.7 h, about Dec 12. Due at tach 4222.1.</div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:26px;display:flex;justify-content:space-between;padding:0 44px;align-items:center">
+        <span style="width:50px;height:50px;border-radius:25px;background:rgba(255,255,255,.14);display:grid;place-items:center"><i data-lucide="sun"></i></span>
+        <span style="width:134px;height:5px;border-radius:3px;background:#fff;margin-top:40px"></span>
+        <span style="width:50px;height:50px;border-radius:25px;background:rgba(255,255,255,.14);display:grid;place-items:center"><i data-lucide="camera"></i></span>
+      </div>
+    </div></div>
+    <figcaption><b>Lock screen</b><span>New: the reminder carries the whole answer, with its page, and a small widget keeps the next two facts in view.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= AFTER A FLIGHT ================= -->
+<h2 class="g-h2" id="a-after-flight">After a flight</h2>
+<p class="g-prose">Back on the ramp, the owner logs the flight with one thumb. Today that means finding Log in the tab bar and nudging a stepper whose text field turns "24" into "2.0", with no way to change the date. Here the Add button opens a sheet, the camera reads the hour meter into a draft, and the owner reviews the number instead of retyping it. After one Save, the phone says what the flight moved.</p>
+<div class="g-phones g-flow">
+  <figure class="g-phone" id="a-m-add-sheet">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head"><div><div class="tail">N734DM</div><div class="sub">1978 Cessna 172N · synced 4 min ago</div></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div class="a-stripe"></div>
+      <div class="am-body"><h1 class="am-h1">One check has lapsed, IFR only. Oil change in 9.7 hours.</h1></div>
+      <div class="am-scrim"></div>
+      <div class="am-sheet">
+        <div class="am-sh-t">Add to N734DM<span class="am-x"><i data-lucide="x"></i></span></div>
+        <div style="display:grid;gap:10px">
+          <div class="am-btn" style="height:70px;justify-content:flex-start;padding:0 18px;gap:14px"><i data-lucide="plane-landing" style="width:26px;height:26px"></i><span style="text-align:left">Log a flight<small>Photograph the tach, or type it</small></span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="am-btn ghost"><i data-lucide="scan-line"></i>Scan pages</div>
+            <div class="am-btn ghost"><i data-lucide="droplet"></i>Add oil</div>
+            <div class="am-btn ghost"><i data-lucide="flag"></i>Squawk</div>
+            <div class="am-btn ghost"><i data-lucide="file-plus-2"></i>Document</div>
+          </div>
+          <div class="am-btn quiet"><i data-lucide="pencil"></i>Write a logbook entry</div>
+        </div>
+      </div>
+    </div></div>
+    <figcaption><b>Add sheet</b><span>The plus in the tab bar. Logging a flight is the big button, in thumb reach.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-tach-photo">
+    <div class="g-device"><div class="artboard da am am-cam">
+      <div class="am-sys dark"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-camtop"><span class="x"><i data-lucide="x"></i></span><span class="txt">Photograph the tach</span><span class="lk">Type it</span></div>
+      <svg viewBox="0 0 390 430" width="390" height="430" aria-label="Camera view of the tachometer with the hour meter found">
+        <rect width="390" height="430" style="fill:var(--ink-2)"/>
+        <circle cx="195" cy="210" r="160" style="fill:var(--ink);stroke:var(--ink-3)" stroke-width="8"/>
+        <g style="stroke:var(--paint)" stroke-width="4" stroke-linecap="round">
+          <line x1="195" y1="68" x2="195" y2="88" transform="rotate(-120 195 210)"/><line x1="195" y1="68" x2="195" y2="88" transform="rotate(-90 195 210)"/><line x1="195" y1="68" x2="195" y2="88" transform="rotate(-60 195 210)"/><line x1="195" y1="68" x2="195" y2="88" transform="rotate(-30 195 210)"/><line x1="195" y1="68" x2="195" y2="88"/><line x1="195" y1="68" x2="195" y2="88" transform="rotate(30 195 210)"/><line x1="195" y1="68" x2="195" y2="88" transform="rotate(60 195 210)"/><line x1="195" y1="68" x2="195" y2="88" transform="rotate(90 195 210)"/>
+        </g>
+        <g style="fill:var(--paint);font:600 20px var(--f-t)" text-anchor="middle">
+          <text x="104" y="268">0</text><text x="92" y="217">5</text><text x="106" y="165">10</text><text x="143" y="128">15</text><text x="195" y="114">20</text><text x="247" y="128">25</text><text x="285" y="165">30</text><text x="298" y="217">35</text>
+          <text x="195" y="170" style="font-size:14px;fill:var(--line-2)">RPM x 100</text>
+        </g>
+        <line x1="195" y1="210" x2="102" y2="262" style="stroke:var(--paint)" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="195" cy="210" r="14" style="fill:var(--ink-3)"/>
+        <rect x="140" y="282" width="110" height="34" rx="3" style="fill:#000;stroke:var(--ink-3)" stroke-width="2"/>
+        <rect x="228" y="285" width="19" height="28" style="fill:var(--paint)"/>
+        <g style="font:500 24px var(--f-n)" text-anchor="middle"><text x="152" y="308" style="fill:var(--paint)">4</text><text x="171" y="308" style="fill:var(--paint)">2</text><text x="190" y="308" style="fill:var(--paint)">1</text><text x="209" y="308" style="fill:var(--paint)">4</text><text x="238" y="308" style="fill:var(--ink)">8</text></g>
+        <path d="M130 288v-14h16M244 274h16v14M260 312v14h-16M146 326h-16v-14" style="fill:none;stroke:var(--s3)" stroke-width="4"/>
+      </svg>
+      <div style="text-align:center;margin-top:-58px;position:relative"><span class="am-pill gold"><i data-lucide="scan-line"></i>Hour meter found</span></div>
+      <div style="padding:28px 20px 0;text-align:center">
+        <div style="font-size:15px;color:var(--on-s1-2)">It reads</div>
+        <div style="font:500 46px/1.1 var(--f-n);letter-spacing:-.02em">4214.8</div>
+        <div style="font-size:15px;color:var(--on-s1-2);margin-top:2px">Tach was 4212.4 on Nov 14</div>
+      </div>
+      <div style="position:absolute;left:20px;right:20px;bottom:34px;display:grid;gap:8px">
+        <div class="am-btn light">Use 4214.8 for the tach</div>
+        <div class="am-btn quiet" style="color:#fff">Now photograph the hobbs</div>
+      </div>
+    </div></div>
+    <figcaption><b>Photograph the tach</b><span>New: the camera finds the hour meter and reads it into a draft flight. Review, don't retype.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-log-confirm">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Photo</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Log a flight</h1>
+        <div class="am-set" style="min-height:52px;padding:4px 0"><span class="ink2">Flown <b style="color:var(--ink)">today, Nov 18</b></span><span class="a-btn quiet sm" style="height:44px">Change date</span></div>
+        <div style="margin-top:16px">
+          <div class="am-lbl"><b>Tach</b><span class="a-src unconf"><i data-lucide="camera"></i>Read from your photo</span></div>
+          <div class="am-stepper"><span><i data-lucide="minus"></i></span><b>4214.8</b><span><i data-lucide="plus"></i></span></div>
+          <div class="am-delta"><b style="color:var(--ink)">+2.4 h</b> this flight. Was 4212.4 on Nov 14.</div>
+        </div>
+        <div style="margin-top:18px">
+          <div class="am-lbl"><b>Hobbs</b><span class="a-src unconf"><i data-lucide="camera"></i>Read from your photo</span></div>
+          <div class="am-stepper"><span><i data-lucide="minus"></i></span><b>4683.1</b><span><i data-lucide="plus"></i></span></div>
+          <div class="am-delta"><b style="color:var(--ink)">+2.7 h</b> this flight. Was 4680.4.</div>
+        </div>
+        <div style="margin-top:18px">
+          <div class="am-lbl"><b>Oil added</b><span class="muted" style="font-size:15px">optional</span></div>
+          <div class="am-chips"><span class="am-chip">None</span><span class="am-chip on">1 qt</span><span class="am-chip">2 qt</span><span class="am-chip">Other</span></div>
+        </div>
+      </div>
+      <div class="am-foot">
+        <div class="am-btn">Save flight</div>
+        <p class="a-note"><i data-lucide="info"></i>Saves on this phone first, then uploads.</p>
+      </div>
+    </div></div>
+    <figcaption><b>Confirm the reading</b><span>Big steppers for a nudge, the date can change, oil is one tap, and there is one Save.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-log-saved">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:42</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head"><div><div class="tail">N734DM</div><div class="sub">1978 Cessna 172N · synced just now</div></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:26px">
+        <span class="a-mark ok" style="width:52px;height:52px"><i data-lucide="check" style="width:28px;height:28px"></i></span>
+        <h1 class="am-h1" style="margin-top:14px">Flight saved. The oil change is now 7.3 hours away.</h1>
+        <p class="am-lead">Tach 4214.8, hobbs 4683.1 and 1 qt of oil, uploaded at 9:42.</p>
+        <h2 class="am-h2">What this flight moved</h2>
+        <div class="am-row"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Oil and filter change</div><div class="d">Was 9.7 h. Now about Dec 6.</div></div><div class="r"><b>7.3 h</b></div></div>
+        <div class="am-row"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">AD 2011-10-09 seat rails</div><div class="d">Was 55.9 h</div></div><div class="r"><b>53.5 h</b></div></div>
+        <div class="am-row" style="border-bottom:0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">Engine TBO, advisory</div><div class="d">Was 590.6 h</div></div><div class="r"><b>588.2 h</b></div></div>
+        <p class="a-note" style="margin:10px 0 0"><i data-lucide="droplet"></i>3 qt added since the last change at 4172.1, about one quart every 14 hours.</p>
+      </div>
+      <div class="am-foot">
+        <div class="am-btn">Done</div>
+        <div class="am-btn quiet" style="height:40px">Undo this flight</div>
+      </div>
+    </div></div>
+    <figcaption><b>Saved, with what it moved</b><span>The answer to "what changed?" without opening the due list.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= SOMETHING IS WRONG ================= -->
+<h2 class="g-h2" id="a-squawk">Something is wrong</h2>
+<p class="g-prose">During a preflight the owner notices an oil seep and wants it on record before forgetting. Today a squawk is text only, severity defaults to Low, and showing the mechanic means leaving the app. Here the photo comes first, the words can be dictated, severity is a deliberate choice, and the squawk goes to the mechanic as a private link.</p>
+<div class="g-phones g-flow">
+  <figure class="g-phone" id="a-m-sq-photo">
+    <div class="g-device"><div class="artboard da am am-cam">
+      <div class="am-sys dark"><span>9:44</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-camtop"><span class="x"><i data-lucide="x"></i></span><span class="txt">New squawk</span><span class="lk">Skip photo</span></div>
+      <svg viewBox="0 0 390 520" width="390" height="520" aria-label="Camera view of the engine's number 3 rocker cover with an oil seep">
+        <rect width="390" height="520" style="fill:var(--ink-2)"/>
+        <g style="fill:var(--ink-3)"><rect x="50" y="196" width="290" height="13" rx="5"/><rect x="50" y="220" width="290" height="13" rx="5"/><rect x="50" y="244" width="290" height="13" rx="5"/><rect x="50" y="268" width="290" height="13" rx="5"/><rect x="50" y="292" width="290" height="13" rx="5"/><rect x="50" y="316" width="290" height="13" rx="5"/><rect x="50" y="340" width="290" height="13" rx="5"/><rect x="50" y="364" width="290" height="13" rx="5"/></g>
+        <rect x="70" y="112" width="250" height="70" rx="16" style="fill:var(--line-2);stroke:var(--ink-3)" stroke-width="3"/>
+        <rect x="64" y="178" width="262" height="10" rx="3" style="fill:var(--ink)"/>
+        <g style="fill:var(--ink-3)"><circle cx="94" cy="132" r="7"/><circle cx="296" cy="132" r="7"/><circle cx="94" cy="162" r="7"/><circle cx="296" cy="162" r="7"/></g>
+        <path d="M218 182c10 0 20 0 26 0 2 40 4 70-4 118-4 26-10 40-13 40s-8-20-10-44c-3-40-2-80 1-114z" style="fill:var(--ink)" opacity=".8"/>
+        <path d="M228 196c2 30 2 60-2 96" style="stroke:var(--paint);fill:none" stroke-width="3" opacity=".35"/>
+        <rect x="110" y="400" width="18" height="120" style="fill:var(--line-2)"/><rect x="260" y="400" width="18" height="120" style="fill:var(--line-2)"/>
+        <path d="M188 168v-18h18M262 150h18v18M280 330v18h-18M206 348h-18v-18" style="fill:none;stroke:var(--s3)" stroke-width="4"/>
+      </svg>
+      <div style="position:absolute;left:0;right:0;bottom:30px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px">
+        <div style="width:52px;height:52px;border-radius:8px;border:2px solid #fff;overflow:hidden;background:var(--ink-3)"></div>
+        <span class="am-shut"></span>
+        <span style="justify-self:end;font-weight:700;font-size:17px;min-height:44px;display:flex;align-items:center">Next</span>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:128px;text-align:center"><span class="am-pill">1 photo taken. Add another or tap Next.</span></div>
+    </div></div>
+    <figcaption><b>Photo first</b><span>New: the camera opens straight away. One or more photos, or skip.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-sq-words">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:45</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Photos</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">What did you notice?</h1>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <svg class="am-ph" viewBox="150 110 170 230" preserveAspectRatio="xMidYMid slice" width="76" height="76" aria-label="Photo 1"><rect x="0" y="0" width="390" height="520" style="fill:var(--ink-2)"/><rect x="70" y="112" width="250" height="70" rx="16" style="fill:var(--line-2)"/><rect x="64" y="178" width="262" height="10" style="fill:var(--ink)"/><g style="fill:var(--ink-3)"><rect x="50" y="196" width="290" height="13"/><rect x="50" y="220" width="290" height="13"/><rect x="50" y="244" width="290" height="13"/><rect x="50" y="268" width="290" height="13"/><rect x="50" y="292" width="290" height="13"/></g><path d="M218 182h26c2 40 4 70-4 118-4 26-10 40-13 40s-8-20-10-44c-3-40-2-80 1-114z" style="fill:var(--ink)" opacity=".8"/></svg>
+          <div style="width:76px;height:76px;border-radius:10px;border:2px dashed var(--line-2);display:grid;place-items:center;color:var(--s1)"><i data-lucide="camera"></i></div>
+        </div>
+        <div class="a-textarea" style="margin-top:14px;min-height:116px;border-color:var(--s1);box-shadow:0 0 0 3px var(--s1-tint)">Oil seeping at the number 3 rocker cover gasket. Wiped it clean, it was back after the flight<span style="border-left:2px solid var(--s1);margin-left:1px"></span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--s1);font-weight:700;font-size:15px"><span class="am-ico" style="background:var(--s1);color:var(--on-s1);border-radius:22px"><i data-lucide="mic"></i></span>Listening. Tap to stop.</div>
+        <div class="a-label" style="margin:18px 0 8px">How much does it matter?</div>
+        <div class="a-seg am-seg" style="border-radius:12px">
+          <span style="height:52px;display:flex;gap:8px;justify-content:center;align-items:center"><span class="a-mark unk" style="width:24px;height:24px"><i data-lucide="info" style="width:14px;height:14px"></i></span>Low</span>
+          <span class="on" style="height:52px;display:flex;gap:8px;justify-content:center;align-items:center"><span class="a-mark soon" style="width:24px;height:24px"><i data-lucide="eye" style="width:14px;height:14px"></i></span>Watch</span>
+          <span style="height:52px;display:flex;gap:8px;justify-content:center;align-items:center"><span class="a-mark bad" style="width:24px;height:24px"><i data-lucide="triangle-alert" style="width:14px;height:14px"></i></span>Ground</span>
+        </div>
+        <p class="am-delta">Watch: you will keep an eye on it. It stays on Today until it is resolved.</p>
+      </div>
+      <div class="am-foot">
+        <div class="am-btn">Add squawk</div>
+        <p class="a-note"><i data-lucide="gauge"></i>Noted at tach 4214.8, today</p>
+      </div>
+    </div></div>
+    <figcaption><b>Severity and words</b><span>Dictation fills the text. No default severity: the owner picks Low, Watch or Ground.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-sq-detail">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:46</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Squawks</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:45</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <svg class="am-ph" viewBox="60 100 280 200" preserveAspectRatio="xMidYMid slice" width="350" height="170" aria-label="Photo of the oil seep"><rect x="0" y="0" width="390" height="520" style="fill:var(--ink-2)"/><rect x="70" y="112" width="250" height="70" rx="16" style="fill:var(--line-2);stroke:var(--ink-3)" stroke-width="3"/><g style="fill:var(--ink-3)"><circle cx="94" cy="132" r="7"/><circle cx="296" cy="132" r="7"/><circle cx="94" cy="162" r="7"/><circle cx="296" cy="162" r="7"/></g><rect x="64" y="178" width="262" height="10" style="fill:var(--ink)"/><g style="fill:var(--ink-3)"><rect x="50" y="196" width="290" height="13" rx="5"/><rect x="50" y="220" width="290" height="13" rx="5"/><rect x="50" y="244" width="290" height="13" rx="5"/><rect x="50" y="268" width="290" height="13" rx="5"/><rect x="50" y="292" width="290" height="13" rx="5"/></g><path d="M218 182h26c2 40 4 70-4 118-4 26-10 40-13 40s-8-20-10-44c-3-40-2-80 1-114z" style="fill:var(--ink)" opacity=".8"/></svg>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span class="a-st soon"><i data-lucide="eye"></i>Watch</span><span class="muted" style="font-size:15px">1 photo</span></div>
+        <h1 class="am-h1" style="font-size:24px;margin-top:10px">Oil seep at the number 3 rocker cover</h1>
+        <p class="am-lead">Wiped it clean, it was back after the flight. Reported today by Dana Morgan at tach 4214.8.</p>
+        <h2 class="am-h2">Send to your mechanic</h2>
+        <div class="am-row" style="border-bottom:0"><span class="a-avatar" style="width:44px;height:44px;background:var(--s1-tint);color:var(--s1)">MT</span><div><div class="t">M. Torres</div><div class="d">A&amp;P 3667012 · gets a private link with the photo and note, no account needed</div></div><span></span></div>
+        <div class="am-row"><span class="am-ico"><i data-lucide="link"></i></span><div><div class="t">Mark resolved</div><div class="d">Pick the logbook entry that cleared it</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+      </div>
+      <div class="am-foot">
+        <div class="am-btn"><i data-lucide="send"></i>Send to M. Torres</div>
+        <p class="a-note"><i data-lucide="clock-3"></i>The link expires in 30 days. You can revoke it.</p>
+      </div>
+    </div></div>
+    <figcaption><b>Squawk detail</b><span>New: send to the mechanic as a link with the photo. Resolving it links the entry that cleared it.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= SCANNING ================= -->
+<h2 class="g-h2" id="a-scanning">Scanning at the hangar</h2>
+<p class="g-prose">With the logbooks open on the workbench, the owner photographs a stack of pages. Today the camera is five taps away, the sheet has no close button, and nothing says when pages have been read, so review starts from a different place later. Here the scan starts from Add, the queue shows each stage with today's reading allowance, and the phone announces when the pages are read.</p>
+<div class="g-phones g-flow">
+  <figure class="g-phone" id="a-m-scan-book">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>2:10</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Today</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 2:02</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Which logbook?</h1>
+        <p class="am-lead">New pages go after the last one. Shoot them in any order, you can reorder later.</p>
+        <div style="margin-top:8px">
+          <div class="am-set"><div><div class="t">Airframe</div><div class="d">198 pages so far, in 2 volumes</div></div><span class="am-radio on"></span></div>
+          <div class="am-set"><div><div class="t">Engine</div><div class="d">118 pages so far</div></div><span class="am-radio"></span></div>
+          <div class="am-set"><div><div class="t">Propeller</div><div class="d">41 pages so far</div></div><span class="am-radio"></span></div>
+          <div class="am-set"><div><div class="t">Avionics</div><div class="d">38 pages so far</div></div><span class="am-radio"></span></div>
+          <div class="am-set"><div><div class="t">Other</div><div class="d">17 pages so far</div></div><span class="am-radio"></span></div>
+          <div class="am-set" style="border-bottom:0"><div><div class="t">Handwritten entries</div><div class="d">Reads cursive as well as typed</div></div><span class="a-toggle on"></span></div>
+        </div>
+      </div>
+      <div class="am-foot">
+        <div class="am-btn"><i data-lucide="camera"></i>Open the camera</div>
+        <p class="a-note"><i data-lucide="scan-line"></i>AI reading: 19 of 50 pages left today</p>
+      </div>
+    </div></div>
+    <figcaption><b>Choose the logbook</b><span>Pages add to the end of the chosen book. The day's reading allowance is shown before spending it.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-scan-cam">
+    <div class="g-device"><div class="artboard da am am-cam">
+      <div class="am-sys dark"><span>2:12</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-camtop"><span class="x"><i data-lucide="x"></i></span><span class="txt">Airframe, page 201</span><span class="lk">Auto</span></div>
+      <div style="position:relative;height:560px;background:var(--ink-2);overflow:hidden">
+        <div style="position:absolute;left:46px;top:40px;width:296px;height:420px;transform:rotate(-4deg)">
+          <div class="scan" style="--lh:21px;--top:44px;--cols:18% 15% 1fr 22%;aspect-ratio:auto;height:100%;font-size:9px">
+            <div class="scan-title">AIRCRAFT LOG</div>
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description</span><span>Sign.</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>9/12/94</span><span>1951.0</span><span>Repl. L/H brake linings, bled brakes.</span><span class="black">J. Hale</span><span class="gap"></span><span>11/4/94</span><span>1968.7</span><span>Oil &amp; filter chg. 8 qt 15W-50.</span><span class="black">J. Hale</span></div>
+            <div class="scan-page">36</div>
+          </div>
+          <div style="position:absolute;inset:-5px;border:3px solid var(--s3);border-radius:3px"></div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:22px;text-align:center"><span class="am-pill gold"><i data-lucide="crop"></i>Page edges found. Hold still.</span></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:30px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px">
+        <div style="position:relative;width:48px"><div class="scan" style="--lh:6px;--top:9px;width:44px;transform:rotate(-6deg)"></div><span style="position:absolute;top:-10px;right:-14px;background:var(--s3);color:var(--ink);font:700 14px/24px var(--f-n);min-width:24px;height:24px;border-radius:12px;text-align:center">2</span></div>
+        <span class="am-shut"></span>
+        <span style="justify-self:end;font-weight:700;font-size:17px;min-height:44px;display:flex;align-items:center">Done</span>
+      </div>
+    </div></div>
+    <figcaption><b>Camera</b><span>Page edges are found and the shot is taken when the page is still. The count runs beside the shutter.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-queue">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>2:16</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Logbooks</span><div class="id"><b>N734DM</b><span><i data-lucide="refresh-cw"></i>Uploading</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">6 pages from this session</h1>
+        <p class="am-lead">Airframe, pages 199 to 204. You can put the phone away; it tells you when all 6 are read.</p>
+        <h2 class="am-h2" style="margin-top:20px">On this phone</h2>
+        <div class="am-row" style="grid-template-columns:auto 1fr"><div class="scan" style="--lh:6px;--top:9px;width:38px"></div><div><div class="t">1 page uploading</div><div class="a-bar" style="margin:8px 0 4px"><i style="width:64%"></i></div><div class="d">1.4 of 2.2 MB</div></div></div>
+        <h2 class="am-h2" style="margin-top:18px">Being read</h2>
+        <div class="am-row" style="grid-template-columns:auto 1fr"><div style="display:flex;gap:4px"><div class="scan" style="--lh:6px;--top:9px;width:38px"></div><div class="scan" style="--lh:6px;--top:9px;width:38px"></div><div class="scan" style="--lh:6px;--top:9px;width:38px"></div></div><div><div class="t">3 pages</div><div class="a-bar hrs" style="margin:8px 0 4px"><i style="width:40%"></i></div><div class="d">About a minute</div></div></div>
+        <h2 class="am-h2" style="margin-top:18px">Read, waiting for you</h2>
+        <div class="am-row" style="grid-template-columns:auto 1fr auto;border-bottom:0"><div style="display:flex;gap:4px"><div class="scan" style="--lh:6px;--top:9px;width:38px"></div><div class="scan" style="--lh:6px;--top:9px;width:38px"></div></div><div><div class="t">2 pages</div><div class="d">Both read cleanly</div></div><span class="am-btn ghost sm">Review</span></div>
+        <div class="a-well" style="margin-top:12px;padding:12px 14px"><div style="display:flex;justify-content:space-between;font-size:15px"><b>AI reading today</b><span class="num">31 of 50</span></div><div class="a-bar" style="margin-top:8px"><i style="width:62%"></i></div><div class="muted" style="font-size:14px;margin-top:6px">Each page frees up 24 hours after it is read</div></div>
+      </div>
+      <div class="am-foot" style="padding-bottom:30px"><div class="am-btn ghost"><i data-lucide="camera"></i>Scan more pages</div></div>
+    </div></div>
+    <figcaption><b>The queue</b><span>One list from phone to review: uploading, being read, waiting for you. The allowance sits beside it.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-notify">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>2:31</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head"><div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">1978 Cessna 172N · synced just now</div></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">One check has lapsed, IFR only. Oil change in 9.7 hours.</h1>
+        <div class="am-card" style="display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:center;margin-top:16px;padding:14px 16px">
+          <div class="a-meter"><div class="v" style="font-size:25px">4212.4</div><div class="l">Tach, Nov 14</div></div>
+          <div class="a-meter"><div class="v" style="font-size:25px">4680.4</div><div class="l">Hobbs</div></div>
+          <span class="a-btn sm ghost" style="height:44px">Log flight</span>
+        </div>
+        <h2 class="am-h2">Coming up <a href="#">All 11</a></h2>
+        <div class="am-vh">
+          <div class="am-row cal"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t">VOR check</div><div class="d">Lapsed Nov 11 · IFR only</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+          <div class="now"><span>Today</span></div>
+          <div class="am-row hrs"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Oil and filter</div><div class="d">About Dec 12</div></div><div class="r"><b>9.7 h</b></div></div>
+          <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Transponder, pitot-static</div><div class="d">By Dec 31</div></div><div class="r"><b>43 days</b></div></div>
+        </div>
+      </div>
+      <nav class="am-tabs">
+        <a class="on" href="#"><i data-lucide="sun"></i>Today</a>
+        <a href="#"><i data-lucide="book-open"></i>Logbooks<span class="dot">6</span></a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+      <div class="am-notif" style="position:absolute;top:10px;left:10px;right:10px;z-index:5">
+        <div class="h"><span class="ap"><i data-lucide="plane"></i></span><b>MyTailLog</b><span>now</span></div>
+        <div class="t">6 pages are read. 2 need a look.</div>
+        <div class="d">4 read cleanly and can be confirmed together. Airframe, pages 199 to 204.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><span class="am-btn ghost sm" style="width:100%">Later</span><span class="am-btn sm" style="width:100%">Review now</span></div>
+      </div>
+    </div></div>
+    <figcaption><b>Pages are read</b><span>The loop closes: a notification when reading finishes, with the count that needs eyes.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= REVIEW ================= -->
+<h2 class="g-h2" id="a-review">Review on the phone</h2>
+<p class="g-prose">The owner reviews what was read, one page at a time, with the page filling the screen. Today the drawer covers most of the scan, the spotlight button sits at the far edge, and each page takes five taps to confirm and move on. Here the least-certain field opens first with its ink lit on the page, each field has three outcomes, and the next page is one swipe away.</p>
+<div class="g-phones g-flow">
+  <figure class="g-phone" id="a-m-rev-page">
+    <div class="g-device"><div class="artboard da am am-cam">
+      <div class="am-sys dark"><span>2:33</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-camtop"><span class="x"><i data-lucide="chevron-left"></i></span><div style="text-align:center"><div class="txt">Airframe p. 201</div><div style="font-size:14px;color:var(--on-s1-2)">Page 3 of 6 to review</div></div><span class="x"><i data-lucide="ellipsis"></i></span></div>
+      <div style="padding:4px 10px 0">
+        <div class="scan" style="--lh:24px;--top:50px;--cols:18% 15% 1fr 23%;aspect-ratio:auto;height:560px">
+          <div class="scan-title">AIRCRAFT LOG</div>
+          <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+          <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+          <div class="scan-body"><span>3/22/94</span><span>1872.6</span><span>Annual insp. IAW FAR 43 App. D. Compr. 74/76/72/75 over 80. Repl. L/H nav lamp.</span><span class="black">R. Mitchell A&amp;P 2214467 IA</span><span class="gap"></span><span>5/9/94</span><span>1891.3</span><span>Changed oil &amp; filter, 8 qt 15W-50. Filter cut, no metal.</span><span class="black">J. Hale A&amp;P</span></div>
+          <div class="scan-page">201</div>
+        </div>
+      </div>
+      <div class="am-sheet" style="color:var(--ink)">
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">2 entries on this page</b><span class="a-st soon"><i data-lucide="circle-help"></i>1 to check</span></div>
+        <div class="am-row"><span class="a-mark soon"><i data-lucide="circle-help"></i></span><div><div class="t">Annual inspection</div><div class="d">Mar 22, 1994 · tach 1872.6 · date unclear</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        <div class="am-row" style="border-bottom:0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">Oil and filter change</div><div class="d">May 9, 1994 · tach 1891.3 · reads cleanly</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        <div class="am-btn" style="margin-top:6px">Start with the unclear date</div>
+      </div>
+    </div></div>
+    <figcaption><b>The page fills the screen</b><span>Entries wait in a bottom drawer. Swipe it up for the fields, sideways for the next page.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-rev-field">
+    <div class="g-device"><div class="artboard da am am-cam">
+      <div class="am-sys dark"><span>2:33</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-camtop"><span class="x"><i data-lucide="chevron-left"></i></span><div style="text-align:center"><div class="txt">Airframe p. 201</div><div style="font-size:14px;color:var(--on-s1-2)">Page 3 of 6 to review</div></div><span class="x"><i data-lucide="ellipsis"></i></span></div>
+      <div style="padding:4px 10px 0">
+        <div class="scan" style="--lh:24px;--top:50px;--cols:18% 15% 1fr 23%;aspect-ratio:auto;height:560px">
+          <div class="scan-title">AIRCRAFT LOG</div>
+          <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+          <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+          <div class="scan-body"><span>3/22/94</span><span>1872.6</span><span>Annual insp. IAW FAR 43 App. D. Compr. 74/76/72/75 over 80. Repl. L/H nav lamp.</span><span class="black">R. Mitchell A&amp;P 2214467 IA</span><span class="gap"></span><span>5/9/94</span><span>1891.3</span><span>Changed oil &amp; filter, 8 qt 15W-50. Filter cut, no metal.</span><span class="black">J. Hale A&amp;P</span></div>
+          <div class="scan-hl" style="left:3px;top:49px;width:63px;height:26px;mix-blend-mode:normal;background:transparent;outline:3px solid var(--s3);box-shadow:0 0 0 900px rgba(10,20,25,.55)"></div>
+          <div class="scan-page">201</div>
+        </div>
+      </div>
+      <div class="am-sheet" style="color:var(--ink);padding-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b style="font-size:16px">Entry 1 of 2 · Annual inspection</b><span class="a-trust ai"><i data-lucide="scan-line"></i>Read by AI</span></div>
+        <div class="am-fld sel" style="grid-template-columns:64px 1fr"><span class="k">Date</span><div><div class="v" style="font-size:22px">Mar 22, 1994</div><div style="font-size:15px;color:var(--ink-2);margin-top:2px;line-height:1.35">The second digit could be a 2 or a 7. It is lit on the page.</div></div></div>
+        <div style="display:grid;gap:8px;margin:10px 0 4px">
+          <div class="am-btn"><i data-lucide="check"></i>Looks right</div>
+          <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:8px"><div class="am-btn ghost"><i data-lucide="pencil"></i>Edit</div><div class="am-btn ghost">Not on this page</div></div>
+        </div>
+        <div class="am-fld"><span class="k">Tach</span><span class="v num">1872.6</span><span class="a-trust"><i data-lucide="check"></i>clear</span></div>
+        <div class="am-fld"><span class="k">Signed</span><span class="v">R. Mitchell, IA 2214467</span><span class="a-trust"><i data-lucide="check"></i>clear</span></div>
+        <p class="a-note" style="justify-content:center;margin:10px 0 0"><i data-lucide="arrow-up-down"></i>Swipe right to accept, left to edit</p>
+      </div>
+    </div></div>
+    <figcaption><b>A doubtful field</b><span>The unsure field comes first, its ink lit on the page. Three outcomes: looks right, edit, not on this page.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-rev-done">
+    <div class="g-device"><div class="artboard da am am-cam">
+      <div class="am-sys dark"><span>2:34</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-camtop"><span class="x"><i data-lucide="chevron-left"></i></span><div style="text-align:center"><div class="txt">Airframe p. 202</div><div style="font-size:14px;color:var(--on-s1-2)">Page 4 of 6 to review</div></div><span class="x"><i data-lucide="ellipsis"></i></span></div>
+      <div style="position:relative;height:540px;overflow:hidden">
+        <div style="position:absolute;left:-262px;top:40px;width:300px;height:430px;opacity:.5"><div class="scan" style="--lh:20px;--top:42px;aspect-ratio:auto;height:100%"></div></div>
+        <span class="a-mark ok" style="position:absolute;left:14px;top:230px;width:48px;height:48px"><i data-lucide="check" style="width:26px;height:26px"></i></span>
+        <div style="position:absolute;left:76px;top:20px;width:304px;height:470px;box-shadow:-18px 0 30px -18px rgba(0,0,0,.8)">
+          <div class="scan" style="--lh:22px;--top:46px;--cols:18% 15% 1fr 23%;aspect-ratio:auto;height:100%">
+            <div class="scan-title">AIRCRAFT LOG</div>
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description</span><span>Signature</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>7/30/94</span><span>1920.4</span><span>Removed &amp; repl. vacuum pump w/ new unit. Ops check good.</span><span class="black">J. Hale A&amp;P</span></div>
+            <div class="scan-page">202</div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;top:516px;left:12px;right:12px"><div class="am-toast"><i data-lucide="circle-check"></i><span style="flex:1">Page 201 confirmed. 2 entries are in the index.</span><b style="text-decoration:underline;text-underline-offset:3px">Undo</b></div></div>
+      <div class="am-sheet" style="color:var(--ink)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:18px">1 entry · reads cleanly</b><span class="muted" style="font-size:15px">3 of 6 done</span></div>
+        <p class="am-lead" style="margin:4px 0 14px">Vacuum pump replaced, Jul 30, 1994, at tach 1920.4.</p>
+        <div class="am-btn">Confirm page and next</div>
+        <div class="am-btn quiet">Look at the fields first</div>
+      </div>
+    </div></div>
+    <figcaption><b>Page confirmed</b><span>The confirmed page slides away, Undo stays for a moment, and a clean page can be confirmed in one tap.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= WHAT IS DUE ================= -->
+<h2 class="g-h2" id="a-due">What is due</h2>
+<p class="g-prose">The owner checks what is coming due and records what was done. Today "All items" and Mark done live outside navigation, so Back exits to the fleet, ADs sit two levels deep, and the three vocabularies for the same state disagree. Here the due list is a tab, ordered along the stripe with the gold today line, each item names the limit that applies, and Mark done is a sheet that can close two items at once.</p>
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-due">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head"><div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">1978 Cessna 172N · synced 4 min ago</div></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h1 class="am-h1" style="font-size:24px;white-space:nowrap">11 tracked items</h1><span class="am-btn ghost sm"><i data-lucide="calendar-clock"></i>Pick a date</span></div>
+        <div class="am-chips" style="margin:12px -20px 0 0"><span class="am-chip on">All <b>11</b></span><span class="am-chip"><span class="a-mark bad" style="width:20px;height:20px"><i data-lucide="triangle-alert" style="width:12px;height:12px"></i></span>Lapsed <b>1</b></span><span class="am-chip"><span class="a-mark soon" style="width:20px;height:20px"><i data-lucide="clock-3" style="width:12px;height:12px"></i></span>Due soon <b>3</b></span><span class="am-chip">Current <b>6</b></span></div>
+        <div class="am-vh" style="margin-top:8px">
+          <div class="am-row cal"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t">VOR check</div><div class="d"><span class="a-kind cal">30 days</span> IFR only</div></div><div class="r"><b>Lapsed</b>Nov 11</div></div>
+          <div class="now"><span>Today, Nov 18</span></div>
+          <div class="grp">Next 60 days</div>
+          <div class="am-row hrs"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Oil and filter</div><div class="d"><span class="a-kind hrs">50 h</span> at tach 4222.1</div></div><div class="r"><b>9.7 h</b>about Dec 12</div></div>
+          <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Transponder</div><div class="d"><span class="a-kind cal">24 months</span> 91.413</div></div><div class="r"><b>43 days</b>Dec 31</div></div>
+          <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Pitot-static</div><div class="d"><span class="a-kind cal">24 months</span> IFR only</div></div><div class="r"><b>43 days</b>Dec 31</div></div>
+          <div class="grp">Later</div>
+          <div class="am-row cal" style="border-bottom:0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">ELT battery</div><div class="d"><span class="a-kind cal">expiry</span></div></div><div class="r"><b>102 days</b>Feb 28</div></div>
+        </div>
+      </div>
+      <nav class="am-tabs">
+        <a href="#"><i data-lucide="sun"></i>Today</a>
+        <a href="#"><i data-lucide="book-open"></i>Logbooks<span class="dot">6</span></a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a class="on" href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Due list</b><span>All 11 items along the stripe: date limits ride the dark band, hour limits the light one. Chips filter and count.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-item">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Due</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Transponder check</h1>
+        <div style="margin-top:10px"><span class="a-st soon"><i data-lucide="clock-3"></i>Due by Dec 31, in 43 days</span></div>
+        <dl class="a-kv" style="margin-top:14px;font-size:15px;gap:6px 16px"><dt>Rule</dt><dd>91.413, every 24 calendar months</dd><dt>Last done</dt><dd>Dec 3, 2024 at tach <span class="num">4131.5</span></dd><dt>By</dt><dd>AeroCheck Instruments</dd><dt>Reminder</dt><dd>30 days ahead</dd></dl>
+        <div class="am-card" style="margin-top:14px;padding:10px">
+          <div class="scan" style="--lh:22px;--top:0px;--cols:21% 18% 1fr 15%;aspect-ratio:auto;height:128px;font-size:10px">
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>12/3/24</span><span>4131.5</span><span class="scan-sticker">ATC TRANSPONDER TEST AND INSPECTION PERFORMED I/A/W FAR 91.413 AND FAR 43 APP. F. ALTIMETER AND STATIC SYSTEM TESTED I/A/W FAR 91.411. FOUND TO COMPLY. AEROCHECK INSTRUMENTS</span><span class="black">J. Whit</span></div>
+            <div class="scan-hl" style="left:4px;top:2px;width:calc(100% - 8px);height:118px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 58</a><span class="a-trust ap"><i data-lucide="badge-check"></i>Signed by the shop</span></div>
+        </div>
+        <div class="am-row" style="border-bottom:0;margin-top:4px"><span class="am-ico"><i data-lucide="list-checks"></i></span><div><div class="t">Done with pitot-static last time</div><div class="d">Also due Dec 31. One visit can cover both.</div></div><span></span></div>
+        <div class="am-row" style="border-top:1px solid var(--line)"><span class="am-ico"><i data-lucide="history"></i></span><div><div class="t">Earlier</div><div class="d">Nov 14, 2022, p. 55 · Dec 2, 2020, p. 51</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+      </div>
+      <div class="am-foot"><div class="am-btn"><i data-lucide="check"></i>Mark done</div></div>
+    </div></div>
+    <figcaption><b>Item detail with its page</b><span>The rule, the last time it was done and the page that proves it, signed by the shop.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-mark-done">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Due</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body"><h1 class="am-h1">Transponder check</h1></div>
+      <div class="am-scrim"></div>
+      <div class="am-sheet">
+        <div class="am-sh-t">Mark transponder done<span class="am-x"><i data-lucide="x"></i></span></div>
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px">
+          <div class="a-field"><label>Done on</label><div class="a-input" style="justify-content:space-between">Nov 18, 2026<i data-lucide="calendar" class="muted"></i></div></div>
+          <div class="a-field"><label>Tach</label><div class="a-input num">4212.4</div></div>
+        </div>
+        <div class="a-field" style="margin-top:12px"><label>Done by</label><div class="a-input">AeroCheck Instruments</div></div>
+        <div class="a-label" style="margin:14px 0 8px">The logbook page for it</div>
+        <div class="a-seg am-seg"><span class="on">Scan it now</span><span>Pick an entry</span><span>Not yet</span></div>
+        <div style="display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:12px 14px" class="am-card"><span class="a-check on"><i data-lucide="check" style="width:14px;height:14px"></i></span><div><div style="font-weight:700;line-height:1.3">Also mark pitot-static and altimeter done</div><div class="ink2" style="font-size:15px">Same visit, same page</div></div></div>
+        <p class="a-note" style="margin:12px 0"><i data-lucide="info"></i>Next due by Nov 30, 2028. It shows as typed by you until a signed page backs it.</p>
+        <div class="am-btn">Mark 2 items done</div>
+      </div>
+    </div></div>
+    <figcaption><b>Mark done</b><span>A sheet, not a separate old-style screen. It can close both checks from one visit and asks for the page.</span></figcaption>
+  </figure>
+</div>
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-vor">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Due</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Log a VOR check</h1>
+        <p class="am-lead" style="font-size:15px">91.171(d) asks for the date, the place, the bearing error and your signature.</p>
+        <div style="display:grid;gap:12px;margin-top:14px">
+          <div class="a-field"><label>Date</label><div class="a-input" style="justify-content:space-between">Nov 18, 2026<i data-lucide="calendar" class="muted"></i></div></div>
+          <div class="a-field"><label>How it was checked</label><div class="a-seg am-seg"><span class="on">VOT</span><span>Ground</span><span>Airborne</span><span>Dual</span></div></div>
+          <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px">
+            <div class="a-field"><label>Place</label><div class="a-input">KHWD VOT</div></div>
+            <div class="a-field"><label>Bearing error</label><div class="a-input num">+2°</div></div>
+          </div>
+          <div class="a-field"><label>Signature</label>
+            <div style="height:92px;border:1px solid var(--line-2);border-radius:8px;background:var(--skin);position:relative">
+              <svg viewBox="0 0 300 80" width="260" height="70" style="position:absolute;left:14px;top:8px" aria-label="Dana Morgan's signature"><path d="M12 52c8-30 22-38 24-20s-14 30-6 30 20-34 30-30-6 26 4 24 14-22 22-20-4 18 6 18 12-16 18-14M120 50c6-18 14-26 18-12s-8 22 0 20 12-24 22-22-2 18 6 18c10 0 10-20 20-18s0 16 8 16 18-10 30-14" style="fill:none;stroke:var(--ink)" stroke-width="2.4" stroke-linecap="round"/></svg>
+              <span style="position:absolute;right:12px;bottom:8px;font-size:15px;font-weight:600;color:var(--s1)">Clear</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="am-foot">
+        <div class="am-btn">Save VOR check</div>
+        <p class="a-note"><i data-lucide="info"></i>Within 4° for a VOT. Next one due by Dec 18.</p>
+      </div>
+    </div></div>
+    <figcaption><b>VOR check log</b><span>The 91.171(d) fields in order, with a signature pad. Saving restarts the 30 days.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-pick-date">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Due</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Pick a date</h1>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+          <div class="a-field"><label>On this date</label><div class="a-input focus" style="justify-content:space-between">Dec 20<i data-lucide="calendar" class="muted"></i></div></div>
+          <div class="a-field"><label>After flying</label><div class="a-input" style="justify-content:space-between;padding:0 6px"><i data-lucide="minus" style="color:var(--s1)"></i><b class="num">12 h</b><i data-lucide="plus" style="color:var(--s1)"></i></div></div>
+        </div>
+        <p style="font:700 20px/1.25 var(--f-d);font-stretch:104%;margin:18px 0 8px">By Dec 20, two items will have lapsed.</p>
+        <div class="am-vh">
+          <div class="now"><span>Today, Nov 18</span></div>
+          <div class="am-row cal"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t">VOR check</div><div class="d">Already lapsed, IFR only</div></div><div class="r"><b>Nov 11</b></div></div>
+          <div class="am-row hrs"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t">Oil and filter</div><div class="d">Lapses at tach 4222.1</div></div><div class="r"><b>2.3 h over</b></div></div>
+          <div class="now then"><span>Your date, Dec 20</span></div>
+          <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Transponder, pitot-static</div><div class="d">11 days after your date</div></div><div class="r"><b>Dec 31</b></div></div>
+          <div class="am-row cal" style="border-bottom:0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">6 more items</div><div class="d">Still current on Dec 20</div></div><i data-lucide="chevron-down" class="muted"></i></div>
+        </div>
+        <p class="a-note" style="margin:10px 0 0"><i data-lucide="info"></i>Hours are projected from about 3 hours a week. Calendar limits never move.</p>
+      </div>
+    </div></div>
+    <figcaption><b>Pick a date</b><span>New: a date and the hours expected by then. The black line is the chosen date; what sits above it will have lapsed.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-ads">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Due</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">ADs and SBs</h1>
+        <p class="am-lead" style="font-size:15px">2 apply to this aircraft, 1 recurring. None is lapsed.</p>
+        <div class="am-chips" style="margin-top:12px"><span class="am-chip on">Applies <b>2</b></span><span class="am-chip">Not applicable <b>1</b></span><span class="am-chip">SBs <b>0</b></span></div>
+        <div style="padding:14px 0;border-bottom:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b class="num" style="font-size:17px">AD 2011-10-09</b><span class="a-st ok"><i data-lucide="check"></i>Current</span></div>
+          <div style="font-weight:700;font-size:17px;margin-top:2px">Seat rails, recurring every 100 h</div>
+          <div class="ink2" style="font-size:15px;margin-top:2px">Complied Jul 14, 2026 at 4168.3. Next at tach 4268.3, in 55.9 h.</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 60</a><span class="am-btn ghost sm">Record compliance</span></div>
+        </div>
+        <div style="padding:14px 0;border-bottom:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b class="num" style="font-size:17px">AD 76-07-12</b><span class="a-st ok"><i data-lucide="check"></i>Complied</span></div>
+          <div style="font-weight:700;font-size:17px;margin-top:2px">Fuel filler caps, one time</div>
+          <div class="ink2" style="font-size:15px;margin-top:2px">Complied in 1998 at the annual.</div>
+          <div style="margin-top:10px"><a class="a-src" href="#"><i data-lucide="file-text"></i>Entry of Apr 18, 1998</a></div>
+        </div>
+        <div style="padding:14px 0">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b class="num" style="font-size:17px">AD 2020-18-01</b><span class="a-st unk"><i data-lucide="circle-help"></i>Not applicable</span></div>
+          <div style="font-weight:700;font-size:17px;margin-top:2px">Fuel pump diaphragm</div>
+          <div class="ink2" style="font-size:15px;margin-top:2px">Reason: this aircraft has a different pump part number.</div>
+        </div>
+      </div>
+      <div class="am-foot"><div class="am-btn ghost"><i data-lucide="search"></i>Find ADs for the Cessna 172N</div></div>
+    </div></div>
+    <figcaption><b>ADs</b><span>Applies, recurring, complied and not applicable with its reason. Each compliance carries its page.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= THE RECORDS ================= -->
+<h2 class="g-h2" id="a-records">The records</h2>
+<p class="g-prose">The owner looks something up: when the engine was overhauled, what the last annual covered, which years are missing. Today there is no global search, the Ask citations are buttons that do nothing, and entry detail is read-only in an older style. Here Logbooks is one tab with books and a timeline, the search icon in the header asks and searches in one field, and every answer opens its page.</p>
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-books">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head"><div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">1978 Cessna 172N · synced 4 min ago</div></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:14px">
+        <div class="a-seg am-seg"><span class="on">Books</span><span>Timeline</span></div>
+        <h1 class="am-h1" style="font-size:24px;margin-top:16px">412 pages, 212 confirmed entries</h1>
+        <div class="am-card" style="display:flex;gap:12px;align-items:center;margin-top:12px;padding:10px 12px 10px 14px"><div style="flex:1"><div style="font-weight:700">6 pages to review</div><div class="ink2" style="font-size:15px">4 read cleanly, 2 need a look</div></div><span class="am-btn sm">Review</span></div>
+        <div style="margin-top:6px">
+          <div class="am-row"><div class="scan" style="--lh:6px;--top:9px;width:40px"></div><div><div class="t">Airframe</div><div class="d">2 volumes · 198 pages</div></div><div class="r"><b style="color:var(--soon)">3 waiting</b></div></div>
+          <div class="am-row"><div class="scan engine" style="--lh:6px;--top:9px;width:40px"></div><div><div class="t">Engine</div><div class="d">118 pages</div></div><div class="r"><b style="color:var(--soon)">2 waiting</b></div></div>
+          <div class="am-row"><div class="scan prop" style="--lh:6px;--top:9px;width:40px"></div><div><div class="t">Propeller</div><div class="d">41 pages</div></div><div class="r"><b style="color:var(--soon)">1 waiting</b></div></div>
+          <div class="am-row"><div class="scan" style="--lh:6px;--top:9px;width:40px"></div><div><div class="t">Avionics</div><div class="d">38 pages</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+          <div class="am-row" style="border-bottom:0"><div class="scan" style="--lh:6px;--top:9px;width:40px"></div><div><div class="t">Other</div><div class="d">17 pages</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        </div>
+      </div>
+      <nav class="am-tabs">
+        <a href="#"><i data-lucide="sun"></i>Today</a>
+        <a class="on" href="#"><i data-lucide="book-open"></i>Logbooks<span class="dot">6</span></a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Logbooks</b><span>The five books with page counts and what waits in each. Review is one tap from here.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-timeline">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head"><div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:20px;height:20px;opacity:.8"></i></div><div class="sub">1978 Cessna 172N · synced 4 min ago</div></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:14px">
+        <div class="a-seg am-seg"><span>Books</span><span class="on">Timeline</span></div>
+        <div class="am-chips" style="margin:12px -20px 0 0"><span class="am-chip on">All books</span><span class="am-chip">Airframe</span><span class="am-chip">Engine</span><span class="am-chip">Propeller</span></div>
+        <h2 class="am-h2" style="margin-top:18px">2026 <span class="muted" style="font:400 15px var(--f-t)">14 entries</span></h2>
+        <div class="am-row" style="grid-template-columns:52px 1fr;padding:10px 0;min-height:0"><b style="font-size:15px">Oct 12</b><div><div class="t" style="font-size:16px">VOR check</div><a class="a-src" href="#" style="margin-top:4px"><i data-lucide="file-text"></i>Airframe p. 61</a></div></div>
+        <div class="am-row" style="grid-template-columns:52px 1fr;padding:10px 0;min-height:0"><b style="font-size:15px">Jul 14</b><div><div class="t" style="font-size:16px">Annual inspection at <span class="num">4168.3</span></div><div style="display:flex;gap:6px;margin-top:4px"><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 60</a><a class="a-src" href="#">+2 books</a></div></div></div>
+        <h2 class="am-h2" style="margin-top:16px">Earlier</h2>
+        <div class="am-row" style="grid-template-columns:62px 1fr auto;padding:10px 0;min-height:0"><b style="font:700 17px var(--f-d)">2010s</b><div><svg viewBox="0 0 100 24" width="150" height="24" aria-label="Entries per year, 2010 to 2019"><g style="fill:var(--s1)"><rect x="0" y="8" width="8" height="16"/><rect x="10" y="4" width="8" height="20"/><rect x="20" y="12" width="8" height="12"/><rect x="30" y="10" width="8" height="14"/><rect x="40" y="14" width="8" height="10"/><rect x="50" y="12" width="8" height="12"/><rect x="60" y="10" width="8" height="14"/><rect x="70" y="12" width="8" height="12"/><rect x="80" y="14" width="8" height="10"/><rect x="90" y="2" width="8" height="22"/></g></svg><div class="d">46 entries · GTN 650 installed 2019</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        <div class="am-row" style="grid-template-columns:62px 1fr auto;padding:10px 0;min-height:0"><b style="font:700 17px var(--f-d)">2000s</b><div><svg viewBox="0 0 100 24" width="150" height="24" aria-label="Entries per year, 2000 to 2009"><g style="fill:var(--s1)"><rect x="0" y="14" width="8" height="10"/><rect x="10" y="12" width="8" height="12"/><rect x="20" y="16" width="8" height="8"/><rect x="30" y="14" width="8" height="10"/><rect x="40" y="12" width="8" height="12"/><rect x="50" y="0" width="8" height="24"/><rect x="60" y="12" width="8" height="12"/><rect x="70" y="14" width="8" height="10"/><rect x="80" y="12" width="8" height="12"/><rect x="90" y="14" width="8" height="10"/></g></svg><div class="d">38 entries · engine overhauled 2005</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        <div style="border:2px dashed var(--line-2);border-radius:10px;padding:10px 12px;margin-top:10px;display:flex;gap:10px;align-items:center"><div style="flex:1"><div style="font-weight:700">1983 to 1991</div><div class="ink2" style="font-size:15px">No airframe pages yet</div></div><span class="am-btn ghost sm">Scan them</span></div>
+      </div>
+      <nav class="am-tabs">
+        <a href="#"><i data-lucide="sun"></i>Today</a>
+        <a class="on" href="#"><i data-lucide="book-open"></i>Logbooks<span class="dot">6</span></a>
+        <a class="add" href="#"><span><i data-lucide="plus"></i></span></a>
+        <a href="#"><i data-lucide="wrench"></i>Due</a>
+        <a href="#"><i data-lucide="menu"></i>More</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Timeline</b><span>This year in full, earlier decades folded with how busy each year was. The 1983 to 1991 gap is stated plainly.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-entry">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Timeline</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:16px">
+        <div class="scan" style="--lh:22px;--top:0px;--cols:19% 16% 1fr 20%;aspect-ratio:auto;height:150px;font-size:10px">
+          <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+          <div class="scan-body"><span>7/14/26</span><span>4168.3</span><span>Annual insp. IAW 14 CFR 43 App. D. AD 2011-10-09 c/w by insp. Repl. alternator belt. Tach 4168.3.</span><span class="black">D. Alvarez IA 3105582</span></div>
+          <div class="scan-hl quiet" style="left:3px;top:2px;width:calc(100% - 6px);height:136px"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 60</a><a class="a-src" href="#">Engine p. 37</a><a class="a-src" href="#">Propeller p. 12</a></div>
+        <h1 class="am-h1" style="margin-top:14px">Annual inspection</h1>
+        <div class="ink2" style="margin-top:4px">Jul 14, 2026 at tach <span class="num">4168.3</span></div>
+        <div style="display:flex;gap:16px;margin-top:8px"><span class="a-trust ap"><i data-lucide="badge-check"></i>Signed by D. Alvarez, IA</span><span class="a-trust me"><i data-lucide="circle-check"></i>Confirmed by you</span></div>
+        <h2 class="am-h2">What this entry satisfied</h2>
+        <div class="am-row" style="min-height:50px;padding:9px 0"><span class="a-mark ok"><i data-lucide="check"></i></span><div class="t" style="font-size:16px">Annual and ELT inspection</div><div class="r">to Jul 31, 2027</div></div>
+        <div class="am-row" style="min-height:50px;padding:9px 0"><span class="a-mark ok"><i data-lucide="check"></i></span><div class="t" style="font-size:16px">AD 2011-10-09 seat rails</div><div class="r">to tach 4268.3</div></div>
+        <div class="am-row" style="min-height:50px;padding:9px 0;border-bottom:0"><span class="a-mark ok"><i data-lucide="flag"></i></span><div class="t" style="font-size:16px">Squawk: alternator belt squeal</div><div class="r">cleared</div></div>
+      </div>
+      <div class="am-foot" style="grid-template-columns:1fr 1fr;gap:10px"><div class="am-btn ghost"><i data-lucide="zoom-in"></i>Whole page</div><div class="am-btn ghost"><i data-lucide="share-2"></i>Share</div></div>
+    </div></div>
+    <figcaption><b>Entry with its scan</b><span>The ink on top, then the reading, the three trust marks in words, and what the entry satisfied.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-ask">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head" style="padding:6px 16px 14px">
+        <div class="a-search" style="flex:1;min-width:0;height:48px;color:var(--on-s1);font-size:16px"><i data-lucide="search"></i><span style="overflow:hidden;text-overflow:ellipsis">When was the engine last overhauled?</span></div>
+        <span style="font-weight:600;color:var(--on-s1);min-height:44px;display:flex;align-items:center">Cancel</span>
+      </div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:16px">
+        <div class="am-card">
+          <p style="margin:0;font-size:18px;line-height:1.45">The engine was last overhauled on <b>Sep 14, 2005</b>, at tach <span class="num">2803.0</span>, by Signal Engines. <a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 22</a> It has run <b class="num">1409.4</b> hours since. <a class="a-src" href="#"><i data-lucide="gauge"></i>Tach, Nov 14</a></p>
+          <div class="scan engine" style="--lh:20px;--top:0px;--cols:19% 16% 1fr 20%;aspect-ratio:auto;height:88px;margin-top:12px;font-size:10px">
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>9/14/05</span><span>2803.0</span><span>Engine major overhaul, Signal Engines. 0 SMOH.</span><span class="black">K. Bauer</span></div>
+            <div class="scan-hl" style="left:3px;top:1px;width:calc(100% - 6px);height:42px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><span class="a-trust me"><i data-lucide="circle-check"></i>From entries you confirmed</span><span class="a-src" style="color:var(--ink-2)">2 more pages</span></div>
+        </div>
+        <h2 class="am-h2" style="margin-top:20px">3 entries mention overhaul</h2>
+        <div class="am-row" style="min-height:0;padding:10px 0"><span class="muted" style="font-size:15px;width:68px">Sep 2005</span><div><div class="t" style="font-size:16px">Engine overhaul at <span class="num">2803.0</span></div></div><a class="a-src" href="#">Engine p. 22</a></div>
+        <div class="am-row" style="min-height:0;padding:10px 0"><span class="muted" style="font-size:15px;width:68px">Apr 2010</span><div><div class="t" style="font-size:16px">Prop overhaul at <span class="num">3204.8</span></div></div><a class="a-src" href="#">Prop p. 8</a></div>
+        <div class="am-row" style="min-height:0;padding:10px 0;border-bottom:0"><span class="muted" style="font-size:15px;width:68px">Aug 2011</span><div><div class="t" style="font-size:16px">Annual, 581.0 h since overhaul</div></div><a class="a-src" href="#">Airframe p. 43</a></div>
+        <p class="a-note" style="margin:8px 0 0"><i data-lucide="info"></i>An index of your logbooks. The paper logbooks are the record.</p>
+      </div>
+    </div></div>
+    <figcaption><b>Search and Ask</b><span>One field. The answer cites its pages and shows the ink; the matching entries list under it.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= AIRCRAFT AND DOCUMENTS ================= -->
+<h2 class="g-h2" id="a-aircraft">Aircraft and documents</h2>
+<p class="g-prose">At the FBO or the insurer's desk the owner needs a number or a paper. Today equipment and directives hide two levels under Status, the meter tiles cannot be tapped, and a missing AROW document cannot be added from the card that reports it. Here the aircraft page holds hours with their sources, a written-versus-calculated check, equipment and W&amp;B; documents lead with the carry-aboard card and the expiry dates.</p>
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-aircraft">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>More</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:16px">
+        <h1 class="am-h1">1978 Cessna 172N</h1>
+        <div class="ink2" style="font-size:15px;margin-top:2px">S/N 17269841 · Lycoming O-320-H2AD</div>
+        <h2 class="am-h2" style="margin-top:16px">Hours</h2>
+        <div class="am-row" style="min-height:0;padding:9px 0;grid-template-columns:1fr auto"><div><div class="t" style="font-size:16px">Tach <span class="num">4212.4</span> · Hobbs <span class="num">4680.4</span></div><div class="d">Read Nov 14 by you</div></div><span class="a-btn sm ghost" style="height:44px">Log</span></div>
+        <div class="am-row" style="min-height:0;padding:9px 0;grid-template-columns:1fr auto"><div><div class="t" style="font-size:16px">Engine <span class="num">1409.4</span> h since overhaul</div><div class="d">Signal Engines, 2005</div></div><a class="a-src" href="#">Engine p. 22</a></div>
+        <div class="am-row" style="min-height:0;padding:9px 0;grid-template-columns:1fr auto;border-bottom:0"><div><div class="t" style="font-size:16px">Prop <span class="num">1007.6</span> h since overhaul</div><div class="d">Overhauled 2010</div></div><a class="a-src" href="#">Prop p. 8</a></div>
+        <div class="a-banner" style="padding:10px 12px;font-size:15px;align-items:flex-start;gap:10px"><i data-lucide="scale" style="margin-top:2px"></i><span><b>Written and calculated differ.</b> The Jul 14 annual writes prop time as 963.0 h; the tach says 963.5 h. <a href="#" style="color:inherit;font-weight:700">Check p. 12</a></span></div>
+        <h2 class="am-h2" style="margin-top:16px">Equipment <a href="#">All 4</a></h2>
+        <div class="am-row" style="min-height:0;padding:8px 0;grid-template-columns:1fr auto"><div><div class="t" style="font-size:16px">Garmin GTN 650</div><div class="d">011-01057-00 · 2019</div></div><a class="a-src" href="#">Form 337</a></div>
+        <div class="am-row" style="min-height:0;padding:8px 0;grid-template-columns:1fr auto;border-bottom:0"><div><div class="t" style="font-size:16px">Rapco vacuum pump RA215CC</div><div class="d">2021</div></div><a class="a-src" href="#">8130-3</a></div>
+        <h2 class="am-h2" style="margin-top:12px">Weight and balance</h2>
+        <div class="am-row" style="min-height:0;padding:8px 0;grid-template-columns:1fr auto;border-bottom:0"><div><div class="t" style="font-size:16px"><span class="num">1447.80</span> lb, arm <span class="num">39.610</span></div><div class="d" style="color:var(--soon)">May be stale: the 2021 pump came later</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+      </div>
+    </div></div>
+    <figcaption><b>Aircraft</b><span>Hours with their pages, equipment, W&amp;B. New: written versus calculated time, caught here.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-docs">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>More</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body" style="padding-top:16px">
+        <h1 class="am-h1">Documents</h1>
+        <div class="ink2" style="font-size:15px;margin-top:2px">14 in the Records Vault, all on this phone</div>
+        <div class="am-card" style="margin-top:14px;padding:12px 14px 4px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">Carry aboard</b><span class="a-st ok"><i data-lucide="check"></i>All 4 here</span></div>
+          <div class="am-row" style="min-height:44px;padding:6px 0"><span class="a-mark ok" style="width:26px;height:26px"><i data-lucide="check"></i></span><div class="t" style="font-size:16px">Airworthiness certificate</div><span></span></div>
+          <div class="am-row" style="min-height:44px;padding:6px 0"><span class="a-mark ok" style="width:26px;height:26px"><i data-lucide="check"></i></span><div class="t" style="font-size:16px">Registration</div><span class="r">to Mar 2029</span></div>
+          <div class="am-row" style="min-height:44px;padding:6px 0"><span class="a-mark ok" style="width:26px;height:26px"><i data-lucide="check"></i></span><div class="t" style="font-size:16px">Operating handbook</div><span class="r">POH</span></div>
+          <div class="am-row" style="min-height:44px;padding:6px 0;border-bottom:0"><span class="a-mark ok" style="width:26px;height:26px"><i data-lucide="check"></i></span><div class="t" style="font-size:16px">Weight and balance</div><span class="r">2019</span></div>
+        </div>
+        <h2 class="am-h2" style="margin-top:16px">Expiry dates</h2>
+        <div class="am-row" style="min-height:0;padding:9px 0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t" style="font-size:16px">Registration</div><div class="d">Renews every 7 years</div></div><div class="r"><b>Mar 31, 2029</b></div></div>
+        <div class="am-row" style="min-height:0;padding:9px 0;border-bottom:0"><span class="a-mark unk"><i data-lucide="circle-help"></i></span><div><div class="t" style="font-size:16px">Insurance policy</div><div class="d">No date on file</div></div><span class="am-btn ghost sm">Add date</span></div>
+        <h2 class="am-h2" style="margin-top:12px">Everything else <a href="#">All 8</a></h2>
+        <div class="am-row" style="min-height:0;padding:9px 0;grid-template-columns:auto 1fr auto"><i data-lucide="file-text" class="muted"></i><div class="t" style="font-size:16px">STC SA01714WI, GTN 650</div><span class="muted" style="font-size:15px">PDF</span></div>
+        <div class="am-row" style="min-height:0;padding:9px 0;grid-template-columns:auto 1fr auto"><i data-lucide="file-text" class="muted"></i><div class="t" style="font-size:16px">Oil analysis reports</div><span class="muted" style="font-size:15px">3</span></div>
+      </div>
+      <div class="am-foot" style="padding-top:10px"><div class="am-btn"><i data-lucide="file-plus-2"></i>Add a document</div></div>
+    </div></div>
+    <figcaption><b>Documents</b><span>The AROW card first, then registration and insurance expiry. New: document dates sit on the due list too.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= SHARING ================= -->
+<h2 class="g-h2" id="a-sharing">Sharing</h2>
+<p class="g-prose">A buyer's mechanic asks for the records. Today "Share a records link" leaves the app and the share row in the account menu never renders. Here Share starts from who it is for, builds the right record room, and hands back a link with a QR code, an expiry and a way to revoke it.</p>
+<div class="g-phones g-flow">
+  <figure class="g-phone" id="a-m-share-who">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>More</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Who is this for?</h1>
+        <p class="am-lead">You choose how long the link lasts and can revoke it any time.</p>
+        <div style="margin-top:6px">
+          <div class="am-set"><div><div class="t">Your IA, for the annual</div><div class="d">Due items, ADs, open squawks, last annual</div></div><span class="am-radio"></span></div>
+          <div class="am-set" style="background:var(--s1-tint);margin:0 -12px;padding:10px 12px;border-radius:10px;border-bottom-color:transparent"><div><div class="t">A buyer</div><div class="d">All five logbooks and documents, with gaps stated</div></div><span class="am-radio on"></span></div>
+          <div class="am-set"><div><div class="t">An insurer</div><div class="d">Hours, last annual, equipment</div></div><span class="am-radio"></span></div>
+          <div class="am-set"><div><div class="t">A mechanic</div><div class="d">One squawk or entry, with photos</div></div><span class="am-radio"></span></div>
+          <div class="am-set" style="border-bottom:0"><div><div class="t">A co-owner</div><div class="d">An account that can edit or view</div></div><span class="am-radio"></span></div>
+        </div>
+        <div class="a-label" style="margin:10px 0 8px">The link lasts</div>
+        <div class="a-seg am-seg"><span>7 days</span><span class="on">30 days</span><span>90 days</span></div>
+      </div>
+      <div class="am-foot"><div class="am-btn">Make the link</div></div>
+    </div></div>
+    <figcaption><b>Who is it for</b><span>The audience decides what goes in. A buyer gets every book, with the gaps said plainly.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-link-made">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:42</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Share</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:42</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">The record room is ready</h1>
+        <div class="a-field" style="margin-top:14px"><label>Name, so you can find it later</label><div class="a-input">Pre-buy for J. Okafor</div></div>
+        <div class="a-qr" style="width:200px;height:200px;margin:18px auto 0"><i data-lucide="qr-code"></i></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:16px"><div class="a-input num" style="font-size:15px;flex:1;min-width:0">mytaillog.com/r/q7k2-m4xd</div><span class="am-btn ghost sm" style="height:48px"><i data-lucide="copy"></i>Copy</span></div>
+        <dl class="a-kv" style="margin-top:14px;font-size:15px;gap:6px 16px"><dt>Expires</dt><dd>Dec 18, 2026, in 30 days</dd><dt>Shows</dt><dd>5 logbooks, 14 documents, 1 gap</dd><dt>Opened</dt><dd>Not yet</dd></dl>
+      </div>
+      <div class="am-foot">
+        <div class="am-btn"><i data-lucide="send"></i>Send the link</div>
+        <div class="am-btn quiet" style="height:40px;color:var(--bad)">Revoke</div>
+      </div>
+    </div></div>
+    <figcaption><b>Link made</b><span>QR for someone standing beside you, a link to copy or send, the expiry, and how often it was opened.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= SYNC AND SETTINGS ================= -->
+<h2 class="g-h2" id="a-sync">Sync and settings</h2>
+<p class="g-prose">Most of the time sync is a line in the header. When something cannot upload, the owner needs to see it from inside the aircraft and decide. Today the conflict screen uses 10 to 13px type, Back always lands on the fleet, and appearance takes five taps to reach. Here both are one tap from More, at full size.</p>
+<div class="g-phones">
+  <figure class="g-phone" id="a-m-sync">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>Today</span><div class="id"><b>N734DM</b><span><i data-lucide="cloud-upload"></i>3 waiting</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Waiting to upload</h1>
+        <p class="am-lead">3 changes are on this phone. One needs you to choose.</p>
+        <div class="am-card" style="margin-top:14px;border-color:var(--soon-fill)">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span class="a-mark soon"><i data-lucide="split"></i></span><div><div style="font-weight:700;line-height:1.3">Changed in two places</div><div class="ink2" style="font-size:15px;line-height:1.4">Squawk "Left brake feels soft". Sam Reyes changed it at 8:55 am while you were offline.</div></div></div>
+          <table class="a-table" style="margin-top:10px;font-size:15px">
+            <tr><th></th><th>Yours</th><th>Theirs</th></tr>
+            <tr><td class="muted">Severity</td><td style="background:var(--soon-bg)"><b>Watch</b></td><td style="background:var(--soon-bg)"><b>Low</b></td></tr>
+            <tr><td class="muted">Note</td><td>Pedal goes further</td><td>Bled Nov 16, firmer</td></tr>
+          </table>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><span class="am-btn ghost sm" style="width:100%">Keep yours</span><span class="am-btn ghost sm" style="width:100%">Take theirs</span></div>
+          <div class="am-btn quiet" style="height:44px">Decide later</div>
+        </div>
+        <div class="am-row" style="min-height:0;padding:10px 0"><span class="am-ico"><i data-lucide="plane-landing"></i></span><div><div class="t">Flight, +2.4 h on the tach</div><div class="d">Uploading now</div></div><i data-lucide="refresh-cw" class="muted"></i></div>
+        <div class="am-row" style="min-height:0;padding:10px 0;border-bottom:0"><span class="am-ico"><i data-lucide="droplet"></i></span><div><div class="t">Oil added, 1 qt</div><div class="d">Next in line</div></div><i data-lucide="cloud-upload" class="muted"></i></div>
+      </div>
+    </div></div>
+    <figcaption><b>Waiting to upload, with a conflict</b><span>Yours and theirs side by side, at reading size, with "Decide later" and the rest of the queue under it.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="a-m-settings">
+    <div class="g-device"><div class="artboard da am">
+      <div class="am-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="am-head push"><span class="bk"><i data-lucide="chevron-left"></i>More</span><div class="id"><b>N734DM</b><span><i data-lucide="circle-check"></i>Synced 9:37</span></div></div>
+      <div class="a-stripe"></div>
+      <div class="am-body">
+        <h1 class="am-h1">Settings</h1>
+        <div class="am-row" style="padding:10px 0"><span class="a-avatar" style="width:44px;height:44px;background:var(--s1);color:var(--on-s1)">DM</span><div><div class="t">Dana Morgan</div><div class="d">dana@example.com · Apple, email link</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        <h2 class="am-h2" style="margin-top:18px">Appearance</h2>
+        <div class="a-seg am-seg" style="margin-top:6px"><span>Match phone</span><span class="on">Light</span><span>Dark</span></div>
+        <p class="am-delta" style="margin-top:6px">Light reads best in sunshine. Text follows your phone's size setting.</p>
+        <h2 class="am-h2" style="margin-top:16px">On this phone</h2>
+        <div class="am-set"><div><div class="t">Keep every page offline</div><div class="d">412 pages and 14 documents, 1.3 GB</div></div><span class="a-toggle on"></span></div>
+        <div class="am-set"><div><div class="t">Storage</div><div class="d">1.6 GB held</div></div><span class="a-btn quiet sm" style="height:44px">Clear cached scans</span></div>
+        <div class="am-set"><div><div class="t">Reminders</div><div class="d">30 days or 10 h ahead</div></div><span class="a-toggle on"></span></div>
+        <div class="am-set" style="border-bottom:0"><div><div class="t">Sync now</div><div class="d">Last synced 9:37 am</div></div><i data-lucide="refresh-cw" style="color:var(--s1)"></i></div>
+        <div class="am-btn quiet" style="color:var(--bad);justify-content:flex-start;padding:0">Sign out</div>
+      </div>
+    </div></div>
+    <figcaption><b>Settings</b><span>Appearance, the offline copy and storage. Sign out asks first if anything has not uploaded.</span></figcaption>
+  </figure>
+</div>
+
+<!-- ================= TABLET ================= -->
+<h2 class="g-h2" id="a-tablet">Tablet</h2>
+<p class="g-prose">On an iPad at the kitchen table the owner reviews pages and plans the shop visit. Today parts of the tablet app are a stretched phone, with a 640px fleet column and no counts in the sidebar. Here the tablet uses the web header with the five destinations, and splits into two or three panes so the list and its detail sit side by side.</p>
+<div class="g-phones">
+  <figure class="g-phone tablet" id="a-t-home" style="--pw:760">
+    <div class="g-device tablet"><div class="artboard da" style="display:flex;flex-direction:column">
+      <header class="at-top">
+        <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Synced 4 min ago</span><i data-lucide="chevrons-up-down"></i></a>
+        <nav class="a-nav"><a href="#" aria-current="page">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+        <span class="sq"><i data-lucide="search"></i></span>
+        <a class="a-btn on-dark sm" href="#" style="height:44px"><i data-lucide="plus"></i>Add</a>
+      </header>
+      <div class="a-stripe"></div>
+      <div style="display:grid;grid-template-columns:1fr 360px;flex:1;min-height:0">
+        <main class="at-pane" style="padding:28px 30px">
+          <h1 class="a-h1" style="font-size:33px;max-width:24ch">One check has lapsed, for IFR only. Next is an oil change, in 9.7 hours.</h1>
+          <p class="a-sub" style="font-size:16px">Worked out from 212 entries you confirmed. Your paper logbooks are still the record.</p>
+          <div class="a-meters" style="margin-top:20px;align-items:center;gap:24px">
+            <div class="a-meter"><div class="v" style="font-size:26px">4212.4</div><div class="l">Tach, read Nov 14</div></div>
+            <div class="a-meter"><div class="v" style="font-size:26px">4680.4</div><div class="l">Hobbs</div></div>
+            <a class="a-btn ghost" href="#" style="height:44px"><i data-lucide="plane-landing"></i>Log a flight</a>
+          </div>
+          <section class="a-hz" aria-label="Next twelve months" style="margin-top:26px">
+            <div class="a-hz-lane" style="height:104px">
+              <div class="a-flag bad tier2" style="--x:0%;max-width:140px"><b>VOR lapsed</b><span>Nov 11, IFR only</span></div>
+              <div class="a-flag soon" style="--x:11.8%;max-width:170px"><b>Transponder, static</b><span>Dec 31, in 43 days</span></div>
+              <div class="a-flag ok" style="--x:69.9%;max-width:160px"><b>Annual, ELT insp.</b><span>Jul 31, 255 days</span></div>
+            </div>
+            <div style="position:relative">
+              <div class="a-hz-ticks top" aria-hidden="true"><span style="left:3.6%">Dec</span><span style="left:20.5%">Feb</span><span style="left:36.7%">Apr</span><span style="left:53.4%">Jun</span><span style="left:70.1%">Aug</span><span style="left:86.8%">Oct</span></div>
+              <div class="a-hz-band"></div><div class="a-hz-band hrs"></div><div class="a-hz-pin"></div>
+              <div class="a-hz-ticks" aria-hidden="true"><span style="left:25%">25 h</span><span style="left:50%">50 h</span><span style="left:75%">75 h</span><span style="left:93%">100 h</span></div>
+              <div class="a-now" style="--x:0%"></div>
+            </div>
+            <div class="a-hz-lane below" style="height:80px">
+              <div class="a-flag down soon" style="--x:9.7%;max-width:170px"><b>Oil and filter</b><span>9.7 h, about Dec 12</span></div>
+              <div class="a-flag down ok" style="--x:55.9%;max-width:180px"><b>AD 2011-10-09</b><span>55.9 h, about Apr 2027</span></div>
+            </div>
+          </section>
+          <div class="a-well" style="display:flex;gap:14px;align-items:center;margin-top:18px;padding:14px 16px"><i data-lucide="list-checks" style="color:var(--s1);width:24px;height:24px"></i><div style="flex:1;font-size:16px;line-height:1.4"><b>Do these together.</b> Transponder and pitot-static both fall due Dec 31. AeroCheck Instruments did them in one visit last time.</div><a class="a-btn ghost sm" href="#" style="height:44px">Plan the visit</a></div>
+        </main>
+        <aside class="at-pane" style="background:var(--skin);border-left:1px solid var(--line);padding:24px 24px">
+          <div class="a-sechead" style="padding-bottom:8px"><h2 class="a-h2" style="font-size:20px">Needs you</h2><a href="#">All 11</a></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:11px 0;gap:12px"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t" style="font-size:17px">VOR check</div><div class="d">Lapsed Nov 11, IFR only</div></div><a class="a-btn sm" href="#" style="height:44px">Log</a></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:11px 0;gap:12px"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t" style="font-size:17px">Oil and filter</div><div class="d">9.7 h · <a class="a-src" href="#">Engine p. 38</a></div></div><span></span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:11px 0;gap:12px"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t" style="font-size:17px">Transponder, static</div><div class="d">43 days · <a class="a-src" href="#">Airframe p. 58</a></div></div><span></span></div>
+          <div style="margin-top:20px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="a-h3">6 pages are waiting</h3><span class="muted" style="font-size:14px">scanned Sunday</span></div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:10px 0 12px"><div class="scan" style="--lh:7px;--top:10px"></div><div class="scan" style="--lh:7px;--top:10px"></div><div class="scan engine" style="--lh:7px;--top:10px"></div><div class="scan engine" style="--lh:7px;--top:10px"></div><div class="scan" style="--lh:7px;--top:10px;outline:3px solid var(--soon-fill)"></div><div class="scan prop" style="--lh:7px;--top:10px;outline:3px solid var(--soon-fill)"></div></div>
+            <a class="a-btn" href="#" style="width:100%">Review 6 pages</a>
+          </div>
+          <div class="a-sechead" style="border-bottom-width:1px;margin-top:20px;padding-bottom:6px"><h3 class="a-h3">Open squawks</h3><a href="#">Add</a></div>
+          <div class="a-row" style="grid-template-columns:1fr auto;padding:9px 0"><div><div class="t" style="font-size:16px">Left brake feels soft</div><div class="d">Watch · Nov 8</div></div><i data-lucide="chevron-right" class="muted"></i></div>
+        </aside>
+      </div>
+    </div></div>
+    <figcaption><b>Home in two panes</b><span>The sentence and the horizontal cheatline on the left; what needs the owner, the pages and squawks on the right.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone tablet" id="a-t-review" style="--pw:760">
+    <div class="g-device tablet"><div class="artboard da" style="display:flex;flex-direction:column">
+      <header class="at-top">
+        <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Synced 2:33 pm</span><i data-lucide="chevrons-up-down"></i></a>
+        <nav class="a-nav"><a href="#">Today</a><a href="#" aria-current="page">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+        <span class="sq"><i data-lucide="search"></i></span>
+        <a class="a-btn on-dark sm" href="#" style="height:44px"><i data-lucide="plus"></i>Add</a>
+      </header>
+      <div class="a-stripe"></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 370px;flex:1;min-height:0">
+        <nav style="background:var(--skin);border-right:1px solid var(--line);padding:16px 12px;display:grid;align-content:start;gap:4px">
+          <div style="font-weight:700;font-size:16px;padding:0 6px 6px">6 pages to review</div>
+          <div style="display:flex;gap:10px;align-items:center;padding:6px;border-radius:8px"><div class="scan" style="--lh:6px;--top:9px;width:34px"></div><div style="font-size:15px;line-height:1.3"><b>p. 199</b><br><span class="a-st ok plain" style="font-size:14px;padding:0"><i data-lucide="check"></i>Confirmed</span></div></div>
+          <div style="display:flex;gap:10px;align-items:center;padding:6px;border-radius:8px"><div class="scan" style="--lh:6px;--top:9px;width:34px"></div><div style="font-size:15px;line-height:1.3"><b>p. 200</b><br><span class="a-st ok plain" style="font-size:14px;padding:0"><i data-lucide="check"></i>Confirmed</span></div></div>
+          <div style="display:flex;gap:10px;align-items:center;padding:6px;border-radius:8px;background:var(--s1-tint);box-shadow:inset 0 0 0 2px var(--s1)"><div class="scan" style="--lh:6px;--top:9px;width:34px"></div><div style="font-size:15px;line-height:1.3"><b>p. 201</b><br><span class="a-st soon plain" style="font-size:14px;padding:0"><i data-lucide="circle-help"></i>1 to check</span></div></div>
+          <div style="display:flex;gap:10px;align-items:center;padding:6px;border-radius:8px"><div class="scan" style="--lh:6px;--top:9px;width:34px"></div><div style="font-size:15px;line-height:1.3"><b>p. 202</b><br><span class="muted" style="font-size:14px">Reads cleanly</span></div></div>
+          <div style="display:flex;gap:10px;align-items:center;padding:6px;border-radius:8px"><div class="scan" style="--lh:6px;--top:9px;width:34px"></div><div style="font-size:15px;line-height:1.3"><b>p. 203</b><br><span class="muted" style="font-size:14px">Reads cleanly</span></div></div>
+          <div style="display:flex;gap:10px;align-items:center;padding:6px;border-radius:8px"><div class="scan" style="--lh:6px;--top:9px;width:34px"></div><div style="font-size:15px;line-height:1.3"><b>p. 204</b><br><span class="a-st soon plain" style="font-size:14px;padding:0"><i data-lucide="circle-help"></i>1 to check</span></div></div>
+          <a class="a-btn ghost sm" href="#" style="margin-top:8px;height:44px">Confirm 2 clean</a>
+        </nav>
+        <div style="background:var(--ink);padding:12px 16px;display:flex;flex-direction:column;gap:10px;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;color:#fff"><b style="font-size:16px">Airframe p. 201</b><span style="display:flex;gap:6px"><span class="am-pill"><i data-lucide="zoom-in"></i></span><span class="am-pill"><i data-lucide="rotate-cw"></i></span><span class="am-pill"><i data-lucide="crop"></i>Crop and re-read</span></span></div>
+          <div class="scan" style="--lh:24px;--top:50px;--cols:18% 15% 1fr 23%;aspect-ratio:auto;flex:1">
+            <div class="scan-title">AIRCRAFT LOG</div>
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of work</span><span>Signature</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body"><span>3/22/94</span><span>1872.6</span><span>Annual insp. IAW FAR 43 App. D. Compr. 74/76/72/75 over 80. Repl. L/H nav lamp.</span><span class="black">R. Mitchell A&amp;P 2214467 IA</span><span class="gap"></span><span>5/9/94</span><span>1891.3</span><span>Changed oil &amp; filter, 8 qt 15W-50. Filter cut, no metal.</span><span class="black">J. Hale A&amp;P</span></div>
+            <div class="scan-hl" style="left:3px;top:49px;width:70px;height:26px;outline-width:3px"></div>
+            <div class="scan-page">201</div>
+          </div>
+        </div>
+        <section style="padding:16px 18px;display:flex;flex-direction:column;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Entry 1 of 2 · Annual inspection</b><span class="a-trust ai"><i data-lucide="scan-line"></i>Read by AI</span></div>
+          <div class="am-fld sel" style="grid-template-columns:70px 1fr;margin:10px -6px 4px;padding:12px"><span class="k">Date</span><div><div class="v" style="font-size:20px">Mar 22, 1994</div><div style="font-size:15px;color:var(--ink-2);line-height:1.35;margin-top:2px">The second digit could be a 2 or a 7.</div>
+            <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><span class="a-btn sm" style="height:40px">Looks right <span class="a-kbd" style="font:500 13px/1 var(--f-n);border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:2px 5px">A</span></span><span class="a-btn sm ghost" style="height:40px">Edit <span class="muted num" style="font-size:13px">E</span></span><span class="a-btn sm ghost" style="height:40px">Not on page <span class="muted num" style="font-size:13px">N</span></span></div></div></div>
+          <div class="am-fld" style="grid-template-columns:70px 1fr auto"><span class="k">Tach</span><span class="v num">1872.6</span><i data-lucide="check" class="muted"></i></div>
+          <div class="am-fld" style="grid-template-columns:70px 1fr auto"><span class="k">Work</span><span class="v" style="font-weight:500;font-size:15px;line-height:1.4">Annual inspection per 43 App. D. Compressions 74/76/72/75 over 80. Replaced left nav lamp.</span><i data-lucide="check" class="muted"></i></div>
+          <div class="am-fld" style="grid-template-columns:70px 1fr auto"><span class="k">Signed</span><span class="v">R. Mitchell, IA 2214467</span><i data-lucide="check" class="muted"></i></div>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:10px;font-size:15px"><span class="a-check"></span>Continues on page 202</div>
+          <a href="#" style="font-size:15px;font-weight:600;margin-top:10px">Add an entry the reader missed</a>
+          <div style="margin-top:auto">
+            <a class="a-btn" href="#" style="width:100%;height:50px">Confirm page and next</a>
+            <p class="a-note" style="justify-content:center;margin:8px 0 0;font-size:14px">Enter confirms the page. Tab moves to the next field.</p>
+          </div>
+        </section>
+      </div>
+    </div></div>
+    <figcaption><b>Review in three panes</b><span>Pages, the scan and the fields. The unsure date is lit; keys A, E and N take the three outcomes.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone tablet" id="a-t-due" style="--pw:760">
+    <div class="g-device tablet"><div class="artboard da" style="display:flex;flex-direction:column">
+      <header class="at-top">
+        <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Synced 4 min ago</span><i data-lucide="chevrons-up-down"></i></a>
+        <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#" aria-current="page">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+        <span class="sq"><i data-lucide="search"></i></span>
+        <a class="a-btn on-dark sm" href="#" style="height:44px"><i data-lucide="plus"></i>Add</a>
+      </header>
+      <div class="a-stripe"></div>
+      <div style="display:grid;grid-template-columns:470px 1fr;flex:1;min-height:0">
+        <section class="at-pane" style="padding:22px 26px 0">
+          <div style="display:flex;justify-content:space-between;align-items:center"><h1 class="a-h1" style="font-size:28px">11 tracked items</h1><a class="a-btn ghost sm" href="#" style="height:44px"><i data-lucide="calendar-clock"></i>Pick a date</a></div>
+          <div class="am-chips" style="margin-top:12px"><span class="am-chip on">All <b>11</b></span><span class="am-chip">Lapsed <b>1</b></span><span class="am-chip">Due soon <b>3</b></span><span class="am-chip">Current <b>6</b></span></div>
+          <div class="am-vh" style="margin-top:8px">
+            <div class="am-row cal"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t">VOR check</div><div class="d"><span class="a-kind cal">30 days</span> IFR only</div></div><div class="r"><b>Lapsed</b>Nov 11</div></div>
+            <div class="now"><span>Today, Nov 18</span></div>
+            <div class="am-row hrs" style="background:var(--s1-tint);margin-right:-26px;padding-right:26px"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Oil and filter</div><div class="d"><span class="a-kind hrs">50 h</span> at tach 4222.1</div></div><div class="r"><b>9.7 h</b>about Dec 12</div></div>
+            <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Transponder</div><div class="d"><span class="a-kind cal">24 months</span> 91.413</div></div><div class="r"><b>43 days</b>Dec 31</div></div>
+            <div class="am-row cal"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t">Pitot-static and altimeter</div><div class="d"><span class="a-kind cal">24 months</span> IFR only</div></div><div class="r"><b>43 days</b>Dec 31</div></div>
+            <div class="am-row cal"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">ELT battery</div><div class="d"><span class="a-kind cal">expiry</span></div></div><div class="r"><b>102 days</b>Feb 28</div></div>
+            <div class="am-row hrs" style="border-bottom:0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t">AD 2011-10-09 seat rails</div><div class="d"><span class="a-kind hrs">100 h</span> recurring</div></div><div class="r"><b>55.9 h</b>about Apr</div></div>
+          </div>
+        </section>
+        <section class="at-pane" style="background:var(--skin);border-left:1px solid var(--line);padding:22px 26px">
+          <h2 class="a-h2">Oil and filter change</h2>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:10px"><span class="a-st soon"><i data-lucide="clock-3"></i>9.7 h left</span><span class="ink2" style="font-size:16px">About Dec 12, at 3 hours a week</span></div>
+          <dl class="a-kv" style="margin-top:16px;font-size:16px;gap:7px 18px"><dt>Hours limit</dt><dd>Every 50 h of tach, advisory</dd><dt>Calendar limit</dt><dd>None set <a href="#" style="font-weight:600">Add 4 months</a></dd><dt>Due at</dt><dd>Tach <span class="num">4222.1</span></dd><dt>Reminder</dt><dd>10 h ahead</dd></dl>
+          <div style="display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start;margin-top:18px">
+            <div class="scan engine" style="--lh:15px;--top:22px;--cols:24% 22% 1fr"><div class="scan-cols"><i></i><i></i><i></i></div><div class="scan-body"><span>9/3/26</span><span>4172.1</span><span>Oil &amp; filter chg, 7 qt XC 20W-50. Sample sent.</span></div><div class="scan-hl" style="left:2px;top:21px;width:144px;height:64px"></div></div>
+            <div><div style="font-weight:700">Last done Sep 3, 2026</div><div class="ink2" style="font-size:15px;line-height:1.4;margin-top:2px">At tach <span class="num">4172.1</span>. 7 qt Phillips XC 20W-50, Blackstone sample normal.</div><div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:8px"><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 38</a><span class="a-trust me"><i data-lucide="circle-check"></i>Confirmed by you</span></div></div>
+          </div>
+          <h3 class="a-h3" style="margin-top:18px;padding-bottom:6px;border-bottom:1px solid var(--line-2)">Earlier</h3>
+          <div class="a-row" style="grid-template-columns:110px 1fr auto;padding:9px 0;font-size:15px"><span>May 9, 2026</span><span>Tach <span class="num">4131.5</span>, compressions 76/74/75/77</span><a class="a-src" href="#">Engine p. 36</a></div>
+          <div style="display:flex;gap:10px;margin-top:16px"><a class="a-btn" href="#"><i data-lucide="check"></i>Mark done</a><a class="a-btn ghost" href="#">Edit the rule</a></div>
+        </section>
+      </div>
+    </div></div>
+    <figcaption><b>Due list with detail</b><span>The stripe-ordered list beside the selected item: both limits named, the projection, and the page it was last done on.</span></figcaption>
+  </figure>
+</div>
+
+</main>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="../shared/gallery.js"></script>
+</body>
+</html>

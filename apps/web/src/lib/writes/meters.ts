@@ -39,6 +39,39 @@ export function pickReading(
   return { reading_date: date, tach: src.tach ?? null, hobbs: src.hobbs ?? null, airframe: src.airframe ?? null };
 }
 
+/** Readings the owner made (by hand or from a photo of the tach, 09 §2.10): the ones this page edits and deletes. */
+export const OWNER_SOURCES = ["manual", "tach_photo"];
+
+/** 09 §2.10, §5.3: a reading the phone took from a photo of the tach, read on the device. */
+export type TachPhotoInput = {
+  source?: "manual" | "tach_photo";
+  ocrValue?: number | null;
+  ocrConfidence?: number | null;
+  ocrCandidates?: { value: number; confidence: number; bbox: [number, number, number, number] }[] | null;
+  ownerEdited?: boolean;
+  /** `<aircraft_id>/meters/<id>.jpg`, uploaded first; omitted when "Keep meter photos" is off. */
+  photoPath?: string | null;
+};
+
+/** The tach-photo columns (source included), or {} for a plain manual reading. */
+export function pickTachPhoto(input: { id?: string } & TachPhotoInput, aircraftId: string):
+  | { source?: "tach_photo"; ocr_value?: number | null; ocr_confidence?: number | null; ocr_candidates?: TachPhotoInput["ocrCandidates"]; owner_edited?: boolean; photo_path?: string | null }
+  | { error: string } {
+  if (input.source !== "tach_photo") return {};
+  const conf = input.ocrConfidence;
+  if (!validNumber(input.ocrValue) || !(conf == null || (typeof conf === "number" && conf >= 0 && conf <= 1)))
+    return { error: "The tach reading from the photo is malformed." };
+  const cands = input.ocrCandidates ?? null;
+  if (cands != null && (!Array.isArray(cands) || cands.length > 10 || !cands.every((c) => c && validNumber(c.value) && typeof c.confidence === "number")))
+    return { error: "The tach reading from the photo is malformed." };
+  if (input.photoPath != null && input.photoPath !== `${aircraftId}/meters/${input.id}.jpg`)
+    return { error: "The meter photo was uploaded to an unexpected place." };
+  return {
+    source: "tach_photo", ocr_value: input.ocrValue ?? null, ocr_confidence: conf ?? null,
+    ocr_candidates: cands, owner_edited: input.ownerEdited === true, photo_path: input.photoPath ?? null,
+  };
+}
+
 export type ResetInput = { meter: Meter; date: string; prior: number | null; next: number; notes?: string | null };
 
 /** Validate a meter replacement: a known meter, a date, non-negative readings. */
@@ -73,13 +106,15 @@ export function pickReset(
 export async function addReading(
   supabase: Db,
   ctx: WriteCtx,
-  input: { id?: string } & ReadingInput,
+  input: { id?: string } & ReadingInput & TachPhotoInput,
 ): Promise<WriteResult> {
   const picked = pickReading(input);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
+  const photo = pickTachPhoto(input, ctx.aircraftId);
+  if ("error" in photo) return { status: "error", message: photo.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
-  const row = { aircraft_id: ctx.aircraftId, ...picked, source: "manual", synced_by: ctx.userId };
+  const row = { aircraft_id: ctx.aircraftId, ...picked, source: "manual", synced_by: ctx.userId, ...photo };
   const { data, error } = input.id
     ? await supabase
         .from("hours_reading")
@@ -110,7 +145,7 @@ async function loadReading(
     .select("*")
     .eq("id", readingId)
     .eq("aircraft_id", ctx.aircraftId)
-    .eq("source", "manual")
+    .in("source", OWNER_SOURCES)
     .maybeSingle();
   if (error) return { status: "error", message: error.message };
   if (!row) return { status: "error", message: "Reading not found.", httpStatus: 404 };
@@ -140,7 +175,7 @@ export async function updateReading(
     .update(picked)
     .eq("id", input.readingId)
     .eq("aircraft_id", ctx.aircraftId)
-    .eq("source", "manual")
+    .in("source", OWNER_SOURCES)
     .select("*")
     .maybeSingle();
   if (error) return { status: "error", message: error.message };
@@ -162,7 +197,7 @@ export async function deleteReading(
     .delete()
     .eq("id", input.readingId)
     .eq("aircraft_id", ctx.aircraftId)
-    .eq("source", "manual")
+    .in("source", OWNER_SOURCES)
     .select("id");
   if (error) return { status: "error", message: error.message };
   if (!data?.length) return { status: "error", message: "Reading not found.", httpStatus: 404 };

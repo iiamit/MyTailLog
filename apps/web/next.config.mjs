@@ -17,7 +17,17 @@ const nextConfig = {
   // server-bundle minification mangles (breaks token issuance with a cryptic
   // "dynamic[...] is not a function"). Keep it external so it's required from
   // node_modules unminified at runtime.
-  serverExternalPackages: ["oidc-provider"],
+  // @react-pdf/renderer (server-side summary and dossier PDFs) loads its layout engine as WebAssembly; keep it a
+  // plain runtime import rather than bundling it.
+  serverExternalPackages: ["oidc-provider", "@react-pdf/renderer"],
+  // The PDF fonts are read from disk at request time (src/lib/pdf/render.tsx), and pdfkit requires its standard
+  // font metrics dynamically (Helvetica.cjs), so tracing must ship both.
+  outputFileTracingIncludes: {
+    "/api/aircraft/[id]/summary": ["./src/lib/pdf/fonts/*.ttf", "./node_modules/pdfkit/js/standard-fonts/**"],
+    "/api/aircraft/[id]/dossier": ["./src/lib/pdf/fonts/*.ttf", "./node_modules/pdfkit/js/standard-fonts/**"],
+    "/r/[token]/summary": ["./src/lib/pdf/fonts/*.ttf", "./node_modules/pdfkit/js/standard-fonts/**"],
+    "/r/[token]/dossier": ["./src/lib/pdf/fonts/*.ttf", "./node_modules/pdfkit/js/standard-fonts/**"],
+  },
   // The capture PWA and service worker are registered client-side (see
   // public/manifest.webmanifest and src/app/capture). Headers below let the
   // manifest and service worker be served with the right scope.

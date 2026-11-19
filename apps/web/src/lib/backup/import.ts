@@ -41,7 +41,31 @@ function clean(row: Row): Row {
   delete o.id;
   delete o.created_at;
   delete o.updated_at;
+  // provider_id is set again from the restored providers where a row carries one (step 5b).
+  // shortcut: scan batches aren't in the backup, so that link is dropped; add them if a restore ever needs them.
+  delete o.provider_id;
+  delete o.batch_id;
   return o;
+}
+
+/**
+ * A backed-up log entry as the owner may re-insert it. The in-app e-signature is not restored: its digest is a
+ * plain hash anyone could recompute, so a restored zip can't prove the mechanic signed it, and the database only
+ * lets sign_authored_entry create signed rows. The entry keeps its text, signer name and certificate number.
+ */
+export function restorableEntry(e: Row): Row {
+  const o = clean(e);
+  delete o.trust; // generated column (0069)
+  for (const col of ["authored_signed_at", "authored_digest", "authored_by", "supersedes_entry_id", "authored_superseded_by"]) {
+    delete o[col];
+  }
+  return o;
+}
+
+/** The ad_reference id for a backed-up compliance row in this database, or null (the link is optional). */
+export function resolveAdReference(a: Row, known: Map<string, string>): string | null {
+  if (!a.ad_reference_id) return null;
+  return known.get(a.ad_reference_id as string) ?? known.get(`ad:${a.reference}`) ?? null;
 }
 
 async function insertRows(
@@ -144,19 +168,28 @@ export async function importBackup(
 
   onProgress?.("Restoring records…");
 
-  // 4. Log entries.
-  const entryMap = new Map<string, string>();
+  // 4. Log entries. Ids are mapped up front because supersede links can point forward.
+  const entryMap = new Map(data.log_entries.map((e) => [e.id as string, crypto.randomUUID()]));
   const entryRows = data.log_entries.map((e) => {
-    const nid = crypto.randomUUID();
-    entryMap.set(e.id as string, nid);
-    const o = clean(e);
-    o.id = nid;
+    const o = restorableEntry(e);
+    o.id = entryMap.get(e.id as string);
     o.aircraft_id = aircraftId;
     o.logbook_id = logbookMap.get(e.logbook_id as string);
     o.page_id = e.page_id ? pageMap.get(e.page_id as string) ?? null : null;
     return o;
   });
   await insertRows(supabase, "log_entry", entryRows);
+  // Second pass: links may cross insert chunks.
+  for (const e of data.log_entries) {
+    const links: Row = {};
+    for (const col of ["supersedes_entry_id", "authored_superseded_by"]) {
+      const to = e[col] ? entryMap.get(e[col] as string) : undefined;
+      if (to) links[col] = to;
+    }
+    if (!Object.keys(links).length) continue;
+    const { error } = await supabase.from("log_entry").update(links as never).eq("id", entryMap.get(e.id as string)!);
+    if (error) throw new Error(`log_entry: ${error.message}`);
+  }
 
   // 5. Components (reference log entries).
   const componentMap = new Map<string, string>();
@@ -172,11 +205,35 @@ export async function importBackup(
   });
   await insertRows(supabase, "component", componentRows);
 
-  // 6. AD/SB compliance (reference entries + components; ad_reference_id is the
-  //    shared global reference table, kept as-is).
+  // 5b. Service providers (0072), before the rows that name one.
+  const providerMap = new Map<string, string>();
+  await insertRows(supabase, "service_provider", (data.service_providers ?? []).map((p) => {
+    providerMap.set(p.id as string, crypto.randomUUID());
+    return owned(p, aircraftId, providerMap.get(p.id as string));
+  }));
+  const provider = (r: Row) => (r.provider_id ? providerMap.get(r.provider_id as string) ?? null : null);
+
+  // 6. AD/SB compliance (reference entries + components). ad_reference is a shared table whose ids differ per
+  //    database (e.g. a production backup restored on test): keep an id that exists here, else match by AD number.
+  const linked = data.ad_compliance.filter((a) => a.ad_reference_id);
+  const known = new Map<string, string>(); // backup ad_reference_id or AD number -> id in this database
+  if (linked.length) {
+    const ids = [...new Set(linked.map((a) => a.ad_reference_id as string))];
+    const nums = [...new Set(linked.map((a) => a.reference as string))];
+    const byId = await supabase.from("ad_reference").select("id").in("id", ids);
+    const byNum = await supabase.from("ad_reference").select("id, ad_number").in("ad_number", nums);
+    if (byId.error || byNum.error) throw new Error(`ad_reference: ${(byId.error ?? byNum.error)!.message}`);
+    for (const r of byId.data) known.set(r.id, r.id);
+    for (const r of byNum.data) if (r.ad_number) known.set(`ad:${r.ad_number}`, r.id);
+  }
+  const adMap = new Map<string, string>();
   const adRows = data.ad_compliance.map((a) => {
     const o = clean(a);
+    adMap.set(a.id as string, crypto.randomUUID());
+    o.id = adMap.get(a.id as string);
     o.aircraft_id = aircraftId;
+    o.provider_id = provider(a);
+    o.ad_reference_id = resolveAdReference(a, known);
     o.reference_entry_id = a.reference_entry_id
       ? entryMap.get(a.reference_entry_id as string) ?? null
       : null;
@@ -186,9 +243,13 @@ export async function importBackup(
   await insertRows(supabase, "ad_compliance", adRows);
 
   // 7. Maintenance items.
+  const mxMap = new Map<string, string>();
   const mxRows = data.maintenance_items.map((m) => {
     const o = clean(m);
+    mxMap.set(m.id as string, crypto.randomUUID());
+    o.id = mxMap.get(m.id as string);
     o.aircraft_id = aircraftId;
+    o.provider_id = provider(m);
     return o;
   });
   await insertRows(supabase, "maintenance_item", mxRows);
@@ -226,5 +287,59 @@ export async function importBackup(
   }
   await insertRows(supabase, "document", docRows);
 
+  // 9. Direction D tables (09 §6; absent in older archives). Order follows the foreign keys:
+  //    squawks and visits, then completions (→ visit), then visit items (→ visit, completion, item keys).
+  const remap = (m: Map<string, string>, id: unknown) => (id ? m.get(id as string) ?? null : null);
+  const squawkMap = new Map<string, string>();
+  await insertRows(supabase, "squawk", (data.squawks ?? []).map((q) => {
+    squawkMap.set(q.id as string, crypto.randomUUID());
+    return { ...owned(q, aircraftId, squawkMap.get(q.id as string)), resolved_log_entry_id: remap(entryMap, q.resolved_log_entry_id) };
+  }));
+  const visitMap = new Map<string, string>();
+  await insertRows(supabase, "planned_visit", (data.planned_visits ?? []).map((v) => {
+    visitMap.set(v.id as string, crypto.randomUUID());
+    return { ...owned(v, aircraftId, visitMap.get(v.id as string)), provider_id: provider(v) };
+  }));
+  const completionMap = new Map<string, string>();
+  await insertRows(supabase, "item_completion", (data.item_completions ?? []).flatMap((c) => {
+    const mx = remap(mxMap, c.maintenance_item_id), ad = remap(adMap, c.ad_compliance_id);
+    if (!mx && !ad) return []; // exactly one parent is required (0070)
+    completionMap.set(c.id as string, crypto.randomUUID());
+    return [{
+      ...owned(c, aircraftId, completionMap.get(c.id as string)), maintenance_item_id: mx, ad_compliance_id: ad,
+      log_entry_id: remap(entryMap, c.log_entry_id), visit_id: remap(visitMap, c.visit_id),
+    }];
+  }));
+  const keyMaps = { mx: mxMap, ad: adMap, squawk: squawkMap };
+  await insertRows(supabase, "planned_visit_item", (data.planned_visit_items ?? []).flatMap((i) => {
+    const visit = remap(visitMap, i.visit_id), key = restoreItemKey(i.item_key as string, keyMaps);
+    return visit && key ? [{ ...owned(i, aircraftId), visit_id: visit, item_key: key, done_completion_id: remap(completionMap, i.done_completion_id) }] : [];
+  }));
+  await insertRows(supabase, "logbook_gap", (data.logbook_gaps ?? []).flatMap((g) => {
+    const lb = remap(logbookMap, g.logbook_id);
+    return lb ? [{ ...owned(g, aircraftId), logbook_id: lb }] : [];
+  }));
+  // Meter photos are not in the archive, so the reading keeps its values without the photo.
+  await insertRows(supabase, "hours_reading", (data.hours_readings ?? []).map((r) => ({ ...owned(r, aircraftId), photo_path: null })));
+
   return { aircraftId, tail: (data.aircraft.tail_number as string) || "aircraft" };
+}
+
+/** `mx:<id>` / `ad:<id>` / `squawk:<id>` with the id this restore gave the row, or null when the row didn't come along. */
+export function restoreItemKey(key: string, maps: Record<string, Map<string, string>>): string | null {
+  const i = key.indexOf(":");
+  const to = maps[key.slice(0, i)]?.get(key.slice(i + 1));
+  return to ? `${key.slice(0, i)}:${to}` : null;
+}
+
+// Who did what on the source account; those user ids mean nothing (or someone else) where the backup lands.
+const USER_COLS = ["created_by", "reported_by", "resolved_by", "status_set_by", "synced_by", "dismissed_by"];
+
+/** A Direction D row for the new aircraft: server columns dropped, user ids cleared, optionally a new id. */
+function owned(row: Row, aircraftId: string, id?: string): Row {
+  const o = clean(row);
+  for (const c of USER_COLS) if (c in o) o[c] = null;
+  o.aircraft_id = aircraftId;
+  if (id) o.id = id;
+  return o;
 }

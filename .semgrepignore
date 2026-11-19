@@ -1,0 +1,15 @@
+# Semgrep's defaults (a custom file replaces them)
+:include .gitignore
+.git/
+node_modules/
+build/
+dist/
+vendor/
+*.min.js
+test/
+tests/
+.semgrep
+.semgrep_logs/
+
+# Static design mockups and the handoff viewer: never served by the app.
+docs/redesign/

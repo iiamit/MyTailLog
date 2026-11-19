@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MyTailLog Redesign</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="shared/gallery.css">
+<style>
+  .hub-dirs { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 26px; margin: 22px 0 10px; }
+  .hub-dir { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .hub-dir a.img { display: block; border: 1px solid var(--g-line); border-radius: 8px; overflow: hidden; }
+  .hub-dir a.img img { display: block; width: 100%; height: auto; }
+  .hub-dir h3 { margin: 6px 0 0; font-size: 22px; line-height: 1.2; }
+  .hub-dir p { margin: 0; color: var(--g-ink-2); font-size: 16px; }
+  .hub-dir .links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 15px; }
+  .hub-rate { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .hub-rate i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--g-ink-2); }
+  .hub-rate i.on { background: var(--g-ink); border-color: var(--g-ink); }
+  .g-table td .hub-rate { margin-right: 6px; }
+</style>
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="index.html" aria-current="page">Overview</a>
+  <a href="analysis.html">Analysis</a>
+  <a href="a/index.html">A · Paint Scheme</a>
+  <a href="b/index.html">B · Section Tabs</a>
+  <a href="c/index.html">C · Line Diagram</a>
+  <a href="d/index.html">D · Tabbed Binder</a>
+  <a href="handoff/index.html">Handoff package</a>
+</div></nav>
+
+<main class="g-wrap">
+  <h1 class="g-h1">Four ways MyTailLog could look if it were built today</h1>
+  <p class="g-lede">Each direction keeps every capability the app has now, adds the ones competitors have taught owners to expect, and reorganises fifteen sidebar items into five or six places. They differ in what the owner sees first and in how the app looks and feels. Direction D combines the two that resonated most.</p>
+  <ul class="g-index">
+    <li><a href="#direction-d">Direction D</a></li>
+    <li><a href="#directions">The three original directions</a></li>
+    <li><a href="#compare">How they compare</a></li>
+    <li><a href="#shared">What all three change</a></li>
+    <li><a href="#ia">Navigation, old and new</a></li>
+    <li><a href="#recommend">Recommendation</a></li>
+    <li><a href="#migrate">Moving from today's design</a></li>
+    <li><a href="analysis.html">Competitor and current-design analysis</a></li>
+  </ul>
+
+  <h2 class="g-h2" id="direction-d">Direction D: the binder with a route map</h2>
+  <div class="hub-dirs" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+    <section class="hub-dir">
+      <a class="img" href="d/index.html"><img src="thumbs/home-d.jpg" alt="Direction D status: the tabbed binder rail, a blue board with a thin map of the aircraft's whole life across the top, and a white leaf showing the next twelve months as coloured logbook lines with due items as rings"></a>
+    </section>
+    <section class="hub-dir" style="justify-content:center">
+      <h3>D · Tabbed Binder</h3>
+      <p>Added after the first review: direction B's binder, the layout owners recognise from their own tabbed logbooks, with direction C's line map bound into it. The map appears in three places: a spine of the aircraft's whole life across every section, a route map in Logbooks whose stops open their pages, and the line ahead in Status for planning shop visits.</p>
+      <div class="links"><a href="d/index.html">Overview</a><a href="d/web.html">Web screens</a><a href="d/mobile.html">Phone and tablet</a><a href="handoff/index.html"><b>Handoff package</b></a></div>
+      <p>The handoff package specifies D for a coding agent. It covers the web app and separate native iOS and Android apps: tokens, components, all 109 screens, flows, capabilities, data and API, the line map, accessibility, copy and a phased build plan.</p>
+    </section>
+  </div>
+
+  <h2 class="g-h2" id="directions">The three original directions</h2>
+  <div class="hub-dirs">
+    <section class="hub-dir">
+      <a class="img" href="a/index.html"><img src="thumbs/home-a.jpg" alt="Direction A home: a header painted petrol blue with N734DM in wide letters, a one-sentence status, and the year ahead drawn along the stripe"></a>
+      <h3>A · Paint Scheme</h3>
+      <p>The app wears the owner's aircraft: the header in the plane's own colours, the tail number as the logo, and the stripe under it turned into a timeline of what comes due. Light, large type, the calmest and most glanceable.</p>
+      <div class="links"><a href="a/index.html">Overview</a><a href="a/web1.html">Web part 1</a><a href="a/web2.html">Web part 2</a><a href="a/mobile.html">Phone and tablet</a></div>
+    </section>
+    <section class="hub-dir">
+      <a class="img" href="b/index.html"><img src="thumbs/home-b.jpg" alt="Direction B home: a dark rail of coloured tabs, a blue board, a white leaf listing what is due and a dark mat showing the scanned logbook page"></a>
+      <h3>B · Section Tabs</h3>
+      <p>The records binder every owner builds before an annual or a sale. Coloured tabs sized by how much each section holds, and every fact on a white leaf beside the scanned page that proves it. The strongest at proving things.</p>
+      <div class="links"><a href="b/index.html">Overview</a><a href="b/web1.html">Web part 1</a><a href="b/web2.html">Web part 2</a><a href="b/mobile.html">Phone and tablet</a></div>
+    </section>
+    <section class="hub-dir">
+      <a class="img" href="c/index.html"><img src="thumbs/home-c.jpg" alt="Direction C home: four coloured logbook lines running from 1978 to 2027 like a transit map, with a departures-style board of upcoming items below"></a>
+      <h3>C · Line Diagram</h3>
+      <p>Fifty years of records drawn as a transit map: each logbook a line, each entry a stop, each multi-book annual an interchange, and the stops ahead are what is due. Dense and the most distinctive; time is the way in.</p>
+      <div class="links"><a href="c/index.html">Overview</a><a href="c/web1.html">Web part 1</a><a href="c/web2.html">Web part 2</a><a href="c/mobile.html">Phone and tablet</a></div>
+    </section>
+  </div>
+
+  <h2 class="g-h2" id="compare">How they compare</h2>
+  <p class="g-prose">Filled dots are a judgment on a five-point scale, made from the mockups and the research. They are there to start the conversation, not to settle it.</p>
+  <div class="g-tablewrap"><table class="g-table">
+    <thead><tr><th></th><th>A · Paint Scheme</th><th>B · Section Tabs</th><th>C · Line Diagram</th><th>D · Tabbed Binder</th></tr></thead>
+    <tbody>
+      <tr><td>What leads</td><td>A sentence, then the year ahead</td><td>A sentence, then the due table with its page</td><td>A sentence, then the whole history and future</td><td>A sentence, the line ahead, then the due table with its page</td></tr>
+      <tr><td>Glance at the aircraft</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Strongest</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Line ahead</td></tr>
+      <tr><td>Proving a fact from the paper</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>Citation chips</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Page beside every fact</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>Stops open their pages</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Rows and stops both</td></tr>
+      <tr><td>Exploring decades of history</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Strongest</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Map and spine</td></tr>
+      <tr><td>Planning ahead</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>Horizon</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>Tables</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>Board</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Visits on the lines</td></tr>
+      <tr><td>One-handed at the aircraft</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td></tr>
+      <tr><td>Readability for older eyes</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>17px, light</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>16px, light leaves</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>Dense; dark at the desk</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>B's, map in ink on white</td></tr>
+      <tr><td>Looks unlike any competitor</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></td></tr>
+      <tr><td>Hand-off documents</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>A tabbed binder</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>A line map of the life</td><td><span class="hub-rate"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span>Map cover, tabbed body</td></tr>
+      <tr><td>Effort to build from today</td><td>Lowest. Mostly new tokens, a new shell and the horizon chart.</td><td>Medium. The two-leaf layout touches most screens.</td><td>Highest. The network diagram needs its own layout engine.</td><td>Medium to high. B's layout plus one map component reused in three sizes.</td></tr>
+      <tr><td>Biggest risk</td><td>Owner-chosen colours; the horizon crowding in a busy year.</td><td>Six colours turning playful; the spread is cramped on phones.</td><td>A diagram some owners will need to learn; build cost.</td><td>Two systems on one screen crowding; kept apart by drawing the map only in ink on white leaves.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="g-h2" id="shared">What all three change</h2>
+  <div class="g-cols">
+    <ol class="g-prose">
+      <li><b>A sentence first.</b> Home says what the records show ("One check has lapsed, for IFR only. Next is an oil change, in 9.7 hours.") and changes with the situation: all clear, something coming, annual month, in the shop, being sold.</li>
+      <li><b>One due list with both limits,</b> the one that bites first named, hours turned into "about" a date, done in place. Registration and insurance expiries join it.</li>
+      <li><b>A citation beside every number,</b> dashed while only read by AI, solid once confirmed, marked when signed by a mechanic.</li>
+      <li><b>One pipeline from paper to index:</b> scan or drop pages, a visible queue with the daily reading allowance, reading in the background, a notice when it is done, one review desk.</li>
+    </ol>
+    <ol class="g-prose" start="5">
+      <li><b>A review desk</b> that shows the least certain field first, lights its ink on the page, and offers accept, edit or "not on this page", with keyboard shortcuts and "Confirm page and next".</li>
+      <li><b>Share starts from the person:</b> your IA, a buyer, an insurer, a co-owner. The right link or document follows, with expiry, revoke, a QR code and a view log.</li>
+      <li><b>Logging a flight from a photo of the tach,</b> Pick a date, squawks with photos sent to the mechanic, "do these together" for one shop visit, and reminders that carry the whole answer.</li>
+      <li><b>Readable and reachable:</b> body text 16 to 17px, light themes, 44pt targets, sync state always visible on the phone.</li>
+    </ol>
+  </div>
+
+  <h2 class="g-h2" id="ia">Navigation, old and new</h2>
+  <p class="g-prose">Today's fifteen sidebar items and fourteen sub-tabs fold into five or six destinations, plus Add and Search-or-ask, which every direction shares.</p>
+  <div class="g-tablewrap"><table class="g-table">
+    <thead><tr><th>Today</th><th>A · Paint Scheme</th><th>B · Section Tabs</th><th>C · Line Diagram</th><th>D · Tabbed Binder</th></tr></thead>
+    <tbody>
+      <tr><td>Overview, Status &amp; forecast</td><td>Today</td><td>Status</td><td>Network</td><td>Status (What's due, Plan ahead)</td></tr>
+      <tr><td>AD / SB, Annual prep, Records gaps, Squawks</td><td>Maintenance</td><td>Maintenance</td><td>Due board</td><td>Maintenance</td></tr>
+      <tr><td>Capture pages, Review, Logbook pages, Timeline &amp; Ask, Add an entry</td><td>Logbooks (capture and Add entry also in Add)</td><td>Logbooks</td><td>Books, and the Network itself</td><td>Logbooks (opens on the Map)</td></tr>
+      <tr><td>Hours &amp; oil, Equipment &amp; W&amp;B, aircraft details</td><td>Aircraft (logging also in Add)</td><td>Aircraft</td><td>Aircraft</td><td>Aircraft</td></tr>
+      <tr><td>Records Vault</td><td>Aircraft › Documents</td><td>Documents</td><td>Aircraft › Documents</td><td>Documents</td></tr>
+      <tr><td>Pre-buy dossier, Sharing &amp; transfer, record room links</td><td>Share</td><td>Share</td><td>Share</td><td>Share</td></tr>
+      <tr><td>Import, export &amp; duplicates; Profile</td><td>Settings (avatar)</td><td>Account (rail foot)</td><td>Settings (rail foot)</td><td>Account (rail foot)</td></tr>
+      <tr><td>Ask your logbook, search</td><td colspan="4">One Search-or-ask field on every screen (keyboard: /)</td></tr>
+      <tr><td>Hangar (switch aircraft)</td><td colspan="4">Tail-number switcher in the header, on every screen</td></tr>
+      <tr><td>(nothing today)</td><td colspan="3">No equivalent</td><td>The spine: move by time from any section</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="g-h2" id="recommend">Recommendation</h2>
+  <div class="g-prose">
+    <p><b>Update after the first review: D is the direction to take forward.</b> It keeps the binder owners recognise and adds the one thing the binder lacked, a view across time. Build it in this order so the map arrives as one reusable component: B's shell and tokens first, then the map in its smallest size (the spine), then the line ahead on Status, then the full map in Logbooks. The original recommendation below still describes the trade-offs between A, B and C.</p>
+    <p><b>Original recommendation: build A, and take B's spread for the review desk and the records screens.</b> The quarter's goal is new owners reaching "status ready" in their first session. Direction A gets them there with the least to learn: the first thing they see is their own aircraft and a plain sentence about it, the type is the most readable, and it is the cheapest to build from today's code. Its weakness is proof, and B's record-beside-page spread is the best answer in the set, so A's Logbooks and review screens should borrow it.</p>
+    <p>Choose <b>B</b> if the product leans toward the annual, the pre-buy and the IA: it is the most trustworthy-looking of the three and its documents would market the product on their own. Choose <b>C</b> if the aim is to stand apart from every competitor and to make the history itself the product; it is the boldest and the most expensive, and it should be tested with five owners on the Network screen before committing.</p>
+  </div>
+
+  <h2 class="g-h2" id="migrate">Moving from today's design</h2>
+  <div class="g-cols">
+    <ol class="g-prose">
+      <li><b>Tokens and type first.</b> Replace the DESIGN.md tokens and raise the type scale; this alone fixes the smallest-type complaints and introduces the light theme.</li>
+      <li><b>New shell and navigation.</b> Five destinations, Add, Search-or-ask and the aircraft switcher, with redirects from every current route.</li>
+      <li><b>The due list and home sentence.</b> These sit on the existing status model, which needs no change beyond exposing "which limit bites first" and projected dates.</li>
+    </ol>
+    <ol class="g-prose" start="4">
+      <li><b>The capture pipeline and review desk.</b> The largest behaviour change: background reading, a queue, completion notices and the unified desk.</li>
+      <li><b>Share by audience</b> and the redesigned documents.</li>
+      <li><b>The phone app last,</b> on the same tokens, starting with Log a flight, the queue indicator and sync state, which are the most-reported phone problems.</li>
+    </ol>
+  </div>
+  <p class="g-prose g-muted g-small">Every mockup uses the fictional demo aircraft N734DM and invented sample data. No real owner, aircraft or customer appears in this proposal.</p>
+</main>
+<script src="shared/gallery.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+# XcodeGen spec. `xcodegen generate` (in apps/ios) writes MyTailLog.xcodeproj and MyTailLog/Info.plist; neither is committed.
+name: MyTailLog
+options:
+  bundleIdPrefix: com.mytaillog
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+targets:
+  MyTailLog:
+    type: application
+    platform: iOS
+    sources:
+      - path: MyTailLog
+        excludes: ["Info.plist"]
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
+    # The KMP core (05 §4.2). Build it first: cd apps/core && ./gradlew :framework:assembleMyTailLogCoreXCFramework
+    dependencies:
+      - framework: ../core/framework/build/XCFrameworks/release/MyTailLogCore.xcframework
+        embed: false
+      # Widgets and the Live Activity (05 §11, §12).
+      - target: MyTailLogWidgets
+    settings:
+      base:
+        # The core is a static framework; SQLDelight's native driver links the system SQLite.
+        OTHER_LDFLAGS: ["$(inherited)", "-lsqlite3"]
+        PRODUCT_BUNDLE_IDENTIFIER: com.mytaillog.app
+        PRODUCT_NAME: MyTailLog
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        CODE_SIGN_STYLE: Automatic
+        # The team the Capacitor app ships under (apps/mobile/scripts/testflight.sh); the AASA appID uses it too.
+        DEVELOPMENT_TEAM: 38Z53C8X48
+    entitlements:
+      path: MyTailLog/MyTailLog.entitlements
+      properties:
+        com.apple.developer.applesignin: [Default]
+        # Email sign-in links: https://mytaillog.com/app/auth/callback (apps/web serves the AASA file).
+        com.apple.developer.associated-domains: ["applinks:mytaillog.com"]
+        # The widgets and intents read the snapshot the app writes here (05 §7.1, §11.2).
+        com.apple.security.application-groups: [group.com.mytaillog.app]
+        # Reminders by APNs (05 §10); production APNs for TestFlight and App Store; the server's APNS_ENV must be production.
+        aps-environment: production
+    preBuildScripts:
+      - name: Check Supabase config
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ -z "${SUPABASE_HOST}" ] || [ -z "${SUPABASE_PUBLISHABLE_KEY}" ] || [ -z "${API_HOST}" ]; then
+            echo "error: SUPABASE_HOST, SUPABASE_PUBLISHABLE_KEY or API_HOST is empty for ${CONFIGURATION}. Create apps/ios/Config/Release.local.xcconfig (see Config/Release.xcconfig)."
+            exit 1
+          fi
+    info:
+      path: MyTailLog/Info.plist
+      properties:
+        CFBundleDisplayName: MyTailLog
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        SupabaseHost: $(SUPABASE_HOST)
+        SupabasePublishableKey: $(SUPABASE_PUBLISHABLE_KEY)
+        # The app API (apps/web) for the status snapshot (09 §4.2).
+        ApiHost: $(API_HOST)
+        UIAppFonts: [LibreFranklin.ttf, Literata.ttf]
+        # OAuth return: com.mytaillog.app://auth/callback (same scheme as the Capacitor app).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.mytaillog.auth
+            CFBundleURLSchemes: [com.mytaillog.app]
+        UILaunchScreen:
+          UIColorName: LaunchCover
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        ITSAppUsesNonExemptEncryption: false
+        # Capture (05 §15.3, §16): the page camera and the hour-meter camera; photos come through PhotosPicker (no permission).
+        NSCameraUsageDescription: MyTailLog uses the camera to photograph logbook pages and read the hour meter. Meter photos stay on your phone.
+        # Background work (05 §9): uploads continue in a background URLSession; sync runs in these tasks.
+        UIBackgroundModes: [fetch, processing, remote-notification]
+        # "Pages in progress" (05 §12).
+        NSSupportsLiveActivities: true
+        BGTaskSchedulerPermittedIdentifiers: [com.mytaillog.sync.refresh, com.mytaillog.sync.process]
+  # WidgetKit extension (05 §3.1): widgets and the Live Activity. It reads the App Group snapshot and never opens the
+  # database or the network, so it compiles only the shared, pure files below and not the KMP core.
+  MyTailLogWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: MyTailLogWidgets
+        excludes: ["Info.plist"]
+      - MyTailLog/Platform/AppLinks.swift
+      - MyTailLog/Platform/WidgetModel.swift
+      - MyTailLog/Platform/ReadingAttributes.swift
+      - MyTailLog/Platform/AircraftEntity.swift
+      - MyTailLog/Status/StatusSnapshot.swift
+      - MyTailLog/Status/StatusText.swift
+      - MyTailLog/DesignSystem/Tokens.swift
+      - MyTailLog/DesignSystem/StatusDrawing.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mytaillog.app.widgets
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 38Z53C8X48
+    entitlements:
+      path: MyTailLogWidgets/MyTailLogWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.mytaillog.app]
+    info:
+      path: MyTailLogWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: MyTailLog
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  MyTailLogTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [MyTailLogTests]
+    dependencies:
+      - target: MyTailLog
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mytaillog.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/MyTailLog.app/MyTailLog
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  MyTailLog:
+    build:
+      targets:
+        MyTailLog: all
+    test:
+      config: Debug
+      targets: [MyTailLogTests]
+    run:
+      config: Debug
+    archive:
+      config: Release

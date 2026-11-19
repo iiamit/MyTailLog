@@ -45,6 +45,18 @@ export async function POST(
     return NextResponse.json({ error: "You don't have edit access to this aircraft." }, { status: 403 });
   }
 
+  // Re-read through the server queue (09 §4.1, "Crop and re-read"): the reader
+  // worker reads it on the caller's allowance. Without `queue` the old
+  // synchronous read stays, for the Capacitor app and the v1 screens.
+  const body = (await req.json().catch(() => null)) as { queue?: unknown } | null;
+  if (body?.queue === true) {
+    const { error } = await supabase.from("page")
+      .update({ extraction_status: "queued", queued_by: user.id, read_attempts: 0, read_after: null, extraction_error: null })
+      .eq("id", page.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ status: "queued" });
+  }
+
   const gate = await prepareAi(supabase, user.id);
   if ("error" in gate) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });

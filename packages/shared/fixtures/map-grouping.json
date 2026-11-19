@@ -1,0 +1,1628 @@
+{
+ "rule": "09 §3.7 stops and interchanges, §3.12 item 7",
+ "algoVersion": 1,
+ "cases": [
+  {
+   "name": "one stop per book and date, lowest trust",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5001",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "signed"
+     },
+     {
+      "id": "e-5002",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "ai_read"
+     },
+     {
+      "id": "e-5003",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2021-05-01",
+      "entry_date": "2021-05-01",
+      "trust": "confirmed"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2020-05-01",
+        "to": "2021-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "230520798c181009",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5001",
+       "e-5002"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-air-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "2f2b64b0d738d670",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2021-05-01",
+      "entryIds": [
+       "e-5003"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2021-05-01"
+      ],
+      "label": null,
+      "major": false
+     }
+    ],
+    "interchanges": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "interchange by shared certificate, spaces and case ignored",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5004",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "mechanic_cert_number": "A&P 123 IA"
+     },
+     {
+      "id": "e-5005",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "mechanic_cert_number": "a&p123ia"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "230520798c181009",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5004"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "3c6669f9a194f84f",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5005"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "fe6f1d8cf4e9702d",
+      "date": "2020-05-01",
+      "stopIds": [
+       "230520798c181009",
+       "3c6669f9a194f84f"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng"
+      ],
+      "trust": "confirmed",
+      "label": null
+     }
+    ],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "interchange by tach within 0.5 h",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5006",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "tach": 1000
+     },
+     {
+      "id": "e-5007",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "tach": 1000.5
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "230520798c181009",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5006"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "2e40f7bfef7f4c69",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5007"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "7e1bf40f57c81063",
+      "date": "2020-05-01",
+      "stopIds": [
+       "230520798c181009",
+       "2e40f7bfef7f4c69"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": null
+     }
+    ],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "no interchange when tach is 0.6 h apart and no certificate",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5008",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "tach": 1000
+     },
+     {
+      "id": "e-5009",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "tach": 1000.6
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "230520798c181009",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5008"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "3c6669f9a194f84f",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5009"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "three books, one chained by tach, one by certificate",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5010",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "tach": 1000
+     },
+     {
+      "id": "e-5011",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "tach": 1000.2,
+      "mechanic_cert_number": "IA 9"
+     },
+     {
+      "id": "e-5012",
+      "logbook_id": "lb-prop",
+      "page_id": "p-lb-prop-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "mechanic_cert_number": "IA 9"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "230520798c181009",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5010"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "3c6669f9a194f84f",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5011"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "2e40f7bfef7f4c69",
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5012"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-prop-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "48d650fb05ec8d13",
+      "date": "2020-05-01",
+      "stopIds": [
+       "230520798c181009",
+       "3c6669f9a194f84f",
+       "2e40f7bfef7f4c69"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng",
+       "lb-prop"
+      ],
+      "trust": "confirmed",
+      "label": null
+     }
+    ],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "an unconfirmed stop joins the interchange and lowers its trust",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5013",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "signed",
+      "tach": 1000
+     },
+     {
+      "id": "e-5014",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "ai_read",
+      "tach": 1000
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2020-05-01",
+        "to": "2020-05-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "230520798c181009",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5013"
+      ],
+      "trust": "signed",
+      "pageIds": [
+       "p-lb-air-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "3c6669f9a194f84f",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2020-05-01",
+      "entryIds": [
+       "e-5014"
+      ],
+      "trust": "ai_read",
+      "pageIds": [
+       "p-lb-eng-2020-05-01"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [
+     {
+      "id": "fe6f1d8cf4e9702d",
+      "date": "2020-05-01",
+      "stopIds": [
+       "230520798c181009",
+       "3c6669f9a194f84f"
+      ],
+      "lineIds": [
+       "lb-air",
+       "lb-eng"
+      ],
+      "trust": "ai_read",
+      "label": null
+     }
+    ],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "replaced notes, continuations and the Other book are not drawn",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5015",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-05-01",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed",
+      "replaced_by_entry_id": "x"
+     },
+     {
+      "id": "e-5016",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-06-01",
+      "entry_date": "2020-06-01",
+      "trust": "confirmed",
+      "is_continuation": true
+     },
+     {
+      "id": "e-5017",
+      "logbook_id": "lb-oth",
+      "page_id": "p-lb-oth-2020-07-01",
+      "entry_date": "2020-07-01",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-5018",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2020-08-01",
+      "entry_date": "2020-08-01",
+      "trust": "confirmed"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2020-08-01",
+        "to": "2020-08-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "f31a3b3931609a9b",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2020-08-01",
+      "entryIds": [
+       "e-5018"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2020-08-01"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "undated entries: landing date of the page, else counted",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5019",
+      "logbook_id": "lb-air",
+      "page_id": "p-l",
+      "entry_date": null,
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-5020",
+      "logbook_id": "lb-air",
+      "page_id": null,
+      "entry_date": null,
+      "trust": "confirmed"
+     }
+    ],
+    "page": [
+     {
+      "id": "p-l",
+      "logbook_id": "lb-air",
+      "page_sequence": 3,
+      "landing_date": "2021-02-03"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2021-02-03",
+        "to": "2021-02-03"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "362d534f7263a721",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2021-02-03",
+      "entryIds": [
+       "e-5019"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-l"
+      ],
+      "label": "First entry",
+      "major": true
+     }
+    ],
+    "interchanges": [],
+    "undatedEntries": 1
+   }
+  },
+  {
+   "name": "pages still being read are not drawn",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5021",
+      "logbook_id": "lb-air",
+      "page_id": "p-q",
+      "entry_date": "2020-05-01",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-5022",
+      "logbook_id": "lb-air",
+      "page_id": "p-w",
+      "entry_date": "2020-05-02",
+      "trust": "confirmed"
+     }
+    ],
+    "page": [
+     {
+      "id": "p-q",
+      "logbook_id": "lb-air",
+      "page_sequence": 1,
+      "extraction_status": "processing"
+     },
+     {
+      "id": "p-w",
+      "logbook_id": "lb-air",
+      "page_sequence": 2,
+      "extraction_status": "waiting_allowance"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [],
+    "interchanges": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "major stops: overhaul words, entry kind, first entry",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5023",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2010-01-01",
+      "entry_date": "2010-01-01",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-5024",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2011-01-01",
+      "entry_date": "2011-01-01",
+      "trust": "confirmed",
+      "description": "Major repair, left wing spar."
+     },
+     {
+      "id": "e-5025",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2012-01-01",
+      "entry_date": "2012-01-01",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-5026",
+      "logbook_id": "lb-eng",
+      "page_id": "p-lb-eng-2013-01-01",
+      "entry_date": "2013-01-01",
+      "trust": "confirmed",
+      "entry_kind": "engine_overhaul"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Airframe",
+        "from": "2010-01-01",
+        "to": "2011-01-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": "2012-01-01",
+        "to": "2013-01-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "6792a9d14bc65cc6",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2010-01-01",
+      "entryIds": [
+       "e-5023"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2010-01-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "f59965a2a4a18b88",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2011-01-01",
+      "entryIds": [
+       "e-5024"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2011-01-01"
+      ],
+      "label": "Major work",
+      "major": true
+     },
+     {
+      "id": "2a5754e581dc9998",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2012-01-01",
+      "entryIds": [
+       "e-5025"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2012-01-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "35ef5a6682490a4f",
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "date": "2013-01-01",
+      "entryIds": [
+       "e-5026"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-eng-2013-01-01"
+      ],
+      "label": "Engine overhaul",
+      "major": true
+     }
+    ],
+    "interchanges": [],
+    "undatedEntries": 0
+   }
+  },
+  {
+   "name": "volumes of one book are one line",
+   "today": "2026-11-18",
+   "input": {
+    "aircraft": {
+     "id": "ac-n1",
+     "tail_number": "N1",
+     "year": 2000,
+     "expected_hours_per_week": 3
+    },
+    "logbook": [
+     {
+      "id": "lb-air",
+      "type": "airframe",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-eng",
+      "type": "engine",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-prop",
+      "type": "prop",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-oth",
+      "type": "other",
+      "component_ref": null,
+      "title": null
+     },
+     {
+      "id": "lb-air-2",
+      "type": "airframe",
+      "component_ref": null,
+      "title": "Vol. 2"
+     }
+    ],
+    "log_entry": [
+     {
+      "id": "e-5027",
+      "logbook_id": "lb-air",
+      "page_id": "p-lb-air-2010-01-01",
+      "entry_date": "2010-01-01",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-5028",
+      "logbook_id": "lb-air-2",
+      "page_id": "p-lb-air-2-2010-01-01",
+      "entry_date": "2010-01-01",
+      "trust": "confirmed"
+     },
+     {
+      "id": "e-5029",
+      "logbook_id": "lb-air-2",
+      "page_id": "p-lb-air-2-2015-01-01",
+      "entry_date": "2015-01-01",
+      "trust": "confirmed"
+     }
+    ]
+   },
+   "expected": {
+    "lines": [
+     {
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "logbookId": "lb-air",
+      "name": "Airframe",
+      "volumes": [
+       {
+        "id": "lb-air",
+        "label": "Vol. 1",
+        "from": "2010-01-01",
+        "to": "2010-01-01"
+       },
+       {
+        "id": "lb-air-2",
+        "label": "Vol. 2",
+        "from": "2010-01-01",
+        "to": "2015-01-01"
+       }
+      ]
+     },
+     {
+      "lineId": "lb-eng",
+      "logbook": "engine",
+      "logbookId": "lb-eng",
+      "name": "Engine",
+      "volumes": [
+       {
+        "id": "lb-eng",
+        "label": "Engine",
+        "from": null,
+        "to": null
+       }
+      ]
+     },
+     {
+      "lineId": "lb-prop",
+      "logbook": "prop",
+      "logbookId": "lb-prop",
+      "name": "Propeller",
+      "volumes": [
+       {
+        "id": "lb-prop",
+        "label": "Propeller",
+        "from": null,
+        "to": null
+       }
+      ]
+     }
+    ],
+    "stops": [
+     {
+      "id": "6792a9d14bc65cc6",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2010-01-01",
+      "entryIds": [
+       "e-5027",
+       "e-5028"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2-2010-01-01",
+       "p-lb-air-2010-01-01"
+      ],
+      "label": "First entry",
+      "major": true
+     },
+     {
+      "id": "2c6e7f478f835ebf",
+      "lineId": "lb-air",
+      "logbook": "airframe",
+      "date": "2015-01-01",
+      "entryIds": [
+       "e-5029"
+      ],
+      "trust": "confirmed",
+      "pageIds": [
+       "p-lb-air-2-2015-01-01"
+      ],
+      "label": null,
+      "major": false
+     }
+    ],
+    "interchanges": [],
+    "undatedEntries": 0
+   }
+  }
+ ]
+}

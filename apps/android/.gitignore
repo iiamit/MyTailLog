@@ -1,0 +1,9 @@
+.gradle/
+build/
+local.properties
+.kotlin/
+*.iml
+.idea/
+captures/
+# FCM client config (README "Reminders and FCM"); never committed.
+app/google-services.json

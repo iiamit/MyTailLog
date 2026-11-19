@@ -47,9 +47,16 @@ export async function updateNotifications(formData: FormData): Promise<{ error?:
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
+  // Merge into what is stored: v2 keeps more in this bag (channels, quiet hours, visit and document alerts,
+  // keep_meter_photos) and this v1 form must not wipe them.
+  const { data: current } = await supabase.from("profile").select("preferences").eq("id", user.id).maybeSingle();
+  const prev = (current?.preferences ?? {}) as Record<string, unknown>;
+  const prevAlerts = (prev.alerts ?? {}) as Record<string, unknown>;
   const preferences = {
+    ...prev,
     notify_due: formData.get("notify_due") === "on",
     alerts: {
+      ...prevAlerts,
       annual: {
         enabled: formData.get("annual_enabled") === "on",
         lead_days: intField(formData, "annual_lead_days", 90),

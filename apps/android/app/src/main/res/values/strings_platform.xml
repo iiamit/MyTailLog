@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 6 platform polish: widgets, shortcuts, notifications, reminders, keyboard (05 §10–13, 06 M-SYS-05…08). -->
+<resources>
+    <!-- Widgets (02 §9.14) -->
+    <string name="widget_line_name">Line ahead</string>
+    <string name="widget_next_name">Next item</string>
+    <string name="widget_line_description">The line ahead for the next 60 days and what comes due on it.</string>
+    <string name="widget_next_description">The next item that comes due.</string>
+
+    <!-- Launcher shortcuts and App Actions (05 §13.3) -->
+    <string name="shortcut_flight">Log a flight</string>
+    <string name="shortcut_due">What\'s due</string>
+    <string name="shortcut_scan">Scan pages</string>
+    <string name="shortcut_squawk">Report a squawk</string>
+    <string name="shortcut_aircraft_status">%1$s status</string>
+    <string-array name="feature_flight">
+        <item>log a flight</item>
+        <item>log flight</item>
+    </string-array>
+    <string-array name="feature_due">
+        <item>what\'s due</item>
+        <item>due items</item>
+    </string-array>
+
+    <!-- Notification channels (05 §10.2) -->
+    <string name="channel_due">Coming due</string>
+    <string name="channel_pages">Pages read</string>
+    <string name="channel_reading">Reading progress</string>
+    <string name="read_review">Review</string>
+
+    <!-- Inbox (03 §5.4, C-NOTIFY-02) -->
+    <string name="notify_title">Notifications</string>
+    <string name="notify_empty">Nothing new. Reminders and reading updates appear here for 90 days.</string>
+    <string name="notify_failed">Notifications could not be loaded.</string>
+    <string name="notify_loading">Loading</string>
+    <string name="notify_read_all">Mark all as read</string>
+    <string name="notify_settings">Notification settings</string>
+    <string name="notify_unread">Unread</string>
+
+    <!-- Reminders (06 M-SYS-05, mirrors the web's Settings › Reminders) -->
+    <string name="reminders_title">Reminders</string>
+    <string name="reminders_phone">Reminders on this phone</string>
+    <string name="reminders_phone_on">On this phone: on</string>
+    <string name="reminders_phone_off">Off on this phone. Email reminders still follow the settings below.</string>
+    <string name="reminders_os_off">Notifications are off for MyTailLog in your phone\'s settings.</string>
+    <string name="reminders_allow">Allow notifications</string>
+    <string name="reminders_open_settings">Open Settings</string>
+    <string name="reminders_failed">This phone couldn\'t register for reminders: %1$s</string>
+    <string name="reminders_no_fcm">this build has no FCM settings</string>
+    <string name="reminders_master">Email and phone reminders before items come due</string>
+    <string name="reminders_weekly">Weekly while something is lapsed</string>
+    <string name="reminders_kind_annual">Annual inspection</string>
+    <string name="reminders_kind_oil">Oil change</string>
+    <string name="reminders_kind_ad">ADs and SBs</string>
+    <string name="reminders_kind_document">Registration, insurance</string>
+    <string name="reminders_kind_visit">A planned shop visit</string>
+    <string name="reminders_kind_default">Everything else</string>
+    <string name="reminders_days">Days ahead</string>
+    <string name="reminders_hours">Hours ahead</string>
+    <string name="reminders_by">Send them by</string>
+    <string name="reminders_email">Email</string>
+    <string name="reminders_push">Phone</string>
+    <string name="reminders_quiet">Quiet hours for the phone</string>
+    <string name="reminders_quiet_from">Quiet from (HH:MM)</string>
+    <string name="reminders_quiet_until">Quiet until (HH:MM)</string>
+    <string name="reminders_reading">Show reading progress in notifications</string>
+    <string name="reminders_note">Each item can have its own lead time on its page in Status.</string>
+    <string name="reminders_saved">Saved.</string>
+    <string name="reminders_not_saved">That didn\'t save. Try again.</string>
+    <string name="reminders_load_failed">Reminder settings could not be loaded. They need a connection.</string>
+    <string name="reminders_test">Send a test</string>
+    <string name="reminders_test_sending">Sending</string>
+    <string name="reminders_test_both">Reached %1$s and your email.</string>
+    <string name="reminders_test_devices">Reached %1$s.</string>
+    <string name="reminders_test_email">Reached your email.</string>
+    <plurals name="reminders_devices">
+        <item quantity="one">%d device</item>
+        <item quantity="other">%d devices</item>
+    </plurals>
+    <string name="reminders_test_nothing">Nothing was reached: no phone is signed in and the email didn\'t send.</string>
+    <string name="reminders_test_limit">That\'s a few tests already. Try again in an hour.</string>
+    <string name="reminders_offline">Couldn\'t reach MyTailLog. Check your connection.</string>
+
+    <!-- Keyboard shortcuts list, Meta + / (06 M-SYS-08) -->
+    <string name="keys_group">MyTailLog</string>
+    <string name="keys_back">Back</string>
+    <string name="keys_sync">Sync now</string>
+</resources>

@@ -5,6 +5,7 @@ import { LOGBOOK_LABEL } from "@/lib/logbooks";
 import { getAircraftRole, canEditRole } from "@/lib/access";
 import { CameraIcon, UploadIcon } from "@/components/icons";
 import { PagesPanel, type PageRow, type LogbookTile } from "../PagesPanel";
+import { v1ExtractionStatus } from "@/lib/pageStatus";
 
 
 // The "Logbooks & pages" browser — every captured scan grouped by logbook, with
@@ -120,7 +121,7 @@ export default async function LogbookPagesPage({
     logbookLabel: labelFor(p.logbook_id),
     pageSequence: p.page_sequence,
     reviewStatus: p.review_status,
-    extractionStatus: p.extraction_status,
+    extractionStatus: v1ExtractionStatus(p.extraction_status),
     detectedPageCount: p.detected_page_count,
     extractionError: p.extraction_error,
     entryCount: entryCounts.get(p.id) ?? 0,

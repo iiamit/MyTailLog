@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, LogEntry, ReferenceLink } from "@/lib/database.types";
 import { isEntryClean } from "@/lib/extraction/schema";
+import { refreshGaps } from "./gaps";
 
 // The ONE implementation of every log-entry write (CONTRACT §3 C1, §4). Called
 // by the web server actions (cookie client) and by POST /api/sync/push (Bearer
@@ -296,7 +297,7 @@ export async function update(
   if (picked.fields.logbook_id && !(await logbookIsOnAircraft(supabase, ctx.aircraftId, picked.fields.logbook_id))) {
     return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
   }
-  return patchEntry(supabase, ctx, input.entryId, { ...picked.fields, owner_confirmed: true });
+  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, { ...picked.fields, owner_confirmed: true }));
 }
 
 export async function setConfirmed(
@@ -307,7 +308,7 @@ export async function setConfirmed(
 ): Promise<WriteResult> {
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
-  return patchEntry(supabase, ctx, input.entryId, { owner_confirmed: input.confirmed === true });
+  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, { owner_confirmed: input.confirmed === true }));
 }
 
 /** Replace an entry's external reference links (see {@link cleanLinks}). */
@@ -320,6 +321,12 @@ export async function setLinks(
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
   return patchEntry(supabase, ctx, input.entryId, { reference_links: cleanLinks(input.links) });
+}
+
+/** Confirmed entry dates may have moved: re-detect the aircraft's gaps (09 §3.8) before answering. */
+async function withGaps(supabase: Db, ctx: WriteCtx, r: WriteResult): Promise<WriteResult> {
+  if (r.status === "ok") await refreshGaps(supabase, ctx.aircraftId);
+  return r;
 }
 
 async function patchEntry(
@@ -362,7 +369,7 @@ export async function remove(
     .select("id");
   if (error) return { status: "error", message: error.message };
   if (!data?.length) return { status: "error", message: "Entry not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return withGaps(supabase, ctx, { status: "ok", row: null });
 }
 
 /**
@@ -452,18 +459,31 @@ export async function mergeContinuation(
  * to `confirmed` (never touching disputed pages).
  * Returns row `{ confirmed, remaining }`.
  */
+/** Ids confirmClean may confirm: clean entries not sitting on a page flagged for a look. */
+export function bulkConfirmable<T extends Parameters<typeof isEntryClean>[0] & { id: string; page_id: string | null }>(
+  rows: T[],
+  lookPages: Set<string>,
+): string[] {
+  return rows.filter((e) => isEntryClean(e) && !(e.page_id && lookPages.has(e.page_id))).map((e) => e.id);
+}
+
 export async function confirmClean(supabase: Db, ctx: WriteCtx): Promise<WriteResult> {
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
   const { data: entries, error } = await supabase
     .from("log_entry")
-    .select("id, confidence, field_confidence, is_continuation")
+    .select("id, page_id, confidence, field_confidence, is_continuation")
     .eq("aircraft_id", ctx.aircraftId)
     .eq("owner_confirmed", false);
   if (error) return { status: "error", message: error.message };
+  // A page flagged for a look (09 §3.9.2) is reviewed by hand, never bulk-confirmed.
+  const { data: flagged, error: pageErr } = await supabase
+    .from("page").select("id").eq("aircraft_id", ctx.aircraftId).eq("needs_look", true);
+  if (pageErr) return { status: "error", message: pageErr.message };
+  const lookPages = new Set((flagged ?? []).map((p) => p.id));
 
   const rows = entries ?? [];
-  const cleanIds = rows.filter(isEntryClean).map((e) => e.id);
+  const cleanIds = bulkConfirmable(rows, lookPages);
   const remaining = rows.length - cleanIds.length;
   if (cleanIds.length === 0) return { status: "ok", row: { confirmed: 0, remaining } };
 
@@ -491,5 +511,5 @@ export async function confirmClean(supabase: Db, ctx: WriteCtx): Promise<WriteRe
       .eq("review_status", "unreviewed");
   }
 
-  return { status: "ok", row: { confirmed: confirmed?.length ?? 0, remaining } };
+  return withGaps(supabase, ctx, { status: "ok", row: { confirmed: confirmed?.length ?? 0, remaining } });
 }

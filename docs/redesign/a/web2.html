@@ -1,0 +1,1390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web: records, aircraft, sharing — MyTailLog direction A</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Atkinson+Hyperlegible+Mono:wght@400;500;700&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<link rel="stylesheet" href="system.css">
+<style>
+/* page-local additions, scoped .da, built only from system.css tokens.
+   Shared with web1 (same names, same rules): a-tag, a-kbd, a-form2, a-tabs.top, a-chip, a-table.grp/plain, a-trust, a-swatch, a-hz.mini, a-qr. */
+.da .a-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; padding: 2px 9px; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; color: var(--ink-2); }
+.da .a-kbd { font: 500 14px/1 var(--f-n); border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 5px; padding: 3px 7px; background: var(--skin); color: var(--ink-2); }
+.da .a-form2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; }
+.da .a-tabs.top { margin-top: 0; margin-bottom: 30px; }
+.da .a-tabs .n { font: 700 13px/20px var(--f-n); background: var(--shade); color: var(--ink-2); border-radius: 10px; padding: 0 7px; }
+.da .a-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.da .a-chip { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--line-2); background: var(--skin); font-size: 15px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.da .a-chip .n { font-family: var(--f-n); font-weight: 700; color: var(--ink); }
+.da .a-chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.da .a-chip.on .n { color: #fff; }
+.da .a-table.mid td { vertical-align: middle; }
+.da .a-table .grp th { background: transparent; font: 700 18px/1.2 var(--f-d); font-stretch: 106%; color: var(--ink); padding: 26px 0 10px; border-bottom: 2px solid var(--ink); }
+.da .a-table td .t { font-weight: 700; font-size: 17px; line-height: 1.3; }
+.da .a-table td .d { font-size: 15px; color: var(--ink-2); margin-top: 2px; }
+.da .a-table.plain th { background: transparent; border-bottom: 1px solid var(--line-2); padding-left: 0; }
+.da .a-table.plain td { padding-left: 0; }
+.da .a-table .num { font-size: 16px; }
+.da .a-trust { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.da .a-trust svg, .da .a-trust [data-lucide] { width: 16px; height: 16px; }
+.da .a-trust.ai { color: var(--soon); }
+.da .a-trust.sig { color: var(--s1); }
+.da .a-swatch { border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); background: var(--skin); }
+.da .a-swatch .p { background: var(--s1); color: var(--on-s1); padding: 12px 14px; font: 800 20px/1 var(--f-d); font-stretch: 122%; letter-spacing: .035em; }
+.da .a-swatch .n { padding: 9px 14px 10px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.da .a-swatch.on { box-shadow: 0 0 0 3px var(--ink); border-color: var(--ink); }
+.da .a-swatch .st { height: 8px; background: linear-gradient(to bottom, var(--s2) 0 5px, var(--skin) 5px 6px, var(--s3) 6px 8px); }
+.da .a-hz.mini { margin-top: 22px; }
+.da .a-hz.mini .a-hz-lane, .da .a-hz.mini .a-hz-lane.below { height: 64px; }
+.da .a-hz.mini .a-flag b { font-size: 15px; } .da .a-hz.mini .a-flag { padding-bottom: 8px; } .da .a-hz.mini .a-flag.down { padding-top: 8px; padding-bottom: 0; }
+.da .a-qr { width: 132px; height: 132px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--skin); display: grid; place-items: center; color: var(--ink); flex: none; }
+.da .a-qr svg, .da .a-qr [data-lucide] { width: 108px; height: 108px; stroke-width: 1.4; }
+
+/* new on this page */
+.da .a-head { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: end; }
+.da .a-crumb a { color: var(--ink-3); text-decoration: none; }
+.da .a-crumb svg { width: 15px; height: 15px; }
+.da mark { background: var(--s2-tint); color: var(--ink); padding: 0 2px; border-radius: 2px; }
+.da .a-bar.warn > i { background: var(--soon-fill); }
+
+/* timeline overview: entries per year, the gap, the engine and prop eras */
+.da .a-tl { display: grid; grid-template-columns: 96px 1fr; gap: 0 18px; align-items: end; margin-top: 26px; }
+.da .a-tl-k { font-size: 14px; font-weight: 700; color: var(--ink-2); align-self: center; }
+.da .a-tlc { position: relative; }
+.da .a-dens { display: flex; align-items: flex-end; gap: 3px; height: 92px; border-bottom: 1px solid var(--line-2); }
+.da .a-dens i { flex: 1; background: var(--s1); border-radius: 2px 2px 0 0; }
+.da .a-tl-gap { position: absolute; top: 0; height: 92px; border: 2px dashed var(--ink-3); border-radius: 4px; display: grid; place-items: center; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink-2); padding: 6px; line-height: 1.3; background: var(--paint); }
+.da .a-tl-win { position: absolute; top: -8px; height: 108px; border: 3px solid var(--s3); border-radius: 4px; }
+.da .a-tl-axis { position: relative; height: 26px; font-size: 13px; color: var(--ink-3); }
+.da .a-tl-axis span { position: absolute; top: 5px; transform: translateX(-50%); white-space: nowrap; }
+.da .a-era { position: relative; height: 32px; margin-top: 8px; }
+.da .a-era > span { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 10px; font-size: 14px; font-weight: 600; border-radius: 4px; white-space: nowrap; overflow: hidden; border-left: 2px solid var(--paint); }
+.da .a-era .old { background: var(--shade); color: var(--ink-2); }
+.da .a-era .new { background: var(--s1-tint); color: var(--s1); }
+
+/* entries */
+.da .a-yr { display: flex; justify-content: space-between; align-items: baseline; padding: 26px 0 10px; border-bottom: 2px solid var(--ink); }
+.da .a-yr b { font: 700 22px/1 var(--f-d); font-stretch: 106%; }
+.da .a-yr span { font-size: 15px; color: var(--ink-3); }
+.da .a-yr.closed { border-bottom: 1px solid var(--line); padding: 16px 0; }
+.da .a-ent { display: grid; grid-template-columns: 120px 1fr 230px; gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.da .a-ent .when b { display: block; font-size: 17px; }
+.da .a-ent .when span { font: 400 15px/1.4 var(--f-n); color: var(--ink-3); }
+.da .a-ent .t { font-weight: 700; font-size: 18px; line-height: 1.3; }
+.da .a-ent .x { font-size: 16px; color: var(--ink-2); margin-top: 4px; max-width: 70ch; }
+.da .a-ent .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.da .a-ent .side { display: grid; gap: 8px; justify-items: end; text-align: right; }
+
+/* trust ladder: read by AI, confirmed by you, signed by a mechanic */
+.da .a-ladder { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 12px; background: var(--skin); }
+.da .a-ladder > div { padding: 16px 18px; border-left: 1px solid var(--line); display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; align-items: center; align-content: start; }
+.da .a-ladder > div:first-child { border-left: 0; }
+.da .a-ladder b { font-size: 16px; }
+.da .a-ladder span:not(.a-mark) { grid-column: 1 / -1; font-size: 15px; color: var(--ink-2); line-height: 1.35; margin-top: 6px; }
+.da .a-ladder .a-mark { width: 26px; height: 26px; }
+
+/* the printable sticker and the emailed signing code */
+.da .a-sticker { background: #fff; color: #111; border: 1px solid var(--line-2); box-shadow: 0 10px 24px -18px rgba(17,23,26,.6); padding: 18px 20px; font-size: 14px; line-height: 1.45; }
+.da .a-sticker .hd { display: flex; justify-content: space-between; font: 800 15px/1.2 var(--f-d); font-stretch: 112%; letter-spacing: .02em; padding-bottom: 8px; border-bottom: 1.5px solid #111; }
+.da .a-sticker .m { font: 500 14px/1.3 var(--f-n); padding: 7px 0; border-bottom: 1px solid #c8ccc6; display: flex; gap: 16px; }
+.da .a-sticker p { margin: 8px 0; }
+.da .a-sticker .id { font: 400 14px/1.4 var(--f-n); color: #333; }
+.da .a-code { display: flex; gap: 6px; align-items: center; }
+.da .a-code span { width: 40px; height: 50px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--skin); display: grid; place-items: center; font: 500 24px/1 var(--f-n); }
+.da .a-code i { width: 10px; height: 2px; background: var(--line-2); }
+
+/* search and ask */
+.da .a-ask { display: flex; align-items: center; gap: 14px; height: 66px; padding: 0 10px 0 20px; border: 2px solid var(--s1); border-radius: 12px; background: var(--skin); font-size: 21px; box-shadow: 0 0 0 4px var(--s1-tint); }
+.da .a-ask > svg, .da .a-ask > [data-lucide] { width: 24px; height: 24px; color: var(--s1); }
+.da .a-cite { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.da .a-cite:last-child { border-bottom: 0; }
+.da .a-cite .scan { aspect-ratio: auto; height: 74px; border-radius: 6px; }
+.da .a-hit { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.da .a-hit .h { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 15px; color: var(--ink-3); }
+.da .a-hit p { margin: 0; font-size: 16px; }
+
+/* the AROW set: the four papers that ride in the aircraft */
+.da .a-arow { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 12px; background: var(--skin); }
+.da .a-arow > div { padding: 18px 20px 20px; border-left: 1px solid var(--line); display: grid; gap: 4px; align-content: start; justify-items: start; }
+.da .a-arow > div:first-child { border-left: 0; }
+.da .a-arow .k { font: 800 34px/1 var(--f-d); font-stretch: 122%; color: var(--s1); margin-bottom: 6px; }
+.da .a-arow b { font-size: 17px; }
+.da .a-arow span:not(.k):not(.a-st) { font-size: 15px; color: var(--ink-2); }
+.da .a-side .num { color: var(--ink-3); font-weight: 600; }
+.da .a-swatch.da { font-size: 17px; }
+.da .a-field { align-content: start; }
+.da .a-table td.num { white-space: nowrap; }
+.da .a-lead { display: inline-flex; gap: 6px; align-items: center; height: 40px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--skin); font-size: 16px; white-space: nowrap; }
+.da .a-opt { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--line); font-size: 16px; font-weight: 600; }
+
+/* audience picker: radio rows, the chosen one opens in place */
+.da .a-aud { display: grid; grid-template-columns: auto 1fr; gap: 16px; padding: 18px 16px; border-bottom: 1px solid var(--line); align-items: start; }
+.da .a-aud .t { font-weight: 700; font-size: 18px; line-height: 1.3; }
+.da .a-aud .d { font-size: 15px; color: var(--ink-2); margin-top: 2px; }
+.da .a-aud.on { background: var(--skin); box-shadow: inset 0 0 0 2px var(--s1); border-radius: 10px; border-bottom-color: transparent; padding: 20px 22px 24px; }
+.da .a-radio { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line-2); background: var(--skin); margin-top: 3px; }
+.da .a-radio.on { border: 7px solid var(--s1); }
+
+/* print documents: always light paper, whatever the theme */
+.da .a-desk { background: var(--shade); border-radius: 12px; padding: 36px; display: flex; gap: 32px; justify-content: center; align-items: flex-start; }
+.da .a-paper { background: #fff; color: #111; width: 600px; min-height: 776px; flex: none; position: relative; padding: 48px 52px 64px; font-size: 14px; line-height: 1.5;
+  box-shadow: 0 1px 2px rgba(17,23,26,.16), 0 22px 40px -26px rgba(17,23,26,.55); }
+.da .a-paper .tl { font: 800 32px/1 var(--f-d); font-stretch: 122%; letter-spacing: .035em; }
+.da .a-paper .ti { font: 700 20px/1.25 var(--f-d); font-stretch: 106%; margin: 10px 0 2px; }
+.da .a-paper h2 { font: 700 16px/1.2 var(--f-d); font-stretch: 106%; margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 1.5px solid #111; }
+.da .a-paper p { margin: 0 0 8px; }
+.da .a-paper table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.da .a-paper th { text-align: left; font-weight: 700; padding: 4px 8px 4px 0; border-bottom: 1px solid #111; white-space: nowrap; }
+.da .a-paper td { padding: 5px 8px 5px 0; border-bottom: 1px solid #d5d9d2; vertical-align: top; }
+.da .a-paper .r { text-align: right; }
+.da .a-paper .num { font-size: 14px; }
+.da .a-paper td.num { white-space: nowrap; }
+.da .a-paper sup { font-size: 14px; line-height: 0; font-weight: 700; color: var(--s1); padding-left: 1px; }
+.da .a-paper ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.da .a-paper .fn { border-top: 1px solid #111; margin-top: 20px; padding-top: 8px; color: #333; display: grid; gap: 2px; }
+.da .a-paper .pg { position: absolute; left: 52px; right: 52px; bottom: 22px; display: flex; justify-content: space-between; color: #555; font-size: 14px; }
+.da .a-paper .st { display: inline-flex; gap: 5px; align-items: center; font-weight: 700; white-space: nowrap; }
+.da .a-paper .st svg, .da .a-paper .st [data-lucide] { width: 15px; height: 15px; stroke-width: 2.4; }
+.da .a-table:not(.plain) .grp th { padding-left: 14px; }
+</style>
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a><a href="../analysis.html">Analysis</a>
+  <a href="../a/index.html" aria-current="page">A · Paint Scheme</a><a href="../b/index.html">B · Section Tabs</a><a href="../c/index.html">C · Line Diagram</a>
+  <a href="../d/index.html">D · Tabbed Binder</a>
+</div></nav>
+<nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
+  <a href="index.html">Direction overview</a><a href="web1.html">Web: status, capture, review</a><a href="web2.html" aria-current="page">Web: records, aircraft, sharing</a><a href="mobile.html">Phone and tablet</a>
+</div></nav>
+<main class="g-wrap">
+  <h1 class="g-h1">Paint Scheme on the web: records, aircraft, sharing</h1>
+  <p class="g-lede">The quieter half of the app: reading forty-eight years of entries, keeping the aircraft's own facts straight, getting ready for the annual, and handing the records to someone else. The painted header and cheatline stay; the horizon appears only where something is coming due.</p>
+  <ul class="g-index">
+    <li><a href="#a-w-timeline">Timeline</a></li><li><a href="#a-w-entry">Entry detail</a></li><li><a href="#a-w-ask">Search and ask</a></li><li><a href="#a-w-write">Write an entry</a></li>
+    <li><a href="#a-w-hours">Hours and meters</a></li><li><a href="#a-w-oil">Oil and engine</a></li><li><a href="#a-w-equip">Equipment</a></li><li><a href="#a-w-wb">Weight and balance</a></li><li><a href="#a-w-docs">Documents</a></li><li><a href="#a-w-details">Aircraft details</a></li>
+    <li><a href="#a-w-annual">Annual prep</a></li><li><a href="#a-w-audit">Gaps and duplicates</a></li>
+    <li><a href="#a-w-share">Share</a></li><li><a href="#a-w-room">Record room</a></li><li><a href="#a-w-dossier">Pre-buy dossier</a></li><li><a href="#a-w-summary">Maintenance summary</a></li>
+    <li><a href="#a-w-data">Import and export</a></li><li><a href="#a-w-settings">Settings</a></li>
+  </ul>
+
+<!-- ===================== READING THE RECORDS ===================== -->
+<h2 class="g-h2" id="a-records">Reading the records</h2>
+<p class="g-prose">The owner is looking something up: when the prop was last overhauled, what the annual found, whether a stretch of years is missing. Today the timeline spends a whole screen on thirteen collapsed year rows, search is a small box in a sidebar, and Ask lives on a separate tab with one question at a time. Here the timeline opens on the aircraft's whole life with the gap drawn in, search and ask share the one field in the header, and every answer shows a crop of the page it came from.</p>
+
+<figure class="g-shot" id="a-w-timeline">
+  <figcaption><b>Timeline</b><span>Forty-eight years on one overview strip: bar height is entries per year, the 1983 to 1991 gap is drawn as a gap, and the engine and propeller eras sit under it so "since overhaul" has a visible start. The gold frame is the stretch listed below; drag it or pick a zoom.</span><em>Replaces: /aircraft/[id]/timeline</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#" aria-current="page">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a class="on" href="#">Timeline</a><a href="#">Books and pages</a><a href="#">Review <span class="n">6</span></a></nav>
+      <div class="a-head">
+        <div>
+          <h1 class="a-h1">212 confirmed entries, from 1978 to last month.</h1>
+          <p class="a-sub">One stretch is missing: there are no airframe pages yet for 1983 to 1991. The 6 pages you scanned Sunday are read but not confirmed, so they stay off the timeline until you review them.</p>
+        </div>
+        <a class="a-btn" href="#"><i data-lucide="pencil"></i>Write an entry</a>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:30px;gap:20px">
+        <div class="a-chips"><span class="a-chip on">Airframe <span class="n">131</span></span><span class="a-chip on">Engine <span class="n">52</span></span><span class="a-chip on">Propeller <span class="n">14</span></span><span class="a-chip on">Avionics <span class="n">11</span></span><span class="a-chip">Other <span class="n">4</span></span></div>
+        <div class="a-seg"><span>Whole life</span><span>Decade</span><span class="on">3 years</span><span>Year</span></div>
+      </div>
+      <section class="a-tl" aria-label="Entries per year, 1978 to 2026">
+        <div class="a-tl-k">Entries<br>each year</div>
+        <div class="a-tlc">
+          <div class="a-dens"><i style="height:75%"></i><i style="height:42%"></i><i style="height:33%"></i><i style="height:42%"></i><i style="height:25%"></i><i style="height:8%"></i><i style="height:0"></i><i style="height:8%"></i><i style="height:8%"></i><i style="height:0"></i><i style="height:8%"></i><i style="height:0"></i><i style="height:8%"></i><i style="height:8%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:67%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:33%"></i><i style="height:92%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:75%"></i><i style="height:67%"></i><i style="height:33%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:42%"></i><i style="height:25%"></i><i style="height:33%"></i><i style="height:33%"></i><i style="height:83%"></i><i style="height:33%"></i><i style="height:67%"></i><i style="height:42%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:50%"></i><i style="height:100%"></i></div>
+          <div class="a-tl-gap" style="left:10.2%;width:18.4%">No airframe pages<br>1983 to 1991</div>
+          <div class="a-tl-win" style="left:93.6%;width:6.4%"></div>
+        </div>
+        <div></div>
+        <div class="a-tl-axis"><span style="left:5.1%">1980</span><span style="left:25.5%">1990</span><span style="left:45.9%">2000</span><span style="left:66.3%">2010</span><span style="left:86.7%">2020</span><span style="left:97.5%">2026</span></div>
+        <div class="a-tl-k">Engine</div>
+        <div class="a-era"><span class="old" style="left:0;width:56.5%">Factory engine, 1978 to Sep 2005</span><span class="new" style="left:56.5%;right:0">Since overhaul by Signal Engines: 1409.4 h</span></div>
+        <div class="a-tl-k">Propeller</div>
+        <div class="a-era"><span class="old" style="left:0;width:65.9%">Original propeller, 1978 to Apr 2010</span><span class="new" style="left:65.9%;right:0">Since overhaul: 1007.6 h</span></div>
+      </section>
+
+      <div class="a-yr" style="margin-top:28px"><b>2026</b><span>12 entries, newest first</span></div>
+      <div class="a-ent">
+        <div class="when"><b>Oct 12</b><span>tach 4196.8</span></div>
+        <div><div class="t">VOR check</div><div class="x">VOT at KBFI, 108.0 MHz. Bearing error +2°. Signed D. Morgan.</div>
+          <div class="meta"><span class="a-tag"><i data-lucide="plane"></i>Airframe</span><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 61</a><span class="a-kind cal">Reset VOR check</span></div></div>
+        <div class="side"><span class="a-trust"><i data-lucide="circle-check"></i>Confirmed by you</span></div>
+      </div>
+      <div class="a-ent">
+        <div class="when"><b>Sep 3</b><span>tach 4172.1</span></div>
+        <div><div class="t">Oil and filter changed</div><div class="x">7 US qt Phillips XC 20W-50, filter Champion CH48110-1 cut and inspected, no metal. Sample sent to Blackstone, result normal.</div>
+          <div class="meta"><span class="a-tag"><i data-lucide="gauge"></i>Engine</span><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 38</a><span class="a-kind hrs">Reset oil change</span><span class="a-tag"><i data-lucide="paperclip"></i>Blackstone report</span></div></div>
+        <div class="side"><span class="a-trust sig"><i data-lucide="badge-check"></i>Signed by M. Torres</span><span class="muted" style="font-size:15px">A&amp;P 3667012</span></div>
+      </div>
+      <div class="a-ent">
+        <div class="when"><b>Jul 14</b><span>tach 4168.3</span></div>
+        <div><div class="t">Annual inspection</div><div class="x">Annual inspection completed. AD 2011-10-09 seat rails inspected, recurring. Alternator belt tension adjusted. ELT inspected per 91.207.</div>
+          <div class="meta"><span class="a-tag"><i data-lucide="layers"></i>3 logbooks</span><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 60</a><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 37</a><a class="a-src" href="#"><i data-lucide="file-text"></i>Propeller p. 12</a><span class="a-kind cal">Reset annual, ELT</span></div></div>
+        <div class="side"><span class="a-trust"><i data-lucide="circle-check"></i>Confirmed by you</span><span class="muted" style="font-size:15px">Signed on paper, D. Alvarez IA</span></div>
+      </div>
+      <div class="a-ent">
+        <div class="when"><b>May 9</b><span>tach 4131.5</span></div>
+        <div><div class="t">Oil change and compressions</div><div class="x">Oil and filter changed. Compressions 76, 74, 75, 77 over 80.</div>
+          <div class="meta"><span class="a-tag"><i data-lucide="gauge"></i>Engine</span><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 36</a></div></div>
+        <div class="side"><span class="a-trust"><i data-lucide="circle-check"></i>Confirmed by you</span></div>
+      </div>
+      <div class="a-yr closed"><b>2025</b><span>6 entries</span></div>
+      <div class="a-yr closed" style="border-bottom:0"><b>2024</b><span>9 entries</span></div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-entry">
+  <figcaption><b>Entry detail</b><span>The transcribed entry beside the page it came from, with all three levels of trust spelled out, what the entry satisfied, and its attachments. This one was written in MyTailLog, signed with an emailed code, printed as a sticker, and recognised again when the page was scanned.</span><em>Replaces: /aircraft/[id]/entries/[entryId] and the expanded timeline row</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#" aria-current="page">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <div class="a-crumb"><a href="#">Timeline</a><i data-lucide="chevron-right"></i><a href="#">2026</a><i data-lucide="chevron-right"></i>Sep 3</div>
+      <div style="display:grid;grid-template-columns:1fr 470px;gap:48px;align-items:start">
+        <div>
+          <h1 class="a-h1">Oil and filter changed, Sep 3, 2026</h1>
+          <p class="a-sub">Engine logbook, page 38. Written in MyTailLog, signed by M. Torres, and printed as a sticker for the paper page.</p>
+          <div class="a-ladder" style="margin-top:24px">
+            <div><span class="a-mark ok"><i data-lucide="check"></i></span><b>Read by AI</b><span>Matched the sticker on p. 38, Sep 9</span></div>
+            <div><span class="a-mark ok"><i data-lucide="check"></i></span><b>Confirmed by you</b><span>Sep 9, against the scan</span></div>
+            <div><span class="a-mark ok"><i data-lucide="badge-check"></i></span><b>Signed by mechanic</b><span>M. Torres, A&amp;P 3667012, emailed code</span></div>
+          </div>
+          <section class="a-sec" style="margin-top:34px">
+            <div class="a-sechead"><h2 class="a-h2">What the page says</h2><a href="#">Write a correction</a></div>
+            <dl class="a-kv" style="margin-top:14px">
+              <dt>Date</dt><dd>Sep 3, 2026</dd>
+              <dt>Tach</dt><dd class="num">4172.1</dd>
+              <dt>Hobbs</dt><dd class="num">4639.6</dd>
+              <dt>Work performed</dt><dd style="font-weight:400;max-width:58ch">Drained oil and replaced filter. Installed 7 US qt Phillips XC 20W-50. Filter Champion CH48110-1 cut open and inspected, no metal found. Oil sample sent to Blackstone Laboratories. Per Lycoming SI 1014. Ground run, no leaks.</dd>
+              <dt>Performed by</dt><dd>M. Torres, A&amp;P 3667012</dd>
+            </dl>
+          </section>
+          <section class="a-sec" style="margin-top:34px">
+            <div class="a-sechead"><h2 class="a-h2">What it satisfied</h2></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto">
+              <span class="a-mark soon"><i data-lucide="clock-3"></i></span>
+              <div><div class="t">Oil and filter change</div><div class="d">Counted from this entry. Next at tach 4222.1, every 50 h.</div></div>
+              <div class="due"><b>9.7 h</b>about Dec 12</div>
+            </div>
+          </section>
+          <section class="a-sec" style="margin-top:28px">
+            <div class="a-sechead"><h2 class="a-h2">Attached</h2><a href="#">Attach a document</a></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0">
+              <i data-lucide="file-text" class="muted"></i>
+              <div><div class="t" style="font-size:17px">Blackstone oil report, Sep 2026</div><div class="d">PDF, 2 pages. Lab says normal. Also in the Records Vault.</div></div>
+              <a class="a-btn sm ghost" href="#">Open</a>
+            </div>
+          </section>
+          <div style="display:flex;gap:12px;margin-top:28px">
+            <a class="a-btn ghost" href="#"><i data-lucide="printer"></i>Print sticker again</a>
+            <a class="a-btn quiet" href="#"><i data-lucide="share-2"></i>Send to someone</a>
+          </div>
+        </div>
+        <div>
+          <div class="scan engine" style="--lh:26px;--top:58px;--cols:15% 13% 1fr 23%;aspect-ratio:auto;height:640px">
+            <div class="scan-title">ENGINE LOG</div>
+            <div class="scan-head"><span>Date</span><span>Tach</span><span>Work performed</span><span>Signature</span></div>
+            <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+            <div class="scan-body">
+              <span>5/9/26</span><span>4131.5</span><span>Chg oil &amp; filter 7 qt.</span><span class="black">M Torres</span>
+              <span></span><span></span><span>Compr 76/74/75/77 /80</span><span class="black">3667012</span>
+              <span class="gap"></span>
+              <span>7/14/26</span><span>4168.3</span><span>Annual. See A/F log p60</span><span class="black">D Alvarez</span>
+              <span></span><span></span><span>Eng. 1365.3 SMOH</span><span class="black">IA 3105582</span>
+              <span class="gap"></span>
+              <span>9/3/26</span><span>4172.1</span><span class="scan-sticker">N734DM ENGINE LOG 09/03/2026. TACH 4172.1 HOBBS 4639.6. DRAINED OIL, REPLACED FILTER CHAMPION CH48110-1. INSTALLED 7 US QT PHILLIPS XC 20W-50. FILTER CUT AND INSPECTED, NO METAL. OIL SAMPLE TO BLACKSTONE. PER LYCOMING SI 1014. E-SIGNED M. TORRES A&amp;P 3667012. MTL 7F3A-21C9</span><span class="black">M Torres</span>
+            </div>
+            <div class="scan-hl" style="left:1%;top:206px;width:98%;height:126px"></div>
+            <div class="scan-page">38</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+            <span class="muted" style="font-size:15px">Engine p. 38, scanned Sep 9</span>
+            <span style="display:flex;gap:6px"><a class="a-btn sm ghost" href="#" aria-label="Zoom in"><i data-lucide="zoom-in"></i></a><a class="a-btn sm ghost" href="#">Open page</a></span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-ask">
+  <figcaption><b>Search and ask</b><span>One field does both. A question gets a short answer with a crop of every page it rests on; the matching entries list beside it is the search result. Entries that are read but not confirmed are left out, and the answer says so.</span><em>Replaces: /aircraft/[id]/ask and the timeline sidebar search</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#" aria-current="page">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <div class="a-ask"><i data-lucide="search"></i><span style="flex:1">When was the engine last overhauled?</span><span class="a-kbd">Enter</span><a class="a-btn" href="#">Ask</a></div>
+      <div class="a-chips" style="margin-top:14px"><span class="muted" style="font-size:15px;margin-right:4px">Also try</span><span class="a-chip">When was the last annual?</span><span class="a-chip">Which ADs are recurring?</span><span class="a-chip">When was the transponder last certified?</span><span class="a-chip">What avionics were installed?</span></div>
+      <div class="a-grid2" style="margin-top:38px;grid-template-columns:1.5fr 1fr">
+        <section>
+          <h1 class="a-h1" style="font-size:34px">The engine was last overhauled on Sep 14, 2005, at tach 2803.0, by Signal Engines.</h1>
+          <p class="a-sub" style="font-size:18px;color:var(--ink)">It has run 1409.4 hours since, by the tach you read on Nov 14. That leaves 590.6 hours to the 2000-hour TBO, which is advisory for your aircraft. A top overhaul of cylinder 3 in 1996 is also on record; it was not a full overhaul.</p>
+          <div class="a-sechead" style="margin-top:30px;border-bottom-width:1px"><h3 class="a-h3">The pages this rests on</h3><span class="muted" style="font-size:15px">3 pages</span></div>
+          <div class="a-cite">
+            <div class="scan engine" style="--lh:24px;--top:12px;--cols:17% 15% 1fr 19%"><div class="scan-cols"><i></i><i></i><i></i><i></i></div><div class="scan-body"><span>9/14/05</span><span>2803.0</span><span>Eng. O/H new limits</span><span class="black">Signal</span><span></span><span></span><span>WO 05-1187. 0 SMOH</span><span class="black">Engines</span></div><div class="scan-hl" style="left:1%;top:11px;width:98%;height:50px"></div></div>
+            <div><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 22</a><p style="margin:8px 0 0;font-size:16px">Overhauled to new limits, work order 05-1187. Confirmed by you, Mar 2026.</p></div>
+          </div>
+          <div class="a-cite">
+            <div class="scan" style="--lh:24px;--top:12px;--cols:17% 15% 1fr 19%"><div class="scan-cols"><i></i><i></i><i></i><i></i></div><div class="scan-body"><span>9/28/05</span><span>2803.0</span><span>Reinst. O-320-H2AD</span><span class="black">Mitchell</span><span></span><span></span><span>s/n L-14238-27A ok</span><span class="black">2214467</span></div><div class="scan-hl" style="left:1%;top:11px;width:98%;height:50px"></div></div>
+            <div><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 39</a><p style="margin:8px 0 0;font-size:16px">The overhauled engine, serial L-14238-27A, went back on the airframe.</p></div>
+          </div>
+          <div class="a-cite">
+            <div class="scan engine" style="--lh:24px;--top:12px;--cols:17% 15% 1fr 19%"><div class="scan-cols"><i></i><i></i><i></i><i></i></div><div class="scan-body"><span>3/2/96</span><span>1987.4</span><span>Top OH #3 cyl, rings</span><span class="black">Mitchell</span><span></span><span></span><span>&amp; valves. 78/80</span><span class="black">2214467</span></div><div class="scan-hl" style="left:1%;top:11px;width:98%;height:50px"></div></div>
+            <div><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 11</a><p style="margin:8px 0 0;font-size:16px">Top overhaul of one cylinder only.</p></div>
+          </div>
+          <p class="a-note" style="margin-top:16px"><i data-lucide="info"></i>Answers come only from your 212 confirmed entries, never the internet. One line on a page you scanned Sunday also mentions the engine; it is not confirmed yet, so it was left out. <a href="#">Review it</a></p>
+        </section>
+        <aside>
+          <div class="a-sechead"><h2 class="a-h2" style="font-size:20px">Entries that match</h2><span class="muted" style="font-size:15px">5</span></div>
+          <div class="a-hit"><div class="h"><b style="color:var(--ink)">Sep 14, 2005</b><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 22</a></div><p>Engine removed and <mark>overhauled</mark> to new limits by Signal Engines. 0 SMOH.</p></div>
+          <div class="a-hit"><div class="h"><b style="color:var(--ink)">Sep 28, 2005</b><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 39</a></div><p>Reinstalled <mark>overhauled</mark> O-320-H2AD, S/N L-14238-27A. Ground run, leak check good.</p></div>
+          <div class="a-hit"><div class="h"><b style="color:var(--ink)">Apr 30, 2010</b><a class="a-src" href="#"><i data-lucide="file-text"></i>Propeller p. 9</a></div><p>Propeller <mark>overhauled</mark>, McCauley 1C160/DTM7557, S/N EM-77341.</p></div>
+          <div class="a-hit"><div class="h"><b style="color:var(--ink)">Jul 14, 2026</b><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 37</a></div><p>Annual inspection. Engine 1365.3 hours since <mark>overhaul</mark>.</p></div>
+          <div class="a-hit" style="border-bottom:0"><div class="h"><b style="color:var(--ink)">Mar 2, 1996</b><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 11</a></div><p>Top <mark>overhaul</mark>, number 3 cylinder, new rings and valves.</p></div>
+          <a class="a-btn ghost" href="#" style="width:100%;margin-top:14px">Show these on the timeline</a>
+        </aside>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-write">
+  <figcaption><b>Write a logbook entry</b><span>A template fills the wording, the meters come from the latest reading, and the sticker preview updates as the owner types. Signing is one panel on the same screen: the emailed code, the attestation, and one button. The draft stays on this computer until it is signed.</span><em>Replaces: /aircraft/[id]/entries/new (both steps) and the sticker controls on /entries/[entryId]</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#" aria-current="page">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <div class="a-crumb"><a href="#">Timeline</a><i data-lucide="chevron-right"></i>Write an entry</div>
+      <div style="display:grid;grid-template-columns:1fr 430px;gap:56px;align-items:start">
+        <div>
+          <h1 class="a-h1">Oil and filter change, Nov 18</h1>
+          <p class="a-sub">Your draft is saved on this computer until you sign. Sign only work you did, or are authorized to approve.</p>
+          <div class="a-form2" style="margin-top:28px">
+            <div class="a-field"><label>Logbook</label><div class="a-select">Engine<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></div>
+            <div class="a-field"><label>Template</label><div class="a-select">Oil and filter service<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></div>
+          </div>
+          <p class="a-note" style="margin:10px 0 0"><i data-lucide="info"></i>Owner preventive maintenance under 14 CFR Part 43, Appendix A(c). Annual and 100-hour inspections need their own record and are not written here.</p>
+          <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:18px 20px;margin-top:22px">
+            <div class="a-field"><label>Completed</label><div class="a-input">Nov 18, 2026</div></div>
+            <div class="a-field"><label>Tach</label><div class="a-input num">4212.4</div></div>
+            <div class="a-field"><label>Hobbs</label><div class="a-input num">4680.4</div></div>
+            <div class="a-field"><label>Airframe</label><div class="a-input num">4212.4</div></div>
+          </div>
+          <div class="a-form2" style="margin-top:18px">
+            <div class="a-field"><label>Oil, brand and type</label><div class="a-input">Phillips XC 20W-50</div></div>
+            <div class="a-field"><label>Quantity</label><div class="a-input">7 US qt</div></div>
+            <div class="a-field"><label>Filter, make and part number</label><div class="a-input">Champion CH48110-1</div></div>
+            <div class="a-field"><label>What the old filter showed</label><div class="a-input focus">Cut open, no metal found</div></div>
+          </div>
+          <div class="a-field" style="margin-top:18px"><label style="display:flex;justify-content:space-between">Work performed, as it will print <a href="#" style="font-weight:600">Reset to template wording</a></label>
+            <div class="a-textarea">Drained oil and replaced filter. Installed 7 US qt Phillips XC 20W-50. Filter Champion CH48110-1 cut open and inspected, no metal found. Per Lycoming SI 1014. Ground run, no leaks.</div></div>
+          <section class="a-panel" style="margin-top:26px;display:grid;gap:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><h2 class="a-h3" style="font-size:20px">Sign</h2><a href="#" style="font-size:15px;font-weight:600">Manage certificates</a></div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:18px 20px;align-items:end">
+              <div class="a-field"><label>Sign with</label><div class="a-select" style="white-space:nowrap">D. Morgan, Private pilot<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></div>
+              <div class="a-field"><label>Code sent to dana@example.com</label><div class="a-code"><span>4</span><span>1</span><span>7</span><span>2</span><i></i><span>0</span><span>9</span><span>5</span><span>8</span></div></div>
+            </div>
+            <p class="a-note" style="margin:0"><i data-lucide="lock"></i>Once signed, the entry is locked. To fix a mistake you write a correction, which points back to it.</p>
+            <label style="display:flex;gap:12px;align-items:flex-start;font-size:16px"><span class="a-check on"><i data-lucide="check" style="width:15px;height:15px"></i></span>I did or approved only the work described, I am allowed to sign it, and I mean this electronic signature to return it to service for that work.</label>
+            <div style="display:flex;gap:14px;align-items:center">
+              <a class="a-btn" href="#"><i data-lucide="signature"></i>Sign this entry</a>
+              <a class="a-btn quiet" href="#">Send a new code</a>
+              <span class="muted" style="font-size:15px;margin-left:auto">Code expires in 8 min.</span>
+            </div>
+          </section>
+        </div>
+        <aside style="position:sticky;top:0">
+          <div class="a-sechead" style="border-bottom-width:1px"><h2 class="a-h3" style="font-size:20px">Sticker preview</h2><span class="muted" style="font-size:15px">updates as you type</span></div>
+          <div style="display:flex;gap:12px;align-items:center;margin:16px 0 18px">
+            <div class="a-seg"><span>3 in</span><span class="on">4 in</span><span>5 in</span></div>
+            <div class="a-select" style="width:auto;height:42px;font-size:16px;gap:10px">US Letter<i data-lucide="chevron-down" class="muted"></i></div>
+          </div>
+          <div class="a-sticker">
+            <div class="hd"><span>N734DM · ENGINE LOG</span><span>NOV 18, 2026</span></div>
+            <div class="m"><span>TACH 4212.4</span><span>HOBBS 4680.4</span><span>A/F 4212.4</span></div>
+            <p>Drained oil and replaced filter. Installed 7 US qt Phillips XC 20W-50. Filter Champion CH48110-1 cut open and inspected, no metal found. Per Lycoming SI 1014. Ground run, no leaks.</p>
+            <p>Work performed by Dana Morgan.<br>Electronically signed by Dana Morgan, Private pilot 3528841. Signature approves return to service only for the work described above.</p>
+            <div class="id">ID 4C1E-90B2 · DIGEST 9A7F21C0E5B36D88</div>
+            <p style="margin-bottom:0">Physical signature ____________________</p>
+          </div>
+          <p class="a-note" style="margin-top:16px"><i data-lucide="sticker"></i>Print at 100% on full-sheet label paper and trim. When you scan the page later, the ID on the sticker links it back to this entry.</p>
+          <a class="a-btn ghost" href="#" style="width:100%;margin-top:6px" aria-disabled="true"><i data-lucide="printer"></i>Print after signing</a>
+        </aside>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<!-- ===================== THE AIRCRAFT ===================== -->
+<h2 class="g-h2" id="a-aircraft">The aircraft</h2>
+<p class="g-prose">The owner is keeping the machine's own facts straight: hours, oil, what is installed, what it weighs, the paperwork. Today these are five hub tabs, logging hours is the fifth section of Meters under a long ADS-B explainer, and equipment edits use browser prompt boxes. Under Aircraft each page opens with the one thing that needs doing, cross-links equipment to ADs and W&amp;B, and checks the times written in the books against the times the app works out.</p>
+
+<figure class="g-shot" id="a-w-hours">
+  <figcaption><b>Hours and meters</b><span>ADS-B suggestions lead because they change what is due; one field records the reading. New: written versus calculated times, which compares "since overhaul" figures written at the annual with the arithmetic from the overhaul entries and points at the page that disagrees.</span><em>Replaces: /aircraft/[id]/meters</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#" aria-current="page">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a class="on" href="#">Hours and meters</a><a href="#">Oil and engine</a><a href="#">Equipment</a><a href="#">Weight and balance</a><a href="#">Documents <span class="n">14</span></a><a href="#">Details</a></nav>
+      <h1 class="a-h1" style="max-width:30ch">Tach 4212.4, read Nov 14. You have probably flown about 4.2 hours since.</h1>
+      <p class="a-sub">ADS-B saw three flights after your last reading. Until you record the tach, hour-limited items may be that much closer than they look.</p>
+      <section class="a-panel" style="margin-top:26px;display:grid;grid-template-columns:1fr 380px;gap:40px">
+        <div>
+          <h2 class="a-h3">3 flights since Nov 14, about 4.2 h airborne</h2>
+          <table class="a-table plain" style="margin-top:8px">
+            <thead><tr><th>Date</th><th>Route</th><th class="r">Airborne</th></tr></thead>
+            <tbody>
+              <tr><td>Sun, Nov 15</td><td>KBFI to KPAE</td><td class="r num">0.9 h</td></tr>
+              <tr><td>Sun, Nov 15</td><td>KPAE to KBFI</td><td class="r num">0.8 h</td></tr>
+              <tr><td>Tue, Nov 17</td><td>KBFI, local</td><td class="r num">2.5 h</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:grid;gap:12px;align-content:start">
+          <div class="a-field"><label>Tach on the aircraft now</label><div class="a-input num focus" style="font-size:20px">4216.6</div><span class="hint">Suggested from ADS-B. Airborne time is neither tach nor hobbs, so read the meter if you can.</span></div>
+          <div style="display:flex;gap:10px"><a class="a-btn" href="#">Save reading</a><a class="a-btn quiet" href="#">Not my flights</a></div>
+        </div>
+      </section>
+      <div class="a-grid2" style="margin-top:8px;grid-template-columns:1fr 1fr">
+        <section class="a-sec">
+          <div class="a-sechead"><h2 class="a-h2">Readings</h2><a href="#">Add by hand</a></div>
+          <div class="a-meters" style="margin:18px 0 6px;gap:40px">
+            <div class="a-meter"><div class="v">4212.4</div><div class="l">Tach, by you Nov 14</div></div>
+            <div class="a-meter"><div class="v">4680.4</div><div class="l">Hobbs, by you Nov 14</div></div>
+            <div class="a-meter"><div class="v">4212.4</div><div class="l">Airframe total</div></div>
+          </div>
+          <table class="a-table plain" style="margin-top:14px">
+            <thead><tr><th>Date</th><th class="r">Tach</th><th class="r">Hobbs</th><th>From</th></tr></thead>
+            <tbody>
+              <tr><td>Nov 14</td><td class="r num">4212.4</td><td class="r num">4680.4</td><td>Entered by you</td></tr>
+              <tr><td>Nov 2</td><td class="r num">4206.1</td><td class="r num">4674.1</td><td>MyFlightBook</td></tr>
+              <tr><td>Oct 26</td><td class="r num">4203.0</td><td class="r num">4671.0</td><td>MyFlightBook</td></tr>
+              <tr><td>Oct 12</td><td class="r num">4196.8</td><td class="r num">4664.6</td><td><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 61</a></td></tr>
+              <tr><td>Sep 3</td><td class="r num">4172.1</td><td class="r num">4639.6</td><td><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 38</a></td></tr>
+            </tbody>
+          </table>
+          <p class="a-note" style="margin-top:10px"><i data-lucide="info"></i>Recent flying works out to about 3 hours a week. That is how hours become "about Dec 12" on the due list.</p>
+        </section>
+        <section class="a-sec">
+          <div class="a-sechead"><h2 class="a-h2">Written and calculated times</h2><span class="a-tag" style="color:var(--s1)">New</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto">
+            <span class="a-mark soon"><i data-lucide="circle-alert"></i></span>
+            <div><div class="t">Propeller since overhaul</div><div class="d">At the Jul 14 annual the book says <b class="num">936.5</b>. From the overhaul at 3204.8 it works out to <b class="num">963.5</b>. Two digits may be swapped.</div><div style="margin-top:8px"><a class="a-src" href="#"><i data-lucide="file-text"></i>Propeller p. 12</a></div></div>
+            <div class="due"><b class="num">27.0 h</b>apart</div>
+          </div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto">
+            <span class="a-mark ok"><i data-lucide="check"></i></span>
+            <div><div class="t">Engine since overhaul</div><div class="d">Book says 1365.3, worked out 1365.3. <a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 37</a></div></div>
+            <div class="due"><b>Agree</b></div>
+          </div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto">
+            <span class="a-mark ok"><i data-lucide="check"></i></span>
+            <div><div class="t">Airframe total time</div><div class="d">Book says 4168.3, tach reads 4168.3. <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 60</a></div></div>
+            <div class="due"><b>Agree</b></div>
+          </div>
+          <div class="a-sechead" style="margin-top:30px;border-bottom-width:1px"><h3 class="a-h3">Replaced meters</h3><a href="#">Record a replacement</a></div>
+          <div class="a-row" style="grid-template-columns:1fr auto;padding:12px 0">
+            <div><div class="t" style="font-size:17px">Hobbs replaced Jun 3, 2015</div><div class="d">Old meter's last reading 3021.7. The new meter was set to match, so totals carry on.</div></div>
+            <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 49</a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-oil">
+  <figcaption><b>Oil and engine</b><span>The lab reports, the top-offs and the compression readings on one page, each with its source. A chart only where a trend is worth seeing; the latest numbers sit in a table beside it.</span><em>Replaces: /aircraft/[id]/oil-analysis</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#" aria-current="page">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Hours and meters</a><a class="on" href="#">Oil and engine</a><a href="#">Equipment</a><a href="#">Weight and balance</a><a href="#">Documents <span class="n">14</span></a><a href="#">Details</a></nav>
+      <div class="a-head">
+        <div><h1 class="a-h1" style="max-width:24ch">All three lab samples came back normal. You add about a quart every 12 hours.</h1>
+        <p class="a-sub">Next oil change at tach 4222.1, in 9.7 hours, about Dec 12. Lab values are read from the reports by AI; the lab's own written comment is the authority.</p></div>
+        <div style="display:flex;gap:10px"><a class="a-btn ghost" href="#"><i data-lucide="droplet"></i>Log a top-off</a><a class="a-btn" href="#"><i data-lucide="upload"></i>Import a lab report</a></div>
+      </div>
+      <div class="a-grid2" style="margin-top:12px;grid-template-columns:1.35fr 1fr">
+        <section class="a-sec">
+          <div class="a-sechead"><h2 class="a-h2">Wear metals, parts per million</h2><span class="muted" style="font-size:15px">Blackstone, 3 samples</span></div>
+          <svg viewBox="0 0 660 270" width="100%" role="img" aria-label="Iron, copper, aluminum and silicon across three samples" style="margin-top:14px;font-family:var(--f-t)">
+            <g style="stroke:var(--line)" stroke-width="1"><line x1="60" y1="20" x2="640" y2="20"/><line x1="60" y1="77" x2="640" y2="77"/><line x1="60" y1="134" x2="640" y2="134"/><line x1="60" y1="191" x2="640" y2="191"/></g>
+            <line x1="60" y1="220" x2="640" y2="220" style="stroke:var(--ink-3)"/>
+            <g style="fill:var(--ink-3);font-size:14px" text-anchor="end"><text x="50" y="224">0</text><text x="50" y="195">5</text><text x="50" y="138">15</text><text x="50" y="81">25</text><text x="50" y="24">35</text></g>
+            <line x1="60" y1="48.6" x2="640" y2="48.6" style="stroke:var(--ink-2)" stroke-width="1.5" stroke-dasharray="6 5"/>
+            <text x="636" y="42" text-anchor="end" style="fill:var(--ink-2);font-size:14px">Universal average for iron, 30</text>
+            <polyline points="110,94.3 350,71.4 590,82.9" fill="none" style="stroke:var(--s1)" stroke-width="3.5"/>
+            <polyline points="110,191.4 350,168.6 590,185.7" fill="none" style="stroke:var(--ink-3)" stroke-width="2.5" stroke-dasharray="2 4" stroke-linecap="round"/>
+            <polyline points="110,185.7 350,180 590,191.4" fill="none" style="stroke:var(--s2)" stroke-width="3"/>
+            <polyline points="110,197.1 350,191.4 590,197.1" fill="none" style="stroke:var(--ink-2)" stroke-width="2"/>
+            <g style="fill:var(--s1)"><circle cx="110" cy="94.3" r="5"/><circle cx="350" cy="71.4" r="5"/><circle cx="590" cy="82.9" r="5"/></g>
+            <g style="fill:var(--ink);font-size:14px;font-weight:700"><text x="110" y="84" text-anchor="middle">22</text><text x="350" y="61" text-anchor="middle">26</text><text x="590" y="72" text-anchor="middle">24</text></g>
+            <g style="fill:var(--ink-2);font-size:14px" text-anchor="middle"><text x="110" y="242">Jun 2024</text><text x="350" y="242">May 9, 2026</text><text x="590" y="242">Sep 3, 2026</text><text x="110" y="260">tach 4098.2</text><text x="350" y="260">tach 4131.5</text><text x="590" y="260">tach 4172.1</text></g>
+          </svg>
+          <div class="a-chips" style="gap:20px;font-size:15px;color:var(--ink-2);margin-top:6px">
+            <span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:4px;background:var(--s1)"></i>Iron</span>
+            <span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:3px;background:var(--s2)"></i>Copper</span>
+            <span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:2px;background:var(--ink-2)"></i>Aluminum</span>
+            <span style="display:flex;gap:8px;align-items:center"><i style="width:22px;height:0;border-top:3px dotted var(--ink-3)"></i>Silicon</span>
+          </div>
+        </section>
+        <section class="a-sec">
+          <div class="a-sechead"><h2 class="a-h2">Latest sample</h2><a class="a-src" href="#"><i data-lucide="file-text"></i>Blackstone, Sep 3</a></div>
+          <table class="a-table plain mid" style="margin-top:6px">
+            <thead><tr><th>Element</th><th class="r">ppm</th><th class="r">Average</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Iron</td><td class="r num">24</td><td class="r num muted">30</td><td><span class="a-st ok plain"><i data-lucide="check"></i>Normal</span></td></tr>
+              <tr><td>Copper</td><td class="r num">5</td><td class="r num muted">8</td><td><span class="a-st ok plain"><i data-lucide="check"></i>Normal</span></td></tr>
+              <tr><td>Aluminum</td><td class="r num">4</td><td class="r num muted">6</td><td><span class="a-st ok plain"><i data-lucide="check"></i>Normal</span></td></tr>
+              <tr><td>Silicon</td><td class="r num">6</td><td class="r num muted">8</td><td><span class="a-st ok plain"><i data-lucide="check"></i>Normal</span></td></tr>
+              <tr><td>Chromium</td><td class="r num">1</td><td class="r num muted">4</td><td><span class="a-st ok plain"><i data-lucide="check"></i>Normal</span></td></tr>
+            </tbody>
+          </table>
+          <p class="ink2" style="font-size:16px;margin:12px 0 0">Lab comment: "Wear is steady and low for this engine type. Silicon is back down after the May sample. Resample at the next change."</p>
+        </section>
+      </div>
+      <div class="a-grid2" style="grid-template-columns:1fr 1fr">
+        <section class="a-sec">
+          <div class="a-sechead"><h2 class="a-h2">Compression, over 80 psi</h2><a href="#">Add readings</a></div>
+          <table class="a-table plain mid" style="margin-top:6px">
+            <thead><tr><th>Date</th><th class="r">#1</th><th class="r">#2</th><th class="r">#3</th><th class="r">#4</th><th class="r">Page</th></tr></thead>
+            <tbody>
+              <tr><td>May 9, 2026</td><td class="r num">76</td><td class="r num">74</td><td class="r num">75</td><td class="r num">77</td><td class="r"><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 36</a></td></tr>
+              <tr><td>Jul 15, 2025</td><td class="r num">77</td><td class="r num">75</td><td class="r num">76</td><td class="r num">78</td><td class="r"><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 34</a></td></tr>
+              <tr><td>Jul 20, 2024</td><td class="r num">78</td><td class="r num">76</td><td class="r num">75</td><td class="r num">78</td><td class="r"><a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 32</a></td></tr>
+            </tbody>
+          </table>
+          <p class="a-note" style="margin-top:10px"><i data-lucide="info"></i>A record of what was written, not a diagnosis. Cylinder 2 has been lowest three years running.</p>
+        </section>
+        <section class="a-sec">
+          <div class="a-sechead"><h2 class="a-h2">Top-offs</h2><span class="muted" style="font-size:15px">about 12.4 h a quart</span></div>
+          <table class="a-table plain mid" style="margin-top:6px">
+            <thead><tr><th>Date</th><th class="r">Added</th><th class="r">Tach</th><th class="r">Hours since last</th></tr></thead>
+            <tbody>
+              <tr><td>Oct 30</td><td class="r num">1 qt</td><td class="r num">4205.0</td><td class="r num">12.4</td></tr>
+              <tr><td>Oct 9</td><td class="r num">1 qt</td><td class="r num">4192.6</td><td class="r num">12.4</td></tr>
+              <tr><td>Sep 21</td><td class="r num">1 qt</td><td class="r num">4180.2</td><td class="r num">8.1</td></tr>
+            </tbody>
+          </table>
+          <p class="a-note" style="margin-top:10px"><i data-lucide="info"></i>Last change interval was 40.6 h, May 9 to Sep 3.</p>
+        </section>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-equip">
+  <figcaption><b>Equipment</b><span>What is fitted, read out of the logbooks. Suggestions wait at the top for a yes or no, each quoting the line it came from. Every component shows the ADs it brings with it, and a change after the last W&amp;B revision is flagged here and on W&amp;B. Removing a part asks for a date in a proper form, not a browser prompt.</span><em>Replaces: /aircraft/[id]/equipment</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#" aria-current="page">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Hours and meters</a><a href="#">Oil and engine</a><a class="on" href="#">Equipment</a><a href="#">Weight and balance</a><a href="#">Documents <span class="n">14</span></a><a href="#">Details</a></nav>
+      <div class="a-head">
+        <div><h1 class="a-h1">8 items installed. Your logbooks mention 3 more.</h1>
+        <p class="a-sub">Equipment decides which ADs apply. Removing a component marks its ADs not applicable from the date you give.</p></div>
+        <a class="a-btn ghost" href="#"><i data-lucide="plus"></i>Add by hand</a>
+      </div>
+      <section class="a-panel" style="margin-top:26px;padding:6px 24px 20px">
+        <div class="a-row" style="grid-template-columns:auto 1fr auto auto">
+          <span class="a-check on"><i data-lucide="check" style="width:15px;height:15px"></i></span>
+          <div><div class="t">JPI EDM-700 engine monitor <span class="a-trust ai" style="margin-left:8px"><i data-lucide="scan-line"></i>Read by AI</span></div><div class="d">Installed Jun 2008. "Installed JPI EDM-700 per STC SA2586NM, wt +2.1 lb."</div></div>
+          <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 46</a><a class="a-btn sm quiet" href="#">Not equipment</a>
+        </div>
+        <div class="a-row" style="grid-template-columns:auto 1fr auto auto">
+          <span class="a-check on"><i data-lucide="check" style="width:15px;height:15px"></i></span>
+          <div><div class="t">Concorde RG-35AXC battery <span class="a-trust ai" style="margin-left:8px"><i data-lucide="scan-line"></i>Read by AI</span></div><div class="d">Installed Apr 2022. "R&amp;R battery, new Concorde RG-35AXC, cap check ok."</div></div>
+          <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 57</a><a class="a-btn sm quiet" href="#">Not equipment</a>
+        </div>
+        <div class="a-row" style="grid-template-columns:auto 1fr auto auto">
+          <span class="a-check"></span>
+          <div><div class="t">Slick 4371 magnetos, pair <span class="a-trust ai" style="margin-left:8px"><i data-lucide="scan-line"></i>Read by AI</span></div><div class="d">Overhauled with the engine, Sep 2005. "Mags O/H, 500 h insp. complied."</div></div>
+          <a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 22</a><a class="a-btn sm quiet" href="#">Not equipment</a>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:16px"><a class="a-btn" href="#">Add 2 selected</a><span class="muted" style="font-size:15px">Found in 212 confirmed entries. Nothing is added until you say yes.</span></div>
+      </section>
+      <div class="a-banner" style="margin-top:22px"><span class="a-mark soon"><i data-lucide="weight"></i></span><span>The vacuum pump installed Jun 8, 2021 is later than your last weight and balance revision, Mar 2019.</span><a href="#" style="margin-left:auto;font-weight:700;color:inherit">Open weight and balance</a></div>
+      <table class="a-table mid" style="margin-top:22px">
+        <thead><tr><th>Component</th><th>Make and part number</th><th>Serial</th><th>Installed</th><th>ADs and limits</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><div class="t">GPS, NAV, COM</div></td><td>Garmin GTN 650, 011-01057-00</td><td class="num">2G4009127</td><td>Mar 12, 2019<div><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 52</a></div></td><td><span class="muted">None. STC SA01714WI in Vault</span></td><td class="r"><a class="a-btn sm ghost" href="#">Edit</a></td></tr>
+          <tr><td><div class="t">Vacuum pump</div></td><td>Rapco RA215CC</td><td class="num">R2107734</td><td>Jun 8, 2021<div><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 55</a></div></td><td><span class="muted">None. 8130-3 in Vault</span></td><td class="r"><a class="a-btn sm ghost" href="#">Edit</a></td></tr>
+          <tr><td><div class="t">ELT</div></td><td>ACK E-04</td><td class="num">E04-18342</td><td>2015</td><td><span class="a-st ok plain"><i data-lucide="check"></i>Battery to Feb 28, 2027</span></td><td class="r"><a class="a-btn sm ghost" href="#">Edit</a></td></tr>
+          <tr><td><div class="t">Seat rails</div><div class="d">Airframe, factory</div></td><td>Cessna</td><td class="muted">none</td><td>1978</td><td><span class="a-st ok plain"><i data-lucide="check"></i>AD 2011-10-09, recurring</span></td><td class="r"><a class="a-btn sm ghost" href="#">Edit</a></td></tr>
+          <tr><td><div class="t">Engine-driven fuel pump</div></td><td>Lycoming LW-15473</td><td class="num">L-9921-A</td><td>Sep 2005</td><td><span class="a-st plain" style="color:var(--ink-2)"><i data-lucide="info"></i>AD 2020-18-01 not applicable</span><div class="d">Different pump part number</div></td><td class="r"><a class="a-btn sm ghost" href="#">Edit</a></td></tr>
+          <tr><td><div class="t">Fuel filler caps</div></td><td>Cessna 0526000-4</td><td class="muted">none</td><td>1998</td><td><span class="a-st ok plain"><i data-lucide="check"></i>AD 76-07-12, complied</span></td><td class="r"><a class="a-btn sm ghost" href="#">Edit</a></td></tr>
+        </tbody>
+      </table>
+      <div class="a-sechead" style="margin-top:30px;border-bottom-width:1px"><h3 class="a-h3">Removed</h3><span class="muted" style="font-size:15px">1</span></div>
+      <div class="a-row" style="grid-template-columns:1fr auto auto;padding:12px 0;color:var(--ink-2)">
+        <div><div class="t" style="font-size:17px;color:var(--ink-2)">NAV, COM: King KX-155</div><div class="d">Removed Mar 12, 2019, when the GTN 650 went in. Its ADs are marked not applicable from that date.</div></div>
+        <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 52</a><a class="a-btn sm quiet" href="#">Reinstall</a>
+      </div>
+      <p class="muted" style="font-size:15px;margin:6px 0 0">Showing 6 of 8 installed. <a href="#">Show engine and propeller</a></p>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-wb">
+  <figcaption><b>Weight and balance</b><span>The current figures and every revision, with the reason it may be stale said once at the top. The form for a new revision opens beside the history instead of above it, and fills the third figure from any two.</span><em>Replaces: /aircraft/[id]/weight-balance</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#" aria-current="page">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Hours and meters</a><a href="#">Oil and engine</a><a href="#">Equipment</a><a class="on" href="#">Weight and balance</a><a href="#">Documents <span class="n">14</span></a><a href="#">Details</a></nav>
+      <h1 class="a-h1" style="max-width:30ch">Empty weight 1447.80 lb, center of gravity 39.610 in aft of datum.</h1>
+      <div class="a-banner" style="margin-top:20px"><span class="a-mark soon"><i data-lucide="circle-alert"></i></span><span><b>May be out of date.</b> A Rapco vacuum pump was installed Jun 8, 2021, after this revision. If it changed the empty weight, add a revision.</span></div>
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:48px;margin-top:8px;align-items:start">
+        <div>
+          <section class="a-sec" style="margin-top:30px">
+            <div class="a-sechead"><h2 class="a-h2">Current figures</h2><a class="a-src" href="#"><i data-lucide="file-text"></i>Form 337, Mar 2019</a></div>
+            <div class="a-meters" style="margin-top:18px;gap:44px;flex-wrap:wrap">
+              <div class="a-meter"><div class="v">1447.80</div><div class="l">Empty weight, lb</div></div>
+              <div class="a-meter"><div class="v">39.610</div><div class="l">CG arm, in</div></div>
+              <div class="a-meter"><div class="v">57,347.36</div><div class="l">Moment, lb-in</div></div>
+              <div class="a-meter"><div class="v">852.20</div><div class="l">Useful load, lb</div></div>
+            </div>
+            <p class="muted" style="font-size:15px;margin:12px 0 0">Max gross 2300 lb. Computed, not weighed: GTN 650 installed and KX-155 removed.</p>
+          </section>
+          <section class="a-sec">
+            <div class="a-sechead"><h2 class="a-h2">Revisions</h2><span class="muted" style="font-size:15px">2</span></div>
+            <table class="a-table plain mid" style="margin-top:4px">
+              <thead><tr><th>Date</th><th>Method</th><th class="r">Empty weight</th><th class="r">Arm</th><th class="r">Moment</th><th>Reason</th></tr></thead>
+              <tbody>
+                <tr><td style="white-space:nowrap"><b>Mar 12, 2019</b><div><span class="a-tag" style="margin-top:4px">Current</span></div></td><td>Computed</td><td class="r num">1447.80</td><td class="r num">39.610</td><td class="r num">57,347.36</td><td>Installed GTN 650, removed KX-155<div><a class="a-src" href="#"><i data-lucide="file-text"></i>Form 337</a></div></td></tr>
+                <tr><td style="white-space:nowrap"><b>Apr 18, 1998</b></td><td>Weighed</td><td class="r num">1441.20</td><td class="r num">39.420</td><td class="r num">56,812.10</td><td>Reweighed at the annual<div><a class="a-src" href="#"><i data-lucide="file-text"></i>W&amp;B report, 1998</a></div></td></tr>
+              </tbody>
+            </table>
+          </section>
+          <p class="a-note" style="margin-top:20px"><i data-lucide="info"></i>An index of your W&amp;B revisions, not a loading calculator and not the official W&amp;B record.</p>
+        </div>
+        <aside class="a-panel" style="margin-top:30px;display:grid;gap:16px">
+          <h2 class="a-h3" style="font-size:20px">New revision</h2>
+          <div class="a-form2">
+            <div class="a-field"><label>Date</label><div class="a-input">Jun 8, 2021</div></div>
+            <div class="a-field"><label>Method</label><div class="a-seg" style="height:48px;display:grid;grid-template-columns:1fr 1fr"><span style="display:grid;place-items:center;padding:0 8px">Weighed</span><span class="on" style="display:grid;place-items:center;padding:0 8px">Computed</span></div></div>
+            <div class="a-field"><label>Empty weight, lb</label><div class="a-input num focus">1448.60</div></div>
+            <div class="a-field"><label>CG arm, in</label><div class="a-input num">39.622</div></div>
+          </div>
+          <div class="a-field"><label>Moment, lb-in</label><div class="a-input num" style="background:var(--shade)">57,396.43</div><span class="hint">Worked out from weight and arm. Enter any two.</span></div>
+          <div class="a-field"><label>Reason for the change</label><div class="a-input">New vacuum pump, Rapco RA215CC</div></div>
+          <div class="a-field"><label>Reference</label><div class="a-select">8130-3, vacuum pump (Vault)<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></div>
+          <div style="display:flex;gap:10px"><a class="a-btn" href="#">Save revision</a><a class="a-btn quiet" href="#">Cancel</a></div>
+        </aside>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-docs">
+  <figcaption><b>Documents</b><span>The Records Vault. The four papers that must be aboard are checked as a set at the top; expiry dates sit in the list and also on the due list (new: registration and insurance count as due items). Categories down the side instead of one long scroll.</span><em>Replaces: /aircraft/[id]/documents</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#" aria-current="page">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Hours and meters</a><a href="#">Oil and engine</a><a href="#">Equipment</a><a href="#">Weight and balance</a><a class="on" href="#">Documents <span class="n">14</span></a><a href="#">Details</a></nav>
+      <div class="a-head">
+        <div><h1 class="a-h1">14 documents. The four you carry aboard are all here.</h1>
+        <p class="a-sub">Registration runs to Mar 31, 2029. The insurance policy has no expiry date yet, so the due list shows it as needing information.</p></div>
+        <a class="a-btn" href="#"><i data-lucide="upload"></i>Upload a document</a>
+      </div>
+      <div class="a-sechead" style="margin-top:34px;border-bottom-width:1px"><h2 class="a-h3" style="font-size:20px">Carry aboard</h2><a href="#" style="display:inline-flex;gap:6px;align-items:center"><i data-lucide="printer" style="width:16px;height:16px"></i>Print the list</a></div>
+      <div class="a-arow" style="margin-top:14px">
+        <div><span class="k">A</span><b>Airworthiness certificate</b><span class="a-st ok plain"><i data-lucide="check"></i>In the Vault</span><span>Standard, issued Jan 1978</span></div>
+        <div><span class="k">R</span><b>Registration</b><span class="a-st ok plain"><i data-lucide="check"></i>To Mar 31, 2029</span><span>Renew from Dec 2028</span></div>
+        <div><span class="k">O</span><b>Operating handbook</b><span class="a-st ok plain"><i data-lucide="check"></i>In the Vault</span><span>1978 POH, 312 pages</span></div>
+        <div><span class="k">W</span><b>Weight and balance</b><span class="a-st soon plain"><i data-lucide="clock-3"></i>May be out of date</span><span>Mar 2019 revision</span></div>
+      </div>
+      <div class="a-split" style="margin-top:36px;grid-template-columns:250px 1fr;gap:40px">
+        <nav class="a-side">
+          <a class="on" href="#">All<span class="num">14</span></a><a href="#">Certificates<span class="num">3</span></a><a href="#">Insurance<span class="num">1</span></a><a href="#">STCs and 337s<span class="num">2</span></a><a href="#">Parts tags, 8130-3<span class="num">2</span></a><a href="#">Overhaul records<span class="num">1</span></a><a href="#">Manuals<span class="num">1</span></a><a href="#">Weight and balance<span class="num">1</span></a><a href="#">Oil analysis<span class="num">3</span></a>
+        </nav>
+        <table class="a-table mid">
+          <thead><tr><th>Document</th><th>Reference</th><th>Dated</th><th>Expires</th><th></th></tr></thead>
+          <tbody>
+            <tr class="grp"><th colspan="5">Certificates</th></tr>
+            <tr><td><div class="t">Airworthiness certificate</div></td><td>FAA 8100-2, Standard</td><td>Jan 1978</td><td class="muted">Does not expire</td><td class="r"><a class="a-btn sm quiet" href="#" aria-label="Download"><i data-lucide="download"></i></a></td></tr>
+            <tr><td><div class="t">Registration certificate</div></td><td>FAA 8050-3</td><td>Mar 2022</td><td><span class="a-st ok"><i data-lucide="check"></i>Mar 31, 2029</span></td><td class="r"><a class="a-btn sm quiet" href="#" aria-label="Download"><i data-lucide="download"></i></a></td></tr>
+            <tr><td><div class="t">Radio station license</div></td><td>FCC</td><td>Jun 2020</td><td><span class="a-st ok"><i data-lucide="check"></i>Jun 2030</span></td><td class="r"><a class="a-btn sm quiet" href="#" aria-label="Download"><i data-lucide="download"></i></a></td></tr>
+            <tr class="grp"><th colspan="5">Insurance</th></tr>
+            <tr><td><div class="t">Insurance policy</div><div class="d">Hull and liability, renewed Aug 2026</div></td><td class="num">AV-118404</td><td>Aug 2026</td><td><span class="a-st unk"><i data-lucide="circle-help"></i>No date on file</span><div style="margin-top:4px"><a href="#" style="font-size:15px;font-weight:600">Add the expiry date</a></div></td><td class="r"><a class="a-btn sm quiet" href="#" aria-label="Download"><i data-lucide="download"></i></a></td></tr>
+            <tr class="grp"><th colspan="5">STCs and 337s</th></tr>
+            <tr><td><div class="t">STC SA01714WI, GTN 650</div><div class="d">Linked to <a href="#">Mar 12, 2019 install</a></div></td><td class="num">SA01714WI</td><td>Mar 2019</td><td class="muted">Does not expire</td><td class="r"><a class="a-btn sm quiet" href="#" aria-label="Download"><i data-lucide="download"></i></a></td></tr>
+            <tr><td><div class="t">Form 337, GTN 650 install</div><div class="d">SkyTech Avionics</div></td><td>FAA 337</td><td>Mar 2019</td><td class="muted">Does not expire</td><td class="r"><a class="a-btn sm quiet" href="#" aria-label="Download"><i data-lucide="download"></i></a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="font-size:15px;margin:14px 0 0 290px">8 more below: parts tags, the 2005 engine overhaul record, the POH, the 1998 W&amp;B report and three Blackstone oil reports.</p>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-details">
+  <figcaption><b>Aircraft details and the danger zone</b><span>What the FAA registry filled in, editable, plus the aircraft's paint scheme. Transfer and delete move here from the sharing page and sit apart at the bottom; delete lists what it removes and waits for the tail number to be typed.</span><em>Replaces: /aircraft/[id]/details and the transfer and delete panels of /aircraft/[id]/share</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#" aria-current="page">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Hours and meters</a><a href="#">Oil and engine</a><a href="#">Equipment</a><a href="#">Weight and balance</a><a href="#">Documents <span class="n">14</span></a><a class="on" href="#">Details</a></nav>
+      <div class="a-head">
+        <div><h1 class="a-h1">Aircraft details</h1>
+        <p class="a-sub">Filled from the FAA registry when you added N734DM. Correct anything that is wrong here; the registry itself is not changed.</p></div>
+        <a class="a-btn" href="#">Save changes</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px 20px;margin-top:28px">
+        <div class="a-field"><label>Tail number</label><div class="a-input" style="font-weight:700">N734DM</div></div>
+        <div class="a-field"><label>Year</label><div class="a-input num">1978</div></div>
+        <div class="a-field"><label>Serial number</label><div class="a-input num">17269841</div></div>
+        <div class="a-field"><label>Make</label><div class="a-input">Cessna</div></div>
+        <div class="a-field"><label>Model</label><div class="a-input">172N</div></div>
+        <div class="a-field"><label>Home airport</label><div class="a-input">KBFI</div></div>
+        <div class="a-field"><label>Engine</label><div class="a-input">Lycoming O-320-H2AD</div></div>
+        <div class="a-field"><label>Engine serial</label><div class="a-input num">L-14238-27A</div></div>
+        <div class="a-field"><label>Mode S code</label><div class="a-input num">A9B3F2</div><span class="hint">From the registry, used for ADS-B flights</span></div>
+        <div class="a-field"><label>Propeller</label><div class="a-input">McCauley 1C160/DTM7557</div></div>
+        <div class="a-field"><label>Propeller serial</label><div class="a-input num">EM-77341</div></div>
+        <div class="a-field"><label>Flying per week</label><div class="a-select">About 3 h, from your readings<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></div>
+      </div>
+      <section class="a-sec" style="margin-top:36px">
+        <div class="a-sechead" style="border-bottom-width:1px"><h2 class="a-h3" style="font-size:20px">Paint scheme</h2><span class="muted" style="font-size:15px">Colors the header for this aircraft only</span></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px">
+          <div class="a-swatch on"><div class="p">N734DM</div><div class="st"></div><div class="n"><i data-lucide="circle-check" style="width:18px;height:18px"></i>Petrol and capri</div></div>
+          <div class="a-swatch da scheme-burgundy"><div class="p">N734DM</div><div class="st"></div><div class="n">Burgundy and tan</div></div>
+          <div class="a-swatch da scheme-graphite"><div class="p">N734DM</div><div class="st"></div><div class="n">Graphite and violet</div></div>
+          <div class="a-swatch" style="border-style:dashed;display:grid;place-items:center;min-height:100px;color:var(--ink-2);font-weight:600;font-size:15px">Match my paint</div>
+        </div>
+      </section>
+      <section class="a-sec" style="margin-top:48px">
+        <div class="a-sechead"><h2 class="a-h2">Hand over or remove</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:18px">
+          <div style="display:grid;gap:12px;align-content:start">
+            <h3 class="a-h3">Transfer to a new owner</h3>
+            <p class="ink2" style="margin:0;font-size:16px">Moves N734DM and all its records to another MyTailLog account. You lose access unless they share it back.</p>
+            <div style="display:flex;gap:10px"><div class="a-input" style="color:var(--ink-3)">Buyer's email</div><a class="a-btn ghost" href="#">Transfer</a></div>
+          </div>
+          <div class="a-panel" style="border-color:var(--bad);display:grid;gap:12px">
+            <h3 class="a-h3" style="color:var(--bad)">Delete N734DM</h3>
+            <p style="margin:0;font-size:16px">This removes 412 page scans, 212 entries, 14 documents and the live record room link for J. Okafor. It cannot be undone. <a href="#">Download a backup first</a></p>
+            <div class="a-field"><label>Type N734DM to confirm</label><div class="a-input focus num">N734D</div></div>
+            <div style="display:flex;gap:10px"><span class="a-btn danger" aria-disabled="true" style="opacity:.5"><i data-lucide="trash-2"></i>Delete N734DM</span><a class="a-btn quiet" href="#">Cancel</a></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<!-- ===================== ANNUAL AND AUDIT ===================== -->
+<h2 class="g-h2" id="a-annual">The annual and the records audit</h2>
+<p class="g-prose">The owner is getting ready to hand the aircraft and the books to the IA, or checking that the digitized records hold together. Today Annual prep and Records gaps are read-only dashboards that link away, findings cannot be dismissed, and nothing can be fixed in place. Here annual prep uses the horizon to show what falls due before the annual, and every loose end in the records carries the fix beside it.</p>
+
+<figure class="g-shot" id="a-w-annual">
+  <figcaption><b>Annual prep</b><span>The horizon from today to the annual: date-limited items above the dark stripe, hour-limited items below the light one, converted to "about" dates. Under it, what the shop will need and the loose ends to tidy first, ending in one action: share it with the IA.</span><em>Replaces: /aircraft/[id]/annual</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#" aria-current="page">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Due</a><a href="#">ADs and SBs</a><a href="#">Squawks <span class="n">2</span></a><a class="on" href="#">Annual prep</a><a href="#">Records audit <span class="n">6</span></a></nav>
+      <div class="a-head">
+        <div><h1 class="a-h1" style="max-width:26ch">The annual is due by Jul 31, 2027. Six items fall due before it, and the books have three loose ends.</h1>
+        <p class="a-sub">D. Alvarez, A&amp;P 3105582 IA, did the last one on Jul 14 at tach 4168.3. <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 60</a></p></div>
+        <div style="display:flex;gap:10px"><a class="a-btn ghost" href="#"><i data-lucide="printer"></i>Print summary</a><a class="a-btn" href="#"><i data-lucide="share-2"></i>Share with your IA</a></div>
+      </div>
+      <section class="a-hz mini" aria-label="From today to the annual" style="margin-top:56px">
+        <div class="a-hz-lane">
+          <div class="a-flag bad left" style="--x:0%"><b>VOR check lapsed</b><span>Nov 11, IFR only</span></div>
+          <div class="a-flag soon" style="--x:16.9%"><b>Transponder, static</b><span>Dec 31</span></div>
+          <div class="a-flag ok" style="--x:40%"><b>ELT battery</b><span>Feb 28</span></div>
+          <div class="a-flag left" style="--x:100%;border-right-color:var(--ink);width:max-content"><b>Annual, ELT inspection</b><span>Jul 31, in 255 days</span></div>
+        </div>
+        <div style="position:relative">
+          <div class="a-hz-ticks top" aria-hidden="true"><span style="left:5.1%">Dec</span><span style="left:17.3%">Jan</span><span style="left:29.4%">Feb</span><span style="left:40.4%">Mar</span><span style="left:52.5%">Apr</span><span style="left:64.3%">May</span><span style="left:76.5%">Jun</span><span style="left:88.2%">Jul 2027</span></div>
+          <div class="a-hz-band"></div>
+          <div class="a-hz-band hrs"></div>
+          <div class="a-hz-pin"></div>
+          <div class="a-now" style="--x:0%"></div>
+        </div>
+        <div class="a-hz-lane below">
+          <div class="a-flag down soon" style="--x:9.4%"><b>Oil and filter</b><span>9.7 h, about Dec 12</span></div>
+          <div class="a-flag down ok" style="--x:51%"><b>AD 2011-10-09, next oil change</b><span>55.9 h and 59.7 h, about Apr</span></div>
+        </div>
+      </section>
+      <div class="a-banner info" style="margin-top:26px"><i data-lucide="merge"></i><span><b>Do these together.</b> The seat-rail AD and the second oil change come due within 4 hours of each other, about early April. One shop visit covers both.</span><a href="#" style="margin-left:auto;font-weight:700;color:inherit;white-space:nowrap">Plan the visit</a></div>
+      <div class="a-grid3" style="margin-top:12px;gap:40px">
+        <section class="a-sec" style="margin-top:28px">
+          <div class="a-sechead"><h2 class="a-h2" style="font-size:20px">Due before the annual</h2><span class="muted" style="font-size:15px">6</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-mark bad"><i data-lucide="triangle-alert"></i></span><div><div class="t" style="font-size:17px">VOR check</div><div class="d">Lapsed Nov 11, IFR only</div></div><span class="a-kind cal">date</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t" style="font-size:17px">Oil and filter</div><div class="d">Tach 4222.1, about Dec 12</div></div><span class="a-kind hrs">hours</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-mark soon"><i data-lucide="clock-3"></i></span><div><div class="t" style="font-size:17px">Transponder, pitot-static</div><div class="d">Dec 31, AeroCheck last time</div></div><span class="a-kind cal">date</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t" style="font-size:17px">ELT battery</div><div class="d">Feb 28</div></div><span class="a-kind cal">date</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t" style="font-size:17px">AD 2011-10-09 seat rails</div><div class="d">Tach 4268.3, about Apr</div></div><span class="a-kind hrs">hours</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-mark ok"><i data-lucide="check"></i></span><div><div class="t" style="font-size:17px">Oil and filter, again</div><div class="d">Tach 4272.1, about Apr</div></div><span class="a-kind hrs">hours</span></div>
+        </section>
+        <section class="a-sec" style="margin-top:28px">
+          <div class="a-sechead"><h2 class="a-h2" style="font-size:20px">Squawks for the shop</h2><span class="muted" style="font-size:15px">2 open</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr;padding:12px 0"><span class="a-st soon"><i data-lucide="eye"></i>Watch</span><div><div class="t" style="font-size:17px">Left brake feels soft</div><div class="d">Reported Nov 8 by Dana, with a photo</div></div></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr;padding:12px 0"><span class="a-st unk"><i data-lucide="info"></i>Low</span><div><div class="t" style="font-size:17px">Nav light lens cracked</div><div class="d">Reported Oct 21 by Dana</div></div></div>
+          <p class="a-note" style="margin-top:12px"><i data-lucide="link"></i>Both go to D. Alvarez with the share link. Cleared last time: alternator belt squeal, by the Jul 14 entry.</p>
+        </section>
+        <section class="a-sec" style="margin-top:28px">
+          <div class="a-sechead"><h2 class="a-h2" style="font-size:20px">Tidy the books first</h2><span class="muted" style="font-size:15px">3</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-check"></span><div><div class="t" style="font-size:17px">Review 6 scanned pages</div><div class="d">4 read cleanly, 2 need a look</div></div><a class="a-btn sm ghost" href="#">Review</a></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-check"></span><div><div class="t" style="font-size:17px">Prop time disagrees</div><div class="d">936.5 written, 963.5 worked out</div></div><a class="a-btn sm ghost" href="#">Check</a></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-check"></span><div><div class="t" style="font-size:17px">1983 to 1991 missing</div><div class="d">No airframe pages scanned</div></div><a class="a-btn sm ghost" href="#">Scan</a></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0;color:var(--ink-3)"><span class="a-check on"><i data-lucide="check" style="width:15px;height:15px"></i></span><div><div class="t" style="font-size:17px;color:var(--ink-2)">Equipment list checked</div><div class="d">Nov 2</div></div><span></span></div>
+        </section>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-audit">
+  <figcaption><b>Records audit: gaps, duplicates, mis-keyed readings</b><span>Every lead from the records in one list, each with the evidence and a fix in place: scan the missing years, accept a corrected reading, keep one of two duplicate photos. Findings can be marked as known, so a lost logbook is said once and not flagged forever.</span><em>Replaces: /aircraft/[id]/audit and /aircraft/[id]/duplicates</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#" aria-current="page">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Due</a><a href="#">ADs and SBs</a><a href="#">Squawks <span class="n">2</span></a><a href="#">Annual prep</a><a class="on" href="#">Records audit <span class="n">6</span></a></nav>
+      <h1 class="a-h1">Six things in the records are worth a look.</h1>
+      <p class="a-sub">These are leads from your confirmed entries, measured against what 91.417 asks an owner to keep. A gap often just means the pages are not scanned yet.</p>
+      <section class="a-sec" style="margin-top:34px">
+        <div class="a-sechead"><h2 class="a-h2">Gaps</h2><span class="muted" style="font-size:15px">2</span></div>
+        <div class="a-row" style="grid-template-columns:auto 1fr auto">
+          <span class="a-mark unk"><i data-lucide="circle-help"></i></span>
+          <div><div class="t">No airframe entries from 1983 to 1991</div><div class="d">Nine years with no annual on record. The engine log has 6 entries in those years, so the aircraft was flying. <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 18</a> ends in 1982, <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 19</a> starts in 1992.</div></div>
+          <div style="display:flex;gap:8px"><a class="a-btn quiet sm" href="#">The books are lost</a><a class="a-btn sm" href="#"><i data-lucide="scan-line"></i>Scan these years</a></div>
+        </div>
+        <div class="a-row" style="grid-template-columns:auto 1fr auto">
+          <span class="a-mark unk"><i data-lucide="circle-help"></i></span>
+          <div><div class="t">No annual found for 2017</div><div class="d">Airframe entries go from the Jun 2016 annual to Sep 2017 with no annual between. It may be on a page read as 2016. <a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 50</a></div></div>
+          <div style="display:flex;gap:8px"><a class="a-btn quiet sm" href="#">Mark as known</a><a class="a-btn sm ghost" href="#">Open the page</a></div>
+        </div>
+      </section>
+      <section class="a-sec" style="margin-top:34px">
+        <div class="a-sechead"><h2 class="a-h2">Readings that look mis-keyed</h2><span class="muted" style="font-size:15px">3</span></div>
+        <table class="a-table plain mid" style="margin-top:4px">
+          <thead><tr><th>Date</th><th>From</th><th>Reading</th><th>Why it stands out</th><th class="r">Suggested</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Oct 19, 2026</td><td>MyFlightBook</td><td class="num">Hobbs 4200.2</td><td>Same as the tach, probably copied into hobbs</td><td class="r num"><b>4668.2</b></td><td class="r" style="white-space:nowrap"><a class="a-btn sm ghost" href="#">Use 4668.2</a> <a class="a-btn sm quiet" href="#">Keep</a></td></tr>
+            <tr><td>Mar 3, 2014</td><td><a class="a-src" href="#"><i data-lucide="file-text"></i>Airframe p. 47</a></td><td class="num">Tach 3621.0</td><td>Lower than the reading before it, 3712.4</td><td class="r num"><b>3721.0</b></td><td class="r" style="white-space:nowrap"><a class="a-btn sm ghost" href="#">Use 3721.0</a> <a class="a-btn sm quiet" href="#">Keep</a></td></tr>
+            <tr><td>Jul 14, 2026</td><td><a class="a-src" href="#"><i data-lucide="file-text"></i>Propeller p. 12</a></td><td class="num">936.5 SPOH</td><td>Works out to 963.5 from the 2010 overhaul</td><td class="r num"><b>963.5</b></td><td class="r" style="white-space:nowrap"><a class="a-btn sm ghost" href="#">Add a note</a> <a class="a-btn sm quiet" href="#">Keep</a></td></tr>
+          </tbody>
+        </table>
+        <p class="a-note" style="margin-top:8px"><i data-lucide="info"></i>A page reading is never changed to match the arithmetic. A note records the difference, and the paper stays as written.</p>
+      </section>
+      <section class="a-sec" style="margin-top:34px">
+        <div class="a-sechead"><h2 class="a-h2">Pages photographed twice</h2><span class="muted" style="font-size:15px">1 pair</span></div>
+        <div style="display:grid;grid-template-columns:150px 150px 1fr;gap:24px;align-items:start;margin-top:18px">
+          <div><div class="scan" style="--lh:10px;--top:16px;outline:3px solid var(--s1);outline-offset:2px"></div><b style="display:block;margin-top:10px;font-size:16px">Airframe p. 44</b><span class="muted" style="font-size:15px">3 entries, sharper</span></div>
+          <div><div class="scan photo" style="--lh:10px;--top:16px;filter:blur(.4px)"></div><b style="display:block;margin-top:10px;font-size:16px">Airframe p. 45</b><span class="muted" style="font-size:15px">3 entries, same dates</span></div>
+          <div style="display:grid;gap:12px;align-content:start">
+            <p style="margin:0;font-size:17px">These two look like the same page. All three entries match on date, tach and wording. Keep p. 44; the photo of p. 45 is slightly blurred.</p>
+            <div style="display:flex;gap:10px"><a class="a-btn ghost" href="#">Keep p. 44, remove p. 45</a><a class="a-btn quiet" href="#">They are different pages</a></div>
+            <span class="muted" style="font-size:15px">Removing asks once more and names what goes: 1 page and its 3 entries.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<!-- ===================== HAND-OFFS ===================== -->
+<h2 class="g-h2" id="a-handoffs">Hand-offs</h2>
+<p class="g-prose">The owner is giving the records to someone: the IA before the annual, a buyer, an insurer, a co-owner. Today the share page asks for a free-text label and a list of checkboxes, links cannot be previewed or edited, the summary quietly includes reporter names, and the recipient gets bare tabs with a 500-entry cap. Here sharing starts from who it is for, the link shows what it exposes and who opened it, and the printed documents carry a footnote to the page behind every figure.</p>
+
+<figure class="g-shot" id="a-w-share">
+  <figcaption><b>Share</b><span>Four audiences, each with a sensible default for what to include and how long the link lives. Live links show their expiry, visit count and log, with copy, QR and revoke beside them; people with accounts and their roles sit underneath.</span><em>Replaces: /aircraft/[id]/share (record room links and people)</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#" aria-current="page">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a class="on" href="#">Links and people</a><a href="#">Maintenance summary</a><a href="#">Pre-buy dossier</a><a href="#">Import and export</a></nav>
+      <h1 class="a-h1">Who is this for?</h1>
+      <p class="a-sub">Pick the audience and MyTailLog builds the right link: what they see, how long it lasts, and a count of every visit. They do not need an account.</p>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:56px;margin-top:28px;align-items:start">
+        <section>
+          <div class="a-rows" style="border-top:1px solid var(--line)">
+            <div class="a-aud"><span class="a-radio"></span><div><div class="t">Your IA, for the annual</div><div class="d">Annual prep, what is due, open squawks, confirmed entries. 30 days.</div></div></div>
+            <div class="a-aud on"><span class="a-radio on"></span><div style="display:grid;gap:14px"><div><div class="t">A buyer</div><div class="d">Pre-buy dossier, confirmed entries, documents, and the gaps said plainly.</div></div>
+              <div class="a-field"><label>Who it is for</label><div class="a-input focus">Pre-buy for T. Nguyen</div></div>
+              <div style="display:grid;gap:10px;font-size:16px">
+                <label style="display:flex;gap:10px;align-items:center"><span class="a-check on"><i data-lucide="check" style="width:15px;height:15px"></i></span>Pre-buy dossier and maintenance summary</label>
+                <label style="display:flex;gap:10px;align-items:center"><span class="a-check on"><i data-lucide="check" style="width:15px;height:15px"></i></span>212 confirmed entries, all five logbooks</label>
+                <label style="display:flex;gap:10px;align-items:center"><span class="a-check on"><i data-lucide="check" style="width:15px;height:15px"></i></span>12 of 14 documents <a href="#" style="font-size:15px">Choose</a></label>
+                <label style="display:flex;gap:10px;align-items:center"><span class="a-check"></span>Page scans <span class="muted" style="font-size:15px">may show text you have not confirmed</span></label>
+                <label style="display:flex;gap:10px;align-items:center"><span class="a-check"></span>Names of who reported each squawk</label>
+              </div>
+              <div style="display:flex;gap:16px;align-items:center"><span class="a-label">Expires in</span><div class="a-seg"><span>7 days</span><span class="on">30 days</span><span>90 days</span></div></div>
+              <div style="display:flex;gap:12px;align-items:center"><a class="a-btn" href="#"><i data-lucide="link"></i>Make the link</a><a class="a-btn quiet" href="#"><i data-lucide="eye"></i>See it as they will</a></div>
+            </div></div>
+            <div class="a-aud"><span class="a-radio"></span><div><div class="t">An insurer</div><div class="d">Maintenance summary, registration and airworthiness certificate. 14 days.</div></div></div>
+            <div class="a-aud"><span class="a-radio"></span><div><div class="t">A co-owner or mechanic</div><div class="d">An account with view or edit rights instead of a link.</div></div></div>
+          </div>
+        </section>
+        <section>
+          <div class="a-sechead"><h2 class="a-h2" style="font-size:20px">Live links</h2><span class="muted" style="font-size:15px">1</span></div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:20px;padding:18px 0;border-bottom:1px solid var(--line)">
+            <div style="display:grid;gap:6px;align-content:start">
+              <div class="t" style="font-weight:700;font-size:18px">Pre-buy for J. Okafor</div>
+              <div class="d ink2" style="font-size:15px">Made Nov 12. Dossier, entries, 12 documents.</div>
+              <div style="display:flex;gap:16px;margin-top:4px;font-size:15px"><span class="a-st ok plain"><i data-lucide="calendar-clock"></i>Expires Dec 18</span><span class="a-st plain" style="color:var(--ink-2)"><i data-lucide="eye"></i>Opened 3 times</span></div>
+              <div style="display:flex;gap:8px;margin-top:8px"><a class="a-btn sm ghost" href="#"><i data-lucide="copy"></i>Copy link</a><a class="a-btn sm ghost" href="#">Edit</a><a class="a-btn sm quiet" href="#" style="color:var(--bad)">Revoke</a></div>
+            </div>
+            <div class="a-qr" style="width:118px;height:118px"><i data-lucide="qr-code" style="width:96px;height:96px"></i></div>
+          </div>
+          <table class="a-table plain" style="margin-top:6px;font-size:15px">
+            <thead><tr><th>Visit</th><th>Looked at</th></tr></thead>
+            <tbody><tr><td>Nov 16, 7:42 pm</td><td>Engine logbook, documents</td></tr><tr><td>Nov 13, 9:05 am</td><td>Summary, pre-buy dossier</td></tr><tr><td>Nov 12, 4:18 pm</td><td>Summary</td></tr></tbody>
+          </table>
+          <p class="muted" style="font-size:15px;margin:10px 0 0">Ended: Insurance renewal, expired Sep 14. <a href="#">Show</a></p>
+          <div class="a-sechead" style="margin-top:34px"><h2 class="a-h2" style="font-size:20px">People with an account</h2><a href="#">Invite</a></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-avatar" style="background:var(--s1);color:var(--on-s1);width:36px;height:36px;font-size:14px">DM</span><div><div class="t" style="font-size:17px">Dana Morgan, you</div><div class="d">dana@example.com</div></div><span class="ink2" style="font-size:15px;font-weight:600">Owner</span></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-avatar" style="background:var(--s2-tint);color:var(--s1);width:36px;height:36px;font-size:14px">SR</span><div><div class="t" style="font-size:17px">Sam Reyes</div><div class="d">Co-owner</div></div><div class="a-select" style="height:40px;width:auto;font-size:15px;gap:8px">Can edit<i data-lucide="chevron-down" class="muted"></i></div></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><span class="a-avatar" style="background:var(--shade);color:var(--ink-2);width:36px;height:36px;font-size:14px">DA</span><div><div class="t" style="font-size:17px">D. Alvarez</div><div class="d">A&amp;P 3105582 IA</div></div><div class="a-select" style="height:40px;width:auto;font-size:15px;gap:8px">Can view<i data-lucide="chevron-down" class="muted"></i></div></div>
+        </section>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-room">
+  <figcaption><b>Record room, as the recipient sees it</b><span>No account and no app navigation, but the same painted header, so the buyer knows whose aircraft this is. It opens with an "as of" date, a plain summary, and a plain statement of what the records do not include. Every figure keeps its page citation.</span><em>Replaces: /r/[token]</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top" style="grid-template-columns:auto 1fr auto">
+      <span class="a-tail"><b>N734DM</b><span>1978 Cessna 172N<br>S/N 17269841</span></span>
+      <span></span>
+      <span style="text-align:right;font-size:15px;color:var(--on-s1-2);line-height:1.35">Shared by Dana Morgan for J. Okafor<br>This link works until Dec 18</span>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <div class="a-head">
+        <div><h1 class="a-h1">The records as of Nov 18, 2026</h1>
+        <p class="a-sub">An index the owner built from the paper logbooks, showing only entries the owner has confirmed. The paper logbooks are the legal record (14 CFR 91.417); check them before you rely on anything here.</p></div>
+        <a class="a-btn" href="#"><i data-lucide="download"></i>Download the dossier</a>
+      </div>
+      <nav class="a-tabs"><a class="on" href="#">Summary</a><a href="#">Airframe <span class="n">131</span></a><a href="#">Engine <span class="n">52</span></a><a href="#">Propeller <span class="n">14</span></a><a href="#">Avionics <span class="n">11</span></a><a href="#">Documents <span class="n">12</span></a></nav>
+      <div class="a-grid2" style="margin-top:30px;grid-template-columns:1.5fr 1fr">
+        <section>
+          <p style="font:700 24px/1.3 var(--f-d);font-stretch:106%;margin:0;max-width:34ch">One check has lapsed, the VOR check, which matters only for flight under IFR. Nothing else tracked is overdue.</p>
+          <table class="a-table mid" style="margin-top:22px">
+            <thead><tr><th>Item</th><th>Last done</th><th>Next due</th><th>State</th></tr></thead>
+            <tbody>
+              <tr><td><b>VOR check</b></td><td>Oct 12, 2026 <a class="a-src" href="#"><i data-lucide="file-text"></i>p. 61</a></td><td>Nov 11, 2026</td><td><span class="a-st bad"><i data-lucide="triangle-alert"></i>Lapsed</span></td></tr>
+              <tr><td><b>Oil and filter</b></td><td>Sep 3, 2026 <a class="a-src" href="#"><i data-lucide="file-text"></i>p. 38</a></td><td class="num">tach 4222.1</td><td><span class="a-st soon"><i data-lucide="clock-3"></i>Due soon</span></td></tr>
+              <tr><td><b>Transponder, pitot-static</b></td><td>Dec 3, 2024 <a class="a-src" href="#"><i data-lucide="file-text"></i>p. 58</a></td><td>Dec 31, 2026</td><td><span class="a-st soon"><i data-lucide="clock-3"></i>Due soon</span></td></tr>
+              <tr><td><b>Annual inspection</b></td><td>Jul 14, 2026 <a class="a-src" href="#"><i data-lucide="file-text"></i>p. 60</a></td><td>Jul 31, 2027</td><td><span class="a-st ok"><i data-lucide="check"></i>Current</span></td></tr>
+              <tr><td><b>AD 2011-10-09</b></td><td>Jul 14, 2026 <a class="a-src" href="#"><i data-lucide="file-text"></i>p. 60</a></td><td class="num">tach 4268.3</td><td><span class="a-st ok"><i data-lucide="check"></i>Current</span></td></tr>
+              <tr><td><b>ELT battery</b></td><td>Feb 11, 2023</td><td>Feb 28, 2027</td><td><span class="a-st ok"><i data-lucide="check"></i>Current</span></td></tr>
+            </tbody>
+          </table>
+          <p class="muted" style="font-size:15px;margin:10px 0 0">6 of 11 tracked items. <a href="#">Show all</a></p>
+        </section>
+        <aside style="display:grid;gap:26px;align-content:start">
+          <section>
+            <div class="a-sechead" style="border-bottom-width:1px"><h2 class="a-h3" style="font-size:20px">Engine and propeller</h2></div>
+            <dl class="a-kv" style="margin-top:12px">
+              <dt>Engine</dt><dd><span class="num">1409.4</span> h since overhaul, Sep 2005 <a class="a-src" href="#"><i data-lucide="file-text"></i>Engine p. 22</a></dd>
+              <dt>Propeller</dt><dd><span class="num">1007.6</span> h since overhaul, Apr 2010 <a class="a-src" href="#"><i data-lucide="file-text"></i>Prop p. 9</a></dd>
+              <dt>Tach</dt><dd><span class="num">4212.4</span>, read Nov 14</dd>
+            </dl>
+          </section>
+          <section class="a-well">
+            <h2 class="a-h3" style="font-size:19px">What this does not include</h2>
+            <ul style="margin:10px 0 0;padding-left:20px;font-size:16px;display:grid;gap:8px">
+              <li>No airframe pages for 1983 to 1991 have been scanned. The owner says the books for those years are being looked for.</li>
+              <li>6 pages scanned on Nov 15 are not confirmed yet and are not shown.</li>
+              <li>Page photos are not part of this link. Ask the owner to see the paper books.</li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+      <p class="a-note" style="margin-top:36px;border-top:1px solid var(--line);padding-top:18px"><i data-lucide="book-open"></i>Kept with MyTailLog, a free and open-source logbook index for aircraft owners. Your visits are counted for the owner; nothing else about you is kept.</p>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-dossier">
+  <figcaption><b>Pre-buy dossier</b><span>A typeset document, shown as it will print: white paper whatever the app theme, the aircraft's colour used only for footnote marks. Every figure carries a footnote to the logbook page behind it, and the items to investigate come first.</span><em>Replaces: /aircraft/[id]/prebuy</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#" aria-current="page">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page wide" style="padding-top:32px">
+      <div style="max-width:1304px;margin:0 auto">
+        <nav class="a-tabs top"><a href="#">Links and people</a><a href="#">Maintenance summary</a><a class="on" href="#">Pre-buy dossier</a><a href="#">Import and export</a></nav>
+        <div class="a-head" style="margin-bottom:24px">
+          <div><h1 class="a-h1" style="font-size:32px">Two pages, every figure footnoted to its page.</h1>
+          <p class="a-sub">Built from 212 confirmed entries for J. Okafor. Change who it is for, or what it includes, from the link.</p></div>
+          <div style="display:flex;gap:10px"><a class="a-btn ghost" href="#"><i data-lucide="link"></i>Share with a buyer</a><a class="a-btn" href="#"><i data-lucide="printer"></i>Print or save as PDF</a></div>
+        </div>
+        <div class="a-desk">
+          <article class="a-paper">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #111;padding-bottom:12px">
+              <div><div class="tl">N734DM</div><div style="margin-top:6px">1978 Cessna 172N, S/N 17269841</div></div>
+              <div style="text-align:right">Pre-buy dossier<br>Nov 18, 2026</div>
+            </div>
+            <div class="ti">Prepared by the owner, Dana Morgan, for J.&nbsp;Okafor</div>
+            <p>Tach <span class="num">4212.4</span>, read Nov 14, 2026. Hobbs <span class="num">4680.4</span>. Engine <span class="num">1409.4</span> h since overhaul.<sup>1</sup></p>
+            <h2>Records coverage</h2>
+            <table>
+              <thead><tr><th>Logbook</th><th class="r">Pages</th><th class="r">Confirmed</th><th>Years</th></tr></thead>
+              <tbody>
+                <tr><td>Airframe, 2 volumes</td><td class="r num">198</td><td class="r num">131</td><td>1978 to 2026, none 1983 to 1991</td></tr>
+                <tr><td>Engine</td><td class="r num">118</td><td class="r num">52</td><td>1978 to 2026</td></tr>
+                <tr><td>Propeller</td><td class="r num">41</td><td class="r num">14</td><td>1978 to 2026</td></tr>
+                <tr><td>Avionics</td><td class="r num">38</td><td class="r num">11</td><td>1992 to 2026</td></tr>
+                <tr><td>Other</td><td class="r num">17</td><td class="r num">4</td><td>1998 to 2026</td></tr>
+                <tr><td><b>All</b></td><td class="r num"><b>412</b></td><td class="r num"><b>212</b></td><td></td></tr>
+              </tbody>
+            </table>
+            <p style="margin-top:8px">Six pages scanned Nov 15, 2026 are not confirmed yet and are not counted.</p>
+            <h2>Items to investigate</h2>
+            <ol>
+              <li><b>VOR check lapsed</b> on Nov 11, 2026. Needed for IFR flight only.<sup>2</sup></li>
+              <li><b>No airframe records for 1983 to 1991.</b> Nine annual inspections are not on file; the engine log shows the aircraft flew in those years.<sup>3</sup></li>
+              <li><b>Propeller time disagrees.</b> Written as 936.5 h since overhaul at the 2026 annual; the 2010 overhaul entry gives 963.5 h.<sup>4</sup></li>
+              <li><b>Two open squawks:</b> left brake feels soft (watch), nav light lens cracked (low).</li>
+              <li><b>Weight and balance</b> last revised in 2019; a vacuum pump went in during 2021.<sup>5</sup></li>
+            </ol>
+            <div class="pg"><span>N734DM pre-buy dossier</span><span>Page 1 of 2</span></div>
+          </article>
+          <article class="a-paper">
+            <h2 style="margin-top:0">Airworthiness directives</h2>
+            <table>
+              <thead><tr><th>AD</th><th>Subject</th><th>Status</th><th>Complied</th></tr></thead>
+              <tbody>
+                <tr><td class="num">2011-10-09</td><td>Seat rails</td><td>Recurring, 100 h; next at tach 4268.3</td><td>Jul 14, 2026<sup>6</sup></td></tr>
+                <tr><td class="num">76-07-12</td><td>Fuel filler caps</td><td>Complied, one-time</td><td>1998<sup>7</sup></td></tr>
+                <tr><td class="num">2020-18-01</td><td>Fuel pump diaphragm</td><td>Not applicable, different pump part number</td><td></td></tr>
+              </tbody>
+            </table>
+            <h2>Engine and propeller</h2>
+            <p>Lycoming O-320-H2AD, S/N L-14238-27A. Overhauled Sep 14, 2005 at tach 2803.0 by Signal Engines; 1409.4 h since, 590.6 h short of the 2000 h TBO.<sup>1</sup> Last compressions May 9, 2026: 76, 74, 75, 77 over 80.<sup>8</sup> Three oil analyses from 2024 to 2026, all reported normal.<sup>9</sup></p>
+            <p>McCauley 1C160/DTM7557, S/N EM-77341. Overhauled Apr 30, 2010 at tach 3204.8.<sup>4</sup></p>
+            <h2>Avionics and equipment</h2>
+            <p>Garmin GTN 650 installed Mar 12, 2019 under STC SA01714WI, Form 337 on file; King KX-155 removed at the same time.<sup>10</sup> Rapco RA215CC vacuum pump, 2021. ACK E-04 ELT, battery due Feb 28, 2027.</p>
+            <h2>Scope</h2>
+            <p>This dossier indexes the owner's confirmed logbook entries. It is not the maintenance record and does not say the aircraft meets any standard. Inspect the paper logbooks and the aircraft before relying on it.</p>
+            <div class="fn">
+              <span><b>1</b> Engine p. 22, Sep 14, 2005</span><span><b>2</b> Airframe p. 61, Oct 12, 2026</span><span><b>3</b> Airframe p. 18 and p. 19</span><span><b>4</b> Propeller p. 12, Jul 14, 2026; Propeller p. 9, Apr 30, 2010</span><span><b>5</b> Form 337, Mar 2019; Airframe p. 55, Jun 8, 2021</span><span><b>6</b> Airframe p. 60, Jul 14, 2026</span><span><b>7</b> Airframe p. 29, Apr 18, 1998</span><span><b>8</b> Engine p. 36, May 9, 2026</span><span><b>9</b> Blackstone reports, Jun 2024, May and Sep 2026</span><span><b>10</b> Airframe p. 52, Mar 12, 2019</span>
+            </div>
+            <div class="pg"><span>Made with MyTailLog, free and open source</span><span>Page 2 of 2</span></div>
+          </article>
+        </div>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-summary">
+  <figcaption><b>Maintenance summary</b><span>The one-page picture for an insurer, a co-owner or the IA, as it will print. The panel beside it decides what goes on the page, with reporter names off by default, and the same status words and marks as the app.</span><em>Replaces: /aircraft/[id]/summary</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#" aria-current="page">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page wide" style="padding-top:32px">
+      <div style="max-width:1304px;margin:0 auto">
+        <nav class="a-tabs top"><a href="#">Links and people</a><a class="on" href="#">Maintenance summary</a><a href="#">Pre-buy dossier</a><a href="#">Import and export</a></nav>
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:36px;align-items:start">
+          <aside style="display:grid;gap:18px">
+            <h1 class="a-h1" style="font-size:30px">One page, ready to print.</h1>
+            <p class="ink2" style="margin:0;font-size:16px">Fits on one US Letter sheet. Figures come from confirmed entries only.</p>
+            <div style="display:grid;border-top:1px solid var(--line)">
+              <label class="a-opt"><span>What is due</span><span class="a-toggle on"></span></label>
+              <label class="a-opt"><span>Open squawks</span><span class="a-toggle on"></span></label>
+              <label class="a-opt"><span>Who reported them</span><span class="a-toggle"></span></label>
+              <label class="a-opt"><span>ADs</span><span class="a-toggle on"></span></label>
+              <label class="a-opt"><span>Equipment and serials</span><span class="a-toggle on"></span></label>
+              <label class="a-opt"><span>Weight and balance</span><span class="a-toggle on"></span></label>
+              <label class="a-opt"><span>Page citations</span><span class="a-toggle on"></span></label>
+            </div>
+            <a class="a-btn" href="#"><i data-lucide="printer"></i>Print or save as PDF</a>
+            <a class="a-btn ghost" href="#"><i data-lucide="copy"></i>Copy as plain text</a>
+          </aside>
+          <div class="a-desk" style="padding:32px">
+            <article class="a-paper" style="width:820px;padding:44px 52px 60px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #111;padding-bottom:10px">
+                <div><div class="tl">N734DM</div><div style="margin-top:6px">1978 Cessna 172N, S/N 17269841. Engine S/N L-14238-27A. Prop S/N EM-77341.</div></div>
+                <div style="text-align:right">Maintenance summary<br>Nov 18, 2026</div>
+              </div>
+              <p style="margin-top:12px">Tach <span class="num">4212.4</span> read Nov 14. Hobbs <span class="num">4680.4</span>. One item lapsed, three due soon, six current, one needs information. Two squawks open.</p>
+              <h2>Inspections, items and recurring ADs</h2>
+              <table>
+                <thead><tr><th>Item</th><th>Last done</th><th>Next due</th><th class="r">Left</th><th>State</th><th class="r">Page</th></tr></thead>
+                <tbody>
+                  <tr><td>VOR check, 30 days, IFR</td><td>Oct 12, 2026</td><td>Nov 11, 2026</td><td class="r">lapsed 7 d</td><td><span class="st"><i data-lucide="triangle-alert"></i>Lapsed</span></td><td class="r">A 61</td></tr>
+                  <tr><td>Oil and filter, 50 h</td><td>Sep 3, 2026</td><td class="num">tach 4222.1</td><td class="r num">9.7 h</td><td><span class="st"><i data-lucide="clock-3"></i>Due soon</span></td><td class="r">E 38</td></tr>
+                  <tr><td>Transponder, 24 months</td><td>Dec 3, 2024</td><td>Dec 31, 2026</td><td class="r">43 d</td><td><span class="st"><i data-lucide="clock-3"></i>Due soon</span></td><td class="r">A 58</td></tr>
+                  <tr><td>Pitot-static, 24 months, IFR</td><td>Dec 3, 2024</td><td>Dec 31, 2026</td><td class="r">43 d</td><td><span class="st"><i data-lucide="clock-3"></i>Due soon</span></td><td class="r">A 58</td></tr>
+                  <tr><td>ELT battery</td><td>Feb 11, 2023</td><td>Feb 28, 2027</td><td class="r">102 d</td><td><span class="st"><i data-lucide="check"></i>Current</span></td><td class="r">A 57</td></tr>
+                  <tr><td>AD 2011-10-09, 100 h</td><td>Jul 14, 2026</td><td class="num">tach 4268.3</td><td class="r num">55.9 h</td><td><span class="st"><i data-lucide="check"></i>Current</span></td><td class="r">A 60</td></tr>
+                  <tr><td>Annual, 12 months</td><td>Jul 14, 2026</td><td>Jul 31, 2027</td><td class="r">255 d</td><td><span class="st"><i data-lucide="check"></i>Current</span></td><td class="r">A 60</td></tr>
+                  <tr><td>ELT inspection, 12 months</td><td>Jul 14, 2026</td><td>Jul 31, 2027</td><td class="r">255 d</td><td><span class="st"><i data-lucide="check"></i>Current</span></td><td class="r">A 60</td></tr>
+                  <tr><td>Engine TBO, 2000 h, advisory</td><td>Sep 2005</td><td class="num">tach 4803.0</td><td class="r num">590.6 h</td><td><span class="st"><i data-lucide="check"></i>Current</span></td><td class="r">E 22</td></tr>
+                  <tr><td>Registration</td><td></td><td>Mar 31, 2029</td><td class="r"></td><td><span class="st"><i data-lucide="check"></i>Current</span></td><td class="r">Doc</td></tr>
+                  <tr><td>Insurance policy</td><td></td><td>no date on file</td><td class="r"></td><td><span class="st"><i data-lucide="circle-help"></i>Needs info</span></td><td class="r">Doc</td></tr>
+                </tbody>
+              </table>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+                <div><h2>Open squawks</h2>
+                  <table><tbody><tr><td>Nov 8</td><td>Left brake feels soft</td><td>Watch</td></tr><tr><td>Oct 21</td><td>Nav light lens cracked</td><td>Low</td></tr></tbody></table></div>
+                <div><h2>ADs</h2>
+                  <table><tbody><tr><td class="num">2011-10-09</td><td>Recurring, current</td></tr><tr><td class="num">76-07-12</td><td>Complied 1998</td></tr><tr><td class="num">2020-18-01</td><td>Not applicable</td></tr></tbody></table></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+                <div><h2>Equipment</h2><p>Garmin GTN 650, 011-01057-00, 2019. Rapco RA215CC vacuum pump, 2021. ACK E-04 ELT, 2015.</p></div>
+                <div><h2>Weight and balance</h2><p>Empty <span class="num">1447.80</span> lb, arm <span class="num">39.610</span> in, computed Mar 2019. Max gross 2300 lb. Revision may predate the 2021 vacuum pump.</p></div>
+              </div>
+              <p style="margin-top:16px;padding-top:10px;border-top:1px solid #111;color:#333">An index of N734DM's paper logbooks, made by the owner with MyTailLog. The paper logbooks are the legal record under 14 CFR 91.417; check them before relying on any figure here. Page refs: A airframe, E engine.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<!-- ===================== DATA AND ACCOUNT ===================== -->
+<h2 class="g-h2" id="a-data">Data and account</h2>
+<p class="g-prose">The owner is moving records in or out, or adjusting how the app behaves. Today cloud backups and the AI allowance are buried in a 936-line profile page with six Save buttons, and reminders are off by default with nothing in the product saying so. Here backups live with export, where people look for them, and settings are one page with a side index, saving as each control changes.</p>
+
+<figure class="g-shot" id="a-w-data">
+  <figcaption><b>Import and export</b><span>A spreadsheet import at its key step: each column mapped once, with the one doubtful mapping marked and the date order explained. Beside it, everything that goes out: the full archive, spreadsheets, and the scheduled Dropbox and Drive backups with their last run.</span><em>Replaces: /aircraft/[id]/import, /aircraft/[id]/export, and the cloud backup section of /profile</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#" aria-current="page">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <nav class="a-tabs top"><a href="#">Links and people</a><a href="#">Maintenance summary</a><a href="#">Pre-buy dossier</a><a class="on" href="#">Import and export</a></nav>
+      <h1 class="a-h1" style="max-width:30ch">Dropbox backed up N734DM on Nov 1. The next backup runs Dec 1.</h1>
+      <p class="a-sub">Bring entries in from a spreadsheet, take a full copy out, or let a backup run on its own. Open formats, MIT licensed, and you can leave whenever you like.</p>
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:48px;margin-top:30px;align-items:start">
+        <section>
+          <div class="a-sechead"><h2 class="a-h2">Import a spreadsheet</h2><span class="muted" style="font-size:15px">Step 2 of 3</span></div>
+          <p style="margin:14px 0 4px;font-size:17px"><b>skytech-and-old-tracker.csv</b> into the Airframe logbook</p>
+          <p class="muted" style="margin:0;font-size:15px">184 rows, 8 columns, comma-separated</p>
+          <table class="a-table mid" style="margin-top:16px">
+            <thead><tr><th>Column</th><th>First value</th><th style="width:250px">Import as</th></tr></thead>
+            <tbody>
+              <tr><td><b>Date</b></td><td class="num">03/12/2019</td><td><div class="a-select" style="height:42px">Date<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></td></tr>
+              <tr><td><b>Work</b></td><td>Installed Garmin GTN 650 per STC SA01714WI</td><td><div class="a-select" style="height:42px">Description<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></td></tr>
+              <tr><td><b>TT</b></td><td class="num">3891.2</td><td><div class="a-select" style="height:42px">Tach<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></td></tr>
+              <tr><td><b>Hobbs</b></td><td class="num">4358.9</td><td><div class="a-select" style="height:42px">Hobbs<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></td></tr>
+              <tr><td><b>By</b></td><td>SkyTech Avionics</td><td><div class="a-select" style="height:42px">Signed by<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></td></tr>
+              <tr style="background:var(--soon-bg)"><td><b>Ref</b><div style="margin-top:4px"><span class="a-st soon" style="padding:2px 8px"><i data-lucide="circle-alert"></i>Check</span></div></td><td class="num">SA01714WI</td><td><div class="a-select" style="height:42px;border-color:var(--soon)">AD references<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div><div style="font-size:14px;color:var(--soon);margin-top:4px">Looks more like an STC number</div></td></tr>
+              <tr><td><b>Cost</b></td><td class="num">14,250.00</td><td><div class="a-select" style="height:42px;color:var(--ink-3)">Do not import<i data-lucide="chevron-down" style="margin-left:auto" class="muted"></i></div></td></tr>
+            </tbody>
+          </table>
+          <p class="a-note" style="margin-top:12px"><i data-lucide="calendar"></i>Dates read as month, day, year. 41 rows have a middle number above 12, so this is certain.</p>
+          <div style="display:flex;gap:14px;align-items:center;margin-top:18px"><a class="a-btn" href="#">Check what will be created</a><span class="muted" style="font-size:15px">Imported entries arrive unconfirmed and change nothing on the due list until you review them.</span></div>
+        </section>
+        <aside>
+          <div class="a-sechead"><h2 class="a-h2">Take a copy</h2></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr auto"><i data-lucide="archive" class="muted"></i><div><div class="t" style="font-size:17px">Everything, as a .zip</div><div class="d">412 scans, 212 entries, 14 documents and a README. About 1.2 GB.</div></div><a class="a-btn sm ghost" href="#">Download</a></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr"><i data-lucide="file-text" class="muted"></i><div><div class="t" style="font-size:17px">Spreadsheets</div><div class="d" style="display:flex;gap:14px;margin-top:4px"><a href="#">Entries</a><a href="#">ADs</a><a href="#">Equipment</a><a href="#">Due items</a></div></div></div>
+          <div class="a-row" style="grid-template-columns:auto 1fr"><i data-lucide="printer" class="muted"></i><div><div class="t" style="font-size:17px">Every entry, printed</div><div class="d"><a href="#">Full records report</a>, about 40 pages</div></div></div>
+          <div class="a-sechead" style="margin-top:30px"><h2 class="a-h2">Backups on a schedule</h2></div>
+          <div style="padding:16px 0;border-bottom:1px solid var(--line);display:grid;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">Dropbox</b><span class="a-st ok"><i data-lucide="check"></i>Last run worked</span></div>
+            <dl class="a-kv" style="font-size:15px"><dt>Last run</dt><dd>Nov 1, 1.18 GB</dd><dt>Next</dt><dd>Dec 1</dd><dt>Folder</dt><dd>MyTailLog/N734DM</dd></dl>
+            <div style="display:flex;gap:10px;align-items:center"><div class="a-seg"><span>Off</span><span class="on">Monthly</span><span>Quarterly</span></div><a class="a-btn sm quiet" href="#">Disconnect</a></div>
+          </div>
+          <div style="padding:16px 0;display:flex;justify-content:space-between;align-items:center"><div><b style="font-size:17px">Google Drive</b><div class="muted" style="font-size:15px">Not connected</div></div><a class="a-btn sm ghost" href="#">Connect</a></div>
+          <p class="a-note"><i data-lucide="info"></i>Backups only add files. Nothing already in the folder is changed or removed.</p>
+        </aside>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<figure class="g-shot" id="a-w-settings">
+  <figcaption><b>Settings</b><span>One page with an index down the side. Reminders are on and their lead times sit in one table, documents included; the AI allowance shows pages, not calls; connected services and sign-in methods each take one row. Every control saves as it changes.</span><em>Replaces: /profile and /profile/credentials (developer and admin screens are out of scope)</em></figcaption>
+  <div class="g-stage"><div class="artboard da" style="--w:1440;--h:900">
+    <header class="a-top">
+      <a class="a-tail" href="#"><b>N734DM</b><span>1978 Cessna 172N<br>Demo aircraft</span><i data-lucide="chevrons-up-down"></i></a>
+      <nav class="a-nav"><a href="#">Today</a><a href="#">Logbooks <span class="count">6</span></a><a href="#">Maintenance</a><a href="#">Aircraft</a><a href="#">Share</a></nav>
+      <div class="a-search"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></div>
+      <a class="a-btn on-dark" href="#"><i data-lucide="plus"></i>Add</a>
+      <div class="a-avatar" style="box-shadow:0 0 0 3px var(--s3)">DM</div>
+    </header>
+    <div class="a-stripe"></div>
+    <main class="a-page">
+      <div class="a-split" style="grid-template-columns:240px 1fr;gap:56px">
+        <nav class="a-side" style="position:sticky;top:0;display:grid;gap:2px">
+          <a href="#">Profile</a><a class="on" href="#">Signing in</a><a href="#">Reminders</a><a href="#">AI reading</a><a href="#">Connected services</a>
+          <a href="#" style="margin-top:18px;color:var(--ink-3)">Sign out</a>
+        </nav>
+        <div style="max-width:860px">
+          <h1 class="a-h1">Settings</h1>
+          <p class="a-sub">Changes save as you make them.</p>
+          <div class="a-form2" style="margin-top:26px">
+            <div class="a-field"><label>Your name</label><div class="a-input">Dana Morgan</div><span class="hint">Printed on entries you sign and on links you share</span></div>
+            <div class="a-field"><label>Email</label><div class="a-input">dana@example.com</div></div>
+          </div>
+          <section class="a-sec" style="margin-top:34px">
+            <div class="a-sechead"><h2 class="a-h2">Signing in</h2></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><i data-lucide="mail" class="muted"></i><div><div class="t" style="font-size:17px">Email link</div><div class="d">Always works for dana@example.com</div></div><a class="a-btn sm quiet" href="#">Change email</a></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><i data-lucide="circle-user-round" class="muted"></i><div><div class="t" style="font-size:17px">Google</div><div class="d">Connected</div></div><a class="a-btn sm quiet" href="#">Disconnect</a></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><i data-lucide="circle-user-round" class="muted"></i><div><div class="t" style="font-size:17px">Apple</div><div class="d">Not connected</div></div><a class="a-btn sm ghost" href="#">Connect</a></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><i data-lucide="key-round" class="muted"></i><div><div class="t" style="font-size:17px">Password</div><div class="d">Not set. Optional.</div></div><a class="a-btn sm ghost" href="#">Set a password</a></div>
+          </section>
+          <section class="a-sec" style="margin-top:38px">
+            <div class="a-sechead"><h2 class="a-h2">Reminders</h2><a href="#">Send a test</a></div>
+            <div class="a-row" style="grid-template-columns:1fr auto auto;padding:14px 0;gap:28px">
+              <div><div class="t" style="font-size:17px">Remind me before things come due</div><div class="d">By email and on the phone app. Each reminder says what is due, when, and the page it was last done on.</div></div>
+              <label style="display:flex;gap:10px;align-items:center;font-size:15px;font-weight:600">Email <span class="a-toggle on"></span></label>
+              <label style="display:flex;gap:10px;align-items:center;font-size:15px;font-weight:600">Phone <span class="a-toggle on"></span></label>
+            </div>
+            <table class="a-table plain mid" style="margin-top:6px">
+              <thead><tr><th>Item</th><th>First reminder</th><th>After it lapses</th></tr></thead>
+              <tbody>
+                <tr><td><b>Annual inspection</b></td><td><span class="a-lead"><span class="num">90</span> days before</span></td><td>Weekly</td></tr>
+                <tr><td><b>Oil change</b></td><td><span class="a-lead"><span class="num">10</span> hours before</span></td><td>Weekly</td></tr>
+                <tr><td><b>ADs and SBs</b></td><td><span class="a-lead"><span class="num">30</span> days or <span class="num">25</span> hours before</span></td><td>Weekly</td></tr>
+                <tr><td><b>Registration and insurance</b></td><td><span class="a-lead"><span class="num">60</span> days before</span></td><td>Weekly</td></tr>
+                <tr><td><b>Everything else</b></td><td><span class="a-lead"><span class="num">30</span> days or <span class="num">25</span> hours before</span></td><td>Once</td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="a-sec" style="margin-top:38px">
+            <div class="a-sechead"><h2 class="a-h2">AI reading</h2><span class="muted" style="font-size:15px">shared allowance</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:16px"><b style="font-size:18px"><span class="num">31</span> of <span class="num">50</span> pages read today</b><span class="ink2" style="font-size:15px">19 left. Each page frees up 24 hours after it was read.</span></div>
+            <div class="a-bar" style="height:12px;margin-top:10px;border-radius:6px"><i style="width:62%"></i></div>
+            <div class="a-row" style="grid-template-columns:1fr auto;padding:16px 0 0;border:0"><div><div class="t" style="font-size:17px">Use your own key</div><div class="d">An Anthropic or OpenAI key removes the daily limit. You pay the provider directly.</div></div><a class="a-btn sm ghost" href="#">Add a key</a></div>
+          </section>
+          <section class="a-sec" style="margin-top:38px">
+            <div class="a-sechead"><h2 class="a-h2">Connected services</h2></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto auto;padding:12px 0"><i data-lucide="plane" class="muted"></i><div><div class="t" style="font-size:17px">MyFlightBook</div><div class="d">Connected as dmorgan. Flights and tach last synced Nov 2.</div></div><a class="a-btn sm ghost" href="#"><i data-lucide="refresh-cw"></i>Sync now</a><a class="a-btn sm quiet" href="#">Disconnect</a></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><i data-lucide="plug" class="muted"></i><div><div class="t" style="font-size:17px">Hangar scheduler</div><div class="d">Can read hours and due items for N734DM. Allowed Aug 3.</div></div><a class="a-btn sm quiet" href="#" style="color:var(--bad)">Revoke</a></div>
+            <div class="a-row" style="grid-template-columns:auto 1fr auto;padding:12px 0"><i data-lucide="signature" class="muted"></i><div><div class="t" style="font-size:17px">Signing certificate</div><div class="d">Private pilot 3528841, for owner maintenance entries. Self-declared; MyTailLog does not check FAA records.</div></div><a class="a-btn sm quiet" href="#">Edit</a></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+</main>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="../shared/gallery.js"></script>
+</body>
+</html>

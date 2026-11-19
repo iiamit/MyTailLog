@@ -5,6 +5,7 @@ import { putBlob, removeBlobs, type PutBody } from "@/lib/storage";
 import type { DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES } from "@/lib/documents";
 import { entryIsOnAircraft, FOREIGN_ENTRY } from "@/lib/writes/entries";
+import { pickExpiry } from "@/lib/writes/documents";
 
 // Records Vault upload for BOTH clients (same split as the capture route):
 //  - web        → multipart/form-data (File part `file`)
@@ -46,6 +47,10 @@ async function parseInput(req: Request): Promise<Upload | null> {
         reference: s("reference"),
         document_date: s("document_date"),
         notes: s("notes"),
+        track_expiry: s("trackExpiry") || (b.trackExpiry === true ? "true" : ""),
+        expires_on: s("expiresOn"),
+        renews_every_months: s("renewsEveryMonths") || (typeof b.renewsEveryMonths === "number" ? String(b.renewsEveryMonths) : ""),
+        remind_lead_days: s("remindLeadDays") || (typeof b.remindLeadDays === "number" ? String(b.remindLeadDays) : ""),
       },
     };
   }
@@ -65,6 +70,10 @@ async function parseInput(req: Request): Promise<Upload | null> {
       reference: s("reference"),
       document_date: s("document_date"),
       notes: s("notes"),
+      track_expiry: s("trackExpiry"),
+      expires_on: s("expiresOn"),
+      renews_every_months: s("renewsEveryMonths"),
+      remind_lead_days: s("remindLeadDays"),
     },
   };
 }
@@ -102,6 +111,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const reference = f.reference.trim() || null;
   const documentDate = f.document_date.trim() || null;
   const notes = f.notes.trim() || null;
+  // 09 §4.1: the upload may turn on expiry tracking at once (W-DOCS-01 "Track its expiry").
+  const num = (v: string) => (v.trim() === "" ? null : Number(v));
+  const expiry = pickExpiry({
+    trackExpiry: ["true", "on", "1"].includes(f.track_expiry.trim().toLowerCase()),
+    expiresOn: f.expires_on.trim() || null,
+    ...(f.renews_every_months.trim() ? { renewsEveryMonths: num(f.renews_every_months) } : {}),
+    remindLeadDays: num(f.remind_lead_days),
+  }, type);
+  if ("error" in expiry) return NextResponse.json({ error: expiry.error }, { status: 400 });
 
   const ext = (input.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
   const path = `${id}/docs/${randomUUID()}.${ext}`;
@@ -122,6 +140,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       mime_type: input.mime,
       size_bytes: input.bytes,
       log_entry_id: logEntryId,
+      ...expiry.fields,
     })
     .select("*")
     .maybeSingle();

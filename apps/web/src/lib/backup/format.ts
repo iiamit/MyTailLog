@@ -41,6 +41,14 @@ export type BackupData = {
   // Optional: absent from archives written before 0046. A restore without these
   // silently re-breaks every hour countdown on an aircraft whose meter was swapped.
   meter_resets?: Row[];
+  // Optional: Direction D tables (09 §6), absent from older archives. Re-import remaps their ids.
+  service_providers?: Row[];
+  item_completions?: Row[];
+  planned_visits?: Row[];
+  planned_visit_items?: Row[];
+  logbook_gaps?: Row[];
+  hours_readings?: Row[];
+  squawks?: Row[];
 };
 
 /** File extension from a storage path, defaulting to jpg. */

@@ -5,6 +5,13 @@
 // the badge once claimed a page was reviewed the moment it was extracted, and
 // the cause was the client patch forgetting a field, not the rule below.
 
+import type { ExtractionStatus, QueuedExtractionStatus } from "@/lib/database.types";
+
+/** The v1 screens know four states; a page in the server reading queue (0077a) shows as being read. */
+export function v1ExtractionStatus(s: ExtractionStatus | QueuedExtractionStatus): ExtractionStatus {
+  return s === "queued" || s === "waiting_allowance" ? "processing" : s;
+}
+
 export type PageStatusRow = {
   extractionStatus: string;
   entryCount: number;

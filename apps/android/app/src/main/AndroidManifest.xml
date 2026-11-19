@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Pages and the tach (05 §15, §16). The camera is optional: photos and the system scanner still work. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Uploads run as a dataSync foreground job with "Uploading 2 pages to N734DM" (05 §7.2, §9). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Lets the Custom Tab for Apple / Google sign-in find a browser that supports it (Android 11+). -->
+    <queries>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+    </queries>
+
+    <!-- allowBackup off: the session is sealed with a Keystore key that can't be restored on
+         another device. outbox.db joins Auto Backup when the offline store lands (05 §6.2). -->
+    <application
+        android:name=".MyTailLogApp"
+        android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyTailLog">
+        <!-- The launcher, App Links and share targets need an exported activity; it holds no privileged entry points. -->
+        <!-- nosemgrep: java.android.security.exported_activity.exported_activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- OAuth return from the Custom Tab (05 §8.4), same scheme as the Capacitor app. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.mytaillog.app" android:host="auth" android:path="/callback" />
+            </intent-filter>
+            <!-- Email sign-in link (05 §8.4). Verified against https://mytaillog.com/.well-known/assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="mytaillog.com" android:path="/app/auth/callback" />
+            </intent-filter>
+            <!-- The 05 §5.5 route table: notifications, widgets, shortcuts and links shared from the web. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="mytaillog.com" android:pathPrefix="/app/a/" />
+            </intent-filter>
+            <!-- Long-press shortcuts and App Actions (05 §13.3). -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+        </activity>
+
+        <!-- Home-screen widgets (05 §11). -->
+        <receiver android:name=".LineAheadReceiver" android:exported="true" android:label="@string/widget_line_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_line_ahead" />
+        </receiver>
+        <receiver android:name=".NextItemReceiver" android:exported="true" android:label="@string/widget_next_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_next_item" />
+        </receiver>
+
+        <!-- FCM delivery only (05 §1 privacy): no analytics; inert unless the build has Firebase values. -->
+        <service android:name=".PushService" android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="due" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_book" />
+
+        <!-- WorkManager's foreground service declares the type the upload job uses. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+
+        <!-- Share a document from the vault (M-DOCS-02): copies under cache/share only. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.share"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/share_paths" />
+        </provider>
+    </application>
+</manifest>

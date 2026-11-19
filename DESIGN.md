@@ -1,237 +1,326 @@
 ---
 name: MyTailLog
-description: Aircraft logbook digitizer and maintenance tracker, drawn as a dark glass-cockpit instrument panel.
+description: Aircraft logbook index and maintenance tracker, drawn as a tabbed records binder with a line map of the aircraft's life.
 colors:
-  accent: "#5aa9ff"
-  accent-soft: "#16324e"
-  annunciator-green: "#43d38a"
-  annunciator-amber: "#f4b13c"
-  annunciator-red: "#ff6156"
-  night-bg: "#0a0d13"
-  panel: "#111823"
-  panel-2: "#161f2b"
-  raise: "#1c2836"
-  line: "#232f3e"
-  line-2: "#33475a"
-  ink: "#e9eef5"
-  dim: "#94a3b6"
-  faint: "#5d6b7d"
-  book-avionics: "#b98cff"
+  cover: "#17191e"
+  cover-2: "#24272e"
+  on-cover: "#f2f1ec"
+  on-cover-2: "#a9adb6"
+  mat: "#2a2c31"
+  leaf: "#ffffff"
+  leaf-2: "#f4f4f1"
+  ink: "#15171b"
+  ink-2: "#454a52"
+  ink-3: "#636973"
+  rule: "#d9dad5"
+  rule-2: "#b8bab4"
+  control-border: "#7d828a"
+  alarm: "#dd3418"
+  alarm-text: "#c42e15"
+  alarm-bg: "#fde9e4"
+  on-alarm-bg: "#7a1707"
+  section-status: "#2a3dbe"
+  section-books: "#edbb1b"
+  section-books-ink: "#7a5c00"
+  on-section-books: "#1c1600"
+  section-maint: "#0b6b6a"
+  section-aircraft: "#2f7533"
+  section-docs: "#85491f"
+  section-share: "#6b44b8"
+  section-share-ink: "#5a36a3"
+  section-setup: "#3a3f46"
+  line-airframe: "#23318f"
+  line-engine: "#a8326b"
+  line-propeller: "#4a4f57"
+  line-avionics: "#0f7fa6"
+  line-other: "#8a8f97"
 typography:
-  display:
-    fontFamily: "Space Grotesk, sans-serif"
-    fontSize: "27px"
-    fontWeight: 600
-    lineHeight: 1
-  title:
-    fontFamily: "Space Grotesk, sans-serif"
-    fontSize: "17px"
-    fontWeight: 600
+  board-title:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "30px"
+    fontWeight: 800
+    lineHeight: 1.1
+    letterSpacing: "-0.01em"
+  lede:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "22px"
+    fontWeight: 400
+    lineHeight: 1.35
+  heading:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "20px"
+    fontWeight: 800
+    lineHeight: 1.25
+  section:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 700
+    lineHeight: 1.5
   body:
-    fontFamily: "Instrument Sans, system-ui, sans-serif"
-    fontSize: "13.5px"
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.6
-    letterSpacing: "0.1px"
-  body-dense:
-    fontFamily: "Instrument Sans, system-ui, sans-serif"
+  body-strong:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 700
+    lineHeight: 1.4
+  small:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: 1.45
+  caption:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
     fontSize: "13px"
-    fontWeight: 400
+    fontWeight: 600
+    lineHeight: 1.4
   label:
-    fontFamily: "Instrument Sans, system-ui, sans-serif"
-    fontSize: "10px"
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 700
+    lineHeight: 1.2
+  button:
+    fontFamily: "Libre Franklin, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 700
+    lineHeight: 1
+  paper:
+    fontFamily: "Literata, Georgia, serif"
+    fontSize: "17px"
     fontWeight: 400
-    letterSpacing: "0.16em"
-  readout:
-    fontFamily: "JetBrains Mono, ui-monospace, monospace"
-    fontSize: "11px"
-    fontFeature: "'tnum' 1"
+    lineHeight: 1.6
+  paper-small:
+    fontFamily: "Literata, Georgia, serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.5
 rounded:
-  sm: "6px"
-  control: "9px"
-  md: "8px"
-  panel: "12px"
-  pill: "9999px"
+  s: "3px"
+  m: "4px"
+  l: "5px"
+  round: "50%"
+  pill: "999px"
 spacing:
-  gutter: "24px"
-  page-y: "32px"
-  panel: "20px"
-  row: "8px"
+  "1": "4px"
+  "2": "8px"
+  "3": "12px"
+  "4": "16px"
+  "5": "20px"
+  "6": "24px"
+  "7": "28px"
+  "8": "32px"
 components:
   button-primary:
-    backgroundColor: "{colors.accent}"
-    textColor: "{colors.night-bg}"
-    rounded: "{rounded.control}"
-    padding: "10px 16px"
-    typography: "{typography.body}"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.leaf}"
+    rounded: "{rounded.m}"
+    padding: "0 18px"
+    height: "42px"
+    typography: "{typography.button}"
   button-secondary:
-    backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    rounded: "{rounded.control}"
-    padding: "10px 16px"
+    backgroundColor: "{colors.leaf}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.m}"
+    padding: "0 18px"
+    height: "42px"
+  button-on-board:
+    backgroundColor: "{colors.leaf}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.m}"
+    padding: "0 12px"
+    height: "34px"
+  button-alarm:
+    backgroundColor: "{colors.leaf}"
+    textColor: "{colors.alarm}"
+    rounded: "{rounded.m}"
+    padding: "0 18px"
+    height: "42px"
   input:
-    backgroundColor: "{colors.panel-2}"
+    backgroundColor: "{colors.leaf}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.sm}"
-    padding: "8px 12px"
-  panel:
-    backgroundColor: "{colors.panel}"
-    rounded: "{rounded.panel}"
-    padding: "{spacing.panel}"
-  nav-item:
-    backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    rounded: "{rounded.control}"
-    padding: "8px"
-  nav-item-active:
-    backgroundColor: "{colors.panel-2}"
+    rounded: "{rounded.m}"
+    padding: "0 12px"
+    height: "44px"
+  leaf:
+    backgroundColor: "{colors.leaf}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    padding: "8px"
-  chip:
-    backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    rounded: "{rounded.pill}"
-    padding: "4px 12px"
+    rounded: "{rounded.s}"
+    padding: "26px 30px 28px"
+  rail:
+    backgroundColor: "{colors.cover}"
+    textColor: "{colors.on-cover}"
+    width: "216px"
+  section-tab:
+    backgroundColor: "{colors.section-status}"
+    textColor: "{colors.leaf}"
+    rounded: "{rounded.l}"
+    height: "50px"
 ---
 
 # Design System: MyTailLog
 
 ## Overview
 
-**Creative North Star: "The Glass Cockpit"**
+**Creative North Star: "The Tabbed Binder"**
 
-MyTailLog looks like a modern avionics display read at night: a near-black panel, quiet blue-grey type, monospaced readouts for every number, and color that appears only when something needs attention. The owner glances at it the way a pilot scans a primary flight display. What's due is found in a second, and nothing decorative competes with it.
+MyTailLog looks like the records binder an owner already keeps for the aircraft, with a line map of the aircraft's life drawn on its pages. A dark cover rail on the left holds six coloured section tabs (Status, Logbooks, Maintenance, Aircraft, Documents, Share), each tab as tall as its section is full. Opening a section floods the board, the area right of the rail, with that section's colour. Work happens on white leaves laid on the board: usually two, the record on the left and its scanned source page on a dark mat on the right.
 
-The system is dense and flat. Panels are separated by hairline borders rather than shadows, type sits at 10 to 13.5px for working screens, and a faint 44px instrument grid with one soft accent glow sits behind everything. Status colors borrow from annunciator lights (green, amber, red) and mean the same thing everywhere. The sky-blue accent marks the one primary action and the current place in the navigation.
+The map gives every record a place in time. Each logbook is a line in its own printer's ink, each entry a stop, a visit that signed several books an interchange, a stretch with no pages a dashed gap, and the future dotted with what's due drawn as rings. A one-finger-high spine under every board's title shows the whole life, today, and the part the screen covers. The app speaks in Libre Franklin. Literata appears only for words transcribed from a scanned page, so the owner can always tell what the logbook says from what the software concluded. Status is ink plus one alarm colour, vermilion, and nothing else.
 
-On screen the web app is dark only. Print re-points the same tokens to a light ramp so summaries and dossiers come out as clean paper. The mobile app follows the same tokens and adds a light theme.
+The light theme is the design reference. A dark "night hangar" theme exists on every platform, and the default follows the system setting. The web, a native SwiftUI app for iPhone and iPad, and a native Compose app for Android share this look. The phones use their own platform's navigation, sheets, gestures, pickers, widgets and notifications.
+
+The full specification lives in `docs/redesign/handoff/` (tokens in `tokens.json` and `01-design-tokens.md`, components in `02-components.md`, accessibility and motion in `11`, copy in `12`, conflicts settled in `14-decisions.md`). This file is the summary that design tooling reads; where they differ, the handoff wins.
 
 **Key Characteristics:**
-- Dark only on screen; light only for print (and the mobile app's light theme).
-- Flat, bordered panels; depth comes from tonal steps, not shadows.
-- Every number (tach, hobbs, hours, dates, counts) in a tabular monospaced readout.
-- Annunciator colors reserved for status; the accent reserved for action and location.
-- Small, precise working type; one display face for headings.
+- Cover, board, leaf, mat: four grounds, each with its own text colours.
+- Section hues fill boards and tabs only; on a leaf they appear only as `section-ink` links and the `hue` button.
+- Status is ink and vermilion, always a mark plus a word; no green, no amber.
+- Two voices: Libre Franklin (the app), Literata (the paper). No monospace; numbers use tabular figures.
+- Readable by a 60-year-old in a hangar: 16px body, nothing under 13px, 4.5:1 text contrast.
+- Flat: a 1px leaf edge is the only shadow on screen.
 
 ## Colors
 
-A night-panel ramp of blue-greys, one sky-blue accent, and three annunciator lights.
+A dark binder cover, six section hues, white leaves with ink, one vermilion alarm, and four printer's inks for the logbook lines. Dark-theme values are in `tokens.json` and `01-design-tokens.md` §3; dark is not an inversion (leaves become warm charcoal, scanned pages are never tinted).
 
 ### Primary
-- **Cockpit Sky Blue** (accent): the primary button fill, links, focus borders, the active nav item's ident, and the accent glow in the page backdrop. One per view for actions.
-- **Deep Sky Wash** (accent-soft): count badges and selected states; the accent's quiet companion.
+- **Binder Ink** (ink): text and drawn marks on leaves, the primary button fill, the "current" status dot, the focus ring. The system's primary colour is ink, not a hue.
+- **Vermilion** (alarm): overdue (solid slip), due soon (ring), errors, destructive confirmation. `alarm-text` is the darker alarm ink for alarm-coloured words; `alarm-bg` is the soft alarm slip with `on-alarm-bg` text.
 
 ### Secondary
-- **Annunciator Green** (annunciator-green): current, done, confirmed, healthy.
-- **Annunciator Amber** (annunciator-amber): due soon, needs review, warnings.
-- **Annunciator Red** (annunciator-red): overdue, errors, destructive actions.
-
-Each light has a 12% wash (`rgba(…, 0.12)`) for tinted backgrounds behind status text.
+- **Section hues** (section-status blue, section-books yellow, section-maint teal, section-aircraft green, section-docs brown, section-share violet, section-setup slate): one per tab, filling that tab and the open board. White text on all but books, which takes dark text (on-section-books). Each has a darker `section-ink` for links on a leaf (status, maint, aircraft, docs and setup inks are within a shade of their hue; books and share differ and are listed).
 
 ### Tertiary
-- **Logbook colors**: each logbook type keeps one color across timelines and coverage bars: airframe uses the accent blue, engine amber, prop green, avionics **Avionics Violet** (book-avionics), other the dim grey.
+- **Logbook inks** (line-airframe, line-engine, line-propeller, line-avionics, line-other): the lines on the map, LineChips, the coloured key of a logbook-scoped PageCite, and the map legend. The Other logbook is never drawn as a line.
 
 ### Neutral
-- **Night Sky** (night-bg): the page background, behind the instrument grid.
-- **Panel** (panel): the base surface for cards and sections.
-- **Panel Step** (panel-2): inputs, hover rows, chips, the top of raised panels.
-- **Raise** (raise): the highest tonal step, for menus and pressed states.
-- **Hairline** (line) and **Strong Hairline** (line-2): borders and dividers; line-2 for dots and emphasized edges.
-- **Ink** (ink): headings and primary text.
-- **Dim** (dim): body copy and secondary text.
-- **Faint** (faint): labels, metadata, empty states.
+- **Cover** (cover) and **Cover Raised** (cover-2): the rail, the phone tab bar, the camera bar, sign-in. Text on-cover and on-cover-2.
+- **Mat** (mat): the dark ground behind scanned pages, a step lighter than the cover so the page edge reads.
+- **Leaf** (leaf) and **Leaf Well** (leaf-2): every working surface; leaf-2 for wells, selected and hovered rows, table heads.
+- **Ink 2** (ink-2) and **Ink 3** (ink-3): secondary text, then meta text and labels.
+- **Rule** (rule) and **Rule 2** (rule-2): dividers; rule-2 is decorative only. **Control Border** (control-border): the edge of every input, select, checkbox, toggle and secondary button.
 
 ### Named Rules
-**The Annunciator Rule.** Green, amber and red mean status and nothing else. Never use them for decoration, branding or categories.
+**The Ink and Vermilion Rule.** Status is ink plus one alarm colour: a filled ink dot is current, a vermilion ring is due soon, a solid vermilion slip is overdue, a dashed ring is no record. Green and amber are not in the palette.
 
-**The One Accent Rule.** The sky-blue accent marks the primary action and where you are. If two things on a screen are accent-filled, one of them is wrong.
+**The Board Rule.** Section hues fill boards and tabs. Never put a raw section hue on a leaf; use that section's `section-ink`.
+
+**The Line Ink Rule.** Logbook inks belong to the map and its keys. They never mean status and never mean a section.
 
 ## Typography
 
-**Display Font:** Space Grotesk (with sans-serif)
-**Body Font:** Instrument Sans (with system-ui)
-**Label/Mono Font:** JetBrains Mono (with ui-monospace)
+**Display Font:** Libre Franklin (with system-ui)
+**Body Font:** Libre Franklin (with system-ui)
+**Label/Mono Font:** none. Numbers use Libre Franklin with tabular figures.
+**Paper Font:** Literata (with Georgia), for transcribed text only.
 
-**Character:** A slightly technical grotesk for headings over a neutral, readable UI sans, with a monospaced face for every number, like the labels and readouts on an instrument panel.
+**Character:** A sturdy American grotesk does all of the app's talking, from the 30px heavy board title to 13px labels. A bookish, screen-tuned serif carries only the logbook's own words, so transcriptions read as quotations from paper.
 
 ### Hierarchy
-- **Display** (600, 27px, line-height 1): page titles (`h1`) on every app page.
-- **Title** (600, 15–17px): section and panel headings, sheet titles.
-- **Body** (400, 13.5px, line-height ~1.6): intro paragraphs and readable copy; keep to roughly 65ch (`max-w-xl`/`max-w-2xl`).
-- **Body dense** (400, 12–13px): list rows, tables, forms.
-- **Label** (10px, uppercase, 0.16em tracking, faint): the eyebrow above titles, stats and sections.
-- **Readout** (JetBrains Mono, 11–12px, tabular numerals): tach, hobbs, hours, dates, counts and IDs.
+- **Board title** (800, 30px, 1.1, -0.01em): the section name on the board ("Status"), the page `h1`.
+- **Lede** (400 with 800 lead phrases, 22px, 1.35): the Verdict sentence, an `h2` directly after the board title; max 34ch.
+- **Heading** (800, 20px, 1.25): leaf headings.
+- **Section** (700, 16px, 1.5): HungSection headings in a leaf's margin column.
+- **Body** (400, 16px, 1.6): everything readable; prose max 68ch. **Body strong** (700, 16px): row titles, values.
+- **Small** (400, 14px): secondary lines under row titles.
+- **Caption** (600, 13px) and **Label** (700, 13px, ink-3): citations, chips, legends, column heads, field labels. Sentence case, no tracking.
+- **Paper** (Literata 400, 17px, 1.6) and **Paper small** (15px): entry narratives, quotes in answers, citation excerpts.
+- Phone scale (pt/sp) and Dynamic Type mapping: `01-design-tokens.md` §5.
 
 ### Named Rules
-**The Readout Rule.** If it is a number someone compares (hours, dates, counts), it is set in the monospaced readout with tabular figures.
+**The Two Voices Rule.** If the software wrote it, it is Libre Franklin. If the logbook says it, it is Literata. Never mix them in one run.
+
+**The 13px Floor.** No text below 13px, except 12px (weight 600+, 4.5:1) for map ticks, the phone tab label, KeyHint chips, count badges and the "first" badge.
 
 ## Layout
 
-Pages are a single centered column with a 24px side gutter and 32px top and bottom padding. Width follows the job: `max-w-3xl` for guided flows and forms, `max-w-4xl` for documents like the summary and record room, `max-w-5xl` to `max-w-6xl` for overviews and dashboards. Inside, panels stack or sit in simple 2–4 column grids (`md:grid-cols-3`, `sm:grid-cols-4`) that collapse to one column on phones. Rows inside panels use 8–10px vertical padding with hairline dividers.
+Desktop web (≥ 1280px): a 216px cover rail on the left, then the board. The board has a head (title and its actions, min 70px), the 52px spine, and the leaves (10px gap; split 1.62 : 1 for a record beside its page, 1 : 1 on the review desk, a single leaf for settings and forms). Leaves pad 26px top, 30px sides, 28px bottom. HungSections put a 118–148px heading column beside their content. Table rows are at least 48px. Space is a 4px scale (`spacing.1`–`spacing.8`). Responsive bands are in `03-information-architecture.md`.
 
-Aircraft pages sit inside a left sidebar shell grouped by task (Status, Log, Records, Workflows, Manage). On small screens it collapses to a top bar.
+Phone: 16pt/16dp screen margins; the phone leaf sits 8pt in from the edges; rows at least 58pt; buttons 52pt; D's own tab bar (50pt plus safe area) carries the six coloured tabs. Tablet: list-detail at ≥ 700pt wide, three panes for review at ≥ 1000pt.
 
 ## Elevation & Depth
 
-The system is flat. Depth comes from tonal steps (night-bg → panel → panel-2 → raise) and 1px hairline borders, not from shadows. The only box-shadows are motion cues: the pulsing accent ring on a "pin" marker, and focus outlines.
+Flat. Depth comes from the grounds (cover, board, leaf, mat) and hairline rules. On screen, leaves cast a 1px bottom edge and nothing else. The phone AddButton, the map's tooltip sheet and menus are the only other shadows. No glows, no gradients except a scanned page's own paper.
+
+### Shadow Vocabulary
+- **Leaf edge** (`box-shadow: 0 1px 0 rgba(0,0,0,.25)`): every leaf.
+- **Add button** (`box-shadow: 0 8px 18px -8px rgba(0,0,0,.7)`): the phone's floating AddButton only.
 
 ### Named Rules
-**The Hairline Rule.** Separate surfaces with a 1px border in line, or a tonal step. Don't add drop shadows to cards.
+**The Paper Stack Rule.** A leaf lies on the board; it does not float. No card shadows, no hover lift.
 
 ## Shapes
 
-Corners are gently rounded and get smaller as elements get smaller: 12px on panels and cards, 9px on primary and secondary buttons, 6–8px on inputs, nav items and rows, and full pills for chips and status dots. Status dots are 8px circles. There are no sharp corners and no decorative shapes.
+Small, square-shouldered corners like cut card stock: 3px on leaves, wells and slips; 4px on buttons, inputs, segmented controls and page thumbnails; 5px on section tabs (left corners only on the web, where the open tab runs flush into the board). Status dots, map stops and rings are circles; the "signed" trust mark is a square turned 45°. Map stops are leaf-filled with an ink stroke, dotted when read by AI and not yet confirmed.
 
 ## Components
 
 ### Buttons
-Precise and quiet: one filled action per view, everything else outlined or text.
-- **Shape:** gently rounded (9px).
-- **Primary:** sky-blue fill with night-sky text, 13.5px semibold, 10px × 16px padding. Hover drops to 90% opacity; disabled to 50%.
-- **Secondary:** transparent with a hairline border and dim text that brightens to ink on hover.
-- **Text actions:** accent-colored links ("Copy", "Open ↗", "Set the annual date →") for in-row actions; red text for destructive ones (Revoke, Delete).
+One filled action per view; everything else is outlined or quiet.
+- **Shape:** 4px corners. Sizes s 34px, m 42px (default), l 48px web / 52pt phone. 700 weight, 15px (14px at s).
+- **Primary:** ink fill, leaf text. Hover #282a2d, pressed #36373b.
+- **Secondary:** leaf fill, control-border edge, ink 600 text. Hover #ececed, pressed #dedfdf.
+- **On-board:** leaf fill, ink text, for actions in the board head ("Log a flight").
+- **Hue:** the section colour fill, for a section-owned primary on the phone ("Make the link").
+- **On-mat:** transparent with a #5a5e68 edge and on-cover text, on the source mat.
+- **Alarm:** leaf fill, vermilion edge and text, only for confirmed destructive actions.
+- **Quiet:** no fill or border; ink 600 with an underline on hover; section-ink when it navigates.
+- **States:** hover adds an 8% layer of the content colour, pressed 14%; disabled is 40% opacity with a one-line reason beside it; loading keeps the width and shows a turning loader plus the busy word. Focus is the double ring (2px ink outside, 2px leaf inside) on `:focus-visible` only.
 
 ### Chips
-- **Style:** pill, transparent, 1px strong hairline (line-2) border, dim 12.5–13px text, 4px × 12px padding.
-- **State:** interactive chips brighten to an accent border and ink text on hover.
+- **FilterChip / ChoiceChip:** pill, control-border edge, ink 600 13–14px; selected is an ink fill with leaf text (never colour alone). LineChips take a logbook ink key.
+- **Tag:** small square-cornered label on leaf-2 for metadata.
 
 ### Cards / Containers
-- **Corner Style:** 12px.
-- **Background:** panel; the "raised" variant fades from panel-2 at the top to panel.
-- **Shadow Strategy:** none (see Elevation & Depth).
-- **Border:** 1px hairline.
-- **Internal Padding:** 20px.
+- **Corner Style:** 3px (radius.s).
+- **Background:** leaf; wells and selected rows leaf-2; scans on the mat.
+- **Shadow Strategy:** the leaf edge only (see Elevation).
+- **Border:** none on leaves; 1px rule between rows; a 2px ink rule under a HungSection's first group.
+- **Internal Padding:** 26px 30px 28px (22–28px on dense screens).
 
 ### Inputs / Fields
-- **Style:** panel-2 fill, 1px hairline border, 6px radius, 8px × 12px padding, ink text.
-- **Focus:** the border switches to the accent; no glow.
-- **Error / Disabled:** errors are red text below the field (with `role="alert"`); disabled controls drop to 50% opacity.
+- **Style:** leaf fill, 1px control-border edge, 4px corners, ink 16px text; label above in the 13px label style.
+- **Focus:** the edge becomes 2px ink; inputs don't draw the double ring.
+- **Error / Disabled:** the edge and a message below in alarm-text, with `role="alert"`; disabled at 40% opacity with its reason. **PaperInput** edits transcribed text in Literata.
 
 ### Navigation
-- **Style:** the aircraft sidebar lists items in 13px dim text under 10px uppercase group labels. Each item leads with a 3-letter waypoint-style ident in 10px mono (the "ident" chip).
-- **Hover:** a faint panel wash and ink text.
-- **Active:** panel-2 background, a strong-hairline border, ink text, the ident turned accent, and `aria-current="page"`. Count badges sit at the right in the readout face (accent-soft for counts, amber wash for items needing attention).
-- **Tabs** inside a page (record room, hubs) are 13px text links; the current tab gets the panel-2 background and ink semibold text.
+- **Rail (web):** the cover column holds the RailPlate (aircraft switcher), six SectionTabs and the RailFoot. Each tab is the section hue, 50–180px tall in proportion to its content, 16px 700 name over a 13px subline. The open tab runs flush into the board of the same colour and carries `aria-current="page"`.
+- **SubTabs:** links in a `nav` under the board head, each with its own URL and `aria-current="page"` (not an ARIA tablist).
+- **Phone:** D's own PhoneTabBar on the cover colour (the system bar can't show coloured tabs), a PhoneHeader on the board colour, platform-native push, sheets and back.
 
-### Status Row (signature)
-The core pattern of the product: an 8px annunciator dot, the item label in 13px, and the due readout right-aligned in the monospaced face ("Mar 31, 2027", "12.4 hrs"). Rows are divided by hairlines and the whole row links to the page that manages it.
+### StatusMark (signature)
+A 12px mark plus a word, 700 14px: filled ink dot "Current"; 3px vermilion ring with alarm-text "Due soon"; solid vermilion slip with white text "lapsed 7 days ago"; 2px dashed ink-3 ring "No record"; no mark, ink-2 "Advisory". The mark is `aria-hidden`; the word always carries the meaning.
 
-### Coverage Bar (signature)
-One horizontal bar per logbook, in that logbook's color, spanning first to last dated entry on a shared year axis, with gaps of 24+ months cut out of it. It shows at a glance which years of the records are digitized.
+### TrustMark (signature)
+How far to trust a value: a dotted ring "Read by AI", a filled ink dot "Confirmed", an ink diamond "Signed". Shown wherever a value from the records appears.
+
+### Verdict (signature)
+The opening sentence of Status and every hand-off: what the confirmed records show, in at most two sentences and two bold runs, in the lede style. Never "airworthy", "legal", "grounded" or "compliant".
+
+### Spine and RouteMap (signature)
+The line map in ink on a leaf, never on a board. The spine is a 40px strip under every board head with the whole life, today marked and the current scope bracketed; the RouteMap opens Logbooks; the LineAhead shows the next 12 months on Status. Drawing rules: `10-line-map.md`.
+
+### PageCite (signature)
+Every derived value carries a citation to its scanned page (logbook ink key, page number, caption style) that opens the page with the source ink highlighted in yellow.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep the web app dark on screen and let the print styles re-point tokens for paper.
-- **Do** set every hour, date and count in the JetBrains Mono readout with tabular figures.
-- **Do** use the annunciator dot plus text for status, so color is never the only signal.
-- **Do** separate panels with 1px hairlines (line) and tonal steps.
-- **Do** keep working type between 10px and 13.5px and headings in Space Grotesk.
+- **Do** generate colours, type and spacing from `tokens.json`; no literal values in components.
+- **Do** show every status as a mark plus a word, using ink and vermilion only.
+- **Do** put the source page one step away from every fact: on the right leaf (web, tablet) or one tap away (phone).
+- **Do** keep one primary (ink-filled) button per view.
+- **Do** set every number with tabular figures in Libre Franklin.
+- **Do** keep body text at 16px and nothing below 13px, with 4.5:1 text contrast in both themes.
+- **Do** offer Light, Dark and Match system, defaulting to Match system; keep scans untinted in dark.
 
 ### Don't:
-- **Don't** use green, amber or red for anything but status.
-- **Don't** fill more than one action per view with the accent.
-- **Don't** add drop shadows, glows or gradients to cards and buttons.
-- **Don't** introduce a light theme on the web screen.
-- **Don't** add a fourth typeface; display, UI and mono cover every role.
+- **Don't** use green or amber anywhere, or vermilion for anything but overdue, due soon, errors and destructive confirmation.
+- **Don't** put a raw section hue on a leaf, or draw the map on a board.
+- **Don't** set software-written text in Literata or transcribed text in Libre Franklin.
+- **Don't** use a monospace face, a third typeface, emoji or Unicode glyphs as icons (icons are Lucide).
+- **Don't** add card shadows, glows or gradients.
+- **Don't** let an AI reading the owner hasn't confirmed change any status, Verdict, map ring, share or export.
+- **Don't** write "airworthy", "legal to fly", "grounded" or "compliant" as a conclusion.

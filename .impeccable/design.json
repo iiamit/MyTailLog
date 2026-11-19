@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T19:25:14Z",
+  "title": "Design System: MyTailLog",
+  "extensions": {
+    "colorMeta": {
+      "cover": {
+        "role": "neutral",
+        "displayName": "Binder Cover"
+      },
+      "cover-2": {
+        "role": "neutral",
+        "displayName": "Cover Raised"
+      },
+      "on-cover": {
+        "role": "neutral",
+        "displayName": "On Cover"
+      },
+      "on-cover-2": {
+        "role": "neutral",
+        "displayName": "On Cover 2"
+      },
+      "mat": {
+        "role": "neutral",
+        "displayName": "Source Mat"
+      },
+      "leaf": {
+        "role": "neutral",
+        "displayName": "Leaf"
+      },
+      "leaf-2": {
+        "role": "neutral",
+        "displayName": "Leaf Well"
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Binder Ink"
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2"
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3"
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule"
+      },
+      "rule-2": {
+        "role": "neutral",
+        "displayName": "Rule 2"
+      },
+      "control-border": {
+        "role": "neutral",
+        "displayName": "Control Border"
+      },
+      "alarm": {
+        "role": "primary",
+        "displayName": "Vermilion"
+      },
+      "alarm-text": {
+        "role": "primary",
+        "displayName": "Vermilion Text"
+      },
+      "alarm-bg": {
+        "role": "primary",
+        "displayName": "Alarm Slip"
+      },
+      "on-alarm-bg": {
+        "role": "primary",
+        "displayName": "On Alarm Slip"
+      },
+      "section-status": {
+        "role": "secondary",
+        "displayName": "Status Blue"
+      },
+      "section-books": {
+        "role": "secondary",
+        "displayName": "Logbooks Yellow"
+      },
+      "section-books-ink": {
+        "role": "secondary",
+        "displayName": "Logbooks Ink"
+      },
+      "on-section-books": {
+        "role": "secondary",
+        "displayName": "On Logbooks"
+      },
+      "section-maint": {
+        "role": "secondary",
+        "displayName": "Maintenance Teal"
+      },
+      "section-aircraft": {
+        "role": "secondary",
+        "displayName": "Aircraft Green"
+      },
+      "section-docs": {
+        "role": "secondary",
+        "displayName": "Documents Brown"
+      },
+      "section-share": {
+        "role": "secondary",
+        "displayName": "Share Violet"
+      },
+      "section-share-ink": {
+        "role": "secondary",
+        "displayName": "Share Ink"
+      },
+      "section-setup": {
+        "role": "secondary",
+        "displayName": "Setup Slate"
+      },
+      "line-airframe": {
+        "role": "tertiary",
+        "displayName": "Airframe Ink"
+      },
+      "line-engine": {
+        "role": "tertiary",
+        "displayName": "Engine Ink"
+      },
+      "line-propeller": {
+        "role": "tertiary",
+        "displayName": "Propeller Ink"
+      },
+      "line-avionics": {
+        "role": "tertiary",
+        "displayName": "Avionics Ink"
+      },
+      "line-other": {
+        "role": "tertiary",
+        "displayName": "Other Ink"
+      }
+    },
+    "typographyMeta": {
+      "board-title": {
+        "displayName": "Board title",
+        "purpose": "Section name on the board; the page h1."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "The Verdict sentence, h2 after the board title."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Leaf headings."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "HungSection headings in the margin column."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Everything readable; 68ch max."
+      },
+      "paper": {
+        "displayName": "Paper",
+        "purpose": "Text transcribed from a scanned page only (Literata)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "leaf-edge",
+        "value": "0 1px 0 rgba(0,0,0,.25)",
+        "purpose": "Every leaf; the only on-screen shadow."
+      },
+      {
+        "name": "add-button",
+        "value": "0 8px 18px -8px rgba(0,0,0,.7)",
+        "purpose": "Phone AddButton only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration-fast",
+        "value": "120ms cubic-bezier(.2,.8,.2,1)",
+        "purpose": "Hover, press, focus, selection, toggles."
+      },
+      {
+        "name": "duration-base",
+        "value": "200ms cubic-bezier(.45,0,.25,1)",
+        "purpose": "Leaf swaps, sub-tab changes, sheets, map zoom."
+      },
+      {
+        "name": "duration-slow",
+        "value": "320ms cubic-bezier(.45,0,.25,1)",
+        "purpose": "Board colour change between sections; first draw of the line ahead."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "instant or 120ms cross-fade",
+        "purpose": "prefers-reduced-motion and OS equivalents."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop",
+        "value": "1280px"
+      },
+      {
+        "name": "tablet-list-detail",
+        "value": "700pt"
+      },
+      {
+        "name": "tablet-review-3-pane",
+        "value": "1000pt"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one filled action on a view.",
+      "html": "<button class=\"ds-btn-primary\">Confirm page and next</button>",
+      "css": ".ds-btn-primary{font-family:'Libre Franklin',system-ui,sans-serif;background:#15171b;color:#fff;border:1px solid #15171b;border-radius:4px;height:42px;padding:0 18px;font-size:15px;font-weight:700;cursor:pointer;transition:background 120ms cubic-bezier(.2,.8,.2,1)}.ds-btn-primary:hover{background:#282a2d}.ds-btn-primary:active{background:#36373b}.ds-btn-primary:focus-visible{outline:2px solid #15171b;outline-offset:2px;box-shadow:0 0 0 2px #fff}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Every other action.",
+      "html": "<button class=\"ds-btn-secondary\">Mark done</button>",
+      "css": ".ds-btn-secondary{font-family:'Libre Franklin',system-ui,sans-serif;background:#fff;color:#15171b;border:1px solid #7d828a;border-radius:4px;height:42px;padding:0 18px;font-size:15px;font-weight:600;cursor:pointer}.ds-btn-secondary:hover{background:#ececed}.ds-btn-secondary:active{background:#dedfdf}.ds-btn-secondary:focus-visible{outline:2px solid #15171b;outline-offset:2px;box-shadow:0 0 0 2px #fff}"
+    },
+    {
+      "name": "Alarm Button",
+      "kind": "button",
+      "refersTo": "button-alarm",
+      "description": "Destructive action after confirmation.",
+      "html": "<button class=\"ds-btn-alarm\">Revoke link</button>",
+      "css": ".ds-btn-alarm{font-family:'Libre Franklin',system-ui,sans-serif;background:#fff;color:#dd3418;border:1px solid #dd3418;border-radius:4px;height:42px;padding:0 18px;font-size:15px;font-weight:700;cursor:pointer}.ds-btn-alarm:hover{background:#fcefed}.ds-btn-alarm:active{background:#fae3df}.ds-btn-alarm:focus-visible{outline:2px solid #15171b;outline-offset:2px;box-shadow:0 0 0 2px #fff}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Leaf field with a control border; 2px ink edge on focus.",
+      "html": "<label class=\"ds-field\"><span>Tach hours</span><input class=\"ds-input\" value=\"4,812.6\"></label>",
+      "css": ".ds-field{font-family:'Libre Franklin',system-ui,sans-serif;display:grid;gap:6px;color:#636973;font-size:13px;font-weight:700}.ds-input{font-family:'Libre Franklin',system-ui,sans-serif;background:#fff;color:#15171b;border:1px solid #7d828a;border-radius:4px;height:44px;padding:0 12px;font-size:16px;font-variant-numeric:tabular-nums}.ds-input:focus{outline:none;border:2px solid #15171b;padding:0 11px}"
+    },
+    {
+      "name": "Section Tab",
+      "kind": "nav",
+      "refersTo": "section-tab",
+      "description": "Coloured binder tab in the cover rail; the open one runs flush into its board.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-tab\" aria-current=\"page\" style=\"background:#2a3dbe\">Status<small>1 lapsed</small></a><a class=\"ds-tab ds-books\">Logbooks<small>412 entries</small></a><a class=\"ds-tab\" style=\"background:#0b6b6a\">Maintenance<small>3 open</small></a></nav>",
+      "css": ".ds-rail{font-family:'Libre Franklin',system-ui,sans-serif;background:#17191e;padding:18px 0 16px 14px;width:216px;display:grid;gap:6px}.ds-tab{display:flex;flex-direction:column;justify-content:center;min-height:50px;padding:8px 14px;margin-right:12px;border-radius:5px 0 0 5px;color:#fff;font-size:16px;font-weight:700;text-decoration:none}.ds-tab small{font-size:13px;font-weight:500;opacity:.92}.ds-tab[aria-current]{margin-right:0}.ds-books{background:#edbb1b;color:#1c1600}.ds-tab:focus-visible{outline:2px solid #15171b;outline-offset:2px;box-shadow:0 0 0 2px #fff}"
+    },
+    {
+      "name": "Status Marks",
+      "kind": "chip",
+      "refersTo": "status-mark",
+      "description": "Ink and vermilion status vocabulary: mark plus word.",
+      "html": "<div class=\"ds-marks\"><span class=\"ds-st ds-ok\">Current</span><span class=\"ds-st ds-soon\">Due soon</span><span class=\"ds-st ds-bad\">lapsed 7 days ago</span><span class=\"ds-st ds-unk\">No record</span></div>",
+      "css": ".ds-marks{font-family:'Libre Franklin',system-ui,sans-serif;display:flex;flex-wrap:wrap;gap:16px;align-items:center}.ds-st{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:700;white-space:nowrap;color:#15171b}.ds-st::before{content:'';width:12px;height:12px;border-radius:50%;box-sizing:border-box}.ds-ok::before{background:#15171b}.ds-soon{color:#c42e15}.ds-soon::before{border:3px solid #dd3418}.ds-bad{background:#dd3418;color:#fff;padding:2px 9px 2px 7px;border-radius:3px}.ds-bad::before{width:8px;height:8px;background:#fff}.ds-unk{color:#636973}.ds-unk::before{border:2px dashed #636973}"
+    },
+    {
+      "name": "Leaf with Verdict",
+      "kind": "card",
+      "refersTo": "leaf",
+      "description": "A white leaf on the status board opening with the Verdict.",
+      "html": "<div class=\"ds-board\"><h1 class=\"ds-title\">Status</h1><section class=\"ds-leaf\"><h2 class=\"ds-lede\"><b>One check has lapsed</b>, and it only matters for IFR. The annual is due Mar 31.</h2><p class=\"ds-paper\">Removed and replaced pitot-static line, leak checked IAW 91.411.</p></section></div>",
+      "css": ".ds-board{font-family:'Libre Franklin',system-ui,sans-serif;background:#2a3dbe;padding:0 22px 22px}.ds-title{color:#fff;font-size:30px;font-weight:800;letter-spacing:-.01em;margin:0;padding:22px 0 14px}.ds-leaf{background:#fff;color:#15171b;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.25);padding:26px 30px 28px}.ds-lede{font-size:22px;font-weight:400;line-height:1.35;max-width:34ch;margin:0 0 16px}.ds-lede b{font-weight:800}.ds-paper{font-family:Literata,Georgia,serif;font-size:17px;line-height:1.6;color:#454a52;margin:0}"
+    },
+    {
+      "name": "Trust Marks",
+      "kind": "custom",
+      "refersTo": "trust-mark",
+      "description": "Read by AI, confirmed by you, signed by a mechanic.",
+      "html": "<div class=\"ds-trust\"><span class=\"ds-t ds-ai\">Read by AI</span><span class=\"ds-t ds-conf\">Confirmed</span><span class=\"ds-t ds-sig\">Signed by D. Alvarez, IA</span></div>",
+      "css": ".ds-trust{font-family:'Libre Franklin',system-ui,sans-serif;display:flex;gap:18px}.ds-t{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#454a52}.ds-t::before{content:'';width:9px;height:9px;box-sizing:border-box}.ds-ai::before{border:2px dotted #636973;border-radius:50%}.ds-conf::before{background:#15171b;border-radius:50%}.ds-sig::before{background:#15171b;border-radius:1px;transform:rotate(45deg)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tabbed Binder",
+    "overview": "MyTailLog looks like the records binder an owner already keeps: a dark cover rail with six coloured section tabs, a board flooded with the open section's colour, and white leaves laid on it, the record on the left and its scanned page on a dark mat on the right. A line map of the aircraft's life, drawn in printer's inks on a leaf, gives every record a place in time. Libre Franklin is the app speaking; Literata is only the logbook's own words. Status is ink plus one vermilion alarm.",
+    "keyCharacteristics": [
+      "Four grounds: cover, board, leaf, mat.",
+      "Section hues fill boards and tabs only.",
+      "Status is ink and vermilion, mark plus word; no green or amber.",
+      "Two voices: Libre Franklin and Literata; tabular figures, no monospace.",
+      "16px body, nothing under 13px, 4.5:1 contrast.",
+      "Flat: the 1px leaf edge is the only shadow."
+    ],
+    "rules": [
+      {
+        "name": "The Ink and Vermilion Rule",
+        "body": "Status is a filled ink dot (current), vermilion ring (due soon), solid vermilion slip (overdue) or dashed ring (no record), always with its word.",
+        "section": "colors"
+      },
+      {
+        "name": "The Board Rule",
+        "body": "Section hues fill boards and tabs; on a leaf use section-ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Line Ink Rule",
+        "body": "Logbook inks belong to the map and its keys, never status or sections.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "Software text is Libre Franklin; transcribed text is Literata.",
+        "section": "typography"
+      },
+      {
+        "name": "The 13px Floor",
+        "body": "No text below 13px except the listed 12px map and badge cases.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Stack Rule",
+        "body": "Leaves lie flat on the board; no card shadows or hover lift.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do generate values from tokens.json.",
+      "Do show status as mark plus word.",
+      "Do keep the source page one step away.",
+      "Do keep one primary button per view.",
+      "Do use tabular figures for numbers.",
+      "Do default the theme to Match system."
+    ],
+    "donts": [
+      "Don't use green or amber.",
+      "Don't put a raw section hue on a leaf or draw the map on a board.",
+      "Don't mix the two voices.",
+      "Don't use monospace, a third typeface or emoji icons.",
+      "Don't add card shadows, glows or gradients.",
+      "Don't let unconfirmed readings move anything.",
+      "Don't write airworthy, legal to fly, grounded or compliant."
+    ]
+  }
+}

@@ -21,6 +21,13 @@ const WHAT: Record<keyof BackupData, string> = {
   maintenance_items: "Tracked inspections and intervals (annual, 100-hr, transponder, ELT, oil…).",
   documents: "Records Vault files (certificates, POH/AFM, 337s, STCs…), incl. names under docs/.",
   meter_resets: "Hobbs/tach meter replacements, so hour counts stay continuous across a new meter.",
+  service_providers: "Shops and mechanics you use for this aircraft.",
+  item_completions: "Each time a tracked item or AD was done, and the entry that proves it.",
+  planned_visits: "Shop visits you booked, with their week, place and status.",
+  planned_visit_items: "What each visit covers: item_key is mx:<maintenance_items id>, ad:<ad_compliance id> or squawk:<squawks id>.",
+  logbook_gaps: "Stretches of a logbook with no pages, and what you said about each.",
+  hours_readings: "Hobbs and tach readings over time (meter photos are not included).",
+  squawks: "Reported discrepancies, open and resolved (photos are not included).",
 };
 
 const rule = (c: string) => c.repeat(74);
@@ -51,6 +58,13 @@ export function buildReadme(data: BackupData, manifest: BackupManifest): string 
     ["maintenance_items", data.maintenance_items],
     ["documents", data.documents],
     ["meter_resets", data.meter_resets ?? []],
+    ["service_providers", data.service_providers ?? []],
+    ["item_completions", data.item_completions ?? []],
+    ["planned_visits", data.planned_visits ?? []],
+    ["planned_visit_items", data.planned_visit_items ?? []],
+    ["logbook_gaps", data.logbook_gaps ?? []],
+    ["hours_readings", data.hours_readings ?? []],
+    ["squawks", data.squawks ?? []],
   ];
 
   const lines: string[] = [

@@ -36,6 +36,13 @@ export type QueuedPage = {
   sharpness: number;
   glareRatio: number;
   createdAt: string;
+  /**
+   * v2 reading queue (09 §4.8): the scan batch this page joins, created by the drain before the page uploads.
+   * `expectedPages` null while a camera session is still open; the page waits on the device until it is set.
+   */
+  batch?: { id: string; source: "web_upload" | "pdf" | "web_camera"; expectedPages: number | null };
+  /** 64-bit dHash, 16 hex characters (09 §3.9.3). */
+  phash?: string;
 };
 
 function openDb(): Promise<IDBDatabase> {
@@ -89,4 +96,11 @@ export async function countQueued(): Promise<number> {
 
 export async function removeQueued(id: string): Promise<void> {
   await tx("readwrite", (store) => store.delete(id));
+}
+
+/** Close a camera session: every page of `batchId` learns how many pages the batch holds, so it can upload. */
+export async function setBatchExpected(batchId: string, expectedPages: number): Promise<void> {
+  for (const p of await listQueued()) {
+    if (p.batch?.id === batchId) await enqueuePage({ ...p, batch: { ...p.batch, expectedPages } });
+  }
 }

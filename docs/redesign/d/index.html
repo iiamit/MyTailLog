@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tabbed Binder — MyTailLog direction D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Libre+Franklin:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,700&display=swap">
+<link rel="stylesheet" href="../shared/gallery.css">
+<link rel="stylesheet" href="../shared/mock.css">
+<link rel="stylesheet" href="system.css">
+</head>
+<body class="g-page">
+<nav class="g-top" aria-label="Proposal"><div class="g-top-in">
+  <b>MyTailLog redesign</b>
+  <a href="../index.html">Overview</a>
+  <a href="../analysis.html">Analysis</a>
+  <a href="../a/index.html">A · Paint Scheme</a>
+  <a href="../b/index.html">B · Section Tabs</a>
+  <a href="../c/index.html">C · Line Diagram</a>
+  <a href="index.html" aria-current="page">D · Tabbed Binder</a>
+</div></nav>
+<nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
+  <a href="index.html" aria-current="page">Direction overview</a><a href="web.html">Web screens</a><a href="mobile.html">Phone and tablet</a>
+</div></nav>
+
+<main class="g-wrap">
+<h1 class="g-h1">Direction D: Tabbed Binder</h1>
+<p class="g-lede">Direction B's records binder, with direction C's route map bound into it. The tabs, the coloured boards and the record-beside-its-page spread stay. The line map becomes the binder's index by time: a spine across the top of every section, a full map of the aircraft's life in Logbooks, and the line ahead for planning what comes due.</p>
+<ul class="g-index">
+  <li><a href="#d-idea">The idea</a></li>
+  <li><a href="#d-home">Home screens</a></li>
+  <li><a href="#d-map">Three places the map lives</a></li>
+  <li><a href="#d-system">Colour and type</a></li>
+  <li><a href="#d-ia">Navigation</a></li>
+  <li><a href="#d-flows">What changes in the workflows</a></li>
+  <li><a href="web.html">Web screens</a></li>
+  <li><a href="mobile.html">Phone and tablet screens</a></li>
+</ul>
+
+<h2 class="g-h2" id="d-idea">The idea</h2>
+<div class="g-cols"><div class="g-prose">
+<p>A binder is good at holding the records and proving each fact: open the tab, and the page is there. It is bad at time. Fifty years sit flattened into sections, and nothing in a binder shows what comes next. A line map is the opposite: it shows the whole life and the road ahead at a glance, but on its own it is a picture rather than a record.</p>
+<p>Direction D puts them together. Each logbook is still a tab and a coloured line at the same time. The tabs answer "where is it kept", the lines answer "when did it happen, and what is next", and every stop on a line opens the page that proves it on the right-hand leaf, exactly as a row does in B.</p>
+</div><div>
+<dl class="g-kv"><dt>Keeps from B</dt><dd>The cover rail and tabs sized by content, section boards, white leaves, the page on the dark mat, the paper-voice and app-voice type rule, ink-and-vermilion status.</dd><dt>Takes from C</dt><dd>Lines for books, stops for entries, interchanges for multi-book visits, dashed gaps, dotted futures and rings for what is due.</dd><dt>New in D</dt><dd>The spine on every board, the line ahead with proposed shop visits, and the stop-to-page link.</dd><dt>Honest risks</dt><dd>Two systems on one screen can crowd, so the map is drawn in ink on a white leaf and never on the coloured board, and the spine stays one strip high. Line inks and section colours are separate sets; the map never uses a section colour.</dd></dl>
+</div></div>
+
+<h2 class="g-h2" id="d-home">Home, on the web and on the phone</h2>
+
+<figure class="g-shot" id="d-web-status">
+  <figcaption><b>Status (web)</b><span>The board is B's. Under its head runs the spine: the aircraft's whole life on one strip, with the part this screen covers bracketed. The left leaf opens with the sentence, then the line ahead: the next twelve months on each book's line, what is due as rings, and a suggested shop visit drawn as a dashed interchange. The right leaf shows the page behind the selected row.</span></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-status fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status on" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead" style="min-height:70px">
+        <h1 class="b-title">Status</h1>
+        <nav class="b-subtabs"><a class="on" href="#">What's due</a><a href="#">Plan ahead</a></nav>
+        <div class="b-boardacts">Tach 4212.4, read Nov 14<a class="b-btn on-board sm" href="#"><i data-lucide="plane-landing"></i>Log a flight</a></div>
+      </div>
+      <div class="d-spine">
+        <div class="lab">N734DM<small>1978 to 2027</small></div>
+        <svg viewBox="0 0 1000 40" preserveAspectRatio="none" class="d-map" aria-label="The aircraft's whole life on one strip, with the next twelve months bracketed">
+          <rect class="win" x="898" y="1" width="101" height="38" rx="3"/>
+          <path class="ln thin air" d="M2,8 H83"/><path class="ln gap air" d="M83,8 H223"/><path class="ln thin air" d="M223,8 H790 M810,8 H898"/><path class="ln thin future air" d="M904,8 H998"/>
+          <path class="ln thin eng" d="M2,16 H790 M810,16 H898"/><path class="ln thin future eng" d="M904,16 H998"/>
+          <path class="ln thin prop" d="M2,24 H790 M810,24 H898"/><path class="ln thin future prop" d="M904,24 H998"/>
+          <path class="ln thin avi" d="M676,32 H790 M810,32 H898"/><path class="ln thin future avi" d="M904,32 H998"/>
+          <line class="axis" x1="800" y1="2" x2="800" y2="38" stroke-dasharray="2 3"/>
+          <rect class="cap" x="331" y="4" width="8" height="24" rx="4" style="stroke-width:1.5"/>
+          <rect class="cap" x="550" y="4" width="8" height="24" rx="4" style="stroke-width:1.5"/>
+          <rect class="cap" x="859" y="4" width="8" height="24" rx="4" style="stroke-width:1.5"/>
+          <rect class="cap plan" x="964" y="4" width="8" height="24" rx="4" style="stroke-width:1.5"/>
+          <circle class="ring bad" cx="896" cy="32" r="3.5"/><circle class="ring soon" cx="906" cy="16" r="3.5" style="stroke-width:2"/><circle class="ring soon" cx="912" cy="32" r="3.5" style="stroke-width:2"/>
+          <line class="today" x1="900" y1="0" x2="900" y2="40"/>
+        </svg>
+        <div class="go"><i data-lucide="route" style="width:16px;height:16px"></i>Open the map</div>
+      </div>
+      <div class="b-leaves" style="--split:1.62fr 1fr">
+        <section class="b-leaf" style="padding:22px 28px 20px">
+          <p class="b-lede" style="max-width:none;margin-bottom:10px"><b>One check has lapsed</b>, and it only matters for IFR. Three more come due before the new year, and two of them fit one visit.</p>
+          <svg class="d-map" viewBox="0 0 680 226" aria-label="The line ahead: the next twelve months on each logbook line">
+            <text class="nm" x="0" y="44" style="fill:var(--l-air)">Airframe</text>
+            <text class="nm" x="0" y="89" style="fill:var(--l-eng)">Engine</text>
+            <text class="nm" x="0" y="134" style="fill:var(--l-prop)">Propeller</text>
+            <text class="nm" x="0" y="179" style="fill:var(--l-avi)">Avionics</text>
+            <path class="ln air" d="M84,40 H110"/><path class="ln future air" d="M116,40 H672"/>
+            <path class="ln eng" d="M84,85 H110"/><path class="ln future eng" d="M116,85 H672"/>
+            <path class="ln prop" d="M84,130 H110"/><path class="ln future prop" d="M116,130 H672"/>
+            <path class="ln avi" d="M84,175 H110"/><path class="ln future avi" d="M116,175 H672"/>
+            <rect class="cap plan" x="151" y="73" width="20" height="114" rx="10"/>
+            <rect class="cap plan" x="486" y="28" width="20" height="114" rx="10"/>
+            <circle class="ring bad" cx="104" cy="175" r="8"/>
+            <circle class="ring soon" cx="147" cy="85" r="8"/>
+            <circle class="ring soon" cx="175" cy="175" r="8"/>
+            <circle class="ring" cx="265" cy="40" r="7"/>
+            <circle class="ring" cx="307" cy="40" r="7"/>
+            <line class="today" x1="110" y1="12" x2="110" y2="196"/>
+            <text x="120" y="20">Suggested visit, week of Dec 7</text>
+            <text class="s" x="316" y="20">AD seat rails ≈ Mar 28</text>
+            <text class="s" x="270" y="62">ELT battery, Feb 28</text>
+            <text x="512" y="20">Annual and ELT, by Jul 31</text>
+            <text class="alarm" x="96" y="200" text-anchor="end">VOR lapsed</text>
+            <text class="s" x="180" y="104">Oil, 9.7 h</text>
+            <text class="s" x="186" y="200">Transponder, static, Dec 31</text>
+            <g class="f"><text class="f" x="110" y="222" text-anchor="middle">Today</text><text class="f" x="177" y="222" text-anchor="middle">Jan</text><text class="f" x="266" y="222" text-anchor="middle">Mar</text><text class="f" x="358" y="222" text-anchor="middle">May</text><text class="f" x="451" y="222" text-anchor="middle">Jul</text><text class="f" x="545" y="222" text-anchor="middle">Sep</text><text class="f" x="672" y="222" text-anchor="end">Nov 2027</text></g>
+          </svg>
+          <div class="b-hung" style="--hung:118px;margin-top:6px">
+            <h3>Overdue</h3>
+            <table class="b-table due">
+              <tr><td class="name">VOR check<small><span class="d-line avi">Avionics</span> · 91.171 · IFR only · <a class="b-cite" href="#">Airframe p. 61</a></small></td><td>Nov 11</td><td>7 days over</td><td><span class="b-st bad">Overdue</span></td></tr>
+            </table>
+          </div>
+          <div class="b-hung" style="--hung:118px">
+            <h3>Before the new year</h3>
+            <table class="b-table due">
+              <tr class="sel"><td class="name">Transponder and static<small><span class="d-line avi">Avionics</span> · 91.413, 91.411 · <a class="b-cite" href="#">Airframe p. 58</a></small></td><td>Dec 31</td><td>43 days</td><td><span class="b-st soon">Due soon</span></td></tr>
+              <tr><td class="name">Oil and filter<small><span class="d-line eng">Engine</span> · every 50 h · <a class="b-cite" href="#">Engine p. 38</a></small></td><td>tach 4222.1<small>about Dec 12</small></td><td>9.7 h</td><td><span class="b-st soon">Due soon</span></td></tr>
+            </table>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div class="b-label"><b>Airframe logbook, page 58</b>Dec 3, 2024 · confirmed by you</div>
+            <div style="display:flex;gap:6px"><a class="b-btn on-mat sm" href="#"><i data-lucide="zoom-in"></i>Zoom</a><a class="b-btn on-mat sm" href="#">On the map</a></div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:hidden">
+            <div class="scan" style="--lh:28px;--top:56px;--cols:19% 16% 1fr 21%;aspect-ratio:auto;height:100%">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of inspections, tests, repairs and alterations</span><span>Signature / cert.</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>5/14/24</span><span>4096.2</span><span>Replaced L/H main tire and tube.</span><span class="black">M Torres</span>
+                <span></span><span></span><span>Serviced nose strut. Ops ck good.</span><span class="black">A&amp;P 3667012</span>
+                <span class="gap"></span>
+                <span>12/3/24</span><span>4131.5</span><span class="scan-sticker">ATC TRANSPONDER TEST AND INSPECTION PERFORMED I/A/W FAR 91.413 AND FAR 43 APP. F. ALTIMETER AND STATIC SYSTEM TESTED I/A/W FAR 91.411, APP. E, TO 20,000 FT. FOUND TO COMPLY. AEROCHECK INSTRUMENTS</span><span class="black">J. Whit</span>
+                <span class="gap"></span><span class="gap"></span>
+                <span>2/11/25</span><span>4139.0</span><span>Removed &amp; replaced vacuum pump filter.</span><span class="black">M Torres</span>
+              </div>
+              <div class="scan-hl" style="left:1%;top:196px;width:98%;height:150px"></div>
+              <div class="scan-page">58</div>
+            </div>
+          </div>
+          <div class="b-label paper" style="color:var(--on-cover);font-size:16px">“ATC transponder test and inspection performed i/a/w FAR 91.413 … found to comply.”</div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<div class="g-phones">
+  <figure class="g-phone" id="d-m-status">
+    <div class="g-device"><div class="artboard db bm sec-status">
+      <div class="bm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="bm-head"><div><div class="tail">N734DM <i data-lucide="chevron-down" style="width:16px;height:16px"></i> · synced 9:38</div><h1>Status</h1></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div class="bm-leaf">
+        <p class="bm-lede" style="margin-bottom:8px"><b>One check has lapsed</b>, IFR only. Two of the next three fit one visit.</p>
+        <svg class="d-map" viewBox="0 0 354 168" aria-label="The line ahead on the phone">
+          <path class="ln air" d="M8,26 H34"/><path class="ln future air" d="M40,26 H346"/>
+          <path class="ln eng" d="M8,62 H34"/><path class="ln future eng" d="M40,62 H346"/>
+          <path class="ln prop" d="M8,98 H34"/><path class="ln future prop" d="M40,98 H346"/>
+          <path class="ln avi" d="M8,134 H34"/><path class="ln future avi" d="M40,134 H346"/>
+          <rect class="cap plan" x="57" y="52" width="18" height="92" rx="9"/>
+          <rect class="cap plan" x="266" y="16" width="18" height="92" rx="9"/>
+          <circle class="ring bad" cx="30" cy="134" r="7"/><circle class="ring soon" cx="55" cy="62" r="7"/><circle class="ring soon" cx="76" cy="134" r="7"/>
+          <circle class="ring" cx="132" cy="26" r="6"/><circle class="ring" cx="157" cy="26" r="6"/>
+          <line class="today" x1="36" y1="6" x2="36" y2="150"/>
+          <text x="84" y="88" class="s">One visit, Dec 7</text>
+          <text x="275" y="10" text-anchor="middle" class="s">Annual</text>
+          <text class="f" x="36" y="166" text-anchor="middle">Today</text><text class="f" x="190" y="166" text-anchor="middle">May</text><text class="f" x="346" y="166" text-anchor="end">Nov 2027</text>
+        </svg>
+        <div class="bm-group"><span>Overdue</span></div>
+        <div class="bm-row"><div><div class="t">VOR check</div><div class="d"><span class="d-line avi">Avionics</span> · Nov 11 · IFR only</div></div><span class="b-st bad">7 days over</span></div>
+        <div class="bm-group"><span>Before the new year</span></div>
+        <div class="bm-row"><div><div class="t">Oil and filter</div><div class="d"><span class="d-line eng">Engine</span> · about Dec 12</div></div><div class="r">9.7 h<small>Due soon</small></div></div>
+        <div class="bm-row"><div><div class="t">Transponder and static</div><div class="d"><span class="d-line avi">Avionics</span> · Dec 31</div></div><div class="r">43 days<small>Due soon</small></div></div>
+        <span class="bm-fab"><i data-lucide="plus"></i></span>
+      </div>
+      <nav class="bm-tabs">
+        <a class="status on" href="#"><i data-lucide="list-checks"></i>Status</a>
+        <a class="books" href="#"><i data-lucide="book-open"></i>Logbooks</a>
+        <a class="maint" href="#"><i data-lucide="wrench"></i>Maint.</a>
+        <a class="aircraft" href="#"><i data-lucide="plane"></i>Aircraft</a>
+        <a class="share" href="#"><i data-lucide="share-2"></i>Share</a>
+      </nav>
+    </div></div>
+    <figcaption><b>Status (phone)</b><span>The line ahead fits the width of the phone: today on the left, a year to the right, the suggested visit drawn where it would happen.</span></figcaption>
+  </figure>
+
+  <figure class="g-phone" id="d-m-map">
+    <div class="g-device"><div class="artboard db bm sec-books">
+      <div class="bm-sys"><span>9:41</span><i><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></i></div>
+      <div class="bm-head" style="padding-bottom:10px"><div><div class="tail">N734DM · 412 pages</div><h1>Logbooks</h1></div><span class="ico"><i data-lucide="search"></i></span></div>
+      <div style="padding:0 16px 10px;display:flex;gap:6px"><span class="b-seg" style="background:var(--leaf)"><span class="on">Map</span><span>Pages</span><span>Review 6</span></span></div>
+      <div class="bm-leaf" style="padding:12px 12px 0">
+        <svg class="d-map" viewBox="0 0 358 600" style="height:510px;width:auto;max-width:100%" aria-label="The route map on the phone, newest at the top">
+          <text class="nm" x="58" y="14" text-anchor="middle" style="fill:var(--l-air);font-size:12px">Air</text>
+          <text class="nm" x="98" y="14" text-anchor="middle" style="fill:var(--l-eng);font-size:12px">Eng</text>
+          <text class="nm" x="138" y="14" text-anchor="middle" style="fill:var(--l-prop);font-size:12px">Prop</text>
+          <text class="nm" x="178" y="14" text-anchor="middle" style="fill:var(--l-avi);font-size:12px">Avi</text>
+          <!-- future: Nov 2027 (y 26) to today (y 96) -->
+          <path class="ln future air" d="M58,26 V92"/><path class="ln future eng" d="M98,26 V92"/><path class="ln future prop" d="M138,26 V92"/><path class="ln future avi" d="M178,26 V92"/>
+          <rect class="cap plan" x="48" y="38" width="100" height="18" rx="9"/>
+          <circle class="ring soon" cx="98" cy="88" r="7"/><circle class="ring soon" cx="178" cy="84" r="7"/>
+          <line class="today" x1="34" y1="98" x2="196" y2="98"/>
+          <!-- recent: today to Nov 2025 (y 98 to 200) -->
+          <path class="ln air" d="M58,98 V200"/><path class="ln eng" d="M98,98 V200"/><path class="ln prop" d="M138,98 V200"/><path class="ln avi" d="M178,98 V200"/>
+          <circle class="ring bad" cx="178" cy="103" r="7"/>
+          <rect class="cap sel" x="48" y="128" width="100" height="18" rx="9"/>
+          <circle class="stop" cx="98" cy="118" r="5"/><circle class="stop" cx="178" cy="110" r="5"/><circle class="stop" cx="98" cy="160" r="5"/>
+          <line class="axis" x1="34" y1="208" x2="196" y2="208" stroke-dasharray="3 4"/>
+          <!-- history: 2025 (y 216) to 1978 (y 590) -->
+          <path class="ln air" d="M58,216 V490"/><path class="ln gap air" d="M58,490 V552"/><path class="ln air" d="M58,552 V590"/>
+          <path class="ln eng" d="M98,216 V590"/><path class="ln prop" d="M138,216 V590"/><path class="ln avi" d="M178,216 V274"/>
+          <circle class="stop" cx="178" cy="274" r="6"/>
+          <rect class="cap" x="48" y="330" width="100" height="18" rx="9"/>
+          <circle class="stop" cx="98" cy="384" r="7"/>
+          <rect class="cap" x="48" y="436" width="100" height="18" rx="9"/>
+          <circle class="stop" cx="58" cy="590" r="5"/><circle class="stop" cx="98" cy="590" r="5"/><circle class="stop" cx="138" cy="590" r="5"/>
+          <!-- labels -->
+          <g><text class="f" x="0" y="30">2027</text><text class="f" x="0" y="102">Today</text><text class="f" x="0" y="220">2025</text><text class="f" x="0" y="300">2015</text><text class="f" x="0" y="380">2005</text><text class="f" x="0" y="460">1995</text><text class="f" x="0" y="540">1985</text><text class="f" x="0" y="594">1978</text></g>
+          <text x="208" y="51" class="s">Annual due Jul 31</text>
+          <text x="208" y="90" class="alarm">Oil, transponder due</text>
+          <text x="208" y="107" class="alarm">VOR lapsed Nov 11</text>
+          <text x="208" y="141">Jul 14 annual</text>
+          <text x="208" y="278" class="s">GTN 650 installed 2019</text>
+          <text x="208" y="343" class="s">2011 annual, AD</text>
+          <text x="208" y="388" class="s">Engine overhaul 2005</text>
+          <text x="208" y="449" class="s">1998 annual</text>
+          <text x="208" y="524" class="f">No airframe pages</text><text x="208" y="540" class="f">1983 to 1991</text>
+          <text x="208" y="594" class="s">Delivered new 1978</text>
+        </svg>
+      </div>
+      <nav class="bm-tabs">
+        <a class="status" href="#"><i data-lucide="list-checks"></i>Status</a>
+        <a class="books on" href="#"><i data-lucide="book-open"></i>Logbooks</a>
+        <a class="maint" href="#"><i data-lucide="wrench"></i>Maint.</a>
+        <a class="aircraft" href="#"><i data-lucide="plane"></i>Aircraft</a>
+        <a class="share" href="#"><i data-lucide="share-2"></i>Share</a>
+      </nav>
+    </div></div>
+    <figcaption><b>The map (phone)</b><span>On the phone the lines run down the screen, newest at the top, so scrolling down is going back in time. Tap any stop to open its page.</span></figcaption>
+  </figure>
+</div>
+
+<h2 class="g-h2" id="d-map">Three places the map lives</h2>
+
+<figure class="g-shot" id="d-web-map">
+  <figcaption><b>Logbooks › Map (web)</b><span>The full route map on the left leaf: four books as lines, the 1983 to 1991 airframe gap dashed, the engine's time since overhaul shaded, interchanges where one visit signed several books, and the road ahead dotted. The 2011 annual is selected, so the right leaf holds its three pages, one tab per book.</span></figcaption>
+  <div class="g-stage"><div class="artboard db web sec-books fixed" style="--w:1440;--h:900">
+    <aside class="b-rail">
+      <div class="b-plate"><b>N734DM <i data-lucide="chevrons-up-down" style="width:16px;height:16px;opacity:.6"></i></b><span>1978 Cessna 172N · Demo</span></div>
+      <a class="b-tab status" href="#" style="height:58px">Status<small>1 overdue, 3 soon</small></a>
+      <a class="b-tab books on" href="#" style="height:172px">Logbooks<small>412 pages in 5 books</small><small>212 entries</small><span class="flag">6 to review</span></a>
+      <a class="b-tab maint" href="#" style="height:104px">Maintenance<small>11 tracked items</small><small>2 open squawks</small></a>
+      <a class="b-tab aircraft" href="#" style="height:78px">Aircraft<small>Hours, equipment, W&amp;B</small></a>
+      <a class="b-tab docs" href="#" style="height:62px">Documents<small>14 in the vault</small></a>
+      <a class="b-tab share" href="#" style="height:58px">Share<small>1 link live</small></a>
+      <div class="b-railfoot">
+        <a class="b-railbtn" href="#"><i data-lucide="search"></i>Search or ask<kbd>/</kbd></a>
+        <a class="b-railbtn add" href="#"><i data-lucide="plus"></i>Add<kbd>N</kbd></a>
+        <a class="b-railbtn" href="#" style="background:transparent"><i data-lucide="circle-user-round"></i>Dana M.</a>
+      </div>
+    </aside>
+    <div class="b-board">
+      <div class="b-boardhead" style="min-height:70px">
+        <h1 class="b-title">Logbooks</h1>
+        <nav class="b-subtabs"><a class="on" href="#">Map</a><a href="#">Pages</a><a href="#">Review 6</a><a href="#">Add pages</a></nav>
+        <div class="b-boardacts"><span class="b-seg" style="background:var(--leaf)"><span class="on">All books</span><span>Airframe</span><span>Engine</span><span>Propeller</span><span>Avionics</span></span></div>
+      </div>
+      <div class="b-leaves" style="--split:1.62fr 1fr">
+        <section class="b-leaf" style="padding:22px 26px 18px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+            <h2 class="b-h2">48 years, 212 confirmed entries</h2>
+            <div class="d-legend"><span><i class="d-key-solid"></i>pages</span><span><i class="d-key-gap"></i>no pages yet</span><span><i class="d-key-future"></i>ahead</span><span><i class="d-key-cap"></i>one visit, several books</span></div>
+          </div>
+          <svg class="d-map z" viewBox="0 0 820 392" style="margin-top:8px" aria-label="Route map of all four logbooks from 1978 to November 2027">
+            <rect x="389" y="140" width="411" height="20" rx="4" style="fill:var(--l-eng);fill-opacity:.08"/>
+            <line class="axis" x1="610" y1="30" x2="610" y2="350" stroke-dasharray="3 5"/>
+            <text class="nm" x="0" y="74" style="fill:var(--l-air)">Airframe</text>
+            <text class="nm" x="0" y="154" style="fill:var(--l-eng)">Engine</text>
+            <text class="nm" x="0" y="234" style="fill:var(--l-prop)">Propeller</text>
+            <text class="nm" x="0" y="314" style="fill:var(--l-avi)">Avionics</text>
+            <path class="ln air" d="M100,70 H152"/><path class="ln gap air" d="M152,70 H241"/><path class="ln air" d="M241,70 H600 M620,70 H708"/><path class="ln future air" d="M714,70 H800"/>
+            <path class="ln eng" d="M100,150 H600 M620,150 H708"/><path class="ln future eng" d="M714,150 H800"/>
+            <path class="ln prop" d="M100,230 H600 M620,230 H708"/><path class="ln future prop" d="M714,230 H800"/>
+            <path class="ln avi" d="M530,310 H600 M620,310 H708"/><path class="ln future avi" d="M714,310 H800"/>
+            <rect class="cap" x="302" y="58" width="20" height="184" rx="10"/>
+            <rect class="cap sel" x="441" y="58" width="20" height="184" rx="10"/>
+            <rect class="cap" x="667" y="58" width="20" height="184" rx="10"/>
+            <rect class="cap plan" x="761" y="58" width="20" height="184" rx="10"/>
+            <circle class="stop" cx="100" cy="70" r="6"/><circle class="stop" cx="100" cy="150" r="6"/><circle class="stop" cx="100" cy="230" r="6"/>
+            <circle class="stop" cx="352" cy="70" r="5"/><circle class="stop" cx="413" cy="70" r="5"/><circle class="stop" cx="497" cy="70" r="5"/><circle class="stop" cx="554" cy="70" r="5"/><circle class="stop" cx="571" cy="70" r="5"/><circle class="stop" cx="590" cy="70" r="5"/>
+            <circle class="stop" cx="225" cy="150" r="5"/><circle class="stop" cx="389" cy="150" r="9"/><circle class="stop" cx="497" cy="150" r="5"/><circle class="stop" cx="660" cy="150" r="5"/><circle class="stop" cx="689" cy="150" r="5"/>
+            <circle class="stop" cx="437" cy="230" r="9"/>
+            <circle class="stop" cx="530" cy="310" r="8"/><circle class="stop" cx="699" cy="310" r="5"/>
+            <circle class="ring bad" cx="705" cy="310" r="6"/><circle class="ring soon" cx="716" cy="150" r="7"/><circle class="ring soon" cx="724" cy="310" r="7"/>
+            <line class="today" x1="711" y1="34" x2="711" y2="350"/>
+            <text x="312" y="48" text-anchor="middle">1998 annual</text>
+            <text x="451" y="48" text-anchor="middle">2011 annual</text>
+            <text x="677" y="48" text-anchor="middle">Jul 14</text>
+            <text class="s" x="771" y="48" text-anchor="middle">Jul 31</text>
+            <text class="f" x="196" y="92" text-anchor="middle">no pages, 1983 to 1991</text>
+            <text class="s" x="381" y="130" text-anchor="middle">Overhauled 2005</text>
+            <text class="s" x="472" y="182">1409.4 h since overhaul</text>
+            <text class="s" x="429" y="262" text-anchor="end">Overhauled 2010</text>
+            <text class="s" x="522" y="338" text-anchor="end">GTN 650, 2019</text>
+            <text class="alarm" x="700" y="338" text-anchor="end">VOR lapsed</text>
+            <g><text class="f" x="121" y="378" text-anchor="middle">1980</text><text class="f" x="225" y="378" text-anchor="middle">1990</text><text class="f" x="330" y="378" text-anchor="middle">2000</text><text class="f" x="434" y="378" text-anchor="middle">2010</text><text class="f" x="539" y="378" text-anchor="middle">2020</text><text class="f" x="620" y="378">Nov 2025</text><text x="711" y="378" text-anchor="middle" style="font-size:12px">Today</text><text class="f" x="800" y="378" text-anchor="end">2027</text></g>
+          </svg>
+          <div class="b-hung" style="--hung:118px;margin-top:4px">
+            <h3>Aug 22, 2011<small>Annual, three books</small></h3>
+            <table class="b-table">
+              <tr class="sel"><td style="width:120px"><span class="d-line air">Airframe</span></td><td class="paper" style="font-size:16px">Annual inspection IAW FAR 43 App. D. AD 2011-10-09 seat rails inspected, complied.</td><td class="r" style="white-space:nowrap"><span class="b-truth conf">Confirmed</span></td></tr>
+              <tr><td><span class="d-line eng">Engine</span></td><td class="paper" style="font-size:16px">Annual. Compressions 75/77/74/76 over 80. Oil and filter changed.</td><td class="r"><span class="b-truth conf">Confirmed</span></td></tr>
+              <tr><td><span class="d-line prop">Propeller</span></td><td class="paper" style="font-size:16px">Inspected i/a/w annual. No defects.</td><td class="r"><span class="b-truth">Read by AI</span></td></tr>
+            </table>
+          </div>
+        </section>
+        <section class="b-leaf mat">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div class="b-label"><b>2011 annual, one visit</b>D. Alvarez, A&amp;P 3105582 IA · tach 3384.0</div>
+            <a class="b-btn on-mat sm" href="#"><i data-lucide="zoom-in"></i>Zoom</a>
+          </div>
+          <div style="display:flex;gap:4px"><a class="b-btn sm on-board" href="#" style="background:var(--leaf);color:var(--ink)">Airframe p. 41</a><a class="b-btn on-mat sm" href="#">Engine p. 14</a><a class="b-btn on-mat sm" href="#">Propeller p. 6</a></div>
+          <div style="flex:1;min-height:0;overflow:hidden">
+            <div class="scan" style="--lh:28px;--top:56px;--cols:19% 16% 1fr 21%;aspect-ratio:auto;height:100%">
+              <div class="scan-title">AIRCRAFT LOG</div>
+              <div class="scan-head"><span>Date</span><span>Tach</span><span>Description of inspections, tests, repairs and alterations</span><span>Signature / cert.</span></div>
+              <div class="scan-cols"><i></i><i></i><i></i><i></i></div>
+              <div class="scan-body">
+                <span>3/2/11</span><span>3361.7</span><span>Replaced L/H landing light lamp.</span><span class="black">K Bryant</span>
+                <span class="gap"></span>
+                <span>8/22/11</span><span>3384.0</span><span>Annual inspection IAW FAR 43</span><span class="black">D Alvarez</span>
+                <span></span><span></span><span>App. D. AD 2011-10-09 seat</span><span class="black">A&amp;P 3105582</span>
+                <span></span><span></span><span>rails inspected, complied.</span><span class="black">IA</span>
+                <span></span><span></span><span>Aircraft airworthy at this time.</span><span></span>
+              </div>
+              <div class="scan-hl" style="left:1%;top:112px;width:98%;height:116px"></div>
+              <div class="scan-stamp" style="right:6%;top:240px">ANNUAL<br>INSPECTION</div>
+              <div class="scan-page">41</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div></div>
+  <button class="g-zoomhint" type="button">View at full size</button>
+</figure>
+
+<div class="g-cols">
+  <div class="g-prose"><h3 class="g-h3">The spine, on every board</h3><p>A strip one finger high under every section's title, drawn from the same data as the map. It brackets what the current screen covers (the year ahead on Status, a decade on a filtered list, one stop on an entry), so the owner always knows where in time they are. Clicking anywhere on it jumps the map to that moment.</p></div>
+  <div class="g-prose"><h3 class="g-h3">The map, in Logbooks</h3><p>The whole life of the aircraft. Stops open their pages on the right leaf; an interchange opens every page signed in that visit, one tab per book. A dashed gap offers to scan the missing pages. Filters narrow it to one book; dragging across a stretch filters the list below to those years.</p></div>
+  <div class="g-prose"><h3 class="g-h3">The line ahead, in Status</h3><p>The same lines continued into the future, with due items as rings in B's status marks: black ring current, vermilion ring due soon, solid vermilion overdue. Items that fit one shop visit are drawn as a proposed interchange. "Plan ahead" stretches it to 24 months and lets the owner drag a date to see what will have lapsed by then.</p></div>
+</div>
+
+<h2 class="g-h2" id="d-system">Colour and type</h2>
+<div class="g-swatches">
+  <div class="g-sw"><i style="background:#17191e"></i><span><b>Cover</b>#17191e<br>rail</span></div>
+  <div class="g-sw"><i style="background:#2a3dbe"></i><span><b>Status</b>#2a3dbe<br>section</span></div>
+  <div class="g-sw"><i style="background:#edbb1b"></i><span><b>Logbooks</b>#edbb1b<br>section</span></div>
+  <div class="g-sw"><i style="background:#0b6b6a"></i><span><b>Maintenance</b>#0b6b6a<br>section</span></div>
+  <div class="g-sw"><i style="background:#dd3418"></i><span><b>Alarm</b>#dd3418<br>overdue and due soon</span></div>
+  <div class="g-sw"><i style="background:#23318f"></i><span><b>Airframe ink</b>#23318f<br>line</span></div>
+  <div class="g-sw"><i style="background:#a8326b"></i><span><b>Engine ink</b>#a8326b<br>line</span></div>
+  <div class="g-sw"><i style="background:#4a4f57"></i><span><b>Propeller ink</b>#4a4f57<br>line</span></div>
+  <div class="g-sw"><i style="background:#0f7fa6"></i><span><b>Avionics ink</b>#0f7fa6<br>line</span></div>
+</div>
+<div class="g-cols"><div class="g-prose"><p>Type and status are B's unchanged: Libre Franklin for the app, Literata only for words transcribed from paper, black dot for current, vermilion ring for due soon, solid vermilion for overdue. The map adds one set of colours, printer's inks for the four books, deliberately darker and duller than the section colours so a line never reads as a tab and never reads as a status.</p></div>
+<div class="g-prose"><p>The map is always drawn in ink on a white leaf, never on a coloured board, so the board keeps its job of saying which section is open. On the phone the map turns vertical: one column per book, newest at the top.</p></div></div>
+
+<h2 class="g-h2" id="d-ia">Navigation</h2>
+<div class="g-prose"><p>B's six tabs stay: Status, Logbooks, Maintenance, Aircraft, Documents, Share, with Search-or-ask, Add and the account at the foot of the rail. Two sub-tabs change. Status gains "Plan ahead", which replaces both Forecast and Pick a date. Logbooks opens on "Map" instead of a page list. The spine adds a second way to move: by time, from any section. On the phone the five coloured tabs stay, and the Logbooks tab opens on the vertical map.</p></div>
+
+<h2 class="g-h2" id="d-flows">What changes in the workflows</h2>
+<ul class="g-prose">
+  <li><b>Planning is drawing.</b> The line ahead shows due items on the books they belong to; dragging the date marker shows what lapses by then; accepting a suggested visit books it as a planned interchange that the reminders then follow.</li>
+  <li><b>Finding is travelling.</b> Search results light up as stops on the map, so an answer shows where in fifty years it sits as well as which page it rests on.</li>
+  <li><b>Scanning fills the map.</b> New pages land on their line as hollow stops while they are read, turn solid when confirmed, and a dashed gap shortens as its pages come in.</li>
+  <li><b>Hand-offs open with the map.</b> The pre-buy dossier and the record room start with the aircraft's life as a line map, every gap labelled, before the tabbed sections.</li>
+  <li><b>Everything else is B.</b> Screens not shown on this direction's pages work as in <a href="../b/index.html">direction B</a>, with the spine added under each board's title.</li>
+</ul>
+<p class="g-prose">See every screen: <a href="web.html">web</a> · <a href="mobile.html">phone and tablet</a>.</p>
+</main>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="../shared/gallery.js"></script>
+</body>
+</html>
