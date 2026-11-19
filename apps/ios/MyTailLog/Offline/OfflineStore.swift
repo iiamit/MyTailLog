@@ -92,7 +92,7 @@ final class OfflineStore {
         uploader = nil
         monitor.cancel()
         pending?.cancel()
-        core.close()
+        if !syncing { core.close() }
     }
 
     /// Sign-out (05 §8.6): the database files, the held pages and the cache go.
@@ -121,17 +121,18 @@ final class OfflineStore {
 
     /// Every mirror row of `table` for one aircraft, decoded from `_raw` (the server's own row shape).
     func rows<T: Decodable>(_ table: String, aircraftId: String, as: T.Type = T.self) -> [T] {
+        guard !closed else { return [] }
         let raw = core.rowsJson(table: table, aircraftId: aircraftId)
         // One bad row must not hide the rest.
         guard let array = try? JSONDecoder().decode([AnyJSON].self, from: Data(raw.utf8)) else { return [] }
         return array.compactMap { row in (try? JSONEncoder().encode(row)).flatMap { try? JSONDecoder().decode(T.self, from: $0) } }
     }
 
-    func aircraftRows<T: Decodable>(as: T.Type = T.self) -> [T] { decode(core.aircraftJson()) ?? [] }
-    func raw(_ table: String, id: String) -> String? { core.rawJson(table: table, id: id) }
-    var hasPulled: Bool { core.cursor() > 0 }
+    func aircraftRows<T: Decodable>(as: T.Type = T.self) -> [T] { closed ? [] : decode(core.aircraftJson()) ?? [] }
+    func raw(_ table: String, id: String) -> String? { closed ? nil : core.rawJson(table: table, id: id) }
+    var hasPulled: Bool { !closed && core.cursor() > 0 }
 
-    func diff(_ id: String) -> [FieldDiffRow] { decode(core.diffJson(mutationId: id)) ?? [] }
+    func diff(_ id: String) -> [FieldDiffRow] { closed ? [] : decode(core.diffJson(mutationId: id)) ?? [] }
 
     private func decode<T: Decodable>(_ s: String) -> T? { try? JSONDecoder().decode(T.self, from: Data(s.utf8)) }
 
@@ -141,6 +142,7 @@ final class OfflineStore {
     func enqueue(id: String = UUID().uuidString.lowercased(), type: String, aircraftId: String, payload: [String: Any],
                  label: String, target: (table: String, id: String)? = nil, base: String? = nil, baseRow: String? = nil,
                  dependsOn: String? = nil) throws {
+        guard !closed else { throw CocoaError(.fileWriteUnknown) }
         let json = String(decoding: try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]), as: UTF8.self)
         try core.enqueue(id: id, type: type, aircraftId: aircraftId, payload: json, label: label,
                          targetTable: target?.table, targetId: target?.id, base: base, baseRow: baseRow, dependsOn: dependsOn)
@@ -151,6 +153,7 @@ final class OfflineStore {
 
     /// Discard a waiting or refused change (M-SYS-01). A page's registration takes its held files with it.
     func discard(_ id: String) {
+        guard !closed else { return }
         _ = core.discard(mutationId: id)
         for f in files where f.meta.pageId == id { removeFileJob(f) }
         reload()
@@ -172,6 +175,7 @@ final class OfflineStore {
     // MARK: Files (05 §7.2)
 
     func addFile(id: String, kind: String, aircraftId: String, path: URL, bytes: Int, meta: FileMeta) throws {
+        guard !closed else { throw CocoaError(.fileWriteUnknown) }
         let json = String(decoding: try JSONEncoder().encode(meta), as: UTF8.self)
         _ = core.addFile(id: id, kind: kind, aircraftId: aircraftId, localPath: path.lastPathComponent, bytes: Int64(bytes),
                          sha256: nil, meta: json, createdAt: Int64(Date().timeIntervalSince1970 * 1000))
@@ -179,6 +183,7 @@ final class OfflineStore {
     }
 
     func setFile(_ id: String, _ status: String, progress: Double = 0, error: String? = nil, attempt: Bool = false) {
+        guard !closed else { return }
         _ = core.setFileStatus(id: id, status: status, progress: progress, error: error, attemptDelta: attempt ? 1 : 0)
         reload()
     }
@@ -188,6 +193,7 @@ final class OfflineStore {
     var pagesDir: URL { dir.appending(path: "Outbox/pages", directoryHint: .isDirectory) }
 
     func removeFileJob(_ job: FileJob) {
+        guard !closed else { return }
         uploader?.cancel(job.id)
         _ = core.removeFile(id: job.id)
         try? FileManager.default.removeItem(at: fileURL(job))
@@ -195,6 +201,7 @@ final class OfflineStore {
 
     /// A page's image reached storage: queue `page.register` once its batch is queued (05 §7.2 step 3).
     func pageUploaded(_ job: FileJob) {
+        guard !closed else { return }
         guard job.kind == "page" else {
             _ = core.removeFile(id: job.id) // the thumbnail is on the server; its file stays for the queue until the page goes
             reload()
@@ -219,7 +226,9 @@ final class OfflineStore {
                 if let p = job.meta.phash { payload["phash"] = p }
                 do {
                     try enqueue(id: job.meta.pageId, type: "page.register", aircraftId: job.aircraftId, payload: payload,
-                                label: "Page photo", target: ("page", job.meta.pageId), dependsOn: job.id)
+                                label: "Page photo", target: ("page", job.meta.pageId),
+                                // Sent only after its batch landed: same-millisecond rows have no order of their own.
+                                dependsOn: job.meta.batchId.flatMap { queued.contains($0) ? $0 : nil })
                 } catch {
                     continue
                 }
@@ -277,12 +286,15 @@ final class OfflineStore {
         recoverSessions(except: openBatch)
         guard !isOffline, !syncing else { return }
         syncing = true
-        defer { syncing = false }
+        // A store closed mid-sync closes its databases once the engine is done with them.
+        defer { syncing = false; if closed { core.close() } }
         do {
             core.accessToken = try await token()
             await uploader?.drain()
+            guard !closed else { return }
             let before = core.cursor()
             let report = try await core.sync()
+            guard !closed else { return }
             reload()
             settleFiles()
             failed = false

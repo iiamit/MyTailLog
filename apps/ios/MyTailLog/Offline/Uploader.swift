@@ -9,28 +9,37 @@ final class Uploader {
     static let sessionId = "com.mytaillog.uploads"
     /// Strong on purpose: OfflineStore.close() drops its uploader, which ends the cycle.
     private let store: OfflineStore
-    private let delegate = Delegate()
-    private let session: URLSession
     private var live: [String: URLSessionTask] = [:]
     private var nextTry: [String: Date] = [:]
+    /// Jobs asking for their signed URL: a second drain (a sync, a capture) must not start them twice.
+    private var starting: Set<String> = []
     /// The system's completion for `handleEventsForBackgroundURLSession` (05 §9).
     static var backgroundCompletion: (() -> Void)?
 
-    init(store: OfflineStore) {
-        self.store = store
-        let config = URLSessionConfiguration.background(withIdentifier: Self.sessionId)
+    /// One background session per process: the system allows one live session per identifier, and a relaunch
+    /// re-attaches to it. Its events go to the open store's uploader.
+    private static weak var active: Uploader?
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.background(withIdentifier: sessionId)
         config.sessionSendsLaunchEvents = true
         config.isDiscretionary = false
-        session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-        delegate.onDone = { [weak self] id, status, error in
-            Task { @MainActor in self?.finished(id, status: status, error: error) }
+        let delegate = Delegate()
+        delegate.onDone = { id, status, error in
+            Task { @MainActor in Uploader.active?.finished(id, status: status, error: error) }
         }
-        delegate.onProgress = { [weak self] id, p in
-            Task { @MainActor in self?.progress(id, p) }
+        delegate.onProgress = { id, p in
+            Task { @MainActor in Uploader.active?.progress(id, p) }
         }
         delegate.onEventsDone = {
             Task { @MainActor in Uploader.backgroundCompletion?(); Uploader.backgroundCompletion = nil }
         }
+        return URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+    }()
+    private var session: URLSession { Self.session }
+
+    init(store: OfflineStore) {
+        self.store = store
+        Self.active = self
         Task { await adoptRunningTasks() }
     }
 
@@ -42,8 +51,8 @@ final class Uploader {
         for job in store.files where job.status == "uploading" && live[job.id] == nil { store.setFile(job.id, "held") }
     }
 
-    /// Frees the background session identifier; tasks already running finish.
-    func invalidate() { session.finishTasksAndInvalidate() }
+    /// The store closed: this uploader stops taking events (running tasks finish and are re-adopted on reopen).
+    func invalidate() { if Self.active === self { Self.active = nil } }
 
     func cancel(_ id: String) { live.removeValue(forKey: id)?.cancel() }
     func cancelAll() { live.values.forEach { $0.cancel() }; live = [:] }
@@ -58,9 +67,13 @@ final class Uploader {
     /// Start every held file that is due (oldest first, thumbnails before their page).
     func drain() async {
         guard store.uploader === self, !store.isOffline else { return }
-        for job in store.files where job.status == "held" && live[job.id] == nil {
+        for job in store.files where job.status == "held" && live[job.id] == nil && !starting.contains(job.id) {
             if let at = nextTry[job.id], at > Date() { continue }
+            // The list was read before earlier awaits; another drain may have moved this job on.
+            guard store.uploader === self, store.files.first(where: { $0.id == job.id })?.status == "held", live[job.id] == nil, !starting.contains(job.id) else { continue }
+            starting.insert(job.id)
             await start(job)
+            starting.remove(job.id)
         }
     }
 
@@ -78,6 +91,7 @@ final class Uploader {
         do {
             request.setValue("Bearer \(try await store.token())", forHTTPHeaderField: "Authorization")
             let (data, response) = try await URLSession.shared.data(for: request)
+            guard store.uploader === self else { return } // closed (sign-out, kill) while asking
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             let answer = try? JSONDecoder().decode(Answer.self, from: data)
             guard (200..<300).contains(status), let answer else {
@@ -101,6 +115,7 @@ final class Uploader {
             store.setFile(job.id, "uploading")
             task.resume()
         } catch {
+            guard store.uploader === self else { return }
             failed(job, "Not uploaded yet: no connection.", countAttempt: false)
         }
     }

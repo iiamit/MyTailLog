@@ -69,12 +69,13 @@ struct OfflineStoreTests {
         s.pageUploaded(job)
         #expect(s.items.isEmpty)
         session.finish()
-        #expect(s.items.map(\.type) == ["batch.create", "page.register"])
-        let register = try #require(s.items.last)
-        #expect(register.id == job.meta.pageId && register.dependsOn == job.id)
+        #expect(Set(s.items.map(\.type)) == ["batch.create", "page.register"])
+        let register = try #require(s.items.first { $0.type == "page.register" })
+        // The registration waits for its batch (the image is already up).
+        #expect(register.id == job.meta.pageId && register.dependsOn == session.batchId)
         #expect(register.payload["storagePath"] == .string("\(aircraft)/\(logbook)/\(job.meta.pageId).jpg"))
         #expect(register.payload["batchId"] == .string(session.batchId))
-        #expect(s.items.first?.payload["expectedPages"] == .number(1))
+        #expect(s.items.first { $0.type == "batch.create" }?.payload["expectedPages"] == .number(1))
         s.close()
     }
 

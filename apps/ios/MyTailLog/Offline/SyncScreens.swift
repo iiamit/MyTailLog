@@ -129,9 +129,10 @@ struct WaitingScreen: View {
     private var summary: some View {
         let changes = offline.waiting.count, pages = offline.heldPages.count
         return VStack(alignment: .leading, spacing: Tokens.Space.s2) {
-            Text(changes + pages == 0 && offline.conflicts.isEmpty && offline.refused.isEmpty
-                 ? "Everything you've recorded has reached the server."
-                 : "\(SyncBars.plural(changes, "change")) and \(SyncBars.plural(pages, "page")) on this phone.")
+            Text(changes + pages == 0
+                 ? (offline.conflicts.isEmpty && offline.refused.isEmpty ? "Everything you've recorded has reached the server." : "Nothing else is waiting.")
+                 : [changes > 0 ? SyncBars.plural(changes, "change") : nil, pages > 0 ? SyncBars.plural(pages, "page") : nil]
+                    .compactMap { $0 }.joined(separator: " and ") + " on this phone.")
                 .dFont(.lede)
             Button {
                 Task { await offline.sync() }
