@@ -42,8 +42,8 @@ targets:
       - name: Check Supabase config
         basedOnDependencyAnalysis: false
         script: |
-          if [ -z "${SUPABASE_HOST}" ] || [ -z "${SUPABASE_PUBLISHABLE_KEY}" ]; then
-            echo "error: SUPABASE_HOST and SUPABASE_PUBLISHABLE_KEY are empty for ${CONFIGURATION}. Create apps/ios/Config/Release.local.xcconfig (see Config/Release.xcconfig)."
+          if [ -z "${SUPABASE_HOST}" ] || [ -z "${SUPABASE_PUBLISHABLE_KEY}" ] || [ -z "${API_HOST}" ]; then
+            echo "error: SUPABASE_HOST, SUPABASE_PUBLISHABLE_KEY or API_HOST is empty for ${CONFIGURATION}. Create apps/ios/Config/Release.local.xcconfig (see Config/Release.xcconfig)."
             exit 1
           fi
     info:
@@ -54,6 +54,8 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         SupabaseHost: $(SUPABASE_HOST)
         SupabasePublishableKey: $(SUPABASE_PUBLISHABLE_KEY)
+        # The app API (apps/web) for the status snapshot (09 §4.2).
+        ApiHost: $(API_HOST)
         UIAppFonts: [LibreFranklin.ttf, Literata.ttf]
         # OAuth return: com.mytaillog.app://auth/callback (same scheme as the Capacitor app).
         CFBundleURLTypes:

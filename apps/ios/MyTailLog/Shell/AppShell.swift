@@ -2,12 +2,13 @@ import SwiftUI
 
 /// Signed out: M-AUTH-01. Signed in: the phone shell at compact width, the binder split view at regular width (05 §3.3).
 struct RootView: View {
-    let core: any CoreBridge
+    let statusAPI: StatusAPI
     @Environment(SessionStore.self) private var store
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var tabs = TabModel()
-    @State private var line = AircraftLine()
+    /// One Status model per signed-in user, so another account never sees the last one's aircraft.
+    @State private var status: StatusModel?
 
     var body: some View {
         Group {
@@ -20,14 +21,25 @@ struct RootView: View {
             }
         }
         .environment(tabs)
-        .environment(\.aircraftLine, line)
+        .environment(status)
+        .environment(\.aircraftLine, status?.line ?? AircraftLine())
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
             await store.refreshIfNeeded()
         }
-        .task(id: store.session?.accessToken) {
-            line = AircraftLine(tail: await core.aircraft().first?.tailNumber, lastSync: await core.lastSync())
+        .task(id: store.session?.userId) {
+            status = store.session?.userId.map(makeStatus)
         }
+    }
+
+    private func makeStatus(userId: String) -> StatusModel {
+        let api = statusAPI, store = store
+        return StatusModel(
+            loadAircraft: {
+                let session = try await store.currentSession()
+                return try await api.aircraft(token: session.accessToken, userId: userId, email: session.email)
+            },
+            loadStatus: { id in try await api.status(token: store.currentSession().accessToken, aircraftId: id) })
     }
 }
 
@@ -52,16 +64,35 @@ struct PhoneShell: View {
     }
 }
 
-/// A top-level phone screen: PhoneHeader on the board colour, then the PhoneLeaf (06 §1.1).
+/// A top-level phone screen: Status's home, or the section's empty leaf (06 §1.1).
 struct PhoneSectionScreen: View {
     let section: Section
+    @Environment(StatusModel.self) private var status: StatusModel?
+
+    var body: some View {
+        PhoneBoard(section: section) {
+            if section == .status, let status {
+                StatusHome(model: status)
+            } else {
+                PhoneLeaf {
+                    Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
+                }
+            }
+        }
+    }
+}
+
+/// A phone board: PhoneHeader on the board colour, then the screen's leaf; `back` makes it a pushed screen.
+struct PhoneBoard<Content: View>: View {
+    let section: Section
+    var title: String?
+    var back: String?
+    @ViewBuilder var content: Content
 
     var body: some View {
         VStack(spacing: 0) {
-            PhoneHeader()
-            PhoneLeaf {
-                Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
-            }
+            PhoneHeader(title: title, back: back)
+            content
         }
         .background(section.board.ignoresSafeArea())
         .environment(\.section, section)
@@ -93,6 +124,7 @@ struct TabletShell: View {
 /// The board: BoardHead on the section colour, then one leaf. iPad keeps the system bar, tinted to the board (02 §9.1).
 struct TabletBoard: View {
     let section: Section
+    @Environment(StatusModel.self) private var status: StatusModel?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -101,14 +133,13 @@ struct TabletBoard: View {
                 .foregroundStyle(section.onBoard)
                 .accessibilityAddTraits(.isHeader)
                 .frame(minHeight: Tokens.Size.boardheadMin, alignment: .bottomLeading)
-            VStack(alignment: .leading) {
-                Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
-                Spacer(minLength: 0)
+            if section == .status, let status {
+                StatusTablet(model: status)
+            } else {
+                TabletLeaf {
+                    Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
+                }
             }
-            .padding(.top, 26)
-            .padding(.horizontal, 30)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Tokens.Colors.leaf, in: RoundedRectangle(cornerRadius: Tokens.Radius.s))
         }
         .padding(.horizontal, Tokens.Size.boardPad)
         .padding(.bottom, Tokens.Size.boardPad)
@@ -127,16 +158,19 @@ struct Rail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s1) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: Tokens.Space.s1) {
-                    Text(line.tailText).dFont(.heading).foregroundStyle(Tokens.Colors.onCover)
-                    Icon("chevrons-up-down", size: 16).foregroundStyle(Tokens.Colors.onCover2)
+            AccountButton(switchesAircraft: true) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: Tokens.Space.s1) {
+                        Text(line.tailText).dFont(.heading).foregroundStyle(Tokens.Colors.onCover)
+                        Icon("chevrons-up-down", size: 16).foregroundStyle(Tokens.Colors.onCover2)
+                    }
+                    Text(line.syncText.prefix(1).uppercased() + line.syncText.dropFirst())
+                        .dFont(.small).foregroundStyle(Tokens.Colors.onCover2)
                 }
-                Text(line.syncText.prefix(1).uppercased() + line.syncText.dropFirst())
-                    .dFont(.small).foregroundStyle(Tokens.Colors.onCover2)
+                .contentShape(Rectangle())
             }
+            .accessibilityLabel("\(line.tailText), \(line.syncText)")
             .padding(.bottom, Tokens.Space.s4)
-            .accessibilityElement(children: .combine)
 
             ForEach(Section.tabletTabs) { section in
                 sectionTab(section)
