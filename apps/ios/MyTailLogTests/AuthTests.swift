@@ -50,6 +50,7 @@ struct AuthFlowTests {
         #expect(AuthError.from(status: 422, body: body("user_already_exists")) == .accountExists)
         #expect(AuthError.from(status: 422, body: body("weak_password")) == .weakPassword)
         #expect(AuthError.from(status: 403, body: body("otp_expired")) == .wrongCode)
+        #expect(AuthError.from(status: 400, body: body("email_not_confirmed")) == .notConfirmed)
         #expect(AuthError.providerFailed("Apple").message == "Apple sign-in didn't finish. Try again, or use your email.")
     }
 

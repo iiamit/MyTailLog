@@ -9,7 +9,7 @@ struct Session: Codable, Equatable, Sendable {
 
 enum AuthError: Error, Equatable {
     case offline, wrongCode, expired, rateLimited, rejected, server
-    case wrongPassword, accountExists, weakPassword
+    case wrongPassword, accountExists, weakPassword, notConfirmed
     /// Apple or Google started but did not finish (cancelling is not an error and shows nothing).
     case providerFailed(String)
 
@@ -26,6 +26,7 @@ enum AuthError: Error, Equatable {
         case .wrongPassword: "That email and password don't match. Try again, or email yourself a link."
         case .accountExists: "There's already an account for that email. Sign in instead."
         case .weakPassword: "Use at least 8 characters."
+        case .notConfirmed: "Confirm your email first with the link or code we sent, then sign in."
         case .providerFailed(let name): "\(name) sign-in didn't finish. Try again, or use your email."
         }
     }
@@ -38,6 +39,7 @@ enum AuthError: Error, Equatable {
         case "invalid_credentials": return .wrongPassword
         case "user_already_exists", "email_exists": return .accountExists
         case "weak_password": return .weakPassword
+        case "email_not_confirmed": return .notConfirmed
         default: break
         }
         if status == 429 || code?.contains("rate_limit") == true { return .rateLimited }
