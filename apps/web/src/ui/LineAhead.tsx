@@ -1,4 +1,4 @@
-import { LA, BOOK, LINE_TOKEN, layoutLineAhead, monthTicks, xFor, type RingInput } from "@/lib/v2/status";
+import { LA, BOOK, LINE_TOKEN, capBoxes, layoutLineAhead, monthTicks, xFor, type RingInput } from "@/lib/v2/status";
 
 /** A shop visit drawn across the lines it touches (02 §4.7 VisitCapsule). */
 export type CapInput = { key: string; date: string; lines: string[]; kind: "suggested" | "planned" | "in_shop" | "awaiting_records"; label: string; name: string };
@@ -40,7 +40,7 @@ export function LineAhead({
   selectedCap?: string | null;
   onSelectCap?: (key: string) => void;
 }) {
-  const { rings: placed, more } = layoutLineAhead(rings, lanes, from, to);
+  const { rings: placed, more } = layoutLineAhead(rings, lanes, from, to, capBoxes(caps, lanes, from, to));
   const ticks = monthTicks(from, to);
   const laneY = (i: number) => LA.laneTop + i * LA.laneGap;
   const top = laneY(0) - 20;

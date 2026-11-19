@@ -22,7 +22,8 @@ export type AnnualPlan = {
 export function annualPlan(items: DueItem[], visits: VisitView[], today: string, recurringAdKeys: Set<string>): AnnualPlan {
   const annual = items.find((i) => i.kind === "annual" && i.source === "maintenance") ?? null;
   const due = annual && annual.status !== "no_record" ? annual.firstDate : null;
-  const horizon = due ?? addDays(today, ANNUAL_FALLBACK_DAYS);
+  // A lapsed annual still needs a look ahead: the next 90 days, as when its date is unknown.
+  const horizon = due && due > today ? due : addDays(today, ANNUAL_FALLBACK_DAYS);
   const rideVisit = annual ? visits.find((v) => v.items.some((i) => i.key === annual.key)) ?? null : null;
   const byKey = new Map(items.map((i) => [i.key, i]));
   const ridesAlong = rideVisit

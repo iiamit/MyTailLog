@@ -281,7 +281,7 @@ export default async function AdsPage({ params, searchParams }: { params: Promis
                         <tr key={r.ad.id}>
                           <td className={cell}>
                             <Link href={sel(r.ad.id)} replace scroll={false} aria-current={isSel ? "true" : undefined} className="block hover:underline">
-                              <span className="block text-body-strong tabular-nums">{r.ad.kind === "sb" ? "SB " : ""}{r.ad.reference}</span>
+                              <span className="block text-body-strong whitespace-nowrap tabular-nums">{r.ad.kind === "sb" ? "SB " : ""}{r.ad.reference}</span>
                               {r.ad.title && <span className="block max-w-[28ch] text-small text-ink-2">{r.ad.title}</span>}
                             </Link>
                           </td>
@@ -297,11 +297,11 @@ export default async function AdsPage({ params, searchParams }: { params: Promis
                               </span>
                             )}
                           </td>
-                          <td className={`${cell} whitespace-nowrap`}>
+                          <td className={cell}>
                             {hrs || cal ? (
                               <>
-                                <span className="block font-semibold tabular-nums">{hrs?.limit ?? cal?.limit}</span>
-                                <span className="block text-small text-ink-3">{hrs ? (hrs.note ?? cal?.limit ?? "") : (cal?.note ?? "")}</span>
+                                <span className="block font-semibold whitespace-nowrap tabular-nums">{hrs?.limit ?? cal?.limit}</span>
+                                <span className="block max-w-[18ch] text-small text-ink-3">{hrs ? (hrs.note ?? cal?.limit ?? "") : (cal?.note ?? "")}</span>
                                 {(r.item?.status === "overdue" || r.item?.status === "due_soon") && <StatusMark kind={r.item.status} compact />}
                               </>
                             ) : (
@@ -310,7 +310,7 @@ export default async function AdsPage({ params, searchParams }: { params: Promis
                           </td>
                           <td className={cell}>
                             {latest?.pageId && latest.pageLabel ? (
-                              <Link href={sel(r.ad.id, `&stop=${latest.id}`)} replace scroll={false} className="text-caption text-board-ink underline decoration-dotted underline-offset-[3px]">
+                              <Link href={sel(r.ad.id, `&stop=${latest.id}`)} replace scroll={false} className="text-caption whitespace-nowrap text-board-ink underline decoration-dotted underline-offset-[3px]">
                                 {latest.pageLabel}
                               </Link>
                             ) : latest ? (

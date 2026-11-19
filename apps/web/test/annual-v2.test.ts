@@ -35,6 +35,9 @@ test("unknown annual looks 90 days ahead", () => {
   assert.equal(p.due, null);
   assert.equal(p.horizon, "2027-02-16");
   assert.deepEqual(p.before.map((i) => i.key), ["mx:xpdr"]);
+  const lapsed = annualPlan([item("mx:annual", "annual", "2026-07-31", "overdue")], [], "2026-11-18", new Set());
+  assert.equal(lapsed.daysLeft, -110);
+  assert.equal(lapsed.horizon, "2027-02-16", "a lapsed annual looks ahead from today, never backwards");
 });
 
 test("visit notices: at risk, in the shop, did it happen; two at most", () => {
