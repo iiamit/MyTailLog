@@ -12,7 +12,8 @@ import { batchComplete, pageReadSummary, readingDoneCopy, MAX_READ_ATTEMPTS, typ
 // charges each to the uploader's rolling-24-hour allowance, parks the page as
 // `waiting_allowance` with a retry time when that is spent, retries a failed
 // read once, then closes the scan batch with one notification.
-// Triggered by /api/cron/reader (every minute) and kicked after uploads.
+// Triggered by /api/cron/reader every minute. Not kicked from upload requests:
+// a read can outlive the request, and a killed read waits 15 minutes for reclaim.
 // ===========================================================================
 
 type Svc = SupabaseClient<Database>;

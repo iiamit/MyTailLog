@@ -1,6 +1,5 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
-import { readQueuedPages } from "@/lib/extraction/queue";
 import { extractPage } from "@/lib/extraction/pipeline";
 import { prepareAi, runWithAiContext, logAiUsage, reserveAiCall, releaseAiReservation, aiBudgetMessage } from "@/lib/extraction/aiContext";
 
@@ -55,7 +54,6 @@ export async function POST(
       .update({ extraction_status: "queued", queued_by: user.id, read_attempts: 0, read_after: null, extraction_error: null })
       .eq("id", page.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    after(() => readQueuedPages().catch((e) => console.error("reader kick failed", e)));
     return NextResponse.json({ status: "queued" });
   }
 

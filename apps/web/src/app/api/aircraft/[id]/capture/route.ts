@@ -1,9 +1,8 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { getBlob, putBlob, type PutBody } from "@/lib/storage";
 import { thumbnailKey } from "@/lib/capture/thumbnail";
 import { describeDuplicate, nextSequence, queueFields } from "@/lib/writes/pages";
-import { readQueuedPages } from "@/lib/extraction/queue";
 
 // Capture-queue drain target for BOTH clients:
 //  - web offline queue → multipart/form-data (File parts)
@@ -170,9 +169,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: rowError.message }, { status: 500 });
   }
 
-  if (queue.fields.extraction_status === "queued" && !queue.fields.duplicate_of_page_id) {
-    after(() => readQueuedPages().catch((e) => console.error("reader kick failed", e)));
-  }
   const duplicateOf = await describeDuplicate(supabase, queue.fields.duplicate_of_page_id);
   return NextResponse.json({ ok: true, pageId: input.pageId, ...(duplicateOf ? { duplicateOf } : {}) });
 }

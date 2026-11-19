@@ -1,7 +1,6 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { duplicateDecision } from "@/lib/writes/pages";
-import { readQueuedPages } from "@/lib/extraction/queue";
 
 // POST /api/pages/{pageId}/duplicate-decision { decision: 'keep_both'|'skip' } → { ok: true }
 // (09 §4.8, §3.9.3). Online path of `page.duplicateDecision`; same write function.
@@ -21,6 +20,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ pageId:
   if (r.status === "error") {
     return NextResponse.json({ error: r.message, code: r.httpStatus === 403 ? "viewer_read_only" : "invalid" }, { status: r.httpStatus ?? 500 });
   }
-  if (b.decision === "keep_both") after(() => readQueuedPages().catch((e) => console.error("reader kick failed", e)));
   return NextResponse.json({ ok: true });
 }
