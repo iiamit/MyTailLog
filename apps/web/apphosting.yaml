@@ -178,6 +178,12 @@ env:
     value: claude-opus-4-8
     availability:
       - RUNTIME
+  # The redesign cut-over switch (src/lib/uiV2.ts). "off" keeps the old design as the default in production;
+  # owners opt in from the account menu. Remove this to make the new design the default.
+  - variable: UI_V2_DEFAULT
+    value: "off"
+    availability:
+      - RUNTIME
   - variable: TEXT_MODEL # text-only tasks: Q&A, equipment/maintenance detection
     value: claude-haiku-4-5
     availability:

@@ -89,3 +89,7 @@ env:
   - variable: EXPOSE_SERVER_ERRORS
     value: "1"
     availability: [RUNTIME]
+  # Test backend keeps the new design as the default; apphosting.yaml sets "off" for production.
+  - variable: UI_V2_DEFAULT
+    value: "on"
+    availability: [RUNTIME]

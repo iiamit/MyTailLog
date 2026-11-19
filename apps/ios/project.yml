@@ -48,8 +48,8 @@ targets:
         com.apple.developer.associated-domains: ["applinks:mytaillog.com"]
         # The widgets and intents read the snapshot the app writes here (05 §7.1, §11.2).
         com.apple.security.application-groups: [group.com.mytaillog.app]
-        # Reminders by APNs (05 §10); the server's APNS_ENV must match (sandbox for Xcode builds).
-        aps-environment: development
+        # Reminders by APNs (05 §10); production APNs for TestFlight and App Store; the server's APNS_ENV must be production.
+        aps-environment: production
     preBuildScripts:
       - name: Check Supabase config
         basedOnDependencyAnalysis: false
