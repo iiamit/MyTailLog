@@ -70,7 +70,7 @@
   </div>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
 <script>
 (function () {
   var GROUPS = [
@@ -87,7 +87,7 @@
       return '<li><a href="#' + f[0] + '" data-f="' + f[0] + '"><span>' + (f[1] || "·") + "</span>" + f[2] + "</a></li>";
     }).join("") + "</ol>";
   }).join("");
-  function slug(t) { return t.toLowerCase().replace(/<[^>]+>/g, "").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-"); }
+  function slug(t) { return t.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-"); }
   function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
   function current() {
     var h = decodeURIComponent(location.hash.slice(1)), parts = h.split("::");
@@ -97,7 +97,10 @@
   function load() {
     var c = current();
     [].forEach.call(nav.querySelectorAll("a"), function (a) { a.toggleAttribute("aria-current", a.dataset.f === c.file); if (a.dataset.f === c.file) a.setAttribute("aria-current", "page"); });
-    tools.innerHTML = '<span>docs/redesign/handoff/' + c.file + '</span><a href="' + c.file + '" download>Download this file</a>';
+    var label = document.createElement("span"), dl = document.createElement("a");
+    label.textContent = "docs/redesign/handoff/" + c.file;
+    dl.href = FILES[c.file][0]; dl.download = ""; dl.textContent = "Download this file";
+    tools.replaceChildren(label, dl);
     var p = cache[c.file] ? Promise.resolve(cache[c.file]) : fetch(c.file).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
     p.then(function (text) {
       cache[c.file] = text;
