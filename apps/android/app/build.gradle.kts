@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -11,6 +13,12 @@ val releaseApiUrl = providers.gradleProperty("mytaillog.apiUrl")
 // The Google Cloud *Web* OAuth client ID that Supabase's Google provider uses (Credential Manager's serverClientId).
 // Not a secret. Blank: "Continue with Google" uses the OAuth Custom Tab instead.
 val googleWebClientId = providers.gradleProperty("mytaillog.googleWebClientId")
+// Play upload key: the same properties file the Capacitor app used (storeFile, storePassword, keyAlias, keyPassword).
+val signingFile = File(
+    System.getenv("MYTAILLOG_ANDROID_SIGNING_PROPERTIES")
+        ?: "${System.getProperty("user.home")}/.config/mytaillog/android/signing.properties",
+)
+val signing = Properties().apply { if (signingFile.isFile) signingFile.inputStream().use { load(it) } }
 
 // FCM (05 §10). The Firebase client values come from app/google-services.json (git-ignored, the same file the
 // Capacitor app used) or -Pmytaillog.firebase*. Neither: the app builds and says "this build can't get reminders".
@@ -51,6 +59,17 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            if (signingFile.isFile) {
+                storeFile = file(signing.getProperty("storeFile"))
+                storePassword = signing.getProperty("storePassword")
+                keyAlias = signing.getProperty("keyAlias")
+                keyPassword = signing.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -70,6 +89,7 @@ android {
             buildConfigField("String", "SUPABASE_KEY", quoted(releaseSupabaseKey.getOrElse("")))
             buildConfigField("String", "API_URL", quoted(releaseApiUrl.getOrElse("")))
             isMinifyEnabled = false
+            if (signingFile.isFile) signingConfig = signingConfigs.getByName("release")
         }
     }
 

@@ -27,7 +27,7 @@ tasks.withType<AbstractTestTask>().configureEach {
 kotlin {
     android {
         namespace = "com.mytaillog.core.domain"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 29
         withHostTest {}
     }
