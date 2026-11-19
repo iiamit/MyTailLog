@@ -81,7 +81,13 @@ struct LineAheadView: View {
                        style: StrokeStyle(lineWidth: stroke, lineCap: .round, dash: [0.1, Tokens.Map.futureDotSpacing / 2]))
         }
         let bottom = top + CGFloat(LineGeometry.lines.count - 1) * gap
-        var todayLine = Path(); todayLine.move(to: CGPoint(x: today, y: top - 10)); todayLine.addLine(to: CGPoint(x: today, y: bottom + 10))
+        // A tick on each line rather than one rule, so it never cuts through the book labels above the lines.
+        var todayLine = Path()
+        for i in LineGeometry.lines.indices {
+            let y = top + CGFloat(i) * gap
+            todayLine.move(to: CGPoint(x: today, y: y - 4))
+            todayLine.addLine(to: CGPoint(x: today, y: i == LineGeometry.lines.count - 1 ? bottom + 10 : y + 4))
+        }
         ctx.stroke(todayLine, with: .color(Tokens.Colors.ink3), lineWidth: 1)
         for ring in ahead.rings {
             if let c = center(ring, w) {

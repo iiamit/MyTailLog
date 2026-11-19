@@ -465,7 +465,12 @@ fun LineAheadView(ahead: LineAhead, items: List<DueItem>, onRing: (String) -> Un
                 drawLine(ink, Offset(today, y), Offset(w, y), stroke, StrokeCap.Round, dots)
             }
             val bottom = top + (LINES.size - 1) * gap
-            drawLine(c.ink3, Offset(today, top - 10.dp.toPx()), Offset(today, bottom + 10.dp.toPx()), 1.dp.toPx())
+            // A tick on each line rather than one rule, so it never cuts through the book labels above the lines.
+            LINES.indices.forEach { i ->
+                val y = top + i * gap
+                val end = if (i == LINES.size - 1) bottom + 10.dp.toPx() else y + 4.dp.toPx()
+                drawLine(c.ink3, Offset(today, y - 4.dp.toPx()), Offset(today, end), 1.dp.toPx())
+            }
             ahead.rings.indices.forEach { i ->
                 ringCenter(i, w)?.let { statusMark(markKind(ahead.rings[i].status), it, ringR, c, Tokens.Map.ringStroke.toPx()) }
             }
