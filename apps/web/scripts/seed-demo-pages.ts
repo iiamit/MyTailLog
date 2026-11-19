@@ -1,8 +1,26 @@
 // ===========================================================================
 // Give the demo aircraft N734DM scanned logbook pages, in the TEST project only.
 //
-//   node --import tsx scripts/seed-demo-pages.ts               # render + upload + write rows
+//   node --import tsx scripts/seed-demo-pages.ts               # demo N734DM, then reset the QA copy
+//   node --import tsx scripts/seed-demo-pages.ts --demo-only   # demo N734DM only
+//   node --import tsx scripts/seed-demo-pages.ts --copy-only   # only reset the QA copy from the demo
+//   node --import tsx scripts/seed-demo-pages.ts --qa-email <email>  # copy owner (default redesign-qa@example.com)
 //   node --import tsx scripts/seed-demo-pages.ts --out <dir>   # render JPEGs to <dir> only
+//
+// Run from apps/web with the Supabase CLI logged in. Needs seed-demo.sql applied first.
+//
+// Gaps: after writing entries it runs the app's own detector (lib/gaps.ts, 09 §3.8) over
+// the demo's rows and stores its result, reconciled with the hand-written GAPS below
+// (their status and note survive where they overlap), so the first confirm in the
+// editor does not suddenly add gaps.
+//
+// QA copy: N734QA ("QA test copy of N734DM"), is_demo=false, owned by the QA test
+// account, not shared with anyone. It holds a full copy of the demo (logbooks, entries,
+// pages with their own image copies under the copy's aircraft id, completions, gaps,
+// AI-read entries, queued pages, items, ADs, equipment, W&B), so review / confirm /
+// edit / gap writes can be tested for real. Every run deletes the copy (cascading
+// everything testers added) and rebuilds it, i.e. it RESETS the copy to the seed.
+// Ids are derived from the demo's ids, so they are stable across resets.
 //
 // Renders phone-scan style page images from the demo's log entries (seed-demo.sql),
 // uploads originals + thumbnails at the app's layout (<aircraft>/<logbook>/<page>.jpg),
@@ -19,16 +37,18 @@
 //
 // Safety: the project ref is fixed to TEST; the service key is fetched at run time
 // from the logged-in Supabase CLI and never printed or stored. Only rows of the
-// is_demo N734DM aircraft are touched.
+// is_demo N734DM aircraft and of the QA copy are touched.
 // ===========================================================================
 
 import { createCanvas, type SKRSContext2D } from "@napi-rs/canvas";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { detectGaps, reconcileGaps, type StoredGap } from "../src/lib/gaps";
+import type { MapEntryRow } from "../src/lib/mapModel";
 
 const TEST_REF = "arpirbajxbrjbkldteaz";
 const SUPABASE_URL = `https://${TEST_REF}.supabase.co`;
@@ -343,6 +363,11 @@ async function main() {
   const outIdx = process.argv.indexOf("--out");
   const outDir = outIdx > 0 ? process.argv[outIdx + 1] : null;
   if (outIdx > 0 && !outDir) fail("--out needs a directory");
+  const demoOnly = process.argv.includes("--demo-only"), copyOnly = process.argv.includes("--copy-only");
+  if (demoOnly && copyOnly) fail("--demo-only and --copy-only exclude each other");
+  const qaIdx = process.argv.indexOf("--qa-email");
+  const qaEmail = qaIdx > 0 ? process.argv[qaIdx + 1] : "redesign-qa@example.com";
+  if (!qaEmail) fail("--qa-email needs an address");
 
   if (new URL(SUPABASE_URL).hostname !== `${TEST_REF}.supabase.co`) fail("refusing: not the TEST project");
   const keys = JSON.parse(execFileSync("supabase", ["projects", "api-keys", "--project-ref", TEST_REF, "-o", "json"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })) as { name: string; api_key: string }[];
@@ -353,7 +378,14 @@ async function main() {
   const { data: acs, error: acErr } = await db.from("aircraft").select("id, owner_id, tail_number").eq("is_demo", true).eq("tail_number", "N734DM");
   if (acErr) fail(acErr.message);
   if (acs?.length !== 1) fail(`expected exactly one is_demo N734DM aircraft, found ${acs?.length ?? 0}`);
-  const ac = acs[0] as { id: string; owner_id: string; tail_number: string };
+  const ac = acs[0] as Ac;
+  if (!copyOnly || outDir) await seedDemo(db, ac, outDir);
+  if (!demoOnly && !outDir) await resetCopy(db, ac, qaEmail);
+}
+
+type Ac = { id: string; owner_id: string; tail_number: string };
+
+async function seedDemo(db: SupabaseClient, ac: Ac, outDir: string | null) {
   const A = ac.id;
 
   const { data: books } = await db.from("logbook").select("id, type").eq("aircraft_id", A);
@@ -477,14 +509,92 @@ async function main() {
   }
   await up("item_completion", newCompletions);
 
-  await up("logbook_gap", GAPS.map((g) => ({
-    id: uid(A, "gap", g.book, g.from), aircraft_id: A, logbook_id: bookId.get(g.book), from_date: g.from, to_date: g.to,
-    status: g.status, source: "coverage_rule", note: g.note ?? null,
+  // Gaps: the hand-written rows, reconciled with what the app's detector (09 §3.8) finds in the
+  // confirmed entries, exactly as the first confirm would (lib/writes/gaps.ts refreshGaps).
+  const hand = GAPS.map((g) => ({
+    id: uid(A, "gap", g.book, g.from), logbook_id: bookId.get(g.book)!, from_date: g.from, to_date: g.to,
+    source: "coverage_rule" as const, status: g.status, note: g.note ?? null,
     status_set_by: g.status === "open" ? null : ac.owner_id, status_set_at: g.status === "open" ? null : SCANNED.initial,
-  })));
+  }));
+  const { data: all, error: allErr } = await db.from("log_entry")
+    .select("id, logbook_id, page_id, entry_date, trust, replaced_by_entry_id, is_continuation, entry_kind, description").eq("aircraft_id", A);
+  const { data: acYear, error: yErr } = await db.from("aircraft").select("year").eq("id", A).single();
+  if (allErr || yErr) fail(`gap detection read: ${(allErr ?? yErr)!.message}`);
+  const logbooks = books ?? [];
+  const plan = reconcileGaps(hand as StoredGap[], detectGaps({ year: acYear.year, logbook: logbooks, log_entry: all as MapEntryRow[] }), logbooks);
+  for (const u of plan.update) Object.assign(hand.find((h) => h.id === u.id)!, u);
+  const gaps = [...hand, ...plan.insert.map((g) => ({
+    ...g, id: uid(A, "gap", g.logbook_id, g.from_date), status: "open", note: null, status_set_by: null, status_set_at: null,
+  }))];
+  await up("logbook_gap", gaps.map((g) => ({ ...g, aircraft_id: A })));
+  // Anything else (a stray detection run with random ids) would duplicate these.
+  const { error: delErr } = await db.from("logbook_gap").delete().eq("aircraft_id", A).not("id", "in", `(${gaps.map((g) => g.id).join(",")})`);
+  if (delErr) fail(`logbook_gap cleanup: ${delErr.message}`);
 
   console.log(`N734DM (${A}): ${pageRows.length} pages, ${links.length} entries linked, ${entryRows.length} AI-read entries, ` +
-    `${newCompletions.length} completions added (+ import rows linked), ${GAPS.length} gaps, ${batches.size} batches.`);
+    `${newCompletions.length} completions added (+ import rows linked), ${gaps.length} gaps (${plan.insert.length} detected), ${batches.size} batches.`);
+}
+
+// --- QA copy ------------------------------------------------------------------
+const COPY_TAIL = "N734QA";
+// Insert order respects foreign keys; aircraft delete cascades the lot.
+const COPY_TABLES = ["logbook", "scan_batch", "page", "maintenance_item", "ad_compliance", "component", "weight_balance", "log_entry", "item_completion", "logbook_gap"];
+const GENERATED: Record<string, string[]> = { log_entry: ["trust"] };
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+
+/** Delete the QA copy and rebuild it from the demo's current rows, owned by the QA account. */
+async function resetCopy(db: SupabaseClient, demo: Ac, qaEmail: string) {
+  const { data: qa, error: qaErr } = await db.from("profile").select("id").eq("email", qaEmail.toLowerCase());
+  if (qaErr) fail(qaErr.message);
+  if (qa?.length !== 1) fail(`expected one profile for ${qaEmail}, found ${qa?.length ?? 0}`);
+  const Q = (qa[0] as { id: string }).id;
+  if (Q === demo.owner_id) fail("the QA account owns the demo; refusing");
+  const C = uid(demo.id, "qa-copy");
+  const { data: prev } = await db.from("aircraft").select("tail_number, is_demo").eq("id", C).maybeSingle();
+  if (prev && (prev.tail_number !== COPY_TAIL || prev.is_demo)) fail(`aircraft ${C} is not the QA copy; refusing`);
+
+  // Read everything before deleting anything.
+  const { data: acRow, error: acErr } = await db.from("aircraft").select("*").eq("id", demo.id).single();
+  if (acErr) fail(acErr.message);
+  const src: Record<string, Record<string, unknown>[]> = {};
+  for (const t of COPY_TABLES) {
+    const { data, error } = await db.from(t).select("*").eq("aircraft_id", demo.id);
+    if (error) fail(`read ${t}: ${error.message}`);
+    src[t] = data ?? [];
+  }
+  // Demo ids -> copy ids (derived, so stable across resets); the demo owner -> the QA account.
+  const map = new Map<string, string>([[demo.id, C], [demo.owner_id, Q]]);
+  for (const t of COPY_TABLES) for (const r of src[t]) map.set(r.id as string, uid(C, "copy", t, r.id as string));
+  const remap = (v: unknown) => (typeof v === "string" ? v.replace(UUID_RE, (m) => map.get(m) ?? m) : v);
+  const copyRow = (r: Record<string, unknown>, skip: string[] = []) =>
+    Object.fromEntries(Object.entries(r).filter(([k]) => !skip.includes(k)).map(([k, v]) => [k, remap(v)]));
+
+  if (prev) {
+    const { error } = await db.from("aircraft").delete().eq("id", C);
+    if (error) fail(`delete old copy: ${error.message}`);
+  }
+  const { error: insErr } = await db.from("aircraft").insert({
+    ...copyRow(acRow, ["created_at", "updated_at"]), tail_number: COPY_TAIL, is_demo: false,
+    notes: "QA test copy of the N734DM demo. Edit freely: scripts/seed-demo-pages.ts resets it.",
+  });
+  if (insErr) fail(`insert copy aircraft: ${insErr.message}`);
+  const counts: string[] = [];
+  for (const t of COPY_TABLES) {
+    if (!src[t].length) continue;
+    const { error } = await db.from(t).insert(src[t].map((r) => copyRow(r, GENERATED[t])));
+    if (error) fail(`copy ${t}: ${error.message}`);
+    counts.push(`${src[t].length} ${t}`);
+  }
+  // Page images: own copies under the copy's aircraft id.
+  // shortcut: images testers upload to the copy are orphaned by a reset, not deleted; clear the prefix by hand if it grows.
+  const files = src.page.flatMap((p) => [p.storage_path, p.thumbnail_path]).filter((p): p is string => !!p);
+  const { error: rmErr } = await db.storage.from(BUCKET).remove(files.map((f) => remap(f) as string));
+  if (rmErr) fail(`clear copy images: ${rmErr.message}`);
+  for (const f of files) {
+    const { error } = await db.storage.from(BUCKET).copy(f, remap(f) as string);
+    if (error) fail(`copy image ${f}: ${error.message}`);
+  }
+  console.log(`${COPY_TAIL} (${C}), owner ${qaEmail}: reset with ${counts.join(", ")}, ${files.length} images.`);
 }
 
 main().catch((e) => fail(e instanceof Error ? e.message : String(e)));
