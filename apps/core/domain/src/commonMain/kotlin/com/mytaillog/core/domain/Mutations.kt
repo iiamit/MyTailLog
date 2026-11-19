@@ -23,7 +23,7 @@ object Mutations {
 
         never("entry.create", "entries.confirmClean", "page.reorder", "page.delete", "reading.create",
             "meterReset.create", "mx.seedStandard", "ad.track", "proposals.confirm", "proposals.dismiss",
-            "squawk.create", "oil.create", "gap.create")
+            "squawk.create", "oil.create", "gap.create", "page.register", "batch.create", "page.duplicateDecision")
         always("entry.update", "entry.confirm", "entry.delete", "entry.merge", "entry.setLinks", "page.review", "gap.setStatus",
             "reading.update", "reading.delete", "meterReset.delete", "mx.delete", "mx.complete", "ad.delete",
             "component.delete", "component.remove", "component.reinstall", "squawk.resolve", "squawk.reopen",

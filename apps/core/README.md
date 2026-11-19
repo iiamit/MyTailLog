@@ -5,9 +5,9 @@ The shared, UI-free core of the native apps (docs/redesign/handoff/05-mobile-arc
 | Module | Holds |
 |---|---|
 | `:domain` | Wire types of today's sync protocol (`SyncChange`, `PullPage`, `Mutation`, `PushResult`) and the mutation catalogue mirrored from `apps/web/src/lib/sync/mutations.ts` |
-| `:api` | Ktor client: `AuthApi` (Supabase Auth: email code and link with PKCE, password, ID token, PKCE code exchange, refresh, sign-out, the OAuth authorize URL) and `HttpSyncApi` (`GET /api/sync/pull`, `POST /api/sync/push`, Bearer token injected by the platform) |
-| `:db` | SQLDelight, two databases per signed-in user: `MirrorDatabase` (`mirror.db`, server truth, rebuildable) and `OutboxDatabase` (`outbox.db`, unsent work, never rebuildable). Phase 0 schema: `sync_state`, `unknown_record`, `mutation` |
-| `:sync` | `SyncEngine`: pull pages from the stored cursor until `hasMore` is false; push in batches of 100; refuses online-only types |
+| `:api` | Ktor client: `AuthApi` (Supabase Auth: email code and link with PKCE, password, ID token, PKCE code exchange, refresh, sign-out, the OAuth authorize URL) and `HttpSyncApi` (sync protocol v2: `GET /api/sync/v2/pull`, `POST /api/sync/v2/push`, `POST /api/sync/v2/conflicts/{id}`, Bearer token injected by the platform) |
+| `:db` | SQLDelight, two databases per signed-in user: `MirrorDatabase` (`mirror.db`, server truth, rebuildable) and `OutboxDatabase` (`outbox.db`, unsent work, never rebuildable). Mirror: typed tables for aircraft, logbook, page, log_entry, maintenance_item, ad_compliance, item_completion, logbook_gap, hours_reading, scan_batch, squawk, aircraft_status_snapshot (query columns + `_raw` + `_seq`, listed in `MirrorTables`), `unknown_record` for the rest. Outbox: `mutation` (conflict records included), `file_job`, `activity` |
+| `:sync` | `SyncEngine`: pull from the stored cursor (410 rebuilds the mirror, outbox kept); the outbox: enqueue, push oldest first per aircraft in hundreds, one change per row per request, dependencies on changes and file jobs, backoff, refusals cascade to dependents; conflicts block later changes to the row until the owner picks Keep mine / Keep both / Take theirs / Discard (`Conflicts` three-way diff); sync line counts |
 | `:framework` | Umbrella that exports the four modules as one Apple framework |
 
 Targets: `android` (minSdk 29), `iosArm64`, `iosSimulatorArm64`.
@@ -32,4 +32,4 @@ From `apps/android` the same modules are addressable as `:core:<module>:…` (fo
 
 ## Not yet here
 
-Typed mirror tables, the outbox state machine (backoff, conflicts, projection), FTS5, due rules and map layout arrive with the phases that use them (13 §5). SKIE for Swift-friendly `Flow`/`suspend` is not wired yet.
+Effective-row projection (05 §6.4), FTS5, the Capacitor import (05 §29.3) and the file transfer itself (platform code) arrive with the phases that use them (13 §5). SKIE for Swift-friendly `Flow`/`suspend` is not wired yet.

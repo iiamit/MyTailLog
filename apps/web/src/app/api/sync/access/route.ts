@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
-import { callsInLastDay, dailyCallCap } from "@/lib/extraction/aiContext";
+import { callsInLastDay, dailyCallCap, sharedAiPaused } from "@/lib/extraction/aiContext";
+import { accessAllowance, allowanceSummary } from "@/lib/extraction/allowance";
 
 // Which aircraft the caller may EDIT, not just see — plus their AI allowance.
 //
@@ -16,6 +17,9 @@ import { callsInLastDay, dailyCallCap } from "@/lib/extraction/aiContext";
 // `allowance` is the same rolling-24h number the profile page shows
 // (callsToday / dailyCap), so the Extract button on the phone can say how many
 // extractions are left before the cap that will actually stop it.
+//
+// v2 fields (09 §4.1, additive so v1 builds ignore them; /api/sync/v2/access is
+// this handler): `roles: [{aircraftId, role}]` and `aiAllowance`.
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
@@ -27,7 +31,7 @@ export async function GET(req: Request) {
 
   // RLS already scopes this to aircraft the user can see at all.
   const [{ data: aircraft, error }, { data: key }, { data: usage }] = await Promise.all([
-    supabase.from("aircraft").select("id"),
+    supabase.from("aircraft").select("id, owner_id"),
     // key_last4 only — the ciphertext lives in a private schema (0039).
     supabase.rpc("my_ai_key_metadata"),
     supabase.from("ai_usage").select("created_at"),
@@ -44,10 +48,19 @@ export async function GET(req: Request) {
     }),
   );
 
+  const ownKey = Boolean(key?.last4);
   const allowance = {
     callsToday: callsInLastDay(usage ?? []),
-    dailyCap: dailyCallCap(Boolean(key?.last4)),
+    dailyCap: dailyCallCap(ownKey),
+  };
+  const roles = (aircraft ?? []).map((a, i) => ({
+    aircraftId: a.id,
+    role: a.owner_id === user.id ? "owner" : access[i].can_edit ? "editor" : "viewer",
+  }));
+  const aiAllowance = {
+    ...accessAllowance(allowanceSummary(usage ?? [], ownKey)),
+    globalPaused: !ownKey && (await sharedAiPaused(supabase)),
   };
 
-  return NextResponse.json({ access, allowance });
+  return NextResponse.json({ access, allowance, roles, aiAllowance });
 }

@@ -140,3 +140,30 @@ delete from auth.users where id = :'V';
 do $$ begin
   assert (select count(*) from squawk where reported_by is null) = 1, 'squawk kept without reporter';
 end $$;
+
+-- 0086: the push ledger is per user; the reading claim is service-only and
+-- skips pages waiting on a duplicate decision.
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000e","email":"editor@example.test"}';
+insert into sync_mutation (user_id, id, aircraft_id, type, status) values (:'E', 'm-1', :'AC', 'entry.update', 'conflict');
+do $$ begin
+  insert into sync_mutation (user_id, id, type, status) values ('00000000-0000-0000-0000-00000000000a', 'm-2', 'oil.create', 'ok');
+  raise exception 'wrote another user''s ledger row';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  perform claim_reading_pages(1);
+  raise exception 'authenticated ran claim_reading_pages';
+exception when insufficient_privilege then null; end $$;
+reset role;
+commit;
+insert into page (id, logbook_id, aircraft_id, storage_path, extraction_status, duplicate_of_page_id) values
+  ('30000000-0000-0000-0000-000000000086', '20000000-0000-0000-0000-000000000001', :'AC', 'x/dup.jpg', 'queued', '30000000-0000-0000-0000-000000000001'),
+  ('30000000-0000-0000-0000-000000000087', '20000000-0000-0000-0000-000000000001', :'AC', 'x/q.jpg', 'queued', null);
+do $$ begin
+  -- p1 was queued by an earlier check; the duplicate (…086) must stay behind.
+  assert (select string_agg(id::text, ',' order by id) from claim_reading_pages(10))
+       = '30000000-0000-0000-0000-000000000001,30000000-0000-0000-0000-000000000087', 'claim skips the page with a duplicate question';
+  assert (select read_attempts from page where id = '30000000-0000-0000-0000-000000000087') = 1, 'claim counts the attempt';
+  assert (select count(*) from claim_reading_pages(10)) = 0, 'a fresh claim is not reclaimed';
+end $$;

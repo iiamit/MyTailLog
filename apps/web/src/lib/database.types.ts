@@ -12,9 +12,8 @@ export type ReviewStatus = "unreviewed" | "confirmed" | "disputed";
 export type ExtractionStatus = "pending" | "processing" | "extracted" | "failed";
 /**
  * Values 0077a added for the server-side reading queue; treat them as "being
- * read". Kept out of ExtractionStatus and Page.extraction_status until the v1
- * UI handles them (PagesPanel STATUS_STYLE would crash on them, and the pages
- * and review routes pass the type through): nothing writes them before phase 3.
+ * read". Written by the phase 3 reader queue (0086); the v1 screens map them to
+ * "processing" through v1ExtractionStatus (lib/pageStatus.ts).
  */
 export type QueuedExtractionStatus = "queued" | "waiting_allowance";
 /** TrustMark source (0069): read by AI, confirmed by the owner, or signed. */
@@ -110,7 +109,7 @@ export type Page = {
   extraction_confidence: number | null;
   review_status: ReviewStatus;
   is_handwritten: boolean | null;
-  extraction_status: ExtractionStatus; // widen to | QueuedExtractionStatus in phase 3 (see above)
+  extraction_status: ExtractionStatus | QueuedExtractionStatus;
   extraction_error: string | null;
   detected_page_count: number | null;
   /**
@@ -126,9 +125,29 @@ export type Page = {
   duplicate_of_page_id: string | null;
   needs_look: boolean | null;
   landing_date: string | null;
+  // Reader worker bookkeeping (0086): who pays the allowance, tries, when to retry.
+  queued_by: string | null;
+  read_attempts: number;
+  read_after: string | null;
   created_at: string;
   updated_at: string;
 }
+
+/** The v2 push ledger and conflict record (0086). */
+export type SyncMutation = {
+  user_id: string;
+  id: string;
+  aircraft_id: string | null;
+  type: string;
+  status: "ok" | "conflict" | "error";
+  base: string | null;
+  error: string | null;
+  code: string | null;
+  resolution: "keep_mine" | "keep_both" | "take_theirs" | "discard" | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export type LogEntry = {
   id: string;
@@ -1077,6 +1096,7 @@ export type Database = {
       time_check_dismissal: { Row: TimeCheckDismissal; Insert: Partial<TimeCheckDismissal> & Pick<TimeCheckDismissal, "aircraft_id" | "component" | "log_entry_id" | "written_value" | "calculated_value" | "action">; Update: Partial<TimeCheckDismissal>; Relationships: [] };
       aircraft_status_snapshot: { Row: AircraftStatusSnapshot; Insert: Partial<AircraftStatusSnapshot> & Pick<AircraftStatusSnapshot, "aircraft_id" | "computed_at" | "inputs_seq" | "algo_version" | "snapshot">; Update: Partial<AircraftStatusSnapshot>; Relationships: [] };
       sync_retention: { Row: SyncRetention; Insert: Partial<SyncRetention>; Update: Partial<SyncRetention>; Relationships: [] };
+      sync_mutation: { Row: SyncMutation; Insert: Partial<SyncMutation> & Pick<SyncMutation, "user_id" | "id" | "type" | "status">; Update: Partial<SyncMutation>; Relationships: [] };
     };
     Views: {
       admin_user_stats: { Row: AdminUserStat; Relationships: [] };
@@ -1139,6 +1159,7 @@ export type Database = {
         };
         Returns: string | null;
       };
+      claim_reading_pages: { Args: { p_limit: number }; Returns: Page[] };
       reserve_ai_call_v2: {
         Args: {
           p_user_id: string;

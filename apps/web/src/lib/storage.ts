@@ -128,6 +128,33 @@ export async function putBlob(
   return { error: error?.message ?? null };
 }
 
+/**
+ * A URL the phone PUTs one file to, straight to storage (05 §7.2), so a large
+ * page never passes through this server and the OS can upload it in the
+ * background. Never overwrites: an existing object makes the PUT fail.
+ */
+export async function signedUploadUrl(
+  path: string,
+  contentType: string,
+): Promise<{ url: string; headers: Record<string, string>; expiresAt: string } | { error: string }> {
+  if (BACKEND === "gcs") {
+    try {
+      const expires = Date.now() + 60 * 60 * 1000;
+      const [url] = await (await bucket()).file(path).getSignedUrl({
+        version: "v4", action: "write", expires, contentType,
+        extensionHeaders: { "x-goog-if-generation-match": "0" },
+      });
+      return { url, headers: { "content-type": contentType, "x-goog-if-generation-match": "0" }, expiresAt: new Date(expires).toISOString() };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Could not prepare the upload." };
+    }
+  }
+  const { data, error } = await supa().storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error || !data) return { error: error?.message ?? "Could not prepare the upload." };
+  // Supabase signed upload URLs last two hours.
+  return { url: data.signedUrl, headers: { "content-type": contentType }, expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() };
+}
+
 /** Best-effort delete of many blobs. Never throws (cleanup is non-critical). */
 export async function removeBlobs(paths: string[]): Promise<void> {
   const keys = paths.filter(Boolean);

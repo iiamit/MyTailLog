@@ -7,7 +7,6 @@ import * as squawks from "../src/lib/writes/squawks";
 import * as documents from "../src/lib/writes/documents";
 import * as timeChecks from "../src/lib/writes/timeChecks";
 import * as aircraftWrites from "../src/lib/writes/aircraft";
-import { pickPhotoReading } from "../src/lib/writes/meters";
 import { writes, PHASE4_MUTATIONS, type Db } from "../src/lib/writes";
 import { computeTimeChecks, isDigitSwap, type TimeCheckInput } from "../src/lib/timeCheck";
 import { newLinkToken, isLinkToken, pickLinkInput, linkMailto, linkActive } from "../src/lib/mechanicLink";
@@ -251,17 +250,6 @@ test("document.setExpiry: defaults by type, bounds, the owner's date only", asyn
   assert.equal(r.status, "ok");
   assert.equal(f.tables.document[0].renews_every_months, 120);
   assert.equal(f.tables.document[0].expires_on, null, "tracked without a date shows as no record, never a computed date");
-});
-
-test("reading.create (extended): a tach photo keeps what the phone read and where the photo is", () => {
-  assert.deepEqual(pickPhotoReading("ac", {}, 2165.3), { source: "manual", photo_path: null, ocr_value: null, ocr_confidence: null, ocr_candidates: null, owner_edited: false });
-  const r = pickPhotoReading("ac", { source: "tach_photo", ocrValue: 2165.8, ocrConfidence: 0.91, photoBlobId: "r-00000001" }, 2165.3);
-  assert.ok(!("error" in r));
-  assert.equal(r.photo_path, "ac/meters/r-00000001.jpg");
-  assert.equal(r.owner_edited, true, "saved value differs from the photo's");
-  assert.ok("error" in pickPhotoReading("ac", { source: "adsb_estimate" as "manual" }, 1), "estimates never come in this way");
-  assert.ok("error" in pickPhotoReading("ac", { source: "tach_photo", ocrConfidence: 2 }, 1));
-  assert.ok("error" in pickPhotoReading("ac", { source: "tach_photo", photoBlobId: "../x" }, 1));
 });
 
 // ---------------------------------------------------------------------------

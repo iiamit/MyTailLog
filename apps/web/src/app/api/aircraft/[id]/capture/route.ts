@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { getBlob, putBlob, type PutBody } from "@/lib/storage";
 import { thumbnailKey } from "@/lib/capture/thumbnail";
+import { describeDuplicate, nextSequence, queueFields } from "@/lib/writes/pages";
 
 // Capture-queue drain target for BOTH clients:
 //  - web offline queue → multipart/form-data (File parts)
@@ -9,6 +10,11 @@ import { thumbnailKey } from "@/lib/capture/thumbnail";
 //                        doesn't reliably do multipart file uploads)
 // The browser used to write Storage + the row itself; now the server does both
 // (service creds for the blob, RLS for the row) so it works on any backend.
+//
+// Phase 3 (09 §4.1): with `batchId` (and optionally `phash`) the page joins the
+// server reading queue (`queued`; the reader worker reads it, the client does
+// not call extract) and the response may carry `duplicateOf`. Without
+// `batchId` it behaves exactly as before, for the Capacitor app.
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -24,6 +30,8 @@ type CaptureInput = {
   pageSequence: number | null;
   capturedAt: string | null;
   isHandwritten: boolean;
+  batchId: string | null;
+  phash: string | null;
 };
 
 async function parseInput(req: Request): Promise<CaptureInput | null> {
@@ -44,6 +52,8 @@ async function parseInput(req: Request): Promise<CaptureInput | null> {
       pageSequence: seq == null || seq === "" ? null : Number(seq),
       capturedAt: b.capturedAt ? String(b.capturedAt) : null,
       isHandwritten: b.isHandwritten === true || b.isHandwritten === "true",
+      batchId: typeof b.batchId === "string" && b.batchId ? b.batchId : null,
+      phash: typeof b.phash === "string" && b.phash ? b.phash : null,
     };
   }
 
@@ -61,6 +71,8 @@ async function parseInput(req: Request): Promise<CaptureInput | null> {
     pageSequence: seqRaw === "" ? null : Number(seqRaw),
     capturedAt: String(form?.get("capturedAt") || "") || null,
     isHandwritten: String(form?.get("isHandwritten") || "") === "true",
+    batchId: String(form?.get("batchId") || "") || null,
+    phash: String(form?.get("phash") || "") || null,
   };
 }
 
@@ -101,6 +113,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (existing) return existing.aircraft_id === id && existing.logbook_id === input.logbookId
     ? NextResponse.json({ ok: true, pageId: input.pageId })
     : NextResponse.json({ error: "Page id belongs to another logbook." }, { status: 409 });
+
+  const queue = await queueFields(supabase, { aircraftId: id, userId: user.id }, { queue: Boolean(input.batchId), batchId: input.batchId, phash: input.phash });
+  if ("error" in queue) return NextResponse.json({ error: queue.error }, { status: queue.httpStatus });
 
   const path = `${id}/${input.logbookId}/${input.pageId}.jpg`;
   const thumbPath = thumbnailKey(path);
@@ -145,6 +160,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     page_sequence: pageSequence,
     captured_at: input.capturedAt,
     is_handwritten: input.isHandwritten,
+    ...queue.fields,
     // review_status defaults to 'unreviewed'; OCR/extraction fill the rest later.
   });
   // 23505 = unique_violation: the row already exists from a prior partial drain →
@@ -153,32 +169,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: rowError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, pageId: input.pageId });
-}
-
-/**
- * The next page number in a logbook: one past the highest already there.
- *
- * page_sequence carries no unique constraint (manual reorder renumbers freely),
- * so two captures draining at the same instant could take the same number. That
- * is the same tie a manual reorder already tolerates and the list still renders,
- * where refusing the insert would lose a scan the owner has already taken.
- *
- * Falls back to null on a read error rather than guessing at 1 and colliding
- * with an existing page 1.
- */
-async function nextSequence(
-  supabase: Awaited<ReturnType<typeof createSyncClient>>,
-  logbookId: string,
-): Promise<number | null> {
-  const { data, error } = await supabase
-    .from("page")
-    .select("page_sequence")
-    .eq("logbook_id", logbookId)
-    .not("page_sequence", "is", null)
-    .order("page_sequence", { ascending: false })
-    .limit(1);
-  if (error) return null;
-  const highest = data?.[0]?.page_sequence;
-  return typeof highest === "number" ? highest + 1 : 1;
+  const duplicateOf = await describeDuplicate(supabase, queue.fields.duplicate_of_page_id);
+  return NextResponse.json({ ok: true, pageId: input.pageId, ...(duplicateOf ? { duplicateOf } : {}) });
 }

@@ -675,8 +675,8 @@ export function PagesPanel({
                   </span>
                 )}
                 <span
-                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${STATUS_STYLE[r.extractionStatus].className}`}
-                  style={STATUS_STYLE[r.extractionStatus].style}
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${(STATUS_STYLE[r.extractionStatus] ?? STATUS_STYLE.processing).className}`}
+                  style={(STATUS_STYLE[r.extractionStatus] ?? STATUS_STYLE.processing).style}
                 >
                   {r.extractionStatus}
                 </span>

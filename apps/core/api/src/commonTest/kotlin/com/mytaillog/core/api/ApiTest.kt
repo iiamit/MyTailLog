@@ -101,7 +101,7 @@ class ApiTest {
         val page = api.pull(cursor = 12)
         assertEquals(12L, page.nextCursor)
         val req = requests.single()
-        assertEquals("/api/sync/pull", req.url.encodedPath)
+        assertEquals("/api/sync/v2/pull", req.url.encodedPath)
         assertEquals("12", req.url.parameters["cursor"])
         assertEquals("Bearer tok", req.headers[HttpHeaders.Authorization])
     }
@@ -114,5 +114,20 @@ class ApiTest {
 
         val unauthorized = HttpSyncApi(client(HttpStatusCode.Unauthorized, """{"error":"Not signed in."}"""), "https://mytaillog.com") { "tok" }
         assertEquals(401, assertFailsWith<SyncHttpException> { unauthorized.pull(0) }.status)
+
+        val gone = HttpSyncApi(client(HttpStatusCode.Gone, """{"error":"…","code":"resync_required"}"""), "https://mytaillog.com") { "tok" }
+        assertEquals(410, assertFailsWith<SyncHttpException> { gone.pull(3) }.status)
+    }
+
+    @Test
+    fun pushDecodesV2CodesAndResolvePostsToTheConflict() = runTest {
+        val api = HttpSyncApi(client(HttpStatusCode.OK, """{"results":[{"id":"m1","status":"error","error":"x","code":"viewer_read_only"},{"id":"m2","status":"ok","replayed":true}]}"""), "https://mytaillog.com") { "tok" }
+        val results = api.push(listOf(Mutation("m1", "entry.update", "a1", JsonObject(emptyMap()), base = "t")))
+        assertEquals("viewer_read_only", results[0].code)
+        assertEquals(true, results[1].replayed)
+        requests.clear()
+        api.resolveConflict("m9", "take_theirs")
+        assertEquals("/api/sync/v2/conflicts/m9", requests.single().url.encodedPath)
+        assertEquals("""{"resolution":"take_theirs"}""", (requests.single().body as TextContent).text)
     }
 }

@@ -42,36 +42,33 @@ export function pickReading(
 /** Readings the owner made (by hand or from a photo of the tach, 09 §2.10): the ones this page edits and deletes. */
 export const OWNER_SOURCES = ["manual", "tach_photo"];
 
-export type PhotoReadingInput = {
-  source?: "manual" | "tach_photo"; ocrValue?: number | null; ocrConfidence?: number | null;
-  ocrCandidates?: { value: number; confidence: number; bbox: number[] }[] | null; ownerEdited?: boolean; photoBlobId?: string | null;
+/** 09 §2.10, §5.3: a reading the phone took from a photo of the tach, read on the device. */
+export type TachPhotoInput = {
+  source?: "manual" | "tach_photo";
+  ocrValue?: number | null;
+  ocrConfidence?: number | null;
+  ocrCandidates?: { value: number; confidence: number; bbox: [number, number, number, number] }[] | null;
+  ownerEdited?: boolean;
+  /** `<aircraft_id>/meters/<id>.jpg`, uploaded first; omitted when "Keep meter photos" is off. */
+  photoPath?: string | null;
 };
 
-/** The tach-photo half of `reading.create` (extended, 09 §5.3). Read on the phone; the server only checks the shape. */
-export function pickPhotoReading(aircraftId: string, src: PhotoReadingInput, tach: number | null):
-  | { source: string; photo_path: string | null; ocr_value: number | null; ocr_confidence: number | null;
-      ocr_candidates: HoursReading["ocr_candidates"]; owner_edited: boolean }
+/** The tach-photo columns (source included), or {} for a plain manual reading. */
+export function pickTachPhoto(input: { id?: string } & TachPhotoInput, aircraftId: string):
+  | { source?: "tach_photo"; ocr_value?: number | null; ocr_confidence?: number | null; ocr_candidates?: TachPhotoInput["ocrCandidates"]; owner_edited?: boolean; photo_path?: string | null }
   | { error: string } {
-  if (src.source == null || src.source === "manual") {
-    return { source: "manual", photo_path: null, ocr_value: null, ocr_confidence: null, ocr_candidates: null, owner_edited: false };
-  }
-  if (src.source !== "tach_photo") return { error: "Unknown reading source." };
-  if (!validNumber(src.ocrValue)) return { error: "The photo's reading is unreadable." };
-  const conf = src.ocrConfidence ?? null;
-  if (conf !== null && !(typeof conf === "number" && conf >= 0 && conf <= 1)) return { error: "The photo's confidence is unreadable." };
-  const cands = src.ocrCandidates ?? null;
-  if (cands !== null && !(Array.isArray(cands) && cands.length <= 10 && cands.every((c) =>
-    c && validNumber(c.value) && typeof c.confidence === "number" && Array.isArray(c.bbox) && c.bbox.length === 4 && c.bbox.every((n) => typeof n === "number"))))
-    return { error: "The photo's candidates are unreadable." };
-  const blob = src.photoBlobId ?? null;
-  if (blob !== null && !(typeof blob === "string" && /^[0-9A-Za-z-]{8,64}$/.test(blob))) return { error: "The photo is missing its id." };
+  if (input.source !== "tach_photo") return {};
+  const conf = input.ocrConfidence;
+  if (!validNumber(input.ocrValue) || !(conf == null || (typeof conf === "number" && conf >= 0 && conf <= 1)))
+    return { error: "The tach reading from the photo is malformed." };
+  const cands = input.ocrCandidates ?? null;
+  if (cands != null && (!Array.isArray(cands) || cands.length > 10 || !cands.every((c) => c && validNumber(c.value) && typeof c.confidence === "number")))
+    return { error: "The tach reading from the photo is malformed." };
+  if (input.photoPath != null && input.photoPath !== `${aircraftId}/meters/${input.id}.jpg`)
+    return { error: "The meter photo was uploaded to an unexpected place." };
   return {
-    source: "tach_photo",
-    photo_path: blob ? `${aircraftId}/meters/${blob}.jpg` : null,
-    ocr_value: src.ocrValue ?? null,
-    ocr_confidence: conf,
-    ocr_candidates: cands as HoursReading["ocr_candidates"],
-    owner_edited: src.ownerEdited ?? (src.ocrValue != null && tach != null && src.ocrValue !== tach),
+    source: "tach_photo", ocr_value: input.ocrValue ?? null, ocr_confidence: conf ?? null,
+    ocr_candidates: cands, owner_edited: input.ownerEdited === true, photo_path: input.photoPath ?? null,
   };
 }
 
@@ -109,15 +106,15 @@ export function pickReset(
 export async function addReading(
   supabase: Db,
   ctx: WriteCtx,
-  input: { id?: string } & ReadingInput & PhotoReadingInput,
+  input: { id?: string } & ReadingInput & TachPhotoInput,
 ): Promise<WriteResult> {
   const picked = pickReading(input);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
-  const photo = pickPhotoReading(ctx.aircraftId, input, picked.tach);
+  const photo = pickTachPhoto(input, ctx.aircraftId);
   if ("error" in photo) return { status: "error", message: photo.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
-  const row = { aircraft_id: ctx.aircraftId, ...picked, ...photo, synced_by: ctx.userId };
+  const row = { aircraft_id: ctx.aircraftId, ...picked, source: "manual", synced_by: ctx.userId, ...photo };
   const { data, error } = input.id
     ? await supabase
         .from("hours_reading")
