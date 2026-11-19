@@ -217,7 +217,21 @@ struct AccountButton<Label: View>: View {
     @ViewBuilder var label: Label
     @Environment(SessionStore.self) private var store
     @Environment(StatusModel.self) private var status: StatusModel?
+    @Environment(OfflineStore.self) private var offline: OfflineStore?
     @State private var confirming = false
+
+    /// "3 changes and 2 pages" not yet on the server, or nil.
+    private var unsent: String? {
+        guard let offline else { return nil }
+        let c = offline.items.count, p = offline.heldPages.count
+        guard c + p > 0 else { return nil }
+        return [c > 0 ? SyncBars.plural(c, "change") : nil, p > 0 ? SyncBars.plural(p, "page") : nil].compactMap { $0 }.joined(separator: " and ")
+    }
+
+    private var signOutQuestion: String {
+        unsent.map { "\($0) \($0.hasPrefix("1 ") && !$0.contains(" and ") ? "hasn't" : "haven't") reached the server. Signing out deletes them from this phone." }
+            ?? "Sign out of MyTailLog on this phone? The records stay on the server."
+    }
 
     var body: some View {
         Group {
@@ -238,10 +252,15 @@ struct AccountButton<Label: View>: View {
             }
         }
         .buttonStyle(.plain)
-        .confirmationDialog("Sign out of MyTailLog on this phone? The records stay on the server.",
-                            isPresented: $confirming, titleVisibility: .visible) {
-            Button("Sign out") { Task { await store.signOut() } }
-            Button("Cancel", role: .cancel) {}
+        .confirmationDialog(signOutQuestion, isPresented: $confirming, titleVisibility: .visible) {
+            if unsent == nil {
+                Button("Sign out") { Task { await store.signOut() } }
+            } else {
+                // 05 §8.6: unsent work is never deleted without saying so.
+                Button("Sync now") { Task { await offline?.sync() } }
+                Button("Delete them and sign out", role: .destructive) { Task { await store.signOut() } }
+            }
+            Button(unsent == nil ? "Cancel" : "Keep working", role: .cancel) {}
         }
     }
 }
