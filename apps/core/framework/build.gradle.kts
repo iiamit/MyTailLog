@@ -27,5 +27,9 @@ kotlin {
             api(project(":db"))
             api(project(":sync"))
         }
+        // OfflineCore opens mirror.db and outbox.db in the app's per-user folder.
+        iosMain.dependencies {
+            implementation(libs.sqldelight.native.driver)
+        }
     }
 }
