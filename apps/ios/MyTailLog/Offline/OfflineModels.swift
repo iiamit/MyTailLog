@@ -69,6 +69,44 @@ struct FileMeta: Codable, Equatable, Sendable {
     var isHandwritten: Bool
     /// The year read off the page, for the queue's lands-in line when the camera couldn't show it (05 §15.2).
     var year: Int?
+    /// Squawk photos: the squawk and the photo's own id (the blob route's `id`).
+    var squawkId: String?
+    var photoId: String?
+    /// Documents: what the add sheet said (the documents route's fields).
+    var type: String?
+    var title: String?
+    var fileName: String?
+    var mimeType: String?
+    var trackExpiry: Bool?
+    var expiresOn: String?
+
+    init(pageId: String = "", logbookId: String = "", batchId: String? = nil, phash: String? = nil, capturedAt: String = "",
+         isHandwritten: Bool = false, year: Int? = nil, squawkId: String? = nil, photoId: String? = nil, type: String? = nil,
+         title: String? = nil, fileName: String? = nil, mimeType: String? = nil, trackExpiry: Bool? = nil, expiresOn: String? = nil) {
+        self.pageId = pageId; self.logbookId = logbookId; self.batchId = batchId; self.phash = phash; self.capturedAt = capturedAt
+        self.isHandwritten = isHandwritten; self.year = year; self.squawkId = squawkId; self.photoId = photoId; self.type = type
+        self.title = title; self.fileName = fileName; self.mimeType = mimeType; self.trackExpiry = trackExpiry; self.expiresOn = expiresOn
+    }
+
+    /// Page fields default when absent: a squawk photo's or document's meta has none, and one row must not hide the rest.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(pageId: try c.decodeIfPresent(String.self, forKey: .pageId) ?? "",
+                  logbookId: try c.decodeIfPresent(String.self, forKey: .logbookId) ?? "",
+                  batchId: try c.decodeIfPresent(String.self, forKey: .batchId),
+                  phash: try c.decodeIfPresent(String.self, forKey: .phash),
+                  capturedAt: try c.decodeIfPresent(String.self, forKey: .capturedAt) ?? "",
+                  isHandwritten: try c.decodeIfPresent(Bool.self, forKey: .isHandwritten) ?? false,
+                  year: try c.decodeIfPresent(Int.self, forKey: .year),
+                  squawkId: try c.decodeIfPresent(String.self, forKey: .squawkId),
+                  photoId: try c.decodeIfPresent(String.self, forKey: .photoId),
+                  type: try c.decodeIfPresent(String.self, forKey: .type),
+                  title: try c.decodeIfPresent(String.self, forKey: .title),
+                  fileName: try c.decodeIfPresent(String.self, forKey: .fileName),
+                  mimeType: try c.decodeIfPresent(String.self, forKey: .mimeType),
+                  trackExpiry: try c.decodeIfPresent(Bool.self, forKey: .trackExpiry),
+                  expiresOn: try c.decodeIfPresent(String.self, forKey: .expiresOn))
+    }
 }
 
 /// A page (or its thumbnail) waiting to upload: held | uploading | uploaded | registered | failed.

@@ -13,6 +13,8 @@ struct RootView: View {
     @State private var books: BooksModel?
     /// The signed-in user's offline store (05 §6): mirror, outbox, held pages.
     @State private var offline: OfflineStore?
+    /// The open aircraft's records (phase 4): Maintenance, Aircraft, Documents.
+    @State private var recs: Recs?
 
     var body: some View {
         Group {
@@ -28,6 +30,7 @@ struct RootView: View {
         .environment(status)
         .environment(books)
         .environment(offline)
+        .environment(recs)
         .environment(\.aircraftLine, line)
         .task(id: scenePhase) {
             switch scenePhase {
@@ -58,6 +61,9 @@ struct RootView: View {
         .task(id: status?.current?.id) {
             books = status?.current.map(makeBooks)
         }
+        .task(id: "\(status?.current?.id ?? "")|\(status?.current?.role == .viewer)|\(offline?.userId ?? "")") {
+            recs = status?.current.flatMap { a in offline.map { makeRecs(a, $0) } }
+        }
         .onChange(of: offline?.revision) {
             if let offline { books?.readMirror(offline) }
         }
@@ -75,6 +81,13 @@ struct RootView: View {
             l.conflicts = offline.conflicts.count
         }
         return l
+    }
+
+    private func makeRecs(_ aircraft: AircraftAccess, _ offline: OfflineStore) -> Recs {
+        let store = store
+        let api = RecordsAPI(apiURL: statusAPI.apiURL, token: { try await store.currentSession().accessToken },
+                             supabase: (statusAPI.supabaseURL, statusAPI.apiKey))
+        return Recs(offline: offline, api: api, aircraft: aircraft, status: status)
     }
 
     private func makeBooks(_ aircraft: AircraftAccess) -> BooksModel {
@@ -122,7 +135,7 @@ struct PhoneShell: View {
             ForEach(Section.phoneTabs) { section in
                 Tab(section.title, image: section.icon, value: section) {
                     NavigationStack(path: tabs.path(section)) {
-                        PhoneSectionScreen(section: section).modifier(SyncDestinations())
+                        PhoneSectionScreen(section: section).modifier(SyncDestinations()).modifier(RecordDestinations())
                     }
                 }
             }
@@ -138,6 +151,8 @@ struct PhoneSectionScreen: View {
     let section: Section
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(BooksModel.self) private var books: BooksModel?
+    @Environment(Recs.self) private var recs: Recs?
+    @State private var adding = false
 
     var body: some View {
         PhoneBoard(section: section) {
@@ -145,12 +160,20 @@ struct PhoneSectionScreen: View {
                 StatusHome(model: status)
             } else if section == .books, let books {
                 BooksHome(model: books).id(books.aircraft.id)
+            } else if section == .maint, let recs {
+                MaintHome(recs: recs).id(recs.id)
+            } else if section == .aircraft, let recs {
+                AircraftHome(recs: recs).id(recs.id)
             } else {
                 PhoneLeaf {
                     Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
                 }
             }
         }
+        // The record leaves carry their own toast; Status and Logbooks show what the Add sheet saved here.
+        .safeAreaInset(edge: .bottom) { if let recs, section == .status || section == .books { ToastBar(recs: recs) } }
+        // 02 §9: the AddButton on the top-level screens of Status, Logbooks, Maint. and Aircraft.
+        .modifier(AddHost(recs: section == .share ? nil : recs, presented: $adding))
     }
 }
 
@@ -199,6 +222,7 @@ struct TabletBoard: View {
     let section: Section
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(BooksModel.self) private var books: BooksModel?
+    @Environment(Recs.self) private var recs: Recs?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -211,6 +235,8 @@ struct TabletBoard: View {
                 StatusTablet(model: status)
             } else if section == .books, let books {
                 BooksTablet(model: books).id(books.aircraft.id)
+            } else if [.maint, .aircraft, .docs].contains(section), let recs {
+                RecordsTablet(section: section, recs: recs).id(recs.id)
             } else {
                 TabletLeaf {
                     Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
@@ -231,6 +257,8 @@ struct TabletBoard: View {
 struct Rail: View {
     @Environment(TabModel.self) private var tabs
     @Environment(\.aircraftLine) private var line
+    @Environment(Recs.self) private var recs: Recs?
+    @State private var adding = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s1) {
@@ -253,6 +281,16 @@ struct Rail: View {
             }
 
             Spacer(minLength: Tokens.Space.s4)
+            if recs != nil {
+                // RailFoot's Add (06 §9: M-FLIGHT-01 from the rail; ⌘N).
+                Button { adding = true } label: {
+                    Label { Text("Add") } icon: { Icon("plus", size: 20) }
+                        .dFont(.bodyStrong).foregroundStyle(Tokens.Colors.onCover)
+                        .frame(minHeight: Tokens.Size.phoneTouchMin)
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut("n", modifiers: .command)
+            }
             AccountButton {
                 Label { Text("Account") } icon: { Icon("circle-user-round", size: 20) }
                     .dFont(.bodyStrong)
@@ -265,6 +303,7 @@ struct Rail: View {
         .padding(.bottom, Tokens.Space.s4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Tokens.Colors.cover.ignoresSafeArea())
+        .modifier(AddHost(recs: recs, showButton: false, presented: $adding))
     }
 
     /// SectionTab: min 50 tall (heights by content arrive with the data); the open tab runs flush into the board.
