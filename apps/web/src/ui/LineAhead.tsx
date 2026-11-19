@@ -1,4 +1,7 @@
-import { LA, BOOK, LINE_TOKEN, layoutLineAhead, monthTicks, type RingInput } from "@/lib/v2/status";
+import { LA, BOOK, LINE_TOKEN, layoutLineAhead, monthTicks, xFor, type RingInput } from "@/lib/v2/status";
+
+/** A shop visit drawn across the lines it touches (02 §4.7 VisitCapsule). */
+export type CapInput = { key: string; date: string; lines: string[]; kind: "suggested" | "planned" | "in_shop" | "awaiting_records"; label: string; name: string };
 
 const RING: Record<string, { stroke: string; fill: string }> = {
   overdue: { stroke: "var(--color-alarm)", fill: "var(--color-alarm)" },
@@ -9,9 +12,8 @@ const RING: Record<string, { stroke: string; fill: string }> = {
 /**
  * The next twelve months on the books' lines (02 §4.5, 10 §8.3 status variant): solid stub, dotted future,
  * rings at due dates, today, month ticks. The DueTable is the full equivalent for screen readers; each ring is
- * still a button with its own name so keyboard users can select from the drawing.
- * shortcut: rings are each a tab stop rather than the roving-focus composite of 10 §10; visits are not drawn
- * until the visits API returns them (phase 4).
+ * still a button with its own name so keyboard users can select from the drawing. Visit caps sit behind the rings.
+ * shortcut: rings and caps are each a tab stop rather than the roving-focus composite of 10 §10.
  */
 export function LineAhead({
   from,
@@ -22,6 +24,9 @@ export function LineAhead({
   selected,
   onSelect,
   summary,
+  caps = [],
+  selectedCap,
+  onSelectCap,
 }: {
   from: string;
   to: string;
@@ -31,6 +36,9 @@ export function LineAhead({
   selected?: string | null;
   onSelect?: (key: string) => void;
   summary: string;
+  caps?: CapInput[];
+  selectedCap?: string | null;
+  onSelectCap?: (key: string) => void;
 }) {
   const { rings: placed, more } = layoutLineAhead(rings, lanes, from, to);
   const ticks = monthTicks(from, to);
@@ -56,6 +64,48 @@ export function LineAhead({
             {t.label}
           </text>
         ))}
+        {caps.map((c) => {
+          const ys = c.lines.filter((l) => lanes.includes(l)).map((l) => laneY(lanes.indexOf(l)));
+          if (!ys.length) return null;
+          const x = xFor(c.date, from, to);
+          const y1 = Math.min(...ys) - 10;
+          const y2 = Math.max(...ys) + 10;
+          const isSel = selectedCap === c.key;
+          const act = () => onSelectCap?.(c.key);
+          return (
+            <g
+              key={c.key}
+              role="button"
+              tabIndex={0}
+              aria-label={c.name}
+              aria-pressed={isSel}
+              className="cursor-pointer outline-none [&:focus-visible>.focus]:visible"
+              onClick={act}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  act();
+                }
+              }}
+            >
+              <rect className="focus invisible" x={x - 13} y={y1 - 3} width={26} height={y2 - y1 + 6} rx={13} fill="none" stroke="var(--color-focus)" strokeWidth="2" />
+              <rect
+                x={x - 10}
+                y={y1}
+                width={20}
+                height={y2 - y1}
+                rx={10}
+                fill={c.kind === "suggested" || c.kind === "planned" || c.kind === "in_shop" ? "var(--color-leaf-2)" : "var(--color-leaf)"}
+                stroke={c.kind === "in_shop" ? "var(--board-ink)" : "var(--color-ink)"}
+                strokeDasharray={c.kind === "suggested" ? "4 4" : undefined}
+                style={{ strokeWidth: isSel ? "var(--map-cap-sel-stroke)" : "var(--map-cap-stroke)" }}
+              />
+              <text x={x} y={y1 - 6} textAnchor="middle" fill="var(--color-ink)" className="text-map-label font-semibold" aria-hidden>
+                {c.label}
+              </text>
+            </g>
+          );
+        })}
         {placed.map((r) => {
           const style = RING[r.status] ?? RING.current;
           const isSel = selected === r.key;

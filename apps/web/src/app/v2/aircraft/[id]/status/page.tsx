@@ -12,7 +12,10 @@ import { Board, BoardHead, Leaf, Leaves, SourceMat, Spine } from "@/ui/Board";
 import { Button } from "@/ui/Button";
 import { StatusSpread } from "@/ui/StatusSpread";
 import { Verdict } from "@/ui/Verdict";
-import { seedStandardFromStatus } from "./actions";
+import { capLabel, findVisit, monD, visitLines, visitNotices, visitParam, visitRowNotes, visitTitle } from "@/lib/v2/visits";
+import { Notice } from "@/ui/Form";
+import { moveVisitTo, seedStandardFromStatus, setVisitStatus } from "./actions";
+import { VisitPanel, type VisitContext } from "./VisitPanel";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -25,10 +28,11 @@ export default async function StatusPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; visit?: string; panel?: string; booked?: string; err?: string }>;
 }) {
   const { id } = await params;
-  const filter = parseFilter((await searchParams).filter);
+  const sp = await searchParams;
+  const filter = parseFilter(sp.filter);
   const supabase = await createClient();
   const [context, { data: auth }] = await Promise.all([getAircraftShellContext(supabase, id), supabase.auth.getUser()]);
   if (!context || !auth.user) notFound();
@@ -77,7 +81,7 @@ export default async function StatusPage({
     <>
       {readout && <span>{readout}</span>}
       {context.canEdit && (
-        <Button variant="on-board" href={`${a}/meters?ui=v1`}>
+        <Button variant="on-board" href={`${a}/hours?panel=reading`}>
           Log a flight
         </Button>
       )}
@@ -120,7 +124,72 @@ export default async function StatusPage({
     </div>
   );
 
-  const verdict = <Verdict verdict={snap.verdict} overdue={snap.counts.overdue > 0} />;
+  // Visits (C-PLAN-02, C-PLAN-03): caps on the line ahead, notices above the verdict, the VisitPanel on the right.
+  const byKey = new Map(snap.items.map((i) => [i.key, i]));
+  const allVisits = [...snap.visits.planned, ...snap.visits.suggested];
+  const caps = allVisits.map((v) => {
+    const n = snap.visits.suggested.indexOf(v) + 1;
+    const label = capLabel(v, n);
+    const names = v.items.map((i) => byKey.get(i.key)?.label ?? "a squawk").join(", ");
+    return {
+      key: visitParam(v),
+      date: v.visitDate ?? v.weekOf,
+      lines: visitLines(v, (k) => byKey.get(k)?.line, lanes),
+      kind: v.status as "suggested" | "planned" | "in_shop" | "awaiting_records",
+      label,
+      name: `${visitTitle(v)}. ${v.status === "suggested" ? "Clears" : "Holds"} ${names}.`,
+    };
+  });
+  const open = findVisit(allVisits, sp.visit);
+  const squawks = new Map((due!.loaded.input.squawk ?? []).map((q) => [q.id, q.description]));
+  const vc: VisitContext = {
+    aircraftId: id, today: snap.today, canEdit: context.canEdit, items: byKey, squawks,
+    providers: (due!.loaded.input.service_provider ?? []).map((p) => ({ id: p.id, name: p.name })), base: `${a}/status`,
+  };
+  const notices = visitNotices(snap.visits.planned, snap.today).map((n) => {
+    const v = n.visit;
+    const vp = `${a}/status?visit=${encodeURIComponent(visitParam(v))}`;
+    const day = monD(v.visitDate ?? v.weekOf);
+    if (n.kind === "at_risk")
+      return (
+        <Well key={`r-${v.id}`}>
+          The {byKey.get(n.itemKey)?.label ?? "item"} now falls {n.daysBefore} {n.daysBefore === 1 ? "day" : "days"} before the {day} visit.{" "}
+          {context.canEdit && v.id && (
+            <form action={moveVisitTo.bind(null, id, v.id, n.moveTo)} className="mt-2">
+              <button type="submit" className="font-semibold text-board-ink underline decoration-dotted">
+                Move the visit to the week of {monD(n.moveTo)}
+              </button>
+            </form>
+          )}
+        </Well>
+      );
+    if (n.kind === "in_shop")
+      return (
+        <Well key={`s-${v.id}`}>
+          Is {context.reg} at the shop this week?{" "}
+          {context.canEdit && v.id && (
+            <form action={setVisitStatus.bind(null, id, v.id, "in_shop", "status")} className="mt-2 inline-flex gap-3">
+              <button type="submit" className="font-semibold text-board-ink underline decoration-dotted">Yes, it&apos;s in the shop</button>
+              <Link href={vp} className="font-semibold text-board-ink underline decoration-dotted">Open the visit</Link>
+            </form>
+          )}
+        </Well>
+      );
+    return (
+      <Well key={`h-${v.id}`}>
+        Did the {day} visit happen? Mark what was done and add its pages.{" "}
+        <Link href={vp} className="font-semibold text-board-ink underline decoration-dotted">Open the visit</Link>
+      </Well>
+    );
+  });
+  const errNote = sp.err && !open ? <Notice tone="alarm">{sp.err}</Notice> : null;
+
+  const verdict = (
+    <>
+      {(notices.length > 0 || errNote) && <div className="mb-4 flex flex-col gap-2">{errNote}{notices}</div>}
+      <Verdict verdict={snap.verdict} overdue={snap.counts.overdue > 0} />
+    </>
+  );
   const empty = snap.items.length === 0 && (
     <div className="mt-4 border-t-2 border-ink pt-4">
       {context.canEdit ? (
@@ -130,7 +199,7 @@ export default async function StatusPage({
               Add the standard Part 91 items
             </button>
           </form>
-          <Button href={`${a}/maintenance?ui=v1`}>Track an item</Button>
+          <Button href={`${a}/maintenance/items?panel=new`}>Track an item</Button>
         </div>
       ) : (
         <p className="text-body text-ink-2">You can view this aircraft. Ask the owner to make you an editor to track items.</p>
@@ -150,6 +219,10 @@ export default async function StatusPage({
         filter={filter}
         canEdit={context.canEdit}
         head={verdict}
+        caps={caps}
+        selectedCap={open ? visitParam(open) : null}
+        right={open ? <VisitPanel visit={open} c={vc} panel={sp.panel} booked={sp.booked === "1"} err={sp.err} /> : undefined}
+        rowNotes={visitRowNotes(snap.visits.planned)}
         foot={
           <>
             {empty}
@@ -159,4 +232,9 @@ export default async function StatusPage({
       />
     </Board>
   );
+}
+
+/** A notice Well (02 §7.9) that may hold a form, so it is a div rather than Notice's paragraph. */
+function Well({ children }: { children: React.ReactNode }) {
+  return <div role="status" className="rounded-[var(--radius-s)] bg-leaf-2 px-4 py-3 text-body">{children}</div>;
 }

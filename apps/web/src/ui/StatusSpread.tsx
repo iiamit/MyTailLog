@@ -11,7 +11,7 @@ import {
 } from "@/lib/v2/status";
 import { Leaf, Leaves, SourceMat } from "@/ui/Board";
 import { buttonClass } from "@/ui/Button";
-import { LineAhead } from "@/ui/LineAhead";
+import { LineAhead, type CapInput } from "@/ui/LineAhead";
 import { FirstBadge, StatusMark, TrustMark, YourNote } from "@/ui/Marks";
 
 const LATER_KEY = "mtl_status_later";
@@ -52,10 +52,17 @@ export type SpreadProps = {
   head: React.ReactNode;
   /** Footnote and reminders line, under the table. */
   foot: React.ReactNode;
+  /** Visit caps on the line ahead; selecting one sets `?visit=` (W-STATUS-01 Interactions). */
+  caps?: CapInput[];
+  selectedCap?: string | null;
+  /** Replaces the item's page on the right leaf (the VisitPanel or its booking form). */
+  right?: React.ReactNode;
+  /** itemKey to "In the Dec 7 visit". */
+  rowNotes?: Record<string, string>;
 };
 
 /** W-STATUS-01's spread: line ahead, legend chips and due table on the left, the selected row's page on the right. */
-export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filter, canEdit, head, foot }: SpreadProps) {
+export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filter, canEdit, head, foot, caps, selectedCap, right, rowNotes }: SpreadProps) {
   const router = useRouter();
   const groups = useMemo(() => groupItems(items, today, filter), [items, today, filter]);
   const ordered = useMemo(() => groups.flatMap((g) => g.items), [groups]);
@@ -68,6 +75,10 @@ export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filte
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement;
       if (e.metaKey || e.ctrlKey || e.altKey || t.closest("input, textarea, select, [contenteditable]")) return;
+      if (e.key === "Escape" && selectedCap) {
+        router.replace(`/aircraft/${aircraftId}/status`, { scroll: false });
+        return;
+      }
       const at = ordered.findIndex((i) => i.key === selected);
       if (e.key === "j" || e.key === "k") {
         const next = ordered[Math.min(Math.max(at + (e.key === "j" ? 1 : -1), 0), ordered.length - 1)];
@@ -82,7 +93,7 @@ export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filte
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [ordered, selected, canEdit, aircraftId, router]);
+  }, [ordered, selected, canEdit, aircraftId, router, selectedCap]);
 
   const byKey = new Map(items.map((i) => [i.key, i]));
   const counts = filterCounts(items);
@@ -116,6 +127,9 @@ export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filte
               onSelect={select}
               dim={filter === "all" ? undefined : (k) => byKey.get(k)?.status !== filter}
               summary={`${counts.overdue} overdue, ${counts.due_soon} due soon, ${counts.current} current.`}
+              caps={caps}
+              selectedCap={selectedCap}
+              onSelectCap={(k) => router.replace(`/aircraft/${aircraftId}/status?visit=${encodeURIComponent(k)}`, { scroll: false })}
             />
             {undated.length > 0 && <p className="mb-3 text-small text-ink-3">Not on the line: {undated.join(", ")}, needs a date.</p>}
             <nav aria-label="Filter by state" className="my-3 flex flex-wrap gap-2">
@@ -180,6 +194,7 @@ export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filte
                             aircraftId={aircraftId}
                             canEdit={canEdit}
                             selected={item.key === selected}
+                            visitNote={rowNotes?.[item.key]}
                             onSelect={() => setSelected(item.key)}
                           />
                         ))}
@@ -193,7 +208,7 @@ export function StatusSpread({ aircraftId, today, items, lineAhead, lanes, filte
         )}
         {foot}
       </Leaf>
-      <ItemMat item={sel} aircraftId={aircraftId} />
+      {right ?? <ItemMat item={sel} aircraftId={aircraftId} />}
     </Leaves>
   );
 }
@@ -216,6 +231,7 @@ function DueRow({
   canEdit,
   selected,
   onSelect,
+  visitNote,
 }: {
   item: DueItem;
   today: string;
@@ -223,6 +239,7 @@ function DueRow({
   canEdit: boolean;
   selected: boolean;
   onSelect: () => void;
+  visitNote?: string;
 }) {
   const cal = calendarCell(item);
   const hrs = hoursCell(item, today);
@@ -245,6 +262,7 @@ function DueRow({
           {detail && <span>· {detail}</span>}
           <Cite item={item} onSelect={onSelect} />
         </div>
+        {visitNote && <div className="mt-0.5 text-small font-semibold text-ink-2">{visitNote}</div>}
         {item.waitingEntryId && (
           <div className="mt-0.5 text-small text-ink-3">
             A newer entry is waiting for review.{" "}
