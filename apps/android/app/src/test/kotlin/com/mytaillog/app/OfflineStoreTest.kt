@@ -80,6 +80,7 @@ class OfflineStoreTest {
     private val target = ScanTarget("a1", "N734QA", "b1", "Airframe", handwritten = true)
 
     private fun open(dir: File = tmp.root): OfflineStore {
+        Class.forName("org.sqlite.JDBC") // DriverManager may not have it when a Robolectric test ran first
         val mirror = JdbcSqliteDriver("jdbc:sqlite:${File(dir, "mirror.db").path}", Properties(), MirrorDatabase.Schema)
         val outbox = JdbcSqliteDriver("jdbc:sqlite:${File(dir, "outbox.db").path}", Properties(), OutboxDatabase.Schema)
         return OfflineStore("u1", dir, mirror, outbox, server, storage) { clock }

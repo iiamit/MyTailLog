@@ -50,6 +50,7 @@ class SyncScreenTest {
     fun listsConflictsRefusalsAndWaitingChanges() {
         val app = RuntimeEnvironment.getApplication()
         WorkManagerTestInitHelper.initializeTestWorkManager(app)
+        Class.forName("org.sqlite.JDBC") // register the JDBC driver inside Robolectric's class loader
         val store = OfflineStore(
             "u1", tmp.root,
             JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY).also { MirrorDatabase.Schema.create(it) },

@@ -43,6 +43,12 @@ The installed Capacitor build has the same id; uninstall it first (`adb uninstal
 
 The session is stored in DataStore, encrypted with a Tink AES-256-GCM key held in Android Keystore (05 §8.1). `Account` refreshes it under one lock when it expires within a minute (on every return to the foreground and on `accessToken()`); a refresh token the server refuses signs out with "You've been signed out. Sign in again to keep syncing."
 
+## Capture and offline (phase 3: 06 M-SCAN-01..03, M-FLIGHT-02/03, M-SYS-01, §1.3)
+
+`OfflineStore` opens `filesDir/{userId}/mirror.db` and `outbox.db` through `core:sync`'s `SyncEngine`, keeps captured pages in `outbox/pages` and thumbnails in `cache/thumbs`. `SyncWorker` (WorkManager, network constraint, expedited, dataSync foreground "Uploading 2 pages to N734DM", hourly periodic) uploads held pages by signed URL first, then pushes and pulls. `page.register` is queued only once the page is in storage and its scan's `batch.create` is queued, so killing the app at any point loses nothing; a scan the app died during is finished on the next launch. Status and the aircraft list fall back to the last server copy offline; Logbooks writes that can't reach the server go to the outbox.
+
+The page camera is CameraX with our own edge finder (`PageFinder`: Otsu threshold, largest bright region, four corners) and `Matrix.setPolyToPoly` to flatten, not OpenCV (its AAR is 112 MB and can't run in JVM tests). ML Kit's Document Scanner is the fallback; ML Kit text recognition (bundled, about 11 MB per ABI) reads the page's dates for "Lands in 1984, inside the airframe gap" and the tach. `LiveCaptureTest` runs the upload path against the test server when `MTL_QA_USER` names the QA account's JSON.
+
 ## Sign-in (05 §8, 06 M-AUTH-01)
 
 | Method | How | Returns by |
