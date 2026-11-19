@@ -14,7 +14,12 @@ import com.mytaillog.core.db.MIRROR_DB
 import com.mytaillog.core.db.OUTBOX_DB
 import com.mytaillog.core.db.mirror.MirrorDatabase
 import com.mytaillog.core.db.outbox.OutboxDatabase
+import androidx.core.content.pm.ShortcutManagerCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.io.File
 
@@ -27,6 +32,10 @@ class MyTailLogApp : Application() {
     val syncApi by lazy { HttpSyncApi(http, BuildConfig.API_URL, token) }
     val captureApi by lazy { CaptureApi(http, BuildConfig.API_URL, token) }
     val recordsApi by lazy { RecordsApi(http, BuildConfig.API_URL, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY, token) }
+    val notifyApi by lazy { NotifyApi(http, BuildConfig.API_URL, token) }
+
+    /** Work that outlives a screen: push registration from the FCM service, widget refreshes. */
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /** Whether the phone has a network (06 §1.3 "offline"). */
     val online = MutableStateFlow(true)
@@ -70,5 +79,9 @@ class MyTailLogApp : Application() {
         SyncWorker.cancel(this)
         if (offline?.userId == userId) { offline?.close(); offline = null }
         File(filesDir, userId).deleteRecursively()
+        // Widgets and launcher shortcuts name the aircraft; they go with the account (05 §8.6).
+        WidgetData.clear(this)
+        ShortcutManagerCompat.removeAllDynamicShortcuts(this)
+        scope.launch { refreshWidgets(this@MyTailLogApp) }
     }
 }

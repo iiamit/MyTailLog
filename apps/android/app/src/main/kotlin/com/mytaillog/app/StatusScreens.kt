@@ -416,9 +416,9 @@ private fun DueMeta(item: DueItem, today: String, showLimitIcon: Boolean) {
     }
 }
 
-private val LINES = listOf("airframe" to "Airframe", "engine" to "Engine", "propeller" to "Propeller", "avionics" to "Avionics")
+internal val LINES = listOf("airframe" to "Airframe", "engine" to "Engine", "propeller" to "Propeller", "avionics" to "Avionics")
 
-private fun lineRow(line: String): Int = when (line) {
+internal fun lineRow(line: String): Int = when (line) {
     "prop" -> 2
     else -> LINES.indexOfFirst { it.first == line }
 }

@@ -65,10 +65,22 @@ import com.mytaillog.design.Section
 import com.mytaillog.design.SubTabs
 import com.mytaillog.design.TabItem
 import com.mytaillog.design.section
+import kotlinx.coroutines.launch
 
 /** Signed in: the phone binder below 700dp, the rail and list-detail at 700dp and wider. */
 @Composable
-fun Shell(email: String? = null, onSignOut: () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null, capture: CaptureHost? = null, records: RecordsApi? = null) {
+fun Shell(
+    email: String? = null,
+    onSignOut: () -> Unit = {},
+    status: StatusHost? = null,
+    books: BooksViewModel? = null,
+    capture: CaptureHost? = null,
+    records: RecordsApi? = null,
+    notify: NotifyApi? = null,
+    link: AppLink? = null,
+    onLinkHandled: () -> Unit = {},
+    keys: kotlinx.coroutines.flow.Flow<KeyCommand>? = null,
+) {
     val unsent = capture?.store?.sync?.collectAsStateWithLifecycle()?.value?.let { it.waiting + it.pages } ?: 0
     val account: @Composable () -> Unit = { AccountSettings(email, onSignOut, unsent) }
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -78,8 +90,31 @@ fun Shell(email: String? = null, onSignOut: () -> Unit = {}, status: StatusHost?
     val recs = remember(capture, records, aircraft, snapshot) {
         if (capture != null && records != null && aircraft != null) Recs(capture.store, records, aircraft, snapshot, capture::kick, context::getString) else null
     }
+    // A link (notification, widget, shortcut, App Action) or a keyboard command becomes a landing (05 §5.5).
+    var go by remember { mutableStateOf<Landing?>(null) }
+    val known = status?.ui?.aircraft.orEmpty()
+    // Wait for the linked aircraft to be open, so its screens exist; an aircraft not on this account opens the current one.
+    val ready = aircraft != null && (link?.aircraftId == null || link.aircraftId == aircraft.aircraft.id || known.none { it.aircraft.id == link.aircraftId })
+    LaunchedEffect(link?.aircraftId, known) { link?.aircraftId?.takeIf { id -> known.any { it.aircraft.id == id } }?.let { status?.select?.invoke(it) } }
+    LaunchedEffect(link, ready) {
+        if (link != null && ready) { go = landing(link); onLinkHandled() }
+    }
+    LaunchedEffect(keys) {
+        keys?.collect { k ->
+            when (k) {
+                is KeyCommand.Section -> go = Landing(TabletSections[k.index])
+                KeyCommand.LogFlight -> go = landing(AppLink(null, LinkTarget.Flight))
+                KeyCommand.Settings -> go = landing(AppLink(null, LinkTarget.Settings))
+                KeyCommand.Sync -> { capture?.kick(); status?.refresh?.invoke() }
+                KeyCommand.Back -> Unit // the activity sends it to the back dispatcher
+            }
+        }
+    }
+    // An inbox row's deep link: the same route table, in place.
+    val open: (String?) -> Unit = { raw -> parseAppLink(raw)?.let { l -> l.aircraftId?.let { id -> status?.select?.invoke(id) }; go = landing(l) } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status, books, recs) else PhoneShell(account = account, status = status, books = books, capture = capture, recs = recs)
+        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status, books, recs, go, { go = null }, notify, open)
+        else PhoneShell(account = account, status = status, books = books, capture = capture, recs = recs, go = go, onGone = { go = null }, notify = notify, open = open)
     }
 }
 
@@ -127,7 +162,18 @@ fun AccountSettings(email: String?, onSignOut: () -> Unit, unsent: Long = 0) {
  * switching tabs saves and restores each tab's stack; re-selecting the open tab pops it to its root.
  */
 @Composable
-fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Composable () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null, capture: CaptureHost? = null, recs: Recs? = null) {
+fun PhoneShell(
+    nav: NavHostController = rememberNavController(),
+    account: @Composable () -> Unit = {},
+    status: StatusHost? = null,
+    books: BooksViewModel? = null,
+    capture: CaptureHost? = null,
+    recs: Recs? = null,
+    go: Landing? = null,
+    onGone: () -> Unit = {},
+    notify: NotifyApi? = null,
+    open: (String?) -> Unit = {},
+) {
     val entry by nav.currentBackStackEntryAsState()
     val hierarchy = entry?.destination?.hierarchy
     val current = PhoneTabs.indexOfFirst { tab -> hierarchy?.any { it.route == tab.graph } == true }.coerceAtLeast(0)
@@ -148,6 +194,20 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
         CaptureNav(h, openSync = { nav.navigate("${PhoneTabs[current].graph}/$SYNC") }, openQueue = { nav.navigate(SCAN_QUEUE) })
     }
     SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover)
+    // A link or a key: the tab (Documents lives under Aircraft here), then the screen pushed on it.
+    LaunchedEffect(go, recs != null) {
+        val l = go ?: return@LaunchedEffect
+        if (recs == null && l.route != null) return@LaunchedEffect // its screens exist once the aircraft is open
+        val (tab, pushed) = if (l.section == Destination.Documents) Destination.Aircraft to (l.route ?: DOCUMENTS_ON_PHONE) else l.section to l.route
+        nav.selectTab(tab, reselect = false)
+        nav.popBackStack(tab.root, inclusive = false)
+        when (pushed) {
+            null -> Unit
+            SCAN_SHEET -> scanning = true
+            else -> runCatching { nav.navigate(pushed) }
+        }
+        onGone()
+    }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalCaptureNav provides captureNav, LocalRecNav provides recNav) {
     Scaffold(
@@ -266,8 +326,18 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
                             val colors = MyTailLogTheme.colors
                             Column(Modifier.fillMaxSize().background(colors.section(Section.Aircraft).board)) {
                                 PhoneHeader(stringResource(R.string.settings_title), Section.Aircraft, back = stringResource(R.string.section_aircraft) to up)
-                                PhoneLeaf { account() }
+                                PhoneLeaf {
+                                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                                        if (notify != null) NotifyRows({ nav.navigate(INBOX) }, { nav.navigate(REMINDERS) })
+                                        account()
+                                    }
+                                }
                             }
+                        }
+                        if (notify != null) {
+                            val up: () -> Unit = { nav.popBackStack() }
+                            composable(INBOX) { InboxScreen(notify, stringResource(R.string.settings_title) to up, open) { nav.navigate(REMINDERS) } }
+                            composable(REMINDERS) { RemindersScreen(notify, stringResource(R.string.settings_title) to up) }
                         }
                     }
                 }
@@ -352,17 +422,48 @@ private fun EmptyText(destination: Destination) {
 /** Tablet: the binder Rail beside the board, which holds a list-detail scaffold of leaves (05 §5.4). */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null, books: BooksViewModel? = null, recs: Recs? = null) {
+fun TabletShell(
+    account: @Composable () -> Unit = {},
+    status: StatusHost? = null,
+    books: BooksViewModel? = null,
+    recs: Recs? = null,
+    go: Landing? = null,
+    onGone: () -> Unit = {},
+    notify: NotifyApi? = null,
+    open: (String?) -> Unit = {},
+) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    // The right leaf of Maintenance, Aircraft and Documents: a records route, "docs", "settings", the inbox or reminders.
+    var detail by rememberSaveable { mutableStateOf<String?>(null) }
+    var planning by rememberSaveable { mutableStateOf(false) }
     val destination = TabletSections[selected]
     val colors = MyTailLogTheme.colors
     val s = colors.section(destination.section)
     SystemBarIcons(darkStatusIcons = false) // the status bar sits over the dark rail on the left
+    LaunchedEffect(go) {
+        val l = go ?: return@LaunchedEffect
+        selected = TabletSections.indexOf(l.section)
+        planning = l.route == STATUS_PLAN || l.route?.startsWith(STATUS_VISIT) == true
+        detail = when (l.route) {
+            SETTINGS_ON_PHONE -> "settings"
+            INBOX, REMINDERS -> l.route
+            else -> l.route?.takeIf { l.section in setOf(Destination.Maintenance, Destination.Aircraft, Destination.Documents) }
+        }
+        onGone()
+    }
+    // Back (06 M-SYS-07, predictive): close the right leaf, then Plan ahead, then go to Status, then leave the app.
+    androidx.activity.compose.BackHandler(enabled = detail != null || planning || selected != 0) {
+        when {
+            detail != null -> detail = null
+            planning -> planning = false
+            else -> selected = 0
+        }
+    }
     Row(Modifier.fillMaxSize().background(colors.cover)) {
         Rail(
             items = TabletSections.map { TabItem(it.section, stringResource(it.title), it.icon) },
             selected = selected,
-            onSelect = { selected = it },
+            onSelect = { selected = it; detail = null },
         )
         Column(
             Modifier
@@ -382,7 +483,7 @@ fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null
                 return@Column
             }
             if (recs != null && destination in setOf(Destination.Maintenance, Destination.Aircraft, Destination.Documents)) {
-                TabletRecords(recs, destination, status, account)
+                TabletRecords(recs, destination, status, account, detail, { detail = it }, notify, open)
                 return@Column
             }
             if (recs != null && destination == Destination.Share) {
@@ -390,7 +491,6 @@ fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null
                 return@Column
             }
             // T-STATUS-01/02: SubTabs What's due · Plan ahead.
-            var planning by rememberSaveable { mutableStateOf(false) }
             if (destination == Destination.Status && status?.ui?.snapshot != null) {
                 SubTabs(
                     listOf(stringResource(R.string.status_whats_due), stringResource(R.string.plan_title)), if (planning) 1 else 0, { planning = it == 1 }, Section.Status,
@@ -404,6 +504,9 @@ fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null
             val navigator = rememberListDetailPaneScaffoldNavigator<Nothing>()
             var selectedItem by rememberSaveable { mutableStateOf<String?>(null) }
             val statusHere = status.takeIf { destination == Destination.Status }
+            val paneScope = androidx.compose.runtime.rememberCoroutineScope()
+            // One pane (narrower than 840dp): the item replaces the list, and back returns to it.
+            androidx.activity.compose.BackHandler(enabled = navigator.canNavigateBack()) { paneScope.launch { navigator.navigateBack() } }
             ListDetailPaneScaffold(
                 directive = navigator.scaffoldDirective,
                 value = navigator.scaffoldValue,
@@ -412,7 +515,10 @@ fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null
                         TabletLeaf {
                             // Settings lives in the RailFoot's Account (06 §9) once that lands; until then, under Aircraft.
                             when {
-                                statusHere != null -> StatusTabletList(statusHere, selectedItem) { selectedItem = it }
+                                statusHere != null -> StatusTabletList(statusHere, selectedItem) {
+                                    selectedItem = it
+                                    paneScope.launch { navigator.navigateTo(androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole.Detail) }
+                                }
                                 destination == Destination.Aircraft -> account()
                                 else -> EmptyText(destination)
                             }
@@ -431,29 +537,43 @@ fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null
  * detail (squawk, AD, item, an aircraft page, a document) in the right one.
  */
 @Composable
-private fun TabletRecords(recs: Recs, destination: Destination, status: StatusHost?, account: @Composable () -> Unit) {
-    var detail by rememberSaveable(destination) { mutableStateOf<String?>(null) }
+private fun TabletRecords(
+    recs: Recs,
+    destination: Destination,
+    status: StatusHost?,
+    account: @Composable () -> Unit,
+    detail: String?,
+    setDetail: (String?) -> Unit,
+    notify: NotifyApi?,
+    open: (String?) -> Unit,
+) {
     var maintView by rememberSaveable { mutableStateOf<MaintView?>(null) }
-    val nav = RecNav(open = { detail = it }, back = { detail = null }, tablet = true)
+    val nav = RecNav(open = { setDetail(it) }, back = { setDetail(null) }, tablet = true)
+    val settings = stringResource(R.string.settings_title) to { setDetail("settings") }
     androidx.compose.runtime.CompositionLocalProvider(LocalRecNav provides nav) {
         Row(Modifier.fillMaxSize().padding(start = 22.dp, end = 22.dp, bottom = 22.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
             Box(Modifier.weight(1f)) {
                 TabletLeaf {
                     when (destination) {
                         Destination.Maintenance -> MaintTab(recs, maintView, { maintView = it }, status)
-                        Destination.Aircraft -> AircraftTab(recs, status, onDocuments = { detail = "docs" }, onSettings = { detail = "settings" })
+                        Destination.Aircraft -> AircraftTab(recs, status, onDocuments = { setDetail("docs") }, onSettings = { setDetail("settings") })
                         else -> DocumentsScreen(recs, back = null)
                     }
                 }
-                if (recs.canEdit && destination == Destination.Maintenance) AddButton({ detail = Routes.NEW_SQUAWK }, Modifier.align(Alignment.BottomEnd).padding(16.dp))
+                if (recs.canEdit && destination == Destination.Maintenance) AddButton({ setDetail(Routes.NEW_SQUAWK) }, Modifier.align(Alignment.BottomEnd).padding(16.dp))
             }
             Box(Modifier.weight(1f)) {
                 TabletLeaf {
                     when (val d = detail) {
                         null -> EmptyText(destination)
-                        "docs" -> DocumentsScreen(recs, back = stringResource(R.string.section_aircraft) to { detail = null })
-                        "settings" -> account()
-                        Routes.NEW_SQUAWK -> NewSquawk(recs, onClose = { detail = null })
+                        "docs" -> DocumentsScreen(recs, back = stringResource(R.string.section_aircraft) to { setDetail(null) })
+                        "settings" -> Column(Modifier.verticalScroll(rememberScrollState())) {
+                            if (notify != null) NotifyRows({ setDetail(INBOX) }, { setDetail(REMINDERS) })
+                            account()
+                        }
+                        INBOX -> notify?.let { InboxScreen(it, settings, open) { setDetail(REMINDERS) } }
+                        REMINDERS -> notify?.let { RemindersScreen(it, settings) }
+                        Routes.NEW_SQUAWK -> NewSquawk(recs, onClose = { setDetail(null) })
                         else -> androidx.compose.runtime.key(d) { RecordsRoute(recs, d) }
                     }
                 }

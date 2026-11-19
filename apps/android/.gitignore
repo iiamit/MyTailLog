@@ -5,3 +5,5 @@ local.properties
 *.iml
 .idea/
 captures/
+# FCM client config (README "Reminders and FCM"); never committed.
+app/google-services.json

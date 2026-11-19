@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -316,12 +317,17 @@ private fun RoomPreview(recs: Recs, d: RoomDraft, books: Books?) {
 
 private fun recipient(a: Audience) = when (a) { Audience.Ia -> R.string.share_your_ia; Audience.Buyer -> R.string.share_the_buyer; Audience.Insurer -> R.string.share_the_insurer; Audience.People -> R.string.share_they }
 
+/** A labelled switch row: the whole row toggles, so TalkBack reads the label with the state. */
 @Composable
-private fun Toggle(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
+internal fun Toggle(label: String, on: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     val c = MyTailLogTheme.colors
-    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 52.dp)
+            .toggleable(on, enabled = enabled, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Lede(label, Modifier.weight(1f))
-        Switch(on, onChange, colors = SwitchDefaults.colors(checkedTrackColor = c.ink, checkedThumbColor = c.leaf))
+        Switch(on, null, enabled = enabled, colors = SwitchDefaults.colors(checkedTrackColor = c.ink, checkedThumbColor = c.leaf))
     }
 }
 

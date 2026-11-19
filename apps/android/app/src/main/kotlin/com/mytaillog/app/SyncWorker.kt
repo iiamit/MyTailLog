@@ -32,7 +32,15 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val app = applicationContext as? MyTailLogApp ?: return Result.success()
         val store = app.currentOffline() ?: return Result.success()
         if (store.sync.value.pages > 0) runCatching { setForeground(getForegroundInfo()) }
+        val held = store.pageJobs()
         val retry = store.syncNow()
+        // Pages that reached storage now get read: follow them in the reading-progress note (05 §12).
+        val left = store.pageJobs().map { it.id }.toSet()
+        held.filter { it.id !in left }.groupBy { it.aircraftId }.forEach { (id, sent) ->
+            ReadingWorker.start(applicationContext, id, sent.map { it.batchId }.distinct(), sent.first().tail)
+        }
+        // Hourly at least, so the widgets' day counts move past midnight (05 §11.2).
+        refreshWidgets(applicationContext)
         return if (retry && runAttemptCount < 20) Result.retry() else Result.success()
     }
 

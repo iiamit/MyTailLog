@@ -52,7 +52,40 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="mytaillog.com" android:path="/app/auth/callback" />
             </intent-filter>
+            <!-- The 05 §5.5 route table: notifications, widgets, shortcuts and links shared from the web. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="mytaillog.com" android:pathPrefix="/app/a/" />
+            </intent-filter>
+            <!-- Long-press shortcuts and App Actions (05 §13.3). -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- Home-screen widgets (05 §11). -->
+        <receiver android:name=".LineAheadReceiver" android:exported="true" android:label="@string/widget_line_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_line_ahead" />
+        </receiver>
+        <receiver android:name=".NextItemReceiver" android:exported="true" android:label="@string/widget_next_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_next_item" />
+        </receiver>
+
+        <!-- FCM delivery only (05 §1 privacy): no analytics; inert unless the build has Firebase values. -->
+        <service android:name=".PushService" android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="due" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_book" />
 
         <!-- WorkManager's foreground service declares the type the upload job uses. -->
         <service
