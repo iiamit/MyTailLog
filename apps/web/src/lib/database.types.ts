@@ -913,6 +913,8 @@ export type ReminderLog = {
   kind: ReminderKind;
   channel: "email" | "push" | "in_app";
   visit_id: string | null;
+  // 0091: weekly sends are numbered 1..8 within a due cycle; other kinds use 1.
+  nth: number;
 }
 
 export type ReminderKind = "lead" | "lapse" | "weekly" | "visit" | "visit_risk" | "document" | "reading_done" | "gap";
