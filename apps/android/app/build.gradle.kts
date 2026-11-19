@@ -43,8 +43,8 @@ android {
         applicationId = "com.mytaillog.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 100 // above the Capacitor app's 14, so Play accepts it as an update
+        versionName = "2.0.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", quoted(googleWebClientId.getOrElse("")))
         listOf("AppId" to "FIREBASE_APP_ID", "ApiKey" to "FIREBASE_API_KEY", "ProjectId" to "FIREBASE_PROJECT_ID", "SenderId" to "FIREBASE_SENDER_ID").forEach { (k, field) ->
             buildConfigField("String", field, quoted(firebase[k] ?: ""))
