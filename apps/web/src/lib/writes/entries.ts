@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, LogEntry, ReferenceLink } from "@/lib/database.types";
 import { isEntryClean } from "@/lib/extraction/schema";
+import { refreshGaps } from "./gaps";
 
 // The ONE implementation of every log-entry write (CONTRACT §3 C1, §4). Called
 // by the web server actions (cookie client) and by POST /api/sync/push (Bearer
@@ -296,7 +297,7 @@ export async function update(
   if (picked.fields.logbook_id && !(await logbookIsOnAircraft(supabase, ctx.aircraftId, picked.fields.logbook_id))) {
     return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
   }
-  return patchEntry(supabase, ctx, input.entryId, { ...picked.fields, owner_confirmed: true });
+  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, { ...picked.fields, owner_confirmed: true }));
 }
 
 export async function setConfirmed(
@@ -307,7 +308,7 @@ export async function setConfirmed(
 ): Promise<WriteResult> {
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
-  return patchEntry(supabase, ctx, input.entryId, { owner_confirmed: input.confirmed === true });
+  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, { owner_confirmed: input.confirmed === true }));
 }
 
 /** Replace an entry's external reference links (see {@link cleanLinks}). */
@@ -320,6 +321,12 @@ export async function setLinks(
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
   return patchEntry(supabase, ctx, input.entryId, { reference_links: cleanLinks(input.links) });
+}
+
+/** Confirmed entry dates may have moved: re-detect the aircraft's gaps (09 §3.8) before answering. */
+async function withGaps(supabase: Db, ctx: WriteCtx, r: WriteResult): Promise<WriteResult> {
+  if (r.status === "ok") await refreshGaps(supabase, ctx.aircraftId);
+  return r;
 }
 
 async function patchEntry(
@@ -362,7 +369,7 @@ export async function remove(
     .select("id");
   if (error) return { status: "error", message: error.message };
   if (!data?.length) return { status: "error", message: "Entry not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return withGaps(supabase, ctx, { status: "ok", row: null });
 }
 
 /**
@@ -491,5 +498,5 @@ export async function confirmClean(supabase: Db, ctx: WriteCtx): Promise<WriteRe
       .eq("review_status", "unreviewed");
   }
 
-  return { status: "ok", row: { confirmed: confirmed?.length ?? 0, remaining } };
+  return withGaps(supabase, ctx, { status: "ok", row: { confirmed: confirmed?.length ?? 0, remaining } });
 }

@@ -22,6 +22,8 @@ export const MUTATIONS = {
   "page.reorder": { base: "never" },
   "page.delete": { base: "never" },
   "page.extract": { base: "never", online: true },
+  "gap.setStatus": { base: "always" },
+  "gap.create": { base: "never" },
   "reading.create": { base: "never" },
   "reading.update": { base: "always" },
   "reading.delete": { base: "always" },

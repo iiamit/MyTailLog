@@ -11,6 +11,7 @@ import * as squawks from "./squawks";
 import * as documents from "./documents";
 import * as oil from "./oil";
 import * as weightBalance from "./weightBalance";
+import * as gaps from "./gaps";
 
 export type { Db, WriteCtx, WriteResult, WriteFn } from "./_stubs";
 
@@ -38,6 +39,8 @@ export const writes: Record<MutationType, WriteFn> = {
   "page.review": pages.setReview,
   "page.reorder": pages.reorder,
   "page.delete": pages.deletePages,
+  "gap.setStatus": gaps.setStatus,
+  "gap.create": gaps.create,
 
   // writes-c2
   "reading.create": meters.addReading,

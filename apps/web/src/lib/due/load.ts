@@ -1,12 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Preferences } from "@/lib/database.types";
-import { todayIn } from "@/lib/mapModel";
+import { todayIn, type MapInput } from "@/lib/mapModel";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { computeStatus, type DueInput } from "@/lib/due/engine";
+import { computeStatus } from "@/lib/due/engine";
 
 export type LoadedDueInput = {
-  input: DueInput;
+  /** The due engine's rows plus the map's extra columns and gaps (lib/mapModel.ts MapInput). */
+  input: MapInput;
   today: string;
   inputsSeq: number;
   preferences: Preferences | null;
@@ -19,7 +20,7 @@ export type LoadedDueInput = {
  */
 export async function loadDueInput(supabase: SupabaseClient<Database>, id: string, userId: string): Promise<LoadedDueInput | null> {
   const { data: aircraft } = await supabase.from("aircraft")
-    .select("id, tail_number, enrollment_date, enrollment_tach, enrollment_hobbs, enrollment_airframe, expected_hours_per_week, situation_override")
+    .select("id, tail_number, enrollment_date, enrollment_tach, enrollment_hobbs, enrollment_airframe, expected_hours_per_week, situation_override, year")
     .eq("id", id).maybeSingle();
   if (!aircraft) return null;
 
@@ -38,15 +39,15 @@ export async function loadDueInput(supabase: SupabaseClient<Database>, id: strin
 
   const [
     maintenance_item, ad_compliance, document, item_completion, log_entry, logbook, page, hours_reading,
-    meter_reset, planned_visit, planned_visit_item, service_provider, record_room, squawk, profile, seq,
+    meter_reset, planned_visit, planned_visit_item, service_provider, record_room, squawk, logbook_gap, profile, seq,
   ] = await Promise.all([
     all("maintenance_item", "id, kind, label, regulatory, interval_months, interval_hours, last_done_date, last_done_hours, next_due_date, next_due_hours, meter, line, provider_id, ifr_only, expires_on"),
     all("ad_compliance", "id, kind, reference, recurring, status, interval_months, interval_hours, complied_date, complied_hours, next_due_date, next_due_hours, reference_entry_id, provider_id"),
     all("document", "id, type, title, expires_on, renews_every_months, track_expiry, remind_lead_days"),
     all("item_completion", "id, maintenance_item_id, ad_compliance_id, log_entry_id, done_date, done_hours"),
-    all("log_entry", "id, logbook_id, page_id, entry_date, tach, hobbs, airframe, trust, replaced_by_entry_id, signature_name"),
-    all("logbook", "id, type"),
-    all("page", "id, logbook_id, page_sequence, extraction_status"),
+    all("log_entry", "id, logbook_id, page_id, entry_date, tach, hobbs, airframe, trust, replaced_by_entry_id, signature_name, is_continuation, mechanic_cert_number, entry_kind, description"),
+    all("logbook", "id, type, component_ref, title"),
+    all("page", "id, logbook_id, page_sequence, extraction_status, landing_date"),
     all("hours_reading", "id, reading_date, tach, hobbs, airframe, source"),
     all("meter_reset", "meter, reset_date, prior_value, new_value, id"),
     all("planned_visit", "id, status, week_of, visit_date, provider_id, airport"),
@@ -54,14 +55,15 @@ export async function loadDueInput(supabase: SupabaseClient<Database>, id: strin
     all("service_provider", "id, name"),
     // Viewers cannot read record rooms (RLS); for them a buyer room does not set the situation.
     all("record_room", "audience, expires_at, revoked_at, id").catch(() => []),
-    all("squawk", "id, description, severity, status"),
+    all("squawk", "id, description, severity, status, reported_at, resolved_at, resolved_log_entry_id"),
+    all("logbook_gap", "id, logbook_id, from_date, to_date, status, source, note"),
     supabase.from("profile").select("time_zone, preferences").eq("id", userId).maybeSingle(),
     supabase.from("change_log").select("seq").eq("aircraft_id", id).order("seq", { ascending: false }).limit(1).maybeSingle(),
   ]);
   const input = {
     aircraft, maintenance_item, ad_compliance, document, item_completion, log_entry, logbook, page, hours_reading,
-    meter_reset, planned_visit, planned_visit_item, service_provider, record_room, squawk,
-  } as DueInput;
+    meter_reset, planned_visit, planned_visit_item, service_provider, record_room, squawk, logbook_gap,
+  } as MapInput;
   return {
     input,
     today: todayIn(profile.data?.time_zone),
