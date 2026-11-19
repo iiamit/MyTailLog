@@ -10,7 +10,10 @@ export function GET(): Response {
         details: [
           {
             appIDs: ["38Z53C8X48.com.mytaillog.app"],
-            components: [{ "/": "/app/auth/callback", comment: "Email sign-in link (link and code)" }],
+            components: [
+              { "/": "/app/auth/callback", comment: "Email sign-in link (link and code)" },
+              { "/": "/app/a/*", comment: "Aircraft links from notifications, widgets and shares (apps/ios AppLinks.swift)" },
+            ],
           },
         ],
       },
