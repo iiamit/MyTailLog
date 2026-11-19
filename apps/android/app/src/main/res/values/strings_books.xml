@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logbooks and review copy: 06 M-BOOKS-*, M-REVIEW-*, 12 §7 and §9. -->
+<resources>
+    <string name="save">Save</string>
+    <string name="saving">Saving</string>
+    <string name="undo">Undo</string>
+    <string name="done">Done</string>
+    <string name="trust_ai">Read by AI</string>
+
+    <string name="books_tab_map">Map</string>
+    <string name="books_tab_pages">Pages</string>
+    <string name="books_tab_review">Review %1$d</string>
+    <string name="books_tab_review_plain">Review</string>
+    <string name="books_all">All books</string>
+    <string name="books_show_list">Show as list</string>
+    <string name="books_show_map">Show as map</string>
+    <string name="books_error">We could not load the logbooks right now.</string>
+    <string name="books_map_empty">The map draws itself from dated entries. None yet.</string>
+    <string name="books_map_more">%1$d more items: see the list.</string>
+    <string name="books_being_read">%1$d pages are being read. Their entries land on the map as hollow stops.</string>
+    <string name="books_being_read_short">Being read</string>
+    <string name="books_viewer">You can view these logbooks. The owner can make changes.</string>
+    <string name="books_page_missing">This page isn\'t on this phone yet.</string>
+    <string name="books_no_page">No page: typed in or imported</string>
+
+    <string name="books_cluster">%1$d entries, %2$s to %3$s</string>
+    <string name="books_not_confirmed">Not confirmed yet. It doesn\'t count toward what\'s due.</string>
+    <string name="books_review_this_page">Review this page</string>
+    <string name="books_open_page">Open page</string>
+    <string name="books_visit">Visit</string>
+    <string name="books_visit_title">%1$s, %2$s, %3$d books</string>
+    <string name="books_card_of">Swipe for the other books · %1$d of %2$d</string>
+    <string name="books_open_cite">Open %1$s</string>
+
+    <string name="books_gap_title">No %1$s pages, %2$s to %3$s</string>
+    <string name="books_gap_marked_none">You marked this: no pages exist.</string>
+    <string name="books_gap_marked_asked">You marked this: you asked the previous owner.</string>
+    <string name="books_gap_other_books">What the other books show</string>
+    <string name="books_gap_unconfirmed">Review %1$d pages read in this gap</string>
+    <string name="books_gap_none">No pages exist</string>
+    <string name="books_gap_asked">I asked the previous owner</string>
+    <string name="books_gap_note">Note (optional)</string>
+
+    <string name="books_ring_due">Due %1$s</string>
+    <string name="books_ring_about">About %1$s at your recent flying</string>
+    <string name="books_ring_more">Status has the limits and the page that says so.</string>
+
+    <string name="books_previous">Earlier</string>
+    <string name="books_next">Later</string>
+    <string name="books_also_signed">Also signed in</string>
+    <string name="books_edit_entry">Edit entry</string>
+    <string name="books_bad_number">Type a number, like 1874.6.</string>
+    <string name="books_bad_date">Type the date as 2026-03-02.</string>
+
+    <string name="books_pages_wait">%1$d pages wait for review.</string>
+    <string name="books_pages_summary">%1$d pages · %2$d entries</string>
+    <string name="books_book_empty">No pages in the %1$s logbook yet.</string>
+
+    <string name="books_tablet_hint">%1$d confirmed entries · tap a stop or a visit</string>
+    <string name="books_tablet_pick">Tap a stop or a visit to see its page here.</string>
+    <string name="books_queue_empty">Nothing waiting for review.</string>
+    <string name="books_queue_waiting">Waiting for your review</string>
+    <string name="books_queue_reading">Being read</string>
+    <string name="books_confirm_clean">Confirm the %1$d clean pages</string>
+
+    <string name="review_n_of">%1$d of %2$d to check</string>
+    <string name="review_previous_page">Previous page</string>
+    <string name="review_next_page">Next page</string>
+    <string name="review_confirmed_toast">%1$s confirmed, %2$d entries</string>
+    <string name="review_all_done">All %1$d pages are reviewed. %2$d entries confirmed.</string>
+    <string name="review_back_to_books">Back to Logbooks</string>
+    <string name="review_back_to_entry">Back to the entry</string>
+    <string name="review_no_entries">No entries read on this page.</string>
+    <string name="review_entry_of">Entry %1$d of %2$d · %3$s</string>
+    <string name="review_sideways">Some writing on this page runs sideways. Check it against the page.</string>
+    <string name="review_previous_entry">Previous entry</string>
+    <string name="review_next_entry">Next entry</string>
+    <string name="review_reads_cleanly">Reads cleanly. Nothing here needs a look.</string>
+    <string name="review_viewer">You can view this page. The owner confirms entries.</string>
+    <string name="review_confirm_next">Confirm page and next</string>
+    <string name="review_absent_done">not on this page</string>
+    <string name="review_checked">checked</string>
+    <string name="review_doubt">read with doubt</string>
+    <string name="review_check">Check</string>
+    <string name="review_read_with_doubt">Read with doubt</string>
+    <string name="review_reason">The reader was %1$d%% sure of this. Check it against the page.</string>
+    <string name="review_looks_right">Looks right</string>
+    <string name="review_edit">Edit</string>
+    <string name="review_absent">Not on this page</string>
+    <string name="review_raw">What the reader saw</string>
+</resources>
