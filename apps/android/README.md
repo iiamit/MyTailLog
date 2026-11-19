@@ -49,6 +49,10 @@ The session is stored in DataStore, encrypted with a Tink AES-256-GCM key held i
 
 The page camera is CameraX with our own edge finder (`PageFinder`: Otsu threshold, largest bright region, four corners) and `Matrix.setPolyToPoly` to flatten, not OpenCV (its AAR is 112 MB and can't run in JVM tests). ML Kit's Document Scanner is the fallback; ML Kit text recognition (bundled, about 11 MB per ABI) reads the page's dates for "Lands in 1984, inside the airframe gap" and the tach. `LiveCaptureTest` runs the upload path against the test server when `MTL_QA_USER` names the QA account's JSON.
 
+## Maintenance, Aircraft and Documents (phase 4: 06 M-MAINT-01..07, M-AIRCRAFT-01..06, M-DOCS-01..03, M-FLIGHT-01/03/04/05)
+
+Every screen reads this phone's mirror (`OfflineStore.records`: typed tables plus the raw `unknown_record` rows of component, document, oil, W&B and the rest) with the outbox laid over it (`overlay` in `Records.kt`), so a change made offline shows at once with "On this phone". Writes go through `OfflineStore.change`/`delete` as sync v2 mutations (squawk.*, ad.*, mx.*, component.*, proposals.*, wb.*, reading.*, meterReset.*, oil.*, document.*, timeCheck.dismiss). Squawk photos and documents are file jobs (`squawk_photo`, `document`): the sync run uploads them after the push, a photo only once its squawk is on the server, then pushes `squawkPhoto.create` (it waits on the file). Online only, disabled with the reason offline: Find ADs (the Federal Register, queried from the phone like the browser does), mechanic links, the logbook scans for completions and equipment, time checks, aircraft details (PostgREST, owner RLS). Tablet: list in the left leaf, the detail in the right (`TabletRecords`). `LiveRecordsTest` runs the writes against the test server when `MTL_QA_USER` is set.
+
 ## Sign-in (05 §8, 06 M-AUTH-01)
 
 | Method | How | Returns by |

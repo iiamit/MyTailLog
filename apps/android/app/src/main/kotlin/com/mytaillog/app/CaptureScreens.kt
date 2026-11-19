@@ -114,15 +114,44 @@ data class BookChoice(val id: String, val name: String)
 
 fun bookName(type: String, title: String?) = title?.takeIf { it.isNotBlank() } ?: type.replaceFirstChar { it.uppercase() }
 
-/** The Add sheet (06 M-ADD-01), the two phase 3 actions. Viewers never see it (07 B-VIEWER). */
+/** One Add row (06 M-FLIGHT-01): a 40dp tile in the colour of the tab it files into, title and subline, 64 tall. */
+@Composable
+private fun AddRow(section: Section, icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, sub: String, onClick: () -> Unit) {
+    val c = MyTailLogTheme.colors
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(role = Role.Button, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s3),
+    ) {
+        com.mytaillog.design.SectionIcon(section, icon, Modifier.size(40.dp))
+        Column {
+            Text(title, color = c.ink, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700)))
+            Text(sub, color = c.ink3, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+/** The Add sheet (06 M-FLIGHT-01) in its fixed order; viewers get only "Report a squawk" (07 B-VIEWER). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddSheet(onScan: () -> Unit, onFlight: () -> Unit, onDismiss: () -> Unit) {
+fun AddSheet(
+    tail: String, canEdit: Boolean, onDismiss: () -> Unit,
+    onFlight: () -> Unit = {}, onOil: () -> Unit = {}, onSquawk: () -> Unit = {}, onScan: () -> Unit = {}, onDocument: () -> Unit = {},
+) {
     val c = MyTailLogTheme.colors
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = c.leaf) {
-        Column(Modifier.padding(horizontal = Tokens.Space.s4, vertical = Tokens.Space.s2)) {
-            PhoneRow(stringResource(R.string.add_scan), onClick = { onDismiss(); onScan() })
-            PhoneRow(stringResource(R.string.add_flight), onClick = { onDismiss(); onFlight() })
+        Column(Modifier.padding(horizontal = Tokens.Space.s4).padding(bottom = Tokens.Space.s4)) {
+            Title(stringResource(R.string.add_to, tail), Modifier.padding(bottom = Tokens.Space.s2))
+            fun go(f: () -> Unit): () -> Unit = { onDismiss(); f() }
+            if (canEdit) {
+                AddRow(Section.Aircraft, LucideIcons.PlaneLanding, stringResource(R.string.add_flight), stringResource(R.string.add_flight_sub), go(onFlight))
+                AddRow(Section.Aircraft, LucideIcons.Droplet, stringResource(R.string.add_oil), stringResource(R.string.add_oil_sub), go(onOil))
+            }
+            AddRow(Section.Maint, LucideIcons.Flag, stringResource(R.string.add_squawk), stringResource(R.string.add_squawk_sub), go(onSquawk))
+            if (canEdit) {
+                AddRow(Section.Books, LucideIcons.Camera, stringResource(R.string.add_scan), stringResource(R.string.add_scan_sub), go(onScan))
+                AddRow(Section.Docs, LucideIcons.FilePlus2, stringResource(R.string.add_document), stringResource(R.string.add_document_sub), go(onDocument))
+            }
+            Text(stringResource(R.string.add_footer), color = c.ink3, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = Tokens.Space.s2))
         }
     }
 }

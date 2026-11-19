@@ -102,6 +102,8 @@ val MyTailLogTypography: Typography = Typography().let { base ->
         titleMedium = t.heading.toTextStyle(),
         bodyLarge = t.body.toTextStyle(),
         bodyMedium = t.small.toTextStyle(),
+        // A text field's label shrinks from bodyLarge to bodySmall; both must measure line height in em, or the lerp throws.
+        bodySmall = t.caption.toTextStyle(),
         labelLarge = t.bodyStrong.toTextStyle().copy(fontSize = 15.sp, lineHeight = 1.em),
         labelMedium = t.caption.toTextStyle(),
         labelSmall = t.tabLabel.toTextStyle(),

@@ -26,6 +26,7 @@ class MyTailLogApp : Application() {
     val booksApi by lazy { BooksApi(http, BuildConfig.API_URL, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY, token) }
     val syncApi by lazy { HttpSyncApi(http, BuildConfig.API_URL, token) }
     val captureApi by lazy { CaptureApi(http, BuildConfig.API_URL, token) }
+    val recordsApi by lazy { RecordsApi(http, BuildConfig.API_URL, BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_KEY, token) }
 
     /** Whether the phone has a network (06 §1.3 "offline"). */
     val online = MutableStateFlow(true)
@@ -55,7 +56,7 @@ class MyTailLogApp : Application() {
         val dir = File(filesDir, userId).apply { mkdirs() }
         val mirror = AndroidSqliteDriver(MirrorDatabase.Schema, this, File(dir, MIRROR_DB).path)
         val outbox = AndroidSqliteDriver(OutboxDatabase.Schema, this, File(dir, OUTBOX_DB).path)
-        return OfflineStore(userId, dir, mirror, outbox, syncApi, captureApi).also {
+        return OfflineStore(userId, dir, mirror, outbox, syncApi, captureApi, records = recordsApi).also {
             it.setOnline(online.value)
             offline = it
         }

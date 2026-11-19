@@ -110,10 +110,9 @@ data class LastTach(val value: Double?, val date: String?, val onPhone: Boolean 
  * recognition (bundled, offline, outside the AI allowance) on frames inside the 280×120 guide; a
  * value is found when the same plausible candidate wins 3 frames. Nothing is saved until **Save flight**,
  * which queues `reading.create` (source tach_photo) in the outbox: works in airplane mode end to end.
- * shortcut: Hobbs next, oil added and the "what it moved" summary of M-FLIGHT-04 aren't built yet.
  */
 @Composable
-fun TachScreen(host: CaptureHost, aircraft: AircraftAccess, last: LastTach, onClose: () -> Unit) {
+fun TachScreen(recs: Recs, last: LastTach, onClose: () -> Unit) {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) }
     var denied by rememberSaveable { mutableStateOf(false) }
@@ -123,7 +122,7 @@ fun TachScreen(host: CaptureHost, aircraft: AircraftAccess, last: LastTach, onCl
     LaunchedEffect(Unit) { if (!granted) permission.launch(Manifest.permission.CAMERA) }
 
     if (confirm != null) {
-        TachConfirm(host, aircraft, last, confirm!!, fromPhoto, denied, onClose)
+        FlightConfirm(recs, last, confirm!!, fromPhoto, denied, onClose)
         return
     }
     BackHandler(onBack = onClose)
@@ -247,56 +246,6 @@ fun guideRect(frameW: Int, frameH: Int, viewW: Int, viewH: Int, guideW: Float, g
     val w = (guideW * 1.2f / k).roundToInt().coerceIn(1, frameW)
     val h = (guideH * 1.2f / k).roundToInt().coerceIn(1, frameH)
     return intArrayOf((frameW - w) / 2, (frameH - h) / 2, w, h)
-}
-
-@Composable
-private fun TachConfirm(host: CaptureHost, aircraft: AircraftAccess, last: LastTach, initial: String, fromPhoto: Double?, denied: Boolean, onClose: () -> Unit) {
-    val c = MyTailLogTheme.colors
-    var text by rememberSaveable { mutableStateOf(initial) }
-    var saved by rememberSaveable { mutableStateOf<String?>(null) } // mutation id once saved
-    BackHandler(onBack = onClose)
-    val value = text.toDoubleOrNull()
-    Column(Modifier.fillMaxSize().background(c.section(Section.Status).board)) {
-        PhoneHeader(stringResource(R.string.tach_confirm_title), Section.Status, back = stringResource(R.string.section_status) to onClose)
-        PhoneLeaf {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Tokens.Space.s3)) {
-                if (saved != null && value != null) {
-                    Text(savedLine(value, last.value), color = c.ink, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
-                    if (!host.store.sync.value.online) Text(stringResource(R.string.on_this_phone_note), color = c.ink2, style = MaterialTheme.typography.bodyMedium)
-                    DButton(stringResource(R.string.done), onClose)
-                    // Undo while it is still on this phone (07 F07: removes the reading from the outbox).
-                    if (host.store.queued().any { it.id == saved && it.status == "pending" }) {
-                        DButton(stringResource(R.string.undo), { host.store.discard(saved!!); saved = null }, kind = ButtonKind.Quiet)
-                    }
-                    return@Column
-                }
-                if (denied) Text(stringResource(R.string.tach_allow_camera), color = c.ink2, style = MaterialTheme.typography.bodyMedium)
-                if (fromPhoto != null) Text(stringResource(R.string.tach_from_photo), color = c.ink2, style = MaterialTheme.typography.bodyMedium)
-                OutlinedTextField(
-                    text, { text = it.filter { ch -> ch.isDigit() || ch == '.' }.take(8) },
-                    label = { Text(stringResource(R.string.tach_label)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true, colors = dTextFieldColors(), modifier = Modifier.fillMaxWidth(),
-                )
-                if (value != null && last.value != null && value >= last.value) {
-                    Text(stringResource(R.string.tach_this_flight, fmtHours(value - last.value)), color = c.ink, style = MaterialTheme.typography.bodyLarge)
-                }
-                value?.let { tachWarning(it, last.value, last.date, last.days) }?.let { Text(it, color = c.alarmText, style = MaterialTheme.typography.bodyMedium) }
-                Text(stringResource(R.string.tach_date_today), color = c.ink3, style = MaterialTheme.typography.bodyMedium)
-                DButton(stringResource(R.string.tach_save), {
-                    val v = value ?: return@DButton
-                    val id = UUID.randomUUID().toString()
-                    val payload = buildJsonObject {
-                        put("id", id); put("date", LocalDate.now().toString()); put("tach", v)
-                        if (fromPhoto != null) { put("source", "tach_photo"); put("ocrValue", fromPhoto); put("ownerEdited", fromPhoto != v) }
-                    }
-                    host.store.enqueue(Mutation(id, "reading.create", aircraft.aircraft.id, payload), flightLabel(last.value, v), RowRef("hours_reading", id))
-                    host.kick()
-                    saved = id
-                }, enabled = value != null)
-            }
-        }
-    }
 }
 
 /** "Flight, tach 4212.4 to 4214.8" (06 M-SYS-01 waiting row). */
