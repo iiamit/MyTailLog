@@ -179,7 +179,7 @@ async function remindUser(
   tz: string | null,
 ): Promise<boolean> {
   const alerts = resolveAlerts(prefs);
-  const aircraft = await accessibleAircraft(supabase, userId, email);
+  const aircraft = await accessibleAircraft(supabase, userId, email, true);
   if (aircraft.length === 0) return false;
 
   const [{ data: logs, error: logsError }, { data: snoozes, error: snoozeError }] = await Promise.all([
@@ -298,34 +298,40 @@ async function pushReminder(
 // --- Shared helpers --------------------------------------------------------
 
 /**
- * Aircraft this user may write to, resolved WITHOUT a JWT (service role bypasses
- * RLS): rows they own, plus rows shared to their email. Mirrors the
- * has_aircraft_access choke point from 0015_multi_user.sql.
+ * Aircraft accessible to this user, resolved WITHOUT a JWT (service role bypasses
+ * RLS). Reminders require a real aircraft the user owns or can edit.
  */
 async function accessibleAircraft(
   supabase: Service,
   userId: string,
   email: string | undefined,
+  remindersOnly = false,
 ): Promise<Aircraft[]> {
   const byId = new Map<string, Aircraft>();
 
-  const { data: owned } = await supabase
+  let ownedQuery = supabase
     .from("aircraft")
     .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
     .eq("owner_id", userId);
+  if (remindersOnly) ownedQuery = ownedQuery.eq("is_demo", false);
+  const { data: owned } = await ownedQuery;
   for (const a of owned ?? []) byId.set(a.id, a);
 
   if (email) {
-    const { data: shares } = await supabase
+    let sharesQuery = supabase
       .from("aircraft_share")
       .select("aircraft_id")
       .ilike("invited_email", email);
+    if (remindersOnly) sharesQuery = sharesQuery.eq("role", "editor");
+    const { data: shares } = await sharesQuery;
     const ids = (shares ?? []).map((s) => s.aircraft_id).filter((id) => !byId.has(id));
     if (ids.length) {
-      const { data: shared } = await supabase
+      let sharedQuery = supabase
         .from("aircraft")
         .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
         .in("id", ids);
+      if (remindersOnly) sharedQuery = sharedQuery.eq("is_demo", false);
+      const { data: shared } = await sharedQuery;
       for (const a of shared ?? []) byId.set(a.id, a);
     }
   }
