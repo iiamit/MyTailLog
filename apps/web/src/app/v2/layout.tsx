@@ -1,20 +1,6 @@
-import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { THEME_COOKIE, parseTheme } from "@/lib/uiV2";
-
-// Direction D's two voices (01 §5). Loaded only under /v2 so v1 pages don't pay for them.
-const franklin = localFont({
-  src: "../fonts/LibreFranklin.ttf",
-  weight: "100 900",
-  variable: "--font-libre-franklin",
-  display: "swap",
-});
-const literata = localFont({
-  src: "../fonts/Literata.ttf",
-  weight: "200 900",
-  variable: "--font-literata",
-  display: "swap",
-});
+import { franklin, literata } from "@/app/fontsV2";
 
 /** Scope for the new design: tokens.css and v2.css apply inside [data-ui="v2"] only. */
 export default async function V2Layout({ children }: { children: React.ReactNode }) {

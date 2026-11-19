@@ -295,8 +295,8 @@ export default async function SquawksPage({
     const canAdd = context!.canEdit || s.reported_by === userId;
     const photos: PhotoView[] = photosOf(s.id).map((p) => ({
       id: p.id,
-      src: `/v2${self}/photo/${p.id}`,
-      thumb: `/v2${self}/photo/${p.id}?thumb`,
+      src: `/api/aircraft/${id}/squawk-photos/${p.id}`,
+      thumb: `/api/aircraft/${id}/squawk-photos/${p.id}?thumb`,
       caption: fmtDay((p.taken_at ?? p.created_at).slice(0, 10)),
       canDelete: context!.canEdit || p.created_by === userId,
     }));

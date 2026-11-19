@@ -121,6 +121,34 @@ export async function roomEntries(room: Room, logbookId: string, q: string, page
   return data ?? [];
 }
 
+/** The entries behind a map stop (W-SHARE-02 "a selected stop shows its entry text"), under the same rules as roomEntries. */
+export async function roomEntriesByIds(room: Room, ids: string[]) {
+  if (!ids.length || !room.logbook_ids.length) return [];
+  const { data } = await createServiceClient()
+    .from("log_entry")
+    .select("id, logbook_id, page_id, entry_date, tach, description, work_performed, trust")
+    .eq("aircraft_id", room.aircraft_id)
+    .in("logbook_id", room.logbook_ids)
+    .in("id", ids.slice(0, 50))
+    .in("trust", ["confirmed", "signed"])
+    .is("replaced_by_entry_id", null)
+    .is("authored_superseded_by", null)
+    .order("entry_date");
+  return data ?? [];
+}
+
+/** Confirmed entries per logbook of the room, for the tab and chip counts. */
+export async function roomEntryCounts(room: Room): Promise<Record<string, number>> {
+  const svc = createServiceClient();
+  const counts = await Promise.all(room.logbook_ids.map(async (id) => {
+    const { count } = await svc.from("log_entry").select("id", { count: "exact", head: true })
+      .eq("aircraft_id", room.aircraft_id).eq("logbook_id", id).in("trust", ["confirmed", "signed"])
+      .is("replaced_by_entry_id", null).is("authored_superseded_by", null);
+    return [id, count ?? 0] as const;
+  }));
+  return Object.fromEntries(counts);
+}
+
 export async function roomPage(room: Room, pageId: string) {
   const { data } = await createServiceClient()
     .from("page")

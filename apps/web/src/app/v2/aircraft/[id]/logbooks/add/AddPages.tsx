@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CloudUpload, Copy, Upload, X } from "lucide-react";
 import { HungSection, Leaf, Leaves } from "@/ui/Board";
 import { Button } from "@/ui/Button";
+import { Qr } from "@/ui/Qr";
 import { assessQuality, type QualityReport } from "@/lib/capture/imageQuality";
 import { isSupportedFile, rasterizeFile } from "@/lib/capture/importFiles";
 import { makeThumbnail } from "@/lib/capture/thumbnail";
@@ -304,14 +305,17 @@ export function AddPages({
           <section aria-labelledby="phone-title" className="rounded-[var(--radius-s)] bg-leaf-2 px-4 py-3.5">
             <h3 id="phone-title" className="text-body-strong">Or scan with your phone</h3>
             <p className="mt-1 text-small text-ink-2">
-              Open this link on your phone. It opens the scanner on this logbook, and every page you photograph joins the queue and lands on the map.
+              Scan the code or open this link on your phone. It opens the scanner on this logbook, and every page you photograph joins the queue and lands on the map.
               Works without signal. Pages wait on the phone and upload later.
             </p>
-            <div className="mt-2 flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-[var(--radius-s)] bg-leaf px-2 py-1.5 text-caption">{handoff}</code>
-              <Button size="s" onClick={() => { void navigator.clipboard?.writeText(handoff).then(() => setCopied(true)); }}>
-                <Copy aria-hidden size={16} /> {copied ? "Copied" : "Copy link"}
-              </Button>
+            <div className="mt-3 flex items-center gap-3">
+              <Qr value={handoff} size={120} label="QR code: scan it with your phone's camera to open the scanner on this logbook" />
+              <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+                <code className="w-full truncate rounded-[var(--radius-s)] bg-leaf px-2 py-1.5 text-caption">{handoff}</code>
+                <Button size="s" onClick={() => { void navigator.clipboard?.writeText(handoff).then(() => setCopied(true)); }}>
+                  <Copy aria-hidden size={16} /> {copied ? "Copied" : "Copy link"}
+                </Button>
+              </div>
             </div>
           </section>
         </div>

@@ -264,7 +264,7 @@ export function monthTicks(from: string, to: string): { x: number; label: string
     ticks.push({ x, label: new Date(`${d}T00:00:00Z`).toLocaleString("en-US", { month: "short", timeZone: "UTC" }), anchor: "middle" });
   }
   // The horizon tick names its month and year, right-aligned; a two-month tick crowding it gives way.
-  while (ticks.length > 1 && LA.horizonX - ticks[ticks.length - 1].x < 60) ticks.pop();
+  while (ticks.length > 1 && LA.horizonX - ticks[ticks.length - 1].x < 76) ticks.pop();
   const end = new Date(`${to}T00:00:00Z`);
   ticks.push({ x: LA.horizonX, label: `${end.toLocaleString("en-US", { month: "short", timeZone: "UTC" })} ${end.getUTCFullYear()}`, anchor: "end" });
   return ticks;

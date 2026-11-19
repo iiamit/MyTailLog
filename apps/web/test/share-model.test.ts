@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { buildDossier, buildSummary, pageCode, roomMap, type ShareExtras, type ShareInput } from "../src/lib/share/model";
+import { buildDossier, buildSummary, pageCode, roomMap, summaryText, type ShareExtras, type ShareInput } from "../src/lib/share/model";
 import type { MapInput } from "../src/lib/mapModel";
 
 // W-SHARE-03/04 view models and the 13 §7.2 rule: unconfirmed entries change no record room content, dossier,
@@ -80,4 +80,15 @@ test("PDF: the summary and dossier render in-process", async () => {
 test("dossier: nothing confirmed → the empty state", () => {
   const none = { ...base.input, log_entry: base.input.log_entry.map((e: object) => ({ ...e, trust: "ai_read" })) };
   assert.equal(buildDossier(share({ ...base, input: none })).empty, true);
+});
+
+test("summary as text (W-SHARE-04 Copy as text): every row with its page, squawks only when shown", () => {
+  const m = buildSummary(share(base));
+  const text = summaryText(m);
+  assert.ok(text.startsWith("N734DM maintenance summary\n"));
+  for (const i of m.items) assert.ok(text.includes(`- ${i.label}: ${i.status}.`), i.label);
+  for (const i of m.items.filter((x) => x.page)) assert.ok(text.includes(`[${i.page}]`));
+  assert.match(text, /Left brake soft/);
+  assert.doesNotMatch(summaryText(buildSummary(share(base), { includeSquawks: false })), /Left brake soft|Open squawks/);
+  assert.ok(text.endsWith(m.footer));
 });
