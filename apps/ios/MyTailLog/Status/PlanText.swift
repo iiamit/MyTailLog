@@ -6,40 +6,6 @@ import Foundation
 
 // MARK: Visits (09 §2.5, §3.5)
 
-struct Visits: Decodable, Equatable, Sendable {
-    var suggested: [VisitView] = []
-    var planned: [VisitView] = []
-
-    init(suggested: [VisitView] = [], planned: [VisitView] = []) { self.suggested = suggested; self.planned = planned }
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        suggested = try c.decodeIfPresent([VisitView].self, forKey: .suggested) ?? []
-        planned = try c.decodeIfPresent([VisitView].self, forKey: .planned) ?? []
-    }
-    private enum CodingKeys: String, CodingKey { case suggested, planned }
-
-    var all: [VisitView] { planned + suggested }
-}
-
-struct VisitItem: Decodable, Equatable, Sendable {
-    let key: String
-    let status: String
-    let done: Bool
-}
-
-/// A suggested visit (`id` nil, `suggestionKey` set) or a booking.
-struct VisitView: Decodable, Equatable, Sendable {
-    var id: String?
-    let suggestionKey: String?
-    var status: String
-    var weekOf: String
-    var visitDate: String?
-    var providerIds: [String]
-    let items: [VisitItem]
-
-    var open: [VisitItem] { items.filter { !$0.done } }
-}
-
 // MARK: planDate's answer (apps/core PlanDate.kt)
 
 struct PlanResult: Decodable, Equatable, Sendable {

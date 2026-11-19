@@ -11,6 +11,26 @@ final class TabModel {
     /// Set by the Add sheet's "Scan logbook pages": Logbooks opens M-SCAN-01 when it shows, and clears it.
     var scanPending = false
     func requestScan() { scanPending = true }
+    /// Set by a link to Review: Logbooks opens the review flow when it shows, and clears it.
+    var reviewPending = false
+    /// Log a flight or Report a squawk asked for by a link, an intent or ⇧⌘F; the shell presents it.
+    var addRequest: AddAction?
+    /// Notifications or Reminders over the shell.
+    var sheet: AccountSheet?
+
+    /// Opens what a link asks for (05 §5.5); `nil` section keeps the open one.
+    func go(_ landing: Landing) {
+        let section = landing.section ?? selected
+        selected = section
+        switch landing.then {
+        case .none: paths[section] = NavigationPath()
+        case .push(let route): var p = NavigationPath(); p.append(route); paths[section] = p
+        case .add(let a): addRequest = a
+        case .scan: paths[section] = NavigationPath(); scanPending = true
+        case .review: paths[section] = NavigationPath(); reviewPending = true
+        case .sheet(let s): sheet = s
+        }
+    }
 
     init(selected: Section = .status) {
         self.selected = selected

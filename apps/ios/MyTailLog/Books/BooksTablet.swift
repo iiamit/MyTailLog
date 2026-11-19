@@ -39,6 +39,13 @@ struct BooksTablet: View {
             case .list: EntriesListScreen(model: model, actions: actions)
             }
         }
+        // A link to Review (05 §5.5) opens the flow here; it also ends the reading Live Activity (05 §12).
+        .task(id: tabs.reviewPending) {
+            guard tabs.reviewPending else { return }
+            tabs.reviewPending = false
+            ReadingLive.shared.endAll()
+            cover = .review(start: nil)
+        }
         .fullScreenCover(item: $cover) { c in
             switch c {
             case .pages(let ids, let current, let box):
