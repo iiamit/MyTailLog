@@ -249,7 +249,7 @@ private fun LazyListScope.statusContent(
         items(body.items.take(3), key = { it.key }) { DueRow(it, today, onClick = { onOpen(it.key) }) }
         body.meters[body.rate.meter]?.let { m ->
             if (m.stitched != null && m.asOf != null) item {
-                val meter = stringResource(R.string.status_meter_line, meterValue(m.stitched!!, body.rate.meter).replaceFirstChar { it.uppercase() }, fmtDate(m.asOf!!))
+                val meter = stringResource(R.string.status_meter_line, "${body.rate.meter.replaceFirstChar { it.uppercase() }} ${hours1(m.stitched!!)}", fmtDate(m.asOf!!))
                 val rate = if (body.rate.hoursPerWeek > 0) " " + stringResource(R.string.status_rate_line, hours1(body.rate.hoursPerWeek)) else ""
                 Small(meter + rate, Modifier.padding(top = Tokens.Space.s3))
             }
