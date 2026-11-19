@@ -14,6 +14,7 @@ struct StatusHome: View {
     var body: some View {
         PhoneLeaf {
             StatusContent(model: model, mode: .home, open: open)
+            StatusCapture(model: model)
         }
         .refreshable { await model.refresh() }
         .navigationDestination(for: StatusRoute.self) { route in
