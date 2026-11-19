@@ -10,6 +10,7 @@ struct RecLeaf<Content: View, Footer: View>: View {
     @ViewBuilder var footer: Footer
     @Environment(\.recNav) private var nav
     @Environment(Recs.self) private var recs: Recs?
+    @State private var footerHeight: CGFloat = 1
 
     var body: some View {
         Group {
@@ -32,11 +33,14 @@ struct RecLeaf<Content: View, Footer: View>: View {
     @ViewBuilder private var footerBar: some View {
         let f = footer
         if !(f is EmptyView) {
+            // A footer whose content is conditional and absent right now draws no bar.
+            let shown = footerHeight > 0
             VStack(spacing: Tokens.Space.s2) { f }
-                .padding(.horizontal, Tokens.Space.s4)
-                .padding(.vertical, Tokens.Space.s3)
-                .background(Tokens.Colors.leaf)
-                .overlay(alignment: .top) { Rule() }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { footerHeight = $0 }
+                .padding(.horizontal, shown ? Tokens.Space.s4 : 0)
+                .padding(.vertical, shown ? Tokens.Space.s3 : 0)
+                .background(shown ? Tokens.Colors.leaf : .clear)
+                .overlay(alignment: .top) { if shown { Rule() } }
                 .padding(.horizontal, nav.tablet ? 0 : Tokens.Space.s2)
         }
     }

@@ -188,3 +188,107 @@ struct RecordsAPI: Sendable {
         }
     }
 }
+
+// MARK: Phase 5: plan and share (09 §4.4, §4.5, §4.11; online only, never queued). Port of Android's RecordsApi.kt.
+
+/// One person with access to the aircraft (aircraft_share).
+struct Person: Identifiable, Equatable, Sendable {
+    let email: String
+    let role: String
+    var id: String { email }
+}
+
+extension RecordsAPI {
+    private func get(_ path: String, _ query: [URLQueryItem] = []) -> URLRequest {
+        var c = URLComponents(url: url(path), resolvingAgainstBaseURL: false)!
+        if !query.isEmpty { c.queryItems = query }
+        return URLRequest(url: c.url!, timeoutInterval: 60)
+    }
+
+    /// The body of a 2xx answer, or the server's `error` verbatim.
+    private func body(_ request: URLRequest) async throws -> Data {
+        let (data, status) = try await send(request)
+        guard (200..<300).contains(status) else {
+            let o = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            throw Failure(status: status, message: o?["error"] as? String ?? "The server refused it (\(status)).")
+        }
+        return data
+    }
+
+    /// Suggested and planned visits over Plan ahead's 24 months (the snapshot carries Status's 12), raw for core's
+    /// planDate and decoded for the screens.
+    func visits(aircraftId: String) async throws -> (raw: String, visits: Visits) {
+        let data = try await body(get("api/aircraft/\(aircraftId)/visits", [URLQueryItem(name: "horizonMonths", value: "24")]))
+        return (String(decoding: data, as: UTF8.self), try JSONDecoder().decode(Visits.self, from: data))
+    }
+
+    /// A 30-day mechanic link for a planned visit (D12): `{ url, expiresAt, mailto }`. Never sends anything itself.
+    func sendVisit(aircraftId: String, visitId: String, recipient: String, providerId: String?) async throws -> [String: Any] {
+        var b: [String: Any] = ["recipientLabel": recipient, "expiresInDays": 30]
+        if let providerId { b["providerId"] = providerId }
+        return try await json(post("api/aircraft/\(aircraftId)/visits/\(visitId)/send", b))
+    }
+
+    /// The owner's record room links as the server sends them (kept on the phone so QR and copy work offline).
+    func rooms(aircraftId: String) async throws -> Data { try await body(get("api/aircraft/\(aircraftId)/record-rooms")) }
+
+    /// POST …/record-rooms: `{ id, url, qrPayload, expiresAt }`.
+    func createRoom(aircraftId: String, _ b: [String: Any]) async throws -> [String: Any] {
+        try await json(post("api/aircraft/\(aircraftId)/record-rooms", b))
+    }
+
+    /// PATCH …/record-rooms/{id}: `{ extendDays: 30 }` or `{ revoke: true }`.
+    func updateRoom(aircraftId: String, roomId: String, _ b: [String: Any]) async throws -> [String: Any] {
+        var r = post("api/aircraft/\(aircraftId)/record-rooms/\(roomId)", b)
+        r.httpMethod = "PATCH"
+        return try await json(r)
+    }
+
+    func roomOpens(aircraftId: String, roomId: String) async throws -> [RoomOpen] {
+        parseOpens(try await body(get("api/aircraft/\(aircraftId)/record-rooms/\(roomId)/opens")))
+    }
+
+    /// The maintenance summary or pre-buy dossier PDF, or the due list CSV.
+    func file(aircraftId: String, _ kind: ShareFile) async throws -> Data {
+        var r = get("api/aircraft/\(aircraftId)/\(kind.path)", kind == .due ? [URLQueryItem(name: "type", value: "due")] : [])
+        r.timeoutInterval = 120
+        do { return try await body(r) } catch let e as Failure { throw Failure(status: e.status, message: "That file couldn't be made (\(e.status)).") }
+    }
+
+    // People with access: aircraft_share through PostgREST; the owner-only RLS policy is the guard, as on the web.
+
+    private func rest(_ query: String, method: String = "GET", _ b: [String: Any]? = nil, prefer: String? = nil) throws -> URLRequest {
+        guard let supabase else { throw Failure(status: 0, message: "People can't be reached from this phone.") }
+        var r = URLRequest(url: URL(string: supabase.url.appending(path: "rest/v1/aircraft_share").absoluteString + "?" + query)!, timeoutInterval: 30)
+        r.httpMethod = method
+        r.setValue(supabase.key, forHTTPHeaderField: "apikey")
+        if let prefer { r.setValue(prefer, forHTTPHeaderField: "Prefer") }
+        if let b {
+            r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            r.httpBody = try JSONSerialization.data(withJSONObject: b)
+        }
+        return r
+    }
+
+    func people(aircraftId: String) async throws -> [Person] {
+        let (data, status) = try await send(rest("aircraft_id=eq.\(aircraftId)&select=invited_email,role&order=created_at"))
+        guard (200..<300).contains(status) else { throw Failure(status: status, message: "People couldn't be loaded (\(status)).") }
+        return ((try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] ?? []).map {
+            Person(email: $0["invited_email"] as? String ?? "", role: $0["role"] as? String ?? "viewer")
+        }
+    }
+
+    /// Give `email` access as editor or viewer, or change their role (upsert on aircraft and email, as addShare does).
+    func setPerson(aircraftId: String, ownerId: String, email: String, role: String) async throws {
+        let b: [String: Any] = ["aircraft_id": aircraftId, "invited_email": email.trimmingCharacters(in: .whitespaces).lowercased(),
+                                "role": role, "invited_by": ownerId]
+        let (_, status) = try await send(rest("on_conflict=aircraft_id,invited_email", method: "POST", b, prefer: "resolution=merge-duplicates,return=minimal"))
+        guard (200..<300).contains(status) else { throw Failure(status: status, message: "Only the aircraft owner can share it.") }
+    }
+
+    func removePerson(aircraftId: String, email: String) async throws {
+        let e = email.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? email
+        let (_, status) = try await send(rest("aircraft_id=eq.\(aircraftId)&invited_email=eq.\(e)", method: "DELETE"))
+        guard (200..<300).contains(status) else { throw Failure(status: status, message: "Not removed (\(status)).") }
+    }
+}

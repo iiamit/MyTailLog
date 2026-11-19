@@ -111,6 +111,8 @@ final class OfflineStore {
     var refused: [OutboxItem] { items.filter { $0.status == "refused" } }
     /// Page files not yet on the server (thumbnails ride along with their page).
     var heldPages: [FileJob] { files.filter { $0.kind == "page" && $0.status != "registered" } }
+    /// Documents not yet on the server: their upload is their create, so no outbox change stands for them.
+    var heldDocuments: [FileJob] { files.filter { $0.kind == Self.document } }
 
     func reload() {
         guard !closed else { return }

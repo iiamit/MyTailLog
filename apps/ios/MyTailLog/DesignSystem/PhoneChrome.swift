@@ -223,7 +223,7 @@ struct AccountButton<Label: View>: View {
     /// "3 changes and 2 pages" not yet on the server, or nil.
     private var unsent: String? {
         guard let offline else { return nil }
-        let c = offline.items.count, p = offline.heldPages.count
+        let c = offline.items.count + offline.heldDocuments.count, p = offline.heldPages.count
         guard c + p > 0 else { return nil }
         return [c > 0 ? SyncBars.plural(c, "change") : nil, p > 0 ? SyncBars.plural(p, "page") : nil].compactMap { $0 }.joined(separator: " and ")
     }

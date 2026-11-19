@@ -79,7 +79,7 @@ func patchOf(_ type: String, _ p: Row) -> Row? {
         return o
     case "component.remove": return obj([("is_installed", .bool(false)), ("removal_date", p["date"]), ("removal_entry_id", p["entryId"])])
     case "component.reinstall": return ["is_installed": .bool(true), "removal_date": .null, "removal_entry_id": .null]
-    case "wb.upsert", "document.update": if case .object(let o)? = p["fields"] { return o }; return [:]
+    case "wb.upsert", "document.update", "provider.upsert": if case .object(let o)? = p["fields"] { return o }; return [:]
     case "document.setEntry": return ["log_entry_id": p["entryId"] ?? .null]
     case "document.setExpiry": return obj([("track_expiry", p["trackExpiry"]), ("expires_on", p["expiresOn"] ?? .null)])
     default: return type.hasSuffix(".delete") ? nil : [:]
@@ -244,6 +244,8 @@ enum RecRoute: Hashable {
     case squawk(String), ad(String, record: Bool = false), item(String), findAds
     case hours, equipment, component(String), wb, oil, details
     case documents, doc(String)
+    /// Phase 5: Plan ahead and a visit (Status), a record room link and Links and people (Share).
+    case plan, visit(String), link(String, made: Bool = false), links
 }
 
 /// How a phase 4 screen moves: the phone's stack, or the tablet's right leaf.
