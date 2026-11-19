@@ -9,6 +9,8 @@ struct RootView: View {
     @State private var tabs = TabModel()
     /// One Status model per signed-in user, so another account never sees the last one's aircraft.
     @State private var status: StatusModel?
+    /// The open aircraft's logbooks; a new one when the aircraft changes.
+    @State private var books: BooksModel?
 
     var body: some View {
         Group {
@@ -22,6 +24,7 @@ struct RootView: View {
         }
         .environment(tabs)
         .environment(status)
+        .environment(books)
         .environment(\.aircraftLine, status?.line ?? AircraftLine())
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
@@ -30,6 +33,14 @@ struct RootView: View {
         .task(id: store.session?.userId) {
             status = store.session?.userId.map(makeStatus)
         }
+        .task(id: status?.current?.id) {
+            books = status?.current.map(makeBooks)
+        }
+    }
+
+    private func makeBooks(_ aircraft: AircraftAccess) -> BooksModel {
+        let store = store
+        return BooksModel(aircraft: aircraft, api: statusAPI, token: { try await store.currentSession().accessToken })
     }
 
     private func makeStatus(userId: String) -> StatusModel {
@@ -68,11 +79,14 @@ struct PhoneShell: View {
 struct PhoneSectionScreen: View {
     let section: Section
     @Environment(StatusModel.self) private var status: StatusModel?
+    @Environment(BooksModel.self) private var books: BooksModel?
 
     var body: some View {
         PhoneBoard(section: section) {
             if section == .status, let status {
                 StatusHome(model: status)
+            } else if section == .books, let books {
+                BooksHome(model: books).id(books.aircraft.id)
             } else {
                 PhoneLeaf {
                     Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)
@@ -125,6 +139,7 @@ struct TabletShell: View {
 struct TabletBoard: View {
     let section: Section
     @Environment(StatusModel.self) private var status: StatusModel?
+    @Environment(BooksModel.self) private var books: BooksModel?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -135,6 +150,8 @@ struct TabletBoard: View {
                 .frame(minHeight: Tokens.Size.boardheadMin, alignment: .bottomLeading)
             if section == .status, let status {
                 StatusTablet(model: status)
+            } else if section == .books, let books {
+                BooksTablet(model: books).id(books.aircraft.id)
             } else {
                 TabletLeaf {
                     Text(section.emptyLine).dFont(.body).foregroundStyle(Tokens.Colors.ink)

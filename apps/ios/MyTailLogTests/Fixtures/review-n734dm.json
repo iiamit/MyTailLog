@@ -1,0 +1,481 @@
+{
+ "logbooks": [
+  {
+   "id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "type": "airframe",
+   "title": null
+  },
+  {
+   "id": "9d28bc25-f9a1-47f8-8bd5-ada761d128f3",
+   "type": "engine",
+   "title": null
+  },
+  {
+   "id": "84eb9ad7-ceb0-4311-bd11-38cdd6a00138",
+   "type": "prop",
+   "title": null
+  },
+  {
+   "id": "91e1b762-b2dd-49a0-a771-c089c6dfbb3f",
+   "type": "avionics",
+   "title": null
+  },
+  {
+   "id": "b744fec3-7f1b-40ee-80a2-3b8c68fccd09",
+   "type": "other",
+   "title": null
+  }
+ ],
+ "pages": [
+  {
+   "id": "744bf643-8272-52cd-9620-9ecb28570d1b",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "page_sequence": 1,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "1978-06-02  9.1\nNew aircraft. Airworthiness certificate issued.\nPre-delivery inspection completed. All systems normal.\nCessna Aircraft Co.",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "26f0632a-28a3-521d-91de-5e971f905308",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "page_sequence": 2,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "1998-04-18  2101.5\nAnnual inspection.\n1. Performed annual inspection IAW FAR 43 App. D. 2. Replaced left main tire. 3. Lubricated all controls. Aircraft returned to service.\nR. Mitchell  A&P 2214467 IA",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "0fdd058c-b5df-5e50-8731-11c875a4c310",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "page_sequence": 3,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2011-08-22  3384.0\nAnnual inspection. AD compliance.\n1. Annual inspection IAW FAR 43 App. D. 2. Complied with AD 2011-10-09 seat rail inspection \u2014 no wear beyond limits, next due in 100 hrs. 3. Replaced ELT battery.\nD. Alvarez  A&P 3105582 IA",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "696ebb28-1959-502e-91ae-1f970099e96d",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "page_sequence": 4,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2019-03-12  3891.2\nAvionics upgrade \u2014 see avionics log.\nRemoved King KX-155 NAV/COM. Installed Garmin GTN 650 GPS/NAV/COM per STC SA01714WI. Weight & balance amended, new equipment list issued. Form 337 filed.\nSkyTech Avionics  CRS #ST4R881K",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "d1c46293-f404-51e0-bd45-71038a378e7b",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "page_sequence": 5,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2024-05-01  4102.7\nTransponder & altimeter certification.\nTransponder tested and inspected IAW FAR 91.413 / Part 43 App. F. Altimeter/static system IAW 91.411 / App. E. Systems approved.\nAeroCheck Instruments  CRS #AC2Y441L\n\n2025-07-20  4168.3\nAnnual inspection.\n1. Annual inspection IAW FAR 43 App. D. 2. Complied with AD 2011-10-09 seat rails \u2014 satisfactory. 3. Replaced vacuum pump filter. 4. Patched left wing fairing crack. Aircraft returned to service.\nD. Alvarez  A&P 3105582 IA",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "c598b3a6-3de8-5e02-a636-db43a16d59a2",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "page_sequence": 6,
+   "review_status": "unreviewed",
+   "extraction_status": "extracted",
+   "ocr_text": "2026-03-02  4205.8\nReplaced landing light.\nReplaced burned out landing light lamp (GE 4509) in L/H wing. Ops check good.\nM. Torres  A&P 3667012\n\n2026-07-18  4219.6\nAnnual inspection.\n1. Annual inspection IAW FAR 43 App. D. 2. Complied with AD 2011-10-09 seat rails, no wear beyond limits. 3. ELT inspected IAW 91.207, battery exp 02/2027. 4. Replaced nose strut seals. Aircraft found airworthy and returned to service.\nD. Alvarez  A&P 3105582 IA",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-11-12T15:05:00+00:00"
+  },
+  {
+   "id": "ebdeecac-00f8-599f-95d5-fd773c8184a3",
+   "logbook_id": "9d28bc25-f9a1-47f8-8bd5-ada761d128f3",
+   "page_sequence": 1,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2005-09-14  2803.0\nEngine overhaul.\nLycoming O-320-H2AD overhauled to service limits by Signal Engines. Zero time SMOH. New Slick magnetos, harness, and plugs installed. Test run normal.\nSignal Engines Inc.  CRS #SE9K204M",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "73b28406-09fc-5f3c-9701-e92f8a0b03d9",
+   "logbook_id": "9d28bc25-f9a1-47f8-8bd5-ada761d128f3",
+   "page_sequence": 2,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2024-11-02  4131.5\nOil change.\nDrained oil, replaced filter (CH48110-1), serviced with 7 qts Phillips XC 20W-50 + CamGuard. Cut filter \u2014 no metal. Compressions 76/74/75/77 over 80.\nM. Torres  A&P 3667012\n\n2025-06-08  4172.1\nOil change.\nDrained oil, new filter, 7 qts Phillips XC 20W-50. Oil sample sent to Blackstone \u2014 results normal. No leaks noted.\nM. Torres  A&P 3667012",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "1b53b906-0767-5323-953c-0ed6a5118fea",
+   "logbook_id": "9d28bc25-f9a1-47f8-8bd5-ada761d128f3",
+   "page_sequence": 3,
+   "review_status": "unreviewed",
+   "extraction_status": "extracted",
+   "ocr_text": "2025-10-11  4196.4\nOil change.\nDrained oil, new filter CH48110-1, 7 qts Phillips XC 20W-50 + CamGuard. Cut filter, no metal.\nM. Torres  A&P 3667012\n\n2026-07-18  4219.6\nAnnual inspection, engine.\nInspected engine IAW FAR 43 App. D. Compressions 75/73/76/76 over 80. Cleaned, gapped and rotated plugs. Mags timed 25 BTC. No leaks.\nD. Alvarez  A&P 3105582 IA",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-11-12T15:05:00+00:00"
+  },
+  {
+   "id": "3402546b-b80a-52de-8407-c6ffcd3fb3a4",
+   "logbook_id": "84eb9ad7-ceb0-4311-bd11-38cdd6a00138",
+   "page_sequence": 1,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2010-04-30  3204.8\nPropeller overhaul.\nMcCauley 1C160/DTM7557 overhauled by ProProp Services. New seals, blades dressed and balanced. Zero time SPOH.\nProProp Services  CRS #PP7Q118N",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "2fdcb7e4-7a7b-5d5d-aef2-5da3494fdffb",
+   "logbook_id": "84eb9ad7-ceb0-4311-bd11-38cdd6a00138",
+   "page_sequence": 2,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2025-07-20  4168.3\nAnnual inspection \u2014 propeller.\nInspected propeller and spinner IAW FAR 43 App. D. Minor nicks dressed. No cracks or oil leaks.\nD. Alvarez  A&P 3105582 IA",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "31e4e2dc-f5f3-5c5f-856e-0abb0972a4a2",
+   "logbook_id": "91e1b762-b2dd-49a0-a771-c089c6dfbb3f",
+   "page_sequence": 1,
+   "review_status": "confirmed",
+   "extraction_status": "extracted",
+   "ocr_text": "2019-03-12  3891.2\nGTN 650 installation.\nInstalled Garmin GTN 650 per STC SA01714WI: new tray, antenna (GA 35), wiring. Interfaced to existing GI 106A CDI. Ground and flight checked \u2014 normal.\nSkyTech Avionics  CRS #ST4R881K\n\n2023-02-11  4038.9\nELT battery replacement.\nReplaced ELT battery (ACK E-04). New expiration: Feb 2027. Self-test normal, remote switch checked.\nM. Torres  A&P 3667012",
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-01-10T17:20:00+00:00"
+  },
+  {
+   "id": "b1ca256a-a665-55c5-a59d-13a473328bb9",
+   "logbook_id": "9d28bc25-f9a1-47f8-8bd5-ada761d128f3",
+   "page_sequence": 4,
+   "review_status": "unreviewed",
+   "extraction_status": "queued",
+   "ocr_text": null,
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-11-12T15:05:00+00:00"
+  },
+  {
+   "id": "153929b1-23b4-5b1c-9348-953ec581f3f6",
+   "logbook_id": "91e1b762-b2dd-49a0-a771-c089c6dfbb3f",
+   "page_sequence": 2,
+   "review_status": "unreviewed",
+   "extraction_status": "queued",
+   "ocr_text": null,
+   "unread_rotated_content": false,
+   "updated_at": "2026-11-19T00:25:16.011695+00:00",
+   "captured_at": "2026-11-12T15:05:00+00:00"
+  }
+ ],
+ "entries": [
+  {
+   "id": "793c6000-3b1e-5629-9539-5e866d60e738",
+   "page_id": "c598b3a6-3de8-5e02-a636-db43a16d59a2",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "entry_date": "2026-03-02",
+   "tach": 4205.8,
+   "hobbs": null,
+   "description": "Replaced landing light.",
+   "work_performed": "Replaced burned out landing light lamp (GE 4509) in L/H wing. Ops check good.",
+   "signature_name": "M. Torres",
+   "mechanic_cert_number": "A&P 3667012",
+   "ad_refs": [],
+   "confidence": 0.81,
+   "field_confidence": {
+    "tach": 0.81,
+    "hobbs": 0.81,
+    "parts": 0.81,
+    "ad_refs": 0.81,
+    "sb_refs": 0.81,
+    "entry_date": 0.62,
+    "description": 0.81,
+    "signature_name": 0.81,
+    "work_performed": 0.81,
+    "mechanic_cert_number": 0.81
+   },
+   "field_boxes": {
+    "tach": {
+     "h": 0.0183,
+     "w": 0.0745,
+     "x": 0.1565,
+     "y": 0.1751
+    },
+    "hobbs": null,
+    "parts": null,
+    "ad_refs": null,
+    "sb_refs": null,
+    "entry_date": {
+     "h": 0.0184,
+     "w": 0.0774,
+     "x": 0.0415,
+     "y": 0.1766
+    },
+    "description": {
+     "h": 0.0194,
+     "w": 0.1527,
+     "x": 0.2632,
+     "y": 0.1727
+    },
+    "signature_name": {
+     "h": 0.0273,
+     "w": 0.1232,
+     "x": 0.5136,
+     "y": 0.2078
+    },
+    "work_performed": {
+     "h": 0.0246,
+     "w": 0.547,
+     "x": 0.2642,
+     "y": 0.1893
+    },
+    "mechanic_cert_number": {
+     "h": 0.019,
+     "w": 0.1256,
+     "x": 0.6488,
+     "y": 0.2117
+    }
+   },
+   "owner_confirmed": false,
+   "is_continuation": false,
+   "entry_index": 0,
+   "trust": "ai_read",
+   "updated_at": "2026-11-19T00:25:16.143389+00:00"
+  },
+  {
+   "id": "4512d7da-ba38-5c06-92a4-6ec49317bc75",
+   "page_id": "c598b3a6-3de8-5e02-a636-db43a16d59a2",
+   "logbook_id": "4d7a696b-901e-47c2-818b-63f434ca39d1",
+   "entry_date": "2026-07-18",
+   "tach": 4219.6,
+   "hobbs": null,
+   "description": "Annual inspection.",
+   "work_performed": "1. Annual inspection IAW FAR 43 App. D. 2. Complied with AD 2011-10-09 seat rails, no wear beyond limits. 3. ELT inspected IAW 91.207, battery exp 02/2027. 4. Replaced nose strut seals. Aircraft found airworthy and returned to service.",
+   "signature_name": "D. Alvarez",
+   "mechanic_cert_number": "A&P 3105582 IA",
+   "ad_refs": [
+    "2011-10-09"
+   ],
+   "confidence": 0.88,
+   "field_confidence": {
+    "tach": 0.58,
+    "hobbs": 0.88,
+    "parts": 0.88,
+    "ad_refs": 0.88,
+    "sb_refs": 0.88,
+    "entry_date": 0.88,
+    "description": 0.88,
+    "signature_name": 0.88,
+    "work_performed": 0.88,
+    "mechanic_cert_number": 0.88
+   },
+   "field_boxes": {
+    "tach": {
+     "h": 0.0202,
+     "w": 0.0749,
+     "x": 0.1585,
+     "y": 0.2613
+    },
+    "hobbs": null,
+    "parts": null,
+    "ad_refs": null,
+    "sb_refs": null,
+    "entry_date": {
+     "h": 0.0204,
+     "w": 0.0887,
+     "x": 0.0435,
+     "y": 0.2626
+    },
+    "description": {
+     "h": 0.0215,
+     "w": 0.1718,
+     "x": 0.2677,
+     "y": 0.2586
+    },
+    "signature_name": {
+     "h": 0.027,
+     "w": 0.0982,
+     "x": 0.5302,
+     "y": 0.3613
+    },
+    "work_performed": {
+     "h": 0.0937,
+     "w": 0.6614,
+     "x": 0.2642,
+     "y": 0.274
+    },
+    "mechanic_cert_number": {
+     "h": 0.0212,
+     "w": 0.1554,
+     "x": 0.6404,
+     "y": 0.3634
+    }
+   },
+   "owner_confirmed": false,
+   "is_continuation": false,
+   "entry_index": 1,
+   "trust": "ai_read",
+   "updated_at": "2026-11-19T00:25:16.143389+00:00"
+  },
+  {
+   "id": "6c7cdba0-4007-57a1-bcf7-0b290d69d82b",
+   "page_id": "1b53b906-0767-5323-953c-0ed6a5118fea",
+   "logbook_id": "9d28bc25-f9a1-47f8-8bd5-ada761d128f3",
+   "entry_date": "2025-10-11",
+   "tach": 4196.4,
+   "hobbs": null,
+   "description": "Oil change.",
+   "work_performed": "Drained oil, new filter CH48110-1, 7 qts Phillips XC 20W-50 + CamGuard. Cut filter, no metal.",
+   "signature_name": "M. Torres",
+   "mechanic_cert_number": "A&P 3667012",
+   "ad_refs": [],
+   "confidence": 0.93,
+   "field_confidence": {
+    "tach": 0.93,
+    "hobbs": 0.93,
+    "parts": 0.93,
+    "ad_refs": 0.93,
+    "sb_refs": 0.93,
+    "entry_date": 0.93,
+    "description": 0.93,
+    "signature_name": 0.93,
+    "work_performed": 0.93,
+    "mechanic_cert_number": 0.93
+   },
+   "field_boxes": {
+    "tach": {
+     "h": 0.0184,
+     "w": 0.0672,
+     "x": 0.1758,
+     "y": 0.1706
+    },
+    "hobbs": null,
+    "parts": null,
+    "ad_refs": null,
+    "sb_refs": null,
+    "entry_date": {
+     "h": 0.0185,
+     "w": 0.0773,
+     "x": 0.0608,
+     "y": 0.1688
+    },
+    "description": {
+     "h": 0.0186,
+     "w": 0.0791,
+     "x": 0.2811,
+     "y": 0.1723
+    },
+    "signature_name": {
+     "h": 0.0277,
+     "w": 0.1245,
+     "x": 0.5296,
+     "y": 0.2143
+    },
+    "work_performed": {
+     "h": 0.0275,
+     "w": 0.6463,
+     "x": 0.282,
+     "y": 0.1942
+    },
+    "mechanic_cert_number": {
+     "h": 0.0193,
+     "w": 0.1269,
+     "x": 0.6659,
+     "y": 0.2222
+    }
+   },
+   "owner_confirmed": false,
+   "is_continuation": false,
+   "entry_index": 0,
+   "trust": "ai_read",
+   "updated_at": "2026-11-19T00:25:16.143389+00:00"
+  },
+  {
+   "id": "4ae19b11-2e88-5ff4-ab2a-effa024becfa",
+   "page_id": "1b53b906-0767-5323-953c-0ed6a5118fea",
+   "logbook_id": "9d28bc25-f9a1-47f8-8bd5-ada761d128f3",
+   "entry_date": "2026-07-18",
+   "tach": 4219.6,
+   "hobbs": null,
+   "description": "Annual inspection, engine.",
+   "work_performed": "Inspected engine IAW FAR 43 App. D. Compressions 75/73/76/76 over 80. Cleaned, gapped and rotated plugs. Mags timed 25 BTC. No leaks.",
+   "signature_name": "D. Alvarez",
+   "mechanic_cert_number": "A&P 3105582 IA",
+   "ad_refs": [],
+   "confidence": 0.9,
+   "field_confidence": {
+    "tach": 0.9,
+    "hobbs": 0.9,
+    "parts": 0.9,
+    "ad_refs": 0.9,
+    "sb_refs": 0.9,
+    "entry_date": 0.9,
+    "description": 0.9,
+    "signature_name": 0.9,
+    "work_performed": 0.9,
+    "mechanic_cert_number": 0.9
+   },
+   "field_boxes": {
+    "tach": {
+     "h": 0.0204,
+     "w": 0.076,
+     "x": 0.1734,
+     "y": 0.2568
+    },
+    "hobbs": null,
+    "parts": null,
+    "ad_refs": null,
+    "sb_refs": null,
+    "entry_date": {
+     "h": 0.0206,
+     "w": 0.0888,
+     "x": 0.0584,
+     "y": 0.255
+    },
+    "description": {
+     "h": 0.023,
+     "w": 0.2402,
+     "x": 0.2807,
+     "y": 0.2585
+    },
+    "signature_name": {
+     "h": 0.0272,
+     "w": 0.0956,
+     "x": 0.5302,
+     "y": 0.3238
+    },
+    "work_performed": {
+     "h": 0.0515,
+     "w": 0.6608,
+     "x": 0.2773,
+     "y": 0.2803
+    },
+    "mechanic_cert_number": {
+     "h": 0.0216,
+     "w": 0.1541,
+     "x": 0.6376,
+     "y": 0.3298
+    }
+   },
+   "owner_confirmed": false,
+   "is_continuation": false,
+   "entry_index": 1,
+   "trust": "ai_read",
+   "updated_at": "2026-11-19T00:25:16.143389+00:00"
+  }
+ ]
+}
