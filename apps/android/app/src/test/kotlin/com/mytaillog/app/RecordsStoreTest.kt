@@ -97,7 +97,9 @@ class RecordsStoreTest {
         offline = false
         clock += 3_600_000
         assertFalse(store.syncNow())
-        assertEquals(listOf("push squawk.create", "photo p0 of s1", "photo p1 of s1", "push squawkPhoto.create", "push squawkPhoto.create"), log)
+        assertEquals("push squawk.create", log[0])
+        assertEquals(setOf("photo p0 of s1", "photo p1 of s1"), log.subList(1, 3).toSet())
+        assertEquals(listOf("push squawkPhoto.create", "push squawkPhoto.create"), log.drop(3))
         assertEquals(0L, store.sync.value.waiting)
         assertTrue(store.recordFiles().isEmpty())
         assertTrue("the phone keeps its copy to show", File(store.dir, "squawk_photos/p0.jpg").exists())

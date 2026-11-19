@@ -39,6 +39,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -92,6 +93,7 @@ import java.time.ZoneOffset
 data class Toast(val text: String, val action: String? = null, val onAction: () -> Unit = {})
 
 /** A top-level or pushed phone screen: PhoneHeader, the sync bars, a scrolling leaf, a pinned footer and the toast. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Board(
     title: String,
@@ -120,11 +122,21 @@ fun Board(
         }
         val leaf: @Composable (Modifier, @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) -> Unit =
             if (tablet) { m, inner -> Box(m.fillMaxWidth(), content = inner) } else { m, inner -> PhoneLeaf(m, inner) }
+        val capture = LocalCaptureNav.current?.host
         leaf(Modifier.weight(1f)) {
             Column(Modifier.fillMaxSize()) {
-                Column(Modifier.weight(1f).let { if (scroll) it.verticalScroll(rememberScrollState()) else it }) {
-                    content()
-                    Spacer(Modifier.height(96.dp)) // clear of the AddButton
+                val body: @Composable () -> Unit = {
+                    Column(Modifier.fillMaxSize().let { if (scroll) it.verticalScroll(rememberScrollState()) else it }) {
+                        content()
+                        Spacer(Modifier.height(96.dp)) // clear of the AddButton
+                    }
+                }
+                // Pull to refresh on top-level leaves (06 §1.7): push, then pull, then the server's snapshot again.
+                Box(Modifier.weight(1f)) {
+                    if (status != null && capture != null) {
+                        val s by capture.store.sync.collectAsStateWithLifecycleCompat()
+                        PullToRefreshBox(isRefreshing = s.syncing, onRefresh = { capture.kick(); status.refresh() }) { body() }
+                    } else body()
                 }
                 footer?.let { Column(Modifier.fillMaxWidth().padding(top = Tokens.Space.s2), verticalArrangement = Arrangement.spacedBy(Tokens.Space.s2), content = it) }
             }
