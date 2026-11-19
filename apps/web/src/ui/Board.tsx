@@ -114,11 +114,12 @@ export function Spine({
 /** The two-sheet spread (02 §3.11). Below 900px it collapses to one column; the source moves to a drawer. */
 export function Leaves({ split = "1.62fr 1fr", mapFirst, children }: { split?: string; mapFirst?: boolean; children: React.ReactNode }) {
   // mapFirst: below 1180px a RouteMap leaf takes the whole width and the mat steps aside, as it does below 900px.
+  // One column (below 900px): the leaves stack at full height and the spread scrolls, so no leaf is clipped.
   // The map's 13px labels need about 600px of drawing to place without overlap (10 §7, §14 checks 1024).
   return (
     <div
       style={{ "--split": split } as React.CSSProperties}
-      className={`grid min-h-0 flex-1 gap-2.5 [grid-template-columns:var(--split)] ${mapFirst ? "max-[1179px]:[grid-template-columns:1fr] max-[1179px]:[&>*:nth-child(2)]:hidden" : "max-[1179px]:[grid-template-columns:1fr_1fr]"} max-[899px]:[grid-template-columns:1fr]`}
+      className={`grid min-h-0 flex-1 gap-2.5 [grid-template-columns:var(--split)] ${mapFirst ? "max-[1179px]:[grid-template-columns:1fr] max-[1179px]:[&>*:nth-child(2)]:hidden" : "max-[1179px]:[grid-template-columns:1fr_1fr] max-[899px]:auto-rows-max max-[899px]:overflow-auto"} max-[899px]:[grid-template-columns:1fr]`}
     >
       {children}
     </div>

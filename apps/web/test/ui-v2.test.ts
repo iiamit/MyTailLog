@@ -143,6 +143,19 @@ test("opt-in redirect uses the public site URL, not the container address", asyn
   }
 });
 
+test("notification deep links open the matching web route (03 §10.3)", async () => {
+  const { appLinkToWeb } = await import("../src/ui/NotificationInbox");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/status/item/mx:9"), "/aircraft/a1/status/item/mx:9");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/status/visit/v1"), "/aircraft/a1/status/plan?visit=v1");
+  assert.equal(appLinkToWeb("https://mytaillog.com/app/aircraft/a1/books/map?at=2020-05-01"), "/aircraft/a1/logbooks/map?from=2018-05-01&to=2022-05-01");
+  assert.equal(appLinkToWeb("/app/aircraft/a1/books/entry/e1"), "/aircraft/a1/logbooks/entries/e1");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/maint/squawk/s1"), "/aircraft/a1/maintenance/squawks?squawk=s1");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/books/review?batch=b1"), "/aircraft/a1/logbooks/review?batch=b1");
+  assert.equal(appLinkToWeb("mytaillog://aircraft/a1/whatever"), "/aircraft/a1/status");
+  assert.equal(appLinkToWeb("mytaillog://settings"), "/hangar");
+  assert.equal(appLinkToWeb(null), "/hangar");
+});
+
 test("g then a letter goes to a section of this aircraft, g t to the hangar (03 §8)", async () => {
   const { goTarget } = await import("../src/ui/Shortcuts");
   assert.equal(goTarget("/aircraft/a1/maintenance/squawks", "s"), "/aircraft/a1/status");

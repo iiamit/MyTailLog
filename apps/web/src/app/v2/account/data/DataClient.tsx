@@ -123,7 +123,7 @@ export function AutoBackups({ backups, aircraftId, owner }: { backups: SettingsS
                   <select
                     defaultValue={b.frequency}
                     aria-label={`${b.name} backup frequency`}
-                    className={`${fieldClass} mt-0 h-[34px] w-auto`}
+                    className={`${fieldClass} mt-0! h-[34px] w-auto!`}
                     onChange={async (e) => {
                       const fd = new FormData();
                       fd.set("backup_provider", b.id);

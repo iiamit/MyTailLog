@@ -49,7 +49,12 @@ export default async function SetupPage({ params }: { params: Promise<{ id: stri
         <Leaf label="Setup">
           <p className="mb-4 max-w-[56ch] text-lede">Three answers and your status is ready. The rest of the logbooks can come later.</p>
           <HungSection title="Meters today" count="Hour items count down from these" first>
-            <MetersForm aircraftId={id} tach={context.tach} hobbs={context.hobbs} />
+            {/* Only readings someone gave; never a hobbs worked out from the tach. */}
+            <MetersForm
+              aircraftId={id}
+              tach={due ? (due.snap.meters.tach.source ? due.snap.meters.tach.face : null) : context.tach}
+              hobbs={due ? (due.snap.meters.hobbs.source ? due.snap.meters.hobbs.face : null) : null}
+            />
           </HungSection>
           <HungSection title="Last annual" count="Usually the last inspection in the airframe logbook">
             {annualKnown ? (

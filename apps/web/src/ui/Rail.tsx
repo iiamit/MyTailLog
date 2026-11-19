@@ -21,6 +21,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { sectionFor, type Section } from "@/lib/uiV2";
 import { inField, openShortcutSheet, singleKeysOn } from "@/ui/Shortcuts";
+import { NotificationInbox, useUnread } from "@/ui/NotificationInbox";
 import type { RailTab } from "@/lib/v2/rail";
 
 export type RailAircraft = { id: string; tail: string; model: string };
@@ -213,25 +214,15 @@ export function Rail({ aircraftId, tail, plateLine, tabs, aircraft, canEdit, use
             </div>
           </Popover>
         )}
-        <Popover
+        <AccountButton
           open={menu === "account"}
+          onToggle={() => setMenu(menu === "account" ? null : "account")}
           onClose={() => setMenu(null)}
-          placement="up"
-          trigger={(ref) => (
-            <button
-              ref={ref}
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={menu === "account"}
-              onClick={() => setMenu(menu === "account" ? null : "account")}
-              className="state-layer flex h-[42px] items-center gap-2.5 rounded-tab px-3 text-[15px] font-semibold"
-            >
-              <CircleUserRound aria-hidden size={18} /> <span className="truncate">{userShortName}</span>
-            </button>
-          )}
-        >
-          <AccountMenu next={`${a}/status`} aircraftId={aircraftId} isAdmin={isAdmin} />
-        </Popover>
+          name={userShortName}
+          next={`${a}/status`}
+          aircraftId={aircraftId}
+          isAdmin={isAdmin}
+        />
       </nav>
     </aside>
   );
@@ -266,12 +257,72 @@ export function PhoneTabs({ tail, tabs }: { tail: string; tabs: RailTab[] }) {
   );
 }
 
-/** The account menu (03 §5.3). The notification inbox joins it when the inbox API lands. */
-export function AccountMenu({ next, aircraftId, isAdmin }: { next: string; aircraftId?: string; isAdmin?: boolean }) {
+/**
+ * The account button and its menu (03 §5.3), with the notification inbox one step in (§5.4). An ink dot (not the
+ * alarm colour) marks unread notifications.
+ */
+export function AccountButton({
+  open,
+  onToggle,
+  onClose,
+  name,
+  ...menu
+}: { open: boolean; onToggle: () => void; onClose: () => void; name: string } & Omit<Parameters<typeof AccountMenu>[0], "unread" | "onInbox">) {
+  const [unread, setUnread] = useUnread();
+  const [inbox, setInbox] = useState(false);
+  const close = () => {
+    setInbox(false);
+    onClose();
+  };
+  return (
+    <Popover
+      open={open}
+      onClose={close}
+      placement="up"
+      trigger={(ref) => (
+        <button
+          ref={ref}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={unread ? `${name}, ${unread} unread notifications` : undefined}
+          onClick={() => (open ? close() : onToggle())}
+          className="state-layer flex h-[42px] items-center gap-2.5 rounded-tab px-3 text-[15px] font-semibold"
+        >
+          <span className="relative">
+            <CircleUserRound aria-hidden size={18} />
+            {!!unread && <span aria-hidden className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-on-cover ring-2 ring-cover" />}
+          </span>
+          <span className="truncate">{name}</span>
+        </button>
+      )}
+    >
+      {inbox ? <NotificationInbox onRead={setUnread} /> : <AccountMenu {...menu} unread={unread} onInbox={() => setInbox(true)} />}
+    </Popover>
+  );
+}
+
+function AccountMenu({
+  next,
+  aircraftId,
+  isAdmin,
+  unread,
+  onInbox,
+}: {
+  next: string;
+  aircraftId?: string;
+  isAdmin?: boolean;
+  unread: number | null;
+  onInbox: () => void;
+}) {
   const router = useRouter();
   const item = "state-layer flex min-h-11 w-full items-center px-4 text-left text-[15px] font-semibold";
   return (
     <div role="menu" aria-label="Account" className="max-h-[80vh] w-[280px] overflow-auto py-2">
+      <button role="menuitem" type="button" className={item} onClick={onInbox}>
+        Notifications
+        {!!unread && <span className="ml-auto rounded-leaf bg-ink px-1.5 text-[13px] font-bold text-leaf">{unread}</span>}
+      </button>
       <Link role="menuitem" href="/account/settings" className={item}>
         Settings
       </Link>

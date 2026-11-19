@@ -11,9 +11,9 @@ import {
   revokeOAuthClient,
   saveAiKey,
   saveMfbCredentials,
-  updateNotifications,
   updateProfile,
 } from "@/app/profile/actions";
+import { setOnboardingEmails } from "./actions";
 import { CREDENTIAL_KINDS } from "@/app/profile/credentials/CredentialManager";
 import { buttonClass } from "@/ui/Button";
 import { Field, fieldClass } from "@/ui/Form";
@@ -259,40 +259,69 @@ export function SigningSection({ initial, userId }: { initial: SigningCredential
   );
 }
 
-const KINDS: { key: keyof AlertSettings; label: string; days?: string; hours?: string }[] = [
-  { key: "annual", label: "Annual inspection", days: "annual_lead_days" },
-  { key: "oil", label: "Oil change", hours: "oil_lead_hours" },
-  { key: "ad", label: "ADs and SBs", days: "ad_lead_days", hours: "ad_lead_hours" },
-  { key: "default", label: "Everything else", days: "default_lead_days", hours: "default_lead_hours" },
+type LeadKey = "annual" | "oil" | "ad" | "document" | "visit" | "default";
+const KINDS: { key: LeadKey; label: string; days?: boolean; hours?: boolean }[] = [
+  { key: "annual", label: "Annual inspection", days: true },
+  { key: "oil", label: "Oil change", hours: true },
+  { key: "ad", label: "ADs and SBs", days: true, hours: true },
+  { key: "document", label: "Registration, insurance", days: true },
+  { key: "visit", label: "A planned shop visit", days: true },
+  { key: "default", label: "Everything else", days: true, hours: true },
 ];
 
-/** Reminders: saves the whole preference bag as each control changes (checkbox) or is left (number). */
+/** PATCH /api/me/preferences: the server merges each alerts object, so one control never resets another. */
+async function patchPrefs(body: Record<string, unknown>): Promise<Msg> {
+  const res = await fetch("/api/me/preferences", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+  if (!res) return { ok: false, text: "Couldn't reach MyTailLog. Check your connection." };
+  const b = (await res.json().catch(() => ({}))) as { error?: string };
+  return res.ok ? { ok: true, text: "Saved." } : { ok: false, text: b.error ?? "That didn't save. Try again." };
+}
+
+/** Reminders (W-ACCOUNT-02, 09 §2.11): each control saves on its own through /api/me/preferences. */
 export function RemindersSection({ notifyDue, onboardingOn, alerts }: { notifyDue: boolean; onboardingOn: boolean; alerts: AlertSettings }) {
-  const form = useRef<HTMLFormElement>(null);
   const [on, setOn] = useState(notifyDue);
   const [msg, setMsg] = useState<Msg>(null);
   const [test, setTest] = useState<Msg>(null);
-  const save = async () => {
-    if (!form.current) return;
-    const res = await updateNotifications(new FormData(form.current)).catch((e) => ({ error: fail(e).text }));
-    setMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Saved." });
-  };
-  const num = (name: string, value: number, unit: string, label: string) => (
-    <label className="flex items-center gap-1.5 text-small text-ink-2">
-      <input type="number" min={0} name={name} defaultValue={value} aria-label={label} onBlur={save} className={`${fieldClass} mt-0 h-[34px] w-20`} />
+  const save = async (body: Record<string, unknown>) => setMsg(await patchPrefs(body));
+  const alert = (key: string, value: unknown) => save({ alerts: { [key]: value } });
+  const box = "mt-1 size-[18px] shrink-0";
+  const num = (key: LeadKey, field: "lead_days" | "lead_hours", value: number, unit: string, label: string) => (
+    <label className="flex items-center gap-1.5 whitespace-nowrap text-small text-ink-2">
+      <input
+        type="number"
+        min={0}
+        defaultValue={value}
+        aria-label={label}
+        onBlur={(e) => {
+          const n = Number(e.target.value);
+          if (e.target.value !== "" && Number.isFinite(n) && n >= 0 && n !== value) alert(key, { [field]: Math.round(n) });
+        }}
+        className={`${fieldClass} mt-0! h-[34px] w-20!`}
+      />
       {unit}
     </label>
   );
   return (
-    <form ref={form} onSubmit={(e) => e.preventDefault()} className="grid gap-3">
+    <div className="grid gap-3">
       <label className="flex items-start gap-3 text-body">
-        <input type="checkbox" name="notify_due" checked={on} onChange={(e) => { setOn(e.target.checked); setTimeout(save); }} className="mt-1 size-[18px] shrink-0" />
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => {
+            setOn(e.target.checked);
+            save({ notify_due: e.target.checked });
+          }}
+          className={box}
+        />
         <span className="font-semibold">Email and phone reminders before items come due</span>
       </label>
-      {/* Dimmed, not disabled: disabled inputs drop out of the form and their lead times would be reset on save. */}
-      <fieldset className={on ? "" : "opacity-60"}>
-        <legend className="sr-only">How far ahead, per kind of item</legend>
+      <div className={`grid gap-3 ${on ? "" : "opacity-60"}`}>
+        <label className="flex items-start gap-3 text-body">
+          <input type="checkbox" defaultChecked={alerts.weekly_while_lapsed} onChange={(e) => alert("weekly_while_lapsed", e.target.checked)} className={box} />
+          <span>Weekly while something is lapsed</span>
+        </label>
         <table className="w-full text-body">
+          <caption className="sr-only">How far ahead to remind, per kind of item</caption>
           <thead>
             <tr className="border-b border-rule text-left text-small text-ink-3">
               <th scope="col" className="py-1.5 font-semibold">Kind of item</th>
@@ -307,20 +336,52 @@ export function RemindersSection({ notifyDue, onboardingOn, alerts }: { notifyDu
                 <tr key={k.key}>
                   <th scope="row" className="py-1.5 text-left font-normal">
                     <label className="flex items-center gap-2">
-                      <input type="checkbox" name={`${k.key}_enabled`} defaultChecked={a.enabled} onChange={() => setTimeout(save)} className="size-[18px]" />
+                      <input type="checkbox" defaultChecked={a.enabled} onChange={(e) => alert(k.key, { enabled: e.target.checked })} className="size-[18px]" />
                       {k.label}
                     </label>
                   </th>
-                  <td className="py-1.5">{k.days ? num(k.days, a.lead_days ?? 30, "days", `${k.label}, days ahead`) : <span className="text-ink-3">–</span>}</td>
-                  <td className="py-1.5">{k.hours ? num(k.hours, a.lead_hours ?? 25, "hours", `${k.label}, hours ahead`) : <span className="text-ink-3">–</span>}</td>
+                  <td className="py-1.5">{k.days ? num(k.key, "lead_days", a.lead_days ?? 30, "days", `${k.label}, days ahead`) : <span className="text-ink-3">–</span>}</td>
+                  <td className="py-1.5">{k.hours ? num(k.key, "lead_hours", a.lead_hours ?? 25, "hours", `${k.label}, hours ahead`) : <span className="text-ink-3">–</span>}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-      </fieldset>
+        <fieldset className="flex flex-wrap gap-x-6 gap-y-2">
+          <legend className="mb-1 text-small font-semibold text-ink-2">Send them by</legend>
+          {(["email", "push"] as const).map((c) => (
+            <label key={c} className="flex items-center gap-2 text-body">
+              <input type="checkbox" defaultChecked={alerts.channels[c]} onChange={(e) => alert("channels", { [c]: e.target.checked })} className="size-[18px]" />
+              {c === "email" ? "Email" : "Phone"}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="flex flex-wrap items-center gap-2 text-small text-ink-2">
+          <legend className="mb-1 text-small font-semibold text-ink-2">Quiet hours for the phone</legend>
+          {(["start", "end"] as const).map((edge, i) => (
+            <span key={edge} className="flex items-center gap-2">
+              {i === 1 && "to"}
+              <input
+                type="time"
+                defaultValue={alerts.quiet_hours[edge]}
+                aria-label={edge === "start" ? "Quiet from" : "Quiet until"}
+                onBlur={(e) => e.target.value && e.target.value !== alerts.quiet_hours[edge] && alert("quiet_hours", { [edge]: e.target.value })}
+                className={`${fieldClass} mt-0! h-[34px] w-[120px]!`}
+              />
+            </span>
+          ))}
+        </fieldset>
+      </div>
       <label className="flex items-start gap-3 text-body">
-        <input type="checkbox" name="onboarding_emails" defaultChecked={onboardingOn} onChange={() => setTimeout(save)} className="mt-1 size-[18px] shrink-0" />
+        <input
+          type="checkbox"
+          defaultChecked={onboardingOn}
+          onChange={async (e) => {
+            const r = await setOnboardingEmails(e.target.checked).catch(() => ({ error: "That didn't save. Try again." }));
+            setMsg("error" in r ? { ok: false, text: r.error } : { ok: true, text: "Saved." });
+          }}
+          className={box}
+        />
         <span>Setup tips by email while I add my aircraft</span>
       </label>
       <Said msg={msg} />
@@ -330,23 +391,25 @@ export function RemindersSection({ notifyDue, onboardingOn, alerts }: { notifyDu
           className={buttonClass("secondary", "s")}
           onClick={async () => {
             setTest({ ok: true, text: "Sending…" });
-            try {
-              const res = await fetch("/api/push/test", { method: "POST" });
-              const b = (await res.json().catch(() => ({}))) as { devices?: number; sent?: number; error?: string; hint?: string };
-              if (!res.ok || b.error) setTest({ ok: false, text: `Couldn't send it: ${b.error ?? res.status}` });
-              else if (!b.devices) setTest({ ok: false, text: b.hint ?? "No phone is signed in to the app on this account." });
-              else setTest({ ok: true, text: `Reached ${b.sent} of ${b.devices} ${b.devices === 1 ? "device" : "devices"}.` });
-            } catch {
-              setTest({ ok: false, text: "Couldn't reach MyTailLog. Check your connection." });
-            }
+            const res = await fetch("/api/me/reminders/test", { method: "POST" }).catch(() => null);
+            const b = (await res?.json().catch(() => ({}))) as { devices?: number; email?: boolean; error?: string } | undefined;
+            if (!res) return setTest({ ok: false, text: "Couldn't reach MyTailLog. Check your connection." });
+            if (!res.ok) return setTest({ ok: false, text: res.status === 429 ? "That's a few tests already. Try again in an hour." : (b?.error ?? "The test didn't send.") });
+            const d = b?.devices ?? 0;
+            const reached = [d ? `${d} ${d === 1 ? "device" : "devices"}` : null, b?.email ? "your email" : null].filter(Boolean);
+            setTest(
+              reached.length
+                ? { ok: true, text: `Reached ${reached.join(" and ")}.` }
+                : { ok: false, text: "Nothing was reached: no phone is signed in and the email didn't send." },
+            );
           }}
         >
           Send a test
         </button>
         <Said msg={test} />
       </span>
-      <p className="text-small text-ink-3">Each item can have its own lead time on its page in Status.</p>
-    </form>
+      <p className="text-small text-ink-3">Each item can have its own lead time on its page in Status. Notifications are in the account menu.</p>
+    </div>
   );
 }
 

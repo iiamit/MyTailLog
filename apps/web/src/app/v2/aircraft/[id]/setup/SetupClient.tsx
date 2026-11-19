@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { buttonClass } from "@/ui/Button";
 import { Field, fieldClass } from "@/ui/Form";
-import { saveItemDate, saveMeters, saveReminders } from "./actions";
+import { saveItemDate, saveMeters } from "./actions";
 
 type Res = { ok: true } | { error: string };
 
@@ -75,7 +75,7 @@ export function ItemDateForm({ aircraftId, kind, label, today, cta = "Save" }: {
       className="flex flex-wrap items-end gap-2"
     >
       <Field label={label}>
-        <input name="date" type="date" max={today} required className={`${fieldClass} w-[180px]`} />
+        <input name="date" type="date" max={today} required className={`${fieldClass} w-[180px]!`} />
       </Field>
       <button type="submit" disabled={busy} className={`${buttonClass("secondary", "s")} mb-1`}>{busy ? "Saving…" : cta}</button>
       {said && <span className="mb-2">{said}</span>}
@@ -94,7 +94,14 @@ export function RemindersToggle({ on, email }: { on: boolean; email: string }) {
           checked={checked}
           onChange={(e) => {
             setChecked(e.target.checked);
-            run(saveReminders(e.target.checked));
+            // The preferences endpoint merges, so this only flips the master switch.
+            run(
+              fetch("/api/me/preferences", {
+                method: "PATCH",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ notify_due: e.target.checked }),
+              }).then((r) => (r.ok ? { ok: true as const } : { error: "That didn't save. Try again." })),
+            );
           }}
           className="mt-1 size-[18px] shrink-0"
         />

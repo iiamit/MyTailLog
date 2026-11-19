@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CircleUserRound, Plus, Upload, Warehouse } from "lucide-react";
-import { AccountMenu, Popover } from "@/ui/Rail";
+import { Plus, Upload, Warehouse } from "lucide-react";
+import { AccountButton, Popover } from "@/ui/Rail";
 import type { RailAircraft } from "@/ui/Rail";
 
 /**
@@ -87,25 +87,14 @@ export function HangarRail({ userName, aircraft, isAdmin, hangarOpen }: { userNa
             ))}
           </div>
         </Popover>
-        <Popover
+        <AccountButton
           open={menu === "account"}
+          onToggle={() => setMenu("account")}
           onClose={() => setMenu(null)}
-          placement="up"
-          trigger={(ref) => (
-            <button
-              ref={ref}
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={menu === "account"}
-              onClick={() => setMenu(menu === "account" ? null : "account")}
-              className="state-layer flex h-[42px] items-center gap-2.5 rounded-tab px-3 text-[15px] font-semibold"
-            >
-              <CircleUserRound aria-hidden size={18} /> <span className="truncate">{userName}</span>
-            </button>
-          )}
-        >
-          <AccountMenu next={path || "/hangar"} isAdmin={isAdmin} />
-        </Popover>
+          name={userName}
+          next={path || "/hangar"}
+          isAdmin={isAdmin}
+        />
       </nav>
     </aside>
   );
