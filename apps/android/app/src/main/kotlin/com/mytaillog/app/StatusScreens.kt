@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import com.mytaillog.core.api.AircraftRole
 import com.mytaillog.core.domain.due.DueItem
 import com.mytaillog.core.domain.due.LineAhead
+import com.mytaillog.core.domain.due.VisitView
 import com.mytaillog.core.domain.due.fmtDate
 import com.mytaillog.design.ButtonKind
 import com.mytaillog.design.DButton
@@ -99,12 +100,12 @@ private enum class Mode { Home, All, Tablet }
 /** M-STATUS-01/02: the phone home. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatusPhone(host: StatusHost, onSeeAll: () -> Unit, onReview: () -> Unit) {
+fun StatusPhone(host: StatusHost, onSeeAll: () -> Unit, onReview: () -> Unit, onPlan: () -> Unit = {}, onVisit: (String) -> Unit = {}) {
     var openKey by rememberSaveable { mutableStateOf<String?>(null) }
     StatusBoard(stringResource(R.string.section_status), host) {
         PullToRefreshBox(isRefreshing = host.ui.loading && host.ui.snapshot != null, onRefresh = host.refresh) {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Tokens.Space.s8)) {
-                statusContent(host, Mode.Home, onOpen = { openKey = it }, onSeeAll = onSeeAll, onReview = onReview)
+                statusContent(host, Mode.Home, onOpen = { openKey = it }, onSeeAll = onSeeAll, onReview = onReview, onPlan = onPlan, onVisit = onVisit)
             }
         }
     }
@@ -210,6 +211,8 @@ private fun LazyListScope.statusContent(
     onSeeAll: () -> Unit,
     onReview: () -> Unit,
     selected: String? = null,
+    onPlan: (() -> Unit)? = null,
+    onVisit: (String) -> Unit = {},
 ) {
     val ui = host.ui
     val snap = ui.snapshot
@@ -239,9 +242,15 @@ private fun LazyListScope.statusContent(
     if (ui.failed) item { StatusError(host.refresh, compact = true) }
     if (body.situation != "setup" && body.items.isNotEmpty()) {
         item(key = "line") {
-            LineAheadView(body.lineAhead, body.items, onRing = onOpen, modifier = Modifier.padding(top = Tokens.Space.s4))
+            LineAheadView(
+                body.lineAhead, body.items, onRing = onOpen, modifier = Modifier.padding(top = Tokens.Space.s4),
+                visits = body.visits.planned + body.visits.suggested, onVisit = onVisit, onEmpty = onPlan ?: {},
+            )
         }
         items(undatedLines(body.lineAhead, body.items)) { Small(it) }
+        // 09 §3.5: the suggested and booked visits as rows too, and Plan ahead (M-STATUS-03).
+        if (mode == Mode.Home) item(key = "visits") { Column { VisitRows(body, onVisit) } }
+        onPlan?.let { item(key = "plan") { PhoneRow(stringResource(R.string.plan_title), it) } }
     }
     if (body.counts.pagesToReview > 0 && mode != Mode.Tablet) {
         item { PhoneRow(pluralStringResource(R.plurals.status_pages_waiting, body.counts.pagesToReview, body.counts.pagesToReview), onReview) }
@@ -420,7 +429,15 @@ private fun lineRow(line: String): Int = when (line) {
  * TalkBack hears one summary; the rows below are the full equivalent.
  */
 @Composable
-fun LineAheadView(ahead: LineAhead, items: List<DueItem>, onRing: (String) -> Unit, modifier: Modifier = Modifier) {
+fun LineAheadView(
+    ahead: LineAhead,
+    items: List<DueItem>,
+    onRing: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    visits: List<VisitView> = emptyList(),
+    onVisit: (String) -> Unit = {},
+    onEmpty: () -> Unit = {},
+) {
     val c = MyTailLogTheme.colors
     val measurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall.copy(color = c.ink3, fontWeight = FontWeight(600))
@@ -436,21 +453,32 @@ fun LineAheadView(ahead: LineAhead, items: List<DueItem>, onRing: (String) -> Un
         val row = lineRow(r.line).takeIf { it >= 0 } ?: return null
         return Offset((lineX(r.date, ahead) * w).coerceIn(ringR, w - ringR), top + row * gap)
     }
+    // Visit caps (dashed) spanning the lines of their items, at the visit's week.
+    val caps = remember(visits, items) {
+        visits.mapNotNull { v ->
+            val rows = v.items.mapNotNull { byKey[it.key]?.line?.let(::lineRow) }.filter { it >= 0 }
+            if (rows.isEmpty()) null else Triple(v, rows.min(), rows.max())
+        }
+    }
     Box(modifier) {
         Canvas(
             Modifier
                 .fillMaxWidth()
                 .height(168.dp)
                 .semantics { contentDescription = summary }
-                .pointerInput(ahead) {
+                .pointerInput(ahead, caps) {
                     detectTapGestures { pos ->
                         val reach = 22.dp.toPx()
                         val hits = ahead.rings.indices.mapNotNull { i ->
                             ringCenter(i, size.width.toFloat())?.takeIf { (it - pos).getDistance() <= reach }?.let { ahead.rings[i].itemKey }
                         }.distinct()
-                        when (hits.size) {
-                            0 -> Unit // shortcut: the empty line opens Plan ahead (M-STATUS-03) in phase 5
-                            1 -> onRing(hits.single())
+                        val cap = caps.firstOrNull { (v, r0, r1) ->
+                            kotlin.math.abs(lineX(v.weekOf, ahead) * size.width - pos.x) <= reach && pos.y in (top + r0 * gap - reach)..(top + r1 * gap + reach)
+                        }
+                        when {
+                            hits.isEmpty() && cap != null -> onVisit(visitKey(cap.first))
+                            hits.isEmpty() -> onEmpty()
+                            hits.size == 1 -> onRing(hits.single())
                             else -> menu = hits
                         }
                     }
@@ -473,6 +501,15 @@ fun LineAheadView(ahead: LineAhead, items: List<DueItem>, onRing: (String) -> Un
                 val y = top + i * gap
                 val end = if (i == LINES.size - 1) bottom + 10.dp.toPx() else y + 4.dp.toPx()
                 drawLine(c.ink3, Offset(today, y - 4.dp.toPx()), Offset(today, end), 1.dp.toPx())
+            }
+            caps.forEach { (v, r0, r1) ->
+                val x = lineX(v.weekOf, ahead) * w
+                val y0 = top + r0 * gap - 10.dp.toPx()
+                drawRoundRect(
+                    c.ink2, Offset(x - 7.dp.toPx(), y0), androidx.compose.ui.geometry.Size(14.dp.toPx(), (r1 - r0) * gap + 20.dp.toPx()),
+                    androidx.compose.ui.geometry.CornerRadius(7.dp.toPx()),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))),
+                )
             }
             ahead.rings.indices.forEach { i ->
                 ringCenter(i, w)?.let { statusMark(markKind(ahead.rings[i].status), it, ringR, c, Tokens.Map.ringStroke.toPx()) }
@@ -498,7 +535,7 @@ fun LineAheadView(ahead: LineAhead, items: List<DueItem>, onRing: (String) -> Un
 /** M-STATUS-05 as a sheet on phones (the brief's call); the same content fills the tablet's right leaf. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ItemSheet(ui: StatusUi, key: String?, onDismiss: () -> Unit) {
+internal fun ItemSheet(ui: StatusUi, key: String?, onDismiss: () -> Unit) {
     val item = ui.snapshot?.body?.items?.firstOrNull { it.key == key } ?: return
     val colors = MyTailLogTheme.colors
     ModalBottomSheet(onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = colors.leaf) {

@@ -2,6 +2,7 @@ package com.mytaillog.app
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
@@ -54,6 +55,11 @@ data class TimeCheck(
     val digitSwap: Boolean,
     val dismissed: Boolean,
 )
+
+private val lenient = Json { ignoreUnknownKeys = true }
+
+/** One person with access to the aircraft (aircraft_share). */
+data class Person(val email: String, val role: String)
 
 /** A mechanic link just made (09 §4.12). */
 data class MechanicLink(val url: String, val expiresAt: String?)
@@ -146,6 +152,72 @@ class RecordsApi(
     /** "Find equipment in the logbooks" (POST …/equipment/scan): proposals land in equipment_proposal. Returns how many. */
     suspend fun scanEquipment(aircraftId: String): Int =
         http.post("$root/api/aircraft/$aircraftId/equipment/scan") { bearerAuth(accessToken()) }.json()["proposed"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
+
+    // --- Phase 5: plan and share (09 §4.4, §4.5, §4.11; online only, never queued) -------------------
+
+    /** Suggested and planned visits over Plan ahead's 24 months (the snapshot carries Status's 12). */
+    suspend fun visits(aircraftId: String): com.mytaillog.core.domain.due.Visits =
+        lenient.decodeFromString(com.mytaillog.core.domain.due.Visits.serializer(), text(http.get("$root/api/aircraft/$aircraftId/visits?horizonMonths=24") { bearerAuth(accessToken()) }))
+
+    /** A 30-day mechanic link for a planned visit (D12): `{ url, expiresAt, mailto }`. Never sends anything itself. */
+    suspend fun sendVisit(aircraftId: String, visitId: String, recipient: String, providerId: String?): JsonObject =
+        http.post("$root/api/aircraft/$aircraftId/visits/$visitId/send") {
+            bearerAuth(accessToken()); contentType(ContentType.Application.Json)
+            setBody(buildJsonObject { put("recipientLabel", recipient); providerId?.let { put("providerId", it) }; put("expiresInDays", 30) }.toString())
+        }.json()
+
+    /** The owner's record room links, as the server sends them (kept on the phone so QR and copy work offline). */
+    suspend fun roomsJson(aircraftId: String): String = text(http.get("$root/api/aircraft/$aircraftId/record-rooms") { bearerAuth(accessToken()) })
+
+    /** POST …/record-rooms: `{ id, url, qrPayload, expiresAt }`. */
+    suspend fun createRoom(aircraftId: String, body: JsonObject): JsonObject =
+        http.post("$root/api/aircraft/$aircraftId/record-rooms") { bearerAuth(accessToken()); contentType(ContentType.Application.Json); setBody(body.toString()) }.json()
+
+    /** PATCH …/record-rooms/{id}: `{ extendDays: 30 }` or `{ revoke: true }`. */
+    suspend fun updateRoom(aircraftId: String, roomId: String, body: JsonObject): JsonObject =
+        http.patch("$root/api/aircraft/$aircraftId/record-rooms/$roomId") { bearerAuth(accessToken()); contentType(ContentType.Application.Json); setBody(body.toString()) }.json()
+
+    suspend fun roomOpens(aircraftId: String, roomId: String): List<RoomOpen> =
+        parseOpens(text(http.get("$root/api/aircraft/$aircraftId/record-rooms/$roomId/opens") { bearerAuth(accessToken()) }))
+
+    /** The maintenance summary or pre-buy dossier PDF ("summary" | "dossier"), or the due list CSV ("export?type=due"). */
+    suspend fun file(aircraftId: String, path: String): ByteArray {
+        val r = http.get("$root/api/aircraft/$aircraftId/$path") { bearerAuth(accessToken()) }
+        if (!r.status.isSuccess()) throw UploadHttpException(r.status.value, "That file couldn't be made (${r.status.value}).")
+        return r.readRawBytes()
+    }
+
+    /** People with access (aircraft_share through PostgREST; the owner-only RLS policy is the guard, as on the web). */
+    suspend fun people(aircraftId: String): List<Person> {
+        val r = http.get("${supabaseUrl.trimEnd('/')}/rest/v1/aircraft_share?aircraft_id=eq.$aircraftId&select=invited_email,role&order=created_at") {
+            header("apikey", supabaseKey); bearerAuth(accessToken())
+        }
+        if (!r.status.isSuccess()) throw UploadHttpException(r.status.value, "People couldn't be loaded (${r.status.value}).")
+        return Json.parseToJsonElement(r.bodyAsText()).jsonArray.map { val o = it.jsonObject; Person(o.s("invited_email") ?: "", o.s("role") ?: "viewer") }
+    }
+
+    /** Give [email] access as editor or viewer, or change their role (upsert on aircraft and email, as addShare does). */
+    suspend fun setPerson(aircraftId: String, ownerId: String, email: String, role: String) {
+        val r = http.post("${supabaseUrl.trimEnd('/')}/rest/v1/aircraft_share?on_conflict=aircraft_id,invited_email") {
+            header("apikey", supabaseKey); bearerAuth(accessToken()); header("Prefer", "resolution=merge-duplicates,return=minimal")
+            contentType(ContentType.Application.Json)
+            setBody(buildJsonObject { put("aircraft_id", aircraftId); put("invited_email", email.trim().lowercase()); put("role", role); put("invited_by", ownerId) }.toString())
+        }
+        if (!r.status.isSuccess()) throw UploadHttpException(r.status.value, "Only the aircraft owner can share it.")
+    }
+
+    suspend fun removePerson(aircraftId: String, email: String) {
+        val r = http.delete("${supabaseUrl.trimEnd('/')}/rest/v1/aircraft_share?aircraft_id=eq.$aircraftId&invited_email=eq.${email.encodeURLParameter()}") {
+            header("apikey", supabaseKey); bearerAuth(accessToken())
+        }
+        if (!r.status.isSuccess()) throw UploadHttpException(r.status.value, "Not removed (${r.status.value}).")
+    }
+
+    private suspend fun text(r: HttpResponse): String {
+        val t = r.bodyAsText()
+        if (!r.status.isSuccess()) throw UploadHttpException(r.status.value, runCatching { Json.parseToJsonElement(t).jsonObject["error"]?.jsonPrimitive?.contentOrNull }.getOrNull() ?: "The server refused it (${r.status.value}).")
+        return t
+    }
 
     private suspend fun HttpResponse.json(): JsonObject {
         val text = bodyAsText()

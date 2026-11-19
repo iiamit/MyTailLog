@@ -62,6 +62,7 @@ import com.mytaillog.design.PhoneRow
 import com.mytaillog.design.PhoneTabBar
 import com.mytaillog.design.Rail
 import com.mytaillog.design.Section
+import com.mytaillog.design.SubTabs
 import com.mytaillog.design.TabItem
 import com.mytaillog.design.section
 
@@ -142,6 +143,7 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
     var maintView by rememberSaveable { mutableStateOf<MaintView?>(null) }
     val atRoot = route in PhoneTabs.filter { it != Destination.Share }.map { it.root }
     val recNav = remember(nav) { RecNav(open = { nav.navigate(it) }, back = { nav.popBackStack() }) }
+    val booksNow = books?.ui?.collectAsStateWithLifecycle()?.value?.books
     val captureNav = capture?.let { h ->
         CaptureNav(h, openSync = { nav.navigate("${PhoneTabs[current].graph}/$SYNC") }, openQueue = { nav.navigate(SCAN_QUEUE) })
     }
@@ -175,7 +177,18 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
                 navigation(startDestination = tab.root, route = tab.graph) {
                     composable(tab.root) {
                         if (tab == Destination.Status && status != null) {
-                            StatusPhone(status, onSeeAll = { nav.navigate(STATUS_ALL_ITEMS) }, onReview = { nav.selectTab(Destination.Logbooks, reselect = false) })
+                            StatusPhone(
+                                status, onSeeAll = { nav.navigate(STATUS_ALL_ITEMS) }, onReview = { nav.selectTab(Destination.Logbooks, reselect = false) },
+                                onPlan = { nav.navigate(STATUS_PLAN) }, onVisit = { nav.navigate("$STATUS_VISIT/$it") },
+                            )
+                            return@composable
+                        }
+                        if (tab == Destination.Share && recs != null) {
+                            ShareHome(
+                                recs, status, booksNow,
+                                onMade = { nav.navigate("$SHARE_MADE/$it") }, onLinks = { nav.navigate(SHARE_LINKS) },
+                                onReview = { nav.selectTab(Destination.Logbooks, reselect = false) },
+                            )
                             return@composable
                         }
                         if (tab == Destination.Logbooks && books != null) {
@@ -199,6 +212,17 @@ fun PhoneShell(nav: NavHostController = rememberNavController(), account: @Compo
                     }
                     if (tab == Destination.Status && status != null) {
                         composable(STATUS_ALL_ITEMS) { AllItemsPhone(status, onBack = { nav.popBackStack() }) }
+                        composable(STATUS_PLAN) { PlanAheadPhone(status, recs, onBack = { nav.popBackStack() }, onVisit = { nav.navigate("$STATUS_VISIT/$it") }) }
+                        composable("$STATUS_VISIT/{key}") { e ->
+                            val fromPlan = nav.previousBackStackEntry?.destination?.route == STATUS_PLAN
+                            VisitScreen(status, recs, e.arguments?.getString("key") ?: "", back = stringResource(if (fromPlan) R.string.plan_title else R.string.section_status) to { nav.popBackStack() })
+                        }
+                    }
+                    if (tab == Destination.Share && recs != null) {
+                        val up: () -> Unit = { nav.popBackStack() }
+                        composable("$SHARE_MADE/{id}") { e -> LinkScreen(recs, e.arguments?.getString("id") ?: "", made = true, back = stringResource(R.string.section_share) to up) }
+                        composable("$SHARE_LINK/{id}") { e -> LinkScreen(recs, e.arguments?.getString("id") ?: "", made = false, back = stringResource(R.string.share_links_title) to up) }
+                        composable(SHARE_LINKS) { LinksScreen(recs, back = stringResource(R.string.section_share) to up) { nav.navigate("$SHARE_LINK/$it") } }
                     }
                     if (tab == Destination.Logbooks && books != null) booksRoutes(nav, books)
                     if (capture != null) {
@@ -275,6 +299,11 @@ const val SCAN_CAMERA = "logbooks/camera"
 const val SCAN_QUEUE = "logbooks/queue"
 const val TACH_CAMERA = "status/tach"
 const val SYNC = "sync"
+const val STATUS_PLAN = "status/plan"
+const val STATUS_VISIT = "status/visit"
+const val SHARE_MADE = "share/made"
+const val SHARE_LINK = "share/link"
+const val SHARE_LINKS = "share/links"
 
 /** The last tach the phone knows (05 §16 plausibility): the snapshot's meter, or a newer reading saved here. */
 fun lastTach(status: StatusHost?, store: OfflineStore, aircraftId: String): LastTach {
@@ -356,6 +385,22 @@ fun TabletShell(account: @Composable () -> Unit = {}, status: StatusHost? = null
                 TabletRecords(recs, destination, status, account)
                 return@Column
             }
+            if (recs != null && destination == Destination.Share) {
+                TabletShare(recs, status, books?.ui?.collectAsStateWithLifecycle()?.value?.books)
+                return@Column
+            }
+            // T-STATUS-01/02: SubTabs What's due · Plan ahead.
+            var planning by rememberSaveable { mutableStateOf(false) }
+            if (destination == Destination.Status && status?.ui?.snapshot != null) {
+                SubTabs(
+                    listOf(stringResource(R.string.status_whats_due), stringResource(R.string.plan_title)), if (planning) 1 else 0, { planning = it == 1 }, Section.Status,
+                    Modifier.padding(start = 22.dp, bottom = 14.dp),
+                )
+                if (planning) {
+                    TabletPlan(status, recs)
+                    return@Column
+                }
+            }
             val navigator = rememberListDetailPaneScaffoldNavigator<Nothing>()
             var selectedItem by rememberSaveable { mutableStateOf<String?>(null) }
             val statusHere = status.takeIf { destination == Destination.Status }
@@ -410,6 +455,59 @@ private fun TabletRecords(recs: Recs, destination: Destination, status: StatusHo
                         "settings" -> account()
                         Routes.NEW_SQUAWK -> NewSquawk(recs, onClose = { detail = null })
                         else -> androidx.compose.runtime.key(d) { RecordsRoute(recs, d) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** T-STATUS-02: the scrubber and the visits in the left leaf; the statement and the table (or a visit) in the right. */
+@Composable
+private fun TabletPlan(status: StatusHost, recs: Recs?) {
+    val body = status.ui.snapshot?.body ?: return
+    val s = rememberPlan(body, recs)
+    var visit by rememberSaveable { mutableStateOf<String?>(null) }
+    var openKey by rememberSaveable { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.CompositionLocalProvider(LocalRecNav provides RecNav({}, {}, tablet = true)) {
+        Row(Modifier.fillMaxSize().padding(start = 22.dp, end = 22.dp, bottom = 22.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.weight(1.62f)) {
+                TabletLeaf {
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        PlanControls(s) { visit = it }
+                        VisitRows(body, { visit = it }, s.visits)
+                    }
+                }
+            }
+            Box(Modifier.weight(1f)) {
+                TabletLeaf {
+                    when (val v = visit) {
+                        null -> Column(Modifier.verticalScroll(rememberScrollState())) { PlanResults(s, { visit = it }) { openKey = it } }
+                        else -> androidx.compose.runtime.key(v) { VisitScreen(status, recs, v, back = stringResource(R.string.plan_title) to { visit = null }) }
+                    }
+                }
+            }
+        }
+    }
+    ItemSheet(status.ui, openKey) { openKey = null }
+}
+
+/** Share on a tablet: who it is for in the left leaf; links and people, or one link, in the right. */
+@Composable
+private fun TabletShare(recs: Recs, status: StatusHost?, books: com.mytaillog.core.api.Books?) {
+    var detail by rememberSaveable { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.CompositionLocalProvider(LocalRecNav provides RecNav({}, {}, tablet = true)) {
+        Row(Modifier.fillMaxSize().padding(start = 22.dp, end = 22.dp, bottom = 22.dp), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.weight(1f)) {
+                TabletLeaf { ShareHome(recs, status, books, onMade = { detail = "made:$it" }, onLinks = { detail = null }, onReview = {}) }
+            }
+            Box(Modifier.weight(1f)) {
+                TabletLeaf {
+                    val d = detail
+                    val back = stringResource(R.string.share_links_title) to { detail = null }
+                    when {
+                        d == null -> LinksScreen(recs, back = null) { detail = "link:$it" }
+                        else -> androidx.compose.runtime.key(d) { LinkScreen(recs, d.substringAfter(':'), made = d.startsWith("made:"), back = back) }
                     }
                 }
             }
