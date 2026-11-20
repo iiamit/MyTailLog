@@ -44,7 +44,7 @@ export function sectionFor(segment: string | null | undefined): Section | null {
 // Per-aircraft paths the v2 tree serves. The section landings exist for every section from phase 0; deeper
 // screens are added here as their phase lands, so an unbuilt screen keeps working in v1.
 const V2_AIRCRAFT =
-  /^\/aircraft\/([^/]+)(?:\/(?:status|setup|logbooks|maintenance|hours|oil|equipment|weight-balance|details|documents|share)|\/status\/(?:plan|item\/[^/]+)|\/share\/(?:dossier|summary)|\/logbooks\/(?:map|list|pages|add|review(?:\/[^/]+)?|entries\/(?!new\/?$)[^/]+)|\/maintenance\/(?:items|ads(?:\/find)?|squawks|annual|records-check))?\/?$/;
+  /^\/aircraft\/([^/]+)(?:\/(?:status|setup|logbooks|ask|maintenance|hours|oil|equipment|weight-balance|details|documents|share)|\/status\/(?:plan|item\/[^/]+)|\/share\/(?:dossier|summary)|\/logbooks\/(?:map|list|pages|add|review(?:\/[^/]+)?|entries\/[^/]+)|\/maintenance\/(?:items|ads(?:\/find)?|squawks|annual|records-check))?\/?$/;
 
 // Account-level screens (03 §9.2), new in the v2 tree.
 const V2_ACCOUNT = /^\/(?:hangar|account(?:\/(?:settings|data))?|aircraft\/new)\/?$/;
@@ -58,7 +58,7 @@ export function v2Rewrite(pathname: string): string | null {
 }
 
 // Today's routes the new design fully replaces (03 §10.1–10.2). Left out, so they keep rendering v1: /import (the
-// CSV wizard is still v1), /entries/new (W-BOOKS-11 not built), /ask, and the fragment links (handled client side).
+// CSV wizard is still v1).
 const ACCOUNT_MOVES: Record<string, string> = {
   "/dashboard": "/hangar",
   "/aircraft/enroll": "/aircraft/new",
@@ -93,6 +93,7 @@ export function v1ToV2(pathname: string, search: URLSearchParams): string | null
   const a = `/aircraft/${m[1]}`;
   const rest = m[2];
   if (rest === "export") return `/account/data?aircraft=${encodeURIComponent(m[1])}#export`;
+  if (rest === "entries/new") return `${a}/logbooks/entries/new${search.toString() ? `?${search}` : ""}`;
   const entry = search.get("entry");
   if (rest === "timeline" && entry) return `${a}/logbooks/map?stop=${encodeURIComponent(entry)}`;
   if (AIRCRAFT_MOVES[rest]) return `${a}/${AIRCRAFT_MOVES[rest]}`;

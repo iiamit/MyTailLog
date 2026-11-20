@@ -1,4 +1,4 @@
-import { AccountShell } from "@/components/shell/AccountShell";
+import { InformationShell } from "@/components/InformationShell";
 import { APP_VERSION } from "@/lib/version";
 import {
   parseChangelog,
@@ -53,7 +53,7 @@ export default function WhatsNewPage() {
   const releases = parseChangelog(process.env.CHANGELOG_MD ?? "");
 
   return (
-    <AccountShell>
+    <InformationShell>
       <main className="mx-auto max-w-3xl px-6 py-8">
         <header className="mb-8">
           <div className="eyebrow mb-2">Account</div>
@@ -137,6 +137,6 @@ export default function WhatsNewPage() {
           .
         </p>
       </main>
-    </AccountShell>
+    </InformationShell>
   );
 }

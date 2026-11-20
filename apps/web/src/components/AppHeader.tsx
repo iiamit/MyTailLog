@@ -8,7 +8,8 @@ import { APP_VERSION } from "@/lib/version";
 
 // Public routes render no app chrome.
 const PUBLIC = (path: string) =>
-  path === "/" || path.startsWith("/login") || path.startsWith("/auth");
+  path === "/" || path.startsWith("/login") || path.startsWith("/auth") ||
+  ["/demo", "/faq", "/compare", "/switch", "/guides", "/ads", "/privacy", "/account-deletion", "/help", "/whats-new", "/developers"].some((p) => path === p || path.startsWith(`${p}/`));
 // Inside a specific aircraft, the AircraftShell provides its own top bar + rail.
 const IN_AIRCRAFT = (path: string) =>
   path.startsWith("/aircraft/") && !path.startsWith("/aircraft/enroll");

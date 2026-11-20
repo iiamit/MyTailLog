@@ -38,12 +38,12 @@ type Props = {
 };
 
 const ADD_ITEMS: { key: string; label: string; detail: string; section: Section; icon: typeof Plane; path: string }[] = [
-  { key: "F", label: "Log a flight", detail: "Photograph the tach, or type it", section: "aircraft", icon: PlaneLanding, path: "meters" },
-  { key: "O", label: "Add oil", detail: "Quarts added at the aircraft", section: "aircraft", icon: Droplet, path: "meters#oil" },
-  { key: "S", label: "Report a squawk", detail: "A photo first, then a few words", section: "maint", icon: Flag, path: "squawks" },
-  { key: "P", label: "Add logbook pages", detail: "Drop scans, or scan with your phone", section: "books", icon: Upload, path: "capture" },
-  { key: "D", label: "Add a document", detail: "Insurance, registration, a Form 337", section: "docs", icon: FilePlus2, path: "documents" },
-  { key: "W", label: "Write a logbook entry", detail: "Sign it with a code sent by email", section: "books", icon: Pencil, path: "entries/new" },
+  { key: "F", label: "Log a flight", detail: "Photograph the tach, or type it", section: "aircraft", icon: PlaneLanding, path: "hours?panel=reading" },
+  { key: "O", label: "Add oil", detail: "Quarts added at the aircraft", section: "aircraft", icon: Droplet, path: "oil?panel=oil" },
+  { key: "S", label: "Report a squawk", detail: "A photo first, then a few words", section: "maint", icon: Flag, path: "maintenance/squawks?panel=new" },
+  { key: "P", label: "Add logbook pages", detail: "Drop scans, or scan with your phone", section: "books", icon: Upload, path: "logbooks/add" },
+  { key: "D", label: "Add a document", detail: "Insurance, registration, a Form 337", section: "docs", icon: FilePlus2, path: "documents?panel=new" },
+  { key: "W", label: "Write a logbook entry", detail: "Sign it with a code sent by email", section: "books", icon: Pencil, path: "logbooks/entries/new" },
 ];
 
 /** The binder cover (02 §3.1–3.7): plate and switcher, six section tabs, Search / Add / Account. */

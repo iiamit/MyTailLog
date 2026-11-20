@@ -76,6 +76,7 @@ export async function POST(
       .from("log_entry")
       .select("id, page_id, logbook_id, entry_date, hobbs, tach, description, work_performed, parts")
       .eq("aircraft_id", id)
+      .eq("owner_confirmed", true)
       .order("entry_date", { ascending: true, nullsFirst: true })
       .limit(MAX_ENTRIES),
   ]);
@@ -154,7 +155,7 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ answer, citations: cited });
+    return NextResponse.json({ answer: cited.length ? answer : "The confirmed entries don't say. Try a different question or search the entries.", citations: cited });
   } catch (err) {
     const message = err instanceof Error ? err.message : "The AI request failed.";
     return NextResponse.json({ error: message }, { status: 500 });

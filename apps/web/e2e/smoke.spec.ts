@@ -47,7 +47,7 @@ test.describe("public marketing pages", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   const PAGES = [
-    ["/", /the logbooks are a cardboard box/i],
+    ["/", /your logbooks can answer you/i],
     ["/faq", /questions before you sign up/i],
     ["/compare", /six ways to keep aircraft maintenance records/i],
     ["/guides/digitize-aircraft-logbooks", /how to digitize aircraft logbooks/i],
@@ -69,7 +69,7 @@ test.describe("public marketing pages", () => {
   test("landing page offers a way in and reaches the other marketing pages", async ({ page }) => {
     await page.goto("/");
     // Signed out: account creation is a primary CTA, not a buried "Sign in".
-    await expect(page.getByRole("link", { name: /create your account/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /create a free account/i }).first()).toBeVisible();
     const badges = page.getByRole("group", { name: "Mobile apps" }).first();
     for (const [name, href] of [
       ["Download on the App Store", "https://apps.apple.com/us/app/mytaillog/id6795396758"],
@@ -82,8 +82,8 @@ test.describe("public marketing pages", () => {
       await expect(page.locator(`footer a[href="${href}"]`)).toBeVisible();
     }
     // The claim the page is built around, and the scope guardrail it must keep.
-    await expect(page.getByText("$0.00")).toBeVisible();
-    await expect(page.getByText(/14 CFR 91\.417/).first()).toBeVisible();
+    await expect(page.getByText(/free and open source under the MIT licence/i)).toBeVisible();
+    await expect(page.getByText(/physical logbooks remain the legal maintenance record/i)).toBeVisible();
   });
 
   // No horizontal overflow at any width — a previous marketing page shipped a

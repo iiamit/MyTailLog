@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { AccountShell } from "@/components/shell/AccountShell";
+import { InformationShell } from "@/components/InformationShell";
 import { DATA_SCOPES } from "@/lib/oauth/scopes";
 import { DevelopersClient } from "./DevelopersClient";
 
@@ -21,7 +21,7 @@ export default async function DevelopersPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <AccountShell>
+    <InformationShell>
       <main className="mx-auto max-w-2xl px-6 py-8">
         <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -41,6 +41,6 @@ export default async function DevelopersPage() {
 
         <DevelopersClient apps={apps ?? []} dataScopes={[...DATA_SCOPES]} />
       </main>
-    </AccountShell>
+    </InformationShell>
   );
 }

@@ -1,671 +1,83 @@
+import Image from "next/image";
 import Link from "next/link";
-import Image, { type StaticImageData } from "next/image";
 import { createClient } from "@/lib/supabase/server";
-import { Disclaimer } from "@/components/Disclaimer";
-import { NavigationMenu } from "@/components/shell/NavigationMenu";
+import { PublicTheme } from "@/components/PublicTheme";
 import { StoreBadges } from "@/components/StoreBadges";
-import { APP_STORE_URL } from "@/lib/appStore";
-import shotReview from "../screenshots/review.png";
-import shotStatus from "../screenshots/status.png";
-import shotAsk from "../screenshots/ask.png";
-import shotTimeline from "../screenshots/timeline.png";
-import shotHub from "../screenshots/hub.png";
-import shotWb from "../screenshots/wb.png";
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/appStore";
 
-/*
-  Landing page — deliberately NOT wrapped in MarketingShell.
-  MarketingShell is a 45rem prose column built for the spoke pages (/faq,
-  /compare, /switch/myfbo) and its footer nav lists "Home", i.e. this page.
-  This page is the hub, and it is carrying detailed product screenshots that die
-  at a 45rem measure. So it keeps its own full-width frame and its own top bar
-  (AppHeader renders nothing on "/"), but reuses the shell's footer pattern —
-  link row + the 91.417 line — so the family still reads as one site.
-*/
-
-const CONTAINER = "mx-auto w-full max-w-6xl px-5 sm:px-7";
-const FOCUS =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-
-/** A datum: tail number, tach reading, AD number, date. Mono, inline in prose. */
-function D({ children }: { children: React.ReactNode }) {
-  // nowrap: an AD number broken across two lines stops reading as one datum.
-  return (
-    <span className="readout whitespace-nowrap text-[0.92em] text-ink">{children}</span>
-  );
-}
-
-// The record's life, in order — the spine of the page. Order carries meaning
-// here (you cannot ask a logbook a question before it has been read), which is
-// why the sections are a sequence and not a grid of equals.
-const STAGES: {
-  eyebrow: string;
-  title: string;
-  body: React.ReactNode;
-  src: StaticImageData;
-  alt: string;
-  caption: string;
-}[] = [
-  {
-    eyebrow: "What's due",
-    title: "See what needs attention",
-    body: <p>Track recurring inspections, maintenance and ADs by date and aircraft hours. See what needs attention, plan around estimated due dates, and set email reminders. Projections never replace a recorded calendar limit.</p>,
-    src: shotStatus,
-    alt: "The Status grid: inspections, maintenance items and airworthiness directives listed by urgency, each with hours and dates remaining",
-    caption: "Status — everything due, ordered by how close it is.",
-  },
-  {
-    eyebrow: "Ask it",
-    title: "Ask a question. Check the source.",
-    body: <p>Ask when a part was replaced or an AD was recorded. Each answer cites the log entries it used, so you can check it against the original scan.</p>,
-    src: shotAsk,
-    alt: "Ask your logbook: a plain-English question answered in a paragraph, with the source log entries listed below it",
-    caption: "Ask — answers that cite the entries they came from.",
-  },
-  {
-    eyebrow: "Find it",
-    title: "One timeline across every book",
-    body: <p>Search airframe, engine, propeller, avionics and other entries in one timeline. Filter by logbook and open the original scan. Duplicate detection flags likely repeats for review.</p>,
-    src: shotTimeline,
-    alt: "Timeline and search: log entries from every logbook merged into one chronological list with a search field and per-book filters",
-    caption: "Timeline — every book, one chronology, searchable.",
-  },
-  {
-    eyebrow: "Keep it",
-    title: "The documents, not just the entries",
-    body: <p>Keep dated weight-and-balance revisions and permanent paperwork beside the logbook scans. Equipment changes flag older weight-and-balance data for review.</p>,
-    src: shotWb,
-    alt: "Weight and balance: current empty weight, CG and useful load above a list of dated W&B revisions",
-    caption: "Weight & balance — current figures over the full revision history.",
-  },
-  {
-    eyebrow: "Per aircraft",
-    title: "One overview for each aircraft",
-    body: <p>See recorded hours, upcoming maintenance and recent activity for each aircraft. Share access with viewers or editors, and keep squawks open until an editor resolves them.</p>,
-    src: shotHub,
-    alt: "Aircraft overview: recorded hours, tracked maintenance status, next due items, recent activity and pages awaiting review",
-    caption: "One overview per aircraft, colour-coded by what needs attention.",
-  },
+const features = [
+  { title: "Read the paper", body: "Scan or upload airframe, engine, propeller and avionics pages. AI drafts the entries; you confirm them beside the original ink." },
+  { title: "Find the answer", body: "Search across your books or ask a question in plain English. Answers cite the entries and show the source page." },
+  { title: "Know what is due", body: "See inspections, recurring work and ADs by date or aircraft hours. Trace a reminder back to the record behind it." },
+  { title: "Keep the small things", body: "Record tach and Hobbs, oil added, squawks, installed equipment, weight and balance, and the documents you carry aboard." },
+  { title: "Write and sign", body: "Create a maintenance entry from a preventive-maintenance template, sign it with a certificate and emailed code, then print a logbook sticker." },
+  { title: "Take it with you", body: "The free iPhone, iPad and Android apps keep synced records and documents available offline and queue changes until you reconnect." },
 ];
 
-// Roughly everything it does. Grouped, one line each, no icons — the product
-// is an index, so the breadth is presented as an index.
-const INDEX: { group: string; items: React.ReactNode[] }[] = [
-  {
-    group: "Capture & extract",
-    items: [
-      "Capture with your phone's own camera — or upload PDF, JPEG, PNG",
-      "Pages queue on the device with no signal and upload when you're back",
-      "Five logbook types: airframe, engine, prop, avionics, other",
-      "Per-field confidence scores; low-confidence fields are held back from bulk-confirm",
-      <>
-        CSV import — one AI pass maps your <em>columns</em>, then every row
-        converts in plain code. CSV only, up to <D>5 MB</D> / <D>5,000</D> rows,
-        maintenance entries
-      </>,
-      "Duplicate finder across scans and entries",
-      "Scan a W&B sheet or an AD compliance report and it applies itself",
-    ],
-  },
-  {
-    group: "Track & forecast",
-    items: [
-      "Status grid, coloured by urgency",
-      <>
-        Part 91 recurring items on hours and on the calendar, with an{" "}
-        <D>≈</D> projected date and a confidence
-      </>,
-      "AD/SB compliance with FAA reference lookup (Federal Register, DRS fallback)",
-      "AD discovery by manufacturer, model or keyword",
-      "Installed equipment rebuilt from the logs",
-      "Weight & balance revisions, flagged stale after an equipment change",
-      "Records gap audit",
-      "Squawks — anyone with access reports, an editor resolves",
-      "Email reminders with your own lead time per item",
-    ],
-  },
-  {
-    group: "Hours & engine health",
-    items: [
-      "Hobbs↔tach reconciliation, so an inflated hobbs doesn't drive your forecast",
-      "MyFlightBook sync pulls your latest hobbs/tach once a day",
-      <>
-        ADS-B passive hours — opt-in per aircraft, off by default; it only ever{" "}
-        <em>suggests</em> a meter value, never writes one
-      </>,
-      "Oil analysis — a lab report in, wear metals charted against the lab's universal average",
-      "Oil consumption — hours per quart between top-offs",
-      "Bring your own Anthropic or OpenAI API key to bill AI usage to your own account",
-    ],
-  },
-  {
-    group: "Keep it & leave with it",
-    items: [
-      "Records Vault for the permanent paperwork",
-      "A printable maintenance summary — the page you hand a buyer, an insurer or an IA",
-      "A full .zip backup of every row as JSON plus the original scans, re-importable",
-      "Automatic backups to your own Dropbox and/or Google Drive, monthly or quarterly",
-      "Sharing (viewer / editor), ownership transfer, delete",
-      <>
-        A read-only OAuth 2.1 API and a self-serve{" "}
-        <Link href="/developers/docs" className={`underline decoration-line underline-offset-2 hover:decoration-line2 ${FOCUS}`}>
-          developer portal
-        </Link>
-      </>,
-      "Free iPhone, iPad, and Android apps with offline records and capture",
-      "MIT licence — run the whole thing yourself",
-    ],
-  },
-];
-
-const NAV: { href: string; label: string }[] = [
-  { href: "/faq", label: "FAQ" },
-  { href: "/compare", label: "How it compares" },
-  { href: "/switch/myfbo", label: "Coming from MyFBO" },
-  { href: "/help", label: "Help & docs" },
-  { href: "/developers/docs", label: "API" },
-  { href: "/whats-new", label: "What's new" },
-];
+const links = [
+  ["FAQ", "/faq"], ["How it compares", "/compare"], ["Coming from MyFBO", "/switch/myfbo"],
+  ["Help", "/help"], ["Developer API", "/developers/docs"], ["What’s new", "/whats-new"],
+  ["Privacy", "/privacy"], ["Delete account", "/account-deletion"],
+] as const;
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const primary = user
-    ? { href: "/dashboard", label: "Go to your hangar" }
-    : { href: "/login", label: "Create your account" };
-
-  return (
-    <>
-      {/* This page renders no AppHeader (PUBLIC includes "/"), so it carries
-          its own bar — and it has to work signed in as well as signed out. */}
-      <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">
-        <div className={`${CONTAINER} flex h-[60px] items-center justify-between gap-4`}>
-          <div aria-label="MyTailLog" role="img" className="flex shrink-0 items-center gap-2.5">
-            <span
-              aria-hidden
-              className="h-[22px] w-[22px]"
-              style={{
-                background: "linear-gradient(180deg,var(--accent),#8ec8ff)",
-                clipPath: "polygon(50% 0,100% 86%,0 86%)",
-              }}
-            />
-            <span className="hidden font-display text-[17px] font-bold tracking-[0.2px] sm:inline">
-              MyTailLog
-            </span>
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
+  const start = user ? "/hangar" : "/login?mode=create";
+  return <PublicTheme>
+    <main id="main-content">
+      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-10 sm:px-7 sm:py-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-12">
+        <div className="rounded-leaf bg-leaf px-6 py-9 shadow-leaf sm:px-9 sm:py-12">
+          <p className="text-label font-bold text-section-ink-status">Aircraft records, within reach</p>
+          <h1 className="mt-4 max-w-[18ch] text-[clamp(2.3rem,4.5vw,4rem)] font-extrabold leading-[1.08] tracking-[-.025em] text-ink">Your logbooks can answer you.</h1>
+          <p className="mt-6 max-w-[55ch] text-lede text-ink-2">Turn photographed pages into a searchable record. See what is due, find the page that proves it, and keep your aircraft&apos;s history close wherever you fly.</p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link href={start} className="state-layer inline-flex min-h-12 items-center rounded-control bg-section-status px-5 font-bold text-white">{user ? "Open your hangar" : "Create a free account"}</Link>
+            <Link href="/demo" className="state-layer inline-flex min-h-12 items-center rounded-control border border-control-border bg-leaf px-5 font-bold text-ink">Explore the demo</Link>
           </div>
-
-          <nav aria-label="Site" className="hidden items-center gap-1 lg:flex">
-            {NAV.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`rounded-md px-2.5 py-2 text-[13px] text-dim hover:bg-panel hover:text-ink ${FOCUS}`}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="shrink-0 lg:hidden">
-              <NavigationMenu label="Menu">
-                <nav aria-label="Site links">
-                  {NAV.map((link) => (
-                    <Link key={link.href} href={link.href} className={`flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-dim hover:bg-panel2 hover:text-ink ${FOCUS}`}>
-                      {link.label}
-                    </Link>
-                  ))}
-                </nav>
-              </NavigationMenu>
-            </div>
-            {!user && (
-              <Link
-                href="/login"
-                className={`hidden rounded-md px-3 py-2 text-[13px] text-dim hover:text-ink sm:inline ${FOCUS}`}
-              >
-                Sign in
-              </Link>
-            )}
-            <Link
-              href={primary.href}
-              className={`inline-flex min-h-11 items-center rounded-md border border-line2 px-3.5 py-2 text-[13px] font-medium text-ink hover:border-accent ${FOCUS}`}
-            >
-              {primary.label}
-            </Link>
-          </div>
+          <div className="mt-6"><StoreBadges /></div>
+          <p className="mt-5 text-small text-ink-3">Free and open source under the MIT licence. No card or trial clock.</p>
         </div>
-      </header>
+        <figure className="overflow-hidden rounded-leaf bg-leaf shadow-leaf">
+          <Image src="/brand/status-preview.jpg" alt="Illustration of the new MyTailLog Status board: due items beside a cited logbook page" width={1440} height={900} priority className="h-auto w-full" />
+          <figcaption className="px-4 py-3 text-small text-ink-3">Illustration of the new Status view using the fictional demo aircraft.</figcaption>
+        </figure>
+      </section>
 
-      <main>
-        {/* ── Hero ───────────────────────────────────────────────────── */}
-        <section className={`${CONTAINER} animate-up pb-14 pt-14 sm:pt-20`}>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-16">
-            <div className="max-w-[46rem]">
-              <p className="eyebrow mb-4">
-                Aircraft logbook digitizer &amp; maintenance tracker
-              </p>
-              <h1 className="font-display text-[clamp(2.05rem,5.4vw,3.5rem)] font-semibold leading-[1.05] tracking-[-0.02em] text-balance">
-                Your annual is in three weeks. The logbooks are a cardboard box.
-              </h1>
-
-              <p className="mt-6 max-w-[60ch] text-[17px] leading-relaxed text-dim">
-                Photograph or upload your logbook pages. Review the extracted entries beside
-                the original scans, then search your records and track what&apos;s due.
-              </p>
-
-              <ul className="mt-5 flex flex-wrap gap-2" aria-label="What you can check">
-                {["Works offline", "Cites the source page", "Export & re-import"].map((c) => (
-                  <li key={c} className="rounded-full border border-line2 px-3 py-1 text-[13px] text-dim">
-                    {c}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href={primary.href}
-                  className={`rounded-md bg-accent px-5 py-3 font-medium text-bg hover:opacity-90 ${FOCUS}`}
-                >
-                  {primary.label} →
-                </Link>
-                {user ? (
-                  <Link
-                    href="/help"
-                    className={`rounded-md border border-line px-5 py-3 text-dim hover:border-line2 hover:text-ink ${FOCUS}`}
-                  >
-                    Help &amp; documentation
-                  </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/demo"
-                      className={`rounded-md border border-line px-5 py-3 text-dim hover:border-line2 hover:text-ink ${FOCUS}`}
-                    >
-                      See the product tour
-                    </Link>
-                    <Link href="/login" className={`px-2 py-3 text-sm text-faint hover:text-ink ${FOCUS}`}>
-                      Sign in
-                    </Link>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-3">
-                <StoreBadges />
-              </div>
-
-              {!user && (
-                <p className="mt-4 text-sm text-dim">
-                  Free account. No card. A fictional demo aircraft is ready to explore.
-                </p>
-              )}
-            </div>
-
-            {/* The one place the page raises its voice: the price, as a gauge. */}
-            <aside className="lg:pt-10">
-              <div className="panel-raised p-5">
-                <div className="eyebrow">Cost to you, per month</div>
-                <div className="readout mt-2 text-[44px] font-semibold leading-none text-annun-green">
-                  $0.00
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-annun-green"
-                  />
-                  <span className="readout text-[10.5px] uppercase tracking-[0.12em] text-dim">
-                    No billing code in the app
-                  </span>
-                </div>
-
-                <dl className="mt-5 flex flex-col gap-2 border-t border-line pt-4 text-[12.5px]">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-faint">Licence</dt>
-                    <dd className="readout text-ink">MIT</dd>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-faint">Self-hostable</dt>
-                    <dd className="readout text-ink">YES</dd>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <dt className="text-faint">Trial clock</dt>
-                    <dd className="readout text-ink">NONE</dd>
-                  </div>
-                </dl>
-
-                <p className="mt-4 text-[12.5px] leading-relaxed text-faint">
-                  No plans, no tiers, no card field. Shared AI use has daily limits;
-                  using your own API key bills usage to your account.{" "}
-                  <a
-                    href="https://github.com/iiamit/MyTailLog"
-                    className={`underline decoration-line underline-offset-2 hover:decoration-line2 ${FOCUS}`}
-                  >
-                    The source is public
-                  </a>
-                  , so that is checkable rather than promised.
-                </p>
-                <p className="mt-2 text-[12.5px] leading-relaxed text-faint">
-                  AI reading includes a daily allowance. Add your own Anthropic
-                  key in Profile for more.
-                </p>
-              </div>
-            </aside>
-          </div>
-        </section>
-
-        {/* ── The hero shot: the thing that actually differs ──────────── */}
-        <section className={`${CONTAINER} pb-16`}>
-          <figure className="flex flex-col gap-3">
-            <a href={shotReview.src} target="_blank" rel="noreferrer" aria-label="Open the review screenshot at full size" className={`block overflow-hidden rounded-lg border border-line bg-panel2 ${FOCUS}`}>
-              <Image
-                src={shotReview}
-                alt="The review screen: a handwritten logbook page on the left, the extracted entry on the right with field confidence percentages and uncertain readings highlighted"
-                sizes="(max-width: 1200px) 100vw, 1100px"
-                placeholder="blur"
-                priority
-                className="h-auto w-full"
-              />
-            </a>
-            <figcaption className="flex flex-wrap items-baseline gap-x-2 text-[13px] text-faint">
-              <span className="eyebrow">Capture &amp; read</span>
-              <span>
-                The page as written, beside what the model read — with a
-                confidence score on every field and uncertain readings flagged for review.
-                Current screens from the N734DM demo aircraft. Open any screenshot to view it full size.
-              </span>
-            </figcaption>
-          </figure>
-        </section>
-
-        {/* ── The spine: what happens to a record after it's captured ─── */}
-        <div className="flex flex-col">
-          {STAGES.map((s) => (
-            <section
-              key={s.eyebrow}
-              className="border-t border-line py-14 sm:py-16"
-            >
-              {/*
-                These are 1600px-wide captures of dense UI. In a half-column
-                (~518 CSS px) every one of them except the review shot rendered
-                as a dark smudge — the problem is how much interface is in
-                frame, not only the pixel count. So the prose runs as a
-                two-column band and the screenshot gets the full container
-                width, which is the ~1100px the review shot is already legible
-                at. `sizes` states that real slot width so the browser can pick
-                a 2x candidate on a retina display.
-              */}
-              <div className={`${CONTAINER} flex flex-col gap-8`}>
-                <div className="grid gap-x-12 gap-y-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-                  <div>
-                    <p className="eyebrow mb-3">{s.eyebrow}</p>
-                    <h2 className="font-display text-[clamp(1.4rem,3vw,1.9rem)] font-semibold leading-tight text-balance">
-                      {s.title}
-                    </h2>
-                  </div>
-                  <div className="flex max-w-[44rem] flex-col gap-3 leading-relaxed text-dim">
-                    {s.body}
-                  </div>
-                </div>
-
-                <figure className="flex min-w-0 flex-col gap-2">
-                  <a href={s.src.src} target="_blank" rel="noreferrer" aria-label={`Open the ${s.eyebrow.toLowerCase()} screenshot at full size`} className={`block overflow-hidden rounded-lg border border-line bg-panel2 ${FOCUS}`}>
-                    <Image
-                      src={s.src}
-                      alt={s.alt}
-                      sizes="(max-width: 1200px) 100vw, 1100px"
-                      placeholder="blur"
-                      className="h-auto w-full"
-                    />
-                  </a>
-                  <figcaption className="text-[12.5px] text-faint">
-                    {s.caption}
-                  </figcaption>
-                </figure>
-              </div>
-            </section>
-          ))}
+      <section className="bg-leaf-2 py-14 sm:py-18">
+        <div className="mx-auto max-w-6xl px-5 sm:px-7">
+          <div className="max-w-2xl"><p className="text-label text-section-ink-status">One connected record</p><h2 className="mt-2 text-board-title">From scanned page to a decision you can check</h2><p className="mt-3 text-body text-ink-2">Every useful summary should lead back to the page or reading behind it. You stay in control of what AI extracted and what counts as confirmed.</p></div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{features.map((f) => <article key={f.title} className="rounded-leaf bg-leaf p-6 shadow-leaf"><h3 className="text-heading">{f.title}</h3><p className="mt-2 text-body text-ink-2">{f.body}</p></article>)}</div>
         </div>
+      </section>
 
-        {/* ── Free, restated with the weight it deserves ──────────────── */}
-        <section className="border-t border-line py-16">
-          <div className={CONTAINER}>
-            <p className="eyebrow mb-3">Why it is free</p>
-            <h2 className="max-w-3xl font-display text-[clamp(1.5rem,3.2vw,2.1rem)] font-semibold leading-tight text-balance">
-              Free is a fact about the code, not a promise about next year
-            </h2>
-            <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-14">
-              <div className="flex max-w-[38rem] flex-col gap-4 leading-relaxed text-dim">
-                <p>
-                  There is no billing in MyTailLog at all — no plans, no tiers,
-                  no trial clock, no card field, no payment code anywhere in the
-                  app. The repository is public and MIT-licensed, so that is not
-                  a claim you have to take on trust; it is a thing you can go
-                  and check.
-                </p>
-                <p>
-                  It also means the exit is real. Everything you put in comes
-                  back out as a <D>.zip</D> of every row as JSON plus the
-                  original scans, re-importable into any instance — including
-                  one you run yourself, on your own Supabase and your own
-                  Anthropic or OpenAI key. Portability that survives us losing interest is
-                  a stronger promise than portability that depends on us staying
-                  nice.
-                </p>
-              </div>
-              <div className="flex max-w-[38rem] flex-col gap-4 leading-relaxed text-dim">
-                <p>
-                  The one line item that costs real money is the AI. Reading a
-                  logbook page is a vision-model call, billed to whoever&apos;s
-                  key is used — so shared use is capped two ways, a per-person
-                  daily call limit and an overall daily-dollar ceiling. If the
-                  day&apos;s shared budget runs out, extraction pauses until
-                  tomorrow and everything else keeps working.
-                </p>
-                <p>
-                  Add your own Anthropic or OpenAI key in Profile and the calls bill to
-                  your account at list prices, with a much higher limit. The
-                  numbers, and everything else about cost and privacy, are in
-                  the{" "}
-                  <Link
-                    href="/faq"
-                    className={`underline decoration-line underline-offset-2 hover:decoration-line2 ${FOCUS}`}
-                  >
-                    FAQ
-                  </Link>
-                  .
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── The index: roughly everything, one line each ────────────── */}
-        <section className="border-t border-line py-16">
-          <div className={CONTAINER}>
-            <p className="eyebrow mb-3">The rest of it</p>
-            <h2 className="max-w-3xl font-display text-[clamp(1.5rem,3.2vw,2.1rem)] font-semibold leading-tight text-balance">
-              Everything else it does
-            </h2>
-            <details className="mt-6">
-              <summary className={`inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm text-accent underline underline-offset-4 ${FOCUS}`}>Browse all features</summary>
-            <div className="mt-8 grid gap-x-12 gap-y-10 sm:grid-cols-2 xl:grid-cols-4">
-              {INDEX.map((g) => (
-                <div key={g.group} className="min-w-0">
-                  <h3 className="border-b border-line pb-2 font-display text-[15px] font-semibold text-ink">
-                    {g.group}
-                  </h3>
-                  <ul className="mt-3 flex flex-col gap-2.5 text-[13.5px] leading-relaxed text-dim">
-                    {g.items.map((item, n) => (
-                      <li key={n}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-            </details>
-          </div>
-        </section>
-
-        {/* ── What it doesn't do. The other pages do this; it's why they
-              read as credible. ───────────────────────────────────────── */}
-        <section className="border-t border-line py-16">
-          <div className={CONTAINER}>
-            <p className="eyebrow mb-3">Limits</p>
-            <h2 className="max-w-3xl font-display text-[clamp(1.5rem,3.2vw,2.1rem)] font-semibold leading-tight text-balance">
-              What it doesn&apos;t do
-            </h2>
-            <dl className="mt-8 grid max-w-5xl gap-x-12 gap-y-7 md:grid-cols-2">
-              <div>
-                <dt className="font-medium text-ink">
-                  No accuracy percentage, because nothing here measures one
-                </dt>
-                <dd className="mt-1.5 text-[14px] leading-relaxed text-dim">
-                  What you get instead is a confidence score per field, the scan
-                  beside the entry, and the flagged fields held back from
-                  bulk-confirm. That catches what the model knows it is unsure
-                  of. It cannot catch what the model was confidently wrong
-                  about — your review is what closes that gap, and it is real
-                  work.
-                </dd>
-              </div>
-              <div>
-                <dt className="font-medium text-ink">
-                  No scheduling, dispatch, invoicing or billing
-                </dt>
-                <dd className="mt-1.5 text-[14px] leading-relaxed text-dim">
-                  Deliberately out of scope, not a roadmap item. Same for
-                  eSignatures, parts inventory, work orders and multi-fleet MRO
-                  management. If you need a booking calendar and rental rates,
-                  an ops platform does that and this does not.
-                </dd>
-              </div>
-              <div>
-                <dt className="font-medium text-ink">
-                  Some tasks still need a connection
-                </dt>
-                <dd className="mt-1.5 text-[14px] leading-relaxed text-dim">
-                  The free iPhone, iPad, and Android apps let you browse records
-                  offline, capture pages, and queue updates after an initial
-                  sync. AI extraction and Ask need a connection.
-                </dd>
-              </div>
-              <div>
-                <dt className="font-medium text-ink">
-                  CSV import is CSV, and it is maintenance entries
-                </dt>
-                <dd className="mt-1.5 text-[14px] leading-relaxed text-dim">
-                  Not XLSX — save it as CSV first, which is one step. Up to{" "}
-                  <D>5 MB</D> and <D>5,000</D> rows, creating log entries only,
-                  and everything imported lands unconfirmed until you have
-                  reviewed it.
-                </dd>
-              </div>
-            </dl>
-
-            <div className="mt-9 max-w-3xl">
-              <Disclaimer />
-            </div>
-          </div>
-        </section>
-
-        {/* ── Close ──────────────────────────────────────────────────── */}
-        <section className="border-t border-line py-16">
-          <div className={`${CONTAINER} flex flex-col items-start gap-6`}>
-            <h2 className="max-w-2xl font-display text-[clamp(1.5rem,3.2vw,2.1rem)] font-semibold leading-tight text-balance">
-              {user
-                ? "Your aircraft are where you left them"
-                : "Start with one page and see what comes back"}
-            </h2>
-            <p className="max-w-xl leading-relaxed text-dim">
-              {user
-                ? "Pick up where you left off — capture a page, review what's waiting, or check what's coming due."
-                : "Create a free account and explore the demo aircraft, or start with your own logbook page. No card required."}
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href={primary.href}
-                className={`rounded-md bg-accent px-5 py-3 font-medium text-bg hover:opacity-90 ${FOCUS}`}
-              >
-                {primary.label} →
-              </Link>
-              <StoreBadges />
-              <Link
-                href="/compare"
-                className={`rounded-md border border-line px-5 py-3 text-dim hover:border-line2 hover:text-ink ${FOCUS}`}
-              >
-                How it compares
-              </Link>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-line py-10">
-        <div className={`${CONTAINER} flex flex-col gap-5 text-sm text-faint`}>
-          <nav
-            aria-label="Footer"
-            className="flex flex-wrap gap-x-5 gap-y-2"
-          >
-            {NAV.map((l) => (
-              <Link key={l.href} href={l.href} className={`hover:text-ink ${FOCUS}`}>
-                {l.label}
-              </Link>
-            ))}
-            <a
-              href="https://github.com/iiamit/MyTailLog"
-              className={`hover:text-ink ${FOCUS}`}
-            >
-              Source on GitHub (MIT)
-            </a>
-          </nav>
-          <p className="max-w-3xl leading-relaxed">
-            MyTailLog is an index and decision-support layer, not the legal
-            maintenance record. The physical logbooks remain the system of
-            record (14 CFR 91.417). Confirm anything you rely on against them.
-          </p>
+      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-14 sm:px-7 lg:grid-cols-2 lg:gap-16">
+        <div><p className="text-label text-section-ink-status">Start with one page</p><h2 className="mt-2 text-board-title">A clear path from paper to digital</h2>
+          <ol className="mt-5 space-y-4">{[
+            ["1", "Add an aircraft", "Enter a tail number and today’s meter readings."],
+            ["2", "Capture pages", "Use the mobile scanner or upload existing PDFs and images."],
+            ["3", "Confirm the reading", "Review extracted entries beside the scan before they affect forecasts."],
+            ["4", "Use the history", "Search, ask, plan maintenance and share a buyer’s dossier."],
+          ].map(([n, title, body]) => <li key={n} className="flex gap-4 border-t border-rule pt-4"><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-section-status font-bold text-white">{n}</span><span><strong className="text-body-strong">{title}</strong><span className="mt-1 block text-small text-ink-2">{body}</span></span></li>)}</ol>
         </div>
-      </footer>
+        <div className="rounded-leaf bg-leaf-2 p-6 sm:p-8"><p className="text-label text-section-ink-status">Made for owners who fly</p><h2 className="mt-2 text-heading">Your records travel with you</h2>
+          <p className="mt-3 text-body text-ink-2">Sign in with Google or Apple, or keep using email and magic links. Connect MyFlightBook when you want its meter readings alongside your maintenance record. Download your data, keep backups, and use the documented API for integrations you authorize.</p>
+          <div className="mt-6 flex flex-wrap gap-3"><Link href="/help" className="font-bold text-section-ink-status underline">See how it works</Link><Link href="/developers/docs" className="font-bold text-section-ink-status underline">Developer API</Link></div>
+          <p className="mt-8 border-t border-rule pt-5 text-small text-ink-3">MyTailLog is an index and decision-support tool. The physical logbooks remain the legal maintenance record. Confirm anything you rely on against them.</p>
+        </div>
+      </section>
 
-      {/* Structured data for search engines. */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            name: "MyTailLog",
-            applicationCategory: "UtilitiesApplication",
-            applicationSubCategory: "Aircraft maintenance recordkeeping",
-            operatingSystem: "Web, iOS, iPadOS",
-            installUrl: APP_STORE_URL,
-            url: "https://mytaillog.com",
-            description:
-              "Free, open-source aircraft logbook digitizer and maintenance tracker for general aviation owners. A vision model reads paper airframe, engine, prop and avionics logbooks into a searchable index with AD/SB compliance, a Part 91 maintenance forecast, plain-English Q&A over the entries, and automatic backups to storage you own.",
-            isAccessibleForFree: true,
-            license: "https://opensource.org/licenses/MIT",
-            offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-            sameAs: ["https://github.com/iiamit/MyTailLog", APP_STORE_URL],
-            featureList: [
-              "Vision-model extraction of scanned logbook pages with per-field confidence and a review screen",
-              "CSV import with AI column mapping and deterministic row conversion",
-              "Searchable timeline across airframe, engine, prop, avionics and other logbooks",
-              "AD/SB compliance with FAA Federal Register reference lookup and AD discovery",
-              "Part 91 maintenance forecast with hours-based items projected to calendar dates",
-              "Plain-English questions answered from your entries with the source entries cited",
-              "Records gap audit and installed-equipment reconstruction from the logs",
-              "Weight & balance revision history",
-              "Squawk tracking with severity and resolution",
-              "Oil analysis wear-metal trends and oil consumption rate",
-              "Hobbs and tach reconciliation, MyFlightBook hours sync, opt-in ADS-B passive hours",
-              "Email reminders with configurable lead times",
-              "Full .zip backup and automatic scheduled backups to your own Dropbox or Google Drive",
-              "Read-only OAuth 2.1 API with per-aircraft consent and a developer portal",
-            ],
-          }),
-        }}
-      />
-    </>
-  );
+      <section className="bg-section-status px-5 py-12 text-center text-white"><h2 className="text-board-title">Bring your logbooks into focus.</h2><p className="mx-auto mt-3 max-w-xl text-body">Start free, explore the demo, and add your first page when you are ready.</p><Link href={start} className="mt-6 inline-flex min-h-12 items-center rounded-control bg-leaf px-6 font-bold text-ink">{user ? "Open your hangar" : "Get started free"}</Link></section>
+    </main>
+    <footer className="mx-auto max-w-6xl px-5 py-8 text-small text-on-cover-2 sm:px-7"><nav aria-label="More about MyTailLog" className="flex flex-wrap gap-x-5 gap-y-2">{links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}<a href="https://github.com/iiamit/MyTailLog">Source on GitHub</a></nav></footer>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+      "@context": "https://schema.org", "@type": "SoftwareApplication", name: "MyTailLog",
+      applicationCategory: "UtilitiesApplication", operatingSystem: "Web, iOS, iPadOS, Android",
+      url: "https://mytaillog.com", installUrl: [APP_STORE_URL, PLAY_STORE_URL],
+      description: "Free, open-source aircraft logbook digitizer and maintenance tracker with scanned-page review, cited search, maintenance forecasts and offline mobile apps.",
+      isAccessibleForFree: true, license: "https://opensource.org/licenses/MIT",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      sameAs: ["https://github.com/iiamit/MyTailLog", APP_STORE_URL, PLAY_STORE_URL],
+    }) }} />
+  </PublicTheme>;
 }

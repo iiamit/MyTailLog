@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/appStore";
-import { AccountShell } from "@/components/shell/AccountShell";
+import { InformationShell } from "@/components/InformationShell";
 import {
   SparklesIcon,
   ClockIcon,
@@ -76,21 +76,21 @@ const SECTIONS: Section[] = [
       <ol className="ml-4 list-decimal space-y-1">
         <li>
           <strong>Explore the demo</strong> — every account gets a read-only demo aircraft
-          (N734DM) on the dashboard, so you can poke at Status, Timeline, and Ask before
+          (N734DM) in the Hangar, so you can explore Status, Logbooks, and Search or ask before
           scanning anything of your own.
         </li>
         <li>
           <strong>Enroll an aircraft</strong> — the FAA registry lookup fills make/model/serial
           from the tail number, here or in the <L href="#mobile">mobile app</L>. Five logbooks are
           created automatically: airframe, engine, prop, avionics, and <strong>Other</strong>.
-          If you skipped engine or propeller serial numbers, open the aircraft overview on the web and choose
+          If you skipped engine or propeller serial numbers, open Aircraft details on the web and choose
           <strong> Edit aircraft details</strong> to add them later. The standard Part 91 items
           (annual, transponder, pitot-static, ELT) are added for you.
         </li>
         <li>
           <strong>Get started</strong> — on the web, enrolling opens a three-step setup: today&apos;s
           tach and hobbs, then a photo of the page with your last annual sign-off (or just its date),
-          then your status. That&apos;s enough to start counting down what&apos;s due. The overview
+          then your status. That&apos;s enough to start counting down what&apos;s due. The Status board
           shows <strong>Finish setup</strong> until it&apos;s done, and the <strong>Records
           coverage</strong> bars there show how far back each logbook goes and where it skips.
         </li>
@@ -230,14 +230,14 @@ const SECTIONS: Section[] = [
         </p>
         <p className="mt-2">
           Uploaded a logbook out of order — the second volume before the first? Open that
-          logbook on <L href="/aircraft">Aircraft → Pages</L>, sort by <strong>Entry date</strong>,
+          logbook under <L href="/hangar">your aircraft</L> → Logbooks → Pages, sort by <strong>Entry date</strong>,
           and hit <strong>Save this order</strong>. It renumbers that logbook&apos;s pages to match
           what you&apos;re looking at, in one step. (It only offers this once every page in the
           logbook has been extracted — before that there are no dates to order by.) The arrows in{" "}
           <strong>Reorder</strong> still nudge a single page up or down.
         </p>
         <p className="mt-2">
-          Easiest way in: open <L href="/aircraft">Aircraft → Pages</L>, tap the logbook you&apos;re
+          Easiest way in: open <L href="/hangar">your aircraft</L> → Logbooks → Pages, tap the logbook you&apos;re
           about to scan, and use <strong>Capture into &lt;that logbook&gt;</strong> — the camera opens
           with it already selected, so there&apos;s no dropdown to get wrong.
         </p>
@@ -346,7 +346,7 @@ const SECTIONS: Section[] = [
           count down only on totals actually written down. Filter to a single
           logbook and hit <strong>Reorder</strong> to hand-arrange its pages with the ↑/↓ arrows —
           handy for scans captured out of order. The
-          aircraft <strong>Overview</strong> summarizes how many pages still need review.
+          Logbooks <strong>Review</strong> shows how many pages still need attention.
         </p>
         <p>
           To move faster, <strong>Review all</strong> (in the left nav) puts every
@@ -440,13 +440,13 @@ const SECTIONS: Section[] = [
   {
     id: "timeline",
     icon: <ClockIcon />,
-    title: "Timeline & Search",
+    title: "Logbooks and search",
     body: (
       <p>
-        Every extracted entry across all logbooks, merged into one date-ordered timeline and
+        Every extracted entry across all logbooks appears on the Map and List. The List is date-ordered and
         filterable by logbook type. Full-text search finds work by keyword, part, or AD number
         (e.g. &ldquo;oil change&rdquo;, &ldquo;magneto&rdquo;, &ldquo;AD 2015-19-07&rdquo;). Each
-        entry links back to its source page image.
+        entry links back to its source page image. Choose <strong>Search or ask</strong> on the aircraft rail to search or ask a question.
       </p>
     ),
   },
@@ -457,7 +457,7 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         Ask plain-English questions (&ldquo;When was the last annual?&rdquo;, &ldquo;Hours since
-        prop overhaul?&rdquo;). Answers are drawn <strong>only from your extracted entries</strong>{" "}
+        prop overhaul?&rdquo;). Answers are drawn <strong>only from confirmed entries</strong>{" "}
         and <strong>cite the specific entries</strong> they came from, so you can click through and
         verify. It won&apos;t invent facts the entries don&apos;t contain — but, like all AI, it can
         misread, so confirm anything you act on.
@@ -591,7 +591,7 @@ const SECTIONS: Section[] = [
     body: (
       <>
         <p>
-          <L href="/aircraft">Log → Hours &amp; oil → Meters &amp; resets</L> shows what each instrument reads and
+          <L href="/hangar">Aircraft → Hours and engine</L> shows what each instrument reads and
           lets you record two things the logbook alone can&apos;t express: a meter that was{" "}
           <strong>replaced</strong>, and <strong>airframe time</strong>.
         </p>
@@ -643,7 +643,7 @@ const SECTIONS: Section[] = [
       <>
         <p>
           If you don&apos;t log every flight, the recorded hours drift below the real ones and every
-          countdown reads optimistic. <L href="/aircraft">Aircraft → Meters</L> can turn on a daily
+          countdown reads optimistic. <L href="/hangar">Aircraft → Hours and engine</L> can turn on a daily
           check against the <strong>OpenSky Network</strong>, a free community ADS-B feed, to notice
           that the aircraft flew when your records don&apos;t show it.
         </p>
@@ -702,7 +702,7 @@ const SECTIONS: Section[] = [
       <>
         <p>
           Track discrepancies noticed in flight — a rough mag, a sticky switch, a small leak. In{" "}
-          <L href="/aircraft">Aircraft → Squawks</L>, anyone with access to the aircraft (including a
+          <L href="/hangar">Maintenance → Squawks</L>, anyone with access to the aircraft (including a
           shared pilot) can report one with a severity; it stays <strong>open</strong> until an editor
           marks it <strong>resolved</strong>.
         </p>
@@ -722,7 +722,7 @@ const SECTIONS: Section[] = [
         <p>
           Owners periodically send an oil sample to a lab (Blackstone, AVLab, …) and get back a
           report of wear-metal concentrations. In{" "}
-          <L href="/aircraft">Aircraft → Oil analysis</L>, click{" "}
+          <L href="/hangar">Aircraft → Oil</L>, click{" "}
           <strong>Import oil report</strong> and upload the lab&apos;s PDF (or a photo of it). The AI
           reads every sample in the report — dates, hours on the oil and engine, each element in
           parts per million, oil properties, and the lab&apos;s written comments.
@@ -760,7 +760,7 @@ const SECTIONS: Section[] = [
           MyFlightBook reading; authorization alone does not confirm that hours have arrived.
         </p>
         <p className="mt-2">
-          An older, optional pull is available under <L href="/profile">Profile → MyFlightBook</L>.
+          An older, optional pull is available under <L href="/account/settings">Account → MyFlightBook</L>.
           For that path, register your own OAuth app on MyFlightBook, save its client ID and secret
           here, connect, then use <strong>Sync from MyFlightBook</strong>. It matches aircraft by tail
           number and imports the latest recorded flight hours; the secret is stored encrypted.
@@ -791,7 +791,7 @@ const SECTIONS: Section[] = [
           shared key, which has a <strong>daily limit</strong> (both per person and an overall daily
           budget). If the shared budget for the day is used up, AI pauses until tomorrow. To bill AI
           usage to your own account and get a much higher limit, add your own{" "}
-          <strong>Anthropic or OpenAI API key</strong> in <L href="/profile">Profile → AI &amp; your API
+          <strong>Anthropic or OpenAI API key</strong> in <L href="/account/settings">Account → AI &amp; your API
           key</L>. Your key is <strong>stored encrypted</strong> and never shown again; only the last
           four characters are kept for display.
         </p>
@@ -833,7 +833,7 @@ const SECTIONS: Section[] = [
         <p>
           A daily background check emails you <strong>before</strong> maintenance, inspections, and
           ADs come due — and once they&apos;re overdue. Turn reminders on and tune the lead times in{" "}
-          <L href="/profile">Profile → Notifications</L>. The master switch is the on/off for{" "}
+          <L href="/account/settings">Account → Notifications</L>. The master switch is the on/off for{" "}
           <em>all</em> reminder email; below it, each category sets how far in advance you&apos;re
           warned:
         </p>
@@ -966,26 +966,21 @@ const SECTIONS: Section[] = [
   {
     id: "records-vault",
     icon: <ArchiveIcon />,
-    title: "Records Vault",
+    title: "Documents",
     body: (
       <>
         <p>
           A home for the aircraft&apos;s <strong>permanent records</strong> — airworthiness
           certificate, registration, radio station authorization, POH/AFM, weight &amp; balance,{" "}
           <strong>STCs</strong>, 337s, 8130-3s, ICAs, and manuals. In{" "}
-          <L href="/aircraft">Aircraft → Records Vault</L>, upload a PDF or photo (up to 25 MB), tag it
+          <L href="/hangar">your aircraft</L>, open Documents and upload a PDF or photo (up to 25 MB), tag it
           with a category and reference number, and it&apos;s a click away instead of buried in a
           binder. These sit alongside your logbook scans.
         </p>
         <p className="mt-2">
-          Any Vault document can be <strong>attached to a specific maintenance entry</strong> — the
-          8130-3 for the part that entry installed, the 337 for the alteration it records. On an
-          entry in <L href="/aircraft">Review</L>, use <strong>+ Link from Vault</strong> to pick an
-          existing document (or <strong>+ Add file</strong> to upload and attach in one step);{" "}
-          <strong>unlink</strong> detaches it without deleting — the document stays in the Vault. The
-          Vault shows the same link from the other side, as the{" "}
-          <strong>linked record</strong> under each document, and attachments appear on their entry
-          in the <L href="/aircraft">Logbook timeline</L>. A document attaches to one entry at a time.
+          A document can be <strong>linked to a maintenance entry</strong> — for example, the
+          8130-3 for an installed part or the 337 for an alteration. The document stays in
+          Documents when the link is removed; the linked entry also shows it in Logbooks.
         </p>
         <p className="mt-2 text-sm text-faint">
           Editors can add, attach, detach, and remove documents; viewers can view and download them
@@ -1038,7 +1033,7 @@ const SECTIONS: Section[] = [
         </p>
         <p className="mt-3">
           <strong>Automatic cloud backups.</strong> Connect <strong>Dropbox</strong> and/or{" "}
-          <strong>Google Drive</strong> from <L href="/profile">Profile</L> and that same .zip is
+          <strong>Google Drive</strong> from <L href="/account/settings">Account settings</L> and that same .zip is
           pushed to your own account <strong>monthly or quarterly</strong>, one file per aircraft,
           named <code className="readout text-[12px]">&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
           On Drive that sits inside a <code className="readout text-[12px]">MyTailLog</code> folder;
@@ -1049,7 +1044,7 @@ const SECTIONS: Section[] = [
           ask only for permission to touch <em>files this app creates</em>, so your existing Drive is
           invisible to us by construction rather than by promise. We only ever <em>add</em> files —
           nothing in your account is renamed, replaced or deleted, so retention stays your call.
-          Profile shows each destination&apos;s last run, its result and its size, and emails you if
+          Account settings shows each destination&apos;s last run, its result and its size, and emails you if
           two runs in a row fail. Very large aircraft (hundreds of scanned pages) are reported as{" "}
           <em>too large to upload</em> rather than silently failing — download those by hand.
         </p>
@@ -1085,7 +1080,7 @@ const SECTIONS: Section[] = [
       <p>
         <strong>Record room links</strong> give a buyer, mechanic, IA or insurer read-only access with
         no account. You pick what&apos;s in each link: the maintenance summary, whole logbooks (only
-        entries you&apos;ve confirmed are shown), their page scans, and individual Vault documents.
+        entries you&apos;ve confirmed are shown), their page scans, and individual documents.
         Links expire after 7 to 180 days, you can revoke one at any time, and the list shows how many
         times each was opened. Transferring the aircraft revokes every link. Create one on Sharing,
         or from the pre-buy dossier with &ldquo;Share with a buyer&rdquo;.
@@ -1107,7 +1102,7 @@ const SECTIONS: Section[] = [
         </p>
         <p className="mt-2">
           <strong>Already have aircraft here?</strong> Sign in with your original email method
-          first. On the web, open <L href="/profile">Profile → How you sign in</L> and choose{" "}
+          first. On the web, open <L href="/account/settings">Account → How you sign in</L> and choose{" "}
           <strong>Connect</strong> beside Google or Apple. In an updated mobile app, open{" "}
           <strong>Account → Connect Google/Apple sign-in</strong>. Complete the provider prompt
           and return to MyTailLog. When it says <strong>Connected</strong>, that method opens your
@@ -1120,7 +1115,7 @@ const SECTIONS: Section[] = [
           method does not merge two accounts. You can still use your original magic link or
           password afterward. To reset a password, enter your email on the sign-in page,
           choose <strong>Password → Forgot password?</strong>, then follow the email link.
-          In Profile you can also set or change a password, change your email, and manage
+          In Account settings you can also set or change a password, change your email, and manage
           your name, A&amp;P/IA certificate number, and <L href="#notifications">notifications</L>.
         </p>
       </>
@@ -1139,7 +1134,7 @@ const SECTIONS: Section[] = [
         aircraft</strong> (the default — including any you add later, so an app keeps working as your
         fleet grows) or <strong>only the ones you pick</strong>. A brand-new account can authorize an
         app before adding any aircraft — the app just sees an empty list until you add one. Revoke any
-        app anytime under <L href="/profile">Profile → Connected apps</L>. Building an integration?
+        app anytime under <L href="/account/settings">Account → Connected apps</L>. Building an integration?
         Register an app and read the guide under <L href="/developers">Developer API</L>. Your
         transcribed log entries are never shared.
       </p>
@@ -1149,7 +1144,7 @@ const SECTIONS: Section[] = [
 
 export default function HelpPage() {
   return (
-    <AccountShell>
+    <InformationShell>
     <main className="mx-auto max-w-3xl px-6 py-8">
       <header className="mb-6">
         <div className="eyebrow mb-2">Account</div>
@@ -1198,6 +1193,6 @@ export default function HelpPage() {
         Confirm anything you rely on against the physical logbooks.
       </p>
     </main>
-    </AccountShell>
+    </InformationShell>
   );
 }

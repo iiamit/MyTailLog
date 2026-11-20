@@ -29,7 +29,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         </p>
         <p>
           If you have a backlog of hundreds of pages and don&apos;t want to wait out the cap, add
-          your own Anthropic or OpenAI API key in Profile. Then the calls bill to your provider account at its
+          your own Anthropic or OpenAI API key in Account settings. Then the calls bill to your provider account at its
           list prices and your limit is much higher. See{" "}
           <A href="#api-key">is my API key safe</A>.
         </p>
@@ -72,7 +72,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           <li>
             <strong>Apps you consent to</strong> over our OAuth 2.1 API — limited to the permissions and
             aircraft covered by your consent, and{" "}
-            <strong>never your log entries or scans</strong>. Revoke any of them under Profile →
+            <strong>never your log entries or scans</strong>. Revoke any of them under Account →
             Connected apps.
           </li>
         </ul>
@@ -142,14 +142,12 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         <p>
           <strong>No.</strong> Not partly, not eventually. Your physical logbooks remain the system
           of record under <strong>14 CFR 91.417</strong>. MyTailLog is an index of them and a
-          decision-support layer on top — it is not a maintenance record, not an airworthiness
-          determination, and not a sign-off.
+          decision-support layer on top — it is not an airworthiness determination.
         </p>
         <p>
-          This is a design decision, not a missing feature. Electronic signatures are{" "}
-          <strong>explicitly out of scope</strong> precisely so the product stays on the index side
-          of the line and out of AC 120-78A territory. Keep the books; keep them safe; use this to
-          find things in them and to see what&apos;s coming due.
+          You can create and electronically sign a maintenance entry in MyTailLog, then print it
+          as a sticker for the physical book. The entry remains locked in the app; corrections
+          create a linked new entry. Keep the books and confirm anything you rely on against them.
         </p>
       </>
     ),
@@ -314,7 +312,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>
-          Yes. Connect <strong>Dropbox</strong> and/or <strong>Google Drive</strong> in Profile, pick{" "}
+          Yes. Connect <strong>Dropbox</strong> and/or <strong>Google Drive</strong> in Account settings, pick{" "}
           <strong>monthly</strong> or <strong>quarterly</strong>, and the same re-importable{" "}
           <code className="readout text-[13px]">.zip</code> described above is pushed there on that
           schedule — one archive per aircraft, named{" "}
@@ -341,14 +339,14 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           the disk space it would save.
         </p>
         <p>
-          <strong>Disconnecting destroys the tokens.</strong> Revoking a destination in Profile
+          <strong>Disconnecting destroys the tokens.</strong> Revoking a destination in Account settings
           erases the stored access and refresh tokens outright — not a flag on a row — so nothing
           decryptable is left behind. The archives already in your cloud are yours and stay put.
           While connected, the tokens are encrypted (AES-256-GCM) in a database schema that
           isn&apos;t reachable over the API at all, and are never sent to the browser.
         </p>
         <p>
-          <strong>If a backup fails you get told.</strong> Profile shows the last run, its status and
+          <strong>If a backup fails you get told.</strong> Account settings shows the last run, its status and
           its size; after two consecutive failures you get an email. A backup that quietly stopped
           working months ago is worse than no backup, because you believed you had one. Very large
           aircraft (currently over 400 MB of scans) are reported as skipped rather than failing
@@ -448,7 +446,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
             It is <strong>decrypted server-side only</strong> and never sent back to the browser.
             After you save it, only the last four characters are ever displayed.
           </li>
-          <li>You can remove it at any time from Profile.</li>
+          <li>You can remove it at any time from Account settings.</li>
         </ul>
         <p>
           Why encryption on top of RLS: row-level security already stops other users from reading
@@ -475,7 +473,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           Scan a weight &amp; balance sheet into Other and it becomes a new W&amp;B revision; scan an
           AD compliance report and it becomes the ground truth for your AD state. Permanent records
           (airworthiness certificate, registration, radio station authorization, POH/AFM, STCs, 337s,
-          8130-3s, manuals) go in the Records Vault.
+          8130-3s, manuals) go in Documents.
         </p>
         <p>
           The product is sized for a <strong>piston GA owner</strong> and the people they share the
@@ -586,7 +584,7 @@ export default function FaqPage() {
               },
               {
                 q: "Does MyTailLog replace my paper logbooks?",
-                a: "No. The physical logbooks remain the system of record under 14 CFR 91.417. MyTailLog is a searchable index and decision-support layer, not a maintenance record, an airworthiness determination, or a sign-off.",
+                a: "No. The physical logbooks remain the system of record under 14 CFR 91.417. MyTailLog helps you search and plan from those records, and can produce a signed entry to print and place in the book.",
               },
               {
                 q: "Is my data used to train AI models?",

@@ -1,47 +1,34 @@
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { MarketingShell } from "@/components/MarketingShell";
-import review from "../../screenshots/review.png";
-import status from "../../screenshots/status.png";
-import ask from "../../screenshots/ask.png";
-import timeline from "../../screenshots/timeline.png";
-import wb from "../../screenshots/wb.png";
-import hub from "../../screenshots/hub.png";
 
 export const metadata = {
   title: "Product tour — MyTailLog",
   description: "See how MyTailLog turns aircraft logbook scans into reviewed records, due-item tracking, cited answers, and a searchable maintenance history.",
 };
 
-const STEPS: Array<{ title: string; body: string; image: StaticImageData; alt: string }> = [
-  { title: "Review every extracted field", body: "The original scan stays beside the structured entry. Confidence is scored field by field so uncertain readings are obvious before you confirm them.", image: review, alt: "A handwritten logbook scan beside its extracted maintenance entry" },
-  { title: "See what is due", body: "Inspections, recurring maintenance, and airworthiness directives are ordered by urgency with both calendar and aircraft-hour limits visible.", image: status, alt: "Aircraft maintenance status grid ordered by urgency" },
-  { title: "Ask the logbook", body: "Ask a plain-English question and get a concise answer with the source entries cited underneath for verification against the scans.", image: ask, alt: "A logbook question answered with cited maintenance entries" },
-  { title: "Search one timeline", body: "Airframe, engine, propeller, avionics, and other records become one chronological, searchable maintenance history.", image: timeline, alt: "Searchable aircraft maintenance timeline" },
-  { title: "Keep weight and balance history", body: "Current figures sit above every dated revision, with stale data flagged when later equipment changes may have affected it.", image: wb, alt: "Aircraft weight and balance figures and revision history" },
-  { title: "Run the aircraft from one overview", body: "Recorded hours, tracked maintenance, recent activity, and pages awaiting review land in one owner-focused view.", image: hub, alt: "Aircraft overview with hours, tracked maintenance, recent activity and pages awaiting review" },
+const STEPS = [
+  ["Capture the page", "Scan from the mobile app or upload an image or PDF. The original remains attached to the book."],
+  ["Review what was read", "AI drafts dates, hours, work and signatures. Confirm each entry beside the ink before it affects your status."],
+  ["See what is due", "Status brings inspections, oil, recurring maintenance and ADs together with their date and hour limits."],
+  ["Ask and check", "Search every book or ask a plain-English question. Follow the cited entry back to its scanned page."],
+  ["Record new work", "Add readings, oil and squawks; write and sign a maintenance entry, then print its logbook sticker."],
+  ["Take the record along", "Sync the iPhone, iPad or Android app to browse records and documents offline."],
 ];
 
 export default function DemoPage() {
-  return (
-    <MarketingShell eyebrow="Product tour" title="See the workflow before you sign up" lede="Real screens from the fictional N734DM demo aircraft. No guest account and no aircraft data exposed." current="/demo">
-      <div className="space-y-12">
-        {STEPS.map((step, index) => (
-          <section key={step.title} className="space-y-3">
-            <div className="eyebrow">{String(index + 1).padStart(2, "0")}</div>
-            <h2 className="text-xl font-semibold">{step.title}</h2>
-            <p className="text-dim">{step.body}</p>
-            <a href={step.image.src} target="_blank" rel="noreferrer" aria-label={`Open ${step.title.toLowerCase()} screenshot at full size`} className="block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-              <Image src={step.image} alt={step.alt} sizes="(max-width: 768px) 100vw, 720px" placeholder="blur" className="h-auto w-full rounded-lg border border-line bg-panel2" />
-              <span className="mt-2 block text-sm text-accent">Open screenshot at full size →</span>
-            </a>
-          </section>
-        ))}
-        <div className="panel flex flex-wrap items-center justify-between gap-4 p-5">
-          <div><h2 className="font-semibold">Ready to try the real demo?</h2><p className="text-sm text-faint">Free account, no card, with N734DM already loaded.</p></div>
-          <Link href="/signup" className="rounded-md bg-accent px-5 py-3 font-medium text-bg hover:opacity-90">Create free account →</Link>
-        </div>
-      </div>
-    </MarketingShell>
-  );
+  return <MarketingShell eyebrow="Product tour" title="See how the record comes together" lede="The illustration uses our fictional N734DM demo aircraft. Create a free account to explore the live app with its demo data." current="/demo">
+    <figure className="overflow-hidden rounded-leaf border border-rule bg-leaf-2">
+      <Image src="/brand/status-preview.jpg" alt="Illustration of the new Status board with due items and a cited logbook page" width={1440} height={900} className="h-auto w-full" />
+      <figcaption className="p-3 text-small text-ink-3">Illustration of the new design; the values belong to the fictional demo aircraft.</figcaption>
+    </figure>
+    <div className="mt-8 grid gap-3 sm:grid-cols-2">{STEPS.map(([title, body], i) => <section key={title} className="rounded-leaf border border-rule bg-leaf-2 p-5">
+      <span className="text-label text-section-ink-status">{String(i + 1).padStart(2, "0")}</span>
+      <h2 className="mt-2 text-heading">{title}</h2><p className="mt-2 text-body text-ink-2">{body}</p>
+    </section>)}</div>
+    <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-leaf bg-leaf-2 p-5">
+      <div><h2 className="text-heading">Ready to try the demo?</h2><p className="mt-1 text-small text-ink-3">Free account, no card, with N734DM ready to explore.</p></div>
+      <Link href="/login?mode=create" className="rounded-control bg-section-status px-5 py-3 font-bold text-white">Create a free account</Link>
+    </div>
+  </MarketingShell>;
 }
