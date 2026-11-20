@@ -17,9 +17,11 @@ export const metadata: Metadata = {
 
 export default async function AdsIndexPage() {
   let rows: AdCatalogModel[] = [];
+  let failed = false;
   try {
     rows = await listCatalogModels();
   } catch (e) {
+    failed = true;
     console.error("ads index: catalog unavailable", e);
   }
 
@@ -36,8 +38,10 @@ export default async function AdsIndexPage() {
     >
       <AdListDisclaimer />
       <div className="mt-6">
-        {makes.length === 0 && (
-          <p>The AD list is being prepared. Check back soon.</p>
+        {failed ? (
+          <p role="alert">Couldn&apos;t load the AD list. Try again later.</p>
+        ) : makes.length === 0 && (
+          <p>No models are listed yet. The list is rebuilt from the Federal Register each week.</p>
         )}
         {makes.map((make, i) => {
           const models = [...(byMake.get(make.slug) ?? [])].sort((a, b) =>
@@ -48,7 +52,7 @@ export default async function AdsIndexPage() {
               <ul className="!list-none !p-0 flex flex-wrap gap-x-4 gap-y-1">
                 {models.map((m) => (
                   <li key={m.model}>
-                    <Link href={adModelPath(make.slug, m.model)} className="inline-flex min-h-10 items-center">
+                    <Link href={adModelPath(make.slug, m.model)} className="inline-flex min-h-11 items-center">
                       {m.model}
                     </Link>{" "}
                     <span className="text-ink-3">({m.ad_count})</span>
@@ -59,7 +63,7 @@ export default async function AdsIndexPage() {
           );
         })}
       </div>
-      <TrackCta />
+      {makes.length > 0 && <TrackCta />}
     </MarketingShell>
   );
 }

@@ -1,5 +1,6 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { PublicTheme } from "@/components/PublicTheme";
 import { buttonClass } from "@/ui/Button";
 import hangar from "@/screenshots/v2-hangar.png";
@@ -64,7 +65,12 @@ export default function DemoPage() {
             </section>
             <figure className="m-0 flex flex-col gap-2 rounded-leaf bg-mat p-[18px] text-on-cover shadow-leaf">
               <Image src={s.shot} alt={s.alt} sizes="(min-width: 1024px) 700px, 100vw" className="h-auto w-full rounded-[var(--radius-m)]" />
-              <figcaption className="text-[13px] leading-[1.45] text-on-cover-2">Demo aircraft N734DM (fictional).</figcaption>
+              <figcaption className="flex flex-wrap items-center justify-between gap-x-4 text-[13px] leading-[1.45] text-on-cover-2">
+                Demo aircraft N734DM (fictional).
+                <a href={s.shot.src} target="_blank" rel="noopener" aria-label={`${s.title}: open the screenshot full size in a new tab`} className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-on-cover underline underline-offset-4">
+                  Open full size <ExternalLink aria-hidden size={16} />
+                </a>
+              </figcaption>
             </figure>
           </li>
         ))}
