@@ -864,6 +864,7 @@ function computeVisits(input: DueInput, items: DueItem[], rate: Rate, today: str
       const mx = mxOf(b);
       const inDays = b.firstDate! <= addDays(anchor, mx?.visit_window_days ?? VISIT_WINDOW_DAYS);
       // shortcut: hours flown are counted to the anchor date (the visit week is not known until the group is), 09 §3.5 step 3.
+      // Count them to the visit week if an owner flying heavily sees an hours item left out of a visit it fits.
       const inHours = !!b.hours && b.hours.remaining - flown(anchor) <= (mx?.visit_window_hours ?? VISIT_WINDOW_HOURS);
       if (b === a || inDays || inHours) { members.push(b); used.add(b.key); }
     }

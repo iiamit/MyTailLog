@@ -41,9 +41,10 @@ export function currentAiContext(): AiCtx {
 //   AI_OWN_USER_DAILY_CALLS    — per-user/day cap on a user's OWN key (default 1000)
 //   AI_SHARED_DAILY_USD        — GLOBAL/day $ ceiling on the shared key across all
 //                                users (default 20; 0 disables the global guard)
-// ponytail: per-user caps bound abuse ACROSS requests — a single scan that fans
+// shortcut: per-user caps bound abuse ACROSS requests — a single scan that fans
 // out to many calls isn't throttled mid-request. The global $ ceiling is the
-// real bound on total shared-key spend.
+// real bound on total shared-key spend. Check mid-request the first time the
+// daily $ ceiling is hit before the day is half over.
 const num = (v: string | undefined, d: number) => {
   const n = v ? Number(v) : NaN;
   return Number.isFinite(n) && n >= 0 ? n : d;

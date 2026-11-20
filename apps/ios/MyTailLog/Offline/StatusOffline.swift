@@ -4,7 +4,8 @@ import Foundation
 /// mirror's `aircraft_status_snapshot` is used when it is newer, so Status opens offline with the records it last
 /// had and the tail line says when they were synced.
 /// shortcut: no local recompute of due items for unsent changes yet (09 §3.12 items 1-6); the Waiting group on
-/// Status names them "On this phone" instead.
+/// Status names them "On this phone" instead. Run the core's DueEngine.kt over the mirror and outbox when owners
+/// report Status disagreeing with work they logged offline.
 extension OfflineStore {
     private struct AccessRow: Codable { let id: String; let tailNumber: String; let isDemo: Bool; let role: String }
     private var accessURL: URL { dir.appending(path: "Cache/aircraft.json") }

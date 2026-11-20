@@ -4,7 +4,8 @@ import SwiftUI
 /// What was loaded stays on screen while a refresh runs or after one fails; `failed` with nothing loaded is the error state.
 /// Books, pages and entries come from the phone's mirror (05 §6.1) once it has synced; the map comes from the server
 /// and its last copy is kept on the phone for offline. `fromPhone` says the server couldn't be asked.
-/// shortcut: the map is not computed on the phone (09 §3.12 item 7); offline it is the last one the server drew.
+/// shortcut: the map is not computed on the phone (09 §3.12 item 7); offline it is the last one the server drew. Build it
+/// from the mirror with the core's MapModel.kt when owners report an offline map missing pages they just confirmed.
 @MainActor @Observable
 final class BooksModel {
     let aircraft: AircraftAccess

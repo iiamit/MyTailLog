@@ -11,7 +11,11 @@ export function hit(key: string, limit: number, windowMs: number, now = Date.now
     windows.set(key, { count: 1, resetAt: now + windowMs });
     return null;
   }
-  if (w.count >= limit) return Math.max(1, Math.ceil((w.resetAt - now) / 1000));
+  if (w.count >= limit) {
+    // Once per key and window: how often limits bite says whether the per-instance count needs a shared store.
+    if (w.count++ === limit) console.warn("[shortcut-trigger]", { at: "lib/rateLimit.ts:16", limit, windowMs });
+    return Math.max(1, Math.ceil((w.resetAt - now) / 1000));
+  }
   w.count += 1;
   return null;
 }

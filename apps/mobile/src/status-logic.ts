@@ -35,8 +35,8 @@ export function detectBackwardsReading(
   newReading: number | null,
 ): { prior: number; asOf: string | null } | null {
   if (newReading == null || !Number.isFinite(newReading)) return null;
-  // ponytail: latest by date, later in the array wins a tie; no magnitude
-  // heuristic — a 0.1 drop is a mis-key, but the owner decides that, not us.
+  // Decision: latest by date, later in the array wins a tie; no magnitude
+  // heuristic. A 0.1 drop is a mis-key, but the owner decides that, not us.
   let last: ReadingLite | null = null;
   for (const r of readings) {
     if (r.value == null) continue;

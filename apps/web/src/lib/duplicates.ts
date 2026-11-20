@@ -14,8 +14,9 @@
 // other). The page listing subsumes the entry listing, so the caller filters
 // entry clusters that a page cluster already covers (see filterEntryClusters).
 //
-// ponytail: O(n^2) per logbook. Fine for a personal logbook (hundreds–a few
-// thousand entries); bucket by date first if one logbook ever dwarfs that.
+// shortcut: O(n^2) per logbook. Fine for a personal logbook (hundreds–a few
+// thousand entries); bucket by date first if one logbook ever dwarfs that
+// (findEntryDuplicates logs a [shortcut-trigger] past DUP_SCAN_WARN).
 // ===========================================================================
 
 export type DupEntry = {
@@ -43,6 +44,8 @@ export type Cluster = { ids: string[]; keepId: string };
 // Tuning knobs (calibration) — deliberately exposed. Extraction/OCR drift is
 // real, so these are thresholds, not equality. Loosen if dupes slip through;
 // tighten if unrelated entries get grouped.
+/** One logbook larger than this makes the O(n^2) scan worth replacing. */
+export const DUP_SCAN_WARN = 3000;
 export const ENTRY_TEXT_SIM = 0.5; // min token overlap AFTER date/meter agree
 export const PAGE_TEXT_SIM = 0.7; // min OCR-text overlap for two pages to be dupes
 const METER_EPS = 0.05; // tach/hobbs within this are "the same reading"
@@ -156,6 +159,8 @@ export function findEntryDuplicates(entries: DupEntry[]): Cluster[] {
   for (const e of entries) {
     (byLogbook.get(e.logbook_id) ?? byLogbook.set(e.logbook_id, []).get(e.logbook_id)!).push(e);
   }
+  const largest = Math.max(0, ...[...byLogbook.values()].map((g) => g.length));
+  if (largest > DUP_SCAN_WARN) console.warn("[shortcut-trigger]", { at: "lib/duplicates.ts:163", entries: largest });
   for (const group of byLogbook.values()) {
     const toks = group.map((e) => tokens(e.text));
     const dsu = new DSU(group.length);

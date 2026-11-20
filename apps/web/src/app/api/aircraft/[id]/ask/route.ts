@@ -8,9 +8,10 @@ import { logbookLabel } from "@/lib/logbooks";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// ponytail: sends the whole (compact) entry set to the model — fine for a
+// shortcut: sends the whole (compact) entry set to the model — fine for a
 // personal logbook (hundreds–low thousands of entries fit Haiku's 200K window).
-// Cap keeps the prompt bounded; swap to retrieval/RAG only if libraries dwarf it.
+// The newest entries are kept when the cap (or PostgREST's 1,000-row limit) bites;
+// swap to retrieval when the [shortcut-trigger] log below shows up.
 const MAX_ENTRIES = 2000;
 const SNIPPET = 220;
 
@@ -77,11 +78,13 @@ export async function POST(
       .select("id, page_id, logbook_id, entry_date, hobbs, tach, description, work_performed, parts")
       .eq("aircraft_id", id)
       .eq("owner_confirmed", true)
-      .order("entry_date", { ascending: true, nullsFirst: true })
+      .order("entry_date", { ascending: false, nullsFirst: false })
       .limit(MAX_ENTRIES),
   ]);
 
-  const rows = entries ?? [];
+  // Fetched newest first so a cap drops the oldest; the prompt reads oldest first.
+  const rows = (entries ?? []).reverse();
+  if (rows.length >= 1000) console.warn("[shortcut-trigger]", { at: "app/api/aircraft/[id]/ask/route.ts:87", entries: rows.length });
   if (rows.length === 0) {
     return NextResponse.json({
       answer:

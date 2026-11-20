@@ -371,7 +371,8 @@ struct FlowLayout: Layout {
 }
 
 /// M-STATUS-05 item detail: the rule, its limits (both, the first named), the last completion and the page that says so.
-/// shortcut: no SourceMat crop, history line or Mark done until Logbooks (phase 2) and capture (phase 3).
+/// shortcut: no SourceMat crop, history line or Mark done here; the snapshot carries no page id or box. Add them with
+/// the tappable PageCite, once the snapshot sends the page.
 struct ItemDetail: View {
     let item: DueItem
     let snapshot: StatusSnapshot

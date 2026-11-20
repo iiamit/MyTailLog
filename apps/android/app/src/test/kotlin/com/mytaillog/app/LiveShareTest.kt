@@ -58,10 +58,10 @@ class LiveShareTest {
         val url = made.s("url")!!
         val open = http.get(url)
         assertEquals("opens without an account", 200, open.status.value)
-        // shortcut: GET …/record-rooms answers 500 on TEST while it holds a room it can't decrypt (one made by
-        // another server); the list is checked when it answers, the rest goes by the PATCH reply and the link itself.
-        val list = runCatching { parseRooms(api.roomsJson(QA)) }.onFailure { println("record-rooms list failed: ${it.message}") }.getOrNull()
-        list?.let { l -> val room = l.single { it.id == id }; assertEquals(url, room.url); assertTrue(room.active) }
+        // The list answers even while it holds a room this server can't decrypt (tryDecryptSecret).
+        val room = parseRooms(api.roomsJson(QA)).single { it.id == id }
+        assertEquals(url, room.url)
+        assertTrue(room.active)
         println("opens after one visit: ${api.roomOpens(QA, id).size}")
         val revoked = api.updateRoom(QA, id, json("revoke" to true))
         assertTrue(revoked.toString(), revoked.s("revokedAt") != null)

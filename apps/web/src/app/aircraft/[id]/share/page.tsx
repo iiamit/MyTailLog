@@ -48,6 +48,7 @@ export default async function SharePage({
     supabase.from("log_entry").select("logbook_id, owner_confirmed").eq("aircraft_id", id).is("authored_superseded_by", null),
     supabase.from("document").select("id, type, title, file_name").eq("aircraft_id", id).not("storage_path", "is", null).order("created_at"),
   ]);
+  if ((views ?? []).length >= 5000) console.warn("[shortcut-trigger]", { at: "app/aircraft/[id]/share/page.tsx:51", views: views!.length });
   const roomRows: RoomRow[] = (rooms ?? []).map((r) => {
     const mine = (views ?? []).filter((v) => v.room_id === r.id);
     const token = tryDecryptSecret(r.token_enc);

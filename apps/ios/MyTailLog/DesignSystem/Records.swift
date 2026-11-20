@@ -79,7 +79,8 @@ struct FirstBadge: View {
 
 /// PageCite (02 §5.4): "Airframe p. 58" in the board ink, underlined, spoken expanded. Nil is an owner's note
 /// without a page: "your note" in ink-3, not a link.
-/// shortcut: not tappable until the ScanViewer lands with Logbooks (phase 2).
+/// shortcut: not tappable; the status snapshot and most callers carry a page label but no page id. Open the page in
+/// Logbooks' ScanViewer once the snapshot's lastDone sends the page id.
 struct PageCite: View {
     let label: String?
     @Environment(\.section) private var section
