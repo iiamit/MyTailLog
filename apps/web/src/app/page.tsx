@@ -16,11 +16,11 @@ import { buttonClass } from "@/ui/Button";
 // and the Jul 18, 2026 annual on airframe page 6 is read by AI and not yet confirmed, so it doesn't count.
 const DEMO_MAP = demoMap as unknown as MapModel;
 
-const VERDICT_TEXT = "2 items are overdue: the annual and the VOR check.";
+const VERDICT_TEXT = "The annual is overdue: the last one confirmed is from July 2025.";
 const DEMO_VERDICT = {
   text: VERDICT_TEXT,
-  emphasis: [[0, 19]] as [number, number][],
-  lines: ["3 entries read by AI are waiting for you. They don't count until you confirm them."],
+  emphasis: [[0, 21]] as [number, number][],
+  lines: ["A newer annual on airframe page 6 is read by AI and not yet confirmed, so it doesn't count yet."],
 };
 
 const STEPS: [string, string][] = [
@@ -77,9 +77,9 @@ export default async function Home() {
                 </span>
                 <TrustMark level="confirmed" label="Confirmed by the owner" />
               </li>
-              <li>
-                <span className="mr-2 inline-flex align-middle"><TrustMark level="ai_read" /></span>
-                The Jul 18, 2026 annual on airframe page 6 (beside) waits for you to confirm it. Until you do, Status doesn&apos;t count it.
+              <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>Newer annual: Airframe logbook p. 6, Jul 18, 2026</span>
+                <TrustMark level="ai_read" />
               </li>
             </ul>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">

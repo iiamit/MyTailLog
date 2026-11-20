@@ -72,6 +72,13 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </MarketingSection>
         )}
       </div>
+      <MarketingSection id="start" title="Try it on your own books">
+        <p>
+          A free account opens with the demo aircraft N734DM, so you can look around before adding yours.{" "}
+          <Link href="/login?mode=create">Create a free account</Link>. Reading pages with AI has a daily allowance of
+          about 50 pages in any 24 hours.
+        </p>
+      </MarketingSection>
       <nav aria-label="More owner guides" className="border-t border-rule pt-4">
         <h2 className="text-label text-ink-3">More owner guides</h2>
         <ul className="mt-1 flex flex-wrap gap-x-6">

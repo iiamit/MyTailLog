@@ -122,7 +122,7 @@ export default function LoginPage() {
         {/* Phones put the form first; the pitch shrinks to one line under it. */}
         <Link href="/" className="inline-flex min-h-11 items-center self-start text-[20px] font-extrabold text-on-cover md:hidden">MyTailLog</Link>
         <section aria-label="About MyTailLog" className="flex flex-col gap-4 rounded-leaf bg-cover-2 px-[30px] pt-[26px] pb-7 text-on-cover max-md:order-last max-md:gap-1 max-md:bg-transparent max-md:px-1 max-md:pt-2 max-md:pb-0">
-          <Link href="/" className="self-start text-board-title text-on-cover max-md:hidden">MyTailLog</Link>
+          <Link href="/" className="inline-flex min-h-11 items-center self-start text-board-title text-on-cover max-md:hidden">MyTailLog</Link>
           <p className="text-lede text-on-cover max-md:hidden">Your aircraft&apos;s logbooks, photographed, read and searchable, with what is due worked out from the pages themselves.</p>
           <p className="text-body text-on-cover-2 max-md:hidden">The paper logbooks stay the legal record. MyTailLog is the index to them.</p>
           <p className="text-body text-on-cover-2 max-md:hidden">Your account opens with the demo aircraft N734DM, a fictional 1978 Cessna 172N, so you can look around before you scan anything.</p>
@@ -135,7 +135,8 @@ export default function LoginPage() {
           <h1 id="board-title" tabIndex={-1} className="text-heading outline-none">{creating ? "Create your free account" : "Sign in to MyTailLog"}</h1>
           <p className="mt-1 text-body text-ink-2">
             {creating
-              ? "No card, no trial clock. Your account opens with the demo aircraft N734DM to look around."
+              ? <>No card, no trial clock. Your account opens with the demo aircraft N734DM to look around.{" "}
+                  <Link href="/privacy" className="font-semibold text-ink underline underline-offset-4">How we handle your data</Link>.</>
               : "Welcome back. Continue with Google or Apple, or use your email."}
           </p>
 
