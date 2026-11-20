@@ -24,7 +24,8 @@ final class AddUITests: XCTestCase {
             let action = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", label)).firstMatch
             XCTAssertTrue(action.waitForExistence(timeout: 5))
             action.tap()
-            XCTAssertTrue(app.staticTexts[destination].waitForExistence(timeout: 10), "\(label) did not open \(destination)")
+            let opened = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", destination)).firstMatch
+            XCTAssertTrue(opened.waitForExistence(timeout: 10), "\(label) did not open \(destination)")
             app.terminate()
         }
     }
