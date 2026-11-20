@@ -33,7 +33,7 @@ export async function InformationShell({
       <HangarShell user={user} profile={profile} fleet={fleet ?? []}>
         <div data-section="setup" className="board h-dvh overflow-y-auto bg-board px-[22px] pb-[22px] text-on-board max-lg:px-3">
           <header className="board-head flex min-h-[78px] items-end px-1 pt-4">
-            <h1 id="board-title" className="mb-3.5 text-board-title max-lg:text-[24px]">{title}</h1>
+            <h1 id="board-title" tabIndex={-1} className="mb-3.5 text-board-title outline-none max-lg:text-[24px]">{title}</h1>
           </header>
           <main id="main-content" tabIndex={-1} className="outline-none">{leaf}</main>
         </div>

@@ -10,7 +10,7 @@ const GUIDES = {
     lede: "Turn paper aircraft logbooks into a searchable index while keeping the originals as the legal record.",
     sections: [
       ["Prepare before scanning", "Inventory every airframe, engine, propeller, and avionics volume. Photograph the cover and identifying pages first, keep books in order, and avoid removing bound pages. A phone document scanner is usually enough; even lighting and a flat page matter more than expensive hardware."],
-      ["Capture in small batches", "Scan one logbook at a time and preserve page order. MyTailLog accepts camera captures and PDF uploads, then extracts dates, times, maintenance descriptions, signatures, AD references, and service-bulletin references. Handwritten pages use a model selected for harder handwriting; printed records use the lower-cost OCR path."],
+      ["Capture in small batches", "Scan one logbook at a time and preserve page order. MyTailLog accepts camera captures and PDF uploads, then extracts dates, times, maintenance descriptions, signatures, AD references, and service-bulletin references. Handwritten pages are read by a stronger AI model that copes better with handwriting; typed and printed pages use a simpler, cheaper text reader."],
       ["Review every extraction", "Machine extraction is a draft, not a maintenance determination. Compare each result with the page image, correct uncertain fields, and confirm it only when the transcription matches. MyTailLog keeps the source scan beside the structured entry so later checks remain possible."],
       ["Protect the originals", "Keep physical records secure and backed by a complete export of the digital index and scans. MyTailLog is not the legal maintenance record; verify anything used for an airworthiness decision against the original records and applicable current data."],
     ],
@@ -57,7 +57,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   if (!guide) notFound();
 
   return (
-    <MarketingShell group={slug === "digitize-aircraft-logbooks" ? "books" : "guides"} title={guide.title} lede={guide.lede} current={`/guides/${slug}`}>
+    <MarketingShell group="guides" title={guide.title} lede={guide.lede} current={`/guides/${slug}`}>
       <div>
         {guide.sections.map(([title, body], index) => (
           <MarketingSection key={title} id={`step-${index + 1}`} title={title} first={index === 0}>
