@@ -154,18 +154,22 @@ class OfflineStore(
     /** Uploads every held page; true when some are left for a retry. Stops at the first network failure. */
     private suspend fun uploadPages(): Boolean {
         val jobs = pageJobs().filter { it.uploaded || it.attempts < MAX_TRIES }
-        jobs.forEachIndexed { i, j ->
+        // (done, total) over the pages this run sends, so "Uploading 3 of 5" counts only those.
+        val total = jobs.count { !it.uploaded }
+        var done = 0
+        jobs.forEach { j ->
             if (!j.uploaded) {
-                state.update { it.copy(uploading = i to jobs.count { x -> !x.uploaded }) }
+                state.update { it.copy(uploading = done to total) }
                 try {
                     uploadOne(j)
                     q.setFileStatus(HELD, 1.0, null, 0, j.id)
+                    done++
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: UploadHttpException) {
                     q.setFileStatus(HELD, 0.0, e.message, if (e.permanent) MAX_TRIES else 1, j.id)
                     refresh()
-                    return@forEachIndexed
+                    return@forEach
                 } catch (_: Exception) {
                     return true
                 }

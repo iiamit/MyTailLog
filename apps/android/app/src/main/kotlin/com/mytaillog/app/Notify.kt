@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -15,8 +16,10 @@ import androidx.core.content.ContextCompat
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
+import androidx.work.ForegroundInfo
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -79,6 +82,12 @@ object Channels {
 fun canNotify(context: Context) = Build.VERSION.SDK_INT < 33 ||
     ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
+/** Device pref: the notification permission was asked at a scan, so a denial is never asked again (M-SYS-04). */
+const val PREF_NOTIFY_ASKED = "notify_asked_at_scan"
+
+/** Ask at the first scan on Android 13+ when notifications aren't allowed and this phone hasn't asked there before. */
+fun askNotifyAtScan(sdk: Int, granted: Boolean, asked: Boolean) = sdk >= 33 && !granted && !asked
+
 private fun openIntent(context: Context, link: String?, request: Int): PendingIntent = PendingIntent.getActivity(
     context, request,
     Intent(Intent.ACTION_VIEW, link?.let(Uri::parse), context, MainActivity::class.java),
@@ -125,23 +134,53 @@ class ReadingWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val aircraftId = inputData.getString(AIRCRAFT) ?: return Result.success()
         val batches = inputData.getStringArray(BATCHES)?.toSet().orEmpty()
         val tail = inputData.getString(TAIL)
-        if (!devicePrefs(app).getBoolean(PREF_READING, true)) return Result.success()
+        // A denied permission is respected: no note, and no reason to poll.
+        if (!devicePrefs(app).getBoolean(PREF_READING, true) || !canNotify(app)) return Result.success()
         Channels.ensure(app)
-        val id = NOTE_BASE + aircraftId.hashCode() % 1000
+        val id = NOTE_BASE + Math.floorMod(aircraftId.hashCode(), 1000)
+        var plain = false
         val until = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(20)
-        while (System.currentTimeMillis() < until) {
-            val queue = try { app.captureApi.readingQueue(aircraftId) } catch (e: CancellationException) { throw e } catch (_: Exception) { null }
-            val note = queue?.batches?.filter { it.id in batches }?.let(::readingNote)
-            if (queue != null && note == null) break
-            if (note != null) post(app, id, aircraftId, tail, note)
-            if (note?.done == true) break
-            delay(15_000)
+        try {
+            while (System.currentTimeMillis() < until) {
+                val queue = try { app.captureApi.readingQueue(aircraftId) } catch (e: CancellationException) { throw e } catch (_: Exception) { null }
+                val note = queue?.batches?.filter { it.id in batches }?.let(::readingNote)
+                if (queue != null && note == null) break
+                if (note?.done == true) {
+                    // Its own id: the ongoing one goes with the foreground job; this one stays until opened.
+                    notify(app, id + DONE_OFFSET, build(app, id + DONE_OFFSET, aircraftId, tail, note))
+                    break
+                }
+                if (note != null) {
+                    // Foreground (dataSync) outlives WorkManager's 10-minute cap; Android may refuse it from the background.
+                    val n = build(app, id, aircraftId, tail, note)
+                    val fg = runCatching {
+                        setForeground(if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) else ForegroundInfo(id, n))
+                    }.isSuccess
+                    if (!fg) { notify(app, id, n); plain = true }
+                }
+                delay(15_000)
+            }
+        } finally {
+            if (plain) NotificationManagerCompat.from(app).cancel(id)
         }
         return Result.success()
     }
 
-    private fun post(context: Context, id: Int, aircraftId: String, tail: String?, n: ReadingNote) {
-        if (!canNotify(context)) return
+    /** Expedited work needs this before Android 12; the first poll replaces it within seconds. */
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        Channels.ensure(applicationContext)
+        val id = NOTE_BASE + Math.floorMod((inputData.getString(AIRCRAFT) ?: "").hashCode(), 1000)
+        val n = NotificationCompat.Builder(applicationContext, Channels.READING)
+            .setSmallIcon(R.drawable.ic_stat_book).setContentTitle(inputData.getString(TAIL)?.let { "Reading pages for $it" } ?: "Reading pages")
+            .setOngoing(true).setProgress(0, 0, true).build()
+        return if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) else ForegroundInfo(id, n)
+    }
+
+    private fun notify(context: Context, id: Int, n: android.app.Notification) {
+        try { NotificationManagerCompat.from(context).notify(id, n) } catch (_: SecurityException) {}
+    }
+
+    private fun build(context: Context, id: Int, aircraftId: String, tail: String?, n: ReadingNote): android.app.Notification {
         val review = appLink(aircraftId, "review")
         val b = NotificationCompat.Builder(context, if (n.done) Channels.PAGES else Channels.READING)
             .setSmallIcon(R.drawable.ic_stat_book)
@@ -156,7 +195,7 @@ class ReadingWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             b.setOngoing(true).setProgress(n.total.coerceAtLeast(1), n.read, false)
                 .setContentIntent(openIntent(context, appLink(aircraftId, "queue"), id))
         }
-        try { NotificationManagerCompat.from(context).notify(id, b.build()) } catch (_: SecurityException) {}
+        return b.build()
     }
 
     companion object {
@@ -164,11 +203,13 @@ class ReadingWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         private const val BATCHES = "batches"
         private const val TAIL = "tail"
         private const val NOTE_BASE = 8000
+        private const val DONE_OFFSET = 1000
         const val PREF_READING = "reading_progress"
 
-        /** After pages reach storage (SyncWorker): one job per aircraft, replaced by the newest upload. */
+        /** After pages reach storage (SyncWorker): one job per aircraft, replaced by the newest upload. Expedited, so the note starts at once. */
         fun start(context: Context, aircraftId: String, batches: List<String>, tail: String?) {
             val req = OneTimeWorkRequestBuilder<ReadingWorker>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .setInputData(workDataOf(AIRCRAFT to aircraftId, BATCHES to batches.toTypedArray(), TAIL to tail))
                 .build()

@@ -1,9 +1,11 @@
 package com.mytaillog.app
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.PickVisualMediaRequest
@@ -173,6 +175,19 @@ fun ScanSetupSheet(host: CaptureHost, aircraft: AircraftAccess, books: List<Book
     val book = books.firstOrNull { it.id == bookId }
     fun target() = book?.let { ScanTarget(aircraft.aircraft.id, aircraft.aircraft.tailNumber, it.id, it.name, handwritten) }
 
+    // Upload and reading progress live in the notification shade: ask once, at the first scan, after saying why (M-SYS-04).
+    val prefs = remember { devicePrefs(context) }
+    val askNotify = remember { askNotifyAtScan(Build.VERSION.SDK_INT, canNotify(context), prefs.getBoolean(PREF_NOTIFY_ASKED, false)) }
+    var afterAsk by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val notifyAsk = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { afterAsk?.invoke(); afterAsk = null }
+    fun first(go: () -> Unit): () -> Unit = {
+        if (askNotify && !prefs.getBoolean(PREF_NOTIFY_ASKED, false)) {
+            prefs.edit().putBoolean(PREF_NOTIFY_ASKED, true).apply()
+            afterAsk = go
+            notifyAsk.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else go()
+    }
+
     val allowance by produceState<Allowance?>(null, sync.online) {
         value = if (sync.online) runCatching { host.api.readingQueue(aircraft.aircraft.id).allowance }.getOrNull() else null
     }
@@ -233,9 +248,10 @@ fun ScanSetupSheet(host: CaptureHost, aircraft: AircraftAccess, books: List<Book
             }
             Text(allowanceLine(allowance, sync.online), color = c.ink3, style = MaterialTheme.typography.bodySmall)
             message?.let { Text(it, color = c.alarmText, style = MaterialTheme.typography.bodyMedium) }
-            DButton(stringResource(R.string.scan_open_camera), { target()?.let { onDismiss(); onCamera(it) } }, enabled = book != null, icon = LucideIcons.Camera)
-            DButton(stringResource(R.string.scan_system_scanner), ::systemScanner, kind = ButtonKind.Quiet, enabled = book != null)
-            DButton(stringResource(R.string.scan_choose_photos), { photos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, kind = ButtonKind.Quiet, enabled = book != null)
+            if (askNotify) Text(stringResource(R.string.scan_notify_primer), color = c.ink3, style = MaterialTheme.typography.bodySmall)
+            DButton(stringResource(R.string.scan_open_camera), first { target()?.let { onDismiss(); onCamera(it) } }, enabled = book != null, icon = LucideIcons.Camera)
+            DButton(stringResource(R.string.scan_system_scanner), first(::systemScanner), kind = ButtonKind.Quiet, enabled = book != null)
+            DButton(stringResource(R.string.scan_choose_photos), first { photos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, kind = ButtonKind.Quiet, enabled = book != null)
         }
     }
 }
