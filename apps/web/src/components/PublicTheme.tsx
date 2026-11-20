@@ -20,7 +20,7 @@ function CoverActions({ signedIn, stacked }: { signedIn: boolean; stacked?: bool
   const quiet = "state-layer inline-flex min-h-11 items-center justify-center rounded-tab bg-cover-2 px-3 text-[15px] font-semibold text-on-cover";
   const filled = "state-layer inline-flex min-h-11 items-center justify-center rounded-tab bg-on-cover px-4 text-[15px] font-bold whitespace-nowrap text-cover max-sm:px-3";
   if (signedIn) return <Link href="/hangar" className={filled}>Open MyTailLog</Link>;
-  if (!stacked) return <Link href="/login?mode=create" className={filled}>Create free account</Link>;
+  if (!stacked) return <Link href="/login?mode=create" className={filled}>Create<span className="max-[359px]:hidden">&nbsp;free</span>&nbsp;account</Link>;
   return (
     <div className="grid gap-2">
       <Link href="/login" className={quiet}>Sign in</Link>
