@@ -7,6 +7,12 @@ import type { Box } from "@/lib/v2/books";
 
 export type { Box };
 
+/** The settled state of an image that may have finished before React hydrated (onLoad never fires then), or null. */
+export function settledImage(img: { complete: boolean; naturalWidth: number } | null): "ok" | "error" | null {
+  if (!img?.complete) return null;
+  return img.naturalWidth > 0 ? "ok" : "error";
+}
+
 const pct = (b: Box) => ({ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` });
 
 /**
@@ -33,6 +39,13 @@ export function ScanViewer({
   const [attempt, setAttempt] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
   const hi = useRef<HTMLDivElement>(null);
+  const img = useRef<HTMLImageElement>(null);
+
+  // A cached or server-rendered image can load before hydration; its onLoad never reaches React, so it stayed hidden.
+  useEffect(() => {
+    const settled = state === "loading" ? settledImage(img.current) : null;
+    if (settled) setState(settled);
+  }, [state, attempt]);
 
   const zoom = (k: "+" | "-" | "0") => setScale((s) => (k === "0" ? 1 : Math.min(4, Math.max(1, s + (k === "+" ? 0.5 : -0.5)))));
   useEffect(() => {
@@ -100,6 +113,7 @@ export function ScanViewer({
             {/* eslint-disable-next-line @next/next/no-img-element -- a stable authenticated route, not an optimisable asset */}
             <img
               key={attempt}
+              ref={img}
               src={attempt ? `${src}${src.includes("?") ? "&" : "?"}r=${attempt}` : src}
               alt={alt}
               onLoad={() => setState("ok")}
