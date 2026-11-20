@@ -45,7 +45,7 @@ export async function loadDueInput(supabase: SupabaseClient<Database>, id: strin
     all("ad_compliance", "id, kind, reference, recurring, status, interval_months, interval_hours, complied_date, complied_hours, next_due_date, next_due_hours, reference_entry_id, provider_id"),
     all("document", "id, type, title, expires_on, renews_every_months, track_expiry, remind_lead_days"),
     all("item_completion", "id, maintenance_item_id, ad_compliance_id, log_entry_id, done_date, done_hours"),
-    all("log_entry", "id, logbook_id, page_id, entry_date, tach, hobbs, airframe, trust, replaced_by_entry_id, signature_name, is_continuation, mechanic_cert_number, entry_kind, description"),
+    all("log_entry", "id, logbook_id, page_id, entry_date, tach, hobbs, airframe, trust, replaced_by_entry_id, signature_name, is_continuation, mechanic_cert_number, entry_kind, description, work_performed"),
     all("logbook", "id, type, component_ref, title"),
     all("page", "id, logbook_id, page_sequence, extraction_status, landing_date"),
     all("hours_reading", "id, reading_date, tach, hobbs, airframe, source"),

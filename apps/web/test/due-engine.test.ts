@@ -103,3 +103,37 @@ test("calendar-month items are due at the end of the month", () => {
     assert.equal(s.items[0].calendar!.calendarMonthRule, true);
   }
 });
+
+test("legacy completions show only a unique confirmed matching scanned page", () => {
+  const input: DueInput = {
+    aircraft: base.aircraft,
+    maintenance_item: [
+      item("annual", { last_done_date: "2026-03-03" }),
+      item("hundred_hour", { last_done_date: "2026-06-10" }),
+      item("oil_change", { last_done_date: "2026-10-20" }),
+    ],
+    item_completion: [
+      { id: "a", maintenance_item_id: "mx-annual", ad_compliance_id: null, log_entry_id: null, done_date: "2026-03-03", done_hours: null },
+      { id: "h", maintenance_item_id: "mx-hundred_hour", ad_compliance_id: null, log_entry_id: null, done_date: "2026-06-10", done_hours: null },
+      { id: "o", maintenance_item_id: "mx-oil_change", ad_compliance_id: null, log_entry_id: null, done_date: "2026-10-20", done_hours: null },
+    ],
+    logbook: [{ id: "lb", type: "engine" }],
+    page: [1, 2, 3, 4].map((n) => ({ id: `p${n}`, logbook_id: "lb", page_sequence: n })),
+    log_entry: [
+      { id: "annual", logbook_id: "lb", page_id: "p1", entry_date: "2026-03-03", trust: "confirmed", description: "Annual inspection completed" },
+      { id: "hundred", logbook_id: "lb", page_id: "p2", entry_date: "2026-06-10", trust: "signed", work_performed: "100-hour inspection completed" },
+      { id: "oil", logbook_id: "lb", page_id: "p3", entry_date: "2026-10-20", trust: "confirmed", description: "Changed engine oil and filter" },
+      { id: "review", logbook_id: "lb", page_id: "p4", entry_date: "2026-10-20", trust: "ai_read", description: "Oil change" },
+    ],
+  };
+  const snapshot = computeStatus(input, TODAY);
+  assert.equal(snapshot.items.find((i) => i.kind === "annual")?.lastDone?.pageId, "p1");
+  assert.equal(snapshot.items.find((i) => i.kind === "hundred_hour")?.lastDone?.pageId, "p2");
+  assert.equal(snapshot.items.find((i) => i.kind === "oil_change")?.lastDone?.pageId, "p3");
+
+  const ambiguous = computeStatus({ ...input, log_entry: [
+    ...input.log_entry!,
+    { id: "other-oil", logbook_id: "lb", page_id: "p4", entry_date: "2026-10-20", trust: "confirmed", description: "Oil change completed" },
+  ] }, TODAY);
+  assert.equal(ambiguous.items.find((i) => i.kind === "oil_change")?.lastDone?.pageId, null);
+});

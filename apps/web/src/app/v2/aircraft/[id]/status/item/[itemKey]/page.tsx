@@ -325,10 +325,12 @@ function historyInputs(input: Parameters<typeof computeStatus>[0], item: DueItem
     const e = c.log_entry_id ? entries.get(c.log_entry_id) : undefined;
     if (e?.replaced_by_entry_id) continue;
     const p = e?.page_id ? pages.get(e.page_id) : undefined;
+    const source = !c.log_entry_id && item.lastDone?.date === c.done_date && item.lastDone.hours === c.done_hours
+      ? item.lastDone : null;
     out.push({
-      id: c.id, date: c.done_date, hours: c.done_hours ?? null, entryId: e?.id ?? null, pageId: p?.id ?? null,
-      pageLabel: p && p.page_sequence != null ? `${BOOK[books.get(p.logbook_id) ?? "other"] ?? "Other"} p. ${p.page_sequence}` : null,
-      trust: e ? e.trust : "confirmed", signer: e?.signature_name ?? null,
+      id: c.id, date: c.done_date, hours: c.done_hours ?? null, entryId: e?.id ?? source?.entryId ?? null, pageId: p?.id ?? source?.pageId ?? null,
+      pageLabel: p && p.page_sequence != null ? `${BOOK[books.get(p.logbook_id) ?? "other"] ?? "Other"} p. ${p.page_sequence}` : source?.pageLabel ?? null,
+      trust: e ? e.trust : source?.trust ?? "confirmed", signer: e?.signature_name ?? source?.signer ?? null,
     });
   }
   if (!rows.length && item.lastDone?.date)
