@@ -19,7 +19,7 @@ export function verdictParts(v: Pick<VerdictBody, "text" | "emphasis">): { text:
  * The opening sentence (02 §5.1). The server composes it; this only renders. When something is overdue the bold
  * runs are alarm ink and a StatusMark sits beside the sentence, so the state is never colour alone (W-STATUS-01).
  */
-export function Verdict({ verdict, overdue }: { verdict: VerdictBody; overdue?: boolean }) {
+export function Verdict({ verdict, overdue, as: Tag = "h2" }: { verdict: VerdictBody; overdue?: boolean; as?: "h2" | "p" }) {
   return (
     <div className="mb-2.5">
       {overdue && (
@@ -27,7 +27,7 @@ export function Verdict({ verdict, overdue }: { verdict: VerdictBody; overdue?: 
           <StatusMark kind="overdue" />
         </p>
       )}
-      <h2 className="text-lede text-ink">
+      <Tag className="text-lede text-ink">
         {verdictParts(verdict).map((p, i) =>
           p.strong ? (
             <b key={i} className={`font-extrabold ${overdue ? "text-alarm-text" : ""}`}>
@@ -37,7 +37,7 @@ export function Verdict({ verdict, overdue }: { verdict: VerdictBody; overdue?: 
             <span key={i}>{p.text}</span>
           ),
         )}
-      </h2>
+      </Tag>
       {verdict.lines.map((l) => (
         <p key={l} className="mt-2 text-small text-ink-2">
           {l}

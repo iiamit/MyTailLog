@@ -14,7 +14,7 @@ export function ReadLeaf({ toc, intro, children, className = "" }: { toc?: TocIt
           <ol className="mt-1 grid gap-x-6 sm:grid-cols-2">
             {toc.map((t) => (
               <li key={t.id}>
-                <a href={`#${t.id}`} className="inline-flex min-h-10 items-center text-[15px] font-semibold text-board-ink underline-offset-4 hover:underline">{t.title}</a>
+                <a href={`#${t.id}`} className="inline-flex min-h-11 items-center text-[15px] font-semibold text-board-ink underline-offset-4 hover:underline">{t.title}</a>
               </li>
             ))}
           </ol>
@@ -25,11 +25,12 @@ export function ReadLeaf({ toc, intro, children, className = "" }: { toc?: TocIt
   );
 }
 
-/** A heading hung in the leaf's margin column (HungSection, 16/700), body at a 54ch measure. */
-export function ReadSection({ id, title, first, children }: { id?: string; title: string; first?: boolean; children: React.ReactNode }) {
+/** A heading hung in the leaf's margin column (HungSection, 16/700), body at a 54ch measure. `level` 3 nests it under a leaf's h2. */
+export function ReadSection({ id, title, first, level = 2, children }: { id?: string; title: string; first?: boolean; level?: 2 | 3; children: React.ReactNode }) {
+  const H = level === 3 ? "h3" : "h2";
   return (
     <section id={id} aria-labelledby={id ? `${id}-h` : undefined} className={`grid scroll-mt-4 grid-cols-[148px_minmax(0,1fr)] gap-x-[22px] py-[18px] max-md:block ${first ? "border-t-2 border-ink" : "border-t border-rule"}`}>
-      <h2 id={id ? `${id}-h` : undefined} className="text-section max-md:mb-2">{title}</h2>
+      <H id={id ? `${id}-h` : undefined} className="text-section max-md:mb-2">{title}</H>
       <div className="read-prose min-w-0">{children}</div>
     </section>
   );
