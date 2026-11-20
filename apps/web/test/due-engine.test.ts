@@ -137,3 +137,18 @@ test("legacy completions show only a unique confirmed matching scanned page", ()
   ] }, TODAY);
   assert.equal(ambiguous.items.find((i) => i.kind === "oil_change")?.lastDone?.pageId, null);
 });
+
+test("legacy annual uses its airframe page when same-day engine entries also mention the inspection", () => {
+  const snapshot = computeStatus({
+    aircraft: base.aircraft,
+    maintenance_item: [item("annual", { last_done_date: "2026-03-03" })],
+    logbook: [{ id: "air", type: "airframe" }, { id: "eng", type: "engine" }],
+    page: [{ id: "p-air", logbook_id: "air", page_sequence: 1 }, { id: "p-eng", logbook_id: "eng", page_sequence: 2 }],
+    log_entry: [
+      { id: "a1", logbook_id: "air", page_id: "p-air", entry_date: "2026-03-03", trust: "confirmed", description: "Annual inspection completed" },
+      { id: "a2", logbook_id: "air", page_id: "p-air", entry_date: "2026-03-03", trust: "confirmed", description: "Annual inspection sign-off" },
+      { id: "e1", logbook_id: "eng", page_id: "p-eng", entry_date: "2026-03-03", trust: "confirmed", description: "Annual inspection completed" },
+    ],
+  }, TODAY);
+  assert.equal(snapshot.items[0].lastDone?.pageId, "p-air");
+});

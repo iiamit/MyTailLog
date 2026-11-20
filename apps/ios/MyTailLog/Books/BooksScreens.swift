@@ -207,8 +207,8 @@ struct MapPane: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Measured from the space offered, never from the map drawn at that width.
-        .background { GeometryReader { g in Color.clear.onChange(of: g.size.width, initial: true) { _, w in width = max(w - 2 * Tokens.Space.s3, 0) } } }
+        // Measure the offered width on the first layout, as the tablet map does.
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = max($0 - 2 * Tokens.Space.s3, 0) }
         .background(Tokens.Colors.leaf)
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: Tokens.Radius.s, topTrailingRadius: Tokens.Radius.s))
         .padding(.horizontal, Tokens.Space.s2)
