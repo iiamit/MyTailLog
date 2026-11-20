@@ -1,0 +1,57 @@
+name: Mobile test-backend checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Run Android records, capture and sharing against test backend
+        working-directory: apps/android
+        env:
+          MTL_QA_USER_JSON: ${{ secrets.MTL_QA_USER_JSON }}
+          MTL_QA_REQUIRED: "1"
+        run: |
+          test -n "$MTL_QA_USER_JSON" || { echo 'Configure MTL_QA_USER_JSON with the test-backend QA account'; exit 1; }
+          account_file="$(mktemp)"
+          trap 'rm -f "$account_file"' EXIT
+          chmod 600 "$account_file"
+          printf '%s' "$MTL_QA_USER_JSON" > "$account_file"
+          export MTL_QA_USER="$account_file"
+          ./gradlew --console=plain :app:testDebugUnitTest \
+            --tests com.mytaillog.app.LiveCaptureTest \
+            --tests com.mytaillog.app.LiveRecordsTest \
+            --tests com.mytaillog.app.LiveShareTest
+  ios-live:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Build shared iOS framework
+        working-directory: apps/core
+        run: ./gradlew --console=plain :framework:assembleMyTailLogCoreXCFramework
+      - name: Sync and reopen offline on iOS simulator
+        working-directory: apps/ios
+        env:
+          MTL_QA_USER_JSON: ${{ secrets.MTL_QA_USER_JSON }}
+          MTL_QA_REQUIRED: "1"
+        run: |
+          test -n "$MTL_QA_USER_JSON" || { echo 'Configure MTL_QA_USER_JSON with the test-backend QA account'; exit 1; }
+          brew install xcodegen
+          xcodegen generate
+          SIM=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [^(]+' | sed 's/ *$//')
+          xcodebuild test -scheme MyTailLog -destination "platform=iOS Simulator,name=$SIM" -only-testing:MyTailLogTests/LiveOfflineTests

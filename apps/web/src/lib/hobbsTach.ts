@@ -528,6 +528,7 @@ export function meterValueAtDate(rawReadings: Reading[], date: string | null, me
   // above has already done wherever it applies.
   if (meter === "airframe") return null;
   const other: Meter = meter === "hobbs" ? "tach" : "hobbs";
+  if (!readings.some((r) => r[other] != null)) return null;
   const otherVal = meterValueAtDate(readings, date, other);
   if (otherVal == null) return null;
   const pairs = buildPairs(readings);
