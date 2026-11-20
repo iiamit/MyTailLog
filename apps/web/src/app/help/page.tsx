@@ -52,7 +52,7 @@ const SECTIONS: Section[] = [
       <>
         <p>
           MyTailLog is moving to a new design, and this guide uses its names. Your account may still open in the
-          earlier design until you switch: choose <strong>Try the new design</strong>{" "}at the top of an aircraft&apos;s
+          earlier design until you switch: choose <strong>Try the new design</strong>{" "}on a computer, at the top of an aircraft&apos;s
           screens, and <strong>Switch back</strong>{" "}from the account menu if you prefer. Your records are the same in
           both. Where a screen has a different name in the earlier design:
         </p>
@@ -167,7 +167,7 @@ const SECTIONS: Section[] = [
         <p>
           <strong>On an iPad</strong>, full screen, the app shows a sidebar and two panes: the verdict
           beside every tracked item, a page beside its entries, a squawk beside its detail. A Magic
-          Keyboard drives it, ⌘1–4 for tabs, ⌘K for Ask, ⌘N for a new squawk, ⌘←/⌘→ to turn pages,
+          Keyboard drives it, ⌘1–6 for tabs, ⌘K for Ask, ⌘N for a new squawk, ⌘←/⌘→ to turn pages,
           ⌘↩ to confirm. In Split View below about half an iPad&apos;s width it falls back to the
           phone layout on purpose, so the app beside ForeFlight is the one you already know.
         </p>

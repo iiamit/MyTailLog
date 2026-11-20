@@ -22,7 +22,7 @@ export default function AccountDeletionPage() {
             the address on your MyTailLog account. Put “Delete my MyTailLog account” in the subject.
             If you cannot use that address, tell us which account to find; we will verify ownership
             before deleting it. You can also delete it yourself in the Android or iOS app (Account, then Delete my account), or on the
-            web in the new design: choose Try the new design at the top of an aircraft&apos;s screens, then Settings,
+            web in the new design: choose Try the new design on a computer, at the top of an aircraft&apos;s screens, then Settings,
             then Delete my account.
           </p>
           <p>
