@@ -5,7 +5,7 @@ import { Board } from "@/ui/Board";
 import { RouteMap } from "@/ui/RouteMap";
 import { aircraftTail } from "@/lib/v2/landing";
 import { loadBooks } from "@/lib/v2/booksLoad";
-import { addYears } from "@/lib/v2/books";
+import { addYears, shelfBooks } from "@/lib/v2/books";
 import { BooksHead } from "../BooksHead";
 import { AddPages, type Volume } from "./AddPages";
 
@@ -31,7 +31,8 @@ export default async function AddPagesScreen({
 
   const lines = model?.lines ?? [];
   const pages = due?.loaded.input.page ?? [];
-  const volumes: Volume[] = lines.flatMap((l) =>
+  // Every book can take pages, Other included (the map draws no line for it, 10 §1).
+  const volumes: Volume[] = shelfBooks(lines, due?.loaded.input.logbook ?? []).flatMap((l) =>
     l.volumes.map((v, i) => {
       const own = pages.filter((p) => p.logbook_id === v.id);
       return {

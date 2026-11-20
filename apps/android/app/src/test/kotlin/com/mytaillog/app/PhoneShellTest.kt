@@ -6,6 +6,8 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.mytaillog.design.MyTailLogTheme
 import org.junit.Rule
 import org.junit.Test
@@ -41,5 +43,33 @@ class PhoneShellTest {
         // Re-selecting the open tab pops it to its root.
         tab("Aircraft").performClick()
         compose.onNodeWithText(documentsEmpty).assertDoesNotExist()
+    }
+
+    @Test
+    fun anotherTabsScreenOpensOnThatTabAndEveryTabStillSwitches() {
+        lateinit var nav: NavHostController
+        compose.setContent { MyTailLogTheme(dark = false) { nav = rememberNavController(); PhoneShell(nav = nav) } }
+
+        // From Share, a screen that belongs to Aircraft (as the Add sheet opens Logbooks' scan queue from any tab).
+        tab("Share").performClick()
+        compose.runOnIdle { nav.openOnItsTab(DOCUMENTS_ON_PHONE) }
+        tab("Aircraft").assertIsSelected()
+        compose.onNodeWithText(documentsEmpty).assertExists()
+
+        // Away and back: Share is at its own root, Aircraft still holds Documents.
+        tab("Share").performClick()
+        tab("Share").assertIsSelected()
+        compose.onNodeWithText(documentsEmpty).assertDoesNotExist()
+        tab("Aircraft").performClick()
+        compose.onNodeWithText(documentsEmpty).assertExists()
+
+        // Opening it again from Status lands on the same Aircraft stack, once, and Status is untouched.
+        tab("Status").performClick()
+        compose.runOnIdle { nav.openOnItsTab(DOCUMENTS_ON_PHONE) }
+        tab("Aircraft").assertIsSelected()
+        tab("Aircraft").performClick() // re-selecting pops to its root
+        compose.onNodeWithText(documentsEmpty).assertDoesNotExist()
+        tab("Status").performClick()
+        tab("Status").assertIsSelected()
     }
 }

@@ -174,4 +174,18 @@ enum UploadBackoff {
         default: 6 * 3600
         }
     }
+
+    /// The upload log's words for a refused upload, from the status alone: the server's text can carry a backend's raw
+    /// error (a GCP IAM message with an internal link), so it is never shown.
+    static func refusal(status: Int) -> String {
+        switch status {
+        case 401: "Not uploaded: sign in again."
+        case 403: "Not uploaded: you can't add pages to this aircraft."
+        case 404: "Not uploaded: that logbook is no longer on this aircraft."
+        case 413: "Too large to upload. Retake at a lower size or upload from a computer."
+        case 408, 429: "Couldn't prepare the upload. It will try again."
+        case 400..<500: "Not uploaded: the server refused this page."
+        default: "Couldn't prepare the upload. It will try again."
+        }
+    }
 }

@@ -20,6 +20,7 @@
     <string name="scan_open_camera">Open the camera</string>
     <string name="scan_system_scanner">Use the system scanner</string>
     <string name="scan_choose_photos">Choose photos</string>
+    <string name="scan_notify_primer">Next, Android asks to allow notifications. Allow them to see pages upload and get read in your notifications, with the app open or closed.</string>
     <string name="scan_no_system_scanner">The system scanner isn\'t available on this phone. Use the camera or choose photos.</string>
 
     <!-- M-SCAN-02 -->

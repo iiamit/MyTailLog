@@ -30,6 +30,22 @@ class UploadHttpException(val status: Int, message: String) : Exception(message)
     val permanent get() = status in 400..499 && status != 408 && status != 429
 }
 
+const val UPLOAD_RETRY = "Couldn't prepare the upload. It will try again."
+const val STORAGE_REFUSED = "Not uploaded yet. It will try again."
+
+/**
+ * The upload log's words for a refused upload (07 B-UPLOAD), from the status alone: the server's text can carry a
+ * backend's raw error, so it is never shown.
+ */
+fun uploadRefusal(status: Int): String = when (status) {
+    401 -> "Not uploaded: sign in again."
+    403 -> "Not uploaded: you can't add pages to this aircraft."
+    404 -> "Not uploaded: that logbook is no longer on this aircraft."
+    413 -> "Too large to upload. Retake at a lower size or upload from a computer."
+    in 400..499 -> if (status == 408 || status == 429) UPLOAD_RETRY else "Not uploaded: the server refused this page."
+    else -> UPLOAD_RETRY
+}
+
 /** Where to PUT one file (05 §7.2). */
 data class UploadTarget(val url: String, val headers: Map<String, String>, val storagePath: String)
 
@@ -94,7 +110,8 @@ class CaptureApi(
             setBody(ByteArrayContent(bytes, ContentType.parse(type)))
         }
         // GCS's if-generation-match refuses a second write of the same object: it is already there.
-        if (!r.status.isSuccess() && r.status.value != 412) throw UploadHttpException(r.status.value, "Not uploaded: ${r.bodyAsText().take(200)}")
+        // Storage's own answer (XML, links) is never shown: house copy only.
+        if (!r.status.isSuccess() && r.status.value != 412) throw UploadHttpException(r.status.value, STORAGE_REFUSED)
     }
 
     suspend fun readingQueue(aircraftId: String): ReadingQueue {
@@ -105,7 +122,7 @@ class CaptureApi(
     private suspend fun HttpResponse.json(): JsonObject {
         val text = bodyAsText()
         val o = runCatching { Json.parseToJsonElement(text).jsonObject }.getOrNull()
-        if (!status.isSuccess()) throw UploadHttpException(status.value, o?.get("error")?.jsonPrimitive?.contentOrNull ?: "The server refused it (${status.value}).")
+        if (!status.isSuccess()) throw UploadHttpException(status.value, uploadRefusal(status.value))
         return o ?: error("Not JSON")
     }
 }

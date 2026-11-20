@@ -49,6 +49,21 @@ class BooksTextTest {
     }
 
     @Test
+    fun pagesScannedIntoOtherAreListedAndLinkedFromTheMap() {
+        val other = "b744fec3-7f1b-40ee-80a2-3b8c68fccd09"
+        // Other is last on the shelf even when the server lists it first, and the map never draws it.
+        val shuffled = b.copy(logbooks = b.logbooks.reversed())
+        assertEquals(listOf("airframe", "engine", "prop", "avionics", "other"), shelf(shuffled).map { it.type })
+        assertTrue(b.map.lines.none { it.lineId == other })
+        assertEquals(emptyList<Pair<LogbookRow, Int>>(), offMapBooks(b)) // no Other pages yet: no link under the map
+        val scanned = b.copy(pages = b.pages + (1..3).map { PageRow("o$it", other, it, updatedAt = "2026-11-20T00:00:00Z") })
+        assertEquals(listOf(other to 3), offMapBooks(scanned).map { it.first.id to it.second })
+        assertEquals("Other", bookTitle(scanned, other))
+        assertEquals("Other logbook, 3 pages, not drawn on the map.", offMapLine("Other", 3))
+        assertEquals("Other logbook, 1 page, not drawn on the map.", offMapLine("Other", 1))
+    }
+
+    @Test
     fun theLeastCertainFieldComesFirst() {
         val e = b.entries.first { it.id == "793c6000-3b1e-5629-9539-5e866d60e738" }
         val fields = reviewFields(e)

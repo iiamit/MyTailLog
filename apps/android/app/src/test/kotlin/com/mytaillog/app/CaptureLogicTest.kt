@@ -144,12 +144,44 @@ class CaptureLogicTest {
         assertEquals("2 pages on this phone. They upload when you have signal.", offlineBarText(base.copy(online = false, pages = 2)))
         assertEquals("Uploading 1 of 2", offlineBarText(base.copy(uploading = 0 to 2, pages = 2)))
         assertEquals("3 changes and 2 pages on this phone.", summaryLine(3, 2))
-        assertEquals("Uploading 2 pages to N734QA", uploadingText(2, "N734QA"))
         assertEquals("Pages are read when you have signal.", allowanceLine(Allowance(31, 50, false, false), online = false))
         assertEquals(
             "Reading allowance today: 31 of 50 pages used, shared by your aircraft. Pages past it wait for tomorrow.",
             allowanceLine(Allowance(31, 50, false, false), online = true),
         )
+    }
+
+    @Test
+    fun theUploadNoteCountsEachPageAsItGoes() {
+        // Before the first page starts: the held pages, nothing done yet.
+        assertEquals(UploadNote("Uploading 1 of 5 pages to N734QA", 0, 5), uploadNote(null, 5, "N734QA"))
+        assertEquals(UploadNote("Uploading 3 of 5 pages to N734QA", 2, 5), uploadNote(2 to 5, 3, "N734QA"))
+        assertEquals(UploadNote("Uploading 1 of 1 page", 0, 1), uploadNote(0 to 1, 1, null))
+        // Never past the end, and nothing held is a plain sync with an indeterminate bar.
+        assertEquals(UploadNote("Uploading 5 of 5 pages", 5, 5), uploadNote(5 to 5, 0, null))
+        assertEquals(UploadNote("Syncing changes", 0, 0), uploadNote(null, 0, "N734QA"))
+    }
+
+    @Test
+    fun refusedUploadsAreHouseCopyNeverTheServersText() {
+        assertEquals("Couldn't prepare the upload. It will try again.", uploadRefusal(500))
+        assertEquals("Couldn't prepare the upload. It will try again.", uploadRefusal(503))
+        assertEquals("Couldn't prepare the upload. It will try again.", uploadRefusal(429))
+        assertEquals("Too large to upload. Retake at a lower size or upload from a computer.", uploadRefusal(413))
+        assertEquals("Not uploaded: the server refused this page.", uploadRefusal(400))
+        assertEquals("Not uploaded: sign in again.", uploadRefusal(401))
+        assertTrue(listOf(400, 401, 403, 404, 408, 413, 429, 500, 502, 503).none { "http" in uploadRefusal(it) })
+        // A 5xx retries; a refusal of the page itself doesn't.
+        assertFalse(UploadHttpException(503, uploadRefusal(503)).permanent)
+        assertTrue(UploadHttpException(403, uploadRefusal(403)).permanent)
+    }
+
+    @Test
+    fun notificationsAreAskedOnceAtTheFirstScanOnAndroid13AndUp() {
+        assertTrue(askNotifyAtScan(sdk = 33, granted = false, asked = false))
+        assertFalse(askNotifyAtScan(sdk = 33, granted = false, asked = true)) // denied once: never again
+        assertFalse(askNotifyAtScan(sdk = 34, granted = true, asked = false))
+        assertFalse(askNotifyAtScan(sdk = 32, granted = false, asked = false)) // no runtime permission before 13
     }
 
     @Test

@@ -222,6 +222,7 @@ private fun MapTab(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNav) {
                         if (model.stops.isEmpty()) Meta(stringResource(R.string.books_map_empty), Modifier.padding(bottom = Tokens.Space.s2))
                         RouteMapView(b, model, layout, onTarget = { target = it }, selected = target)
                         if (layout.more > 0) Meta(stringResource(R.string.books_map_more, layout.more))
+                        OffMapBooks(b, nav)
                         if (ui.aircraft?.canEdit == false) Meta(stringResource(R.string.books_viewer), Modifier.padding(top = Tokens.Space.s3))
                     }
                 }
@@ -247,6 +248,16 @@ private fun MapTab(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNav) {
                 }
             }
         }
+    }
+}
+
+/** Other is never drawn (10 §1): under the map, its page count and a way to its pages. */
+@Composable
+fun OffMapBooks(b: Books, nav: BooksNav) {
+    offMapBooks(b).forEach { (book, n) ->
+        val name = bookTitle(b, book.id)
+        Meta(offMapLine(name, n), Modifier.padding(top = Tokens.Space.s3))
+        DButton(stringResource(R.string.books_pages_in, name), { nav.openBook(book.id) }, kind = ButtonKind.Secondary, modifier = Modifier.padding(top = Tokens.Space.s1))
     }
 }
 
@@ -548,7 +559,7 @@ fun PagesTab(ui: BooksUi, b: Books, nav: BooksNav) {
             }
         }
         item { Meta(stringResource(R.string.books_pages_summary, b.pages.size, b.entries.count { !it.isContinuation }), Modifier.padding(top = Tokens.Space.s3)) }
-        items(b.logbooks.sortedBy { LANES.indexOf(it.type).let { i -> if (i < 0) 9 else i } }, key = { it.id }) { book ->
+        items(shelf(b), key = { it.id }) { book ->
             val pages = b.pages.count { it.logbookId == book.id }
             val gaps = b.map.gaps.filter { it.logbook == book.type && it.status != "no_pages_exist" }.joinToString(", ") { "gap ${it.from.take(4)} to ${it.to.take(4)}" }
             Column(

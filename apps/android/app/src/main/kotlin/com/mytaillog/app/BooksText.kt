@@ -3,6 +3,7 @@ package com.mytaillog.app
 import com.mytaillog.core.api.Books
 import com.mytaillog.core.api.EntryRow
 import com.mytaillog.core.api.FieldBox
+import com.mytaillog.core.api.LogbookRow
 import com.mytaillog.core.api.PageRow
 import com.mytaillog.core.domain.due.fmtDate
 import com.mytaillog.core.domain.map.LANES
@@ -69,7 +70,17 @@ fun entriesOn(b: Books, pageId: String): List<EntryRow> = b.entries.filter { it.
 private fun bookRank(b: Books, logbookId: String): Int =
     b.logbooks.firstOrNull { it.id == logbookId }?.type?.let { LANES.indexOf(it).takeIf { i -> i >= 0 } } ?: LANES.size
 
-fun bookType(b: Books, logbookId: String): String? = b.logbooks.firstOrNull { it.id == logbookId }?.type
+/** M-BOOKS-06's book rows: every logbook, the map's books in lane order, Other (never a map line, 10 §1) last. */
+fun shelf(b: Books): List<LogbookRow> = b.logbooks.sortedBy { LANES.indexOf(it.type).let { i -> if (i < 0) LANES.size else i } }
+
+/** Books the map never draws (Other) that hold pages, with their counts: the map links to them. */
+fun offMapBooks(b: Books): List<Pair<LogbookRow, Int>> =
+    b.logbooks.filter { it.type !in LANES }.map { book -> book to b.pages.count { it.logbookId == book.id } }.filter { it.second > 0 }
+
+/** "Other logbook, 3 pages, not drawn on the map." */
+fun offMapLine(name: String, pages: Int): String = "$name logbook, $pages ${if (pages == 1) "page" else "pages"}, not drawn on the map."
+
+fun bookType(b: Books, logbookId: String): String? =b.logbooks.firstOrNull { it.id == logbookId }?.type
 
 fun bookTitle(b: Books, logbookId: String): String {
     val book = b.logbooks.firstOrNull { it.id == logbookId }
