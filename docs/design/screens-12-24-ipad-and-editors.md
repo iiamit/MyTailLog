@@ -1,5 +1,7 @@
 # Addendum: Screens 12–24 — regular width, and the surfaces that let you finish the job
 
+> **History (2026-11).** Written for the Capacitor iOS app before the direction D redesign. The shipped design is specified in `docs/redesign/handoff/` and built natively in `apps/ios` and `apps/android`; keep this for the reasoning, not as the current spec.
+
 Written against `design_handoff_ios_redesign/README.md` (direction "Verdict first") and the screen-11
 addendum. Same tokens, same type scale, same voice. **Nothing here introduces a new colour, radius or
 family.** Two frames carry the drawings:

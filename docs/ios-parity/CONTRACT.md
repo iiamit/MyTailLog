@@ -1,5 +1,7 @@
 # iOS parity — the contract
 
+> **History (2026-11).** Written for the Capacitor iOS app before the direction D redesign. The shipped design is specified in `docs/redesign/handoff/` and built natively in `apps/ios` and `apps/android`; keep this for the reasoning, not as the current spec.
+
 This is the interface every workstream builds against. It is short on purpose:
 read all of it before touching code. Plan of record:
 https://claude.ai/code/artifact/239f484e-ae33-455a-912f-8e72e6250fd8
