@@ -19,6 +19,11 @@ struct CameraPreview: UIViewRepresentable {
         let v = PreviewView()
         v.preview.session = engine.session
         v.preview.videoGravity = .resizeAspectFill
+        return v
+    }
+
+    func updateUIView(_ v: PreviewView, context: Context) {
+        guard v.coordinator == nil else { return }
         if let device = engine.captureDevice {
             let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: v.preview)
             v.coordinator = coordinator
@@ -31,10 +36,8 @@ struct CameraPreview: UIViewRepresentable {
                 engine.setCaptureAngle(coordinator.videoRotationAngleForHorizonLevelCapture)
             }
         }
-        return v
     }
 
-    func updateUIView(_ uiView: PreviewView, context: Context) {}
 }
 
 /// Where content of `content` size lands when aspect-filled into `bounds` (the preview's crop).
