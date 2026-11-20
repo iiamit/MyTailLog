@@ -34,14 +34,24 @@
   --font-ui: var(--font-app);
 }
 
-/* Read template prose (components/public/Read.tsx): ink body at a 68ch measure, section-ink links, ruled tables. */
+/* Read template prose (components/public/Read.tsx): ink body at a 54ch measure, section-ink links, ruled tables. */
 .read-prose {
   font-size: var(--type-body-size);
   line-height: var(--type-body-lh);
   color: var(--color-ink);
 }
-.read-prose > :where(p, ul, ol, dl, h3, h4, .callout, blockquote) {
-  max-width: 68ch;
+.read-prose :where(p, li, h3, h4, dd, blockquote, .callout) {
+  max-width: 54ch;
+}
+.public-v2 :where(p, li, dd) {
+  text-wrap: pretty;
+}
+.public-v2 :where(h1, h2, h3) {
+  text-wrap: balance;
+}
+.public-v2 ::placeholder {
+  color: var(--color-ink-3);
+  opacity: 1;
 }
 .read-prose :where(p, ul, ol, dl, table, pre, .callout, figure) + :where(p, ul, ol, dl, table, pre, .callout, figure) {
   margin-top: 0.75em;

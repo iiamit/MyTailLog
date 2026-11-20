@@ -1,20 +1,176 @@
 import Link from "next/link";
-import { StoreBadges } from "@/components/StoreBadges";
+import { Menu } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { PublicRoot } from "@/components/public/PublicRoot";
+import { PUBLIC_GROUPS, groupOf, isCurrentPage, type PublicGroup } from "@/lib/publicNav";
 
-/** Public sibling of the binder: same type, colours and leaf surfaces, with normal page scrolling. */
-export function PublicTheme({ children, header = true, className = "" }: { children: React.ReactNode; header?: boolean; className?: string }) {
-  return <div data-ui="v2" data-theme="light" className={`public-v2 min-h-screen bg-cover text-ink ${className}`}>
-    <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:bg-leaf focus:p-3">Skip to content</a>
-    {header && <header className="border-b border-rule bg-cover text-on-cover">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-7">
-        <Link href="/" className="flex items-center gap-2 text-heading text-on-cover"><span aria-hidden className="inline-block size-5 bg-section-status [clip-path:polygon(50%_0,100%_86%,0_86%)]" />MyTailLog</Link>
-        <nav aria-label="Site" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-small">
-          <Link href="/faq">FAQ</Link><Link href="/compare">Compare</Link><Link href="/switch/myfbo">From MyFBO</Link><Link href="/help">Help</Link><Link href="/developers/docs">API</Link><Link href="/whats-new">What&apos;s new</Link>
+export { PublicRoot };
+
+const tabHref = (g: (typeof PUBLIC_GROUPS)[number]) => g.pages.find((p) => !p.href.includes("#"))!.href;
+
+/** Sign in plus Create free account when signed out; Open MyTailLog when signed in. On the cover ground. */
+function CoverActions({ signedIn, stacked }: { signedIn: boolean; stacked?: boolean }) {
+  const quiet = "state-layer inline-flex min-h-11 items-center justify-center rounded-tab px-3 text-[15px] font-semibold text-on-cover";
+  const filled = "state-layer inline-flex min-h-11 items-center justify-center rounded-tab bg-on-cover px-4 text-[15px] font-bold text-cover";
+  if (signedIn) return <Link href="/hangar" className={filled}>Open MyTailLog</Link>;
+  return (
+    <div className={stacked ? "grid gap-2" : "flex items-center gap-1"}>
+      <Link href="/login" className={`${quiet} ${stacked ? "bg-cover-2" : ""}`}>Sign in</Link>
+      {stacked && <Link href="/login?mode=create" className={filled}>Create free account</Link>}
+    </div>
+  );
+}
+
+/**
+ * The public site as the closed binder (the "Binder Cover"): the cover rail holds six section tabs; the open tab runs
+ * flush into a board of its hue carrying the page title. `ground="cover"` keeps the hue to the board head band and lays
+ * the page's leaves on the cover (Persuade pages); otherwise the leaves sit on the board (Read pages).
+ */
+export async function PublicTheme({
+  group,
+  path,
+  title,
+  lede,
+  ground = "board",
+  children,
+}: {
+  group: PublicGroup;
+  path: string;
+  title: string;
+  lede?: React.ReactNode;
+  ground?: "board" | "cover";
+  children: React.ReactNode;
+}) {
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
+  const open = groupOf(group);
+  const subTabs = open.pages.length > 1 ? open.pages : [];
+
+  return (
+    <PublicRoot className="lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
+      {/* Desktop: the cover rail, as in the app. */}
+      <aside className="rail sticky top-0 flex h-dvh flex-col gap-1 bg-cover pt-[18px] pb-4 pl-[14px] text-on-cover max-lg:hidden">
+        <Link href="/" className="mr-[14px] mb-3 block rounded-tab px-1 py-0.5">
+          <span className="block text-[24px] leading-[1.1] font-extrabold tracking-[.02em]">MyTailLog</span>
+          <span className="block text-[13px] text-on-cover-2">Aircraft logbooks, indexed</span>
+        </Link>
+        <nav aria-label="Site sections" className="flex max-h-[600px] min-h-0 flex-1 flex-col gap-1">
+          {PUBLIC_GROUPS.map((g) => {
+            const isOpen = g.id === group;
+            return (
+              <Link
+                key={g.id}
+                href={tabHref(g)}
+                data-section={g.section}
+                aria-current={isOpen ? "true" : undefined}
+                className={`state-layer flex min-h-[58px] flex-1 flex-col justify-start gap-px rounded-l-tab bg-board py-[11px] pl-3 text-on-board ${isOpen ? "mr-0 pr-6" : "mr-3 pr-3"}`}
+              >
+                <span className="text-tab">{g.label}</span>
+                <span className="text-tab-sub">{g.sub}</span>
+              </Link>
+            );
+          })}
         </nav>
-        <Link href="/hangar" className="rounded-control bg-leaf px-4 py-2 text-small font-bold text-ink">Open MyTailLog</Link>
+        <div className="mt-auto pt-3 pr-[14px]"><CoverActions signedIn={!!user} stacked /></div>
+      </aside>
+
+      <div className="flex min-w-0 flex-col">
+        {/* Phone and tablet: a compact cover header, then the tabs as a strip that runs into the board. */}
+        <header className="bg-cover text-on-cover lg:hidden">
+          <div className="flex items-center gap-2 px-4 pt-2">
+            <Link href="/" className="mr-auto inline-flex min-h-11 items-center text-[20px] font-extrabold tracking-[.02em]">MyTailLog</Link>
+            <CoverActions signedIn={!!user} />
+            <details className="group relative">
+              <summary className="state-layer flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-tab px-3 text-[15px] font-semibold [&::-webkit-details-marker]:hidden">
+                <Menu aria-hidden size={18} /> Menu
+              </summary>
+              <nav aria-label="All pages" className="absolute top-full right-0 z-40 mt-1 max-h-[75dvh] w-[min(320px,calc(100vw-32px))] overflow-auto rounded-leaf bg-leaf p-2 text-ink shadow-[0_8px_18px_-8px_rgba(0,0,0,.7)]">
+                {!user && <Link href="/login?mode=create" className="state-layer mb-2 flex min-h-11 items-center justify-center rounded-control bg-ink px-4 font-bold text-leaf">Create free account</Link>}
+                {PUBLIC_GROUPS.map((g) => (
+                  <div key={g.id} className="border-t border-rule py-1 first:border-t-0">
+                    <p className="px-2 pt-2 text-label text-ink-3">{g.label}</p>
+                    {g.pages.map((p) => (
+                      <Link key={p.href} href={p.href} aria-current={isCurrentPage(p.href, path) ? "page" : undefined} className="state-layer flex min-h-11 items-center rounded-control px-2 text-[15px] font-semibold aria-[current=page]:underline">
+                        {p.label}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+              </nav>
+            </details>
+          </div>
+          <nav aria-label="Site sections" className="flex gap-1 overflow-x-auto px-4 pt-2">
+            {PUBLIC_GROUPS.map((g) => (
+              <Link
+                key={g.id}
+                href={tabHref(g)}
+                data-section={g.section}
+                aria-current={g.id === group ? "true" : undefined}
+                className={`state-layer flex min-h-11 shrink-0 items-center rounded-t-tab bg-board px-3 text-[15px] font-bold whitespace-nowrap text-on-board ${g.id === group ? "pb-1" : "mb-1.5"}`}
+              >
+                {g.label}
+              </Link>
+            ))}
+          </nav>
+        </header>
+
+        <div data-section={open.section} className={`board flex-1 text-on-board ${ground === "board" ? "bg-board" : "bg-cover"}`}>
+          <header className={`board-head bg-board px-[22px] pt-4 pb-1 max-lg:px-4 ${ground === "cover" ? "pb-5" : ""}`}>
+            <div className="flex flex-wrap items-end gap-x-7 gap-y-2">
+              <h1 id="board-title" className="mb-2 text-board-title max-lg:text-[26px]">{title}</h1>
+              {subTabs.length > 0 && (
+                <nav aria-label={`${open.label} pages`} className="-mx-1 flex max-w-full gap-0.5 self-end overflow-x-auto px-1">
+                  {subTabs.map((t) => {
+                    const cur = isCurrentPage(t.href, path);
+                    return (
+                      <Link
+                        key={t.href}
+                        href={t.href}
+                        aria-current={cur ? "page" : undefined}
+                        className={`state-layer inline-flex min-h-11 shrink-0 items-center rounded-t-tab px-3.5 text-[15px] font-semibold whitespace-nowrap ${cur ? "bg-leaf text-ink" : "text-on-board-2 underline-offset-4 hover:text-on-board hover:underline"}`}
+                      >
+                        {t.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              )}
+            </div>
+            {lede && <div className="mb-3 max-w-[54ch] text-[17px] leading-[1.5] text-on-board">{lede}</div>}
+          </header>
+          <main id="main-content" tabIndex={-1} className="px-[22px] pb-[22px] outline-none max-lg:px-2 max-lg:pb-2">
+            {children}
+          </main>
+        </div>
+        <PublicFooter />
       </div>
-    </header>}
-    {children}
-    {header && <div className="mx-auto flex max-w-6xl justify-center px-5 py-5"><StoreBadges /></div>}
-  </div>;
+    </PublicRoot>
+  );
+}
+
+/** One footer for every public page, on the cover. */
+export function PublicFooter() {
+  return (
+    <footer className="bg-cover px-[22px] py-8 text-[14px] text-on-cover-2 max-lg:px-4">
+      <nav aria-label="More about MyTailLog" className="grid gap-6 sm:grid-cols-3 lg:grid-cols-6">
+        {PUBLIC_GROUPS.map((g) => (
+          <div key={g.id}>
+            <p className="text-label text-on-cover">{g.label}</p>
+            <ul className="mt-1">
+              {g.pages.map((p) => (
+                <li key={p.href}><Link href={p.href} className="inline-flex min-h-9 items-center underline-offset-4 hover:text-on-cover hover:underline">{p.label}</Link></li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
+      <div className="mt-6 flex flex-wrap gap-x-5 gap-y-1 border-t border-cover-2 pt-5">
+        <a href="https://github.com/iiamit/MyTailLog" className="inline-flex min-h-9 items-center underline-offset-4 hover:text-on-cover hover:underline">Source on GitHub (MIT)</a>
+        <a href="/whats-new/rss.xml" className="inline-flex min-h-9 items-center underline-offset-4 hover:text-on-cover hover:underline">Release notes feed (RSS)</a>
+      </div>
+      <p className="mt-3 max-w-[54ch]">
+        The paper logbooks are the legal record (14 CFR 91.417). MyTailLog is an index of them. Check anything you rely on against the pages.
+      </p>
+    </footer>
+  );
 }

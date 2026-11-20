@@ -36,7 +36,9 @@ export type Release = {
 // "Earlier in 2026.07" — read as feature lists, so they default to New.
 const TAG_BY_VERB: Record<string, ChangeTag> = {
   added: "New",
+  released: "New",
   changed: "Improved",
+  improved: "Improved",
   removed: "Improved",
   deprecated: "Improved",
   fixed: "Fixed",
