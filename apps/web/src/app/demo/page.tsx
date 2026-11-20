@@ -2,12 +2,12 @@ import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { PublicTheme } from "@/components/PublicTheme";
 import { buttonClass } from "@/ui/Button";
-import hub from "@/screenshots/hub.png";
-import review from "@/screenshots/review.png";
-import status from "@/screenshots/status.png";
-import ask from "@/screenshots/ask.png";
-import timeline from "@/screenshots/timeline.png";
-import wb from "@/screenshots/wb.png";
+import hangar from "@/screenshots/v2-hangar.png";
+import review from "@/screenshots/v2-review.png";
+import status from "@/screenshots/v2-status.png";
+import entry from "@/screenshots/v2-entry.png";
+import map from "@/screenshots/v2-map.png";
+import wb from "@/screenshots/v2-wb.png";
 
 export const metadata = {
   title: "Product tour",
@@ -15,12 +15,12 @@ export const metadata = {
 };
 
 const STEPS: { id: string; title: string; body: string; shot: StaticImageData; alt: string }[] = [
-  { id: "aircraft", title: "Open the aircraft", body: "Each aircraft opens on what the records show: what is due next, what waits for review, and how far back each logbook goes.", shot: hub, alt: "The demo aircraft's overview: tracked maintenance items, the next items due, and records coverage by logbook" },
-  { id: "review", title: "Review what was read", body: "AI drafts dates, hours, work and signatures from each page. You confirm each entry beside the ink before it counts toward anything.", shot: review, alt: "The review screen: a scanned airframe logbook page on the left, the fields read from it on the right" },
-  { id: "status", title: "See what is due", body: "Inspections, oil, recurring work and ADs come together with their date and hour limits, each traced to the entry behind it.", shot: status, alt: "The status screen listing inspections and ADs with their due dates and hours" },
-  { id: "ask", title: "Ask and check", body: "Search every book or ask a plain-English question. The answer cites the entries, and each citation opens its scanned page.", shot: ask, alt: "An answer to the question about when the engine was last overhauled, with the cited entry below it" },
-  { id: "history", title: "Follow the history", body: "Every confirmed entry sits on one timeline across the airframe, engine, propeller and avionics books.", shot: timeline, alt: "The logbook timeline, entries grouped by year across all logbooks" },
-  { id: "small-things", title: "Keep the small things", body: "Weight and balance revisions, equipment, hours and oil live with the logbooks they came from.", shot: wb, alt: "The weight and balance screen with the current empty weight, arm and moment" },
+  { id: "aircraft", title: "Open the hangar", body: "Every aircraft you keep or can view has a card that says, in one line, what is overdue and what is due soon.", shot: hangar, alt: "The hangar: the demo aircraft N734DM with 3 items overdue, 2 due soon and 13 confirmed entries" },
+  { id: "review", title: "Review what was read", body: "AI drafts dates, hours, work and signatures from each page, least certain field first. You check each one beside the ink before the entry counts toward anything.", shot: review, alt: "The review desk: fields read from an airframe logbook entry, with the date marked unsure, beside the scanned page and a close-up of the handwritten date" },
+  { id: "status", title: "See what is due", body: "Inspections and recurring checks sit on a line across the next twelve months, with a table of date and hour limits underneath. The page behind the most urgent item is open beside it.", shot: status, alt: "The status screen: 3 items overdue, a line of due dates across the airframe, engine, propeller and avionics, and the table of limits, beside the scanned page behind them" },
+  { id: "page", title: "Check it against the page", body: "Every entry shows who read it, who confirmed it and who signed it, next to the scanned page it came from. Search every book from anywhere, or ask a plain-English question and follow the cited entries.", shot: entry, alt: "An annual inspection entry with its trust marks, the work as written and the tach reading, beside its scanned airframe logbook page" },
+  { id: "history", title: "Follow the history", body: "Each logbook is a line on one map, from the first entry to the next visit due. Gaps show where pages are missing, and any stop opens its page.", shot: map, alt: "The logbooks map: 48 years of airframe, engine, propeller and avionics lines, with a selected avionics entry and its scanned page" },
+  { id: "small-things", title: "Keep the small things", body: "Weight and balance revisions, equipment, hours and oil live with the logbooks they came from. When later work may have changed the weight, the page says so.", shot: wb, alt: "The weight and balance screen: a note that the figures may be stale, the current empty weight, arm, moment and useful load, and the revision history" },
 ];
 
 export default function DemoPage() {
@@ -64,7 +64,7 @@ export default function DemoPage() {
             </section>
             <figure className="m-0 flex flex-col gap-2 rounded-leaf bg-mat p-[18px] text-on-cover shadow-leaf">
               <Image src={s.shot} alt={s.alt} sizes="(min-width: 1024px) 700px, 100vw" className="h-auto w-full rounded-[var(--radius-m)]" />
-              <figcaption className="text-[13px] leading-[1.45] text-on-cover-2">Demo aircraft N734DM (fictional). Screens from an earlier version of the app.</figcaption>
+              <figcaption className="text-[13px] leading-[1.45] text-on-cover-2">Demo aircraft N734DM (fictional).</figcaption>
             </figure>
           </li>
         ))}
