@@ -20,7 +20,7 @@ test("a rate limit logs its trigger once per window, with numbers only, and keep
   assert.deepEqual(result.map((r) => r !== null), [false, false, true, true, true]);
   assert.equal(logs.length, 1);
   assert.equal(logs[0][0], "[shortcut-trigger]");
-  assert.ok(!JSON.stringify(logs[0]).includes("example.com"));
+  assert.ok(!JSON.stringify(logs[0]).includes(key), "the rate-limit key never reaches the log");
   // A new window starts clean and can log again.
   const again = capture(() => [hit(key, 2, 60_000, 70_000), hit(key, 2, 60_000, 70_001), hit(key, 2, 60_000, 70_002)]);
   assert.equal(again.logs.length, 1);
