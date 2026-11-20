@@ -66,7 +66,7 @@ struct SignInView: View {
                     .font(.custom("LibreFranklin-ExtraBold", size: 34, relativeTo: .largeTitle))
                     .foregroundStyle(Section.setup.onBoard)
                     .accessibilityAddTraits(.isHeader)
-                Text("Your aircraft's logbooks, photographed and read into an index you can search, with what is due worked out from them.")
+                Text("Photograph your aircraft's logbooks. Search every entry and see what's due.")
                     .dFont(.lede)
                     .foregroundStyle(Section.setup.onBoard2)
                     .lineLimit(3)
