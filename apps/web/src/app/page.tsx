@@ -75,7 +75,7 @@ export default async function Home() {
                 <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden className="inline-block size-2.5 rounded-[2px] bg-line-airframe" />Last annual: Airframe logbook, Jul 20, 2025
                 </span>
-                <TrustMark level="confirmed" />
+                <TrustMark level="confirmed" label="Confirmed by the owner" />
               </li>
               <li>
                 <span className="mr-2 inline-flex align-middle"><TrustMark level="ai_read" /></span>

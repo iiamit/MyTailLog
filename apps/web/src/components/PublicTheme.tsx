@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PublicRoot } from "@/components/public/PublicRoot";
+import { TabStrip } from "@/components/public/TabStrip";
 import { PublicMenu } from "@/components/public/PublicMenu";
 import { PUBLIC_GROUPS, groupOf, isCurrentPage, visiblePages, type PublicGroup } from "@/lib/publicNav";
 
@@ -104,7 +105,7 @@ export async function PublicTheme({
               </nav>
             </PublicMenu>
           </div>
-          <nav aria-label="Site sections" className="flex gap-1 overflow-x-auto px-4 pt-2">
+          <TabStrip>
             {PUBLIC_GROUPS.map((g) => (
               <Link
                 key={g.id}
@@ -116,7 +117,7 @@ export async function PublicTheme({
                 {g.label}
               </Link>
             ))}
-          </nav>
+          </TabStrip>
         </header>
 
         <div data-section={open.section} className={`board flex-1 text-on-board ${ground === "board" ? "bg-board" : "bg-cover"}`}>

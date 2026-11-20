@@ -34,6 +34,8 @@ colors:
   line-propeller: "#4a4f57"
   line-avionics: "#0f7fa6"
   line-other: "#8a8f97"
+  highlight: "rgba(255,214,10,0.42)"
+  highlight-edge: "#c99700"
 typography:
   board-title:
     fontFamily: "Libre Franklin, system-ui, sans-serif"

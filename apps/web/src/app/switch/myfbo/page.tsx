@@ -6,7 +6,7 @@ import { Callout } from "@/components/public/Read";
 export const metadata: Metadata = {
   title: "Coming from MyFBO: rescue your maintenance records",
   description:
-    "MyFBO is shutting down and your maintenance history is inside it. MyTailLog is not a MyFBO replacement (no scheduling, dispatch or invoicing), but it will read your exports, PDFs, scans and photos of paper into a searchable, exportable, MIT-licensed record you keep.",
+    "If your maintenance history is in MyFBO, get it out into a record you keep. MyTailLog is not a MyFBO replacement (no scheduling, dispatch or invoicing), but it will read your exports, PDFs, scans and photos of paper into a searchable, exportable, MIT-licensed record you keep.",
 };
 
 const MOVES: { what: string; how: string }[] = [
@@ -92,7 +92,7 @@ export default function SwitchMyFboPage() {
       lede={
         <>
           <p>
-            <strong>MyFBO is going away, and your maintenance history is inside it.</strong> Get it out, into something open,
+            <strong>If your maintenance history lives in MyFBO, get it out</strong> into something open,
             exportable and free. This page is about rescuing the records, and it is upfront about the large part of MyFBO
             that MyTailLog deliberately does not do.
           </p>

@@ -265,7 +265,7 @@ const SECTIONS: Section[] = [
         </p>
         <Effects>
           Imported entries land <strong>unconfirmed</strong>: they show up in{" "}
-          <L href="#extract">Review all</L> grouped as &ldquo;imported (no scan)&rdquo;, and drive
+          <L href="#extract">Review all</L>{" "}grouped as &ldquo;imported (no scan)&rdquo;, and drive
           no reminder or forecast until you confirm them. Importing into an aircraft that already
           has entries is the usual way to create duplicates, so check{" "}
           <L href="#duplicates">Fix duplicates</L> afterwards.
@@ -561,7 +561,7 @@ const SECTIONS: Section[] = [
     body: (
       <>
         <p>
-          <L href="/hangar">Aircraft → Hours and engine</L> shows what each instrument reads and
+          <L href="/hangar">Aircraft → Hours and engine</L>{" "}shows what each instrument reads and
           lets you record two things the logbook alone can&apos;t express: a meter that was{" "}
           <strong>replaced</strong>, and <strong>airframe time</strong>.
         </p>
@@ -828,7 +828,7 @@ const SECTIONS: Section[] = [
         </p>
         <p>
           Note: the oil-change <em>interval</em> (hours between changes) is set on the oil item on
-          each aircraft&apos;s <L href="#maintenance">Maintenance</L> page, the setting here only
+          each aircraft&apos;s <L href="#maintenance">Maintenance</L>{" "}page, the setting here only
           controls how early you&apos;re alerted, not when the item is due.
         </p>
         <Effects>
@@ -896,7 +896,7 @@ const SECTIONS: Section[] = [
         </p>
         <Effects>
           An equipment install/removal that postdates your last{" "}
-          <L href="#wb">Weight &amp; Balance</L> revision flags the W&amp;B as possibly stale, a
+          <L href="#wb">Weight &amp; Balance</L>{" "}revision flags the W&amp;B as possibly stale, a
           common records gap (avionics swapped, W&amp;B never recomputed).
         </Effects>
       </>
@@ -914,7 +914,7 @@ const SECTIONS: Section[] = [
           not a loading calculator.
         </p>
         <Effects>
-          If <L href="#equipment">equipment</L> changed after your last revision, a banner flags the
+          If <L href="#equipment">equipment</L>{" "}changed after your last revision, a banner flags the
           W&amp;B as out of date. Scanning an <L href="#other">A&amp;P W&amp;B sheet</L> adds a
           revision automatically.
         </Effects>

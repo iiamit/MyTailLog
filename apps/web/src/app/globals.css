@@ -16,6 +16,9 @@
 }
 
 /* Existing long-form content keeps its semantic markup while using the new leaf palette. */
+/* A public page the app header can't recognise by path (the 404) brings its own frame. */
+body:has(.public-v2) .app-header { display: none; }
+
 .public-v2 {
   --font-libre-franklin: "Libre Franklin Public";
   --font-literata: "Literata Public";

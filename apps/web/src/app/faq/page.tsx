@@ -289,7 +289,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         </ul>
         <p>
           You don&apos;t have to remember to do it, either, MyTailLog can push that same ZIP to{" "}
-          <A href="#cloud-backup">cloud storage you own</A> on a schedule. It&apos;s also the clean
+          <A href="#cloud-backup">cloud storage you own</A>{" "}on a schedule. It&apos;s also the clean
           way to hand an aircraft&apos;s full history to a buyer.
         </p>
         <p>
@@ -544,7 +544,7 @@ export default function FaqPage() {
       lede={
         <p>
           The commercial and trust questions: cost, privacy, accuracy, and getting your data back out.{" "}
-          <Link href="/help">Help</Link> covers how each feature works; this page doesn&apos;t repeat it.
+          <Link href="/help">Help</Link>{" "}covers how each feature works; this page doesn&apos;t repeat it.
         </p>
       }
       toc={GROUPS.map((g) => ({ id: g.id, title: g.title }))}
