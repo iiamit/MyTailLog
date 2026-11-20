@@ -91,6 +91,9 @@ export type LogEntryRow = {
   trust: Trust;
   replaced_by_entry_id?: string | null;
   signature_name?: string | null;
+  entry_kind?: string | null;
+  description?: string | null;
+  work_performed?: string | null;
 };
 export type LogbookRow = { id: string; type: string };
 export type PageRow = { id: string; logbook_id: string; page_sequence: number | null; extraction_status?: string };
@@ -514,6 +517,19 @@ export function computeStatus(input: DueInput, today: string, visitOpts: VisitOp
       signer: e?.signature_name ?? null,
     };
   };
+  const sourceFor = (kind: string, last: LastDone | null): LastDone | null => {
+    if (!last?.date || last.entryId) return last;
+    const phrases: Record<string, RegExp> = {
+      annual: /\bannual(?:\s+(?:inspection|insp))?\b/i,
+      hundred_hour: /\b(?:100|one hundred)[-\s]*(?:hour|hr)\b/i,
+      oil_change: /\b(?:oil\s+(?:and\s+filter\s+)?(?:change|changed|service|replaced)|(?:changed|replaced)\s+(?:the\s+)?(?:engine\s+)?oil)\b/i,
+    };
+    const phrase = phrases[kind];
+    if (!phrase) return last;
+    const matches = entries.filter((e) => e.entry_date === last.date && e.page_id && pages.has(e.page_id) && counts(e) &&
+      (e.entry_kind === kind || phrase.test(`${e.description ?? ""} ${e.work_performed ?? ""}`)));
+    return matches.length === 1 ? fromEntry(last.date, last.hours, matches[0].id) : last;
+  };
   const byLatest = (x: ItemCompletionRow, y: ItemCompletionRow) =>
     cmp(y.done_date, x.done_date) || (y.done_hours ?? -1) - (x.done_hours ?? -1) || cmp(x.id, y.id);
   /** Returns the counted last done (or the parent's columns when the item has no completion rows) and a newer waiting entry. */
@@ -542,9 +558,11 @@ export function computeStatus(input: DueInput, today: string, visitOpts: VisitOp
   };
   const drafts: Draft[] = [];
   const mxItems = input.maintenance_item ?? [];
-  const mxLast = new Map(mxItems.map((m) => [m.id, lastDoneOf(
-    completions.filter((c) => c.maintenance_item_id === m.id),
-    { date: m.last_done_date, hours: m.last_done_hours, entryId: null })]));
+  const mxLast = new Map(mxItems.map((m) => {
+    const result = lastDoneOf(completions.filter((c) => c.maintenance_item_id === m.id),
+      { date: m.last_done_date, hours: m.last_done_hours, entryId: null });
+    return [m.id, { ...result, last: sourceFor(m.kind, result.last) }] as const;
+  }));
 
   const hoursLimit = (meterChoice: MeterName | null | undefined, kind: string, base: { hours: number; date: string | null } | null, interval: number | null, stored: number | null | undefined) => {
     let meter: MeterName = meterChoice ?? (kind === "oil_change" ? "hobbs" : "tach");
