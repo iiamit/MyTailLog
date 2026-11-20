@@ -106,7 +106,7 @@ public enum Tokens {
         public static let phoneRowMin: CGFloat = 58
         public static let phoneButton: CGFloat = 52
         public static let phoneTouchMin: CGFloat = 44
-        public static let phoneTabbar: CGFloat = 60
+        public static let phoneTabbar: CGFloat = 50
         public static let phoneAddButton: CGFloat = 60
     }
     public enum Map {

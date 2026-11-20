@@ -174,7 +174,7 @@ struct AddHost: ViewModifier {
                     }
                     .buttonStyle(.plain)
                     .padding(.trailing, Tokens.Space.s2 + Tokens.Space.s4)
-                    .padding(.bottom, Tokens.Space.s4 + Tokens.Size.phoneTabbar)
+                    .padding(.bottom, Tokens.Space.s4 + PhoneTabBar.height)
                     .accessibilityLabel("Add")
                     .keyboardShortcut("n", modifiers: .command)
                 }
