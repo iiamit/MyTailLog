@@ -44,4 +44,14 @@ final class AddUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["MyTailLog"].waitForExistence(timeout: 10))
     }
+
+    @MainActor func testLandscapeKeepsPrimaryNavigationReachable() {
+        let app = launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(app.buttons["Add"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Logbooks, tab 2 of 5"].waitForExistence(timeout: 10))
+        app.buttons["Logbooks, tab 2 of 5"].tap()
+        XCTAssertTrue(app.staticTexts["Logbooks"].waitForExistence(timeout: 10))
+    }
 }
