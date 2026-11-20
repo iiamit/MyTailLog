@@ -118,35 +118,37 @@ struct VisitSheet: View {
         let stops = stops
         let books = stops.compactMap { bookName($0.logbook) }
         let firstEntry = stops.first?.entryIds.first.flatMap(model.entry)
-        VStack(alignment: .leading, spacing: Tokens.Space.s3) {
-            SheetTitle(title: "\(Day.format(visit.date)) \((visit.label ?? "visit").lowercased()), \(books.count) books")
-            if let e = firstEntry {
-                Text([e.signature_name, e.mechanic_cert_number, e.tach.map { "tach \(EntryRow.number($0))" }].compactMap { $0 }.joined(separator: " · "))
-                    .dFont(.small).foregroundStyle(Tokens.Colors.ink3)
-            }
-            TabView(selection: $index) {
-                ForEach(Array(stops.enumerated()), id: \.offset) { i, stop in
-                    card(stop).tag(i).padding(.trailing, Tokens.Space.s6)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Tokens.Space.s3) {
+                SheetTitle(title: "\(Day.format(visit.date)) \((visit.label ?? "visit").lowercased()), \(books.count) books")
+                if let e = firstEntry {
+                    Text([e.signature_name, e.mechanic_cert_number, e.tach.map { "tach \(EntryRow.number($0))" }].compactMap { $0 }.joined(separator: " · "))
+                        .dFont(.small).foregroundStyle(Tokens.Colors.ink3)
+                }
+                TabView(selection: $index) {
+                    ForEach(Array(stops.enumerated()), id: \.offset) { i, stop in
+                        ScrollView { card(stop).padding(.trailing, Tokens.Space.s6) }.tag(i)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .frame(height: 280)
+                .accessibilityElement(children: .contain)
+                .accessibilityValue("Card \(index + 1) of \(stops.count)")
+                .accessibilityAdjustableAction { d in
+                    index = d == .increment ? min(index + 1, stops.count - 1) : max(index - 1, 0)
+                }
+                if stops.count > 1 {
+                    let rest = stops.enumerated().filter { $0.offset != index }.map { pageName($0.element) }
+                    Text("Swipe for \(rest.joined(separator: " and ")) · \(index + 1) of \(stops.count)")
+                        .dFont(.caption).foregroundStyle(Tokens.Colors.ink3)
+                }
+                if stops.indices.contains(index), let pageId = stops[index].pageIds.first {
+                    let e = stops[index].entryIds.first.flatMap(model.entry)
+                    Button("Open \(pageName(stops[index]))") { actions.page(pageId, e?.entryBox) }.buttonStyle(.primary)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(minHeight: 280)
-            .accessibilityElement(children: .contain)
-            .accessibilityValue("Card \(index + 1) of \(stops.count)")
-            .accessibilityAdjustableAction { d in
-                index = d == .increment ? min(index + 1, stops.count - 1) : max(index - 1, 0)
-            }
-            if stops.count > 1 {
-                let rest = stops.enumerated().filter { $0.offset != index }.map { pageName($0.element) }
-                Text("Swipe for \(rest.joined(separator: " and ")) · \(index + 1) of \(stops.count)")
-                    .dFont(.caption).foregroundStyle(Tokens.Colors.ink3)
-            }
-            if stops.indices.contains(index), let pageId = stops[index].pageIds.first {
-                let e = stops[index].entryIds.first.flatMap(model.entry)
-                Button("Open \(pageName(stops[index]))") { actions.page(pageId, e?.entryBox) }.buttonStyle(.primary)
-            }
+            .padding(Tokens.Space.s4)
         }
-        .padding(Tokens.Space.s4)
         .background(Tokens.Colors.leaf)
         .environment(\.section, .books)
     }

@@ -125,14 +125,14 @@ struct PhoneLeaf<Content: View>: View {
     }
 }
 
-/// PhoneTabBar (02 §9.4): five coloured tabs hanging from the cover; the open one rises 8 into the leaf.
+/// PhoneTabBar (02 §9.4): five coloured tabs hanging from the cover.
 struct PhoneTabBar: View {
     @Environment(TabModel.self) private var tabs
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    /// Labels hide and the bar grows to 56 at accessibility sizes; long-press shows the Large Content Viewer (05 §19).
-    private var height: CGFloat { typeSize.isAccessibilitySize ? 56 : Tokens.Size.phoneTabbar }
+    /// Labels hide at accessibility sizes; long-press shows the Large Content Viewer (05 §19).
+    static let height: CGFloat = 60
 
     var body: some View {
         HStack(alignment: .top, spacing: Tokens.Space.s1) {
@@ -141,7 +141,7 @@ struct PhoneTabBar: View {
             }
         }
         .padding(.horizontal, Tokens.Space.s2)
-        .frame(height: height, alignment: .top)
+        .frame(height: Self.height, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .bottom)
         .accessibilityElement(children: .contain)
@@ -165,12 +165,12 @@ struct PhoneTabBar: View {
                     Text(section.tabLabel).dFont(.tabLabel).lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
+            .padding(.top, 6)
             .frame(maxWidth: .infinity)
-            .frame(height: selected ? height + 8 : height)
+            .frame(height: Self.height)
         }
         .buttonStyle(FillButtonStyle(fill: section.board, content: section.onBoard, shape: shape))
         .opacity(selected ? 1 : 0.92)
-        .offset(y: selected ? -8 : 0)
         .accessibilityLabel("\(section.title), tab \(index + 1) of \(Section.phoneTabs.count)" + (overdue > 0 ? ", \(overdue) overdue" : ""))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityShowsLargeContentViewer {

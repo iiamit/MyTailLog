@@ -26,7 +26,7 @@ struct RecLeaf<Content: View, Footer: View>: View {
                 footerBar
             }
             // The phone's tab bar is drawn over the stack (PhoneShell's inset doesn't reach the tab's content).
-            .padding(.bottom, nav.tablet ? 0 : Tokens.Size.phoneTabbar)
+            .padding(.bottom, nav.tablet ? 0 : PhoneTabBar.height)
         }
     }
 
