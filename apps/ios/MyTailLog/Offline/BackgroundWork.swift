@@ -78,8 +78,13 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         -> UNNotificationPresentationOptions { [.banner, .list, .sound] }
 
     /// Tapping a notification opens its `deepLink` (the server's `data.deepLink`, 05 §5.5).
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
         let link = response.notification.request.content.userInfo["deepLink"] as? String
-        await MainActor.run { LinkInbox.shared.pending = AppLinks.parse(link) ?? AppLinks.parse(AppLinks.root) }
+        // UIKit saves app state after completion; finish on its main thread.
+        DispatchQueue.main.async {
+            LinkInbox.shared.pending = AppLinks.parse(link) ?? AppLinks.parse(AppLinks.root)
+            completionHandler()
+        }
     }
 }
