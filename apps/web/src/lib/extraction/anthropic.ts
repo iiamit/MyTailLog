@@ -134,7 +134,7 @@ function e2eStubClient(): Anthropic {
       });
     } else {
       // ask (no schema) and any not-yet-stubbed flow
-      text = JSON.stringify({ answer: "E2E stubbed answer.", citations: [] });
+      text = JSON.stringify({ answer: "E2E stubbed answer.", citations: [1] });
     }
     return {
       id: "e2e-stub", type: "message", role: "assistant", model: String(body.model),
