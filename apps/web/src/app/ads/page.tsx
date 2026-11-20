@@ -21,8 +21,10 @@ export default async function AdsIndexPage() {
   try {
     rows = await listCatalogModels();
   } catch (e) {
-    failed = true;
     console.error("ads index: catalog unavailable", e);
+    // A failed background refresh keeps serving the last good page; only a build with no page yet shows the error.
+    if (process.env.NEXT_PHASE !== "phase-production-build") throw e;
+    failed = true;
   }
 
   const byMake = new Map<string, AdCatalogModel[]>();
