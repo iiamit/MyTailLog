@@ -1,7 +1,19 @@
-# Offline sync engine & the iOS app
+# Offline sync engine & the Capacitor app
 
-How the native app works and the self-hosted sync that feeds it. Design of record
-for `apps/mobile` and the `/api/sync` + capture surfaces in `apps/web`.
+How the self-hosted sync works, and how the Capacitor app (`apps/mobile`) uses it.
+
+> **Updated 2026-11.** The change feed below is still the base of all sync. Since the
+> redesign, the native apps (`apps/ios`, `apps/android`) sync through the shared Kotlin
+> core (`apps/core`, `SyncEngine`) over **protocol v2**: `GET /api/sync/v2/pull`,
+> `POST /api/sync/v2/push` and `POST /api/sync/v2/conflicts/{id}` (`apps/web/src/lib/sync/v2.ts`).
+> v2 uses the same feed and write functions and adds a 410 `resync_required` when a
+> cursor predates pruned history, machine error codes, the viewer write rule (viewers
+> may only report squawks) and a push ledger, so a retried mutation never runs twice and
+> a conflict stays recorded until the phone decides it. Each phone keeps `mirror.db`
+> (server truth, rebuildable) and `outbox.db` (unsent work, never rebuilt); see
+> `apps/core/README.md` and the spec in `docs/redesign/handoff/05-mobile-architecture.md`.
+> The v1 endpoints and the app sections below describe the Capacitor app, which is being
+> replaced and keeps v1 until its users move.
 
 ## Goal
 
@@ -123,8 +135,8 @@ must not open onto the previous owner's fleet.
 
 ## The app (`apps/mobile`)
 
-Capacitor + Vite + React, standalone npm project. Dark "glass cockpit" theme
-matching the web.
+Capacitor + Vite + React, standalone npm project, with the pre-redesign look of the
+web. Being replaced by the native apps; see the note at the top.
 
 | Module | Role |
 |---|---|
@@ -171,13 +183,14 @@ menu shows what's held and offers **Clear cached scans**.
 
 ## Monorepo & a Turbopack gotcha
 
-Repo layout: `apps/web` (Next), `apps/mobile` (Capacitor), `packages/`
-(placeholder). `apps/web` is a **standalone** Next app (own `package.json` /
+Repo layout: `apps/web` (Next), `apps/ios` and `apps/android` (native),
+`apps/core` (shared Kotlin), `apps/mobile` (Capacitor), `packages/shared` (tokens and
+test fixtures). `apps/web` is a **standalone** Next app (own `package.json` /
 `package-lock.json` / `apphosting.yaml`); App Hosting builds it with the backend
 **root directory set to `apps/web`**.
 
-`packages/shared` is deliberately **empty** (a README). Sharing live TS across the
-Next build hit two walls, both worth knowing:
+`packages/shared` holds data, not code: design tokens and test fixtures (see its
+README). Sharing live TS across the Next build hit two walls, both worth knowing:
 
 1. **Turbopack won't resolve a package symlinked outside the app root** — workspace
    *or* `file:`, TS *or* compiled-JS. It's a hard project-root boundary; `Module
@@ -200,12 +213,7 @@ runtime naming a missing one, even for camera-only capture), and set
 
 ## Deferred
 
-The shared-code package. Offline edit of existing rows with conflict handling,
-auto-drain on reconnect, the Keychain session, light appearance, push, and the
-iPad layout are all done.
-
-**Account deletion has no server side yet.** `/profile` has no delete action and
-no `#delete-account` anchor, so the in-app link Apple requires lands on a page
-that cannot delete anything. Fine for TestFlight; it blocks App Store submission
-(guideline 5.1.1(v)). It is destructive and irreversible and wants its own PR —
-see `apps/mobile/TESTFLIGHT.md` §8.
+A shared TypeScript code package (the native apps share Kotlin through `apps/core`
+instead). Offline edit of existing rows with conflict handling, auto-drain on
+reconnect, the Keychain session, light appearance, push, the iPad layout and
+account deletion are all done.

@@ -375,7 +375,8 @@ export function currentTach(readings: Reading[]): CurrentTach {
   if (pairs.length === 0) {
     // Can't relate the meters (no shared point). Prefer an actual tach reading —
     // it's the authoritative maintenance meter (covers the all-tach logbook).
-    // ponytail: a tach-then-only-hobbs history falls back to the tach here too.
+    // shortcut: a tach-then-only-hobbs history falls back to the (stale) tach here too. Bridge with the default
+    // ratio when an owner reports a current tach that ignores newer hobbs-only entries.
     if (latestTach) return { tach: round1(latestTach.tach), estimated: false, asOf: latestTach.date, rough: false, from: latestTach.source };
     return latestHobbs
       ? { tach: round1(latestHobbs.hobbs * DEFAULT_RATIO), estimated: true, asOf: latestHobbs.date, rough: true, from: latestHobbs.source }

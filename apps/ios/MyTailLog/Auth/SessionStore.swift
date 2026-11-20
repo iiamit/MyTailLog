@@ -3,7 +3,8 @@ import Security
 
 /// The Supabase session (and the email link's PKCE verifier) in the Keychain, this device only,
 /// readable after first unlock (05 §8.1).
-/// shortcut: no keychain access group yet; add one when the widget/intent/share extensions arrive (phase 6).
+/// No keychain access group: App Intents run in the app, and the widget extension reads only the App Group snapshot.
+/// Add a group if an extension ever needs the session itself.
 enum SessionKeychain {
     private static func query(_ account: String) -> [String: Any] {
         [
@@ -186,7 +187,7 @@ final class SessionStore {
         return session
     }
 
-    /// shortcut: phase 0 has no outbox, so this is the "nothing unsent" path of 05 §8.6; add the unsent-work prompt with sync.
+    /// Deletes this phone's copy, unsent work included; AccountButton asks first when the outbox holds any (05 §8.6).
     func signOut() async {
         // This phone stops getting the account's reminders while the session can still say so (06 M-SYS-05).
         await Push.shared.stop()

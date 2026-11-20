@@ -215,8 +215,10 @@ export async function queueFields(
   if (phash && !PHASH.test(phash)) return { error: "The page fingerprint is malformed.", httpStatus: 400 };
   let duplicateOf: string | null = null;
   if (phash) {
-    // shortcut: compares against every fingerprinted page of the aircraft in JS (a few thousand at most); move to SQL if fleets grow.
+    // shortcut: compares against every fingerprinted page of the aircraft in JS, and PostgREST returns at most 1,000;
+    // move the comparison to SQL when the log below fires.
     const { data } = await supabase.from("page").select("id, image_phash").eq("aircraft_id", ctx.aircraftId).not("image_phash", "is", null);
+    if ((data ?? []).length >= 1000) console.warn("[shortcut-trigger]", { at: "lib/writes/pages.ts:221", pages: data!.length });
     duplicateOf = findDuplicate(phash, (data ?? []) as { id: string; image_phash: string | null }[])?.id ?? null;
   }
   return {

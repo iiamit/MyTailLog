@@ -270,7 +270,8 @@ struct ScanCameraScreen: View {
 }
 
 /// This session's pages (the thumbnail's review strip) with Delete per page.
-/// shortcut: "Adjust corners" and "Retake" per page are not here yet; delete and shoot again does the job.
+/// shortcut: "Adjust corners" and "Retake" per page are not here yet; delete and shoot again does the job. Add them
+/// when reads fail on badly cropped pages (the reader's "unreadable" pages from phone scans are the signal).
 private struct ScanStrip: View {
     let session: ScanSession
     @Environment(\.dismiss) private var dismiss

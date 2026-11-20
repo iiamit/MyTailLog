@@ -11,9 +11,9 @@ export const metadata = { title: "Maintenance summary — MyTailLog" };
 // insurer, or an IA at annual. Deliberately NOT the full records export (that
 // lives at ../export and runs to every logbook entry) — this is the top sheet.
 //
-// ponytail: no PDF library. The page is print-first and globals.css re-points
-// the design tokens to a light ramp under @media print, so the browser's
-// "Save as PDF" is the exporter.
+// The PDF file comes from /api/aircraft/[id]/summary (lib/pdf/render.tsx).
+// This page is the on-screen and print view of the same summary; globals.css
+// re-points the design tokens to a light ramp under @media print.
 // ===========================================================================
 
 export default async function SummaryPage({ params }: { params: Promise<{ id: string }> }) {

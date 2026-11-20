@@ -7,10 +7,11 @@
 // process.env.CHANGELOG_MD (a build-time string substitution), which is why
 // this module is a pure parser over a string rather than a file read.
 //
-// ponytail: hand-rolled over our own known format instead of adding a markdown
+// shortcut: hand-rolled over our own known format instead of adding a markdown
 // dependency. Only what CHANGELOG.md actually uses is supported — `## version`,
 // `### Verb — topic`, "- " bullets, **bold**, `code`, [text](url). Anything
-// else falls through as plain text rather than breaking the page.
+// else falls through as plain text rather than breaking the page. Switch to a
+// markdown library the first time an entry needs tables, images or nested lists.
 // ===========================================================================
 
 export type ChangeTag = "New" | "Improved" | "Fixed" | "Security";

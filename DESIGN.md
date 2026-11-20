@@ -24,8 +24,11 @@ colors:
   section-books-ink: "#7a5c00"
   on-section-books: "#1c1600"
   section-maint: "#0b6b6a"
+  section-maint-ink: "#0b6665"
   section-aircraft: "#2f7533"
+  section-aircraft-ink: "#2c6e30"
   section-docs: "#85491f"
+  section-docs-ink: "#824a22"
   section-share: "#6b44b8"
   section-share-ink: "#5a36a3"
   section-setup: "#3a3f46"
@@ -192,7 +195,7 @@ A dark binder cover, six section hues, white leaves with ink, one vermilion alar
 - **Vermilion** (alarm): overdue (solid slip), due soon (ring), errors, destructive confirmation. `alarm-text` is the darker alarm ink for alarm-coloured words; `alarm-bg` is the soft alarm slip with `on-alarm-bg` text.
 
 ### Secondary
-- **Section hues** (section-status blue, section-books yellow, section-maint teal, section-aircraft green, section-docs brown, section-share violet, section-setup slate): one per tab, filling that tab and the open board. White text on all but books, which takes dark text (on-section-books). Each has a darker `section-ink` for links on a leaf (status, maint, aircraft, docs and setup inks are within a shade of their hue; books and share differ and are listed).
+- **Section hues** (section-status blue, section-books yellow, section-maint teal, section-aircraft green, section-docs brown, section-share violet, section-setup slate): one per tab, filling that tab and the open board. White text on all but books, which takes dark text (on-section-books). Each has a darker `section-ink` for links on a leaf (status and setup inks are the hue itself; the others are listed, from `apps/web/src/ui/tokens.css`).
 
 ### Tertiary
 - **Logbook inks** (line-airframe, line-engine, line-propeller, line-avionics, line-other): the lines on the map, LineChips, the coloured key of a logbook-scoped PageCite, and the map legend. The Other logbook is never drawn as a line.

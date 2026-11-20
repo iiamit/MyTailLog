@@ -1,5 +1,14 @@
 # MyTailLog — mobile app (Capacitor + Vite + React)
 
+> **Being replaced.** The native apps, [`apps/ios`](../ios/README.md) (SwiftUI, 2.0.0 on TestFlight) and
+> [`apps/android`](../android/README.md) (Compose, 2.0.0 on the Play internal track), take over the same
+> bundle and application id, `com.mytaillog.app`, and share the Kotlin core in [`apps/core`](../core/README.md).
+> This app stays in the stores until they ship, and it still speaks sync protocol v1 (`/api/sync/pull`, `/api/sync/push`),
+> so keep those routes working until its users have moved. New features go into the native apps only.
+>
+> What still uses this folder: `scripts/play.mjs` uploads the **native** Android bundle to Play
+> (`MYTAILLOG_ANDROID_DIR=../android node scripts/play.mjs draft`, see [`docs/release-android.md`](../../docs/release-android.md)). The notes below describe the Capacitor app itself.
+
 ## Android development
 
 The Android project lives in `android/` and shares this React app, SQLite mirror,

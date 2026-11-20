@@ -139,11 +139,12 @@ export async function extractPage(
     // A fresh photo of an old page has a new page ID. Compare its entries with
     // the logbook before writing rows, and recognize our signed sticker by its
     // printed entry ID plus digest. The signed row itself stays immutable.
-    // ponytail: scan one aircraft in memory; date-scope these reads if its
-    // logbook grows beyond a few thousand entries.
+    // shortcut: scan one aircraft in memory, and PostgREST returns at most 1,000 rows, so an aircraft past
+    // that compares against only part of its logbook. Date-scope or page these reads when the log below fires.
     const { data: priorRows, error: priorError } = await supabase.from("log_entry")
       .select("*").eq("aircraft_id", page.aircraft_id);
     if (priorError) throw new Error(`Could not check existing logbook entries: ${priorError.message}`);
+    if ((priorRows ?? []).length >= 1000) console.warn("[shortcut-trigger]", { at: "lib/extraction/pipeline.ts:147", entries: priorRows!.length });
     const { data: sourcePages, error: pagesError } = await supabase.from("page")
       .select("id, logbook_id").eq("aircraft_id", page.aircraft_id);
     if (pagesError) throw new Error(`Could not check source pages: ${pagesError.message}`);

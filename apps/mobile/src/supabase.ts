@@ -19,7 +19,7 @@ if (!url || !anon) {
 // phone is locked. `setSynchronize(false)` keeps it off iCloud Keychain — a
 // session belongs to one device.
 //
-// ponytail: no biometric gate. This plugin has no biometry option (that is a
+// Decision: no biometric gate. This plugin has no biometry option (that is a
 // separate @aparajita plugin), and Face ID in front of an app whose whole point
 // is being usable one-handed at the aircraft is a cost with no attacker it
 // stops that the device passcode doesn't already.

@@ -4,8 +4,13 @@ Aircraft logbook digitization & maintenance tracker for piston GA owners — liv
 
 **Mobile apps:** [iPhone and iPad on the App Store](https://apps.apple.com/us/app/mytaillog/id6795396758) · [Android on Google Play](https://play.google.com/store/apps/details?id=com.mytaillog.app).
 Free, open source, and ready for the hangar: sync once to browse records offline,
-scan logbook pages, and record updates that upload on the next sync. The iOS app
-requires iOS / iPadOS 15.6 or later. Use the same account on the web and in the apps.
+scan logbook pages, and record updates that upload on the next sync. Use the same
+account on the web and in the apps.
+
+The store apps are being replaced by native ones built on the new design: a
+SwiftUI app for iPhone and iPad (iOS 18 or later, in TestFlight) and a Jetpack
+Compose app for Android (Android 10 or later, in Play internal testing). They
+install over the current apps with the same ids.
 
 On the website, you can sign up or sign in with Google, Apple, an email magic
 link, or a password. Existing users should sign in with email first and connect
@@ -30,34 +35,54 @@ hours — then reminds you before things come due.
 
 ## Screenshots
 
-AI reads the page; you review it next to the original, with low-confidence fields flagged
-*(all shots are the demo aircraft — a fictional 1978 C172N every new account gets):*
+The new design, on the demo aircraft every account gets (a fictional 1978 Cessna
+172N). Owners on the web can switch to it with **Try the new design**; it becomes
+the default once the cut-over switch is flipped (see [Deploy](#deploy-firebase-app-hosting--supabase)).
 
-![Review — a handwritten 1979 logbook page beside the AI-extracted entry](apps/web/src/screenshots/review.png)
+**Status**: what the records show is due, with the line ahead and the page behind each item
+![Status: three items overdue, the line ahead for each logbook, and the page that last signed an item](apps/web/src/screenshots/v2-status.png)
 
 <details>
-<summary><b>More screenshots</b> — aircraft overview · Status grid · Ask your logbook · Timeline · Weight &amp; Balance</summary>
+<summary><b>More screenshots</b>: review desk · logbook map · entry · hangar · weight &amp; balance</summary>
 
 <br>
 
-**Aircraft overview** — everything at a glance, color-coded by what needs attention
-![Aircraft overview](apps/web/src/screenshots/hub.png)
+**Review desk**: AI reads the page, you check it field by field next to the scan, least certain first
+![Review desk: a handwritten airframe page beside the fields read from it](apps/web/src/screenshots/v2-review.png)
 
-**Status** — every inspection, item, and AD by urgency (with email reminders before they come due)
-![Status grid](apps/web/src/screenshots/status.png)
+**Logbooks map**: every logbook as a line, shop visits as stops, and the gaps where no pages exist
+![Logbooks map](apps/web/src/screenshots/v2-map.png)
 
-**Ask your logbook** — plain-English answers that cite their source entries
-![Ask your logbook](apps/web/src/screenshots/ask.png)
+**Entry**: the words as written, the meters, who signed, and the page it came from
+![An entry with its scanned page](apps/web/src/screenshots/v2-entry.png)
 
-**Timeline & search** across all logbooks
-![Timeline](apps/web/src/screenshots/timeline.png)
+**Hangar**: all your aircraft
+![Hangar](apps/web/src/screenshots/v2-hangar.png)
 
-**Weight & Balance** — revision history + current empty weight/CG
-![Weight & Balance](apps/web/src/screenshots/wb.png)
+**Weight & balance**: revision history and the current empty weight and CG
+![Weight and balance](apps/web/src/screenshots/v2-wb.png)
 
 </details>
 
 ## Features
+
+The app is organised like a binder with six sections, the same on the web and the
+phones:
+
+- **Status**: what's due and overdue by date and hours, the line ahead, Plan ahead,
+  and the shop visits that can group items.
+- **Logbooks**: the map of every book, pages, entries, the review desk, search and
+  Ask.
+- **Maintenance**: tracked items, ADs, squawks and the annual.
+- **Aircraft**: hours, oil, equipment and weight & balance.
+- **Documents**: registration, airworthiness certificate, POH, insurance and the
+  rest, with their expiry dates.
+- **Share**: record rooms, people, the maintenance summary, the pre-buy dossier and
+  exports.
+
+Every value shows where it came from: read by AI, confirmed by you, or signed by a
+mechanic, with the page it's on. Entries read by AI don't count toward Status until
+you confirm them.
 
 **Capture → extract → review**
 - Camera capture with automatic document edge-detection / deskew / crop, or
@@ -133,12 +158,14 @@ AI reads the page; you review it next to the original, with low-confidence field
   (or any consented app) can pull airworthiness *from* MTL. See
   [`docs/mfb-integration.md`](docs/mfb-integration.md).
 
-**AI keys & cost control**
-- Extraction and Q&A run on the app's shared Anthropic key by default, bounded by
-  a **per-user daily call cap** and a **global daily-$ ceiling** (both env-tunable).
-- Owners can **bring their own Anthropic API key** (stored encrypted) to bill AI
-  usage to their own account and get a much higher limit; the Profile page shows
-  their calls, tokens, and estimated cost so far.
+**AI reading allowance**
+- Reading pages and Ask run on the app's shared key by default. Each owner can have
+  about **50 pages read in any rolling 24 hours**; each page frees up 24 hours after
+  it was read, and pages past the allowance wait in line and are read when it frees
+  up. A global daily-$ ceiling bounds total shared spend (both env-tunable).
+- For more, owners can **bring their own Anthropic or OpenAI key** (stored
+  encrypted) and bill reading to their own account, up to 1,000 reading calls in any
+  24 hours. The Profile page shows calls, tokens and estimated cost so far.
 
 **Own your data**
 - **Records Vault** — keep the aircraft's permanent records (airworthiness
@@ -148,6 +175,10 @@ AI reads the page; you review it next to the original, with low-confidence field
   compliance, upcoming due items, installed equipment and current W&B: the
   document you hand a buyer, an insurer, or an IA at annual. Plus a full
   entry-by-entry records report and CSV exports.
+- **Record rooms**: a read-only link for a buyer, mechanic, IA or insurer, no
+  account needed. You choose what's in it (the summary, whole logbooks with their
+  scans, individual documents); links expire after 7 to 180 days, can be revoked,
+  and show how often they were opened.
 - A full **`.zip` backup** (records + original scans) you can **re-import**,
   carrying a `README.txt` that documents every file and column in it.
 - **Automatic backups to cloud storage you own** — connect **Dropbox** and/or
@@ -170,11 +201,18 @@ A lightweight monorepo:
 
 - **`apps/web`** — the Next.js app (this is what deploys). **Standalone**: its own
   `package.json`, `package-lock.json`, and `apphosting.yaml`. Firebase App Hosting
-  builds it with the backend **root directory set to `apps/web`**.
-- **`apps/mobile`** — the native **iOS app** (Capacitor + Vite + React), a
-  standalone npm project — see [`apps/mobile/README.md`](apps/mobile/README.md).
-- **`packages/`** — reserved for cross-app shared code (a placeholder today; see
-  the README there and [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md) for why).
+  builds it with the backend **root directory set to `apps/web`**. The new design
+  lives in `src/app/v2`, `src/ui` and `src/lib/v2`; the current design in the rest.
+- **`apps/ios`** — the native iPhone and iPad app (SwiftUI); see
+  [`apps/ios/README.md`](apps/ios/README.md) and [`docs/release-ios.md`](docs/release-ios.md).
+- **`apps/android`** — the native Android app (Jetpack Compose); see
+  [`apps/android/README.md`](apps/android/README.md) and [`docs/release-android.md`](docs/release-android.md).
+- **`apps/core`** — the Kotlin Multiplatform core both native apps share: sync,
+  the on-device mirror and outbox, and ports of the due engine and the map.
+- **`apps/mobile`** — the Capacitor app in the stores today, being replaced by the
+  native apps; its `scripts/play.mjs` still uploads Android builds to Play.
+- **`packages/shared`** — the design tokens and the rule fixtures the web app and
+  the native apps must agree on; see [its README](packages/shared/README.md).
 - **`supabase/migrations`** — versioned Postgres schema; new migrations are
   applied to test and production through Supabase MCP during releases.
 - **`docs/`** — design docs, incl. the [offline sync engine & iOS app](docs/mobile-and-sync.md).
@@ -197,11 +235,12 @@ work happens in `apps/web`.
   bytes serve through RLS-gated app routes (`/api/page/[id]/image`,
   `/api/document/[id]`), never a public CDN. Cutover is a single env flag
   (`STORAGE_BACKEND`), with an admin health-check (`/api/admin/storage-check`).
-- **Offline-first sync + native iOS app.** A self-hosted change feed
-  (`change_log`) streams deltas to the app via `GET /api/sync/pull`; the device
-  mirrors everything into on-device SQLite and caches every scan to the filesystem,
-  so the full logbook browses with no signal, and captures queue offline and upload
-  later. No sync vendor — see [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md).
+- **Offline-first sync for the phones.** A self-hosted change feed (`change_log`)
+  streams deltas to each phone (`GET /api/sync/v2/pull`); the phone keeps a mirror
+  in SQLite and an outbox of unsent work, so the logbooks browse with no signal and
+  captures, flights, squawks and edits queue offline and upload later. A change made
+  in two places comes back as a conflict for the owner to decide, never a silent
+  winner. No sync vendor — see [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md).
 - **Anthropic or OpenAI** — model routing matches cost to the task. Anthropic uses
   `claude-opus-4-8` for images and `claude-haiku-4-5` for text. OpenAI uses
   `gpt-5.6-sol` for handwritten pages, while printed OCR/PDFs and text-only work
@@ -235,7 +274,8 @@ work happens in `apps/web`.
   build/read) — the server never touches image bytes, keeping hosting at ~zero
   marginal cost.
 - **Firebase App Hosting** (Cloud Run) for the app, **Cloud Scheduler** for the
-  daily job, and **Resend** for reminder email.
+  daily, backup and reader jobs, **Resend** for reminder email, and APNs and FCM for
+  push.
 - **FAA data** comes from the **Federal Register API** (source of truth for
   post-1994 ADs — `src/lib/faa/federalRegister.ts`) with a reverse-engineered
   **DRS fallback** for legacy ADs (`src/lib/faa/drs.ts`). Access model:
@@ -283,7 +323,8 @@ npm run dev                    # http://localhost:3000
 (Or from the repo root: `npm --prefix apps/web run dev`.) See
 [`apps/web/.env.example`](apps/web/.env.example) for all config (required vs
 optional) and [`supabase/README.md`](supabase/README.md) for the schema + RLS
-model. For the iOS app, see [`apps/mobile/README.md`](apps/mobile/README.md).
+model. For the phones, see [`apps/ios/README.md`](apps/ios/README.md) and
+[`apps/android/README.md`](apps/android/README.md).
 
 ## Deploy (Firebase App Hosting + Supabase)
 
@@ -295,6 +336,9 @@ on every GitHub push, global CDN) over a **Supabase** project, with blobs on
 
 **Prerequisites:** a Firebase project on the **Blaze** plan (App Hosting requires
 it; metered but ~$0 at personal scale — set a budget alert) and the Firebase CLI.
+What the environment needs outside the code (IAM roles, scheduler jobs, app-link
+files, migrations, the new-design switch, push) is in
+[`docs/deploy-prerequisites.md`](docs/deploy-prerequisites.md).
 
 **1. Secrets** (Cloud Secret Manager, referenced by name in `apphosting.yaml`):
 ```bash
@@ -361,16 +405,21 @@ Configure custom SMTP (e.g. Resend) to lift the built-in email rate limit.
 Google provisions a managed TLS cert.
 
 **5. Migrations** — commit each new SQL file in `supabase/migrations/`, then
-apply it through Supabase MCP to test and production, verifying each project
-before deploying application code. As of 2026-10-13, both projects contain all
-migrations through `0062`, including the two distinct `0060` files. See
+apply it through Supabase MCP to test and then production, **one file at a time**,
+verifying each project before the next file and before deploying application
+code. Note the two distinct `0060` files. See
 [`supabase/README.md`](supabase/README.md) for the release workflow. Enum-adding
 migrations (e.g. `0004`/`0017`) must be applied before deploying code that uses
 the new value.
 
-**6. Daily reminders (optional)** — create a **Cloud Scheduler** job that does a
-daily `POST https://mytaillog.com/api/cron/daily` with header
-`Authorization: Bearer <CRON_SECRET>`.
+**6. Scheduled jobs** — create the **Cloud Scheduler** jobs for `/api/cron/daily`,
+`/api/cron/backup` and `/api/cron/reader` (every minute; pages aren't read without
+it), each a `POST` with header `Authorization: Bearer <CRON_SECRET>`. Settings in
+[`docs/deploy-prerequisites.md`](docs/deploy-prerequisites.md#cloud-scheduler-jobs).
+
+**7. The new design** — `UI_V2_DEFAULT` in `apphosting.yaml` decides what owners who
+haven't chosen see. Production has it `"off"` (the current design, with **Try the
+new design** to opt in); remove it to make the new design the default.
 
 ### Cost & known ceilings
 - **App Hosting / Cloud Run:** scale-to-zero → ~$0 idle; Cloud Run free tier

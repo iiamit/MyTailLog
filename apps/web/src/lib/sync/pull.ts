@@ -40,6 +40,7 @@ export async function pullChanges(supabase: Db, userId: string, cursor: number, 
   // Avoid evaluating access checks against every other tenant's historical rows.
   // RLS still authorizes each candidate, including shared AD references and deleted aircraft.
   // shortcut: over 100 aircraft uses the original RLS-only query; use a DB-side join if fleets need it.
+  if ((aircraft ?? []).length > 100) console.warn("[shortcut-trigger]", { at: "lib/sync/pull.ts:43", aircraft: aircraft!.length });
   if ((aircraft ?? []).length <= 100) {
     const scope = ["aircraft_id.is.null", `owner_id.eq.${userId}`];
     if (aircraft?.length) scope.push(`aircraft_id.in.(${aircraft.map((a) => a.id).join(",")})`);

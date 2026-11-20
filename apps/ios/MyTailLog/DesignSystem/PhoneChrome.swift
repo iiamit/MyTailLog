@@ -211,7 +211,8 @@ private struct OverdueBadge: View {
 
 /// The tail line, the RailPlate and the rail's Account button. With `switchesAircraft`, a menu of the aircraft the user
 /// can open, then Sign out; otherwise Sign out directly (05 §8.6, nothing-unsent path).
-/// shortcut: a menu of tail numbers until the AircraftSwitcher sheet (M-SWITCH-01) lands with the hangar.
+/// shortcut: a menu of tail numbers, not the AircraftSwitcher sheet (M-SWITCH-01). Build the sheet with the hangar
+/// (M-HANGAR-01), or sooner if an account holds more aircraft than the menu shows without scrolling.
 struct AccountButton<Label: View>: View {
     var switchesAircraft = false
     @ViewBuilder var label: Label

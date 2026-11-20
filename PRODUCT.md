@@ -27,7 +27,7 @@ Success for the current quarter is acquisition: new owners who sign up, add an a
 All four are core and every page may lean on them:
 
 - **Cites the source page.** Every value and every "Ask" answer links back to the scanned page it came from, and nothing moves compliance until the owner confirms it.
-- **Free and open source.** MIT licensed, no subscription. AI reading has a daily allowance; owners can add their own Anthropic key for more (about 50 pages per rolling 24 hours on the shared key).
+- **Free and open source.** MIT licensed, no subscription. AI reading has a daily allowance; about 50 pages per rolling 24 hours on the shared key; owners can add their own Anthropic or OpenAI key for more.
 - **The owner keeps the data.** Nobody else handles the books. Full export, scans included, and re-import.
 - **Works in the hangar.** Records open offline on iPhone, iPad and Android; pages can be scanned on the phone and sync later.
 
@@ -43,7 +43,7 @@ All four are core and every page may lean on them:
 - **Legal boundary:** the physical logbooks are the legal record under 14 CFR 91.417. MyTailLog is an index and decision-support layer, never an airworthiness determination or a maintenance sign-off. Every surface that shows derived data must say so where it matters, and copy must never imply otherwise.
 - **Review rule:** unreviewed OCR never moves a compliance signal; the owner confirms first.
 - **Out of scope:** eSignatures, parts procurement and inventory, work orders, flight scheduling, multi-fleet management.
-- **Terminology:** tach, hobbs, airframe hours; annual; AD/SB; squawk; A&P, IA; W&B; Records Vault; record room.
+- **Terminology:** tach, hobbs, airframe hours; annual; AD/SB; squawk; A&P, IA; W&B; Documents (the Records Vault in the current web design); record room.
 - **Demo aircraft:** every new account gets a fictional 1978 Cessna 172N, N734DM.
 
 ## Brand Commitments
@@ -53,7 +53,7 @@ All four are core and every page may lean on them:
 
 ## Evidence on Hand
 
-- The demo aircraft N734DM and the screenshots in `apps/web/src/screenshots/` (review, hub, status, ask, timeline, W&B).
+- The demo aircraft N734DM and the screenshots in `apps/web/src/screenshots/`: the new design (`v2-status`, `v2-review`, `v2-map`, `v2-entry`, `v2-hangar`, `v2-wb`) and the current one (review, hub, status, ask, timeline, W&B).
 - Usage numbers (sign-ups, aircraft, pages) exist and may be published, but only figures the owner supplies; never estimate them.
 - No testimonials, customer quotes, press or case studies. Do not fabricate any.
 

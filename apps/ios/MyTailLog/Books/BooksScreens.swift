@@ -346,7 +346,8 @@ struct CoverageBar: View {
 }
 
 /// M-BOOKS-06 book page: thumbnails in a grid (3 on the phone, 5 on the tablet), each with its page number and state.
-/// shortcut: no Select mode (retake, move, delete, reorder) or volumes until capture (phase 3).
+/// shortcut: no Select mode (retake, move, delete, reorder) or volumes on the phone; the web pages view does them.
+/// Add them when owners ask to fix page order from the phone.
 struct BookPagesScreen: View {
     let model: BooksModel
     let logbookId: String
@@ -431,8 +432,8 @@ struct PageStateMark: View {
 }
 
 /// M-BOOKS-07: one entry with its scan on top, the transcription in the paper's type, previous and next on its line.
-/// shortcut: "What it satisfied", attached documents and Edit's own form wait for the phase 4 items and phase 3 outbox;
-/// Edit opens this page on the review desk, where the same fields are edited.
+/// shortcut: no "What it satisfied", attached documents or Edit form of its own (the web entry page has them); Edit
+/// opens this page on the review desk, where the same fields are edited. Add them when owners ask for them on the phone.
 struct EntryScreen: View {
     let model: BooksModel
     let entryId: String
@@ -556,7 +557,8 @@ struct EntryScreen: View {
 }
 
 /// M-BOOKS-08: the map's entries as a list by year, for reading and for anyone who prefers lists.
-/// shortcut: no draggable year strip; the year headers carry the counts.
+/// shortcut: no draggable year strip; the year headers carry the counts. Add the strip when a list runs past about
+/// 30 years and scrolling to a year gets slow.
 struct EntriesListScreen: View {
     let model: BooksModel
     let actions: BooksActions

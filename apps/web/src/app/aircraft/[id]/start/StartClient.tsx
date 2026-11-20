@@ -119,7 +119,8 @@ function AnnualStep({ aircraftId, airframeLogbookId }: { aircraftId: string; air
     try {
       setPhase({ at: "working", message: "Preparing the photo…" });
       let blob: Blob | null = null;
-      // ponytail: first page only; a multi-page PDF belongs in Capture pages.
+      // shortcut: first page only; a multi-page PDF belongs in Capture pages. Read every page when owners
+      // drop multi-page PDFs here instead of using Capture (support mail is the signal).
       await rasterizeFile(file, async (p, i) => {
         if (i === 1) blob = p.blob;
       });

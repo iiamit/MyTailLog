@@ -6,6 +6,38 @@ the git log.
 
 ## 2026.11
 
+### Added — a new design for the web, to try now
+
+- The aircraft is laid out like a records binder with six sections: **Status**, **Logbooks**, **Maintenance**, **Aircraft**, **Documents** and **Share**. Each keeps its own colour, and the same sections are on the phones.
+- Status opens with one sentence on what the records show, the line ahead for each logbook, and the page that last signed each item. **Plan ahead** shows what will be due on a date you pick, and which items can share a shop visit.
+- Logbooks draws the aircraft's history as a map: one line per logbook, a stop for each shop visit, and the gaps where no pages exist.
+- The review desk puts the scan beside the fields read from it, least certain first, with a close-up of the field being checked. Keys move between fields and pages.
+- It's opt-in for now: choose **Try the new design** in the app, and **Switch back** at any time. Pages it doesn't cover yet open in the current design.
+
+### Released — new native apps for iPhone, iPad and Android
+
+- Rebuilt from scratch in SwiftUI (iOS and iPadOS 18 or later) and Jetpack Compose (Android 10 or later), on the new design, sharing one core for sync and the due rules. Version 2.0 is in TestFlight and Play internal testing, and installs over the current app.
+- Everything opens offline. Scans, flights, oil, squawks and edits made without signal wait on the phone and upload on the next sync. A change made in two places comes back to you to decide, never a silent winner.
+- Scan pages with the camera, which finds the page edges and flattens them. Reading progress shows as a notification, and a Live Activity on iPhone.
+- Widgets for what's next, reminders as notifications, iPad and tablet layouts with the binder rail, and keyboard shortcuts.
+
+### Improved — record rooms
+
+- Choose who a room is for and preview it before you send the link. Share it as a QR code, see when it was opened, and extend or revoke it.
+
+### Changed — the public site
+
+- The home page, help, FAQ, comparisons, guides, AD lists, API docs, What's new and sign-in follow the new look.
+
+### Fixed — logbooks, uploads and phones
+
+- Pages in an **Other** logbook can be opened again.
+- Upload errors say what went wrong in plain words.
+- On Android, upload and reading notifications show, and switching tabs keeps your place.
+- Maintenance completions recorded before the redesign show the scanned page they came from.
+- Due reminders skip the demo aircraft and aircraft you only view.
+- On the new design, a scanned page that loaded before the page finished opening no longer stays invisible on the review desk and entry pages.
+
 ### Improved — tracked status and small-screen navigation
 
 - Missing schedules or meter readings now show as **needs information**, rather than appearing current. Failed record loads show a retry action instead of a reassuring empty assessment.

@@ -3,7 +3,7 @@ import Foundation
 /// The aircraft list and the current aircraft's status snapshot (port of Android's StatusViewModel).
 /// The snapshot is the server's (09 §3.12) and stays on screen while a refresh runs or after one fails;
 /// `failed` with no snapshot is the error state.
-/// shortcut: snapshots are cached in memory only, until the phase 3 mirror and on-device engine land.
+/// Snapshots are cached here for the session; the copy that survives a relaunch is OfflineStore's (StatusOffline.swift).
 @MainActor @Observable
 final class StatusModel {
     private(set) var aircraft: [AircraftAccess] = []

@@ -20,7 +20,8 @@ const SEVERITY_LINE: Record<string, string> = {
 // The mechanic link page (W-MAINT-03 "Mechanic link page", 09 §4.12): no account, read-only, only what
 // the owner chose. The service client bypasses RLS, so every read is scoped to the link's aircraft
 // and to the squawks or visit the link names. Each open is counted (not the creator's own previews).
-// shortcut: related entries show their text and page label, no page crops yet (08 "related entries").
+// shortcut: related entries show their text and page label, no page crops yet (08 "related entries"); add the crop
+// when a mechanic says the label alone isn't enough to find the entry.
 export default async function MechanicLinkPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const svc = createServiceClient();

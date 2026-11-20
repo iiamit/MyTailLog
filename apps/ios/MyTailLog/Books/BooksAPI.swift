@@ -1,4 +1,8 @@
 import Foundation
+import os
+
+/// Where a known limit starts to bite (the web logs the same "[shortcut-trigger]" tag). Counts only, never user data.
+let shortcutTrigger = Logger(subsystem: "com.mytaillog.app", category: "shortcut-trigger")
 
 /// A logbook (09 §2): one per book; `type` is airframe, engine, prop, avionics or other.
 struct LogbookRow: Decodable, Equatable, Sendable, Identifiable {
@@ -119,7 +123,8 @@ struct PushResult: Decodable, Equatable, Sendable {
 
 /// Logbooks reads (map, evidence, pages, entries) and the writes it sends through the push endpoint, as the signed-in
 /// user under RLS. Viewers read everything; the server refuses their writes.
-/// shortcut: online only until the phase 3 mirror and outbox; writes go straight to push instead of a queue.
+/// shortcut: these review writes (gap answers, page confirm, entry edits) go straight to push and need signal, unlike
+/// Capture and Maintenance, which queue in the outbox. Queue them too when owners ask to review pages offline.
 extension StatusAPI {
     func map(token: String, aircraftId: String) async throws -> MapData {
         try await get(apiURL.appending(path: "api/aircraft/\(aircraftId)/map"), token, apiKey: false)
@@ -140,12 +145,15 @@ extension StatusAPI {
         ]), token)
     }
 
-    /// shortcut: one read of every entry (PostgREST caps it at 1,000 rows); page through when an aircraft passes that.
+    /// shortcut: one read of every entry (PostgREST caps it at 1,000 rows); only used before the mirror's first pull.
+    /// Page through like the core's BooksApi when the trigger log below shows up.
     func entries(token: String, aircraftId: String) async throws -> [EntryRow] {
-        try await get(rest("log_entry", [
+        let rows: [EntryRow] = try await get(rest("log_entry", [
             "select": "id,page_id,logbook_id,entry_date,tach,hobbs,description,work_performed,signature_name,mechanic_cert_number,ad_refs,confidence,field_confidence,field_boxes,owner_confirmed,is_continuation,entry_index,trust,updated_at",
             "aircraft_id": "eq.\(aircraftId)", "replaced_by_entry_id": "is.null", "order": "entry_date.asc.nullslast",
         ]), token)
+        if rows.count >= 1000 { shortcutTrigger.warning("[shortcut-trigger] at=BooksAPI.swift:155 rows=\(rows.count)") }
+        return rows
     }
 
     /// A page image through the app (thumbnail when `thumb`), cached by URLSession.
