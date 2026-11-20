@@ -200,17 +200,19 @@ struct PhoneShell: View {
 
     var body: some View {
         @Bindable var tabs = tabs
-        TabView(selection: $tabs.selected) {
-            ForEach(Section.phoneTabs) { section in
-                Tab(section.title, image: section.icon, value: section) {
-                    NavigationStack(path: tabs.path(section)) {
-                        PhoneSectionScreen(section: section).modifier(SyncDestinations()).modifier(RecordDestinations())
+        HStack(spacing: 0) {
+            if verticalTabs { PhoneTabBar(vertical: true) }
+            TabView(selection: $tabs.selected) {
+                ForEach(Section.phoneTabs) { section in
+                    Tab(section.title, image: section.icon, value: section) {
+                        NavigationStack(path: tabs.path(section)) {
+                            PhoneSectionScreen(section: section).modifier(SyncDestinations()).modifier(RecordDestinations())
+                        }
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) { if !verticalTabs { PhoneTabBar() } }
         }
-        .safeAreaInset(edge: .leading, spacing: 0) { if verticalTabs { PhoneTabBar(vertical: true) } }
-        .safeAreaInset(edge: .bottom, spacing: 0) { if !verticalTabs { PhoneTabBar() } }
         .environment(\.phoneBarAtBottom, !verticalTabs)
         // Documents is a tablet tab; on the phone it lives under Aircraft.
         .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }

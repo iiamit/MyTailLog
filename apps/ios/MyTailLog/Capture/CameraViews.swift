@@ -28,9 +28,11 @@ struct CameraPreview: UIViewRepresentable {
             let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: v.preview)
             v.coordinator = coordinator
             v.previewObservation = coordinator.observe(\.videoRotationAngleForHorizonLevelPreview, options: [.initial, .new]) { [weak v] coordinator, _ in
-                guard let connection = v?.preview.connection else { return }
                 let angle = coordinator.videoRotationAngleForHorizonLevelPreview
-                if connection.isVideoRotationAngleSupported(angle) { connection.videoRotationAngle = angle }
+                Task { @MainActor [weak v] in
+                    guard let connection = v?.preview.connection else { return }
+                    if connection.isVideoRotationAngleSupported(angle) { connection.videoRotationAngle = angle }
+                }
             }
             v.captureObservation = coordinator.observe(\.videoRotationAngleForHorizonLevelCapture, options: [.initial, .new]) { [engine] coordinator, _ in
                 engine.setCaptureAngle(coordinator.videoRotationAngleForHorizonLevelCapture)

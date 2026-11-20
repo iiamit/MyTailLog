@@ -156,16 +156,17 @@ struct MapPane: View {
     let model: BooksModel
     let select: (MapElement) -> Void
     let list: () -> Void
-    @State private var width: CGFloat = 0
     @State private var only: String?
     @State private var zoom: Double = 1
     @State private var zoomBase: Double = 1
     @Environment(\.section) private var section
 
     var body: some View {
-        VStack(spacing: 0) {
+        GeometryReader { viewport in
+          VStack(spacing: 0) {
             if let map = model.map {
                 let data = only.map { map.only(lineId: $0) } ?? map
+                let width = max(viewport.size.width - 2 * Tokens.Space.s3, 0)
                 let layout = width > 0 ? data.layout(MapLayoutOptions(size: "phone", renderedWidth: width, allEras: only != nil)) : nil
                 ZStack(alignment: .trailing) {
                     if let layout { MapColumnHeads(layout: layout).frame(maxWidth: .infinity, alignment: .leading) }
@@ -205,12 +206,11 @@ struct MapPane: View {
                 .accessibilityElement()
                 .accessibilityLabel("Loading the map")
             }
+          }
+          .frame(width: viewport.size.width, height: viewport.size.height)
+          .background(Tokens.Colors.leaf)
+          .clipShape(UnevenRoundedRectangle(topLeadingRadius: Tokens.Radius.s, topTrailingRadius: Tokens.Radius.s))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Measure the offered width on the first layout, as the tablet map does.
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = max($0 - 2 * Tokens.Space.s3, 0) }
-        .background(Tokens.Colors.leaf)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: Tokens.Radius.s, topTrailingRadius: Tokens.Radius.s))
         .padding(.horizontal, Tokens.Space.s2)
         .overlay(alignment: .bottomLeading) {
             Button(action: list) {
