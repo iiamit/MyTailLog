@@ -34,6 +34,8 @@ colors:
   line-propeller: "#4a4f57"
   line-avionics: "#0f7fa6"
   line-other: "#8a8f97"
+  highlight: "rgba(255,214,10,0.42)"
+  highlight-edge: "#c99700"
 typography:
   board-title:
     fontFamily: "Libre Franklin, system-ui, sans-serif"
@@ -214,6 +216,7 @@ A dark binder cover, six section hues, white leaves with ink, one vermilion alar
 **Display Font:** Libre Franklin (with system-ui)
 **Body Font:** Libre Franklin (with system-ui)
 **Label/Mono Font:** none. Numbers use Libre Franklin with tabular figures.
+**Code exception:** the public API documentation and help readouts may set literal code (requests, identifiers such as `airworthiness:read`, file names) in the platform monospace, inside a leaf-2 well or inline `code`. Only code: never AD numbers, versions, hours or labels.
 **Paper Font:** Literata (with Georgia), for transcribed text only.
 
 **Character:** A sturdy American grotesk does all of the app's talking, from the 30px heavy board title to 13px labels. A bookish, screen-tuned serif carries only the logbook's own words, so transcriptions read as quotations from paper.
@@ -320,7 +323,7 @@ Every derived value carries a citation to its scanned page (logbook ink key, pag
 - **Don't** use green or amber anywhere, or vermilion for anything but overdue, due soon, errors and destructive confirmation.
 - **Don't** put a raw section hue on a leaf, or draw the map on a board.
 - **Don't** set software-written text in Literata or transcribed text in Libre Franklin.
-- **Don't** use a monospace face, a third typeface, emoji or Unicode glyphs as icons (icons are Lucide).
+- **Don't** use a monospace face (except for literal code on the API docs and help, see Typography), a third typeface, emoji or Unicode glyphs as icons (icons are Lucide).
 - **Don't** add card shadows, glows or gradients.
 - **Don't** let an AI reading the owner hasn't confirmed change any status, Verdict, map ring, share or export.
 - **Don't** write "airworthy", "legal to fly", "grounded" or "compliant" as a conclusion.

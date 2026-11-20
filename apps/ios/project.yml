@@ -140,6 +140,16 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/MyTailLog.app/MyTailLog
         BUNDLE_LOADER: $(TEST_HOST)
+  MyTailLogUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [MyTailLogUITests]
+    dependencies:
+      - target: MyTailLog
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mytaillog.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   MyTailLog:
     build:
@@ -147,7 +157,7 @@ schemes:
         MyTailLog: all
     test:
       config: Debug
-      targets: [MyTailLogTests]
+      targets: [MyTailLogTests, MyTailLogUITests]
     run:
       config: Debug
     archive:

@@ -43,6 +43,7 @@ class LiveRecordsTest {
     @Test
     fun phase4WritesLandThroughTheOutbox() = runBlocking {
         val path = System.getenv("MTL_QA_USER")?.takeIf { it.isNotBlank() }
+        if (System.getenv("MTL_QA_REQUIRED") == "1") require(path != null && File(path).exists()) { "MTL_QA_USER must name the test account JSON" }
         assumeTrue("set MTL_QA_USER to run against the test server", path != null && File(path).exists())
         val creds = Json.parseToJsonElement(File(path!!).readText()).jsonObject
         val http = createHttpClient()

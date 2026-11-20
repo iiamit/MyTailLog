@@ -3,25 +3,27 @@ import Link from "next/link";
 import { MarketingSection, MarketingShell } from "@/components/MarketingShell";
 
 export const metadata: Metadata = {
-  title: "Delete your MyTailLog account",
+  title: "Delete your account",
   description: "Request deletion of your MyTailLog account and associated data.",
 };
 
 export default function AccountDeletionPage() {
   return (
     <MarketingShell
-      eyebrow="Account"
-      title="Delete your MyTailLog account"
+      group="about"
+      title="Delete your account"
       current="/account-deletion"
       lede="You can request deletion here even if you no longer have the app."
     >
-      <div className="space-y-8">
-        <MarketingSection id="request" title="Send a deletion request">
+      <div>
+        <MarketingSection id="request" title="Send a deletion request" first>
           <p>
-            Email <a className="underline" href="mailto:mytaillog@iamit.org?subject=Delete%20my%20MyTailLog%20account">mytaillog@iamit.org</a> from
+            Email <a href="mailto:mytaillog@iamit.org?subject=Delete%20my%20MyTailLog%20account">mytaillog@iamit.org</a> from
             the address on your MyTailLog account. Put “Delete my MyTailLog account” in the subject.
             If you cannot use that address, tell us which account to find; we will verify ownership
-            before deleting it. You can also start from Account → Delete my account in the Android or iOS app.
+            before deleting it. You can also delete it yourself in the Android or iOS app (Account, then Delete my account), or on the
+            web in the new design: choose Try the new design on a computer, at the top of an aircraft&apos;s screens, then Settings,
+            then Delete my account.
           </p>
           <p>
             We handle requests manually. We will confirm what will be deleted, including your account,
@@ -33,7 +35,7 @@ export default function AccountDeletionPage() {
         <MarketingSection id="more" title="Your data choices">
           <p>
             You can remove an individual aircraft without deleting your account. See the{" "}
-            <Link href="/privacy" className="underline">privacy policy</Link> for how data is handled
+            <Link href="/privacy">privacy policy</Link>{" "}for how data is handled
             while your account is active.
           </p>
         </MarketingSection>

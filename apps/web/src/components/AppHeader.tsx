@@ -36,7 +36,7 @@ export function AppHeader({ email }: { email: string | null }) {
     }`;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">
+    <header className="app-header sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-[60px] max-w-6xl items-center justify-between px-5 sm:px-7">
         {/* The version chip links to /whats-new — it's the changelog entry the
             reader is on, so it doubles as the way in. Separate <Link> (an <a>

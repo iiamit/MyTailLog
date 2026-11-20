@@ -20,7 +20,7 @@ test("whats-new renders the changelog grouped by version", async ({ page }) => {
   await page.goto("/whats-new");
   // level 2 = the version heading; the changelog also has an "Earlier in
   // 2026.07" group heading, so an unscoped name match hits both.
-  await expect(page.getByRole("heading", { name: "2026.07", level: 2 })).toBeVisible();
+  await expect(page.getByText("Release 2026.07", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Open API & integrations" })).toBeVisible();
   await expect(page.getByText("Security", { exact: true }).first()).toBeVisible();
 });
@@ -47,13 +47,13 @@ test.describe("public marketing pages", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   const PAGES = [
-    ["/", /your logbooks can answer you/i],
+    ["/", /indexed and cited to the page/i],
     ["/faq", /questions before you sign up/i],
-    ["/compare", /six ways to keep aircraft maintenance records/i],
+    ["/compare", /six ways to keep aircraft records/i],
     ["/guides/digitize-aircraft-logbooks", /how to digitize aircraft logbooks/i],
     ["/guides/aircraft-maintenance-tracking", /aircraft maintenance tracking for owners/i],
     ["/guides/airworthiness-directive-tracking", /airworthiness directive tracking/i],
-    ["/switch/myfbo", /myfbo is going away/i],
+    ["/switch/myfbo", /coming from myfbo/i],
   ] as const;
 
   for (const [path, heading] of PAGES) {
@@ -82,8 +82,8 @@ test.describe("public marketing pages", () => {
       await expect(page.locator(`footer a[href="${href}"]`)).toBeVisible();
     }
     // The claim the page is built around, and the scope guardrail it must keep.
-    await expect(page.getByText(/free and open source under the MIT licence/i)).toBeVisible();
-    await expect(page.getByText(/physical logbooks remain the legal maintenance record/i)).toBeVisible();
+    await expect(page.getByText(/MIT licensed, no subscription/i)).toBeVisible();
+    await expect(page.getByText(/paper logbooks are the legal record/i).first()).toBeVisible();
   });
 
   // No horizontal overflow at any width — a previous marketing page shipped a

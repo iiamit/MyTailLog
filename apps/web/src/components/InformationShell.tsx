@@ -1,21 +1,43 @@
 import { createClient } from "@/lib/supabase/server";
 import { HangarShell } from "@/ui/HangarShell";
-import { PublicTheme } from "@/components/PublicTheme";
+import { PublicRoot, PublicTheme } from "@/components/PublicTheme";
+import { ReadLeaf, type TocItem } from "@/components/public/Read";
+import type { PublicGroup } from "@/lib/publicNav";
 
-/** Help and API docs remain public; signed-in readers keep the new Hangar rail. */
-export async function InformationShell({ children }: { children: React.ReactNode }) {
+/** Help, API docs and release notes stay public; signed-in readers keep the Hangar rail around the same Read leaf. */
+export async function InformationShell({
+  group,
+  path,
+  title,
+  lede,
+  toc,
+  children,
+}: {
+  group: PublicGroup;
+  path: string;
+  title: string;
+  lede?: React.ReactNode;
+  toc?: TocItem[];
+  children: React.ReactNode;
+}) {
   const db = await createClient();
   const { data: { user } } = await db.auth.getUser();
-  if (!user) return <PublicTheme><div id="main-content" className="mx-auto my-7 max-w-4xl rounded-leaf bg-leaf text-ink shadow-leaf sm:my-10">{children}</div></PublicTheme>;
+  const leaf = <ReadLeaf intro={lede} toc={toc}>{children}</ReadLeaf>;
+  if (!user) return <PublicTheme group={group} path={path} title={title}>{leaf}</PublicTheme>;
   const [{ data: profile }, { data: fleet }] = await Promise.all([
     db.from("profile").select("full_name, is_admin").eq("id", user.id).maybeSingle(),
     db.from("aircraft").select("id, tail_number, make, model").order("tail_number"),
   ]);
-  return <PublicTheme header={false}>
-    <HangarShell user={user} profile={profile} fleet={fleet ?? []}>
-      <div data-section="setup" className="h-dvh overflow-y-auto bg-board p-3 sm:p-6">
-        <div id="main-content" className="mx-auto max-w-4xl rounded-leaf bg-leaf text-ink shadow-leaf">{children}</div>
-      </div>
-    </HangarShell>
-  </PublicTheme>;
+  return (
+    <PublicRoot>
+      <HangarShell user={user} profile={profile} fleet={fleet ?? []}>
+        <div data-section="setup" className="board h-dvh overflow-y-auto bg-board px-[22px] pb-[22px] text-on-board max-lg:px-3">
+          <header className="board-head flex min-h-[78px] items-end px-1 pt-4">
+            <h1 id="board-title" tabIndex={-1} className="mb-3.5 text-board-title outline-none max-lg:text-[24px]">{title}</h1>
+          </header>
+          <main id="main-content" tabIndex={-1} className="outline-none">{leaf}</main>
+        </div>
+      </HangarShell>
+    </PublicRoot>
+  );
 }
