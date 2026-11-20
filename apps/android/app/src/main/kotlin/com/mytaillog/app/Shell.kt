@@ -191,7 +191,7 @@ fun PhoneShell(
     val recNav = remember(nav) { RecNav(open = { nav.navigate(it) }, back = { nav.popBackStack() }) }
     val booksNow = books?.ui?.collectAsStateWithLifecycle()?.value?.books
     val captureNav = capture?.let { h ->
-        CaptureNav(h, openSync = { nav.navigate("${PhoneTabs[current].graph}/$SYNC") }, openQueue = { nav.navigate(SCAN_QUEUE) })
+        CaptureNav(h, openSync = { nav.navigate("${PhoneTabs[current].graph}/$SYNC") }, openQueue = { nav.openOnItsTab(SCAN_QUEUE) })
     }
     SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover)
     // A link or a key: the tab (Documents lives under Aircraft here), then the screen pushed on it.
@@ -216,7 +216,7 @@ fun PhoneShell(
             // Add (02 §9.8) on the top-level screens; viewers get it for "Report a squawk" only (06 §1.5).
             // On Maint.'s Squawks view it opens the new squawk directly (M-MAINT-05).
             if (capture != null && atRoot && aircraft != null) AddButton({
-                if (route == Destination.Maintenance.root && maintView == MaintView.Squawks) nav.navigate(Routes.NEW_SQUAWK) else adding = true
+                if (route == Destination.Maintenance.root && maintView == MaintView.Squawks) nav.openOnItsTab(Routes.NEW_SQUAWK) else adding = true
             })
         },
         contentWindowInsets = WindowInsets(0),
@@ -294,7 +294,7 @@ fun PhoneShell(
                                 if (t == null) { LaunchedEffect(Unit) { up() }; return@composable }
                                 ScanCameraScreen(
                                     capture, t,
-                                    onDone = { nav.navigate(SCAN_QUEUE) { popUpTo(SCAN_CAMERA) { inclusive = true } } },
+                                    onDone = { nav.navigate(SCAN_QUEUE) { popUpTo(SCAN_CAMERA) { inclusive = true }; launchSingleTop = true } },
                                     onCancel = up,
                                     onSystemScanner = { up(); scanning = true },
                                     onPhotos = { up(); scanning = true },
@@ -347,9 +347,9 @@ fun PhoneShell(
     if (capture != null && aircraft != null) {
         if (adding) AddSheet(
             aircraft.aircraft.tailNumber, recs?.canEdit == true, onDismiss = { adding = false },
-            onFlight = { nav.navigate(TACH_CAMERA) },
+            onFlight = { nav.openOnItsTab(TACH_CAMERA) },
             onOil = { oiling = true },
-            onSquawk = { nav.navigate(Routes.NEW_SQUAWK) },
+            onSquawk = { nav.openOnItsTab(Routes.NEW_SQUAWK) },
             onScan = { scanning = true },
             onDocument = { documenting = true },
         )
@@ -357,8 +357,8 @@ fun PhoneShell(
         if (recs != null && documenting) AddDocSheet(recs, null) { documenting = false }
         if (scanning) ScanSetupSheet(
             capture, aircraft, remember(aircraft.aircraft.id) { scanBooks(capture.store, aircraft.aircraft.id, books?.ui?.value?.books?.logbooks) },
-            onCamera = { capture.target = it; nav.navigate(SCAN_CAMERA) },
-            onImported = { nav.navigate(SCAN_QUEUE) },
+            onCamera = { capture.target = it; nav.openOnItsTab(SCAN_CAMERA) },
+            onImported = { nav.openOnItsTab(SCAN_QUEUE) },
             onDismiss = { scanning = false },
         )
     }
@@ -384,15 +384,25 @@ fun lastTach(status: StatusHost?, store: OfflineStore, aircraftId: String): Last
 }
 
 fun NavHostController.selectTab(tab: Destination, reselect: Boolean) {
-    if (reselect) {
-        popBackStack(tab.root, inclusive = false)
-        return
-    }
+    // Re-selecting pops to the root; when the root isn't on this stack, switch properly rather than do nothing.
+    if (reselect && popBackStack(tab.root, inclusive = false)) return
     navigate(tab.graph) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true
     }
+}
+
+/**
+ * Pushes [route] on the tab whose graph holds it (SCAN_QUEUE → Logbooks), switching tabs first. The Add sheet and the
+ * sync line open other tabs' screens; pushed on the current tab's stack they made the tab bar point at one tab while
+ * the stack was another's, so tapping a tab did nothing or bounced back.
+ */
+fun NavHostController.openOnItsTab(route: String) {
+    val owner = PhoneTabs.firstOrNull { (graph.findNode(it.graph) as? androidx.navigation.NavGraph)?.findNode(route) != null }
+    val here = PhoneTabs.firstOrNull { t -> currentBackStackEntry?.destination?.hierarchy?.any { it.route == t.graph } == true }
+    if (owner != null && owner != here) selectTab(owner, reselect = false)
+    navigate(route) { launchSingleTop = true }
 }
 
 /** A top-level or pushed phone screen: PhoneHeader in the section colour over an empty PhoneLeaf. */
