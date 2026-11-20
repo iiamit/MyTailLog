@@ -132,7 +132,7 @@ struct PhoneTabBar: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     /// Labels hide at accessibility sizes; long-press shows the Large Content Viewer (05 §19).
-    private var height: CGFloat { Tokens.Size.phoneTabbar }
+    static let height: CGFloat = 60
 
     var body: some View {
         HStack(alignment: .top, spacing: Tokens.Space.s1) {
@@ -141,7 +141,7 @@ struct PhoneTabBar: View {
             }
         }
         .padding(.horizontal, Tokens.Space.s2)
-        .frame(height: height, alignment: .top)
+        .frame(height: Self.height, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .bottom)
         .accessibilityElement(children: .contain)
@@ -167,7 +167,7 @@ struct PhoneTabBar: View {
             }
             .padding(.top, 6)
             .frame(maxWidth: .infinity)
-            .frame(height: height)
+            .frame(height: Self.height)
         }
         .buttonStyle(FillButtonStyle(fill: section.board, content: section.onBoard, shape: shape))
         .opacity(selected ? 1 : 0.92)
