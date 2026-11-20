@@ -21,8 +21,9 @@ export default function AccountDeletionPage() {
             Email <a href="mailto:mytaillog@iamit.org?subject=Delete%20my%20MyTailLog%20account">mytaillog@iamit.org</a> from
             the address on your MyTailLog account. Put “Delete my MyTailLog account” in the subject.
             If you cannot use that address, tell us which account to find; we will verify ownership
-            before deleting it. You can also delete it yourself: Account settings, then Delete my account, in the web app&apos;s new design or
-            in the Android or iOS app.
+            before deleting it. You can also delete it yourself in the Android or iOS app (Account, then Delete my account), or on the
+            web in the new design: choose Try the new design at the top of an aircraft&apos;s screens, then Settings,
+            then Delete my account.
           </p>
           <p>
             We handle requests manually. We will confirm what will be deleted, including your account,

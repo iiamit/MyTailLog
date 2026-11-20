@@ -46,6 +46,29 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "designs",
+    title: "Two designs, same records",
+    body: (
+      <>
+        <p>
+          MyTailLog is moving to a new design, and this guide uses its names. Your account may still open in the
+          earlier design until you switch: choose <strong>Try the new design</strong>{" "}at the top of an aircraft&apos;s
+          screens, and <strong>Switch back</strong>{" "}from the account menu if you prefer. Your records are the same in
+          both. Where a screen has a different name in the earlier design:
+        </p>
+        <ul>
+          <li>Status: <strong>Status &amp; forecast</strong></li>
+          <li>Maintenance, Squawks: <strong>Status, Squawks</strong></li>
+          <li>Maintenance, Annual: <strong>Workflows, Annual prep</strong>{" "}and <strong>Records gaps</strong></li>
+          <li>Logbooks, Pages: <strong>Records, Logbook pages</strong></li>
+          <li>Search or ask: <strong>Records, Timeline &amp; Ask</strong></li>
+          <li>Aircraft, Hours and engine: <strong>Hours &amp; oil</strong></li>
+          <li>Account, How you sign in: <strong>Profile, How you sign in</strong></li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: "start",
     title: "Getting started",
     body: (
@@ -1092,7 +1115,7 @@ const SECTIONS: Section[] = [
 
 // Eight groups for the contents list, in the app's own order: start, then the six sections, then the account.
 const GROUPS: { id: string; title: string; topics: string[] }[] = [
-  { id: "g-start", title: "Start here", topics: ["idea", "start", "mobile"] },
+  { id: "g-start", title: "Start here", topics: ["idea", "designs", "start", "mobile"] },
   { id: "g-logbooks", title: "Logbooks", topics: ["capture", "csv-import", "extract", "duplicates", "other", "timeline", "ask", "audit"] },
   { id: "g-status", title: "Status", topics: ["status", "maintenance", "projection"] },
   { id: "g-maintenance", title: "Maintenance", topics: ["squawks", "compliance", "oil-analysis"] },

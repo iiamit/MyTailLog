@@ -31,7 +31,7 @@ export default function DemoPage() {
       path="/demo"
       title="Product tour"
       ground="cover"
-      lede={<p>Six screens from the app, using the fictional demo aircraft N734DM. Every new account gets the same aircraft to look around before scanning anything.</p>}
+      lede={<p>Six screens from the app, using the fictional demo aircraft N734DM. Every new account gets the same aircraft to look around before scanning anything. These are the app&apos;s new design; if your account opens in the earlier one, choose Try the new design at the top of an aircraft&apos;s screens.</p>}
     >
       <nav aria-label="Tour steps" className="mx-auto max-w-[1180px] pt-2.5">
         <ol className="flex flex-wrap gap-x-1 gap-y-1">
