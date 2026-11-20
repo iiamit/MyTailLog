@@ -3,6 +3,9 @@ name: Mobile test-backend checks
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   android-live:
     runs-on: ubuntu-latest
