@@ -103,10 +103,8 @@ final class Uploader {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             let answer = try? JSONDecoder().decode(Answer.self, from: data)
             guard (200..<300).contains(status), let answer else {
-                // 4xx is the server's reason, verbatim after "Not uploaded:" (07 B-UPLOAD); 5xx retries.
-                let reason = status == 413 ? "Too large to upload. Retake at a lower size or upload from a computer."
-                    : answer?.error.map { "Not uploaded: \($0)" } ?? "Not uploaded: the server didn't answer."
-                failed(job, reason)
+                // House copy from the status (07 B-UPLOAD), never the server's text; 5xx retries.
+                failed(job, UploadBackoff.refusal(status: status))
                 return
             }
             if answer.alreadyUploaded == true {

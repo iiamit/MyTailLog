@@ -141,6 +141,14 @@ struct OfflineRulesTests {
         #expect(UploadBackoff.maxAttempts == 5)
     }
 
+    @Test func refusedUploadsAreHouseCopyNeverTheServersText() {
+        #expect(UploadBackoff.refusal(status: 500) == "Couldn't prepare the upload. It will try again.")
+        #expect(UploadBackoff.refusal(status: 503) == "Couldn't prepare the upload. It will try again.")
+        #expect(UploadBackoff.refusal(status: 413) == "Too large to upload. Retake at a lower size or upload from a computer.")
+        #expect(UploadBackoff.refusal(status: 400) == "Not uploaded: the server refused this page.")
+        #expect([400, 401, 403, 404, 408, 413, 429, 500, 503].allSatisfy { !UploadBackoff.refusal(status: $0).contains("http") })
+    }
+
     @Test func syncLineStates() {
         var l = AircraftLine(tail: "N734QA", lastSync: nil)
         #expect(l.syncText == "not synced yet")

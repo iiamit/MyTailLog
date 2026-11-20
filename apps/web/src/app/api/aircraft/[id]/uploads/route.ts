@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSyncClient } from "@/lib/supabase/sync";
 import { blobSize, signedUploadUrl } from "@/lib/storage";
 import { thumbnailKey } from "@/lib/capture/thumbnail";
+import { uploadPrepareFailed } from "@/lib/capture/uploadError";
 import { MAX_PAGE_BYTES, pageStoragePath } from "@/lib/writes/pages";
 
 // POST /api/aircraft/{id}/uploads  (05 §7.2, 09 §5.6) — phones only; editors.
@@ -56,6 +57,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   if ((await blobSize(path)) != null) return NextResponse.json({ alreadyUploaded: true, storagePath: path });
   const signed = await signedUploadUrl(path, "image/jpeg");
-  if ("error" in signed) return NextResponse.json({ error: signed.error, code: "server_error" }, { status: 500 });
+  if ("error" in signed) return NextResponse.json(uploadPrepareFailed(path, signed.error), { status: 503 });
   return NextResponse.json({ uploadUrl: signed.url, method: "PUT", headers: signed.headers, storagePath: path, expiresAt: signed.expiresAt });
 }
