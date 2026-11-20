@@ -23,7 +23,7 @@ test("new design: every Add action opens its actual editor", async ({ page, scra
     await expect(page).toHaveURL(action.path);
     if (action.name === "Add logbook pages") await expect(page.getByRole("region", { name: "Add pages" })).toBeVisible();
     else await expect(page.getByRole("heading", { name: action.heading, exact: true }).last()).toBeVisible();
-    if (action.control === "File") await expect(page.getByLabel("File", { exact: true })).toBeVisible();
+    if (action.control === "File") await expect(page.locator('input[name="file"]')).toBeVisible();
     else if (action.control === "Work performed") await expect(page.getByLabel("Work performed")).toBeVisible();
     else if (action.control === "choose files") await expect(page.getByRole("button", { name: "choose files" })).toBeVisible();
     else await expect(page.getByRole("button", { name: action.control })).toBeVisible();

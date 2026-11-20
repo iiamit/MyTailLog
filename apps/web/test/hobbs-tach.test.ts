@@ -285,6 +285,12 @@ test("meterValueAtDate: no date → null", () => {
   assert.equal(meterValueAtDate([R("a", "2025-01-01", 100, null)], null, "hobbs"), null);
 });
 
+test("meterValueAtDate: no meter readings returns null without recursion", () => {
+  const noMeters = [R("empty", "2025-01-01", null, null)];
+  assert.equal(meterValueAtDate(noMeters, "2025-02-01", "hobbs"), null);
+  assert.equal(meterValueAtDate(noMeters, "2025-02-01", "tach"), null);
+});
+
 // --- digitEditCandidates ---------------------------------------------------
 test("digitEditCandidates: dropped and extra digit both reach the true value", () => {
   assert.ok(digitEditCandidates(303).includes(3303), "insert digit");

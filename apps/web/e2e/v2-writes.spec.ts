@@ -22,14 +22,14 @@ test("new design: a squawk and document added through their panes are saved", as
   const description = `E2E right brake ${scratch.tail}`;
   await page.goto(`/api/ui?design=v2&next=${encodeURIComponent(`${scratch.path}/maintenance/squawks?panel=new`)}`);
   await page.getByLabel("What's wrong?").fill(description);
-  await page.getByText("Watch", { exact: true }).click();
+  await page.getByRole("radiogroup", { name: "Severity" }).getByRole("radio", { name: "Watch" }).check();
   await page.getByRole("button", { name: "Report squawk" }).click();
   await expect.poll(async () => (await admin().from("squawk").select("status").eq("aircraft_id", scratch.id).eq("description", description).maybeSingle()).data).toMatchObject({ status: "open" });
 
   const title = `E2E registration ${scratch.tail}`;
   await page.goto(`${scratch.path}/documents?panel=new`);
-  await page.getByLabel("File", { exact: true }).setInputFiles("e2e/fixtures/blank.pdf");
-  await page.getByLabel("Title", { exact: true }).fill(title);
+  await page.locator('input[name="file"]').setInputFiles("e2e/fixtures/blank.pdf");
+  await page.locator('input[name="title"]').fill(title);
   await page.getByRole("button", { name: "Add document" }).click();
   await expect.poll(async () => (await admin().from("document").select("id").eq("aircraft_id", scratch.id).eq("title", title).maybeSingle()).data).not.toBeNull();
 });

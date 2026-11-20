@@ -35,6 +35,10 @@ test("new design: a completed item opens its linked logbook scan", async ({ page
       done_date: "2026-09-29", done_hours: 984.9, meter: "hobbs", source: "owner_link",
     });
     expect(completionError).toBeNull();
+    const { error: readingError } = await admin.from("hours_reading").insert({
+      aircraft_id: scratch.id, reading_date: "2026-09-29", hobbs: 984.9, tach: 4172.9, source: "manual",
+    });
+    expect(readingError).toBeNull();
 
     await page.goto(`/api/ui?design=v2&next=${encodeURIComponent(`${scratch.path}/status`)}`);
     const oil = page.getByRole("link", { name: "Oil change", exact: true }).first();
