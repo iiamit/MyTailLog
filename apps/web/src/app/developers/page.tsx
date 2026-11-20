@@ -7,6 +7,8 @@ import { DevelopersClient } from "./DevelopersClient";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "API keys" };
+
 export default async function DevelopersPage() {
   const supabase = await createClient();
   const {
@@ -21,26 +23,13 @@ export default async function DevelopersPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <InformationShell>
-      <main className="mx-auto max-w-2xl px-6 py-8">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="eyebrow mb-2">Account</div>
-            <h1 className="font-display text-[27px] font-semibold leading-none">Developer API</h1>
-            <p className="mt-2 text-[13.5px] text-dim">
-              Register an app to read aircraft data (with each owner&apos;s consent) over OAuth 2.1.
-            </p>
-          </div>
-          <Link
-            href="/developers/docs"
-            className="shrink-0 rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
-          >
-            API docs →
-          </Link>
-        </header>
-
-        <DevelopersClient apps={apps ?? []} dataScopes={[...DATA_SCOPES]} />
-      </main>
+    <InformationShell
+      group="share"
+      path="/developers"
+      title="API keys"
+      lede={<p>Register an app to read aircraft data, with each owner&apos;s consent, over OAuth 2.1. How it works is in the <Link href="/developers/docs">API docs</Link>.</p>}
+    >
+      <DevelopersClient apps={apps ?? []} dataScopes={[...DATA_SCOPES]} />
     </InformationShell>
   );
 }

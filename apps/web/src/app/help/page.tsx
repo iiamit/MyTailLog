@@ -1,47 +1,25 @@
 import Link from "next/link";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/appStore";
 import { InformationShell } from "@/components/InformationShell";
-import {
-  SparklesIcon,
-  ClockIcon,
-  GaugeIcon,
-  WrenchIcon,
-  ShieldIcon,
-  CpuIcon,
-  ScaleIcon,
-  AlertIcon,
-  ArchiveIcon,
-  UsersIcon,
-  CameraIcon,
-  UploadIcon,
-  UserIcon,
-  PlaneIcon,
-} from "@/components/icons";
+import { Callout, ReadSection } from "@/components/public/Read";
+import { StatusMark } from "@/ui/Marks";
 
-export const metadata = { title: "Help & documentation — MyTailLog" };
+export const metadata = {
+  title: "Help",
+  description: "How every part of MyTailLog works: logbooks, status, maintenance, aircraft, documents and sharing, and how each part affects the others.",
+};
 
 type Section = {
   id: string;
-  icon: React.ReactNode;
   title: string;
   body: React.ReactNode;
 };
 
-// A "ripple" callout — what a given action changes elsewhere in the app.
-function Effects({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="mt-3 rounded-md border border-annun-amber/40 px-3 py-2 text-sm text-annun-amber"
-      style={{ background: "var(--amb-bg)" }}
-    >
-      <span className="font-semibold">Ripple effects: </span>
-      {children}
-    </div>
-  );
-}
+// What one action changes elsewhere in the app.
+const Effects = ({ children }: { children: React.ReactNode }) => <Callout title="What this changes elsewhere">{children}</Callout>;
 
 const L = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <Link href={href} className="underline decoration-line underline-offset-2 hover:decoration-line2">
+  <Link href={href}>
     {children}
   </Link>
 );
@@ -49,20 +27,19 @@ const L = ({ href, children }: { href: string; children: React.ReactNode }) => (
 const SECTIONS: Section[] = [
   {
     id: "idea",
-    icon: <ShieldIcon />,
     title: "The core idea (read this first)",
     body: (
       <>
         <p>
           MyTailLog is a <strong>searchable index of your physical logbooks</strong> and a
-          decision-support layer on top of them — <strong>not</strong> the legal maintenance
-          record and not an airworthiness determination. The paper logbooks remain the system
+          decision-support layer on top of them. It is <strong>not</strong> the legal maintenance
+          record, and it never decides whether the aircraft may fly. The paper logbooks remain the system
           of record (14 CFR 91.417).
         </p>
-        <p className="mt-2">
-          Almost everything you see is <em>derived</em> — read from your scans by AI, or computed
+        <p>
+          Almost everything you see is <em>derived</em>: read from your scans by AI, or computed
           from data you entered. Values can be wrong. Treat MyTailLog as a fast way to find,
-          cross-check, and forecast — then confirm anything important against the paper before you
+          cross-check, and forecast, then confirm anything important against the paper before you
           rely on it. Low-confidence extractions are flagged for exactly this reason.
         </p>
       </>
@@ -70,25 +47,24 @@ const SECTIONS: Section[] = [
   },
   {
     id: "start",
-    icon: <SparklesIcon />,
     title: "Getting started",
     body: (
-      <ol className="ml-4 list-decimal space-y-1">
+      <ol>
         <li>
-          <strong>Explore the demo</strong> — every account gets a read-only demo aircraft
+          <strong>Explore the demo</strong>: every account gets a read-only demo aircraft
           (N734DM) in the Hangar, so you can explore Status, Logbooks, and Search or ask before
           scanning anything of your own.
         </li>
         <li>
-          <strong>Enroll an aircraft</strong> — the FAA registry lookup fills make/model/serial
+          <strong>Enroll an aircraft</strong>: the FAA registry lookup fills make/model/serial
           from the tail number, here or in the <L href="#mobile">mobile app</L>. Five logbooks are
           created automatically: airframe, engine, prop, avionics, and <strong>Other</strong>.
-          If you skipped engine or propeller serial numbers, open Aircraft details on the web and choose
-          <strong> Edit aircraft details</strong> to add them later. The standard Part 91 items
+          If you skipped engine or propeller serial numbers, open Aircraft details on the web and choose{" "}
+          <strong>Edit aircraft details</strong> to add them later. The standard Part 91 items
           (annual, transponder, pitot-static, ELT) are added for you.
         </li>
         <li>
-          <strong>Get started</strong> — on the web, enrolling opens a three-step setup: today&apos;s
+          <strong>Get started</strong>: on the web, enrolling opens a three-step setup: today&apos;s
           tach and hobbs, then a photo of the page with your last annual sign-off (or just its date),
           then your status. That&apos;s enough to start counting down what&apos;s due. The Status board
           shows <strong>Finish setup</strong> until it&apos;s done, and the <strong>Records
@@ -98,21 +74,21 @@ const SECTIONS: Section[] = [
           <strong>Capture or upload</strong> your logbook pages (and A&amp;P documents into Other).
         </li>
         <li>
-          <strong>Extract</strong> — AI reads each page into structured entries.
+          <strong>Extract</strong>: AI reads each page into structured entries.
         </li>
         <li>
-          <strong>Review</strong> — confirm or correct what it read.
+          <strong>Review</strong>: confirm or correct what it read.
         </li>
         <li>
-          Then <strong>Status</strong>, <strong>Maintenance</strong>, <strong>Compliance</strong>,{" "}
-          <strong>Ask your logbook</strong>, and the rest come alive from your data.
+          Then the six sections fill in from your data: <strong>Status</strong>,{" "}
+          <strong>Logbooks</strong>, <strong>Maintenance</strong>, <strong>Aircraft</strong>,{" "}
+          <strong>Documents</strong> and <strong>Share</strong>, plus <strong>Ask</strong>.
         </li>
       </ol>
     ),
   },
   {
     id: "mobile",
-    icon: <SparklesIcon />,
     title: "Mobile apps",
     body: (
       <>
@@ -120,10 +96,10 @@ const SECTIONS: Section[] = [
           Download the free <L href={APP_STORE_URL}>iPhone / iPad app from the App Store</L> or{" "}
           <L href={PLAY_STORE_URL}>Android app from Google Play</L>. Sync your aircraft once to
           browse records and capture updates offline, even when the hangar has no signal. The
-          iPhone and iPad app requires iOS or iPadOS 15.6 or later. AI extraction and Ask need a connection.
+          iPhone and iPad app needs iOS or iPadOS 18 or later, and the Android app needs Android 10 or later. AI extraction and Ask need a connection.
         </p>
         <p>
-          <strong>Status</strong> answers &ldquo;can I fly this?&rdquo; without a connection: current
+          <strong>Status</strong> works without a connection and shows what the records say is due: current
           tach and hobbs with where each reading came from, then every maintenance item and recurring
           AD worst-first, with the same countdowns and calendar-month rules the web app uses. The
           aircraft list flags the worst one, so you see a problem before you open anything.
@@ -133,17 +109,17 @@ const SECTIONS: Section[] = [
           it warns if the number is lower than the last one), log oil you added, raise a squawk, or
           mark a recurring item done. A <strong>VOR check</strong> asks for the place, the bearing
           error and your signature, because <strong>91.171(d)</strong> requires those recorded and
-          signed — so it resets the counter <em>and</em> writes a real log entry, rather than just
+          signed, so it resets the counter <em>and</em> writes a real log entry, rather than just
           moving a due-date.
         </p>
         <p>
           Everything you record is saved on the device immediately and uploads on the next sync. A{" "}
           <strong>Waiting to upload</strong> list shows anything still queued, and keeps the reason on
-          anything the server refused — nothing you record disappears quietly.
+          anything the server refused, nothing you record disappears quietly.
         </p>
         <p>
           <strong>Review</strong> happens on the phone now, not only on the web. Entries sit beside
-          the scan — in a drawer you swipe up on an iPhone, in the pane next to it on an iPad — with
+          the scan, in a drawer you swipe up on an iPhone, in the pane next to it on an iPad, with
           a <strong>Check this</strong> chip on any field the extractor was unsure of. Tap the{" "}
           <strong>◎</strong> beside a value to light a ring on the exact ink it was read from, and it
           stays lit while you edit. <strong>Confirm N clean</strong> accepts every confident entry in
@@ -153,7 +129,7 @@ const SECTIONS: Section[] = [
         <p>
           <strong>Inspections, ADs and equipment are managed, not just read.</strong> Add an
           inspection or edit its interval, mark any item done, seed the standard Part 91 items, track
-          an AD and record compliance against it, or record an installation and a removal — the
+          an AD and record compliance against it, or record an installation and a removal, the
           directive that only applied because of that component turns itself off, with the reason
           written down. <strong>Squawks</strong> are resolved on the device (naming the entry that
           cleared them), reopened, edited or deleted, and{" "}
@@ -161,17 +137,16 @@ const SECTIONS: Section[] = [
           it used listed underneath.
         </p>
         <p>
-          <strong>Documents</strong> keeps your AROW paperwork to hand — airworthiness certificate,
-          registration, POH/AFM and weight &amp; balance — for a ramp check with no signal.{" "}
+          <strong>Documents</strong> keeps your AROW paperwork to hand, airworthiness certificate,
+          registration, POH/AFM and weight &amp; balance, for a ramp check with no signal.{" "}
           <strong>PDFs open in the app</strong>, page by page, which matters because a registration
-          or airworthiness certificate usually is one. Documents also go <em>in</em> from the phone —
-          from Files, the camera, or by dragging a PDF onto an iPad — queued on the device
+          or airworthiness certificate usually is one. Documents also go <em>in</em> from the phone, from Files, the camera, or by dragging a PDF onto an iPad, queued on the device
           with no signal, and attachable to the log entry they belong with.
         </p>
         <p>
           <strong>On an iPad</strong>, full screen, the app shows a sidebar and two panes: the verdict
           beside every tracked item, a page beside its entries, a squawk beside its detail. A Magic
-          Keyboard drives it — ⌘1–4 for tabs, ⌘K for Ask, ⌘N for a new squawk, ⌘←/⌘→ to turn pages,
+          Keyboard drives it, ⌘1–4 for tabs, ⌘K for Ask, ⌘N for a new squawk, ⌘←/⌘→ to turn pages,
           ⌘↩ to confirm. In Split View below about half an iPad&apos;s width it falls back to the
           phone layout on purpose, so the app beside ForeFlight is the one you already know.
         </p>
@@ -189,7 +164,7 @@ const SECTIONS: Section[] = [
         </p>
         <Effects>
           Browse, check status, review pages, correct entries, manage inspections/ADs/equipment,
-          resolve squawks and add documents — all offline, saved on the device and uploaded on the next
+          resolve squawks and add documents, all offline, saved on the device and uploaded on the next
           sync. If someone changed the same row on the web meanwhile, the phone shows you both versions
           rather than picking a winner. Your account and aircraft are shared between the web and
           native app. Both stores offer the public release; no test invitation is needed.
@@ -199,56 +174,55 @@ const SECTIONS: Section[] = [
   },
   {
     id: "capture",
-    icon: <CameraIcon />,
     title: "Capture & Upload",
     body: (
       <>
         <p>
           Two ways to get pages in, both landing in the same review queue:
         </p>
-        <ul className="ml-4 mt-1 list-disc space-y-1">
+        <ul>
           <li>
-            <strong>Capture</strong> — opens your phone&apos;s own camera app, so you get its
+            <strong>Capture</strong>: opens your phone&apos;s own camera app, so you get its
             autofocus, HDR and stabilisation, and the shot is instant. Fill the frame with the page;
             it doesn&apos;t need to be cropped or perfectly square, because the extractor reads the
             page out of the photo. Blurry or glare-heavy shots are flagged before you keep them.
             Got the desk in the shot? Open the page&apos;s review screen and use{" "}
-            <strong>Crop &amp; clean up</strong> — drag the corners to cut out the background,
+            <strong>Crop &amp; clean up</strong>: drag the corners to cut out the background,
             rotate, and turn on the <strong>scan look</strong> for a black-and-white document finish.
             It <strong>replaces the stored scan</strong> (your paper page is still the legal record),
             so re-extract afterwards if the crop changed what&apos;s readable. On iPhone the app uses
             Apple&apos;s own document scanner and does this as you shoot.
           </li>
           <li>
-            <strong>Upload scans</strong> — PDF, JPEG, or PNG. Multi-page PDFs are split into one
+            <strong>Upload scans</strong>: PDF, JPEG, or PNG. Multi-page PDFs are split into one
             page each, in order.
           </li>
         </ul>
-        <p className="mt-2">
+        <p>
           Already have the history as data rather than paper? <L href="#csv-import">Import a CSV</L>{" "}
-          instead — no scan needed.
+          instead, no scan needed.
         </p>
-        <p className="mt-2">
-          Uploaded a logbook out of order — the second volume before the first? Open that
+        <p>
+          Uploaded a logbook out of order, the second volume before the first? Open that
           logbook under <L href="/hangar">your aircraft</L> → Logbooks → Pages, sort by <strong>Entry date</strong>,
           and hit <strong>Save this order</strong>. It renumbers that logbook&apos;s pages to match
           what you&apos;re looking at, in one step. (It only offers this once every page in the
-          logbook has been extracted — before that there are no dates to order by.) The arrows in{" "}
+          logbook has been extracted, before that there are no dates to order by.) The arrows in{" "}
           <strong>Reorder</strong> still nudge a single page up or down.
         </p>
-        <p className="mt-2">
+        <p>
           Easiest way in: open <L href="/hangar">your aircraft</L> → Logbooks → Pages, tap the logbook you&apos;re
-          about to scan, and use <strong>Capture into &lt;that logbook&gt;</strong> — the camera opens
+          about to scan, and use <strong>Capture into &lt;that logbook&gt;</strong>: the camera opens
           with it already selected, so there&apos;s no dropdown to get wrong.
         </p>
-        <p className="mt-2">
-          Pick the right <strong>logbook</strong> for what you&apos;re scanning — airframe/engine/
+        <p>
+          Pick the right <strong>logbook</strong> for what you&apos;re scanning, airframe/engine/
           prop/avionics for running maintenance pages, and <strong>Other</strong> for A&amp;P
           documents (see below). Pages queue on-device and upload when you&apos;re online, so
           capture works in a hangar with no signal.
         </p>
-        <p className="mt-2 text-sm text-faint">
-          Note: scanned logbook spreads sometimes contain two physical pages side by side — the
+        <p>
+          Note: scanned logbook spreads sometimes contain two physical pages side by side, the
           extractor flags these so you can review both halves.
         </p>
       </>
@@ -256,42 +230,41 @@ const SECTIONS: Section[] = [
   },
   {
     id: "csv-import",
-    icon: <ArchiveIcon />,
     title: "Import a CSV",
     body: (
       <>
         <p>
           Coming from another platform, or from your own spreadsheet? Export it as{" "}
-          <strong>CSV</strong> and bring the maintenance history in directly — no printing to PDF,
+          <strong>CSV</strong> and bring the maintenance history in directly, no printing to PDF,
           no re-typing. Up to <strong>5 MB / 5,000 rows</strong> per file; comma, semicolon and tab
           separated files all work, as do quoted fields containing commas or line breaks.
         </p>
-        <p className="mt-2">
+        <p>
           We don&apos;t ship an importer per vendor. Instead, <strong>the columns are mapped, not
           the rows</strong>: one AI pass reads your header plus a few sample rows and proposes what
           each column means (&ldquo;Tach Out&rdquo; → Tach, &ldquo;A&amp;P&rdquo; → Signature,
           &ldquo;Invoice #&rdquo; → don&apos;t import). <strong>You confirm that mapping once</strong>,
-          and every row is then converted in plain code — so the same file always imports the same
+          and every row is then converted in plain code, so the same file always imports the same
           way, and a wrong import is explainable by pointing at the mapping. Pick which{" "}
           <strong>logbook</strong> the file belongs to; a spreadsheet doesn&apos;t say.
         </p>
-        <p className="mt-2">
-          <strong>Dates are never guessed.</strong> <code className="readout text-[13px]">03/04/2026</code>{" "}
+        <p>
+          <strong>Dates are never guessed.</strong> <code>03/04/2026</code>{" "}
           is 3 April or 4 March depending on who exported it, and getting it wrong would shift a
           maintenance date by up to eleven months. We scan the whole date column: the first date
           anywhere in the file with a day past the 12th settles the reading for the entire file. Only
-          if <em>every</em> row reads both ways are you asked — and you&apos;re shown what the first
+          if <em>every</em> row reads both ways are you asked, and you&apos;re shown what the first
           few dates become each way. A column that&apos;s internally inconsistent (some rows only
           day/month, others only month/day) is reported as a broken file rather than coerced.
         </p>
-        <p className="mt-2">
+        <p>
           Before anything is written you get a <strong>count of what will be created</strong>, plus
-          every row that can&apos;t be read and why — an unreadable date or an implausible tach
+          every row that can&apos;t be read and why, an unreadable date or an implausible tach
           fails that one row rather than importing as a zero, and never takes the rest of the file
           with it.
         </p>
         <Effects>
-          Imported entries land <strong>unconfirmed</strong> — they show up in{" "}
+          Imported entries land <strong>unconfirmed</strong>: they show up in{" "}
           <L href="#extract">Review all</L> grouped as &ldquo;imported (no scan)&rdquo;, and drive
           no reminder or forecast until you confirm them. Importing into an aircraft that already
           has entries is the usual way to create duplicates, so check{" "}
@@ -302,66 +275,64 @@ const SECTIONS: Section[] = [
   },
   {
     id: "extract",
-    icon: <UploadIcon />,
     title: "Extraction & Review",
     body: (
       <>
         <p>
           Extraction reads a page image into structured entries (date, hours, work performed,
           parts, AD/SB references, signature). Each field gets its own confidence score, shown as a
-          percentage right on that field in the <strong>Review</strong> screen — anything below
+          percentage right on that field in the <strong>Review</strong> screen, anything below
           threshold is highlighted. The page image sits alongside the entries, staying put as you
           scroll, so you can check a transcription against the original without opening anything.
           Tap the <strong>◎</strong> beside a field to spotlight exactly where on the scan that
           value was read from (spotlights appear once a page is extracted under the current model;
           re-extract older pages to get them), and click the image itself to magnify it. Editing an
-          entry marks it confirmed. The same review — the scan, the ◎ spotlight, the low-confidence
-          chips, <strong>Confirm N clean</strong> and the page-spanning merge — now runs in the{" "}
+          entry marks it confirmed. The same review, the scan, the ◎ spotlight, the low-confidence
+          chips, <strong>Confirm N clean</strong> and the page-spanning merge, now runs in the{" "}
           <L href="#mobile">mobile app</L> as well, offline, so a page can be checked against the
           paper book while the book is in your hands.
         </p>
-        <p className="mt-3">
+        <p>
           <strong>Stickers at odd angles.</strong> Shops stick labels wherever there&apos;s room, so
           one page can carry an upright sticker and another rotated 90°. Each sticker is normally its
           own entry, and a page is read in every orientation. If rotated content is spotted but
-          can&apos;t be read in full, the page gets a second look automatically — and if that still
-          doesn&apos;t resolve it, <strong>Review shows an amber warning on that page</strong> asking
+          can&apos;t be read in full, the page gets a second look automatically, and if that still
+          doesn&apos;t resolve it, <strong>Review shows a warning on that page</strong> asking
           you to compare against the paper. That matters more than a wrong value does: a low
           confidence score flags a field you can see, but an entry that was never extracted has
           nothing to flag. Use <strong>Add an entry the extractor missed</strong> to key it in. You can <strong>re-extract</strong> a page (e.g. if a multi-page
-          entry wasn&apos;t linked) right from the review screen — it replaces that page&apos;s
-          entries. The <strong>Logbook pages</strong> view (in the left nav) lists every captured
+          entry wasn&apos;t linked) right from the review screen, it replaces that page&apos;s
+          entries. The <strong>Logbook pages</strong> view lists every captured
           scan grouped by logbook with its <strong>Needs review / Processing</strong> status, and can
-          be <strong>sorted</strong> — within each logbook — by upload order, entry date, tach, or
+          be <strong>sorted</strong> within each logbook by upload order, entry date, tach, or{" "}
           <strong>AFTT</strong>, ascending or descending (the choice is remembered). Sorting
           reorders pages inside their own logbook, never across logbooks; the dates and hours come
           from a page&apos;s extracted entries, so an early logbook you uploaded late still sorts
-          into chronological place. Pages in an <strong>airframe</strong> logbook are labelled
-          <strong> AFTT</strong> (airframe total time), which is what an airframe book is kept in.
-          Most airframe books don&apos;t record a separate airframe total — the tach is the
-          instrument that total is kept in — so where none was written down, the page&apos;s tach
+          into chronological place. Pages in an <strong>airframe</strong> logbook are labelled{" "}
+          <strong>AFTT</strong> (airframe total time), which is what an airframe book is kept in.
+          Most airframe books don&apos;t record a separate airframe total, the tach is the
+          instrument that total is kept in, so where none was written down, the page&apos;s tach
           reading is shown as its AFTT. Maintenance countdowns use the same reading, with a check
           first: if any entry recorded a total <em>and</em> a tach that disagree, the aircraft
-          keeps those numbers apart on purpose and nothing is filled in — its airframe items then
+          keeps those numbers apart on purpose and nothing is filled in, its airframe items then
           count down only on totals actually written down. Filter to a single
-          logbook and hit <strong>Reorder</strong> to hand-arrange its pages with the ↑/↓ arrows —
-          handy for scans captured out of order. The
+          logbook and hit <strong>Reorder</strong> to hand-arrange its pages with the ↑/↓ arrows, handy for scans captured out of order. The
           Logbooks <strong>Review</strong> shows how many pages still need attention.
         </p>
         <p>
-          To move faster, <strong>Review all</strong> (in the left nav) puts every
-          extracted entry in one scrollable list — edit inline and confirm as you go, or hit{" "}
+          To move faster, <strong>Review all</strong> puts every
+          extracted entry in one scrollable list, edit inline and confirm as you go, or hit{" "}
           <strong>Confirm N clean</strong> to accept, in one click, every entry the AI was fully
           confident on (high overall score, no flagged field, not a page-spanning fragment).
           Anything with a low-confidence field is left for you. Each page&apos;s scan sits beside
-          its entries here too, so you can cross-reference the whole group without leaving the list;
-          <strong> Open page ↗</strong> takes you to that page&apos;s own screen when you want to
+          its entries here too, so you can cross-reference the whole group without leaving the list;{" "}
+          <strong>Open page ↗</strong> takes you to that page&apos;s own screen when you want to
           crop it, re-extract it, or read its raw transcription.
         </p>
         <Effects>
           Extracting a running-maintenance page also (best-effort) proposes{" "}
           <L href="#equipment">equipment</L> installs/removals and advances{" "}
-          <L href="#maintenance">maintenance</L> last-done dates — so a single scan can shift your
+          <L href="#maintenance">maintenance</L> last-done dates, so a single scan can shift your
           equipment list, the maintenance forecast, and the <L href="#status">Status</L> grid.
         </Effects>
       </>
@@ -369,15 +340,14 @@ const SECTIONS: Section[] = [
   },
   {
     id: "duplicates",
-    icon: <AlertIcon />,
     title: "Duplicates & fixes",
     body: (
       <>
         <p>
           Re-uploading, re-capturing, or re-extracting the same page can leave
           duplicate scans and entries behind. <strong>Duplicates &amp; fixes</strong>{" "}
-          (in the left nav, editor-only) flags likely duplicates by matching on
-          date, tach/hobbs, and work text — grouping pages that look like the
+          (editors only) flags likely duplicates by matching on
+          date, tach/hobbs, and work text, grouping pages that look like the
           same scan and entries that look like the same logged event. One copy in
           each group is marked <strong>suggested keep</strong>; delete any of the
           others. Deleting a page also removes its entries. Matches are
@@ -385,14 +355,14 @@ const SECTIONS: Section[] = [
           <strong>Open</strong> link) before deleting.
         </p>
         <p>
-          It also flags <strong>mis-keyed hobbs/tach readings</strong> — a value
+          It also flags <strong>mis-keyed hobbs/tach readings</strong>: a value
           below an earlier reading (a dropped digit, e.g. <em>303</em> for{" "}
           <em>3,302</em>) or an unusually large jump (a fat-finger, e.g.{" "}
-          <em>33,303</em>) — and suggests the corrected number. <strong>Accept</strong>{" "}
+          <em>33,303</em>), and suggests the corrected number. <strong>Accept</strong>{" "}
           it, edit the value first, or <strong>Keep mine</strong> if it&apos;s
           right; either way it won&apos;t re-flag. This covers both log entries and
           MyFlightBook-synced readings. It also catches a <strong>Hobbs value that&apos;s
-          just the Tach duplicated</strong> into both fields (they should differ) — offering
+          just the Tach duplicated</strong> into both fields (they should differ), offering
           to <strong>Clear</strong> the bogus Hobbs while keeping the Tach.
         </p>
         <Effects>
@@ -406,7 +376,6 @@ const SECTIONS: Section[] = [
   },
   {
     id: "other",
-    icon: <ArchiveIcon />,
     title: 'The "Other" scan type (A&P documents)',
     body: (
       <>
@@ -415,7 +384,7 @@ const SECTIONS: Section[] = [
           aren&apos;t running-log pages. MyTailLog classifies each and <em>applies</em> it instead
           of storing it as log entries:
         </p>
-        <ul className="ml-4 mt-1 list-disc space-y-1">
+        <ul>
           <li>
             <strong>Weight &amp; Balance sheet</strong> → creates a new{" "}
             <L href="#wb">W&amp;B revision</L> (empty weight, CG, moment), which becomes your
@@ -430,16 +399,15 @@ const SECTIONS: Section[] = [
         </ul>
         <Effects>
           The AD report never overwrites a compliance record whose logbook-derived date is{" "}
-          <em>newer</em> than the report — later logs win over the report baseline. A W&amp;B sheet
+          <em>newer</em> than the report, later logs win over the report baseline. A W&amp;B sheet
           updates your <L href="#wb">Weight &amp; Balance</L>; an AD report updates{" "}
-          <L href="#compliance">AD/SB compliance</L> and the <L href="#status">Status</L> grid.
+          <L href="#compliance">AD tracking</L> and <L href="#status">Status</L>.
         </Effects>
       </>
     ),
   },
   {
     id: "timeline",
-    icon: <ClockIcon />,
     title: "Logbooks and search",
     body: (
       <p>
@@ -452,38 +420,44 @@ const SECTIONS: Section[] = [
   },
   {
     id: "ask",
-    icon: <SparklesIcon />,
     title: "Ask your logbook",
     body: (
       <p>
         Ask plain-English questions (&ldquo;When was the last annual?&rdquo;, &ldquo;Hours since
         prop overhaul?&rdquo;). Answers are drawn <strong>only from confirmed entries</strong>{" "}
         and <strong>cite the specific entries</strong> they came from, so you can click through and
-        verify. It won&apos;t invent facts the entries don&apos;t contain — but, like all AI, it can
+        verify. It won&apos;t invent facts the entries don&apos;t contain, but, like all AI, it can
         misread, so confirm anything you act on.
       </p>
     ),
   },
   {
     id: "status",
-    icon: <GaugeIcon />,
     title: "Status overview",
     body: (
-      <p>
-        The at-a-glance dashboard: every recurring inspection, maintenance item, and AD as a
-        color-coded card — <span className="text-annun-red">red = overdue</span>,{" "}
-        <span className="text-annun-amber">amber = due soon</span>,{" "}
-        <span className="text-annun-green">green = current</span> — with days
-        and hours remaining — plus, where there&apos;s enough flying history,{" "}
-        <L href="#projection">an approximate calendar date</L> for the hours to run out. It&apos;s
-        a read-only rollup of your <L href="#maintenance">maintenance forecast</L> and recurring{" "}
-        <L href="#compliance">ADs</L>; each card links to where you manage it.
-      </p>
+      <>
+        <p>
+          Status opens with one sentence on what the confirmed records show. Below it, every recurring
+          inspection, maintenance item and AD is listed with the days and hours remaining, plus, where
+          there&apos;s enough flying history, <L href="#projection">an approximate calendar date</L> for
+          the hours to run out. Each item carries a mark and a word:
+        </p>
+        <ul className="!list-none !pl-0">
+          <li><StatusMark kind="current" />: nothing is due yet.</li>
+          <li><StatusMark kind="due_soon" />: inside its warning window, usually 90 days or 10 hours.</li>
+          <li><StatusMark kind="overdue" />: past its date or hours; the line says how long ago it lapsed.</li>
+          <li><StatusMark kind="no_record" />: no confirmed entry shows it was ever done.</li>
+        </ul>
+        <p>
+          Status rolls up your <L href="#maintenance">maintenance forecast</L> and recurring{" "}
+          <L href="#compliance">ADs</L>; each item links to where you manage it. Entries read by AI
+          don&apos;t count until you confirm them.
+        </p>
+      </>
     ),
   },
   {
     id: "maintenance",
-    icon: <WrenchIcon />,
     title: "Maintenance forecast",
     body: (
       <>
@@ -493,27 +467,25 @@ const SECTIONS: Section[] = [
           interval and last-done. Seed the standard set with one click, mark items done, or add
           your own. Regulatory items are distinguished from advisory ones (TBO/overhaul).
         </p>
-        <p className="mt-3">
-          <strong>Calendar months, not exact months.</strong> The regulations that count in months —
-          annual (91.409), transponder (91.413), pitot-static (91.411), ELT (91.207) — say{" "}
+        <p>
+          <strong>Calendar months, not exact months.</strong> The regulations that count in months, annual (91.409), transponder (91.413), pitot-static (91.411), ELT (91.207), say{" "}
           <em>&ldquo;within the preceding N calendar months&rdquo;</em>, so the day of the month the
           work was signed off doesn&apos;t matter: an annual completed anywhere in March 2025 is good
           through <strong>31 March 2026</strong>. Due dates for those items land on the last day of
           the month. Advisory items (prop overhaul) and the VOR check are <em>not</em> calendar-month
-          rules — 91.171 is 30 days — so those count from the date itself.
+          rules, 91.171 is 30 days, so those count from the date itself.
         </p>
         <Effects>
           Each item counts down on the meter it&apos;s tracked against. By default that&apos;s the{" "}
           <strong>oil change</strong> on <strong>Hobbs</strong> (the meter you fly and record it
-          on — so a fresh Hobbs reading from a MyFlightBook sync advances it directly), and
-          everything else engine/airframe — <strong>100-hour, Engine TBO, prop, ADs</strong> — on{" "}
+          on, so a fresh Hobbs reading from a MyFlightBook sync advances it directly), and
+          everything else on the engine and airframe (<strong>100-hour, engine TBO, prop, ADs</strong>) on{" "}
           <strong>tach</strong>. Those are only defaults: every item has a{" "}
-          <strong>&ldquo;Hours counted on&rdquo;</strong> setting, so if you track oil on the tach —
-          or fly an aircraft with no Hobbs meter at all — set it there and the countdown follows.
+          <strong>&ldquo;Hours counted on&rdquo;</strong> setting, so if you track oil on the tach, or fly an aircraft with no Hobbs meter at all, set it there and the countdown follows.
           Aircraft with no Hobbs reading on record fall back to tach on their own rather than
           counting against a converted figure. When the needed meter has no recent reading, the
           other is converted via this aircraft&apos;s own hobbs↔tach ratio and marked{" "}
-          <em>&ldquo;est.&rdquo;</em> — except <strong>airframe</strong>, which is never estimated.
+          <em>&ldquo;est.&rdquo;</em>, except <strong>airframe</strong>, which is never estimated.
           See <L href="#meters">Meters</L>.
           Extraction and{" "}
           &ldquo;Update from logs&rdquo; advance last-done automatically. The 100-hour resets off the
@@ -526,14 +498,13 @@ const SECTIONS: Section[] = [
   },
   {
     id: "projection",
-    icon: <ClockIcon />,
     title: "Projected due dates (≈)",
     body: (
       <>
         <p>
           &ldquo;Due in 38.4 hours&rdquo; is accurate but hard to plan around. Wherever an item
-          counts down on <em>hours</em>, MyTailLog also shows an approximate calendar date —{" "}
-          <strong>≈ 14 Mar 2027</strong> — worked out from how much this aircraft has actually
+          counts down on <em>hours</em>, MyTailLog also shows an approximate calendar date,{" "}
+          <strong>≈ 14 Mar 2027</strong>, worked out from how much this aircraft has actually
           been flown, using your own logged meter readings from the past <strong>365 days</strong>.
         </p>
         <p>
@@ -544,41 +515,41 @@ const SECTIONS: Section[] = [
           you can judge it yourself.
         </p>
         <p>
-          <strong>Confidence</strong> reflects how much evidence sits behind the rate — both how
+          <strong>Confidence</strong> reflects how much evidence sits behind the rate, both how
           many readings and how long a stretch they cover:
         </p>
-        <ul className="ml-4 list-disc space-y-1">
+        <ul>
           <li>
-            <strong>High</strong> — 6+ readings spanning 180 days or more.
+            <strong>High</strong>: 6+ readings spanning 180 days or more.
           </li>
           <li>
-            <strong>Medium</strong> — 4+ readings over 90 days.
+            <strong>Medium</strong>: 4+ readings over 90 days.
           </li>
           <li>
-            <strong>Low</strong> — 2+ readings over 30 days. Treat as a rough sketch.
+            <strong>Low</strong>: 2+ readings over 30 days. Treat as a rough sketch.
           </li>
           <li>
-            <strong>None</strong> — anything thinner. No date is shown at all; you simply see the
+            <strong>None</strong>: anything thinner. No date is shown at all; you simply see the
             hours, exactly as before. MyTailLog will not guess a date from a single data point.
           </li>
         </ul>
         <p>
           The rate is measured on the <strong>tach</strong> wherever possible, because hour-based
-          limits — the 100-hour, TBO, hour-interval ADs — are written against engine time. If your
+          limits, the 100-hour, TBO, hour-interval ADs, are written against engine time. If your
           logs carry no usable tach history it falls back to <strong>hobbs</strong> and says so in
           the hover text. Hobbs runs a little faster than tach, so a hobbs-based projection tends
-          to land slightly early — the safe direction to be wrong in.
+          to land slightly early, the safe direction to be wrong in.
         </p>
         <Effects>
           A projection <strong>never</strong> overrides a <strong>calendar</strong> limit. An annual
           is a date in its own right; the ≈ date only ever appears next to an <em>hours</em>{" "}
           countdown, and never replaces or softens a real due date. Intervals that span a recorded{" "}
-          <L href="#meters">meter replacement</L> are dropped from the rate entirely — a swapped
+          <L href="#meters">meter replacement</L> are dropped from the rate entirely, a swapped
           tach makes the raw difference meaningless, and that is the most likely source of a badly
           wrong date. Projections appear on <L href="#status">Status</L>, the{" "}
           <L href="#maintenance">maintenance forecast</L>, your <L href="#compliance">AD</L> rows,
           and in <L href="#notifications">reminder emails</L>. They are never used to decide{" "}
-          <em>whether</em> something is due or when to email you — that stays on the real hours and
+          <em>whether</em> something is due or when to email you, that stays on the real hours and
           dates.
         </Effects>
       </>
@@ -586,7 +557,6 @@ const SECTIONS: Section[] = [
   },
   {
     id: "meters",
-    icon: <GaugeIcon />,
     title: "Meters, replacements & airframe time",
     body: (
       <>
@@ -596,8 +566,8 @@ const SECTIONS: Section[] = [
           <strong>replaced</strong>, and <strong>airframe time</strong>.
         </p>
         <p>
-          A hobbs or tach that gets swapped restarts near zero. Record the replacement — the date,
-          the old meter&apos;s final reading, and what the new one started at — and MyTailLog stitches
+          A hobbs or tach that gets swapped restarts near zero. Record the replacement, the date,
+          the old meter&apos;s final reading, and what the new one started at, and MyTailLog stitches
           the two together into one continuous total. Without it, importing older logbook pages makes
           time appear to run backwards: the boundary reading gets flagged as a typo, and any item
           last done before the swap counts down against a number it can never reach. Both meters are
@@ -606,12 +576,12 @@ const SECTIONS: Section[] = [
         <p>
           <strong>Airframe</strong> is a third, independent meter for sailplanes and motorgliders. A
           glider has no engine to drive a tach, and a motorglider accrues far more airframe time than
-          engine time, so airframe is never derived from the other two — it shows only what has
+          engine time, so airframe is never derived from the other two, it shows only what has
           actually been recorded. Enter it on a logbook entry, at enrollment, or by hand on this page.
         </p>
         <p>
           <strong>Where a reading came from.</strong> Each current reading shows the date it is
-          anchored to and its source — a logbook entry, a MyFlightBook sync, something you entered
+          anchored to and its source, a logbook entry, a MyFlightBook sync, something you entered
           by hand, an ADS-B estimate, or the starting reading. A value marked <em>estimated</em> was
           derived rather than read off the meter, and the source then names what it was derived
           from. The readings list labels each row the same way, so an ADS-B estimate is never
@@ -620,7 +590,7 @@ const SECTIONS: Section[] = [
         <p>
           <strong>Starting readings</strong> on the same page are the figures captured when you added
           the aircraft. Every hours countdown starts from them, so a number typed into the wrong box
-          shifts all of them — and they used to be set once at enrollment and unreachable afterwards.
+          shifts all of them, and they used to be set once at enrollment and unreachable afterwards.
           You can now edit them, and <strong>clearing a meter stops tracking it entirely</strong>: if
           you work from tach only, leave Hobbs blank and nothing will count against it. (The oil
           change is the one item that defaults to Hobbs; its{" "}
@@ -637,7 +607,6 @@ const SECTIONS: Section[] = [
   },
   {
     id: "adsb",
-    icon: <PlaneIcon />,
     title: "ADS-B passive hours",
     body: (
       <>
@@ -649,14 +618,14 @@ const SECTIONS: Section[] = [
         </p>
         <p>
           It is <strong>off by default and opt-in per aircraft</strong>. The only thing that ever
-          leaves the app is the aircraft&apos;s <strong>ICAO 24-bit Mode S address</strong> — public
+          leaves the app is the aircraft&apos;s <strong>ICAO 24-bit Mode S address</strong>: public
           FAA registry data. Nothing about you or your records is sent, and no track or position
           data is stored: only the start, end and duration of each flight seen. Turn it off and the
           checks stop.
         </p>
         <p>
           The address is looked up from the FAA registry (or adsbdb as a fallback) and cached. It is
-          never <em>computed</em> from your N-number — that encoding has edge cases that would
+          never <em>computed</em> from your N-number, that encoding has edge cases that would
           silently pull another aircraft&apos;s flights. You can always enter it by hand.
         </p>
         <p>
@@ -668,24 +637,24 @@ const SECTIONS: Section[] = [
         <p>
           <strong>Your own records always win.</strong> Hobbs and tach are cumulative, so a reading
           from a <L href="#myflightbook">MyFlightBook</L> sync, a logbook entry, or one you typed
-          already accounts for everything flown up to its date. ADS-B only speaks up about flights
-          <em> after</em> your most recent reading — and it stays quiet entirely if a meter was
+          already accounts for everything flown up to its date. ADS-B only speaks up about flights{" "}
+          <em>after</em> your most recent reading, and it stays quiet entirely if a meter was
           replaced since then.
         </p>
         <p>
-          When it does speak up you get one line — &ldquo;3 flights totalling ≈4.2 h since your last
-          reading&rdquo; — a suggested meter value, and two buttons: record a reading, or dismiss.{" "}
+          When it does speak up you get one line, &ldquo;3 flights totalling ≈4.2 h since your last
+          reading&rdquo;, a suggested meter value, and two buttons: record a reading, or dismiss.{" "}
           <strong>Nothing is ever written for you.</strong> The suggested number is pre-filled and
           fully editable; read the real meter and correct it before saving.
         </p>
         <p>
-          <strong>Honest limits.</strong> Airborne wall-clock is neither tach nor hobbs — it excludes
+          <strong>Honest limits.</strong> Airborne wall-clock is neither tach nor hobbs, it excludes
           taxi and runup and drifts from tach with RPM. Ground coverage has gaps. Not every GA
           aircraft broadcasts ADS-B Out. Treat it as an estimate that prompts a real reading.
         </p>
         <Effects>
-          An accepted reading is saved as an <span className="readout">adsb_estimate</span>, which
-          feeds the current-hours figure and the countdowns like any other reading — but is{" "}
+          An accepted reading is saved as an <code>adsb_estimate</code>, which
+          feeds the current-hours figure and the countdowns like any other reading, but is{" "}
           <strong>never</strong> compliance evidence, and never feeds a utilization-rate estimate
           (that would be circular). It may widen a forecast&apos;s warning band, which is the safe
           direction to be wrong in. Editors and owners can opt in and accept; viewers see it
@@ -696,12 +665,11 @@ const SECTIONS: Section[] = [
   },
   {
     id: "squawks",
-    icon: <AlertIcon />,
     title: "Squawks",
     body: (
       <>
         <p>
-          Track discrepancies noticed in flight — a rough mag, a sticky switch, a small leak. In{" "}
+          Track discrepancies noticed in flight, a rough mag, a sticky switch, a small leak. In{" "}
           <L href="/hangar">Maintenance → Squawks</L>, anyone with access to the aircraft (including a
           shared pilot) can report one with a severity; it stays <strong>open</strong> until an editor
           marks it <strong>resolved</strong>.
@@ -715,7 +683,6 @@ const SECTIONS: Section[] = [
   },
   {
     id: "oil-analysis",
-    icon: <GaugeIcon />,
     title: "Oil analysis",
     body: (
       <>
@@ -724,22 +691,21 @@ const SECTIONS: Section[] = [
           report of wear-metal concentrations. In{" "}
           <L href="/hangar">Aircraft → Oil</L>, click{" "}
           <strong>Import oil report</strong> and upload the lab&apos;s PDF (or a photo of it). The AI
-          reads every sample in the report — dates, hours on the oil and engine, each element in
+          reads every sample in the report, dates, hours on the oil and engine, each element in
           parts per million, oil properties, and the lab&apos;s written comments.
         </p>
-        <p className="mt-2">
+        <p>
           Each wear metal is charted over time against the lab&apos;s <strong>universal average</strong>{" "}
-          for your engine type (the dashed line). Values above it are highlighted amber, and well
-          above (2×) red — a prompt to watch, not a verdict.
+          for your engine type (the dashed line). Values above it are marked, and values well above it
+          (2×) are marked more strongly. It is a prompt to watch, not a verdict.
         </p>
-        <p className="mt-2">
+        <p>
           Separately, log each <strong>oil top-off</strong> (&ldquo;added 1.5 qt&rdquo;) with the
-          tach/hobbs at the time — the meters prefill from the aircraft&apos;s current reading. From
-          those, MyTailLog charts your <strong>burn rate</strong> (hours per quart) between top-offs —
-          a leading indicator of engine health, distinct from the lab wear-metal trend above.
+          tach/hobbs at the time, the meters prefill from the aircraft&apos;s current reading. From
+          those, MyTailLog charts your <strong>burn rate</strong> (hours per quart) between top-offs, a leading indicator of engine health, distinct from the lab wear-metal trend above.
         </p>
-        <p className="mt-2 text-sm text-faint">
-          Like all extraction here, the numbers are read by AI — confirm anything important against
+        <p>
+          Like all extraction here, the numbers are read by AI, confirm anything important against
           the original report, and treat the lab&apos;s own assessment as authoritative. Re-importing
           the same report updates its samples in place rather than duplicating them.
         </p>
@@ -748,32 +714,30 @@ const SECTIONS: Section[] = [
   },
   {
     id: "myflightbook",
-    icon: <PlaneIcon />,
     title: "MyFlightBook (hours sync)",
     body: (
       <>
         <p>
-          For the two-way connection, authorize MyTailLog in MyFlightBook&apos;s
-          <strong> Preferences → Maintenance</strong>, then use <strong>Update from MyTailLog</strong> on
+          For the two-way connection, authorize MyTailLog in MyFlightBook&apos;s{" "}
+          <strong>Preferences → Maintenance</strong>, then use <strong>Update from MyTailLog</strong> on
           its My Aircraft page. MyFlightBook can read your maintenance data and send recorded{" "}
           <strong>hobbs and tach</strong> back under that authorization. Check Meters here for a
           MyFlightBook reading; authorization alone does not confirm that hours have arrived.
         </p>
-        <p className="mt-2">
+        <p>
           An older, optional pull is available under <L href="/account/settings">Account → MyFlightBook</L>.
           For that path, register your own OAuth app on MyFlightBook, save its client ID and secret
           here, connect, then use <strong>Sync from MyFlightBook</strong>. It matches aircraft by tail
           number and imports the latest recorded flight hours; the secret is stored encrypted.
         </p>
-        <p className="mt-2 text-sm text-faint">
+        <p>
           Honesty caveat: MyFlightBook has no authoritative &ldquo;current&rdquo; meter for a
           shared plane, and a flight&apos;s ending hours may go unlogged. So this is the latest{" "}
-          <strong>recorded</strong> hobbs/tach, shown as <em>&ldquo;as of &lt;date&gt;&rdquo;</em> —
-          treat it as the last known reading, not a live gauge, and confirm against the aircraft.
+          <strong>recorded</strong> hobbs/tach, shown as <em>&ldquo;as of &lt;date&gt;&rdquo;</em>: treat it as the last known reading, not a live gauge, and confirm against the aircraft.
         </p>
         <Effects>
           A synced reading feeds <strong>current tach</strong> (reconciled across logs, enrollment,
-          and synced readings — hobbs converted to tach when needed), so it flows straight into the{" "}
+          and synced readings, hobbs converted to tach when needed), so it flows straight into the{" "}
           <L href="#maintenance">maintenance forecast</L>, recurring{" "}
           <L href="#compliance">AD next-due</L>, and the <L href="#status">Status</L> grid.
         </Effects>
@@ -782,7 +746,6 @@ const SECTIONS: Section[] = [
   },
   {
     id: "ai-key",
-    icon: <SparklesIcon />,
     title: "AI & your API key",
     body: (
       <>
@@ -795,30 +758,29 @@ const SECTIONS: Section[] = [
           key</L>. Your key is <strong>stored encrypted</strong> and never shown again; only the last
           four characters are kept for display.
         </p>
-        <p className="mt-2 text-sm text-faint">
+        <p>
           The app uses the stronger model for handwritten logbook pages, where a missed digit or
           maintenance entry matters. Printed pages, PDFs, and Ask My Logbook use the provider&apos;s
           lowest-cost capable model. Marking a captured page as printed or handwritten controls
           that routing; an unknown page takes the safer handwritten path.
         </p>
-        <p className="mt-2 text-sm text-faint">
+        <p>
           This must be an <strong>API key</strong> (starts with <code>sk-ant-</code>) from the{" "}
           <a
             href="https://console.anthropic.com/settings/keys"
             target="_blank"
             rel="noreferrer"
-            className="underline decoration-line hover:decoration-line2"
           >
             Anthropic Console
           </a>
           , where you add a little pay-as-you-go credit. A <strong>Claude.ai (Pro/Max) subscription
-          won&apos;t work</strong> — it&apos;s a separate product with no API access.
+          won&apos;t work</strong>: it&apos;s a separate product with no API access.
         </p>
-        <p className="mt-2">
-          With your own key connected, the panel shows your <strong>usage</strong> — calls, input and
+        <p>
+          With your own key connected, the panel shows your <strong>usage</strong>: calls, input and
           output tokens, and <strong>estimated cost so far</strong> (from token counts at
           the provider&apos;s list prices; a close guide, not your exact invoice). If your key is
-          rejected (invalid or out of quota) the request fails with a clear message — it is never
+          rejected (invalid or out of quota) the request fails with a clear message, it is never
           silently charged to the shared key.
         </p>
       </>
@@ -826,53 +788,52 @@ const SECTIONS: Section[] = [
   },
   {
     id: "notifications",
-    icon: <AlertIcon />,
     title: "Notifications (email & push)",
     body: (
       <>
         <p>
           A daily background check emails you <strong>before</strong> maintenance, inspections, and
-          ADs come due — and once they&apos;re overdue. Turn reminders on and tune the lead times in{" "}
+          ADs come due, and once they&apos;re overdue. Turn reminders on and tune the lead times in{" "}
           <L href="/account/settings">Account → Notifications</L>. The master switch is the on/off for{" "}
           <em>all</em> reminder email; below it, each category sets how far in advance you&apos;re
           warned:
         </p>
-        <ul className="ml-4 mt-1 list-disc space-y-1">
+        <ul>
           <li>
-            <strong>Annual inspection</strong> — a number of <em>days</em> before it&apos;s due
+            <strong>Annual inspection</strong>: a number of <em>days</em> before it&apos;s due
             (default 90).
           </li>
           <li>
-            <strong>Oil change</strong> — a number of <em>hours</em> before it&apos;s due (default
+            <strong>Oil change</strong>: a number of <em>hours</em> before it&apos;s due (default
             10).
           </li>
           <li>
-            <strong>ADs / SBs</strong> and <strong>everything else</strong> — both a days-before and
+            <strong>ADs / SBs</strong> and <strong>everything else</strong>: both a days-before and
             an hours-before window (defaults 30 days / 25 hours); whichever is reached first triggers
             the reminder.
           </li>
         </ul>
-        <p className="mt-2">
+        <p>
           If you&apos;ve allowed notifications in the <L href="#mobile">mobile app</L>, the same daily
           check also sends a <strong>push notification</strong> to your phone, grouped per aircraft the
-          way the digest is (&ldquo;N4321J — 2 items coming due&rdquo;). It follows the same lead times
+          way the digest is (&ldquo;N4321J, 2 items coming due&rdquo;). It follows the same lead times
           and the same once-per-due-cycle rule as the email, so you aren&apos;t told twice. Turning
           notifications off in the app removes that device.
         </p>
-        <p className="mt-2">
+        <p>
           Reminders are grouped into <strong>one digest email per day</strong>, organized by
           aircraft, each item linking to its Status page. You&apos;re reminded once per due-cycle:
           after you mark an item done and it schedules a new next-due, the reminder arms again for the
           next cycle. You never get an empty email.
         </p>
-        <p className="mt-2 text-sm text-faint">
+        <p>
           Note: the oil-change <em>interval</em> (hours between changes) is set on the oil item on
-          each aircraft&apos;s <L href="#maintenance">Maintenance</L> page — the setting here only
+          each aircraft&apos;s <L href="#maintenance">Maintenance</L> page, the setting here only
           controls how early you&apos;re alerted, not when the item is due.
         </p>
         <Effects>
           What counts as &ldquo;due&rdquo; comes straight from the{" "}
-          <L href="#status">Status</L> grid — <strong>current tach</strong> (logs, enrollment, and{" "}
+          <L href="#status">Status</L> grid, <strong>current tach</strong> (logs, enrollment, and{" "}
           <L href="#myflightbook">MyFlightBook</L> syncs, hobbs converted to tach when needed) and
           last-done dates drive it. The same
           daily job also auto-syncs connected MyFlightBook accounts once a day, so a reminder can
@@ -883,8 +844,7 @@ const SECTIONS: Section[] = [
   },
   {
     id: "compliance",
-    icon: <ShieldIcon />,
-    title: "AD / SB compliance",
+    title: "AD and SB tracking",
     body: (
       <>
         <p>
@@ -897,8 +857,8 @@ const SECTIONS: Section[] = [
         <p>
           <strong>Explore</strong> searches for ADs you might not know about, three ways at once:
           by <strong>manufacturer</strong> (the airframe make plus every installed
-          equipment&apos;s make — the broad net), by <strong>model</strong> (your specific
-          variant — the sharp one), and by any <strong>keyword</strong> you type. Results come
+          equipment&apos;s make, the broad net), by <strong>model</strong> (your specific
+          variant, the sharp one), and by any <strong>keyword</strong> you type. Results come
           from the Federal Register plus the FAA&apos;s DRS, which is what surfaces the{" "}
           <strong>pre-1994 legacy ADs</strong> the Federal Register archive doesn&apos;t hold; if
           either source is unreachable the other still returns. Each result lists the{" "}
@@ -908,9 +868,9 @@ const SECTIONS: Section[] = [
           <em>Track with an interval</em> records it as recurring on hours, calendar months, or
           both, with a next-due.
         </p>
-        <p className="text-dim">
+        <p>
           Search results are a starting point, not a determination. The parsed model list is read
-          off the AD&apos;s title and summary and can be incomplete — real applicability often
+          off the AD&apos;s title and summary and can be incomplete, real applicability often
           turns on serial numbers and installed equipment. Confirm against the AD itself; the call
           is yours and your A&amp;P&apos;s. For ground truth, scan an{" "}
           <L href="#other">A&amp;P AD compliance report</L>.
@@ -925,19 +885,18 @@ const SECTIONS: Section[] = [
   },
   {
     id: "equipment",
-    icon: <CpuIcon />,
     title: "Installed equipment",
     body: (
       <>
         <p>
-          A reconstructed list of what&apos;s installed now, derived from your logs — installs and
+          A reconstructed list of what&apos;s installed now, derived from your logs, installs and
           removals detected during extraction arrive as <strong>proposals</strong> you confirm or
           reject (nothing is trusted automatically). Use &ldquo;Update from logs&rdquo; to rescan
           the full history.
         </p>
         <Effects>
           An equipment install/removal that postdates your last{" "}
-          <L href="#wb">Weight &amp; Balance</L> revision flags the W&amp;B as possibly stale — a
+          <L href="#wb">Weight &amp; Balance</L> revision flags the W&amp;B as possibly stale, a
           common records gap (avionics swapped, W&amp;B never recomputed).
         </Effects>
       </>
@@ -945,13 +904,12 @@ const SECTIONS: Section[] = [
   },
   {
     id: "wb",
-    icon: <ScaleIcon />,
     title: "Weight & Balance",
     body: (
       <>
         <p>
           A history of your W&amp;B revisions (empty weight, CG arm, moment) with the latest as your
-          current W&amp;B — plus useful load if you enter max gross. Enter any two of
+          current W&amp;B, plus useful load if you enter max gross. Enter any two of
           weight/arm/moment and the third is filled in. This is an index of your W&amp;B records,
           not a loading calculator.
         </p>
@@ -965,24 +923,23 @@ const SECTIONS: Section[] = [
   },
   {
     id: "records-vault",
-    icon: <ArchiveIcon />,
     title: "Documents",
     body: (
       <>
         <p>
-          A home for the aircraft&apos;s <strong>permanent records</strong> — airworthiness
+          A home for the aircraft&apos;s <strong>permanent records</strong>: airworthiness
           certificate, registration, radio station authorization, POH/AFM, weight &amp; balance,{" "}
           <strong>STCs</strong>, 337s, 8130-3s, ICAs, and manuals. In{" "}
           <L href="/hangar">your aircraft</L>, open Documents and upload a PDF or photo (up to 25 MB), tag it
           with a category and reference number, and it&apos;s a click away instead of buried in a
           binder. These sit alongside your logbook scans.
         </p>
-        <p className="mt-2">
-          A document can be <strong>linked to a maintenance entry</strong> — for example, the
+        <p>
+          A document can be <strong>linked to a maintenance entry</strong>. For example, the
           8130-3 for an installed part or the 337 for an alteration. The document stays in
           Documents when the link is removed; the linked entry also shows it in Logbooks.
         </p>
-        <p className="mt-2 text-sm text-faint">
+        <p>
           Editors can add, attach, detach, and remove documents; viewers can view and download them
           but cannot change any of it. Attachments travel in the .zip backup and survive a re-import.
         </p>
@@ -991,14 +948,13 @@ const SECTIONS: Section[] = [
   },
   {
     id: "audit",
-    icon: <AlertIcon />,
     title: "Records gap audit",
     body: (
       <p>
         Advisory heuristics that flag <em>suspected</em> gaps in the digitized record: missing
         annuals (breaks in the annual chain), long stretches with no entries, and recurring ADs
-        never complied or past due. Framed as &ldquo;suspected&rdquo; — a gap may just mean a page
-        isn&apos;t scanned yet. Find it under <strong>Workflows → Annual prep</strong>, which also
+        never complied or past due. Framed as &ldquo;suspected&rdquo;, a gap may just mean a page
+        isn&apos;t scanned yet. Find it under <strong>Maintenance → Annual</strong>, which also
         gathers what&apos;s due before the annual, open squawks for the shop, and pages still
         awaiting review.
       </p>
@@ -1006,7 +962,6 @@ const SECTIONS: Section[] = [
   },
   {
     id: "export",
-    icon: <ArchiveIcon />,
     title: "Export & backup",
     body: (
       <>
@@ -1025,37 +980,35 @@ const SECTIONS: Section[] = [
           descriptions. On browsers without a share sheet, the same snapshot is copied to the
           clipboard. Use Print → Save as PDF when the recipient needs the full report.
         </p>
-        <p className="mt-3">
-          The <strong>.zip backup</strong> takes everything — all records plus your original
-          scans — and includes a <code className="readout text-[12px]">README.txt</code>{" "}
+        <p>
+          The <strong>.zip backup</strong> takes everything, all records plus your original
+          scans, and includes a <code>README.txt</code>{" "}
           documenting every file and every column, so the archive still explains itself years
           from now.
         </p>
-        <p className="mt-3">
+        <p>
           <strong>Automatic cloud backups.</strong> Connect <strong>Dropbox</strong> and/or{" "}
           <strong>Google Drive</strong> from <L href="/account/settings">Account settings</L> and that same .zip is
           pushed to your own account <strong>monthly or quarterly</strong>, one file per aircraft,
-          named <code className="readout text-[12px]">&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
-          On Drive that sits inside a <code className="readout text-[12px]">MyTailLog</code> folder;
+          named <code>&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
+          On Drive that sits inside a <code>MyTailLog</code> folder;
           on Dropbox the app folder is already that folder, so there&apos;s no second one.
-          You can connect <em>both</em> — each has its own schedule and runs independently, which is
+          You can connect <em>both</em>: each has its own schedule and runs independently, which is
           real redundancy rather than one basket. We can only ever see the files we put there, never
           the rest of your account: Dropbox gives us an <em>app folder</em>, and on Google Drive we
           ask only for permission to touch <em>files this app creates</em>, so your existing Drive is
-          invisible to us by construction rather than by promise. We only ever <em>add</em> files —
-          nothing in your account is renamed, replaced or deleted, so retention stays your call.
+          invisible to us by construction rather than by promise. We only ever <em>add</em> files, nothing in your account is renamed, replaced or deleted, so retention stays your call.
           Account settings shows each destination&apos;s last run, its result and its size, and emails you if
           two runs in a row fail. Very large aircraft (hundreds of scanned pages) are reported as{" "}
-          <em>too large to upload</em> rather than silently failing — download those by hand.
+          <em>too large to upload</em> rather than silently failing, download those by hand.
         </p>
-        <p className="mt-3">
+        <p>
           <strong>On lock-in.</strong> That .zip <strong>re-imports</strong>: restoring it
           recreates the aircraft, entries, ADs and scans as a <em>new</em> aircraft (it never
           overwrites an existing one). Everything inside is plain JSON and your original
-          JPEG/PNG/PDF files — readable with no special software. MyTailLog itself is{" "}
+          JPEG/PNG/PDF files, readable with no special software. MyTailLog itself is{" "}
           <a
             href="https://github.com/iiamit/MyTailLog"
-            className="underline decoration-line underline-offset-2 hover:decoration-line2"
           >
             open source under the MIT licence
           </a>{" "}
@@ -1067,13 +1020,12 @@ const SECTIONS: Section[] = [
   },
   {
     id: "sharing",
-    icon: <UsersIcon />,
-    title: "Sharing, transfer & delete",
+    title: "Sharing, record rooms, transfer and delete",
     body: (
       <>
       <p>
         Invite others by email as <strong>viewers</strong> (read-only) or <strong>editors</strong>{" "}
-        (can contribute) — they get access the moment they sign in with that address, no account
+        (can contribute), they get access the moment they sign in with that address, no account
         needed first. Owners can transfer an aircraft to another user, or delete it (type-to-confirm;
         removes all records and scans). Access is enforced by the database, not just the UI.
       </p>
@@ -1082,7 +1034,7 @@ const SECTIONS: Section[] = [
         no account. You pick what&apos;s in each link: the maintenance summary, whole logbooks (only
         entries you&apos;ve confirmed are shown), their page scans, and individual documents.
         Links expire after 7 to 180 days, you can revoke one at any time, and the list shows how many
-        times each was opened. Transferring the aircraft revokes every link. Create one on Sharing,
+        times each was opened. Transferring the aircraft revokes every link. Create one under Share,
         or from the pre-buy dossier with &ldquo;Share with a buyer&rdquo;.
       </p>
       </>
@@ -1090,7 +1042,6 @@ const SECTIONS: Section[] = [
   },
   {
     id: "profile",
-    icon: <UserIcon />,
     title: "Account & sign-in",
     body: (
       <>
@@ -1100,7 +1051,7 @@ const SECTIONS: Section[] = [
           the iPhone app also offers Apple sign-in once its updated build is installed. Email
           sign-in remains available in both apps.
         </p>
-        <p className="mt-2">
+        <p>
           <strong>Already have aircraft here?</strong> Sign in with your original email method
           first. On the web, open <L href="/account/settings">Account → How you sign in</L> and choose{" "}
           <strong>Connect</strong> beside Google or Apple. In an updated mobile app, open{" "}
@@ -1109,7 +1060,7 @@ const SECTIONS: Section[] = [
           existing account with the same aircraft and records. This also works if Apple hides
           your email or your provider uses a different address.
         </p>
-        <p className="mt-2">
+        <p>
           If you started a separate account by mistake, sign out and return to the account
           that already has your aircraft before connecting a provider. Connecting a sign-in
           method does not merge two accounts. You can still use your original magic link or
@@ -1123,17 +1074,16 @@ const SECTIONS: Section[] = [
   },
   {
     id: "developer-api",
-    icon: <UserIcon />,
     title: "Developer API (OAuth)",
     body: (
       <p>
-        Other apps (like MyFlightBook) can read your aircraft&apos;s airworthiness, equipment, hours,
-        oil, and weight-and-balance data — <strong>only with your consent</strong>. An app granted{" "}
+        Other apps (like MyFlightBook) can read your aircraft&apos;s maintenance status, equipment, hours,
+        oil, and weight-and-balance data, <strong>only with your consent</strong>. An app granted{" "}
         <strong>hours:write</strong> can also add Hobbs and tach readings. On the consent screen you choose
         the scope: <strong>all your
-        aircraft</strong> (the default — including any you add later, so an app keeps working as your
+        aircraft</strong> (the default, including any you add later, so an app keeps working as your
         fleet grows) or <strong>only the ones you pick</strong>. A brand-new account can authorize an
-        app before adding any aircraft — the app just sees an empty list until you add one. Revoke any
+        app before adding any aircraft, the app just sees an empty list until you add one. Revoke any
         app anytime under <L href="/account/settings">Account → Connected apps</L>. Building an integration?
         Register an app and read the guide under <L href="/developers">Developer API</L>. Your
         transcribed log entries are never shared.
@@ -1142,57 +1092,47 @@ const SECTIONS: Section[] = [
   },
 ];
 
+// Eight groups for the contents list, in the app's own order: start, then the six sections, then the account.
+const GROUPS: { id: string; title: string; topics: string[] }[] = [
+  { id: "g-start", title: "Start here", topics: ["idea", "start", "mobile"] },
+  { id: "g-logbooks", title: "Logbooks", topics: ["capture", "csv-import", "extract", "duplicates", "other", "timeline", "ask", "audit"] },
+  { id: "g-status", title: "Status", topics: ["status", "maintenance", "projection"] },
+  { id: "g-maintenance", title: "Maintenance", topics: ["squawks", "compliance", "oil-analysis"] },
+  { id: "g-aircraft", title: "Aircraft", topics: ["meters", "adsb", "myflightbook", "equipment", "wb"] },
+  { id: "g-documents", title: "Documents", topics: ["records-vault"] },
+  { id: "g-share", title: "Share", topics: ["sharing", "export", "developer-api"] },
+  { id: "g-account", title: "Account and settings", topics: ["profile", "ai-key", "notifications"] },
+];
+
+const BY_ID = new Map(SECTIONS.map((s) => [s.id, s]));
+
 export default function HelpPage() {
   return (
-    <InformationShell>
-    <main className="mx-auto max-w-3xl px-6 py-8">
-      <header className="mb-6">
-        <div className="eyebrow mb-2">Account</div>
-        <h1 className="font-display text-[27px] font-semibold leading-none">Help &amp; documentation</h1>
-        <p className="mt-2 text-dim">
-          What every part of MyTailLog does — and, just as important, how the pieces affect each
-          other. The amber <span className="font-medium text-annun-amber">Ripple effects</span>{" "}
-          notes call out where one action changes something elsewhere. For what changed in the
-          latest release, see <L href="/whats-new">What&apos;s new</L>.
+    <InformationShell
+      group="help"
+      path="/help"
+      title="Help"
+      lede={
+        <p>
+          What every part of MyTailLog does, and how one part affects another. Cost, privacy and getting your data out
+          are in the <L href="/faq">FAQ</L>; what changed lately is in <L href="/whats-new">What&apos;s new</L>.
         </p>
-        <p className="mt-2 text-sm text-faint">
-          Looking for cost, privacy, accuracy, or how to get your data back out? Those live in the{" "}
-          <L href="/faq">FAQ</L>, alongside <L href="/compare">how this compares</L> to the other
-          ways of keeping records.
-        </p>
-      </header>
-
-      {/* Table of contents */}
-      <nav className="mb-8 grid gap-1 rounded-lg border border-line p-4 text-sm sm:grid-cols-2">
-        {SECTIONS.map((s) => (
-          <a
-            key={s.id}
-            href={`#${s.id}`}
-            className="flex items-center gap-2 rounded-sm px-2 py-1 text-dim hover:bg-panel2"
-          >
-            <span className="text-faint">{s.icon}</span>
-            {s.title}
-          </a>
-        ))}
-      </nav>
-
-      <div className="flex flex-col gap-8">
-        {SECTIONS.map((s) => (
-          <section key={s.id} id={s.id} className="scroll-mt-20">
-            <h2 className="mb-2 flex items-center gap-2 text-xl font-semibold">
-              <span className="text-faint">{s.icon}</span>
-              {s.title}
-            </h2>
-            <div className="text-dim">{s.body}</div>
-          </section>
-        ))}
-      </div>
-
-      <p className="mt-10 border-t border-line pt-4 text-sm text-faint">
-        Reminder: MyTailLog is an index and decision-support tool, not the legal maintenance record.
-        Confirm anything you rely on against the physical logbooks.
-      </p>
-    </main>
+      }
+      toc={GROUPS.map((g) => ({ id: g.id, title: g.title }))}
+    >
+      {GROUPS.map((g, gi) => (
+        <ReadSection key={g.id} id={g.id} title={g.title} first={gi === 0}>
+          {g.topics.map((id) => {
+            const t = BY_ID.get(id)!;
+            return (
+              <div key={id} className="[&+&]:mt-8">
+                <h3 id={t.id} className="scroll-mt-4">{t.title}</h3>
+                {t.body}
+              </div>
+            );
+          })}
+        </ReadSection>
+      ))}
     </InformationShell>
   );
 }

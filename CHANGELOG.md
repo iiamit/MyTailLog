@@ -257,9 +257,9 @@ the git log.
   a single time on upgrade, and "Rebuild from the server" now sits in the account
   menu for any future drift. Anything recorded but not yet uploaded is kept.
 
-### Changed — the iOS app is rebuilt around "can I fly today?"
+### Changed — the iOS app is rebuilt around "what is due today?"
 - **A verdict comes before any list.** Status now opens with one countdown ring
-  and one sentence — "One item due soon", "Grounded — annual overdue" — then the
+  and one sentence ("One item due soon", "Annual overdue"), then the
   single item that needs doing, then everything healthy collapsed into one row.
   Seven items used to render as near-identical cards, so an engine overhaul due
   in 2038 competed for attention with a VOR check due in 26 days.
@@ -448,11 +448,11 @@ the git log.
   estimate was guessing at. An estimate **above** every real reading still
   counts — that's the case it exists for.
 
-### Added — The iOS app can now tell you if you're legal, and record what you did
+### Added — The iOS app now shows what's due offline, and records what you did
 - **Status, computed on the device.** Current tach/hobbs with provenance, then
   every maintenance item and recurring AD worst-first — offline, in the hangar,
   where there's no signal. The aircraft list flags the worst one so a problem is
-  visible before you open anything. None of the airworthiness math is a second
+  visible before you open anything. None of the due-date math is a second
   implementation: the app imports the *same* pure compliance code the web runs,
   because two copies is how a phone and a website start disagreeing about
   whether an annual is due.
@@ -462,8 +462,8 @@ the git log.
   upload on the next sync.
 - **The VOR check writes a real record.** 91.171(d) wants the place, the bearing
   error and a signature, so the app asks for them and writes a log entry as well
-  as resetting the counter. A tick-box that only moved a due-date would leave you
-  non-compliant while telling you that you were fine.
+  as resetting the counter. A tick-box that only moved a due-date would leave the
+  record incomplete while telling you that you were fine.
 - **AROW documents offline** — airworthiness certificate, registration, POH/AFM
   and weight & balance pinned together for a ramp check, each either present or
   explicitly missing. **PDFs open in the app**, page by page: they used to say

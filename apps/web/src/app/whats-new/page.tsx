@@ -1,47 +1,21 @@
 import { InformationShell } from "@/components/InformationShell";
+import { Tag } from "@/components/public/Read";
 import { APP_VERSION } from "@/lib/version";
-import {
-  parseChangelog,
-  parseInline,
-  type ChangeTag,
-  type InlineToken,
-} from "@/lib/changelog";
+import { parseChangelog, parseInline, type InlineToken } from "@/lib/changelog";
 
 export const metadata = {
-  title: "What's new — MyTailLog",
+  title: "What's new",
   description:
-    "Every notable change to MyTailLog, newest first — new features, improvements, fixes, and security work, grouped by release.",
-};
-
-// Tag → annunciator colour, reusing the design system's existing status ramp.
-const TAG_STYLE: Record<ChangeTag, string> = {
-  New: "border-annun-green/40 text-annun-green",
-  Improved: "border-accent/40 bg-accent-soft text-accent",
-  Fixed: "border-annun-amber/40 text-annun-amber",
-  Security: "border-annun-red/40 text-annun-red",
+    "Every notable change to MyTailLog, newest first: new features, improvements, fixes and security work, grouped by release.",
 };
 
 function Inline({ tokens }: { tokens: InlineToken[] }) {
   return (
     <>
       {tokens.map((t, i) => {
-        if (t.kind === "bold") return <strong key={i} className="font-semibold text-ink">{t.text}</strong>;
-        if (t.kind === "code")
-          return (
-            <code key={i} className="readout rounded-sm border border-line px-1 py-0.5 text-[11.5px] text-dim">
-              {t.text}
-            </code>
-          );
-        if (t.kind === "link")
-          return (
-            <a
-              key={i}
-              href={t.href}
-              className="underline decoration-line underline-offset-2 hover:decoration-line2 hover:text-ink"
-            >
-              {t.text}
-            </a>
-          );
+        if (t.kind === "bold") return <strong key={i}>{t.text}</strong>;
+        if (t.kind === "code") return <code key={i}>{t.text}</code>;
+        if (t.kind === "link") return <a key={i} href={t.href}>{t.text}</a>;
         return <span key={i}>{t.text}</span>;
       })}
     </>
@@ -49,94 +23,59 @@ function Inline({ tokens }: { tokens: InlineToken[] }) {
 }
 
 export default function WhatsNewPage() {
-  // Inlined at build time by next.config.mjs — see src/lib/changelog.ts.
+  // Inlined at build time by next.config.mjs (see src/lib/changelog.ts).
   const releases = parseChangelog(process.env.CHANGELOG_MD ?? "");
 
   return (
-    <InformationShell>
-      <main className="mx-auto max-w-3xl px-6 py-8">
-        <header className="mb-8">
-          <div className="eyebrow mb-2">Account</div>
-          <h1 className="font-display text-[27px] font-semibold leading-none">What&apos;s new</h1>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-dim">
-            Every notable change, newest first. Releases are calendar-versioned — the
-            number in the header of every page tells you which one you&apos;re on. You&apos;re
-            running{" "}
-            <span className="readout rounded-sm border border-line px-1.5 py-0.5 text-[11.5px] text-faint">
-              v{APP_VERSION}
-            </span>
-            .
-          </p>
-        </header>
-
-        {releases.length === 0 ? (
-          <p className="text-sm text-faint">No releases recorded yet.</p>
-        ) : (
-          <div className="flex flex-col gap-10">
-            {releases.map((r) => (
-              <section key={r.version} id={r.version} className="scroll-mt-20">
-                <div className="mb-4 flex flex-wrap items-baseline gap-3 border-b border-line pb-2">
-                  <h2 className="readout text-[19px] font-semibold text-ink">{r.version}</h2>
-                  {r.dateLabel && <span className="text-[12.5px] text-faint">{r.dateLabel}</span>}
-                  {r.version === APP_VERSION && (
-                    <span className="rounded-full border border-accent/40 bg-accent-soft px-2 py-0.5 text-[11px] text-accent">
-                      you&apos;re here
-                    </span>
-                  )}
-                  <a
-                    href={`#${r.version}`}
-                    aria-label={`Link to release ${r.version}`}
-                    className="ml-auto text-xs text-faint hover:text-ink"
-                  >
-                    Share
-                  </a>
-                </div>
-
-                <div className="flex flex-col gap-6">
-                  {r.groups.map((g, gi) => (
-                    <div key={gi}>
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-[11px] ${TAG_STYLE[g.tag]}`}
-                          style={g.tag === "Fixed" ? { background: "var(--amb-bg)" } : undefined}
-                        >
-                          {g.tag}
-                        </span>
-                        <h3 className="text-[15px] font-semibold text-ink">{g.topic}</h3>
-                      </div>
-                      <ul className="flex flex-col gap-2 text-[13.5px] leading-relaxed text-dim">
-                        {g.items.map((item, ii) => (
-                          <li key={ii} className="flex gap-2.5">
-                            <span aria-hidden className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-faint" />
-                            <span>
-                              <Inline tokens={parseInline(item)} />
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-
-        <p className="mt-10 border-t border-line pt-4 text-[12.5px] text-faint">
-          Follow updates in your feed reader through the{" "}
-          <a href="/whats-new/rss.xml" className="underline decoration-line underline-offset-2 hover:text-ink">
-            RSS feed
-          </a>
-          . MyTailLog is MIT-licensed and open source — the full engineering history is in{" "}
-          <a
-            href="https://github.com/iiamit/MyTailLog"
-            className="underline decoration-line underline-offset-2 hover:text-ink"
-          >
-            the git log
-          </a>
-          .
+    <InformationShell
+      group="about"
+      path="/whats-new"
+      title="What's new"
+      lede={
+        <p>
+          Every notable change, newest first. Releases are numbered by year and month; you&apos;re on release {APP_VERSION}.
+          Follow along in a feed reader with the <a href="/whats-new/rss.xml">RSS feed</a>, or read the full history in{" "}
+          <a href="https://github.com/iiamit/MyTailLog">the source repository</a>.
         </p>
-      </main>
+      }
+      toc={releases.slice(0, 8).map((r) => ({ id: r.version, title: r.dateLabel ? `${r.dateLabel} (${r.version})` : r.version }))}
+    >
+      {releases.length === 0 ? (
+        <p>No releases recorded yet.</p>
+      ) : (
+        releases.map((r, ri) => (
+          <section
+            key={r.version}
+            id={r.version}
+            aria-labelledby={`r-${r.version}`}
+            className={`grid scroll-mt-4 grid-cols-[148px_minmax(0,1fr)] gap-x-[22px] max-md:block ${ri === 0 ? "border-t-2 border-ink" : ""}`}
+          >
+            <div className="pt-[18px] max-md:pb-2">
+              <h2 id={`r-${r.version}`} className="text-section">{r.dateLabel ?? r.version}</h2>
+              <p className="text-small text-ink-3">Release {r.version}</p>
+              {r.version === APP_VERSION && <p className="mt-1"><Tag>You&apos;re on this one</Tag></p>}
+            </div>
+            {/* The dated stop on a small ink line: one stop per release, the line running down to the next. */}
+            <div className="read-prose relative min-w-0 py-[18px] pl-8">
+              <span aria-hidden className={`absolute top-0 left-[6px] w-[3px] bg-ink ${ri === releases.length - 1 ? "h-7" : "bottom-0"}`} />
+              <span aria-hidden className="absolute top-[22px] left-0 size-[15px] rounded-full border-[3px] border-ink bg-leaf" />
+              {r.groups.map((g, gi) => (
+                <div key={gi} className={gi ? "mt-6" : ""}>
+                  <h3 className="!m-0 flex flex-wrap items-center gap-2">
+                    <Tag tone={g.tag === "Security" ? "alarm" : "ink"}>{g.tag}</Tag>
+                    <span>{g.topic.charAt(0).toUpperCase() + g.topic.slice(1)}</span>
+                  </h3>
+                  <ul className="mt-2">
+                    {g.items.map((item, ii) => (
+                      <li key={ii}><Inline tokens={parseInline(item)} /></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))
+      )}
     </InformationShell>
   );
 }

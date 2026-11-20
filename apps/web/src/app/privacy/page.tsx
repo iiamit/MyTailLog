@@ -10,17 +10,24 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <MarketingShell
-      eyebrow="Privacy"
-      title="How MyTailLog handles your data"
+      group="about"
+      title="Privacy"
       current="/privacy"
-      lede="This policy covers the MyTailLog website and its iOS and Android apps. Updated November 15, 2026."
+      lede="How MyTailLog handles your data. This policy covers the MyTailLog website and its iOS and Android apps. Updated November 15, 2026."
+      toc={[
+        { id: "collect", title: "What we collect" },
+        { id: "use", title: "How we use it" },
+        { id: "share", title: "Who receives it" },
+        { id: "control", title: "Access, export and deletion" },
+        { id: "security", title: "Security and contact" },
+      ]}
     >
-      <div className="space-y-8">
-        <MarketingSection id="collect" title="What we collect">
+      <div>
+        <MarketingSection id="collect" title="What we collect" first>
           <p>
             Your account uses an email address and sign-in credentials. When you use MyTailLog, you may
             add aircraft details, maintenance records, logbook scans, documents, inspection and
-            airworthiness tracking data, squawks, and notes. The mobile app keeps a local copy of
+            AD tracking data, squawks, and notes. The mobile app keeps a local copy of
             records and files you choose to sync so you can work offline.
           </p>
           <p>
@@ -75,7 +82,7 @@ export default function PrivacyPage() {
             You can export your records from the web app, remove an aircraft, revoke a sharing
             invitation or connected app, and turn off reminders or setup emails separately in Profile.
             Every setup email also has an unsubscribe link. To request deletion of your account
-            and associated data, use the <Link href="/account-deletion" className="underline">account deletion page</Link>.
+            and associated data, use the <Link href="/account-deletion">account deletion page</Link>.
             We verify requests before carrying them out and explain any effect on shared aircraft.
           </p>
           <p>
@@ -91,7 +98,7 @@ export default function PrivacyPage() {
             additionally encrypted at rest. No system can promise perfect security.
           </p>
           <p>
-            Questions or privacy requests: <a className="underline" href="mailto:mytaillog@iamit.org">mytaillog@iamit.org</a>.
+            Questions or privacy requests: <a href="mailto:mytaillog@iamit.org">mytaillog@iamit.org</a>.
           </p>
         </MarketingSection>
       </div>

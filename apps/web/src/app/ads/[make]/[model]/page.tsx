@@ -32,36 +32,28 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const name = `${data.make.name} ${data.model}`;
   const n = data.ads.exact.length;
   return {
-    title: `Airworthiness directives for the ${name} — MyTailLog`,
+    title: `Airworthiness directives for the ${name}`,
     description: `${n} FAA airworthiness directive${n === 1 ? "" : "s"} naming the ${name}, newest first, with links to the official Federal Register text.`,
     alternates: { canonical: `/ads/${data.make.slug}/${data.key.toLowerCase()}` },
   };
 }
 
 const fmtDate = (d: string | null) =>
-  d ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }) : "—";
+  d ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }) : "date not given";
 
 function AdList({ ads }: { ads: AdCatalog[] }) {
   return (
-    <ul className="divide-y divide-line">
+    <ul className="!m-0 !list-none !p-0">
       {ads.map((ad) => (
-        <li key={ad.ad_number} className="py-3">
-          <div className="flex flex-wrap items-baseline gap-x-3">
-            <span className="font-mono font-semibold text-ink">AD {ad.ad_number}</span>
-            <span className="text-sm text-faint">Effective {fmtDate(ad.effective_date)}</span>
-          </div>
-          <p className="mt-1">{displayTitle(ad.title)}</p>
-          <p className="mt-1 text-sm">
-            {ad.fr_html_url && (
-              <a href={ad.fr_html_url} className="mr-3 underline decoration-line underline-offset-2 hover:text-ink" rel="nofollow">
-                Federal Register
-              </a>
-            )}
-            {ad.pdf_url && (
-              <a href={ad.pdf_url} className="underline decoration-line underline-offset-2 hover:text-ink" rel="nofollow">
-                Official PDF
-              </a>
-            )}
+        <li key={ad.ad_number} className="!m-0 border-b border-rule py-3 last:border-b-0">
+          <p className="flex flex-wrap items-baseline gap-x-3">
+            <strong className="tabular-nums">AD {ad.ad_number}</strong>
+            <span className="text-small text-ink-3">Effective {fmtDate(ad.effective_date)}</span>
+          </p>
+          <p className="!mt-1">{displayTitle(ad.title)}</p>
+          <p className="!mt-1 flex gap-x-5 text-small">
+            {ad.fr_html_url && <a href={ad.fr_html_url} rel="nofollow">Federal Register</a>}
+            {ad.pdf_url && <a href={ad.pdf_url} rel="nofollow">Official PDF</a>}
           </p>
         </li>
       ))}
@@ -78,31 +70,31 @@ export default async function AdModelPage({ params }: Params) {
 
   return (
     <MarketingShell
-      eyebrow={`${data.make.name} airworthiness directives`}
+      group="guides"
       title={`Airworthiness directives for the ${name}`}
       lede={`FAA ADs whose titles or abstracts name the ${name}, newest first, from the Federal Register (1994 onward).`}
       current={`/ads/${data.make.slug}/${data.key.toLowerCase()}`}
     >
       <AdListDisclaimer />
-      <div className="mt-8 space-y-8">
-        <MarketingSection id="named" title={`ADs naming the ${data.model} (${data.ads.exact.length})`}>
+      <div className="mt-6">
+        <MarketingSection id="named" title={`ADs naming the ${data.model} (${data.ads.exact.length})`} first>
           <AdList ads={data.ads.exact} />
         </MarketingSection>
         {data.ads.series.length > 0 && (
           <MarketingSection id="series" title={`ADs naming the ${series.join(" / ")} series (${data.ads.series.length})`}>
-            <p className="text-sm">
+            <p>
               These name a base model the {data.model} belongs to, and may also cover it.
             </p>
             <AdList ads={data.ads.series} />
           </MarketingSection>
         )}
-        <p className="text-sm text-faint">
+        <p className="border-t border-rule pt-4 text-small text-ink-2">
           Pre-1994 ADs aren&apos;t in the Federal Register archive and aren&apos;t listed here; search
           the{" "}
-          <a href="https://drs.faa.gov/" className="underline decoration-line underline-offset-2 hover:text-ink">
+          <a href="https://drs.faa.gov/" className="font-semibold text-board-ink underline underline-offset-4">
             FAA Dynamic Regulatory System
           </a>{" "}
-          for those. <Link href="/ads" className="underline decoration-line underline-offset-2 hover:text-ink">All makes and models</Link>
+          for those. <Link href="/ads" className="font-semibold text-board-ink underline underline-offset-4">All makes and models</Link>
         </p>
       </div>
       <TrackCta />

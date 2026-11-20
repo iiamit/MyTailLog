@@ -34,7 +34,7 @@ const GUIDES = {
       ["Find the recorded compliance", "Search confirmed logbook entries for AD references and review the underlying signed page. A reference alone does not prove applicability or continuing compliance, but it gives an owner or mechanic a fast path back to the evidence."],
       ["Track the disposition", "Record whether an AD is open, complied with, previously complied with, not applicable, or superseded. For recurring directives, capture the calendar or hour interval and the last compliance basis so the next review point is visible."],
       ["Check the whole aircraft", "Applicability can depend on model, serial range, engine, propeller, appliance, or installed modification. MyTailLog can help discover candidates from aircraft and equipment data, but a qualified person must verify current FAA data and the actual configuration."],
-      ["Keep an audit trail", "Use the compliance view and maintenance summary to surface open and upcoming items, then verify each conclusion against the physical logbooks and current regulatory material. Export the aircraft archive regularly so scans and structured records remain portable."],
+      ["Keep an audit trail", "Use the AD list under Maintenance and the maintenance summary to surface open and upcoming items, then verify each conclusion against the physical logbooks and current regulatory material. Export the aircraft archive regularly so scans and structured records remain portable."],
     ],
   },
 } as const;
@@ -48,7 +48,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const guide = GUIDES[slug as GuideSlug];
-  return guide ? { title: `${guide.title} — MyTailLog`, description: guide.description } : {};
+  return guide ? { title: guide.title, description: guide.description } : {};
 }
 
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -57,30 +57,30 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   if (!guide) notFound();
 
   return (
-    <MarketingShell eyebrow="Owner guide" title={guide.title} lede={guide.lede} current={`/guides/${slug}`}>
-      <div className="space-y-8">
+    <MarketingShell group={slug === "digitize-aircraft-logbooks" ? "books" : "guides"} title={guide.title} lede={guide.lede} current={`/guides/${slug}`}>
+      <div>
         {guide.sections.map(([title, body], index) => (
-          <MarketingSection key={title} id={`step-${index + 1}`} title={title}>
+          <MarketingSection key={title} id={`step-${index + 1}`} title={title} first={index === 0}>
             <p>{body}</p>
           </MarketingSection>
         ))}
         {slug === "airworthiness-directive-tracking" && (
-          <p className="text-dim">
-            Looking for a starting list?{" "}
-            <Link href="/ads" className="underline decoration-line underline-offset-2 hover:text-ink">
-              Browse airworthiness directives by aircraft, engine, and propeller model
-            </Link>
-            .
-          </p>
+          <MarketingSection id="ad-list" title="A starting list">
+            <p>
+              <Link href="/ads">Browse airworthiness directives by aircraft, engine and propeller model</Link>.
+            </p>
+          </MarketingSection>
         )}
       </div>
-      <nav aria-label="More owner guides" className="mt-10 border-t border-line pt-5 text-sm text-dim">
-        <span className="mr-3 text-faint">More owner guides:</span>
-        {Object.entries(GUIDES).filter(([other]) => other !== slug).map(([other, item]) => (
-          <Link key={other} href={`/guides/${other}`} className="mr-3 underline decoration-line underline-offset-2 hover:text-ink">
-            {item.title}
-          </Link>
-        ))}
+      <nav aria-label="More owner guides" className="border-t border-rule pt-4">
+        <h2 className="text-label text-ink-3">More owner guides</h2>
+        <ul className="mt-1 flex flex-wrap gap-x-6">
+          {Object.entries(GUIDES).filter(([other]) => other !== slug).map(([other, item]) => (
+            <li key={other}>
+              <Link href={`/guides/${other}`} className="inline-flex min-h-11 items-center font-semibold text-board-ink underline underline-offset-4">{item.title}</Link>
+            </li>
+          ))}
+        </ul>
       </nav>
     </MarketingShell>
   );

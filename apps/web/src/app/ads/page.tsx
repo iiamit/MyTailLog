@@ -10,7 +10,7 @@ import { AdListDisclaimer, TrackCta } from "./AdCatalogParts";
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "Airworthiness directives by aircraft model — MyTailLog",
+  title: "Airworthiness directives by aircraft model",
   description:
     "FAA airworthiness directives for Cessna, Piper, Beechcraft, Mooney, Cirrus and other general-aviation aircraft, engines and propellers, listed by model.",
 };
@@ -29,32 +29,29 @@ export default async function AdsIndexPage() {
 
   return (
     <MarketingShell
-      eyebrow="Airworthiness directives"
-      title="Airworthiness directives by aircraft model"
-      lede="FAA ADs from the Federal Register, grouped by the makes and models their titles and abstracts name — airframes, engines, and propellers."
+      group="guides"
+      title="ADs by model"
+      lede="FAA airworthiness directives from the Federal Register, grouped by the makes and models their titles and abstracts name: airframes, engines and propellers."
       current="/ads"
     >
       <AdListDisclaimer />
-      <div className="mt-8 space-y-8">
+      <div className="mt-6">
         {makes.length === 0 && (
-          <p className="text-dim">The AD list is being prepared. Check back soon.</p>
+          <p>The AD list is being prepared. Check back soon.</p>
         )}
-        {makes.map((make) => {
+        {makes.map((make, i) => {
           const models = [...(byMake.get(make.slug) ?? [])].sort((a, b) =>
             a.model.localeCompare(b.model, "en", { numeric: true }),
           );
           return (
-            <MarketingSection key={make.slug} id={make.slug} title={make.name}>
-              <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            <MarketingSection key={make.slug} id={make.slug} title={make.name} first={i === 0}>
+              <ul className="!list-none !p-0 flex flex-wrap gap-x-4 gap-y-1">
                 {models.map((m) => (
                   <li key={m.model}>
-                    <Link
-                      href={adModelPath(make.slug, m.model)}
-                      className="underline decoration-line underline-offset-2 hover:text-ink"
-                    >
+                    <Link href={adModelPath(make.slug, m.model)} className="inline-flex min-h-10 items-center">
                       {m.model}
                     </Link>{" "}
-                    <span className="text-faint">({m.ad_count})</span>
+                    <span className="text-ink-3">({m.ad_count})</span>
                   </li>
                 ))}
               </ul>
