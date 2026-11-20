@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AccountShell } from "@/components/shell/AccountShell";
+import { InformationShell } from "@/components/InformationShell";
 import { DATA_SCOPES, SCOPE_LABELS } from "@/lib/oauth/scopes";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export default function DeveloperDocsPage() {
   const issuer = `${origin}/api/oidc`;
 
   return (
-    <AccountShell>
+    <InformationShell>
       <main className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-8 text-[14px] leading-relaxed">
         <header>
           <div className="eyebrow mb-2">Developer API</div>
@@ -120,6 +120,6 @@ GET /api/v1/aircraft/{id}/weightbalance`}</Code>
           </p>
         </section>
       </main>
-    </AccountShell>
+    </InformationShell>
   );
 }

@@ -11,7 +11,7 @@ import { v2Rewrite } from "../src/lib/uiV2";
 
 test("logbooks routes rewrite to v2; the unbuilt ones stay v1", () => {
   for (const p of ["map", "list", "pages", "add", "review", "review/p1", "entries/e1"]) assert.equal(v2Rewrite(`/aircraft/a/logbooks/${p}`), `/v2/aircraft/a/logbooks/${p}`);
-  assert.equal(v2Rewrite("/aircraft/a/logbooks/entries/new"), null, "W-BOOKS-11 is still v1");
+  assert.equal(v2Rewrite("/aircraft/a/logbooks/entries/new"), "/v2/aircraft/a/logbooks/entries/new");
   assert.equal(v2Rewrite("/aircraft/a/logbooks/pages/x"), null);
   assert.equal(v2Rewrite("/aircraft/a/logbooks/review/p1/x"), null);
 });

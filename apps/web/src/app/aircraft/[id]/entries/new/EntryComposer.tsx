@@ -5,23 +5,29 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TEMPLATES, missingTemplateFields, templateWork, type TemplateId } from "@/lib/authored-entries";
 import type { SigningCredential } from "@/lib/database.types";
+import { HungSection, Leaf, Leaves } from "@/ui/Board";
+import { buttonClass } from "@/ui/Button";
+import { fieldClass as v2FieldClass } from "@/ui/Form";
 import { requestEntryCode, signEntry, type SignInput } from "./actions";
+import { resolveSquawk } from "@/app/v2/aircraft/[id]/maintenance/squawks/actions";
 
 type Book = { id: string; type: string; label: string };
 const fieldClass = "mt-1 w-full rounded-md border border-line bg-panel px-3 py-2 text-sm";
 const number = (s: string) => s.trim() === "" ? null : Number(s);
 
-export function EntryComposer({ aircraftId, tailNumber, books, fullName, credentials, correctionId }: {
+export function EntryComposer({ aircraftId, tailNumber, books, fullName, credentials, correctionId, initialMeters, initialBookId, initialTemplateId, initialSquawkId, openSquawks = [], v2 = false }: {
   aircraftId: string; tailNumber: string; books: Book[]; fullName: string;
-  credentials: SigningCredential[]; correctionId: string | null;
+  credentials: SigningCredential[]; correctionId: string | null; initialMeters?: { tach: string; hobbs: string; airframe: string }; v2?: boolean;
+  initialBookId?: string; initialTemplateId?: string; initialSquawkId?: string; openSquawks?: { id: string; description: string }[];
 }) {
   const router = useRouter();
-  const [templateId, setTemplateId] = useState<TemplateId>("oil_filter");
-  const [bookId, setBookId] = useState(books.find((b) => b.type === "engine")?.id ?? books[0]?.id ?? "");
+  const [templateId, setTemplateId] = useState<TemplateId>(TEMPLATES.some((t) => t.id === initialTemplateId) ? initialTemplateId as TemplateId : "oil_filter");
+  const [bookId, setBookId] = useState(books.find((b) => b.id === initialBookId || b.type === initialBookId)?.id ?? books.find((b) => b.type === "engine")?.id ?? books[0]?.id ?? "");
+  const [squawkId, setSquawkId] = useState(openSquawks.some((s) => s.id === initialSquawkId) ? initialSquawkId ?? "" : "");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [hobbs, setHobbs] = useState("");
-  const [tach, setTach] = useState("");
-  const [airframe, setAirframe] = useState("");
+  const [hobbs, setHobbs] = useState(initialMeters?.hobbs ?? "");
+  const [tach, setTach] = useState(initialMeters?.tach ?? "");
+  const [airframe, setAirframe] = useState(initialMeters?.airframe ?? "");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [customWork, setCustomWork] = useState<string | null>(null);
   const [credentialId, setCredentialId] = useState(credentials[0]?.id ?? "");
@@ -73,21 +79,82 @@ export function EntryComposer({ aircraftId, tailNumber, books, fullName, credent
       hobbs: number(hobbs), tach: number(tach), airframe: number(airframe), work,
       answers, credentialId, performedBy, supersedesEntryId: correctionId, attested,
     };
-    const result = await requestEntryCode(input);
-    setBusy(false);
-    if ("error" in result) { setError(result.error); return; }
-    setPendingInput(input); setChallengeId(result.id);
+    try {
+      const result = await requestEntryCode(input);
+      if ("error" in result) { setError(result.error); return; }
+      setPendingInput(input); setChallengeId(result.id);
+    } catch { setError("Couldn't send a code. Check your connection and try again."); }
+    finally { setBusy(false); }
   }
 
   async function sign() {
     if (!pendingInput || !challengeId) return;
     setError(""); setBusy(true);
-    const result = await signEntry(pendingInput, challengeId, code);
-    setBusy(false);
-    if ("error" in result) { setError(result.error); return; }
-    localStorage.removeItem(draftKey);
-    router.push(`/aircraft/${aircraftId}/entries/${result.id}`);
+    try {
+      const result = await signEntry(pendingInput, challengeId, code);
+      if ("error" in result) { setError(result.error); return; }
+      let closeFailed = false;
+      if (squawkId) {
+        try {
+          const closed = await resolveSquawk(aircraftId, squawkId, { entryId: result.id, notes: "", date: pendingInput.entryDate });
+          closeFailed = "error" in closed;
+        } catch { closeFailed = true; }
+      }
+      localStorage.removeItem(draftKey);
+      router.push(v2 ? `/aircraft/${aircraftId}/logbooks/entries/${result.id}?panel=sticker${closeFailed ? "&closeError=1" : ""}` : `/aircraft/${aircraftId}/entries/${result.id}`);
+    } catch { setError("Couldn't confirm the signature. Check your connection before trying again."); }
+    finally { setBusy(false); }
   }
+
+  if (v2) return <Leaves split="1.55fr 1fr">
+    <Leaf label="Write a logbook entry">
+      <h2 className="text-heading">{correctionId ? "Correct a signed entry" : "Write an entry"}</h2>
+      <p className="mt-1 text-small text-ink-3">Draft kept on this device until you sign. Review the wording and sign only work you are authorized to approve.</p>
+      {!challengeId ? <>
+        <HungSection title="Record" first><div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-label">Logbook<select className={v2FieldClass} value={bookId} onChange={(e) => setBookId(e.target.value)}>{books.map((b) => <option value={b.id} key={b.id}>{b.label}</option>)}</select></label>
+          <label className="text-label">Template<select className={v2FieldClass} value={templateId} onChange={(e) => { setTemplateId(e.target.value as TemplateId); setAnswers({}); setCustomWork(null); }}>{TEMPLATES.map((t) => <option value={t.id} key={t.id}>{t.title}</option>)}</select></label>
+        </div><p className="mt-3 text-small text-ink-3">{template.source} Annual and 100-hour inspections need the mechanic&apos;s own record.</p></HungSection>
+        <HungSection title="Completed"><div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-label">Date<input type="date" className={v2FieldClass} value={date} onChange={(e) => setDate(e.target.value)} /></label>
+          <label className="text-label">Tach<input type="number" min="0" step="0.1" className={v2FieldClass} value={tach} onChange={(e) => setTach(e.target.value)} /></label>
+          <label className="text-label">Hobbs<input type="number" min="0" step="0.1" className={v2FieldClass} value={hobbs} onChange={(e) => setHobbs(e.target.value)} /></label>
+          <label className="text-label">Airframe total<input type="number" min="0" step="0.1" className={v2FieldClass} value={airframe} onChange={(e) => setAirframe(e.target.value)} /></label>
+        </div></HungSection>
+        <HungSection title="Work"><div className="grid gap-3 sm:grid-cols-2">{template.fields.map((f) => <label key={f.key} className="text-label">{f.label}{f.required ? " *" : ""}<input className={v2FieldClass} value={answers[f.key] ?? ""} onChange={(e) => setAnswers({ ...answers, [f.key]: e.target.value })} />{f.hint && <span className="mt-1 block text-small font-normal text-ink-3">{f.hint}</span>}</label>)}</div>
+          <label className="mt-4 block text-label">Work performed<textarea className={`${v2FieldClass} h-auto min-h-40 py-2 font-paper`} value={work} onChange={(e) => setCustomWork(e.target.value)} /></label>
+          {customWork !== null && <button type="button" className="mt-1 text-small text-board-ink underline" onClick={() => setCustomWork(null)}>Reset to template wording</button>}
+          <label className="mt-4 block text-label">Work done by<input className={v2FieldClass} value={performedBy} onChange={(e) => setPerformedBy(e.target.value)} /></label>
+          {openSquawks.length > 0 && <label className="mt-4 block text-label">Closes squawk<select className={v2FieldClass} value={squawkId} onChange={(e) => setSquawkId(e.target.value)}><option value="">None</option>{openSquawks.map((s) => <option key={s.id} value={s.id}>{s.description.slice(0, 90)}</option>)}</select></label>}
+        </HungSection>
+        <HungSection title="Sign it"><label className="block text-label">Sign with certificate<select className={v2FieldClass} value={credentialId} onChange={(e) => setCredentialId(e.target.value)}><option value="">Select certificate</option>{credentials.filter((c) => c.kind !== "sport_pilot").map((c) => <option key={c.id} value={c.id}>{c.kind.replaceAll("_", " ")} · {c.certificate_number}</option>)}</select></label>
+          <Link href="/account/settings#signing" className="mt-2 inline-block text-small text-board-ink underline">Manage certificates</Link>
+          <label className="mt-4 flex gap-2 text-small text-ink-2"><input type="checkbox" checked={attested} onChange={(e) => setAttested(e.target.checked)} />I performed or approved only the work described, am authorized to sign it, and intend this electronic signature to approve return to service for that work.</label>
+          <p className="mt-2 text-small text-ink-3">Once signed, this entry cannot be edited. Mistakes require a signed correction.</p>
+        </HungSection>
+        {error && <p role="alert" className="mt-3 text-small text-alarm-text">{error}</p>}
+        <button type="button" disabled={busy || !attested} onClick={requestCode} className={`${buttonClass("primary")} mt-4`}>{busy ? "Sending code…" : "Email me a signing code"}</button>
+      </> : <section className="mt-6 border-t-2 border-ink pt-4">
+        <h3 className="text-heading">Confirm your signature</h3><p className="mt-2 text-body text-ink-2">An eight-digit code was sent to your account email. It expires in 10 minutes. Review the entry on the right before signing.</p>
+        <label className="mt-4 block text-label">Signing code<input inputMode="numeric" autoComplete="one-time-code" maxLength={8} className={v2FieldClass} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} /></label>
+        {error && <p role="alert" className="mt-3 text-small text-alarm-text">{error}</p>}
+        <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={busy || code.length !== 8} onClick={sign} className={buttonClass("primary")}>{busy ? "Signing…" : "Sign this entry"}</button>
+          <button type="button" onClick={() => { setChallengeId(""); setPendingInput(null); setCode(""); setError(""); }} className={buttonClass("quiet")}>Edit entry</button></div>
+      </section>}
+    </Leaf>
+    <Leaf label="Sticker preview">
+      <h2 className="text-heading">Sticker preview</h2><p className="mt-1 text-small text-ink-3">Print the signed entry from its detail page. The entry ID and digest are added when you sign.</p>
+      <div className="mt-5 border-2 border-ink bg-leaf p-5 font-paper text-body leading-relaxed text-ink">
+        <p className="border-b border-rule pb-2 font-bold">{tailNumber} · {books.find((b) => b.id === bookId)?.label ?? "Logbook"}</p>
+        <p className="mt-3">{date} · Tach {tach || "—"} · Hobbs {hobbs || "—"} · Airframe {airframe || "—"}</p>
+        <p className="mt-4 whitespace-pre-wrap">{pendingInput?.work ?? work}</p>
+        <p className="mt-5">Work performed by {performedBy || "—"}</p>
+        <p>To be signed by {fullName || "—"} · {selectedCredential?.certificate_number ?? "certificate needed"}</p>
+        <p className="mt-4 border-t border-rule pt-2 text-small">Physical signature ____________________</p>
+      </div>
+      <p className="mt-4 text-small text-ink-3">Print at 100% scale on full-sheet adhesive paper and trim. Try plain paper first. When the page is scanned later, the entry ID links it back here.</p>
+    </Leaf>
+  </Leaves>;
 
   return <main className="mx-auto max-w-3xl px-6 py-8">
     <Link href={`/aircraft/${aircraftId}/timeline`} className="text-sm text-accent">← Logbook timeline</Link>

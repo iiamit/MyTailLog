@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicTheme } from "@/components/PublicTheme";
 
 // Shared frame for the public marketing pages (/faq, /compare, /switch/myfbo).
 // Signed-out visitors get no app chrome (AppHeader renders nothing without a
@@ -33,11 +34,11 @@ export function MarketingShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
+    <PublicTheme><main id="main-content" className="mx-auto my-7 max-w-4xl rounded-leaf bg-leaf px-6 py-10 text-ink shadow-leaf sm:my-10 sm:px-10">
       <header className="mb-8">
-        <div className="eyebrow mb-2">{eyebrow}</div>
-        <h1 className="font-display text-[32px] font-semibold leading-tight">{title}</h1>
-        <p className="mt-3 text-dim">{lede}</p>
+        <div className="text-label text-section-ink-status">{eyebrow}</div>
+        <h1 className="mt-2 text-board-title">{title}</h1>
+        <p className="mt-3 max-w-2xl text-lede text-ink-2">{lede}</p>
       </header>
 
       {children}
@@ -60,7 +61,7 @@ export function MarketingShell({
           on against them.
         </p>
       </footer>
-    </main>
+    </main></PublicTheme>
   );
 }
 
@@ -76,8 +77,8 @@ export function MarketingSection({
 }) {
   return (
     <section id={id} className="scroll-mt-20">
-      <h2 className="mb-2 text-xl font-semibold">{title}</h2>
-      <div className="space-y-2 text-dim">{children}</div>
+      <h2 className="mb-2 border-t border-rule pt-4 text-heading">{title}</h2>
+      <div className="space-y-2 text-ink-2">{children}</div>
     </section>
   );
 }

@@ -2,6 +2,45 @@
 @import '../ui/tokens.css';
 @import '../ui/v2.css';
 
+@font-face {
+  font-family: "Libre Franklin Public";
+  src: url('./fonts/LibreFranklin.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Literata Public";
+  src: url('./fonts/Literata.ttf') format('truetype');
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+/* Existing long-form content keeps its semantic markup while using the new leaf palette. */
+.public-v2 {
+  --font-libre-franklin: "Libre Franklin Public";
+  --font-literata: "Literata Public";
+  --bg: var(--color-cover);
+  --panel: var(--color-leaf);
+  --panel2: var(--color-leaf-2);
+  --raise: var(--color-leaf-2);
+  --line: var(--color-rule);
+  --line2: var(--color-control-border);
+  --ink: var(--color-ink);
+  --dim: var(--color-ink-2);
+  --faint: var(--color-ink-3);
+  --accent: var(--color-section-ink-status);
+  --accent-soft: var(--color-leaf-2);
+  --font-display: var(--font-app);
+  --font-ui: var(--font-app);
+}
+.public-v2.home-v2 {
+  --bg: var(--color-leaf);
+}
+.public-v2.home-v2 main > section:nth-child(even),
+.public-v2.home-v2 main > div > section:nth-child(even) {
+  background: var(--color-leaf-2);
+}
+
 @theme {
   --color-bg: var(--bg);
   --color-panel: var(--panel);

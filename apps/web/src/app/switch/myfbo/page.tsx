@@ -27,7 +27,7 @@ const MOVES: { what: string; how: string }[] = [
   },
   {
     what: "Permanent records",
-    how: "Airworthiness certificate, registration, radio station authorization, POH/AFM, STCs, 337s, 8130-3s and manuals go in the Records Vault, next to the logbook scans.",
+    how: "Airworthiness certificate, registration, radio station authorization, POH/AFM, STCs, 337s, 8130-3s and manuals go in Documents, next to the logbook scans.",
   },
   {
     what: "Aircraft identity & hours",
@@ -256,7 +256,7 @@ export default function SwitchMyFboPage() {
           <p>
             The one thing worth planning around: reading pages costs AI calls, so the shared key has
             a per-person daily cap and an overall daily budget. A backlog of several hundred pages
-            may take a few days at that rate — or add your own Anthropic API key in Profile and run
+            may take a few days at that rate — or add your own Anthropic API key in Account settings and run
             it in one sitting on your own account. The{" "}
             <Link
               href="/faq#cost"

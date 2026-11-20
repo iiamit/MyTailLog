@@ -56,5 +56,7 @@ export async function signEntry(input: SignInput, challengeId: string, code: str
   if (!data) return { error: "The code is incorrect or expired, or the entry changed. Request a new code if needed." };
   revalidatePath(`/aircraft/${input.aircraftId}/timeline`);
   revalidatePath(`/aircraft/${input.aircraftId}`);
+  revalidatePath(`/aircraft/${input.aircraftId}/logbooks`);
+  revalidatePath(`/aircraft/${input.aircraftId}/status`);
   return { id: data };
 }

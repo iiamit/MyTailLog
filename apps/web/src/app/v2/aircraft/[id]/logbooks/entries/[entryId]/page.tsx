@@ -12,6 +12,7 @@ import { addDays, entryBox, entryTitle, fmtDay } from "@/lib/v2/books";
 import { fmtMeter } from "@/lib/v2/status";
 import { BooksHead } from "../../BooksHead";
 import { EntryKeys, UnconfirmButton } from "./EntryControls";
+import { StickerControls } from "@/app/aircraft/[id]/entries/[entryId]/StickerControls";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -21,10 +22,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 /** W-BOOKS-10 Entry detail: the words as written, meters, trust, what it satisfied, attachments, corrections, the page. */
 export default async function EntryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; entryId: string }>;
+  searchParams: Promise<{ panel?: string; closeError?: string }>;
 }) {
   const { id, entryId } = await params;
+  const { panel, closeError } = await searchParams;
   const books = await loadBooks(id);
   const { supabase, model, due, context } = books;
   const a = `/aircraft/${id}`;
@@ -58,6 +62,9 @@ export default async function EntryPage({
   const authored = !!e.authored_by;
   const signed = e.trust === "signed";
   const title = entryTitle(e);
+  const { data: stickerEntry } = authored && signed && panel === "sticker"
+    ? await supabase.from("log_entry").select("*").eq("id", entryId).eq("aircraft_id", id).maybeSingle()
+    : { data: null };
 
   return (
     <Board section="books">
@@ -68,8 +75,8 @@ export default async function EntryPage({
         actions={
           authored && signed ? (
             <>
-              <Button variant="on-board" href={`${a}/entries/${e.id}`}>Print sticker</Button>
-              {context.canEdit && <Button variant="on-board" href={`${a}/entries/new?corrects=${e.id}`}>Write a correction</Button>}
+              <Button variant="on-board" href={`${a}/logbooks/entries/${e.id}?panel=sticker`}>Print sticker</Button>
+              {context.canEdit && <Button variant="on-board" href={`${a}/logbooks/entries/new?corrects=${e.id}`}>Write a correction</Button>}
             </>
           ) : null
         }
@@ -83,6 +90,7 @@ export default async function EntryPage({
       />
       <Leaves split="1.6fr 1fr">
         <Leaf label="Entry">
+          {closeError && <p role="alert" className="mb-3 rounded-control bg-alarm-bg p-3 text-small text-alarm-text">Entry signed, but the squawk could not be closed. Open Squawks to resolve it with this entry.</p>}
           <EntryKeys prev={prev ? href(prev) : null} next={next ? href(next) : null} />
           <Link href={`${a}/logbooks/map?stop=${e.id}`} className="text-small font-semibold text-board-ink underline decoration-dotted">
             Back to the map
@@ -212,7 +220,11 @@ export default async function EntryPage({
             </HungSection>
           </div>
         </Leaf>
-        <SourceMat title={e.page_id ? pl.long : undefined} meta={e.page_id ? `${e.entry_date ? fmtDay(e.entry_date) : "No date"} · ${e.trust === "ai_read" ? "read by AI" : e.trust === "signed" ? "signed" : "confirmed by you"}` : undefined}>
+        {stickerEntry ? <Leaf label="Sticker preview">
+          <h2 className="text-heading">Print sticker</h2>
+          <p className="mt-1 text-small text-ink-3">The signed entry is locked. Print at actual size, then check it against the logbook page.</p>
+          <div className="mt-4"><StickerControls entry={stickerEntry} tailNumber={context.reg} logbookName={pl.book} v2 /></div>
+        </Leaf> : <SourceMat title={e.page_id ? pl.long : undefined} meta={e.page_id ? `${e.entry_date ? fmtDay(e.entry_date) : "No date"} · ${e.trust === "ai_read" ? "read by AI" : e.trust === "signed" ? "signed" : "confirmed by you"}` : undefined}>
           {e.page_id ? (
             <ScanViewer src={`/api/page/${e.page_id}/image`} alt={`${pl.long}, scanned page`} lit={entryBox(e)} />
           ) : (
@@ -221,7 +233,7 @@ export default async function EntryPage({
               {authored ? "When the page with this sticker is scanned, it links here by itself." : "Imported without a page."}
             </p>
           )}
-        </SourceMat>
+        </SourceMat>}
       </Leaves>
     </Board>
   );

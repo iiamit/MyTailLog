@@ -16,6 +16,8 @@ test("v2 rewrites only the routes the new design covers", () => {
   assert.equal(v2Rewrite("/aircraft/abc/status/forecast"), null);
   assert.equal(v2Rewrite("/aircraft/abc/logbooks/pages"), "/v2/aircraft/abc/logbooks/pages");
   assert.equal(v2Rewrite("/aircraft/abc/logbooks/add"), "/v2/aircraft/abc/logbooks/add");
+  assert.equal(v2Rewrite("/aircraft/abc/ask"), "/v2/aircraft/abc/ask");
+  assert.equal(v2Rewrite("/aircraft/abc/logbooks/entries/new"), "/v2/aircraft/abc/logbooks/entries/new");
   assert.equal(v2Rewrite("/aircraft/abc/review"), null);
   for (const p of ["maintenance/items", "maintenance/ads", "maintenance/ads/find", "maintenance/squawks", "maintenance/annual",
     "maintenance/records-check", "hours", "oil", "equipment", "weight-balance", "details"])
@@ -55,11 +57,12 @@ test("today's routes move to their v2 homes (03 §10)", () => {
   assert.equal(v1ToV2("/aircraft/a/capture", q("logbook=x")), "/aircraft/a/logbooks/add?capture=1");
   assert.equal(v1ToV2("/aircraft/a/pages/p1/review", q()), "/aircraft/a/logbooks/review/p1");
   assert.equal(v1ToV2("/aircraft/a/entries/e1", q()), "/aircraft/a/logbooks/entries/e1");
+  assert.equal(v1ToV2("/aircraft/a/entries/new", q("corrects=e1")), "/aircraft/a/logbooks/entries/new?corrects=e1");
   assert.equal(v1ToV2("/aircraft/a/timeline", q("entry=e1")), "/aircraft/a/logbooks/map?stop=e1");
   assert.equal(v1ToV2("/aircraft/a/timeline", q()), "/aircraft/a/logbooks/map");
   assert.equal(v1ToV2("/aircraft/a/audit", q()), "/aircraft/a/maintenance/records-check");
   assert.equal(v1ToV2("/aircraft/a/export", q()), "/account/data?aircraft=a#export");
-  for (const p of ["/aircraft/a/entries/new", "/aircraft/a/import", "/aircraft/a/ask", "/aircraft/a/status", "/aircraft/a",
+  for (const p of ["/aircraft/a/import", "/aircraft/a/ask", "/aircraft/a/status", "/aircraft/a",
     "/r/token", "/r/token/page/p", "/m/token", "/help", "/"])
     assert.equal(v1ToV2(p, q()), null, `${p} is unchanged or still v1`);
   // Every destination is a route the v2 tree serves.
