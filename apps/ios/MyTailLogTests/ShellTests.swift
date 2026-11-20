@@ -5,6 +5,13 @@ import UIKit
 
 @MainActor
 struct TabModelTests {
+    @Test func shellTracksAvailableWindowWidth() {
+        #expect(ShellLayout.forWindow(width: 466, sizeClass: .compact) == .tabs)
+        #expect(ShellLayout.forWindow(width: 678, sizeClass: .compact) == .rail)
+        #expect(ShellLayout.forWindow(width: 669, sizeClass: .regular) == .rail)
+        #expect(ShellLayout.forWindow(width: 951, sizeClass: .regular) == .binder)
+        #expect(ShellLayout.forWindow(width: 800, sizeClass: .regular) == .rail)
+    }
     @Test func phoneHasFiveTabsAndTabletSix() {
         #expect(Section.phoneTabs == [.status, .books, .maint, .aircraft, .share])
         #expect(Section.tabletTabs == [.status, .books, .maint, .aircraft, .docs, .share])

@@ -431,7 +431,6 @@ private struct QRCard: View {
 private struct BigQR: View {
     let url: String
     @Environment(\.dismiss) private var dismiss
-    @State private var before: CGFloat?
 
     var body: some View {
         ZStack {
@@ -440,11 +439,31 @@ private struct BigQR: View {
         }
         .environment(\.colorScheme, .light)
         .contentShape(Rectangle())
+        .background(BrightScreen())
         .onTapGesture { dismiss() }
         .accessibilityAction(named: "Close") { dismiss() }
-        .onAppear { before = UIScreen.main.brightness; UIScreen.main.brightness = 1 }
-        .onDisappear { if let before { UIScreen.main.brightness = before } }
     }
+}
+
+/// Brighten the display carrying this window, then restore that display when the QR closes.
+private struct BrightScreen: UIViewRepresentable {
+    final class View: UIView {
+        private var original: (screen: UIScreen, brightness: CGFloat)?
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if let original { original.screen.brightness = original.brightness; self.original = nil }
+            if let screen = window?.screen {
+                original = (screen, screen.brightness)
+                screen.brightness = 1
+            }
+        }
+        func restore() {
+            if let original { original.screen.brightness = original.brightness; self.original = nil }
+        }
+    }
+    func makeUIView(context: Context) -> View { View() }
+    func updateUIView(_ view: View, context: Context) {}
+    static func dismantleUIView(_ view: View, coordinator: ()) { view.restore() }
 }
 
 // MARK: Links and people (M-SHARE-03)

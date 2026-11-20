@@ -125,8 +125,13 @@ struct PhoneLeaf<Content: View>: View {
     }
 }
 
-/// PhoneTabBar (02 §9.4): five coloured tabs hanging from the cover.
+extension EnvironmentValues {
+    @Entry var phoneBarAtBottom = true
+}
+
+/// PhoneTabBar (02 §9.4): five coloured tabs on the bottom or a side rail when the window is wide.
 struct PhoneTabBar: View {
+    var vertical = false
     @Environment(TabModel.self) private var tabs
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -135,28 +140,41 @@ struct PhoneTabBar: View {
     static let height: CGFloat = 60
 
     var body: some View {
-        HStack(alignment: .top, spacing: Tokens.Space.s1) {
-            ForEach(Array(Section.phoneTabs.enumerated()), id: \.element) { index, section in
-                tab(section, index: index)
+        Group {
+            if vertical {
+                VStack(spacing: Tokens.Space.s1) { buttons }
+                    .padding(.top, Tokens.Space.s2)
+                    .padding(.horizontal, Tokens.Space.s1)
+                    .frame(width: 82)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .leading)
+            } else {
+                HStack(alignment: .top, spacing: Tokens.Space.s1) { buttons }
+                    .padding(.horizontal, Tokens.Space.s2)
+                    .frame(height: Self.height, alignment: .top)
+                    .frame(maxWidth: .infinity)
+                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .bottom)
             }
         }
-        .padding(.horizontal, Tokens.Space.s2)
-        .frame(height: Self.height, alignment: .top)
-        .frame(maxWidth: .infinity)
-        .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .bottom)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isTabBar)
         .sensoryFeedback(.selection, trigger: tabs.selected)
+    }
+
+    private var buttons: some View {
+        ForEach(Array(Section.phoneTabs.enumerated()), id: \.element) { index, section in
+            tab(section, index: index)
+        }
     }
 
     private func tab(_ section: Section, index: Int) -> some View {
         let selected = tabs.selected == section
         // 06 §1.3: Status carries an alarm badge with the overdue count.
         let overdue = section == .status ? status?.snapshot?.counts.overdue ?? 0 : 0
-        let shape = UnevenRoundedRectangle(topLeadingRadius: selected ? Tokens.Radius.l : 0,
+        let shape = UnevenRoundedRectangle(topLeadingRadius: selected || vertical ? Tokens.Radius.l : 0,
                                            bottomLeadingRadius: Tokens.Radius.l,
                                            bottomTrailingRadius: Tokens.Radius.l,
-                                           topTrailingRadius: selected ? Tokens.Radius.l : 0)
+                                           topTrailingRadius: selected || vertical ? Tokens.Radius.l : 0)
         return Button { tabs.tap(section) } label: {
             VStack(spacing: 3) {
                 Icon(section.icon, size: 21)

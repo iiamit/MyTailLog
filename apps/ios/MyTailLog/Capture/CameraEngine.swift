@@ -12,6 +12,8 @@ final class CameraEngine: NSObject, @unchecked Sendable, AVCaptureVideoDataOutpu
     private let video = AVCaptureVideoDataOutput()
     private let photo = AVCapturePhotoOutput()
     private var device: AVCaptureDevice?
+    var captureDevice: AVCaptureDevice? { device }
+    private var captureAngle: CGFloat = 90
     private var lastFrame: TimeInterval = 0
     private let motion = CMMotionManager()
     private var photoDone: (@Sendable (CGImage?) -> Void)?
@@ -62,6 +64,13 @@ final class CameraEngine: NSObject, @unchecked Sendable, AVCaptureVideoDataOutpu
         queue.async { self.session.stopRunning() }
     }
 
+    func setCaptureAngle(_ angle: CGFloat) {
+        queue.async {
+            self.captureAngle = angle
+            if let c = self.video.connection(with: .video), c.isVideoRotationAngleSupported(angle) { c.videoRotationAngle = angle }
+        }
+    }
+
     var hasTorch: Bool { device?.hasTorch ?? false }
 
     func setTorch(_ on: Bool) {
@@ -76,7 +85,8 @@ final class CameraEngine: NSObject, @unchecked Sendable, AVCaptureVideoDataOutpu
             self.photoDone = done
             let settings = AVCapturePhotoSettings()
             settings.photoQualityPrioritization = .quality
-            if let c = self.photo.connection(with: .video), c.isVideoRotationAngleSupported(90) { c.videoRotationAngle = 90 }
+            let angle = self.captureAngle
+            if let c = self.photo.connection(with: .video), c.isVideoRotationAngleSupported(angle) { c.videoRotationAngle = angle }
             self.photo.capturePhoto(with: settings, delegate: self)
         }
     }

@@ -185,7 +185,7 @@ struct NewSquawk: View {
             Text("Photograph it first. You can skip this.").dFont(.body).padding(.horizontal, Tokens.Space.s4)
             ZStack {
                 switch phase {
-                case .running, .starting: CameraPreview(session: engine.session)
+                case .running, .starting: CameraPreview(engine: engine)
                 case .denied, .unavailable:
                     Tokens.Colors.cover2
                     VStack(alignment: .leading, spacing: Tokens.Space.s3) {

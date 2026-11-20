@@ -1,7 +1,16 @@
 import SwiftUI
 import WidgetKit
 
-/// Signed out: M-AUTH-01. Signed in: the phone shell at compact width, the binder split view at regular width (05 §3.3).
+/// Signed out: M-AUTH-01. Signed in: tabs, a compact side rail, or the binder as the window grows.
+enum ShellLayout: Equatable {
+    case tabs, rail, binder
+
+    static func forWindow(width: CGFloat, sizeClass: UserInterfaceSizeClass?) -> Self {
+        if sizeClass == .regular && width >= 900 { return .binder }
+        return width >= 600 ? .rail : .tabs
+    }
+}
+
 struct RootView: View {
     let statusAPI: StatusAPI
     @Environment(SessionStore.self) private var store
@@ -18,17 +27,19 @@ struct RootView: View {
     @State private var recs: Recs?
 
     var body: some View {
-        Group {
-            if store.session == nil {
-                SignInView()
-            } else if sizeClass == .regular {
-                TabletShell()
-            } else {
-                PhoneShell()
+        GeometryReader { window in
+            let layout = ShellLayout.forWindow(width: window.size.width, sizeClass: sizeClass)
+            Group {
+                if store.session == nil {
+                    SignInView()
+                } else if layout == .binder {
+                    TabletShell()
+                } else {
+                    PhoneShell(verticalTabs: layout == .rail)
+                }
             }
+            .background { if store.session != nil { KeyCommands(tablet: layout == .binder) } }
         }
-        // Inside the environment below: these read the shell's models.
-        .background { if store.session != nil { KeyCommands(tablet: sizeClass == .regular) } }
         // Notifications and Reminders (06 M-SYS-05) over either shell.
         .sheet(item: Bindable(tabs).sheet) { s in
             AccountSheetView(sheet: s, api: notifyAPI, tails: tails) { LinkInbox.shared.pending = $0 }
@@ -182,6 +193,7 @@ struct RootView: View {
 
 /// 05 §5.2: a TabView keeps each tab's stack and state; its system bar is hidden and D's PhoneTabBar is drawn instead.
 struct PhoneShell: View {
+    var verticalTabs = false
     @Environment(TabModel.self) private var tabs
 
     var body: some View {
@@ -195,7 +207,9 @@ struct PhoneShell: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { PhoneTabBar() }
+        .safeAreaInset(edge: .leading, spacing: 0) { if verticalTabs { PhoneTabBar(vertical: true) } }
+        .safeAreaInset(edge: .bottom, spacing: 0) { if !verticalTabs { PhoneTabBar() } }
+        .environment(\.phoneBarAtBottom, !verticalTabs)
         // Documents is a tablet tab; on the phone it lives under Aircraft.
         .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }
     }

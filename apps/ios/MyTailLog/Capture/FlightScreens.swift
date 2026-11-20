@@ -86,7 +86,7 @@ struct TachCameraScreen: View {
                 let guide = CGRect(x: (g.size.width - 280) / 2, y: (g.size.height - 120) / 2 - 40, width: 280, height: 120)
                 ZStack {
                     if model.phase == .running || model.phase == .starting {
-                        CameraPreview(session: model.engine.session)
+                        CameraPreview(engine: model.engine)
                     } else {
                         Tokens.Colors.cover2
                     }
