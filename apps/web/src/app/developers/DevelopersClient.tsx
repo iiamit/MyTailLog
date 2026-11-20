@@ -136,7 +136,7 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
             </div>
           )}
           <p className="text-small text-ink-2">
-            OAuth 2.1, authorization code with PKCE. Public by default; check <em>Confidential</em> for a server app with a
+            OAuth 2.1, authorization code with PKCE. Public by default; check <em>Confidential</em>{" "}for a server app with a
             client secret. See the <a href="/developers/docs">API docs</a>.
           </p>
         </form>

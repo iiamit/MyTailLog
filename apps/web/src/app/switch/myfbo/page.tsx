@@ -92,7 +92,7 @@ export default function SwitchMyFboPage() {
       lede={
         <>
           <p>
-            <strong>If your maintenance history lives in MyFBO, get it out</strong> into something open,
+            <strong>If your maintenance history lives in MyFBO, get it out</strong>{" "}into something open,
             exportable and free. This page is about rescuing the records, and it is upfront about the large part of MyFBO
             that MyTailLog deliberately does not do.
           </p>
@@ -131,23 +131,23 @@ export default function SwitchMyFboPage() {
         <MarketingSection id="ingest" title="We read what you can actually get out">
           <p>
             There is no import wizard that needs their schema, and no ticket to open. Pages come in
-            as <strong>PDF, JPEG or PNG</strong> (a multi-page PDF is split into one page each, in
+            as <strong>PDF, JPEG or PNG</strong>{" "}(a multi-page PDF is split into one page each, in
             order) or straight from your phone&apos;s own camera app. A plain photo of a paper page,
             taken in the hangar with no signal, queues on the device and uploads when you&apos;re
             back online.
           </p>
           <p>
             Then a vision model reads each page into structured entries, in minutes, with a{" "}
-            <strong>confidence score on every field</strong> and a cropped snippet of the scan
+            <strong>confidence score on every field</strong>{" "}and a cropped snippet of the scan
             showing where each value came from. It is self-serve and free at the point of use,
             not a transcription service you pay per aircraft and wait weeks for. The flip side,
             stated plainly: <strong>you are the reviewer</strong>. Nobody else checks the entries;
             the app&apos;s job is to show you precisely where to look.
           </p>
           <p>
-            If your MyFBO export is a <strong>CSV</strong> rather than paper, you don&apos;t need
+            If your MyFBO export is a <strong>CSV</strong>{" "}rather than paper, you don&apos;t need
             any of that: import it directly. There is no MyFBO-specific importer and there won&apos;t
-            be. Instead the <strong>columns</strong> are mapped, not the rows. One AI pass reads
+            be. Instead the <strong>columns</strong>{" "}are mapped, not the rows. One AI pass reads
             your header and a few sample rows, proposes what each column means, you correct it once,
             and every row is then converted in plain code. Dates are never guessed: the whole date
             column is scanned, and you&apos;re only asked which way round they are if every single
@@ -162,7 +162,7 @@ export default function SwitchMyFboPage() {
         <MarketingSection id="steps" title="What the migration actually looks like">
           <ol>
             <li>
-              <strong>Enroll the aircraft.</strong> Type the tail number; the FAA registry lookup
+              <strong>Enroll the aircraft.</strong>{" "}Type the tail number; the FAA registry lookup
               fills make, model and serial. Five logbooks are created: airframe, engine, prop,
               avionics, and Other for A&amp;P documents.
             </li>
@@ -172,12 +172,12 @@ export default function SwitchMyFboPage() {
               data goes in as data.
             </li>
             <li>
-              <strong>Upload the paper into the right logbook</strong> and let extraction run. Start
+              <strong>Upload the paper into the right logbook</strong>{" "}and let extraction run. Start
               with the last few years if the backlog is large; the searchable index is useful long
               before it&apos;s complete.
             </li>
             <li>
-              <strong>Review</strong> with the original page beside the entry. Flagged fields first;
+              <strong>Review</strong>{" "}with the original page beside the entry. Flagged fields first;
               accept the clean ones in a click.
             </li>
             <li>
@@ -240,7 +240,7 @@ export default function SwitchMyFboPage() {
         <MarketingSection id="lockin" title="Why this can't happen to you again here">
           <ul>
             <li>
-              <strong>MIT-licensed, public source.</strong> The whole app, schema and security
+              <strong>MIT-licensed, public source.</strong>{" "}The whole app, schema and security
               policies are yours to run. Nobody can announce a shutdown that takes that away.
             </li>
             <li>
@@ -249,11 +249,11 @@ export default function SwitchMyFboPage() {
               MyTailLog instance, including your own.
             </li>
             <li>
-              <strong>No billing to lapse.</strong> There are no plans, no card on file, and nothing
+              <strong>No billing to lapse.</strong>{" "}There are no plans, no card on file, and nothing
               that flips your account to read-only.
             </li>
             <li>
-              <strong>The paper is still the record.</strong> MyTailLog is an index of your
+              <strong>The paper is still the record.</strong>{" "}MyTailLog is an index of your
               logbooks under 14 CFR 91.417, never a replacement for them, so the worst case has
               always been losing an index, not losing your history.
             </li>
@@ -267,8 +267,8 @@ export default function SwitchMyFboPage() {
           </p>
           <p>
             The one thing worth planning around: reading pages costs AI calls, so the shared key has
-            a per-person daily cap and an overall daily budget. A backlog of several hundred pages
-            may take a few days at that rate. Or add your own Anthropic API key in Account settings and run
+            a daily allowance of about 50 pages in any 24 hours. A backlog of several hundred pages
+            may take a few days at that rate. Or add your own Anthropic or OpenAI key in Account settings and run
             it in one sitting on your own account. The{" "}
             <Link href="/faq#cost">FAQ</Link>{" "}
             has the details.

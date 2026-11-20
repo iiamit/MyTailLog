@@ -22,10 +22,10 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         <p>
           The one line item that costs real money is the AI. Reading a logbook page is a vision-model
           call, and those are billed to whoever&apos;s API key is used. By default that&apos;s the
-          key of whoever runs the instance, so shared use is capped two ways: a{" "}
-          <strong>per-person daily call limit</strong> and an <strong>overall daily-dollar
-          ceiling</strong>. If the day&apos;s shared budget is spent, extraction pauses until
-          tomorrow, everything else (timeline, status, forecast, reminders, export) keeps working.
+          key of whoever runs the instance, so shared use has a <strong>daily allowance</strong>: about 50 pages in any 24 hours per
+          person, within an overall cap on the shared key. When it is used up, reading waits until
+          pages from 24 hours earlier roll off; everything else (timeline, status, forecast, reminders,
+          export) keeps working.
         </p>
         <p>
           If you have a backlog of hundreds of pages and don&apos;t want to wait out the cap, add
@@ -57,7 +57,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           aircraft, and that&apos;s enforced by <strong>Postgres row-level security</strong>, not by
           application code: access funnels through a single{" "}
           <code>has_aircraft_access()</code> /{" "}
-          <code>can_edit_aircraft()</code> choke point that every
+          <code>can_edit_aircraft()</code>{" "}choke point that every
           table is scoped to. An RLS-isolation regression suite runs in CI on every pull request.
         </p>
         <p>Who can actually read your aircraft:</p>
@@ -70,7 +70,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
             You can remove them at any time.
           </li>
           <li>
-            <strong>Apps you consent to</strong> over our OAuth 2.1 API, limited to the permissions and
+            <strong>Apps you consent to</strong>{" "}over our OAuth 2.1 API, limited to the permissions and
             aircraft covered by your consent, and{" "}
             <strong>never your log entries or scans</strong>. Revoke any of them under Account →
             Connected apps.
@@ -107,7 +107,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>
-          <strong>MyTailLog trains nothing.</strong> There is no training pipeline, no fine-tuning,
+          <strong>MyTailLog trains nothing.</strong>{" "}There is no training pipeline, no fine-tuning,
           no dataset job, and no code path that pools users&apos; records for any purpose. The
           repository is public, that claim is checkable rather than promised.
         </p>
@@ -138,7 +138,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>
-          <strong>No.</strong> Not partly, not eventually. Your physical logbooks remain the system
+          <strong>No.</strong>{" "}Not partly, not eventually. Your physical logbooks remain the system
           of record under <strong>14 CFR 91.417</strong>. MyTailLog is an index of them and a
           decision-support layer on top. It never decides whether the aircraft may fly.
         </p>
@@ -182,7 +182,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         </ul>
         <p>
           Where it struggles, so you know before you hit it: heavy cursive handwriting, faded or
-          bled ink, stamps overlapping text, and scanned <em>spreads</em> where two physical pages
+          bled ink, stamps overlapping text, and scanned <em>spreads</em>{" "}where two physical pages
           sit side by side in one image (those get flagged so you can review both halves).
         </p>
         <p>
@@ -206,9 +206,9 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         <p>
           You fix it, and nothing downstream is stuck. Every extracted field is editable in the
           review screen with the original scan beside it; editing an entry marks it confirmed. You
-          can also <strong>re-extract</strong> a whole page if it was read badly, that replaces
+          can also <strong>re-extract</strong>{" "}a whole page if it was read badly, that replaces
           that page&apos;s entries rather than duplicating them, and there&apos;s a{" "}
-          <strong>duplicate finder</strong> for when re-captures and re-extractions pile up.
+          <strong>duplicate finder</strong>{" "}for when re-captures and re-extractions pile up.
         </p>
         <p>
           Everything derived, the status grid, the maintenance forecast, the AD list, the equipment
@@ -235,7 +235,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>
-          Yes. Export your maintenance history as <strong>CSV</strong> and import it directly, you don&apos;t have to print it to PDF and run it through the page extractor.
+          Yes. Export your maintenance history as <strong>CSV</strong>{" "}and import it directly, you don&apos;t have to print it to PDF and run it through the page extractor.
         </p>
         <p>
           There is no importer per vendor, because <strong>the columns are mapped, not the
@@ -247,7 +247,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         </p>
         <p>
           <strong>Dates are never guessed.</strong>{" "}
-          <code>03/04/2026</code> is 3 April or 4 March depending on
+          <code>03/04/2026</code>{" "}is 3 April or 4 March depending on
           who exported it. The whole date column is scanned, and the first date with a day past the
           12th settles the reading for the file; you&apos;re asked only when every row genuinely
           reads both ways, and then you&apos;re shown what the first few dates become each way.
@@ -273,7 +273,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         <p>Yes, immediately, yourself, with no request form and no waiting on a job queue:</p>
         <ul>
           <li>
-            <strong>CSV</strong> per data set, log entries, AD/SB compliance, equipment, maintenance
+            <strong>CSV</strong>{" "}per data set, log entries, AD/SB compliance, equipment, maintenance
             items.
           </li>
           <li>
@@ -281,7 +281,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
             history, forecast, and compliance state as a document.
           </li>
           <li>
-            <strong>A complete <code>.zip</code> backup</strong>: a manifest, every aircraft-scoped row verbatim as JSON, and the{" "}
+            <strong>A complete <code>.zip</code>{" "}backup</strong>: a manifest, every aircraft-scoped row verbatim as JSON, and the{" "}
             <strong>original scanned images and documents</strong>. It <strong>re-imports</strong>{" "}
             into any MyTailLog instance, including one you host yourself, and the import is
             non-destructive (it creates a new aircraft).
@@ -306,15 +306,15 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>
-          Yes. Connect <strong>Dropbox</strong> and/or <strong>Google Drive</strong> in Account settings, pick{" "}
-          <strong>monthly</strong> or <strong>quarterly</strong>, and the same re-importable{" "}
-          <code>.zip</code> described above is pushed there on that
+          Yes. Connect <strong>Dropbox</strong>{" "}and/or <strong>Google Drive</strong>{" "}in Account settings, pick{" "}
+          <strong>monthly</strong>{" "}or <strong>quarterly</strong>, and the same re-importable{" "}
+          <code>.zip</code>{" "}described above is pushed there on that
           schedule, one archive per aircraft, named{" "}
           <code>&lt;TAIL&gt;/&lt;date&gt;-&lt;TAIL&gt;.zip</code>.
           It&apos;s off until you connect something.
         </p>
         <p>
-          Connect <em>both</em> if you want to: they run independently, on separate schedules, each
+          Connect <em>both</em>{" "}if you want to: they run independently, on separate schedules, each
           reporting its own status. That gives you copies in two different companies&apos; clouds,
           which is a materially better position than trusting any one of us, including us.
         </p>
@@ -327,20 +327,20 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           also don&apos;t request your email address from either provider.
         </p>
         <p>
-          <strong>Nothing in your account is ever deleted or overwritten.</strong> Each run writes a
+          <strong>Nothing in your account is ever deleted or overwritten.</strong>{" "}Each run writes a
           new dated file and leaves every previous one alone, so retention is yours to manage.
           Automatically pruning someone else&apos;s cloud storage isn&apos;t a risk worth taking for
           the disk space it would save.
         </p>
         <p>
-          <strong>Disconnecting destroys the tokens.</strong> Revoking a destination in Account settings
+          <strong>Disconnecting destroys the tokens.</strong>{" "}Revoking a destination in Account settings
           erases the stored access and refresh tokens outright, not a flag on a row, so nothing
           decryptable is left behind. The archives already in your cloud are yours and stay put.
           While connected, the tokens are encrypted (AES-256-GCM) in a database schema that
           isn&apos;t reachable over the API at all, and are never sent to the browser.
         </p>
         <p>
-          <strong>If a backup fails you get told.</strong> Account settings shows the last run, its status and
+          <strong>If a backup fails you get told.</strong>{" "}Account settings shows the last run, its status and
           its size; after two consecutive failures you get an email. A backup that quietly stopped
           working months ago is worse than no backup, because you believed you had one. Very large
           aircraft (currently over 400 MB of scans) are reported as skipped rather than failing
@@ -372,15 +372,15 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         <p>What that risk is bounded by:</p>
         <ul>
           <li>
-            <strong>MIT license, public repository.</strong> The whole application, schema, and
+            <strong>MIT license, public repository.</strong>{" "}The whole application, schema, and
             RLS policies are yours to run. Nobody can withdraw that.
           </li>
           <li>
-            <strong>The ZIP round trip.</strong> Records <em>and</em> original scans, re-importable.
+            <strong>The ZIP round trip.</strong>{" "}Records <em>and</em>{" "}original scans, re-importable.
             Take one today and you already hold a complete copy.
           </li>
           <li>
-            <strong>No proprietary format.</strong> The archive is a manifest plus plain JSON rows
+            <strong>No proprietary format.</strong>{" "}The archive is a manifest plus plain JSON rows
             plus your image files, readable with or without this app.
           </li>
         </ul>
@@ -398,7 +398,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
       <>
         <p>
           Yes. MIT-licensed, and the deployment path is documented rather than theoretical. You
-          need a <strong>Supabase project</strong> (Postgres + Auth), an{" "}
+          need a <strong>Supabase project</strong>{" "}(Postgres + Auth), an{" "}
           <strong>Anthropic or OpenAI API key</strong>, and somewhere to run a Next.js server, the README
           walks through Firebase App Hosting on Cloud Run, which is what mytaillog.com runs on. A
           Google Cloud Storage bucket holds the scans; Resend plus a scheduled daily POST enable the
@@ -431,12 +431,12 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           </li>
           <li>
             The ciphertext lives in a Postgres schema that is <strong>not exposed over the REST
-            API</strong> and is reachable only through{" "}
-            <code>SECURITY DEFINER</code> functions granted to the
+            API</strong>{" "}and is reachable only through{" "}
+            <code>SECURITY DEFINER</code>{" "}functions granted to the
             server role, it isn&apos;t in browser reach even in encrypted form.
           </li>
           <li>
-            It is <strong>decrypted server-side only</strong> and never sent back to the browser.
+            It is <strong>decrypted server-side only</strong>{" "}and never sent back to the browser.
             After you save it, only the last four characters are ever displayed.
           </li>
           <li>You can remove it at any time from Account settings.</li>
@@ -444,7 +444,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
         <p>
           Why encryption on top of RLS: row-level security already stops other users from reading
           the row. The encryption is aimed at a different failure, a leaked database backup or read
-          replica, where RLS isn&apos;t in the picture. What it does <em>not</em> defend against is
+          replica, where RLS isn&apos;t in the picture. What it does <em>not</em>{" "}defend against is
           someone who has both the running server and its encryption key; no at-rest scheme does.
         </p>
         <p>
@@ -469,7 +469,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           8130-3s, manuals) go in Documents.
         </p>
         <p>
-          The product is sized for a <strong>piston GA owner</strong> and the people they share the
+          The product is sized for a <strong>piston GA owner</strong>{" "}and the people they share the
           plane with. The recurring items seeded for you are the Part 91 set, annual (91.409),
           transponder (91.413), pitot-static/altimeter (91.411), ELT (91.207), VOR check (91.171),
           100-hour, plus advisory items (oil change, engine TBO, prop overhaul) that are marked
@@ -480,7 +480,7 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
           Nothing stops you enrolling anything else, but be clear-eyed about what isn&apos;t modeled:{" "}
           <strong>no turbine or Part 135/121 inspection programs</strong>, no progressive inspection
           programs, and no multi-fleet MRO management. Enrollment auto-fills make, model, and serial
-          from the <strong>FAA registry</strong> by tail number, so non-US registrations mean typing
+          from the <strong>FAA registry</strong>{" "}by tail number, so non-US registrations mean typing
           those in yourself.
         </p>
         <p>
@@ -497,13 +497,13 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
       <>
         <p>
           Each person signs in as themselves, but you don&apos;t have to set anything up for them
-          first. Invite an email address as a <strong>viewer</strong> (read-only) or an{" "}
-          <strong>editor</strong> (can contribute), and access appears the moment that person signs
+          first. Invite an email address as a <strong>viewer</strong>{" "}(read-only) or an{" "}
+          <strong>editor</strong>{" "}(can contribute), and access appears the moment that person signs
           in with that address. There is no seat cost, because there is no cost.
         </p>
         <p>
           Two roles, not five. Sharing, ownership transfer, and deletion are owner-only. Squawks are
-          the deliberate exception: <strong>anyone with access can report</strong> an in-flight
+          the deliberate exception: <strong>anyone with access can report</strong>{" "}an in-flight
           discrepancy, and editors resolve them, a renter or a partner shouldn&apos;t need edit
           rights to tell you the nav light is out.
         </p>
@@ -572,7 +572,7 @@ export default function FaqPage() {
             mainEntity: [
               {
                 q: "What does MyTailLog cost?",
-                a: "Nothing. There is no billing, no plans and no trial clock. The metered cost is AI calls, which are capped per person per day on the shared key; you can add your own Anthropic or OpenAI API key to bill your own account and lift the limit.",
+                a: "Nothing. There is no billing, no plans and no trial clock. The metered cost is AI calls, which have a daily allowance on the shared key (about 50 pages in any 24 hours); you can add your own Anthropic or OpenAI API key to bill your own account and lift the limit.",
               },
               {
                 q: "Does MyTailLog replace my paper logbooks?",

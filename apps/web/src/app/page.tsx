@@ -88,7 +88,7 @@ export default async function Home() {
             </div>
             <p className="mt-3 max-w-[54ch] text-small text-ink-2">
               Reading pages with AI has a daily allowance: about 50 pages in any 24 hours on the shared key. Add your own
-              Anthropic key to read more. No card, no trial clock.
+              Anthropic or OpenAI key to read more. No card, no trial clock.
             </p>
             <figure className="mt-5 mb-0 border-t border-rule pt-3">
               <StaticMap model={DEMO_MAP} label="The life of N734DM from its four logbooks, 1978 to a year ahead. Dashed stretches are years with no pages; rings ahead are items due." />
@@ -151,9 +151,9 @@ export default async function Home() {
           <section aria-labelledby="yours-h" className="flex flex-col rounded-leaf bg-leaf-2 px-[30px] pt-[26px] pb-7 text-ink shadow-leaf max-sm:px-4">
             <h2 id="yours-h" className="text-heading">Yours to keep</h2>
             <div className="read-prose mt-3">
-              <p><strong>The owner keeps the data.</strong> Export everything, scans included, whenever you like, and import it again. Nobody else handles your books.</p>
-              <p><strong>Free and open source.</strong> MIT licensed, no subscription. The code is <a href="https://github.com/iiamit/MyTailLog">on GitHub</a>.</p>
-              <p><strong>Works in the hangar.</strong> Records open offline on iPhone, iPad and Android, and pages scanned without signal sync later.</p>
+              <p><strong>The owner keeps the data.</strong>{" "}Export everything, scans included, whenever you like, and import it again. Nobody else handles your books.</p>
+              <p><strong>Free and open source.</strong>{" "}MIT licensed, no subscription. The code is <a href="https://github.com/iiamit/MyTailLog">on GitHub</a>.</p>
+              <p><strong>Works in the hangar.</strong>{" "}Records open offline on iPhone, iPad and Android, and pages scanned without signal sync later.</p>
             </div>
             <div className="mt-5"><StoreBadges /></div>
           </section>

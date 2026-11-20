@@ -76,7 +76,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         <p>
           A free account opens with the demo aircraft N734DM, so you can look around before adding yours.{" "}
           <Link href="/login?mode=create">Create a free account</Link>. Reading pages with AI has a daily allowance of
-          about 50 pages in any 24 hours.
+          about 50 pages in any 24 hours; add your own Anthropic or OpenAI key to read more.
         </p>
       </MarketingSection>
       <nav aria-label="More owner guides" className="border-t border-rule pt-4">

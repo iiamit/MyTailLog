@@ -243,20 +243,20 @@ export default function ComparePage() {
             <p>A comparison table whose author wins every row is an advertisement. These are the rows we don&apos;t win:</p>
             <ul>
               <li>
-                <strong>A human beats a model on per-entry certainty.</strong> Paying someone to read every entry gives you a
+                <strong>A human beats a model on per-entry certainty.</strong>{" "}Paying someone to read every entry gives you a
                 person&apos;s guarantee on each one. We give you a confidence-scored draft: a score on every field, the scan
                 cropped to where each value was read, and the doubtful ones held back from bulk confirm. That catches what
                 the model knows it&apos;s unsure about. It cannot catch what the model was confidently wrong about. Your
                 review closes that gap, and it is real work.
               </li>
               <li>
-                <strong>No scheduling, dispatch or billing, ever.</strong> If you run a club, a school or a leaseback and
+                <strong>No scheduling, dispatch or billing, ever.</strong>{" "}If you run a club, a school or a leaseback and
                 need a booking calendar, tach-to-invoice dispatch, rental rates or dues, an ops platform does that and we
                 deliberately do not. It is on the out-of-scope list, not the roadmap: a second-rate scheduler would cost
                 the records depth that is the point of this.
               </li>
               <li>
-                <strong>AI reading and Ask need a connection.</strong> The free iPhone, iPad and Android apps browse synced
+                <strong>AI reading and Ask need a connection.</strong>{" "}The free iPhone, iPad and Android apps browse synced
                 records, capture pages and queue updates offline.
               </li>
             </ul>

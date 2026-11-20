@@ -44,7 +44,7 @@ ${issuer}/.well-known/openid-configuration`}</CodeWell>
       <ReadSection id="register" title="Register">
         <p>
           Create an app under <Link href="/developers">API keys</Link>: a name, the exact redirect URIs, and the scopes you
-          need. You get a <code>client_id</code>. Apps are <strong>public clients</strong> by default: no secret, so use PKCE.
+          need. You get a <code>client_id</code>. Apps are <strong>public clients</strong>{" "}by default: no secret, so use PKCE.
         </p>
       </ReadSection>
 
@@ -59,7 +59,7 @@ ${issuer}/.well-known/openid-configuration`}</CodeWell>
   &code_challenge_method=S256`}</CodeWell>
         <p>
           They sign in, pick which aircraft to share, and come back to your redirect URI with <code>?code=…</code>. The
-          scope name <code>airworthiness:read</code> is an identifier kept for existing apps; it grants the maintenance
+          scope name <code>airworthiness:read</code>{" "}is an identifier kept for existing apps; it grants the maintenance
           status the owner&apos;s records show, not a determination about the aircraft.
         </p>
       </ReadSection>
@@ -92,7 +92,7 @@ GET /api/v1/aircraft/{id}/weightbalance`}</CodeWell>
 
       <ReadSection id="confidential" title="Server-to-server apps">
         <p>
-          Check <strong>Confidential</strong> when registering to get a <strong>client secret</strong>. It is shown once;
+          Check <strong>Confidential</strong>{" "}when registering to get a <strong>client secret</strong>. It is shown once;
           rotate it any time. Server apps authenticate the token request with HTTP Basic (<code>client_id:client_secret</code>)
           as well as PKCE:
         </p>

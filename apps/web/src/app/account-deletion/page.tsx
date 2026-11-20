@@ -33,7 +33,7 @@ export default function AccountDeletionPage() {
         <MarketingSection id="more" title="Your data choices">
           <p>
             You can remove an individual aircraft without deleting your account. See the{" "}
-            <Link href="/privacy">privacy policy</Link> for how data is handled
+            <Link href="/privacy">privacy policy</Link>{" "}for how data is handled
             while your account is active.
           </p>
         </MarketingSection>
