@@ -19,8 +19,8 @@ export const DATA_SCOPES = OAUTH_SCOPES.filter((s) => s !== "openid" && s !== "o
 
 // Plain-English labels for the consent screen + developer portal.
 export const SCOPE_LABELS: Record<string, string> = {
-  "airworthiness:read": "Airworthiness — AD/inspection status, due dates, current hours",
-  "aircraft:read": "Aircraft details — tail, make/model, serial numbers, home base",
+  "airworthiness:read": "Maintenance status: inspection and AD due dates, current hours",
+  "aircraft:read": "Aircraft details: tail, make and model, serial numbers, home base",
   "equipment:read": "Installed equipment & components",
   "hours:read": "Current hours (hobbs / tach)",
   "hours:write": "Add hobbs / tach readings to your aircraft (e.g. synced flight hours)",

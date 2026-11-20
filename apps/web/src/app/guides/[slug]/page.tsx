@@ -10,7 +10,7 @@ const GUIDES = {
     lede: "Turn paper aircraft logbooks into a searchable index while keeping the originals as the legal record.",
     sections: [
       ["Prepare before scanning", "Inventory every airframe, engine, propeller, and avionics volume. Photograph the cover and identifying pages first, keep books in order, and avoid removing bound pages. A phone document scanner is usually enough; even lighting and a flat page matter more than expensive hardware."],
-      ["Capture in small batches", "Scan one logbook at a time and preserve page order. MyTailLog accepts camera captures and PDF uploads, then extracts dates, times, maintenance descriptions, signatures, AD references, and service-bulletin references. Handwritten pages use a model selected for harder handwriting; printed records use the lower-cost OCR path."],
+      ["Capture in small batches", "Scan one logbook at a time and preserve page order. MyTailLog accepts camera captures and PDF uploads, then extracts dates, times, maintenance descriptions, signatures, AD references, and service-bulletin references. Handwritten pages are read by a stronger AI model that copes better with handwriting; typed and printed pages use a simpler, cheaper text reader."],
       ["Review every extraction", "Machine extraction is a draft, not a maintenance determination. Compare each result with the page image, correct uncertain fields, and confirm it only when the transcription matches. MyTailLog keeps the source scan beside the structured entry so later checks remain possible."],
       ["Protect the originals", "Keep physical records secure and backed by a complete export of the digital index and scans. MyTailLog is not the legal maintenance record; verify anything used for an airworthiness decision against the original records and applicable current data."],
     ],
@@ -34,7 +34,7 @@ const GUIDES = {
       ["Find the recorded compliance", "Search confirmed logbook entries for AD references and review the underlying signed page. A reference alone does not prove applicability or continuing compliance, but it gives an owner or mechanic a fast path back to the evidence."],
       ["Track the disposition", "Record whether an AD is open, complied with, previously complied with, not applicable, or superseded. For recurring directives, capture the calendar or hour interval and the last compliance basis so the next review point is visible."],
       ["Check the whole aircraft", "Applicability can depend on model, serial range, engine, propeller, appliance, or installed modification. MyTailLog can help discover candidates from aircraft and equipment data, but a qualified person must verify current FAA data and the actual configuration."],
-      ["Keep an audit trail", "Use the compliance view and maintenance summary to surface open and upcoming items, then verify each conclusion against the physical logbooks and current regulatory material. Export the aircraft archive regularly so scans and structured records remain portable."],
+      ["Keep an audit trail", "Use the AD list under Maintenance and the maintenance summary to surface open and upcoming items, then verify each conclusion against the physical logbooks and current regulatory material. Export the aircraft archive regularly so scans and structured records remain portable."],
     ],
   },
 } as const;
@@ -48,7 +48,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const guide = GUIDES[slug as GuideSlug];
-  return guide ? { title: `${guide.title} — MyTailLog`, description: guide.description } : {};
+  return guide ? { title: guide.title, description: guide.description } : {};
 }
 
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -57,30 +57,37 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   if (!guide) notFound();
 
   return (
-    <MarketingShell eyebrow="Owner guide" title={guide.title} lede={guide.lede} current={`/guides/${slug}`}>
-      <div className="space-y-8">
+    <MarketingShell group="guides" title={guide.title} lede={guide.lede} current={`/guides/${slug}`}>
+      <div>
         {guide.sections.map(([title, body], index) => (
-          <MarketingSection key={title} id={`step-${index + 1}`} title={title}>
+          <MarketingSection key={title} id={`step-${index + 1}`} title={title} first={index === 0}>
             <p>{body}</p>
           </MarketingSection>
         ))}
         {slug === "airworthiness-directive-tracking" && (
-          <p className="text-dim">
-            Looking for a starting list?{" "}
-            <Link href="/ads" className="underline decoration-line underline-offset-2 hover:text-ink">
-              Browse airworthiness directives by aircraft, engine, and propeller model
-            </Link>
-            .
-          </p>
+          <MarketingSection id="ad-list" title="A starting list">
+            <p>
+              <Link href="/ads">Browse airworthiness directives by aircraft, engine and propeller model</Link>.
+            </p>
+          </MarketingSection>
         )}
       </div>
-      <nav aria-label="More owner guides" className="mt-10 border-t border-line pt-5 text-sm text-dim">
-        <span className="mr-3 text-faint">More owner guides:</span>
-        {Object.entries(GUIDES).filter(([other]) => other !== slug).map(([other, item]) => (
-          <Link key={other} href={`/guides/${other}`} className="mr-3 underline decoration-line underline-offset-2 hover:text-ink">
-            {item.title}
-          </Link>
-        ))}
+      <MarketingSection id="start" title="Try it on your own books">
+        <p>
+          A free account opens with the demo aircraft N734DM, so you can look around before adding yours.{" "}
+          <Link href="/login?mode=create">Create a free account</Link>. Reading pages with AI has a daily allowance of
+          about 50 pages in any 24 hours; add your own Anthropic or OpenAI key to read more.
+        </p>
+      </MarketingSection>
+      <nav aria-label="More owner guides" className="border-t border-rule pt-4">
+        <h2 className="text-label text-ink-3">More owner guides</h2>
+        <ul className="mt-1 flex flex-wrap gap-x-6">
+          {Object.entries(GUIDES).filter(([other]) => other !== slug).map(([other, item]) => (
+            <li key={other}>
+              <Link href={`/guides/${other}`} className="inline-flex min-h-11 items-center font-semibold text-board-ink underline underline-offset-4">{item.title}</Link>
+            </li>
+          ))}
+        </ul>
       </nav>
     </MarketingShell>
   );

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SCOPE_LABELS } from "@/lib/oauth/scopes";
+import { ReadSection } from "@/components/public/Read";
+import { buttonClass } from "@/ui/Button";
+import { fieldClass } from "@/ui/Form";
 import { createOAuthApp, deleteOAuthApp, rotateOAuthSecret, updateOAuthAppScopes } from "./actions";
 
 export type OAuthApp = {
@@ -14,10 +17,8 @@ export type OAuthApp = {
   created_at: string;
 };
 
-const card = "flex flex-col gap-3 rounded-lg border border-line p-5";
-const inputClass =
-  "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent";
-
+const check = "size-5 shrink-0 accent-ink";
+const scopeRow = "flex min-h-11 items-start gap-3 py-1.5";
 export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataScopes: string[] }) {
   const router = useRouter();
   // Render the server-provided `apps` directly; router.refresh() re-fetches after
@@ -83,160 +84,121 @@ export function DevelopersClient({ apps, dataScopes }: { apps: OAuthApp[]; dataS
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Register */}
-      <form id="register-app" action={register} className={card}>
-        <h2 className="font-semibold">Register an app</h2>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Name</span>
-          <input name="name" className={inputClass} placeholder="My Maintenance Tracker" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Redirect URIs</span>
-          <textarea
-            name="redirect_uris"
-            rows={2}
-            className={inputClass}
-            placeholder={"https://app.example.com/oauth/callback\n(one per line — https, or http://localhost)"}
-          />
-        </label>
-        <fieldset className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium">Scopes</span>
-          {dataScopes.map((s) => (
-            <label key={s} className="flex items-center gap-2">
-              <input type="checkbox" name="scopes" value={s} />
-              <span className="text-ink">{s}</span>
-              <span className="text-faint">{SCOPE_LABELS[s] ?? ""}</span>
-            </label>
-          ))}
-          <label className="mt-1 flex items-center gap-2">
-            <input type="checkbox" name="offline_access" />
-            <span className="text-ink">offline_access</span>
-            <span className="text-faint">issue a refresh token for long-lived access</span>
+    <div>
+      <ReadSection id="register" title="Register an app" first>
+        <form id="register-app" action={register} className="grid max-w-[54ch] gap-4">
+          <label className="block text-label">
+            Name
+            <input name="name" className={fieldClass} placeholder="e.g. My maintenance tracker" />
           </label>
-        </fieldset>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="confidential" />
-          <span className="text-ink">Confidential (server-to-server)</span>
-          <span className="text-faint">issues a client secret (else public + PKCE)</span>
-        </label>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90 disabled:opacity-60"
-          >
-            {busy ? "Registering…" : "Register app"}
-          </button>
-          {msg && (
-            <span className={`text-sm ${msg.ok ? "text-annun-green" : "text-annun-red"}`}>{msg.text}</span>
-          )}
-        </div>
-        {newId && (
-          <div className="rounded-md border border-line bg-panel2 p-3 text-sm">
-            <div className="text-faint">Your client_id:</div>
-            <code className="readout break-all text-ink">{newId}</code>
+          <label className="block text-label">
+            Redirect URIs
+            <textarea name="redirect_uris" rows={3} className={`${fieldClass} h-auto py-2`} placeholder={"e.g. https://app.example.com/oauth/callback"} />
+            <span className="mt-1 block text-small font-normal text-ink-3">One per line: https, or http://localhost while you develop.</span>
+          </label>
+          <fieldset>
+            <legend className="text-label">Scopes</legend>
+            {dataScopes.map((s) => (
+              <label key={s} className={scopeRow}>
+                <input type="checkbox" name="scopes" value={s} className={`${check} mt-0.5`} />
+                <span><code>{s}</code><span className="block text-small text-ink-2">{SCOPE_LABELS[s] ?? ""}</span></span>
+              </label>
+            ))}
+            <label className={scopeRow}>
+              <input type="checkbox" name="offline_access" className={`${check} mt-0.5`} />
+              <span><code>offline_access</code><span className="block text-small text-ink-2">Issue a refresh token for long-lived access</span></span>
+            </label>
+          </fieldset>
+          <label className={scopeRow}>
+            <input type="checkbox" name="confidential" className={`${check} mt-0.5`} />
+            <span className="font-semibold">Confidential (server-to-server)<span className="block text-small font-normal text-ink-2">Issues a client secret. Otherwise the app is public and uses PKCE.</span></span>
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" disabled={busy} className={buttonClass("primary")}>
+              {busy ? "Registering…" : "Register app"}
+            </button>
+            {msg && (
+              <span role={msg.ok ? "status" : "alert"} className={`text-small font-semibold ${msg.ok ? "text-ink" : "text-alarm-text"}`}>{msg.text}</span>
+            )}
           </div>
-        )}
-        {secret && (
-          <div className="rounded-md border border-annun-amber/40 bg-(--amb-bg) p-3 text-sm">
-            <div className="font-medium text-annun-amber">
-              Client secret — copy it now, it won&apos;t be shown again.
+          {newId && (
+            <div className="rounded-leaf bg-leaf-2 px-4 py-3">
+              <p className="text-label text-ink-3">Your client_id</p>
+              <code className="break-all">{newId}</code>
             </div>
-            <code className="readout mt-1 block break-all text-ink" data-testid="client-secret">
-              {secret.value}
-            </code>
-          </div>
-        )}
-        <p className="text-[11px] text-faint">
-          OAuth 2.1, Authorization Code + PKCE. Public by default; check{" "}
-          <em>Confidential</em> for a server app with a client secret. See the{" "}
-          <a href="/developers/docs" className="underline">
-            API docs
-          </a>
-          .
-        </p>
-      </form>
+          )}
+          {secret && (
+            <div className="border-t-2 border-ink bg-leaf-2 px-4 py-3">
+              <p className="font-bold">Client secret: copy it now. It won&apos;t be shown again.</p>
+              <code className="mt-1 block break-all" data-testid="client-secret">
+                {secret.value}
+              </code>
+            </div>
+          )}
+          <p className="text-small text-ink-2">
+            OAuth 2.1, authorization code with PKCE. Public by default; check <em>Confidential</em>{" "}for a server app with a
+            client secret. See the <a href="/developers/docs">API docs</a>.
+          </p>
+        </form>
+      </ReadSection>
 
-      {/* List */}
-      <div className={card}>
-        <h2 className="font-semibold">Your apps</h2>
+      <ReadSection id="apps" title="Your apps">
         {apps.length === 0 ? (
-          <p className="text-sm text-dim">No apps yet.</p>
+          <p>No apps yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-line">
+          <ul className="!m-0 !list-none !p-0">
             {apps.map((app) => (
-              <li key={app.client_id} className="flex flex-col gap-3 py-3">
+              <li key={app.client_id} className="!m-0 border-b border-rule py-3 last:border-b-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 text-sm">
-                    <div className="flex items-center gap-2 font-medium text-ink">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 font-bold">
                       {app.name}
-                      <span className="rounded-sm border border-line px-1.5 py-0.5 text-[10px] text-faint">
-                        {app.is_confidential ? "confidential" : "public"}
+                      <span className="rounded-[var(--radius-s)] bg-leaf-2 px-1.5 py-0.5 text-label shadow-[inset_0_0_0_1px_var(--color-rule-2)]">
+                        {app.is_confidential ? "Confidential" : "Public"}
                       </span>
-                    </div>
-                    <div className="readout break-all text-[12px] text-faint">{app.client_id}</div>
-                    <div className="mt-1 text-faint">{app.scopes.join(", ")}</div>
-                    <div className="text-faint">{app.redirect_uris.join(", ")}</div>
+                    </p>
+                    <code className="break-all">{app.client_id}</code>
+                    <p className="!mt-1 text-small text-ink-2">{app.scopes.join(", ")}</p>
+                    <p className="!mt-0 text-small break-all text-ink-2">{app.redirect_uris.join(", ")}</p>
                   </div>
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(editing === app.client_id ? null : app.client_id)}
-                      className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
-                    >
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <button type="button" onClick={() => setEditing(editing === app.client_id ? null : app.client_id)} className={buttonClass("secondary", "s")}>
                       {editing === app.client_id ? "Cancel" : "Edit scopes"}
                     </button>
                     {app.is_confidential && (
-                      <button
-                        type="button"
-                        onClick={() => rotate(app.client_id)}
-                        className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
-                      >
+                      <button type="button" onClick={() => rotate(app.client_id)} className={buttonClass("secondary", "s")}>
                         Rotate secret
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => remove(app.client_id)}
-                      className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-annun-red"
-                    >
+                    <button type="button" onClick={() => remove(app.client_id)} className={buttonClass("secondary", "s")}>
                       Delete
                     </button>
                   </div>
                 </div>
                 {editing === app.client_id && (
-                  <form
-                    action={(fd) => saveScopes(app.client_id, fd)}
-                    className="flex flex-col gap-2 rounded-md border border-line bg-panel2 p-4 text-sm"
-                  >
-                    <span className="font-medium">Scopes</span>
+                  <form action={(fd) => saveScopes(app.client_id, fd)} className="mt-3 grid gap-1 rounded-leaf bg-leaf-2 px-4 py-3">
+                    <p className="text-label">Scopes</p>
                     {dataScopes.map((s) => (
-                      <label key={s} className="flex items-start gap-2">
-                        <input type="checkbox" name="scopes" value={s} defaultChecked={app.scopes.includes(s)} />
+                      <label key={s} className={scopeRow}>
+                        <input type="checkbox" name="scopes" value={s} defaultChecked={app.scopes.includes(s)} className={`${check} mt-0.5`} />
                         <span>{SCOPE_LABELS[s] ?? s}</span>
                       </label>
                     ))}
-                    <label className="mt-1 flex items-center gap-2">
-                      <input type="checkbox" name="offline_access" defaultChecked={app.scopes.includes("offline_access")} />
+                    <label className={scopeRow}>
+                      <input type="checkbox" name="offline_access" defaultChecked={app.scopes.includes("offline_access")} className={`${check} mt-0.5`} />
                       <span>Offline access (refresh tokens)</span>
                     </label>
-                    <button
-                      type="submit"
-                      className="mt-1 self-start rounded-md border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent hover:text-panel"
-                    >
+                    <button type="submit" className={`${buttonClass("primary", "s")} mt-1 justify-self-start`}>
                       Save scopes
                     </button>
-                    <span className="text-faint">
-                      Existing connections keep their old scopes until the user re-authorizes.
-                    </span>
+                    <p className="text-small text-ink-2">Existing connections keep their old scopes until the owner authorizes again.</p>
                   </form>
                 )}
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </ReadSection>
     </div>
   );
 }

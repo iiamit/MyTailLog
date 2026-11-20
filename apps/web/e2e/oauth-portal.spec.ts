@@ -16,7 +16,7 @@ test("RFC8414 discovery + self-serve register/delete an OAuth app", async ({ pag
   let clientId: string | null = null;
   try {
     await page.goto("/developers");
-    await expect(page.getByRole("heading", { name: "Developer API" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "API keys", level: 1 })).toBeVisible();
 
     await page.fill('input[name="name"]', appName);
     await page.fill('textarea[name="redirect_uris"]', `${baseURL}/cb`);

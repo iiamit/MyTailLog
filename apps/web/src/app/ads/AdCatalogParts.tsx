@@ -1,26 +1,27 @@
 import Link from "next/link";
+import { Callout } from "@/components/public/Read";
+import { buttonClass } from "@/ui/Button";
 
 /** Shown on every /ads page: a listing is text matching, not applicability. */
 export function AdListDisclaimer() {
   return (
-    <p className="rounded-md border border-line px-4 py-3 text-sm text-dim">
-      ADs are listed here because their FAA titles or abstracts name the model. That is text
-      matching from Federal Register data, not an applicability determination: whether an AD applies
-      to a particular aircraft depends on serial-number ranges, installed engines, propellers and
-      equipment, and modifications. Your mechanic decides what applies.
-    </p>
+    <Callout title="A list by name, not an applicability check">
+      <p>
+        ADs are listed here because their FAA titles or abstracts name the model. That is text matching from Federal
+        Register data. Whether an AD applies to a particular aircraft depends on serial-number ranges, installed engines,
+        propellers and equipment, and modifications. Your mechanic decides what applies.
+      </p>
+    </Callout>
   );
 }
 
 export function TrackCta() {
   return (
-    <p className="mt-10">
-      <Link
-        href="/?ref=ad-page"
-        className="inline-block rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg hover:opacity-90"
-      >
-        Track these for your aircraft, free →
+    <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-rule pt-5">
+      <Link href="/login?mode=create&ref=ad-page" className={buttonClass("primary", "l")}>
+        Track these for your aircraft
       </Link>
-    </p>
+      <span className="text-small text-ink-2">Free and open source. The AD list for your aircraft lives under Maintenance.</span>
+    </div>
   );
 }
