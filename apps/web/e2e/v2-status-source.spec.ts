@@ -40,7 +40,7 @@ test("new design: a completed item opens its linked logbook scan", async ({ page
     const oil = page.getByRole("link", { name: "Oil change", exact: true }).first();
     if (!(await oil.isVisible())) await page.getByRole("button", { name: /Later ·/ }).click();
     await oil.click();
-    await expect(page).toHaveURL(new RegExp(`/status/item/mx:${item!.id}`));
+    await expect.poll(() => new URL(page.url()).pathname).toBe(`${scratch.path}/status/item/mx:${item!.id}`);
     const source = page.getByRole("region", { name: "Source page" });
     const scan = source.locator(`img[src="/api/page/${pageId}/image"]`);
     await expect(scan).toBeVisible();
