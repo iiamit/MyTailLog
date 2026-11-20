@@ -22,7 +22,7 @@ test("new design: a squawk and document added through their panes are saved", as
   const description = `E2E right brake ${scratch.tail}`;
   await page.goto(`/api/ui?design=v2&next=${encodeURIComponent(`${scratch.path}/maintenance/squawks?panel=new`)}`);
   await page.getByLabel("What's wrong?").fill(description);
-  await page.getByRole("radiogroup", { name: "Severity" }).getByRole("radio", { name: "Watch" }).check();
+  await page.getByRole("radiogroup", { name: "Severity" }).getByText("Watch", { exact: true }).click();
   await page.getByRole("button", { name: "Report squawk" }).click();
   await expect.poll(async () => (await admin().from("squawk").select("status").eq("aircraft_id", scratch.id).eq("description", description).maybeSingle()).data).toMatchObject({ status: "open" });
 

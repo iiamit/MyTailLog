@@ -26,7 +26,7 @@ test("new design: a viewer can report a squawk but cannot open owner write panes
     await expect(page.locator("aside.rail").getByRole("button", { name: /Add/ })).toHaveCount(0);
     const description = `Viewer report ${viewerId}`;
     await page.getByLabel("What's wrong?").fill(description);
-    await page.getByRole("radiogroup", { name: "Severity" }).getByRole("radio", { name: "Low" }).check();
+    await page.getByRole("radiogroup", { name: "Severity" }).getByText("Low", { exact: true }).click();
     await page.getByRole("button", { name: "Report squawk" }).click();
     await expect.poll(async () => (await admin.from("squawk").select("id").eq("aircraft_id", scratch.id).eq("description", description).maybeSingle()).data).not.toBeNull();
     await page.goto(`${scratch.path}/hours?panel=reading`);

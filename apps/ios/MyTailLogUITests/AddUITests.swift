@@ -1,6 +1,7 @@
 import XCTest
 
 final class AddUITests: XCTestCase {
+    @MainActor
     private func launch(_ mode: String = "owner") -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["MTL_UI_TEST_ADD"] = mode
@@ -9,7 +10,7 @@ final class AddUITests: XCTestCase {
         return app
     }
 
-    func testEveryOwnerActionOpensItsDestination() {
+    @MainActor func testEveryOwnerActionOpensItsDestination() {
         let actions = [
             ("Log a flight", "Type it"),
             ("Add oil", "Quarts"),
@@ -20,23 +21,24 @@ final class AddUITests: XCTestCase {
         for (label, destination) in actions {
             let app = launch()
             app.buttons["Add"].tap()
-            XCTAssertTrue(app.buttons[label].waitForExistence(timeout: 5))
-            app.buttons[label].tap()
+            let action = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", label)).firstMatch
+            XCTAssertTrue(action.waitForExistence(timeout: 5))
+            action.tap()
             XCTAssertTrue(app.staticTexts[destination].waitForExistence(timeout: 10), "\(label) did not open \(destination)")
             app.terminate()
         }
     }
 
-    func testViewerCanOnlyReportSquawk() {
+    @MainActor func testViewerCanOnlyReportSquawk() {
         let app = launch("viewer")
         app.buttons["Add"].tap()
-        XCTAssertTrue(app.buttons["Report a squawk"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Report a squawk")).firstMatch.waitForExistence(timeout: 5))
         for label in ["Log a flight", "Add oil", "Scan logbook pages", "Add a document"] {
-            XCTAssertFalse(app.buttons[label].exists)
+            XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", label)).firstMatch.exists)
         }
     }
 
-    func testSignedOutLaunchShowsLogin() {
+    @MainActor func testSignedOutLaunchShowsLogin() {
         let app = XCUIApplication()
         app.launch()
         XCTAssertTrue(app.staticTexts["MyTailLog"].waitForExistence(timeout: 10))
