@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PublicRoot } from "@/components/public/PublicRoot";
+import { buttonClass } from "@/ui/Button";
+import { fieldClass } from "@/ui/Form";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "magic" | "password";
@@ -15,7 +19,9 @@ function nextParam(): string {
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("magic");
-  const [signUp, setSignUp] = useState(false);
+  // `?mode=create` (marketing CTAs) opens on account creation.
+  const createMode = useSearchParams().get("mode") === "create";
+  const [signUp, setSignUp] = useState(createMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -66,7 +72,7 @@ export default function LoginPage() {
           router.push(nextParam());
           router.refresh();
         } else {
-          setNotice(`Account created — check ${email} to confirm, then sign in.`);
+          setNotice(`Account created. Check ${email} to confirm, then sign in.`);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -98,143 +104,147 @@ export default function LoginPage() {
     else setNotice(`Check ${email} for a link to set a new password.`);
   }
 
-  const inputClass =
-    "rounded-md border border-line bg-panel2 px-3 py-2 text-ink outline-hidden focus:border-accent";
+  const creating = signUp;
+  const providerBtn = "state-layer flex min-h-11 w-full items-center justify-center gap-3 rounded-control disabled:opacity-40";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6">
-      <div>
-        <h1 className="text-2xl font-bold">
-          {mode === "password" && signUp ? "Create your account" : "Sign in to MyTailLog"}
-        </h1>
-        <p className="mt-1 text-sm text-dim">
-          {mode === "magic"
-            ? "We'll email you a magic link — no password to remember."
-            : signUp
-              ? "Sign up with your email and a password."
-              : "Sign in with your email and password."}
-        </p>
-      </div>
+    <PublicRoot className="flex flex-col">
+      <main id="main-content" className="mx-auto grid w-full max-w-[1000px] flex-1 content-center gap-2.5 px-4 py-8 md:grid-cols-[400px_minmax(0,1fr)] md:py-16">
+        <section aria-label="About MyTailLog" className="flex flex-col gap-4 rounded-leaf bg-cover-2 px-[30px] pt-[26px] pb-7 text-on-cover max-md:px-5">
+          <Link href="/" className="self-start text-board-title text-on-cover">MyTailLog</Link>
+          <p className="text-lede text-on-cover">Your aircraft&apos;s logbooks, photographed, read and searchable, with what is due worked out from the pages themselves.</p>
+          <p className="text-body text-on-cover-2">The paper logbooks stay the legal record. MyTailLog is the index to them.</p>
+          <p className="text-body text-on-cover-2">Your account opens with the demo aircraft N734DM, a fictional 1978 Cessna 172N, so you can look around before you scan anything.</p>
+          <p className="mt-auto text-small text-on-cover-2">Free and open source under the MIT licence.</p>
+          <Link href="/" className="inline-flex min-h-11 items-center self-start text-[15px] font-semibold text-on-cover underline underline-offset-4">Back to mytaillog.com</Link>
+        </section>
 
-      <div className="flex flex-col gap-2">
-        <button type="button" disabled={busy} onClick={() => socialSignIn("google")}
-          className="flex min-h-11 items-center justify-center gap-3 rounded-md border border-[#747775] bg-white px-4 font-medium text-[#1f1f1f] hover:opacity-90 disabled:opacity-60">
-          <img src="/brand/google-g.png" width="20" height="20" alt="" />
-          <span>Continue with Google</span>
-        </button>
-        <button type="button" disabled={busy} onClick={() => socialSignIn("apple")}
-          aria-label="Continue with Apple"
-          className="flex min-h-11 items-center justify-center rounded-md bg-black hover:opacity-90 disabled:opacity-60">
-          <img src="/brand/apple-continue.png" width="210" height="44" alt="" />
-        </button>
-        {error && <p role="alert" className="text-sm text-annun-red">{error}</p>}
-        <p className="text-xs text-faint">Already have an account? Sign in with email first, then connect Google or Apple in Profile to keep your records together.</p>
-        <p className="text-center text-xs text-faint">Or continue with email</p>
-      </div>
+        <section aria-labelledby="signin-title" className="rounded-leaf bg-leaf px-[30px] pt-[26px] pb-7 text-ink shadow-leaf max-md:px-5">
+          <h1 id="signin-title" className="text-heading">{creating ? "Create your account" : "Sign in"}</h1>
+          <p className="mt-1 text-body text-ink-2">
+            {mode === "magic"
+              ? "We'll email you a sign-in link. No password to remember."
+              : creating
+                ? "Create an account with your email and a password."
+                : "Sign in with your email and password."}
+          </p>
 
-      {/* Method toggle */}
-      <div className="flex gap-1 rounded-lg border border-line p-1 text-sm">
-        {(["magic", "password"] as Mode[]).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => {
-              setMode(m);
-              setError(null);
-              setNotice(null);
-            }}
-            className={`flex-1 rounded-md px-3 py-1.5 font-medium transition ${
-              mode === m
-                ? "bg-accent text-bg"
-                : "text-dim hover:bg-panel2 hover:text-ink"
-            }`}
-          >
-            {m === "magic" ? "Magic link" : "Password"}
-          </button>
-        ))}
-      </div>
+          <div className="mt-5 grid gap-2">
+            <button type="button" disabled={busy} onClick={() => socialSignIn("google")}
+              className={`${providerBtn} border border-[#747775] bg-white px-4 text-[15px] font-semibold text-[#1f1f1f]`}>
+              <img src="/brand/google-g.png" width="20" height="20" alt="" />
+              <span>Continue with Google</span>
+            </button>
+            <button type="button" disabled={busy} onClick={() => socialSignIn("apple")}
+              aria-label="Continue with Apple"
+              className={`${providerBtn} bg-black`}>
+              <img src="/brand/apple-continue.png" width="210" height="44" alt="" />
+            </button>
+            <p className="text-small text-ink-3">Already have an account? Sign in with email first, then connect Google or Apple in Profile to keep your records together.</p>
+          </div>
 
-      {notice ? (
-        <div
-          className="rounded-md border border-annun-green/40 px-4 py-3 text-sm text-annun-green"
-          style={{ background: "var(--grn-bg)" }}
-        >
-          {notice}
-        </div>
-      ) : (
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          <label className="text-sm font-medium" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className={inputClass}
-          />
+          <div className="my-5 flex items-center gap-3 text-caption text-ink-3" aria-hidden>
+            <span className="h-px flex-1 bg-rule" />or with your email<span className="h-px flex-1 bg-rule" />
+          </div>
 
-          {mode === "password" && (
-            <>
-              <label className="text-sm font-medium" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete={signUp ? "new-password" : "current-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={signUp ? "At least 8 characters" : "••••••••"}
-                className={inputClass}
-              />
-            </>
-          )}
-
-          <button
-            type="submit"
-            disabled={busy}
-            className="mt-1 rounded-md bg-accent px-4 py-2 font-medium text-bg hover:opacity-90 disabled:opacity-60"
-          >
-            {busy
-              ? "Working…"
-              : mode === "magic"
-                ? "Send magic link"
-                : signUp
-                  ? "Create account"
-                  : "Sign in"}
-          </button>
-
-          {mode === "password" && (
-            <div className="flex items-center justify-between text-sm">
+          <div role="group" aria-label="Sign-in method" className="grid grid-cols-2 gap-1 rounded-control border border-control-border p-1">
+            {(["magic", "password"] as Mode[]).map((m) => (
               <button
+                key={m}
                 type="button"
+                aria-pressed={mode === m}
                 onClick={() => {
-                  setSignUp((s) => !s);
+                  setMode(m);
                   setError(null);
+                  setNotice(null);
                 }}
-                className="text-dim underline hover:text-ink"
+                className={`state-layer min-h-10 rounded-[var(--radius-s)] px-3 text-[15px] font-semibold ${mode === m ? "bg-ink text-leaf" : "text-ink"}`}
               >
-                {signUp ? "Have an account? Sign in" : "New here? Create an account"}
+                {m === "magic" ? "Email me a link" : "Use a password"}
               </button>
-              {!signUp && (
-                <button
-                  type="button"
-                  onClick={forgotPassword}
-                  className="text-faint underline hover:text-dim"
-                >
-                  Forgot password?
-                </button>
-              )}
+            ))}
+          </div>
+
+          {notice ? (
+            <div role="status" className="mt-4 border-t-2 border-ink bg-leaf-2 px-4 py-3 text-body text-ink">
+              {notice}
             </div>
+          ) : (
+            <form onSubmit={submit} className="mt-4 grid gap-4">
+              <label className="block text-label" htmlFor="email">
+                Email
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  aria-describedby={error ? "signin-error" : undefined}
+                  className={fieldClass}
+                />
+              </label>
+
+              {mode === "password" && (
+                <label className="block text-label" htmlFor="password">
+                  Password
+                  <input
+                    id="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete={signUp ? "new-password" : "current-password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={signUp ? "At least 8 characters" : ""}
+                    aria-describedby={error ? "signin-error" : undefined}
+                    className={fieldClass}
+                  />
+                </label>
+              )}
+
+              {error && <p id="signin-error" role="alert" className="text-small font-semibold text-alarm-text">{error}</p>}
+
+              <button type="submit" disabled={busy} className={`${buttonClass("primary", "l")} w-full`}>
+                {busy
+                  ? "Working…"
+                  : mode === "magic"
+                    ? "Email me a sign-in link"
+                    : signUp
+                      ? "Create account"
+                      : "Sign in"}
+              </button>
+              {mode === "magic" && <p className="text-small text-ink-3">The link signs you in on this device and works once.</p>}
+
+              {mode === "password" && (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignUp((s) => !s);
+                      setError(null);
+                    }}
+                    className={buttonClass("quiet", "s")}
+                  >
+                    {signUp ? "Have an account? Sign in" : "New here? Create an account"}
+                  </button>
+                  {!signUp && (
+                    <button type="button" onClick={forgotPassword} className={buttonClass("quiet", "s")}>
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+              )}
+            </form>
           )}
-        </form>
-      )}
-    </main>
+          {error && notice && <p role="alert" className="mt-3 text-small font-semibold text-alarm-text">{error}</p>}
+
+          <p className="mt-6 border-t border-rule pt-4 text-small text-ink-2">
+            Not ready to sign up? <Link href="/demo" className="font-semibold text-ink underline underline-offset-4">Look around the demo aircraft</Link>
+          </p>
+        </section>
+      </main>
+    </PublicRoot>
   );
 }
