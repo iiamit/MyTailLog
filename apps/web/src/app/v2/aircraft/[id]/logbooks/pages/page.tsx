@@ -7,7 +7,7 @@ import { ScanViewer } from "@/ui/ScanViewer";
 import { aircraftTail } from "@/lib/v2/landing";
 import { sharedAiPaused } from "@/lib/extraction/aiContext";
 import { loadBooks } from "@/lib/v2/booksLoad";
-import { fmtMonth } from "@/lib/v2/books";
+import { fmtMonth, shelfBooks } from "@/lib/v2/books";
 import { SORTS, STATE_WORD, pageState, plural, sortPages, stateFilter, type PageFilter, type PageSort } from "@/lib/v2/capture";
 import { BooksHead } from "../BooksHead";
 import { PagesGrid, SortControl, PageDrawerActions, type GridPage } from "./PagesGrid";
@@ -35,7 +35,8 @@ export default async function PagesLibrary({
   const a = `/aircraft/${id}`;
   const canEdit = context.canEdit;
   const input = due?.loaded.input;
-  const lines = model?.lines ?? [];
+  // Every book, Other included: the map draws no line for Other, but its pages live here (10 §1).
+  const lines = shelfBooks(model?.lines ?? [], input?.logbook ?? []);
   const allPages = input?.page ?? [];
   const perVol = new Map<string, number>();
   for (const p of allPages) perVol.set(p.logbook_id, (perVol.get(p.logbook_id) ?? 0) + 1);
@@ -191,6 +192,9 @@ export default async function PagesLibrary({
               {span ? ` · ${span}` : ""}
               {seqs.length > 1 ? ` · showing pages ${Math.min(...seqs)} to ${Math.max(...seqs)}` : ""}
             </p>
+            {line?.logbook === "other" && (
+              <p className="mt-1 text-small text-ink-2">W&amp;B sheets, 8130-3 tags, AD reports. Filed and applied, not split into entries.</p>
+            )}
             {sp.done && <p role="status" className="mt-2 text-small">{sp.done}</p>}
             {paused && <p className="mt-2 text-small">Reading is paused today. Pages wait and are read when it resumes.</p>}
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">

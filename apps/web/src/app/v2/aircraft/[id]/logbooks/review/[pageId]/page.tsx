@@ -101,7 +101,7 @@ export default async function ReviewDeskPage({
           boxes: row.field_boxes ?? {},
           continuation: row.is_continuation,
         }))}
-        books={logbooks.filter((b) => b.type !== "other").map((b) => ({ id: b.id, label: pageLabel(model, logbooks, b.id, null).book }))}
+        books={logbooks.filter((b) => b.type !== "other" || b.id === page.logbook_id).map((b) => ({ id: b.id, label: pageLabel(model, logbooks, b.id, null).book }))}
         prevHref={prev ? `${a}/logbooks/review/${prev}` : null}
         nextHref={next ? `${a}/logbooks/review/${next}` : null}
         backHref={`${a}/logbooks/review`}

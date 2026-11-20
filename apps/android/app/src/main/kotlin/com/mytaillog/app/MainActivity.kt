@@ -162,6 +162,8 @@ private fun AppRoot(
             }
             // Logbooks follows the aircraft Status has open (one switcher, 06 §1.3).
             LaunchedEffect(ui.current) { books.show(ui.current) }
+            // Pages scanned on this phone reach Logbooks once their sync lands, not only on pull to refresh.
+            LaunchedEffect(sync.lastSync) { if (sync.lastSync != openedAt) books.refresh() }
             // This device gets reminders once signed in; the permission is asked in Reminders, not at launch (05 §10.2).
             LaunchedEffect(user.id) { Push.register(context.applicationContext, app.notifyApi) }
             // Widgets and the launcher's aircraft shortcut follow the aircraft Status has open (05 §11.2, §13.3).

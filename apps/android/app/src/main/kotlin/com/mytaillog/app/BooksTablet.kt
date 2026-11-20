@@ -107,6 +107,7 @@ private fun MapWithPages(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNa
             BoxWithConstraints {
                 RouteMapView(b, model, rememberMapLayout(model, "routemap", maxWidth.value), onTarget = { target = it }, selected = target)
             }
+            OffMapBooks(b, nav)
             picked.forEachIndexed { i, e -> EntryRowView(b, e) { shown = i } }
             when (val t = target) {
                 is MapTarget.Gap -> GapSheet(vm, ui, b, t.id, nav)

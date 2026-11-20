@@ -2,10 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   acceptedLine, confirmPlan, deskEntry, deskFields, deskReducer, entryBox, firstUnsure, groupByYear, highlight, markName, matches,
-  navigate, nextWaiting, pageDoubt, pageIsClean, parseMapParams, patchOf, withParams, zoomAround, zoomWindow,
+  navigate, nextWaiting, pageDoubt, pageIsClean, parseMapParams, patchOf, shelfBooks, withParams, zoomAround, zoomWindow,
   type DeskAction, type DeskEntryInput, type DeskState, type Mark,
 } from "../src/lib/v2/books";
 import { v2Rewrite } from "../src/lib/uiV2";
+import { linesOf } from "../src/lib/mapModel";
 
 // The Logbooks rules an owner hits from the keyboard (04 W-BOOKS-*, 10 §10, 11 §4).
 
@@ -225,4 +226,18 @@ test("entry region is the union of its field boxes", () => {
   const b = entryBox({ field_boxes: { a: { x: 0.1, y: 0.2, w: 0.2, h: 0.1 }, b: { x: 0.2, y: 0.25, w: 0.3, h: 0.1 }, c: null } })!;
   assert.deepEqual([b.x, b.y, b.w, b.h].map((v) => v.toFixed(3)), ["0.100", "0.200", "0.400", "0.150"]);
   assert.equal(entryBox({ field_boxes: { a: { x: 0, y: 0, w: 0, h: 0 } } }), null);
+});
+
+test("the Pages library lists every book: map lines first, then Other, which the map never draws", () => {
+  const logbooks = [
+    { id: "o2", type: "other" }, { id: "e1", type: "engine" }, { id: "a2", type: "airframe" }, { id: "a1", type: "airframe" }, { id: "o1", type: "other" },
+  ];
+  const lines = linesOf(logbooks);
+  assert.ok(!lines.some((l) => (l.logbook as string) === "other"), "the map has no Other line");
+  const shelf = shelfBooks(lines, logbooks);
+  assert.deepEqual(shelf.map((b) => [b.name, b.volumes.map((v) => v.id)]), [["Airframe", ["a1", "a2"]], ["Engine", ["e1"]], ["Other", ["o1", "o2"]]]);
+  assert.equal(shelf[2].logbook, "other");
+  // Only Other: still listed; no Other book: nothing added.
+  assert.deepEqual(shelfBooks([], [{ id: "o1", type: "other" }]).map((b) => b.name), ["Other"]);
+  assert.deepEqual(shelfBooks(linesOf([{ id: "p1", type: "prop" }]), [{ id: "p1", type: "prop" }]).map((b) => b.name), ["Propeller"]);
 });

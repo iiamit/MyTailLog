@@ -55,6 +55,7 @@
     <string name="books_pages_wait">%1$d pages wait for review.</string>
     <string name="books_pages_summary">%1$d pages · %2$d entries</string>
     <string name="books_book_empty">No pages in the %1$s logbook yet.</string>
+    <string name="books_pages_in">Pages in %1$s</string>
 
     <string name="books_tablet_hint">%1$d confirmed entries · tap a stop or a visit</string>
     <string name="books_tablet_pick">Tap a stop or a visit to see its page here.</string>

@@ -39,6 +39,8 @@ struct BooksTablet: View {
             case .list: EntriesListScreen(model: model, actions: actions)
             }
         }
+        // Pages scanned on this phone show up once their sync lands, not only on pull to refresh.
+        .onChange(of: model.offline?.lastSyncAt) { _, _ in if let offline = model.offline { model.readMirror(offline) } }
         // A link to Review (05 §5.5) opens the flow here; it also ends the reading Live Activity (05 §12).
         .task(id: tabs.reviewPending) {
             guard tabs.reviewPending else { return }

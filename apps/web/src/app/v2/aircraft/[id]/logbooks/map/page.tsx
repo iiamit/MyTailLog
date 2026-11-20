@@ -8,7 +8,7 @@ import { ScanViewer } from "@/ui/ScanViewer";
 import { BookTabs, type BookPage } from "@/ui/BookTabs";
 import { aircraftTail } from "@/lib/v2/landing";
 import { entriesByIds, loadBooks, pageLabel, type EntryRow } from "@/lib/v2/booksLoad";
-import { BOOK_NAME, clip, entryBox, entryTitle, fmtDay, fmtMonth, parseMapParams, withParams, zoomWindow } from "@/lib/v2/books";
+import { BOOK_NAME, shelfBooks, clip, entryBox, entryTitle, fmtDay, fmtMonth, parseMapParams, withParams, zoomWindow } from "@/lib/v2/books";
 import { gapEvidence, type StoredGap } from "@/lib/gaps";
 import { itemSummary, fmtMeter } from "@/lib/v2/status";
 import { BooksHead } from "../BooksHead";
@@ -92,6 +92,9 @@ export default async function MapPage({
       : `${years} ${years === 1 ? "year" : "years"}, ${confirmedCount} confirmed ${confirmedCount === 1 ? "entry" : "entries"}`;
   const hasUnconfirmed = model.stops.some((s) => s.trust === "ai_read");
   const onlyOther = model.lines.length === 0;
+  // Other is never drawn (10 §1); its pages are one link away.
+  const other = shelfBooks(model.lines, input.logbook ?? []).find((b) => b.logbook === "other");
+  const otherPages = other ? (input.page ?? []).filter((pg) => other.volumes.some((v) => v.id === pg.logbook_id)).length : 0;
 
   // Selection detail and the mat.
   let detail: React.ReactNode = (
@@ -388,6 +391,14 @@ export default async function MapPage({
                 {model.undatedEntries} {model.undatedEntries === 1 ? "entry" : "entries"} without a date.{" "}
                 <Link className="font-semibold text-board-ink underline decoration-dotted" href={`${a}/logbooks/list?q=`}>
                   See them in the list
+                </Link>
+              </span>
+            )}
+            {other && otherPages > 0 && (
+              <span>
+                Other logbook, {otherPages} {otherPages === 1 ? "page" : "pages"}, not drawn on the map.{" "}
+                <Link className="font-semibold text-board-ink underline decoration-dotted" href={`${a}/logbooks/pages?vol=${other.volumes[0].id}`}>
+                  Pages in Other
                 </Link>
               </span>
             )}

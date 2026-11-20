@@ -499,3 +499,19 @@ export function unionBox(boxes: (Box | null | undefined)[]): Box | null {
   return { x, y, w: Math.max(...bs.map((b) => b.x + b.w)) - x, h: Math.max(...bs.map((b) => b.y + b.h)) - y };
 }
 export const entryBox = (e: { field_boxes: Record<string, Box | null> | null } | null | undefined) => unionBox(Object.values(e?.field_boxes ?? {}));
+
+// --- Pages library books (W-BOOKS-05) -----------------------------------------------------------------------------
+
+export type ShelfBook = { lineId: string; logbook: string; name: string; volumes: { id: string; from: string | null; to: string | null }[] };
+
+/**
+ * Every logbook the Pages library lists: the map's lines in lane order, then Other. Other is never a line (10 §1) but
+ * holds A&P documents and loose pages, so it must still be reachable. Books of a type the map doesn't draw join Other.
+ */
+export function shelfBooks(lines: ShelfBook[], logbooks: { id: string; type: string }[]): ShelfBook[] {
+  const onLine = new Set(lines.flatMap((l) => l.volumes.map((v) => v.id)));
+  const rest = logbooks.filter((b) => !onLine.has(b.id)).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const out = lines.map((l) => ({ lineId: l.lineId, logbook: l.logbook, name: l.name, volumes: l.volumes }));
+  if (rest.length) out.push({ lineId: rest[0].id, logbook: "other", name: BOOK_NAME.other, volumes: rest.map((b) => ({ id: b.id, from: null, to: null })) });
+  return out;
+}
