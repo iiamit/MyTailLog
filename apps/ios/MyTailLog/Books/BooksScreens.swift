@@ -352,7 +352,6 @@ struct BookPagesScreen: View {
     let model: BooksModel
     let logbookId: String
     let actions: BooksActions
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         let book = model.logbook(logbookId)
@@ -362,7 +361,7 @@ struct BookPagesScreen: View {
                 if pages.isEmpty {
                     Text("No pages in the \(book?.name ?? "") logbook yet.").dFont(.body).foregroundStyle(Tokens.Colors.ink)
                 } else {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Tokens.Space.s2), count: sizeClass == .regular ? 5 : 3),
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: Tokens.Space.s2)],
                               spacing: Tokens.Space.s2) {
                         ForEach(pages) { page in thumb(page) }
                     }

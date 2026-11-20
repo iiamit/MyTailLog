@@ -227,7 +227,6 @@ struct ReviewFlow: View {
     @State private var session: ReviewSession
     @State private var detent: PresentationDetent = .fraction(0.34)
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(model: BooksModel, start: String?) {
@@ -235,11 +234,13 @@ struct ReviewFlow: View {
     }
 
     var body: some View {
-        Group {
-            if sizeClass == .regular {
-                ReviewDesk(session: session, close: { dismiss() })
-            } else {
-                phone
+        GeometryReader { window in
+            Group {
+                if window.size.width >= 900 {
+                    ReviewDesk(session: session, close: { dismiss() })
+                } else {
+                    phone
+                }
             }
         }
         .environment(\.section, .books)

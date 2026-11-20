@@ -17,6 +17,7 @@ struct RootView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var tabs = TabModel()
+    @State private var windowLayout: ShellLayout = .tabs
     /// One Status model per signed-in user, so another account never sees the last one's aircraft.
     @State private var status: StatusModel?
     /// The open aircraft's logbooks; a new one when the aircraft changes.
@@ -39,6 +40,7 @@ struct RootView: View {
                 }
             }
             .background { if store.session != nil { KeyCommands(tablet: layout == .binder) } }
+            .onChange(of: layout, initial: true) { _, newValue in windowLayout = newValue }
         }
         // Notifications and Reminders (06 M-SYS-05) over either shell.
         .sheet(item: Bindable(tabs).sheet) { s in
@@ -128,7 +130,7 @@ struct RootView: View {
         links.pending = nil
         if let id = link.aircraftId, id != status.currentId, status.aircraft.contains(where: { $0.id == id }) { status.select(id) }
         if link.target == .review { ReadingLive.shared.endAll() }
-        tabs.go(landing(link, tablet: sizeClass == .regular))
+        tabs.go(landing(link, tablet: windowLayout == .binder))
     }
 
     /// The tail line with the sync state (06 §1.3).
