@@ -58,6 +58,33 @@ class BooksApiTest {
     }
 
     @Test
+    fun anAircraftPastOnePageOfEntriesGetsThemAll() = runTest {
+        val total = REST_PAGE + 5
+        val paged = BooksApi(
+            createHttpClient(MockEngine { req ->
+                requests += req
+                val p = req.url.encodedPath
+                val body = when {
+                    p.endsWith("/map") -> map
+                    p.endsWith("/log_entry") -> {
+                        val from = req.url.parameters["offset"]!!.toInt()
+                        val to = minOf(total, from + req.url.parameters["limit"]!!.toInt())
+                        (from until to).joinToString(",", "[", "]") { """{"id":"e$it","logbook_id":"L1","trust":"ai_read","updated_at":"2026-11-19T00:00:00Z"}""" }
+                    }
+                    else -> "[]"
+                }
+                respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }),
+            apiBaseUrl = "https://api.example/", supabaseUrl = "https://x.supabase.co", supabaseKey = "key", accessToken = { "tok" },
+        )
+        val books = paged.load("a1")
+        assertEquals(total, books.entries.map { it.id }.toSet().size)
+        val entryReads = requests.filter { it.url.encodedPath.endsWith("/log_entry") }
+        assertEquals(listOf("0", "$REST_PAGE"), entryReads.map { it.url.parameters["offset"] })
+        assertTrue(entryReads.all { it.url.parameters["order"]!!.endsWith(",id") })
+    }
+
+    @Test
     fun aViewerOrMissingAircraftThrowsWithTheStatus() = runTest {
         assertEquals(404, assertFailsWith<ApiHttpException> { api(HttpStatusCode.NotFound).load("a1") }.status)
     }

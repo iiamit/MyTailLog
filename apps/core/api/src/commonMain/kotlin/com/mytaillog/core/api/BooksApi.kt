@@ -97,6 +97,8 @@ private const val ENTRY_COLUMNS = "id,page_id,logbook_id,entry_date,tach,hobbs,a
     "signature_name,mechanic_cert_number,ad_refs,confidence,field_confidence,field_boxes,trust,is_continuation,entry_index," +
     "entry_kind,authored_signed_at,updated_at"
 
+internal const val REST_PAGE = 1000
+
 class BooksApi(
     private val http: HttpClient,
     private val apiBaseUrl: String,
@@ -106,10 +108,10 @@ class BooksApi(
 ) {
     suspend fun load(aircraftId: String): Books = coroutineScope {
         val map = async { parseMap(api("/api/aircraft/$aircraftId/map").bodyAsText()) }
-        val entries = async { rest<List<EntryRow>>("log_entry", aircraftId, ENTRY_COLUMNS, "entry_date.desc.nullslast,entry_index") }
-        val pages = async { rest<List<PageRow>>("page", aircraftId, "id,logbook_id,page_sequence,review_status,extraction_status,ocr_text,unread_rotated_content,updated_at", "page_sequence") }
-        val books = async { rest<List<LogbookRow>>("logbook", aircraftId, "id,type,title", "type") }
-        val gaps = async { rest<List<GapRow>>("logbook_gap", aircraftId, "id,status,note,updated_at", "from_date") }
+        val entries = async { rest<EntryRow>("log_entry", aircraftId, ENTRY_COLUMNS, "entry_date.desc.nullslast,entry_index") }
+        val pages = async { rest<PageRow>("page", aircraftId, "id,logbook_id,page_sequence,review_status,extraction_status,ocr_text,unread_rotated_content,updated_at", "page_sequence") }
+        val books = async { rest<LogbookRow>("logbook", aircraftId, "id,type,title", "type") }
+        val gaps = async { rest<GapRow>("logbook_gap", aircraftId, "id,status,note,updated_at", "from_date") }
         Books(map.await(), entries.await(), pages.await(), books.await(), gaps.await())
     }
 
@@ -126,14 +128,23 @@ class BooksApi(
     private suspend fun api(path: String): HttpResponse =
         http.get("${apiBaseUrl.trimEnd('/')}$path") { bearerAuth(accessToken()) }.orThrow()
 
-    private suspend inline fun <reified T> rest(table: String, aircraftId: String, select: String, order: String): T =
-        http.get("${supabaseUrl.trimEnd('/')}/rest/v1/$table") {
-            header("apikey", supabaseKey)
-            bearerAuth(accessToken())
-            parameter("aircraft_id", "eq.$aircraftId")
-            parameter("select", select)
-            parameter("order", order)
-        }.orThrow().body()
+    /** Every row, a page at a time: PostgREST answers at most [REST_PAGE] rows a request (Supabase's max-rows). */
+    private suspend inline fun <reified T> rest(table: String, aircraftId: String, select: String, order: String): List<T> {
+        val all = mutableListOf<T>()
+        while (true) {
+            val page: List<T> = http.get("${supabaseUrl.trimEnd('/')}/rest/v1/$table") {
+                header("apikey", supabaseKey)
+                bearerAuth(accessToken())
+                parameter("aircraft_id", "eq.$aircraftId")
+                parameter("select", select)
+                parameter("order", "$order,id") // id breaks ties so offsets never skip or repeat a row
+                parameter("limit", REST_PAGE)
+                parameter("offset", all.size)
+            }.orThrow().body()
+            all += page
+            if (page.size < REST_PAGE) return all
+        }
+    }
 
     private suspend fun HttpResponse.orThrow(): HttpResponse =
         if (status.isSuccess()) this else throw ApiHttpException(status.value, bodyAsText())
