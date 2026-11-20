@@ -66,9 +66,8 @@ const SECTIONS: Section[] = [
         <li>
           <strong>Get started</strong>: on the web, enrolling opens a three-step setup: today&apos;s
           tach and hobbs, then a photo of the page with your last annual sign-off (or just its date),
-          then your status. That&apos;s enough to start counting down what&apos;s due. The Status board
-          shows <strong>Finish setup</strong>{" "}until it&apos;s done, and the <strong>Records
-          coverage</strong>{" "}bars there show how far back each logbook goes and where it skips.
+          then your status. That&apos;s enough to start counting down what&apos;s due. Status reminds you
+          until setup is done, and the logbook map shows how far back each book goes and where it skips.
         </li>
         <li>
           <strong>Capture or upload</strong>{" "}your logbook pages (and A&amp;P documents into Other).
@@ -120,9 +119,8 @@ const SECTIONS: Section[] = [
         <p>
           <strong>Review</strong>{" "}happens on the phone now, not only on the web. Entries sit beside
           the scan, in a drawer you swipe up on an iPhone, in the pane next to it on an iPad, with
-          a <strong>Check this</strong>{" "}chip on any field the extractor was unsure of. Tap the{" "}
-          <strong>◎</strong>{" "}beside a value to light a ring on the exact ink it was read from, and it
-          stays lit while you edit. <strong>Confirm N clean</strong>{" "}accepts every confident entry in
+          a <strong>Check this</strong>{" "}chip on any field the extractor was unsure of. Tap the
+          page mark beside a value to light the exact ink it was read from, and it stays lit while you edit. <strong>Confirm N clean</strong>{" "}accepts every confident entry in
           one tap, on the same rule the web reviewer uses; entries the extractor missed can be keyed
           in, and one that runs onto the next page can be merged into the one before it.
         </p>
@@ -284,10 +282,10 @@ const SECTIONS: Section[] = [
           percentage right on that field in the <strong>Review</strong>{" "}screen, anything below
           threshold is highlighted. The page image sits alongside the entries, staying put as you
           scroll, so you can check a transcription against the original without opening anything.
-          Tap the <strong>◎</strong>{" "}beside a field to spotlight exactly where on the scan that
+          Tap the page mark beside a field to spotlight exactly where on the scan that
           value was read from (spotlights appear once a page is extracted under the current model;
           re-extract older pages to get them), and click the image itself to magnify it. Editing an
-          entry marks it confirmed. The same review, the scan, the ◎ spotlight, the low-confidence
+          entry marks it confirmed. The same review, the scan, the spotlight, the low-confidence
           chips, <strong>Confirm N clean</strong>{" "}and the page-spanning merge, now runs in the{" "}
           <L href="#mobile">mobile app</L>{" "}as well, offline, so a page can be checked against the
           paper book while the book is in your hands.
@@ -326,7 +324,7 @@ const SECTIONS: Section[] = [
           confident on (high overall score, no flagged field, not a page-spanning fragment).
           Anything with a low-confidence field is left for you. Each page&apos;s scan sits beside
           its entries here too, so you can cross-reference the whole group without leaving the list;{" "}
-          <strong>Open page ↗</strong>{" "}takes you to that page&apos;s own screen when you want to
+          opening the page takes you to its own screen when you want to
           crop it, re-extract it, or read its raw transcription.
         </p>
         <Effects>
@@ -755,8 +753,7 @@ const SECTIONS: Section[] = [
           person, within an overall cap on the shared key. When it is used up, reading waits until pages
           from 24 hours earlier roll off. To bill AI
           usage to your own account and get a much higher limit, add your own{" "}
-          <strong>Anthropic or OpenAI API key</strong>{" "}in <L href="/account/settings">Account → AI &amp; your API
-          key</L>. Your key is <strong>stored encrypted</strong>{" "}and never shown again; only the last
+          <strong>Anthropic or OpenAI API key</strong>{" "}in <L href="/account/settings">Account settings</L>. Your key is <strong>stored encrypted</strong>{" "}and never shown again; only the last
           four characters are kept for display.
         </p>
         <p>
