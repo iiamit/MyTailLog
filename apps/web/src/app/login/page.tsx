@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PublicRoot } from "@/components/public/PublicRoot";
@@ -105,28 +105,38 @@ export default function LoginPage() {
   }
 
   const creating = signUp;
+  // The layout's metadata titles the page "Sign in"; the create view retitles itself.
+  useEffect(() => {
+    document.title = creating ? "Create an account · MyTailLog" : "Sign in · MyTailLog";
+  }, [creating]);
+  const switchMode = () => {
+    setSignUp((s) => !s);
+    setError(null);
+    setNotice(null);
+  };
   const providerBtn = "state-layer flex min-h-11 w-full items-center justify-center gap-3 rounded-control disabled:opacity-40";
 
   return (
     <PublicRoot className="flex flex-col">
-      <main id="main-content" className="mx-auto grid w-full max-w-[1000px] flex-1 content-center gap-2.5 px-4 py-8 md:grid-cols-[400px_minmax(0,1fr)] md:py-16">
-        <section aria-label="About MyTailLog" className="flex flex-col gap-4 rounded-leaf bg-cover-2 px-[30px] pt-[26px] pb-7 text-on-cover max-md:px-5">
-          <Link href="/" className="self-start text-board-title text-on-cover">MyTailLog</Link>
-          <p className="text-lede text-on-cover">Your aircraft&apos;s logbooks, photographed, read and searchable, with what is due worked out from the pages themselves.</p>
-          <p className="text-body text-on-cover-2">The paper logbooks stay the legal record. MyTailLog is the index to them.</p>
-          <p className="text-body text-on-cover-2">Your account opens with the demo aircraft N734DM, a fictional 1978 Cessna 172N, so you can look around before you scan anything.</p>
-          <p className="mt-auto text-small text-on-cover-2">Free and open source under the MIT licence.</p>
+      <main id="main-content" className="mx-auto grid w-full max-w-[1000px] flex-1 content-center gap-2.5 px-4 py-8 max-md:pt-4 md:grid-cols-[400px_minmax(0,1fr)] md:py-16">
+        {/* Phones put the form first; the pitch shrinks to one line under it. */}
+        <Link href="/" className="inline-flex min-h-11 items-center self-start text-[20px] font-extrabold text-on-cover md:hidden">MyTailLog</Link>
+        <section aria-label="About MyTailLog" className="flex flex-col gap-4 rounded-leaf bg-cover-2 px-[30px] pt-[26px] pb-7 text-on-cover max-md:order-last max-md:gap-1 max-md:bg-transparent max-md:px-1 max-md:pt-2 max-md:pb-0">
+          <Link href="/" className="self-start text-board-title text-on-cover max-md:hidden">MyTailLog</Link>
+          <p className="text-lede text-on-cover max-md:hidden">Your aircraft&apos;s logbooks, photographed, read and searchable, with what is due worked out from the pages themselves.</p>
+          <p className="text-body text-on-cover-2 max-md:hidden">The paper logbooks stay the legal record. MyTailLog is the index to them.</p>
+          <p className="text-body text-on-cover-2 max-md:hidden">Your account opens with the demo aircraft N734DM, a fictional 1978 Cessna 172N, so you can look around before you scan anything.</p>
+          <p className="text-small text-on-cover-2 md:hidden">Free and open source. The paper logbooks stay the legal record; MyTailLog is the index to them.</p>
+          <p className="mt-auto text-small text-on-cover-2 max-md:hidden">Free and open source under the MIT licence.</p>
           <Link href="/" className="inline-flex min-h-11 items-center self-start text-[15px] font-semibold text-on-cover underline underline-offset-4">Back to mytaillog.com</Link>
         </section>
 
-        <section aria-labelledby="signin-title" className="rounded-leaf bg-leaf px-[30px] pt-[26px] pb-7 text-ink shadow-leaf max-md:px-5">
-          <h1 id="signin-title" className="text-heading">{creating ? "Create your account" : "Sign in"}</h1>
+        <section aria-labelledby="board-title" className="rounded-leaf bg-leaf px-[30px] pt-[26px] pb-7 text-ink shadow-leaf max-md:px-5">
+          <h1 id="board-title" tabIndex={-1} className="text-heading outline-none">{creating ? "Create your free account" : "Sign in to MyTailLog"}</h1>
           <p className="mt-1 text-body text-ink-2">
-            {mode === "magic"
-              ? "We'll email you a sign-in link. No password to remember."
-              : creating
-                ? "Create an account with your email and a password."
-                : "Sign in with your email and password."}
+            {creating
+              ? "No card, no trial clock. Your account opens with the demo aircraft N734DM to look around."
+              : "Welcome back. Continue with Google or Apple, or use your email."}
           </p>
 
           <div className="mt-5 grid gap-2">
@@ -135,19 +145,22 @@ export default function LoginPage() {
               <img src="/brand/google-g.png" width="20" height="20" alt="" />
               <span>Continue with Google</span>
             </button>
+            {/* Apple's white-with-outline button (HIG, Sign in with Apple): the black artwork inverted on white. */}
             <button type="button" disabled={busy} onClick={() => socialSignIn("apple")}
               aria-label="Continue with Apple"
-              className={`${providerBtn} bg-black`}>
-              <img src="/brand/apple-continue.png" width="210" height="44" alt="" />
+              className={`${providerBtn} border border-black bg-white`}>
+              <img src="/brand/apple-continue.png" width="210" height="44" alt="" className="invert" />
             </button>
-            <p className="text-small text-ink-3">Already have an account? Sign in with email first, then connect Google or Apple in Profile to keep your records together.</p>
+            {!creating && (
+              <p className="text-small text-ink-3">Signed up with email? Sign in with email first, then connect Google or Apple in Profile to keep your records together.</p>
+            )}
           </div>
 
           <div className="my-5 flex items-center gap-3 text-caption text-ink-3" aria-hidden>
             <span className="h-px flex-1 bg-rule" />or with your email<span className="h-px flex-1 bg-rule" />
           </div>
 
-          <div role="group" aria-label="Sign-in method" className="grid grid-cols-2 gap-1 rounded-control border border-control-border p-1">
+          <div role="group" aria-label={creating ? "Sign-up method" : "Sign-in method"} className="grid grid-cols-2 gap-1 rounded-control border border-control-border p-1">
             {(["magic", "password"] as Mode[]).map((m) => (
               <button
                 key={m}
@@ -158,7 +171,7 @@ export default function LoginPage() {
                   setError(null);
                   setNotice(null);
                 }}
-                className={`state-layer min-h-10 rounded-[var(--radius-s)] px-3 text-[15px] font-semibold ${mode === m ? "bg-ink text-leaf" : "text-ink"}`}
+                className={`state-layer min-h-11 rounded-[var(--radius-s)] border-2 px-3 text-[15px] font-semibold ${mode === m ? "border-ink text-ink" : "border-transparent text-ink-2"}`}
               >
                 {m === "magic" ? "Email me a link" : "Use a password"}
               </button>
@@ -215,33 +228,29 @@ export default function LoginPage() {
                       ? "Create account"
                       : "Sign in"}
               </button>
-              {mode === "magic" && <p className="text-small text-ink-3">The link signs you in on this device and works once.</p>}
+              {mode === "magic" && (
+                <p className="text-small text-ink-3">
+                  {creating ? "The link creates your account and signs you in on this device. It works once." : "The link signs you in on this device and works once."}
+                </p>
+              )}
 
-              {mode === "password" && (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSignUp((s) => !s);
-                      setError(null);
-                    }}
-                    className={buttonClass("quiet", "s")}
-                  >
-                    {signUp ? "Have an account? Sign in" : "New here? Create an account"}
-                  </button>
-                  {!signUp && (
-                    <button type="button" onClick={forgotPassword} className={buttonClass("quiet", "s")}>
-                      Forgot password?
-                    </button>
-                  )}
-                </div>
+              {mode === "password" && !signUp && (
+                <button type="button" onClick={forgotPassword} className={`${buttonClass("quiet", "s")} min-h-11 justify-self-start`}>
+                  Forgot password?
+                </button>
               )}
             </form>
           )}
+          <p className="mt-4 text-small text-ink-2">
+            {creating ? "Already have an account?" : "New to MyTailLog?"}{" "}
+            <button type="button" onClick={switchMode} className="inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-4">
+              {creating ? "Sign in" : "Create an account"}
+            </button>
+          </p>
           {error && notice && <p role="alert" className="mt-3 text-small font-semibold text-alarm-text">{error}</p>}
 
-          <p className="mt-6 border-t border-rule pt-4 text-small text-ink-2">
-            Not ready to sign up? <Link href="/demo" className="font-semibold text-ink underline underline-offset-4">Look around the demo aircraft</Link>
+          <p className="mt-2 border-t border-rule pt-2 text-small text-ink-2">
+            Not ready to sign up? <Link href="/demo" className="inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-4">See the product tour</Link>
           </p>
         </section>
       </main>

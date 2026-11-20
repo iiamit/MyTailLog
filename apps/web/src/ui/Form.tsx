@@ -2,7 +2,7 @@ import Link from "next/link";
 import { buttonClass } from "@/ui/Button";
 
 /** TextInput / Select / DateInput look (02 §7.3). Textareas add `h-auto py-2`. */
-export const fieldClass = "mt-1 block h-[42px] w-full rounded-control border border-control-border bg-leaf px-3 text-body text-ink";
+export const fieldClass = "mt-1 block h-11 w-full rounded-control border border-control-border bg-leaf px-3 text-body text-ink";
 
 /** A labelled field with optional helper and error (02 §7.3). Children are the control. */
 export function Field({ label, help, error, children }: { label: string; help?: string; error?: string; children: React.ReactNode }) {
