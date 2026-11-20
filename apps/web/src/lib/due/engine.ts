@@ -517,7 +517,7 @@ export function computeStatus(input: DueInput, today: string, visitOpts: VisitOp
       signer: e?.signature_name ?? null,
     };
   };
-  const sourceFor = (kind: string, last: LastDone | null): LastDone | null => {
+  const sourceFor = (kind: string, line: string, last: LastDone | null): LastDone | null => {
     if (!last?.date || last.entryId) return last;
     const phrases: Record<string, RegExp> = {
       annual: /\bannual(?:\s+(?:inspection|insp))?\b/i,
@@ -528,7 +528,9 @@ export function computeStatus(input: DueInput, today: string, visitOpts: VisitOp
     if (!phrase) return last;
     const matches = entries.filter((e) => e.entry_date === last.date && e.page_id && pages.has(e.page_id) && counts(e) &&
       (e.entry_kind === kind || phrase.test(`${e.description ?? ""} ${e.work_performed ?? ""}`)));
-    return matches.length === 1 ? fromEntry(last.date, last.hours, matches[0].id) : last;
+    const onOnePage = (rows: typeof matches) => new Set(rows.map((e) => e.page_id)).size === 1 ? rows[0] : undefined;
+    const match = onOnePage(matches) ?? onOnePage(matches.filter((e) => books.get(e.logbook_id) === line));
+    return match ? fromEntry(last.date, last.hours, match.id) : last;
   };
   const byLatest = (x: ItemCompletionRow, y: ItemCompletionRow) =>
     cmp(y.done_date, x.done_date) || (y.done_hours ?? -1) - (x.done_hours ?? -1) || cmp(x.id, y.id);
@@ -561,7 +563,7 @@ export function computeStatus(input: DueInput, today: string, visitOpts: VisitOp
   const mxLast = new Map(mxItems.map((m) => {
     const result = lastDoneOf(completions.filter((c) => c.maintenance_item_id === m.id),
       { date: m.last_done_date, hours: m.last_done_hours, entryId: null });
-    return [m.id, { ...result, last: sourceFor(m.kind, result.last) }] as const;
+    return [m.id, { ...result, last: sourceFor(m.kind, m.line ?? DEFAULT_LINE[m.kind] ?? "airframe", result.last) }] as const;
   }));
 
   const hoursLimit = (meterChoice: MeterName | null | undefined, kind: string, base: { hours: number; date: string | null } | null, interval: number | null, stored: number | null | undefined) => {
