@@ -13,6 +13,10 @@ A coming-soon / sneak-peek campaign: seven carousel images, an editorial motion 
 
 The social captions and announcement copy are in the parent package's `copy/` directory.
 
+## Motion edit
+
+The revised Reel uses much larger product views, smooth zooms and pans from the map or fields to the original page, an animated Duo reveal, and staggered final-card entrances. Three scenes contain real interaction: web logbook selection, the native iPhone map scrolling, and web maintenance history/source selection. These are product recordings; camera moves and the Duo reveal are editorial effects. The approved narration and music mix is copied unchanged into the new edit.
+
 ## Campaign sequence
 
 1. Your aircraft. A clearer picture — redesigned around the records.
@@ -30,6 +34,7 @@ Campaign posture: **try the new design on the web now; native apps are coming so
 - Web: committed `apps/web/src/screenshots/v2-map.png`, `v2-review.png`, and `v2-status.png`. They show fictional demo aircraft **N734DM**.
 - Native: screenshots captured on the Mac build host, in `~/.codex/outputs/mytaillog-store-screenshots-2026-11-21`. The test backend contains an aircraft copied for testing; visible tail identifiers are replaced with **DEMO** for these marketing assets. The app's data and layout are otherwise preserved.
 - Duo: actual simulator capture `~/.local/share/mytaillog-screens/duo-map-selected.png`, with the tail and mechanic's name anonymized and the source scan blurred for privacy. It demonstrates the real two-pane interface. The cover-to-inner cut in the reel is editorial animation, **not a recording or promise of an OS fold animation**. No hardware certification is implied.
+- `source/web-map-interaction.mp4` and `source/web-status-interaction.mp4`: real browser interactions recorded on the dedicated Mac against the test backend, using the fictional N734DM demo aircraft. Only the product viewport is included; sign-in and the test profile are excluded.
 - `source/native-interaction.mp4`: actual iPhone simulator screen recording from the Mac build host, captured by a passing temporary UI test. It shows scrolling the real logbook map; only the tail label is anonymized. The raw recording, sign-in steps and test credentials are not distributed.
 - Native/UI captures and the web demo are genuine product screenshots; no invented screen or generated product UI appears.
 - Voice: ElevenLabs **Chris — Charming, Down-to-Earth**, male American English; model `eleven_multilingual_v2`. Friendly, upbeat delivery. Alignment comes directly from ElevenLabs and drives the captions. This is synthetic narration, not a customer testimonial.
@@ -64,4 +69,4 @@ The key is never embedded in an artifact. `generate_voiceover.py` writes real sp
 
 ## Verification
 
-Run `python -B validate_media.py` after rendering. It checks seven 4:5 cards, the 9:16 cover, both playable H.264/AAC 30 fps reels, voice/caption alignment, full decode, integrated loudness and true peak. The results are in `verification.json`; `manifest.json` records file sizes and SHA-256 checksums. Native capture completed on the Mac build host; its temporary test source was restored, the worktree was clean, and the simulator was shut down.
+Run `python -B validate_media.py` after rendering. For the first motion revision, pass the previous approved clean Reel as its only argument to establish the audio hash; later checks reuse that hash from `verification.json`. It checks seven 4:5 cards, the 9:16 cover, both playable H.264/AAC 30 fps reels, voice/caption alignment, full decode, integrated loudness and true peak. It also checks visible motion in all six product scenes and that the approved narration/music audio is unchanged. The results are in `verification.json`; `manifest.json` records file sizes and SHA-256 checksums. Native capture completed on the Mac build host; its temporary test source was restored, the worktree was clean, and the simulator was shut down.

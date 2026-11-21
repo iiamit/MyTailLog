@@ -12,7 +12,7 @@ Campaign prepared November 21, 2026. Position the mobile redesign as **coming so
 | Website | [CHANGELOG.md](../../CHANGELOG.md) | New November groups feed `/whats-new` and RSS at web build time. |
 | GitHub | [README.md](../../README.md) | New November update section explains the design and mobile rollout. |
 
-Media files and their production notes are in `media/`.
+Media files and their production notes are in `media/`. The revised 40.8-second Reel brings screenshots closer, adds smooth zooms and pans, and includes real interaction in three scenes. The approved narration and music are unchanged.
 
 ## Publish sequence
 
