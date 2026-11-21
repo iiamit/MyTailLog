@@ -42,7 +42,7 @@ struct SignInView: View {
         ScrollView {
             VStack(spacing: 0) {
                 if !typeSize.isAccessibilitySize {
-                    cover.containerRelativeFrame(.vertical) { height, _ in height * 0.46 }
+                    cover.containerRelativeFrame(.vertical) { height, _ in min(height * 0.34, 230) }
                 }
                 leaf
             }
@@ -66,14 +66,14 @@ struct SignInView: View {
                     .font(.custom("LibreFranklin-ExtraBold", size: 34, relativeTo: .largeTitle))
                     .foregroundStyle(Section.setup.onBoard)
                     .accessibilityAddTraits(.isHeader)
-                Text("Your aircraft's logbooks, photographed and read into an index you can search, with what is due worked out from them.")
+                Text("Photograph your aircraft's logbooks. Search every entry and see what's due.")
                     .dFont(.lede)
                     .foregroundStyle(Section.setup.onBoard2)
                     .lineLimit(3)
             }
             .padding(.leading, Tokens.Space.s6)
             .padding(.trailing, Tokens.Space.s6 + 24)
-            .padding(.top, 120)
+            .padding(.top, 64)
             // The six section colours as a stack of tabs at the right edge, decorative.
             VStack(spacing: 2) {
                 ForEach(Section.tabletTabs) { $0.board }

@@ -9,6 +9,7 @@ enum MaintView: Int { case items, ads, squawks }
 struct MaintHome: View {
     let recs: Recs
     @State private var view: MaintView?
+    @Environment(\.duoCoverTrailingInset) private var coverInset
 
     var body: some View {
         let open = recs.records("squawk").filter { $0.s("status") != "resolved" }.count
@@ -22,6 +23,7 @@ struct MaintHome: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, Tokens.Space.s4)
+            .padding(.trailing, coverInset)
             RecLeaf {
                 switch shown {
                 case .items: ItemsView(recs: recs)

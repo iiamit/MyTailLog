@@ -43,6 +43,7 @@ struct BooksHome: View {
     @State private var scanBook: ScanChoice?
     @Environment(TabModel.self) private var tabs
     @Environment(OfflineStore.self) private var offline: OfflineStore?
+    @Environment(\.duoCoverTrailingInset) private var coverInset
 
     var body: some View {
         VStack(spacing: Tokens.Space.s2) {
@@ -96,7 +97,11 @@ struct BooksHome: View {
         }
     }
 
-    private var captureRow: some View { ScanRow(model: model, scanBook: $scanBook).padding(.horizontal, Tokens.Space.s4) }
+    private var captureRow: some View {
+        ScanRow(model: model, scanBook: $scanBook)
+            .padding(.horizontal, Tokens.Space.s4)
+            .padding(.trailing, coverInset)
+    }
 
     @ViewBuilder private var content: some View {
         switch tab {
@@ -156,16 +161,17 @@ struct MapPane: View {
     let model: BooksModel
     let select: (MapElement) -> Void
     let list: () -> Void
-    @State private var width: CGFloat = 0
     @State private var only: String?
     @State private var zoom: Double = 1
     @State private var zoomBase: Double = 1
     @Environment(\.section) private var section
 
     var body: some View {
-        VStack(spacing: 0) {
+        GeometryReader { viewport in
+          VStack(spacing: 0) {
             if let map = model.map {
                 let data = only.map { map.only(lineId: $0) } ?? map
+                let width = max(viewport.size.width - 2 * Tokens.Space.s3, 0)
                 let layout = width > 0 ? data.layout(MapLayoutOptions(size: "phone", renderedWidth: width, allEras: only != nil)) : nil
                 ZStack(alignment: .trailing) {
                     if let layout { MapColumnHeads(layout: layout).frame(maxWidth: .infinity, alignment: .leading) }
@@ -205,12 +211,11 @@ struct MapPane: View {
                 .accessibilityElement()
                 .accessibilityLabel("Loading the map")
             }
+          }
+          .frame(width: viewport.size.width, height: viewport.size.height)
+          .background(Tokens.Colors.leaf)
+          .clipShape(UnevenRoundedRectangle(topLeadingRadius: Tokens.Radius.s, topTrailingRadius: Tokens.Radius.s))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Measure the offered width on the first layout, as the tablet map does.
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = max($0 - 2 * Tokens.Space.s3, 0) }
-        .background(Tokens.Colors.leaf)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: Tokens.Radius.s, topTrailingRadius: Tokens.Radius.s))
         .padding(.horizontal, Tokens.Space.s2)
         .overlay(alignment: .bottomLeading) {
             Button(action: list) {
@@ -352,7 +357,6 @@ struct BookPagesScreen: View {
     let model: BooksModel
     let logbookId: String
     let actions: BooksActions
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         let book = model.logbook(logbookId)
@@ -362,7 +366,7 @@ struct BookPagesScreen: View {
                 if pages.isEmpty {
                     Text("No pages in the \(book?.name ?? "") logbook yet.").dFont(.body).foregroundStyle(Tokens.Colors.ink)
                 } else {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Tokens.Space.s2), count: sizeClass == .regular ? 5 : 3),
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: Tokens.Space.s2)],
                               spacing: Tokens.Space.s2) {
                         ForEach(pages) { page in thumb(page) }
                     }

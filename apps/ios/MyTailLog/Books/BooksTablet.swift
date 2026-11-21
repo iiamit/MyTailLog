@@ -13,6 +13,8 @@ struct BooksTablet: View {
     @State private var gap: MapData.Gap?
     @State private var scanBook: ScanChoice?
     @Environment(TabModel.self) private var tabs
+    @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
+    @Environment(\.duoCoverTrailingInset) private var trailingInset
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -25,6 +27,7 @@ struct BooksTablet: View {
                 .pickerStyle(.segmented)
                 .frame(maxWidth: 420)
                 ScanRow(model: model, scanBook: $scanBook).frame(maxWidth: 360)
+                    .padding(.trailing, trailingInset)
             }
             switch tab {
             case .map: map
@@ -93,7 +96,7 @@ struct BooksTablet: View {
                     let years = Int(map.today.prefix(4))! - Int(map.range.from.prefix(4))!
                     Text("\(years) years, \(confirmed) confirmed entries · tap a stop or a visit").dFont(.small).foregroundStyle(Tokens.Colors.ink3)
                     if width > 0 {
-                        let layout = map.layout(MapLayoutOptions(size: "routemap", renderedWidth: width))
+                        let layout = map.layout(MapLayoutOptions(size: width < 600 ? "phone" : "routemap", renderedWidth: width))
                         let elements = mapElements(layout, map) { s in s.entryIds.first.flatMap(model.entry)?.title }
                         RouteMapView(data: map, layout: layout, elements: elements, selected: selected?.id, open: open)
                     }
@@ -106,9 +109,10 @@ struct BooksTablet: View {
                     Skeleton(fraction: 1, height: 400)
                 }
             }
+            .frame(width: duoLeftLeafWidth)
             .onGeometryChange(for: CGFloat.self) { $0.size.width - 60 } action: { width = max($0, 0) }
             .refreshable { await model.refresh() }
-            pagesMat.frame(maxWidth: 380)
+            pagesMat.frame(maxWidth: duoLeftLeafWidth == nil ? 380 : .infinity)
         }
     }
 

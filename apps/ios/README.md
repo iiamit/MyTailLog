@@ -45,6 +45,9 @@ Re-run `xcodegen generate` after adding or removing files. Tests use Swift Testi
 - **Not yet:** Mark done and the SourceMat crop on item detail, a tappable PageCite, Select mode and volumes on a book's pages, and the AircraftSwitcher sheet (a menu stands in). Each has a `shortcut:` comment with its trigger.
 
 ## Layout
+
+The iPhone Duo uses the same window-based shell: bottom tabs below 600 pt, a side rail from 600 pt, and the binder when a regular-width window has at least 900 pt. Folding and unfolding resizes the window; SwiftUI and the system animate that transition. The selected aircraft and tab model stay in `RootView` while the shell changes. iPhone landscape is enabled. Review and page grids also follow available width, and the camera uses AVFoundation's rotation coordinator. In Simulator Device Hub, test the cover, unfolded inner display, landscape, and an intermediate window width while navigating Status, Logbooks, and Records. The simulator cannot verify physical camera or display brightness behavior.
+
 ```
 App/            entry point
 Auth/           AuthClient (URLSession to /auth/v1), AuthFlow (PKCE, nonce, return URLs), SessionStore + Keychain, SignInView (M-AUTH-01)

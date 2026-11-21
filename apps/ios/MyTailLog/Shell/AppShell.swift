@@ -1,13 +1,24 @@
 import SwiftUI
 import WidgetKit
 
-/// Signed out: M-AUTH-01. Signed in: the phone shell at compact width, the binder split view at regular width (05 §3.3).
+/// Signed out: M-AUTH-01. Signed in: tabs, a compact side rail, or the binder as the window grows.
+enum ShellLayout: Equatable {
+    case tabs, rail, duo, binder
+
+    static func forWindow(width: CGFloat, height: CGFloat, sizeClass: UserInterfaceSizeClass?) -> Self {
+        if sizeClass == .regular && width >= 900 { return .binder }
+        if width >= 800 && height >= 500 { return .duo }
+        return width >= 600 ? .rail : .tabs
+    }
+}
+
 struct RootView: View {
     let statusAPI: StatusAPI
     @Environment(SessionStore.self) private var store
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var tabs = TabModel()
+    @State private var windowLayout: ShellLayout = .tabs
     /// One Status model per signed-in user, so another account never sees the last one's aircraft.
     @State private var status: StatusModel?
     /// The open aircraft's logbooks; a new one when the aircraft changes.
@@ -18,17 +29,31 @@ struct RootView: View {
     @State private var recs: Recs?
 
     var body: some View {
-        Group {
-            if store.session == nil {
-                SignInView()
-            } else if sizeClass == .regular {
-                TabletShell()
-            } else {
-                PhoneShell()
+        GeometryReader { window in
+            let layout = ShellLayout.forWindow(width: window.size.width, height: window.size.height, sizeClass: sizeClass)
+            Group {
+                if store.session == nil {
+                    SignInView()
+                } else if layout == .binder {
+                    TabletShell()
+                        .environment(\.horizontalSizeClass, .regular)
+                } else if layout == .duo {
+                    DuoShell(fullWidth: window.size.width + window.safeAreaInsets.trailing,
+                             fullHeight: window.size.height + window.safeAreaInsets.bottom,
+                             leftLeafWidth: (window.size.width + window.safeAreaInsets.trailing) / 2
+                                 - 82 - Tokens.Size.boardPad - Tokens.Space.s4 / 2,
+                             trailingInset: window.safeAreaInsets.trailing)
+                        .environment(\.horizontalSizeClass, .regular)
+                        .ignoresSafeArea(edges: [.trailing, .bottom])
+                } else {
+                    PhoneShell(verticalTabs: layout == .rail, bottomInset: window.safeAreaInsets.bottom,
+                               rightInset: layout == .tabs ? window.safeAreaInsets.trailing : 0,
+                               safeWidth: window.size.width)
+                }
             }
+            .background { if store.session != nil { KeyCommands(tablet: layout == .binder || layout == .duo) } }
+            .onChange(of: layout, initial: true) { _, newValue in windowLayout = newValue }
         }
-        // Inside the environment below: these read the shell's models.
-        .background { if store.session != nil { KeyCommands(tablet: sizeClass == .regular) } }
         // Notifications and Reminders (06 M-SYS-05) over either shell.
         .sheet(item: Bindable(tabs).sheet) { s in
             AccountSheetView(sheet: s, api: notifyAPI, tails: tails) { LinkInbox.shared.pending = $0 }
@@ -117,7 +142,7 @@ struct RootView: View {
         links.pending = nil
         if let id = link.aircraftId, id != status.currentId, status.aircraft.contains(where: { $0.id == id }) { status.select(id) }
         if link.target == .review { ReadingLive.shared.endAll() }
-        tabs.go(landing(link, tablet: sizeClass == .regular))
+        tabs.go(landing(link, tablet: windowLayout == .binder || windowLayout == .duo))
     }
 
     /// The tail line with the sync state (06 §1.3).
@@ -182,20 +207,59 @@ struct RootView: View {
 
 /// 05 §5.2: a TabView keeps each tab's stack and state; its system bar is hidden and D's PhoneTabBar is drawn instead.
 struct PhoneShell: View {
+    var verticalTabs = false
+    var bottomInset: CGFloat = 0
+    var rightInset: CGFloat = 0
+    var safeWidth: CGFloat = 0
     @Environment(TabModel.self) private var tabs
+    @Environment(Recs.self) private var recs: Recs?
+    @State private var adding = false
 
     var body: some View {
         @Bindable var tabs = tabs
-        TabView(selection: $tabs.selected) {
-            ForEach(Section.phoneTabs) { section in
-                Tab(section.title, image: section.icon, value: section) {
-                    NavigationStack(path: tabs.path(section)) {
-                        PhoneSectionScreen(section: section).modifier(SyncDestinations()).modifier(RecordDestinations())
+        HStack(spacing: 0) {
+            if verticalTabs { PhoneTabBar(vertical: true) }
+            TabView(selection: $tabs.selected) {
+                ForEach(Section.phoneTabs) { section in
+                    Tab(section.title, image: section.icon, value: section) {
+                        NavigationStack(path: tabs.path(section)) {
+                            PhoneSectionScreen(section: section).modifier(SyncDestinations()).modifier(RecordDestinations())
+                                .ignoresSafeArea(.container, edges: rightInset > 0 ? .trailing : [])
+                        }
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !verticalTabs {
+                    VStack(spacing: 0) {
+                        tabs.selected.board.frame(height: Tokens.Space.s1)
+                        HStack(spacing: 0) {
+                            PhoneTabBar().frame(width: rightInset > 0 ? safeWidth : nil)
+                            if rightInset > 0, recs != nil {
+                                Button { adding = true } label: {
+                                    Icon("plus", size: 28)
+                                        .foregroundStyle(tabs.selected.onBoard)
+                                        .frame(width: rightInset, height: PhoneTabBar.height)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Add")
+                                .keyboardShortcut("n", modifiers: .command)
+                                .background(tabs.selected.board)
+                            } else if rightInset > 0 {
+                                tabs.selected.board.frame(width: rightInset)
+                            }
+                        }
+                        .padding(.bottom, -bottomInset)
+                    }
+                }
+            }
+            .frame(width: rightInset > 0 ? safeWidth + rightInset : nil)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { PhoneTabBar() }
+        .modifier(AddHost(recs: recs, showButton: false, presented: $adding))
+        .environment(\.duoCover, rightInset > 0)
+        .environment(\.duoCoverTrailingInset, rightInset)
+        .environment(\.phoneBarAtBottom, !verticalTabs)
+        .ignoresSafeArea(edges: rightInset > 0 ? .trailing : [])
         // Documents is a tablet tab; on the phone it lives under Aircraft.
         .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }
     }
@@ -207,6 +271,7 @@ struct PhoneSectionScreen: View {
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(BooksModel.self) private var books: BooksModel?
     @Environment(Recs.self) private var recs: Recs?
+    @Environment(\.duoCover) private var duoCover
     @State private var adding = false
 
     var body: some View {
@@ -230,7 +295,7 @@ struct PhoneSectionScreen: View {
         // The record leaves carry their own toast; Status and Logbooks show what the Add sheet saved here.
         .safeAreaInset(edge: .bottom) { if let recs, section == .status || section == .books { ToastBar(recs: recs) } }
         // 02 §9: the AddButton on the top-level screens of Status, Logbooks, Maint. and Aircraft.
-        .modifier(AddHost(recs: section == .share ? nil : recs, presented: $adding))
+        .modifier(AddHost(recs: section == .share ? nil : recs, showButton: !duoCover, presented: $adding))
     }
 }
 
@@ -274,12 +339,67 @@ struct TabletShell: View {
     }
 }
 
+/// Duo's inner screen has room for two leaves but not the iPad's full text sidebar.
+struct DuoShell: View {
+    let fullWidth: CGFloat
+    let fullHeight: CGFloat
+    let leftLeafWidth: CGFloat
+    let trailingInset: CGFloat
+    @Environment(TabModel.self) private var tabs
+    @Environment(\.aircraftLine) private var line
+    @Environment(Recs.self) private var recs: Recs?
+    @State private var adding = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                AccountButton(switchesAircraft: true) {
+                    Text(line.tailText).dFont(.small, weight: 700)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .foregroundStyle(Tokens.Colors.onCover)
+                        .frame(width: 74, height: 48)
+                }
+                PhoneTabBar(vertical: true)
+                if recs != nil {
+                    Button { adding = true } label: {
+                        Icon("plus", size: 22).foregroundStyle(Tokens.Colors.onCover)
+                            .frame(width: 74, height: 48)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add")
+                    .keyboardShortcut("n", modifiers: .command)
+                }
+                AccountButton {
+                    Icon("circle-user-round", size: 22).foregroundStyle(Tokens.Colors.onCover)
+                        .frame(width: 74, height: 48)
+                }
+                .accessibilityLabel("Account")
+            }
+            .frame(width: 82)
+            .background(Tokens.Colors.cover.ignoresSafeArea())
+            NavigationStack(path: tabs.path(tabs.selected)) {
+                TabletBoard(section: tabs.selected).modifier(SyncDestinations()).modifier(RecordDestinations())
+                    .ignoresSafeArea(.container, edges: .trailing)
+            }
+            .id(tabs.selected)
+            .frame(width: fullWidth - 82, height: fullHeight)
+        }
+        .frame(width: fullWidth, alignment: .leading)
+        .background(Tokens.Colors.cover.ignoresSafeArea())
+        .modifier(AddHost(recs: recs, showButton: false, presented: $adding))
+        .environment(\.duoLeftLeafWidth, leftLeafWidth)
+        .environment(\.duoCoverTrailingInset, trailingInset)
+        .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }
+    }
+}
+
 /// The board: BoardHead on the section colour, then one leaf. iPad keeps the system bar, tinted to the board (02 §9.1).
 struct TabletBoard: View {
     let section: Section
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(BooksModel.self) private var books: BooksModel?
     @Environment(Recs.self) private var recs: Recs?
+    @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -287,7 +407,7 @@ struct TabletBoard: View {
                 .font(.custom("LibreFranklin-ExtraBold", size: 30, relativeTo: .largeTitle))
                 .foregroundStyle(section.onBoard)
                 .accessibilityAddTraits(.isHeader)
-                .frame(minHeight: Tokens.Size.boardheadMin, alignment: .bottomLeading)
+                .frame(minHeight: duoLeftLeafWidth == nil ? Tokens.Size.boardheadMin : 40, alignment: .bottomLeading)
             if section == .status, let status {
                 StatusTablet(model: status)
             } else if section == .books, let books {
@@ -301,7 +421,7 @@ struct TabletBoard: View {
             }
         }
         .padding(.horizontal, Tokens.Size.boardPad)
-        .padding(.bottom, Tokens.Size.boardPad)
+        .padding(.bottom, duoLeftLeafWidth == nil ? Tokens.Size.boardPad : Tokens.Space.s1)
         .background(section.board.ignoresSafeArea())
         .environment(\.section, section)
         .toolbarBackground(section.board, for: .navigationBar)

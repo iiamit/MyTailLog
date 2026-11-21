@@ -5,22 +5,41 @@ import VisionKit
 
 /// The live preview, filling its frame (aspect fill).
 struct CameraPreview: UIViewRepresentable {
-    let session: AVCaptureSession
+    let engine: CameraEngine
 
     final class PreviewView: UIView {
         override static var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
         var preview: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+        var coordinator: AVCaptureDevice.RotationCoordinator?
+        var previewObservation: NSKeyValueObservation?
+        var captureObservation: NSKeyValueObservation?
     }
 
     func makeUIView(context: Context) -> PreviewView {
         let v = PreviewView()
-        v.preview.session = session
+        v.preview.session = engine.session
         v.preview.videoGravity = .resizeAspectFill
-        if let c = v.preview.connection, c.isVideoRotationAngleSupported(90) { c.videoRotationAngle = 90 }
         return v
     }
 
-    func updateUIView(_ uiView: PreviewView, context: Context) {}
+    func updateUIView(_ v: PreviewView, context: Context) {
+        guard v.coordinator == nil else { return }
+        if let device = engine.captureDevice {
+            let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: v.preview)
+            v.coordinator = coordinator
+            v.previewObservation = coordinator.observe(\.videoRotationAngleForHorizonLevelPreview, options: [.initial, .new]) { [weak v] coordinator, _ in
+                let angle = coordinator.videoRotationAngleForHorizonLevelPreview
+                Task { @MainActor [weak v] in
+                    guard let connection = v?.preview.connection else { return }
+                    if connection.isVideoRotationAngleSupported(angle) { connection.videoRotationAngle = angle }
+                }
+            }
+            v.captureObservation = coordinator.observe(\.videoRotationAngleForHorizonLevelCapture, options: [.initial, .new]) { [engine] coordinator, _ in
+                engine.setCaptureAngle(coordinator.videoRotationAngleForHorizonLevelCapture)
+            }
+        }
+    }
+
 }
 
 /// Where content of `content` size lands when aspect-filled into `bounds` (the preview's crop).

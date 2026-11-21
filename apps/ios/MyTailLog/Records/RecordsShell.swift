@@ -59,6 +59,7 @@ struct RecordsTablet: View {
     let section: Section
     let recs: Recs
     @State private var detail: RecRoute?
+    @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
 
     var body: some View {
         let nav = RecNav(open: { detail = $0 }, back: { detail = nil }, tablet: true)
@@ -71,7 +72,8 @@ struct RecordsTablet: View {
                 default: DocumentsScreen(recs: recs, pushed: false)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(width: duoLeftLeafWidth.map { $0 + (Tokens.Space.s4 - Tokens.Size.leavesGap) / 2 })
+            .frame(maxWidth: duoLeftLeafWidth == nil ? .infinity : nil)
             Group {
                 if let detail {
                     RecordScreen(recs: recs, route: detail).id(detail)
@@ -161,6 +163,7 @@ struct AddHost: ViewModifier {
     var showButton = true
     @Binding var presented: Bool
     @Environment(TabModel.self) private var tabs
+    @Environment(\.phoneBarAtBottom) private var phoneBarAtBottom
     @State private var action: AddAction?
 
     func body(content: Content) -> some View {
@@ -174,7 +177,7 @@ struct AddHost: ViewModifier {
                     }
                     .buttonStyle(.plain)
                     .padding(.trailing, Tokens.Space.s2 + Tokens.Space.s4)
-                    .padding(.bottom, Tokens.Space.s4 + Tokens.Size.phoneTabbar)
+                    .padding(.bottom, Tokens.Space.s4 + (phoneBarAtBottom ? PhoneTabBar.height : 0))
                     .accessibilityLabel("Add")
                     .keyboardShortcut("n", modifiers: .command)
                 }

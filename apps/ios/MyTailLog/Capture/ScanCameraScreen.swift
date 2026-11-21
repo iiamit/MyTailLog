@@ -176,7 +176,7 @@ struct ScanCameraScreen: View {
         case .running, .starting:
             GeometryReader { g in
                 ZStack(alignment: .bottom) {
-                    CameraPreview(session: model.engine.session)
+                    CameraPreview(engine: model.engine)
                     QuadOverlay(quad: model.quad, frame: aspectFillRect(content: model.bufferSize, in: g.size), pulse: flash || model.busy)
                     if flash { Tokens.Colors.onCover.opacity(0.85).allowsHitTesting(false) }
                     Label { Text(model.hint.text).dFont(.small, weight: 600) } icon: { Icon("scan-line", size: 16) }

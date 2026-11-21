@@ -12,7 +12,7 @@ final class AddUITests: XCTestCase {
 
     @MainActor func testEveryOwnerActionOpensItsDestination() {
         let actions = [
-            ("Log a flight", "Type it"),
+            ("Log a flight", "Tach"),
             ("Add oil", "Quarts"),
             ("Report a squawk", "New squawk"),
             ("Scan logbook pages", "Scan requested"),
@@ -43,5 +43,14 @@ final class AddUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
         XCTAssertTrue(app.staticTexts["MyTailLog"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor func testLandscapeKeepsAddSheetReachable() {
+        let app = launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(app.buttons["Add"].waitForExistence(timeout: 10))
+        app.buttons["Add"].tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Log a flight")).firstMatch.waitForExistence(timeout: 10))
     }
 }

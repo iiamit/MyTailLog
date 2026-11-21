@@ -71,6 +71,7 @@ struct StatusTablet: View {
     @State private var stack: [RecRoute] = []
     @Environment(TabModel.self) private var tabs
     @Environment(Recs.self) private var recs: Recs?
+    @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
 
     var body: some View {
         if let recs, let route = stack.last {
@@ -89,6 +90,7 @@ struct StatusTablet: View {
                     if case .item(let key) = route { selected = key }
                 }
             }
+            .frame(width: duoLeftLeafWidth)
             .refreshable { await model.refresh() }
             TabletLeaf {
                 let items = model.snapshot?.items ?? []
@@ -97,7 +99,7 @@ struct StatusTablet: View {
                 }
             }
             // The list leads; the selected item's leaf stays narrower so rows keep their two columns in portrait.
-            .frame(maxWidth: 380)
+            .frame(maxWidth: duoLeftLeafWidth == nil ? 380 : .infinity)
         }
     }
 }
