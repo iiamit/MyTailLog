@@ -147,13 +147,19 @@ struct PhoneTabBar: View {
                     .padding(.horizontal, Tokens.Space.s1)
                     .frame(width: 82)
                     .frame(maxHeight: .infinity, alignment: .top)
-                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .leading)
+                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: [.leading, .bottom])
             } else {
                 HStack(alignment: .top, spacing: Tokens.Space.s1) { buttons }
                     .padding(.horizontal, Tokens.Space.s2)
                     .frame(height: Self.height, alignment: .top)
                     .frame(maxWidth: .infinity)
-                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .bottom)
+                    .background {
+                        HStack(spacing: Tokens.Space.s1) {
+                            ForEach(Section.phoneTabs) { $0.board.frame(maxWidth: .infinity) }
+                        }
+                        .padding(.horizontal, Tokens.Space.s2)
+                        .ignoresSafeArea(edges: .bottom)
+                    }
             }
         }
         .accessibilityElement(children: .contain)

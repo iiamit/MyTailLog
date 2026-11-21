@@ -3,10 +3,11 @@ import WidgetKit
 
 /// Signed out: M-AUTH-01. Signed in: tabs, a compact side rail, or the binder as the window grows.
 enum ShellLayout: Equatable {
-    case tabs, rail, binder
+    case tabs, rail, duo, binder
 
-    static func forWindow(width: CGFloat, sizeClass: UserInterfaceSizeClass?) -> Self {
+    static func forWindow(width: CGFloat, height: CGFloat, sizeClass: UserInterfaceSizeClass?) -> Self {
         if sizeClass == .regular && width >= 900 { return .binder }
+        if width >= 800 && height >= 500 { return .duo }
         return width >= 600 ? .rail : .tabs
     }
 }
@@ -29,17 +30,21 @@ struct RootView: View {
 
     var body: some View {
         GeometryReader { window in
-            let layout = ShellLayout.forWindow(width: window.size.width, sizeClass: sizeClass)
+            let layout = ShellLayout.forWindow(width: window.size.width, height: window.size.height, sizeClass: sizeClass)
             Group {
                 if store.session == nil {
                     SignInView()
                 } else if layout == .binder {
                     TabletShell()
+                        .environment(\.horizontalSizeClass, .regular)
+                } else if layout == .duo {
+                    DuoShell()
+                        .environment(\.horizontalSizeClass, .regular)
                 } else {
                     PhoneShell(verticalTabs: layout == .rail)
                 }
             }
-            .background { if store.session != nil { KeyCommands(tablet: layout == .binder) } }
+            .background { if store.session != nil { KeyCommands(tablet: layout == .binder || layout == .duo) } }
             .onChange(of: layout, initial: true) { _, newValue in windowLayout = newValue }
         }
         // Notifications and Reminders (06 M-SYS-05) over either shell.
@@ -130,7 +135,7 @@ struct RootView: View {
         links.pending = nil
         if let id = link.aircraftId, id != status.currentId, status.aircraft.contains(where: { $0.id == id }) { status.select(id) }
         if link.target == .review { ReadingLive.shared.endAll() }
-        tabs.go(landing(link, tablet: windowLayout == .binder))
+        tabs.go(landing(link, tablet: windowLayout == .binder || windowLayout == .duo))
     }
 
     /// The tail line with the sync state (06 §1.3).
@@ -289,6 +294,51 @@ struct TabletShell: View {
             .id(tabs.selected)
         }
         .navigationSplitViewStyle(.balanced)
+    }
+}
+
+/// Duo's inner screen has room for two leaves but not the iPad's full text sidebar.
+struct DuoShell: View {
+    @Environment(TabModel.self) private var tabs
+    @Environment(\.aircraftLine) private var line
+    @Environment(Recs.self) private var recs: Recs?
+    @State private var adding = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                AccountButton(switchesAircraft: true) {
+                    Text(line.tailText).dFont(.small, weight: 700)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .foregroundStyle(Tokens.Colors.onCover)
+                        .frame(width: 74, height: 48)
+                }
+                PhoneTabBar(vertical: true)
+                if recs != nil {
+                    Button { adding = true } label: {
+                        Icon("plus", size: 22).foregroundStyle(Tokens.Colors.onCover)
+                            .frame(width: 74, height: 48)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add")
+                    .keyboardShortcut("n", modifiers: .command)
+                }
+                AccountButton {
+                    Icon("circle-user-round", size: 22).foregroundStyle(Tokens.Colors.onCover)
+                        .frame(width: 74, height: 48)
+                }
+                .accessibilityLabel("Account")
+            }
+            .frame(width: 82)
+            .background(Tokens.Colors.cover.ignoresSafeArea())
+            NavigationStack(path: tabs.path(tabs.selected)) {
+                TabletBoard(section: tabs.selected).modifier(SyncDestinations()).modifier(RecordDestinations())
+            }
+            .id(tabs.selected)
+            .frame(maxWidth: .infinity)
+        }
+        .modifier(AddHost(recs: recs, showButton: false, presented: $adding))
+        .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }
     }
 }
 

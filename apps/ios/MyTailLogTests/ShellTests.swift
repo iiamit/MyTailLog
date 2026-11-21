@@ -6,11 +6,16 @@ import UIKit
 @MainActor
 struct TabModelTests {
     @Test func shellTracksAvailableWindowWidth() {
-        #expect(ShellLayout.forWindow(width: 466, sizeClass: .compact) == .tabs)
-        #expect(ShellLayout.forWindow(width: 678, sizeClass: .compact) == .rail)
-        #expect(ShellLayout.forWindow(width: 669, sizeClass: .regular) == .rail)
-        #expect(ShellLayout.forWindow(width: 951, sizeClass: .regular) == .binder)
-        #expect(ShellLayout.forWindow(width: 800, sizeClass: .regular) == .rail)
+        #expect(ShellLayout.forWindow(width: 466, height: 880, sizeClass: .compact) == .tabs)
+        #expect(ShellLayout.forWindow(width: 678, height: 880, sizeClass: .compact) == .rail)
+        #expect(ShellLayout.forWindow(width: 780, height: 700, sizeClass: .compact) == .rail)
+        #expect(ShellLayout.forWindow(width: 951, height: 440, sizeClass: .compact) == .rail)
+        #expect(ShellLayout.forWindow(width: 840, height: 600, sizeClass: .compact) == .duo)
+        #expect(ShellLayout.forWindow(width: 951, height: 700, sizeClass: .compact) == .duo)
+        #expect(ShellLayout.forWindow(width: 669, height: 900, sizeClass: .regular) == .rail)
+        #expect(ShellLayout.forWindow(width: 951, height: 700, sizeClass: .regular) == .binder)
+        #expect(ShellLayout.forWindow(width: 867, height: 635, sizeClass: .regular) == .duo)
+        #expect(ShellLayout.forWindow(width: 800, height: 900, sizeClass: .regular) == .duo)
     }
     @Test func phoneHasFiveTabsAndTabletSix() {
         #expect(Section.phoneTabs == [.status, .books, .maint, .aircraft, .share])

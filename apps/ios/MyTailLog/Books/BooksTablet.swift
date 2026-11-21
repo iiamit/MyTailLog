@@ -93,7 +93,7 @@ struct BooksTablet: View {
                     let years = Int(map.today.prefix(4))! - Int(map.range.from.prefix(4))!
                     Text("\(years) years, \(confirmed) confirmed entries · tap a stop or a visit").dFont(.small).foregroundStyle(Tokens.Colors.ink3)
                     if width > 0 {
-                        let layout = map.layout(MapLayoutOptions(size: "routemap", renderedWidth: width))
+                        let layout = map.layout(MapLayoutOptions(size: width < 600 ? "phone" : "routemap", renderedWidth: width))
                         let elements = mapElements(layout, map) { s in s.entryIds.first.flatMap(model.entry)?.title }
                         RouteMapView(data: map, layout: layout, elements: elements, selected: selected?.id, open: open)
                     }
