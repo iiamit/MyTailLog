@@ -61,6 +61,9 @@ export default defineConfig({
           // makes getAnthropic return canned responses so no real calls are made.
           ANTHROPIC_API_KEY: "e2e-stub-key",
           E2E_STUB_AI: "1",
+          // Stubbed calls still use the test DB ledger; keep prior CI runs from exhausting its quotas.
+          AI_SHARED_USER_DAILY_CALLS: "100000",
+          AI_SHARED_DAILY_USD: "0",
           // ADS-B needs no stub: the OpenSky fetch moved out of the app entirely
           // (to .github/workflows/adsb-sweep.yml), so adsb.spec.ts drives the
           // real /api/cron/adsb endpoints directly and never touches the live
