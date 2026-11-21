@@ -14,6 +14,7 @@ struct BooksTablet: View {
     @State private var scanBook: ScanChoice?
     @Environment(TabModel.self) private var tabs
     @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
+    @Environment(\.duoCoverTrailingInset) private var trailingInset
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -26,6 +27,7 @@ struct BooksTablet: View {
                 .pickerStyle(.segmented)
                 .frame(maxWidth: 420)
                 ScanRow(model: model, scanBook: $scanBook).frame(maxWidth: 360)
+                    .padding(.trailing, trailingInset)
             }
             switch tab {
             case .map: map

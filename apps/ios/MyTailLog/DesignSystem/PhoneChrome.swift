@@ -150,7 +150,7 @@ struct PhoneTabBar: View {
                     .padding(.horizontal, Tokens.Space.s1)
                     .frame(width: 82)
                     .frame(maxHeight: .infinity, alignment: .top)
-                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: [.leading, .bottom])
+                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: [.top, .leading, .bottom])
             } else {
                 HStack(alignment: .top, spacing: Tokens.Space.s1) { buttons }
                     .frame(height: Self.height, alignment: .top)

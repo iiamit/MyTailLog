@@ -41,7 +41,8 @@ struct RootView: View {
                     DuoShell(fullWidth: window.size.width + window.safeAreaInsets.trailing,
                              fullHeight: window.size.height + window.safeAreaInsets.bottom,
                              leftLeafWidth: (window.size.width + window.safeAreaInsets.trailing) / 2
-                                 - 82 - Tokens.Size.boardPad - Tokens.Space.s4 / 2)
+                                 - 82 - Tokens.Size.boardPad - Tokens.Space.s4 / 2,
+                             trailingInset: window.safeAreaInsets.trailing)
                         .environment(\.horizontalSizeClass, .regular)
                         .ignoresSafeArea(edges: [.trailing, .bottom])
                 } else {
@@ -343,6 +344,7 @@ struct DuoShell: View {
     let fullWidth: CGFloat
     let fullHeight: CGFloat
     let leftLeafWidth: CGFloat
+    let trailingInset: CGFloat
     @Environment(TabModel.self) private var tabs
     @Environment(\.aircraftLine) private var line
     @Environment(Recs.self) private var recs: Recs?
@@ -386,6 +388,7 @@ struct DuoShell: View {
         .background(Tokens.Colors.cover.ignoresSafeArea())
         .modifier(AddHost(recs: recs, showButton: false, presented: $adding))
         .environment(\.duoLeftLeafWidth, leftLeafWidth)
+        .environment(\.duoCoverTrailingInset, trailingInset)
         .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }
     }
 }
