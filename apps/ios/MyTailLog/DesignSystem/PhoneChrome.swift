@@ -127,6 +127,9 @@ struct PhoneLeaf<Content: View>: View {
 
 extension EnvironmentValues {
     @Entry var phoneBarAtBottom = true
+    @Entry var duoCover = false
+    @Entry var duoCoverTrailingInset: CGFloat = 0
+    @Entry var duoLeftLeafWidth: CGFloat?
 }
 
 /// PhoneTabBar (02 §9.4): five coloured tabs on the bottom or a side rail when the window is wide.
@@ -150,16 +153,15 @@ struct PhoneTabBar: View {
                     .background(Tokens.Colors.cover, ignoresSafeAreaEdges: [.leading, .bottom])
             } else {
                 HStack(alignment: .top, spacing: Tokens.Space.s1) { buttons }
-                    .padding(.horizontal, Tokens.Space.s2)
                     .frame(height: Self.height, alignment: .top)
                     .frame(maxWidth: .infinity)
                     .background {
                         HStack(spacing: Tokens.Space.s1) {
                             ForEach(Section.phoneTabs) { $0.board.frame(maxWidth: .infinity) }
                         }
-                        .padding(.horizontal, Tokens.Space.s2)
                         .ignoresSafeArea(edges: .bottom)
                     }
+                    .background(Tokens.Colors.cover, ignoresSafeAreaEdges: .bottom)
             }
         }
         .accessibilityElement(children: .contain)

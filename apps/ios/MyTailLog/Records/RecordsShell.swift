@@ -59,6 +59,7 @@ struct RecordsTablet: View {
     let section: Section
     let recs: Recs
     @State private var detail: RecRoute?
+    @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
 
     var body: some View {
         let nav = RecNav(open: { detail = $0 }, back: { detail = nil }, tablet: true)
@@ -71,7 +72,8 @@ struct RecordsTablet: View {
                 default: DocumentsScreen(recs: recs, pushed: false)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(width: duoLeftLeafWidth.map { $0 + (Tokens.Space.s4 - Tokens.Size.leavesGap) / 2 })
+            .frame(maxWidth: duoLeftLeafWidth == nil ? .infinity : nil)
             Group {
                 if let detail {
                     RecordScreen(recs: recs, route: detail).id(detail)

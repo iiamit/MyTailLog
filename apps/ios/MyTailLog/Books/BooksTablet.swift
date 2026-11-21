@@ -13,6 +13,7 @@ struct BooksTablet: View {
     @State private var gap: MapData.Gap?
     @State private var scanBook: ScanChoice?
     @Environment(TabModel.self) private var tabs
+    @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -106,9 +107,10 @@ struct BooksTablet: View {
                     Skeleton(fraction: 1, height: 400)
                 }
             }
+            .frame(width: duoLeftLeafWidth)
             .onGeometryChange(for: CGFloat.self) { $0.size.width - 60 } action: { width = max($0, 0) }
             .refreshable { await model.refresh() }
-            pagesMat.frame(maxWidth: 380)
+            pagesMat.frame(maxWidth: duoLeftLeafWidth == nil ? 380 : .infinity)
         }
     }
 

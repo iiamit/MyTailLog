@@ -11,7 +11,7 @@ struct RecLeaf<Content: View, Footer: View>: View {
     @Environment(\.recNav) private var nav
     @Environment(\.phoneBarAtBottom) private var phoneBarAtBottom
     @Environment(Recs.self) private var recs: Recs?
-    @State private var footerHeight: CGFloat = 1
+    @State private var footerHeight: CGFloat = 0
 
     var body: some View {
         Group {
@@ -27,7 +27,7 @@ struct RecLeaf<Content: View, Footer: View>: View {
                 footerBar
             }
             // The phone's tab bar is drawn over the stack (PhoneShell's inset doesn't reach the tab's content).
-            .padding(.bottom, nav.tablet || !phoneBarAtBottom ? 0 : PhoneTabBar.height)
+            .padding(.bottom, nav.tablet || !phoneBarAtBottom || (footerHeight == 0 && recs?.toast == nil) ? 0 : PhoneTabBar.height)
         }
     }
 

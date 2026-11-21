@@ -43,6 +43,7 @@ struct BooksHome: View {
     @State private var scanBook: ScanChoice?
     @Environment(TabModel.self) private var tabs
     @Environment(OfflineStore.self) private var offline: OfflineStore?
+    @Environment(\.duoCoverTrailingInset) private var coverInset
 
     var body: some View {
         VStack(spacing: Tokens.Space.s2) {
@@ -96,7 +97,11 @@ struct BooksHome: View {
         }
     }
 
-    private var captureRow: some View { ScanRow(model: model, scanBook: $scanBook).padding(.horizontal, Tokens.Space.s4) }
+    private var captureRow: some View {
+        ScanRow(model: model, scanBook: $scanBook)
+            .padding(.horizontal, Tokens.Space.s4)
+            .padding(.trailing, coverInset)
+    }
 
     @ViewBuilder private var content: some View {
         switch tab {

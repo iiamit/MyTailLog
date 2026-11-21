@@ -38,10 +38,16 @@ struct RootView: View {
                     TabletShell()
                         .environment(\.horizontalSizeClass, .regular)
                 } else if layout == .duo {
-                    DuoShell()
+                    DuoShell(fullWidth: window.size.width + window.safeAreaInsets.trailing,
+                             fullHeight: window.size.height + window.safeAreaInsets.bottom,
+                             leftLeafWidth: (window.size.width + window.safeAreaInsets.trailing) / 2
+                                 - 82 - Tokens.Size.boardPad - Tokens.Space.s4 / 2)
                         .environment(\.horizontalSizeClass, .regular)
+                        .ignoresSafeArea(edges: [.trailing, .bottom])
                 } else {
-                    PhoneShell(verticalTabs: layout == .rail)
+                    PhoneShell(verticalTabs: layout == .rail, bottomInset: window.safeAreaInsets.bottom,
+                               rightInset: layout == .tabs ? window.safeAreaInsets.trailing : 0,
+                               safeWidth: window.size.width)
                 }
             }
             .background { if store.session != nil { KeyCommands(tablet: layout == .binder || layout == .duo) } }
@@ -201,7 +207,12 @@ struct RootView: View {
 /// 05 §5.2: a TabView keeps each tab's stack and state; its system bar is hidden and D's PhoneTabBar is drawn instead.
 struct PhoneShell: View {
     var verticalTabs = false
+    var bottomInset: CGFloat = 0
+    var rightInset: CGFloat = 0
+    var safeWidth: CGFloat = 0
     @Environment(TabModel.self) private var tabs
+    @Environment(Recs.self) private var recs: Recs?
+    @State private var adding = false
 
     var body: some View {
         @Bindable var tabs = tabs
@@ -212,13 +223,42 @@ struct PhoneShell: View {
                     Tab(section.title, image: section.icon, value: section) {
                         NavigationStack(path: tabs.path(section)) {
                             PhoneSectionScreen(section: section).modifier(SyncDestinations()).modifier(RecordDestinations())
+                                .ignoresSafeArea(.container, edges: rightInset > 0 ? .trailing : [])
                         }
                     }
                 }
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) { if !verticalTabs { PhoneTabBar() } }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !verticalTabs {
+                    VStack(spacing: 0) {
+                        tabs.selected.board.frame(height: Tokens.Space.s1)
+                        HStack(spacing: 0) {
+                            PhoneTabBar().frame(width: rightInset > 0 ? safeWidth : nil)
+                            if rightInset > 0, recs != nil {
+                                Button { adding = true } label: {
+                                    Icon("plus", size: 28)
+                                        .foregroundStyle(tabs.selected.onBoard)
+                                        .frame(width: rightInset, height: PhoneTabBar.height)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Add")
+                                .keyboardShortcut("n", modifiers: .command)
+                                .background(tabs.selected.board)
+                            } else if rightInset > 0 {
+                                tabs.selected.board.frame(width: rightInset)
+                            }
+                        }
+                        .padding(.bottom, -bottomInset)
+                    }
+                }
+            }
+            .frame(width: rightInset > 0 ? safeWidth + rightInset : nil)
         }
+        .modifier(AddHost(recs: recs, showButton: false, presented: $adding))
+        .environment(\.duoCover, rightInset > 0)
+        .environment(\.duoCoverTrailingInset, rightInset)
         .environment(\.phoneBarAtBottom, !verticalTabs)
+        .ignoresSafeArea(edges: rightInset > 0 ? .trailing : [])
         // Documents is a tablet tab; on the phone it lives under Aircraft.
         .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }
     }
@@ -230,6 +270,7 @@ struct PhoneSectionScreen: View {
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(BooksModel.self) private var books: BooksModel?
     @Environment(Recs.self) private var recs: Recs?
+    @Environment(\.duoCover) private var duoCover
     @State private var adding = false
 
     var body: some View {
@@ -253,7 +294,7 @@ struct PhoneSectionScreen: View {
         // The record leaves carry their own toast; Status and Logbooks show what the Add sheet saved here.
         .safeAreaInset(edge: .bottom) { if let recs, section == .status || section == .books { ToastBar(recs: recs) } }
         // 02 §9: the AddButton on the top-level screens of Status, Logbooks, Maint. and Aircraft.
-        .modifier(AddHost(recs: section == .share ? nil : recs, presented: $adding))
+        .modifier(AddHost(recs: section == .share ? nil : recs, showButton: !duoCover, presented: $adding))
     }
 }
 
@@ -299,6 +340,9 @@ struct TabletShell: View {
 
 /// Duo's inner screen has room for two leaves but not the iPad's full text sidebar.
 struct DuoShell: View {
+    let fullWidth: CGFloat
+    let fullHeight: CGFloat
+    let leftLeafWidth: CGFloat
     @Environment(TabModel.self) private var tabs
     @Environment(\.aircraftLine) private var line
     @Environment(Recs.self) private var recs: Recs?
@@ -333,11 +377,15 @@ struct DuoShell: View {
             .background(Tokens.Colors.cover.ignoresSafeArea())
             NavigationStack(path: tabs.path(tabs.selected)) {
                 TabletBoard(section: tabs.selected).modifier(SyncDestinations()).modifier(RecordDestinations())
+                    .ignoresSafeArea(.container, edges: .trailing)
             }
             .id(tabs.selected)
-            .frame(maxWidth: .infinity)
+            .frame(width: fullWidth - 82, height: fullHeight)
         }
+        .frame(width: fullWidth, alignment: .leading)
+        .background(Tokens.Colors.cover.ignoresSafeArea())
         .modifier(AddHost(recs: recs, showButton: false, presented: $adding))
+        .environment(\.duoLeftLeafWidth, leftLeafWidth)
         .onAppear { if !Section.phoneTabs.contains(tabs.selected) { tabs.selected = .aircraft } }
     }
 }
@@ -348,6 +396,7 @@ struct TabletBoard: View {
     @Environment(StatusModel.self) private var status: StatusModel?
     @Environment(BooksModel.self) private var books: BooksModel?
     @Environment(Recs.self) private var recs: Recs?
+    @Environment(\.duoLeftLeafWidth) private var duoLeftLeafWidth
 
     var body: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
@@ -355,7 +404,7 @@ struct TabletBoard: View {
                 .font(.custom("LibreFranklin-ExtraBold", size: 30, relativeTo: .largeTitle))
                 .foregroundStyle(section.onBoard)
                 .accessibilityAddTraits(.isHeader)
-                .frame(minHeight: Tokens.Size.boardheadMin, alignment: .bottomLeading)
+                .frame(minHeight: duoLeftLeafWidth == nil ? Tokens.Size.boardheadMin : 40, alignment: .bottomLeading)
             if section == .status, let status {
                 StatusTablet(model: status)
             } else if section == .books, let books {
@@ -369,7 +418,7 @@ struct TabletBoard: View {
             }
         }
         .padding(.horizontal, Tokens.Size.boardPad)
-        .padding(.bottom, Tokens.Size.boardPad)
+        .padding(.bottom, duoLeftLeafWidth == nil ? Tokens.Size.boardPad : Tokens.Space.s1)
         .background(section.board.ignoresSafeArea())
         .environment(\.section, section)
         .toolbarBackground(section.board, for: .navigationBar)

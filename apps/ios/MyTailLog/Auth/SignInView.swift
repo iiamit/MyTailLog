@@ -42,7 +42,7 @@ struct SignInView: View {
         ScrollView {
             VStack(spacing: 0) {
                 if !typeSize.isAccessibilitySize {
-                    cover.containerRelativeFrame(.vertical) { height, _ in height * 0.46 }
+                    cover.containerRelativeFrame(.vertical) { height, _ in min(height * 0.34, 230) }
                 }
                 leaf
             }
@@ -73,7 +73,7 @@ struct SignInView: View {
             }
             .padding(.leading, Tokens.Space.s6)
             .padding(.trailing, Tokens.Space.s6 + 24)
-            .padding(.top, 120)
+            .padding(.top, 64)
             // The six section colours as a stack of tabs at the right edge, decorative.
             VStack(spacing: 2) {
                 ForEach(Section.tabletTabs) { $0.board }
