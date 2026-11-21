@@ -9,10 +9,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     static let processId = "com.mytaillog.sync.process"
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.refreshId, using: nil) { task in
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.refreshId, using: .main) { task in
             Self.run(task)
         }
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.processId, using: nil) { task in
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.processId, using: .main) { task in
             Self.run(task)
         }
         // A background relaunch for the upload session needs the signed-in user's store before any scene exists.
