@@ -41,6 +41,10 @@ with Sign in with Apple, Associated Domains, App Groups and Push; App Group
 
 ## Build & verify (no credentials needed)
 
+Run mobile builds and simulator checks on this Mac. For screens behind sign-in,
+use the `e2e@iamit.org` test account and keep its password outside the repo;
+a signed-out simulator screen is not a completed visual check.
+
 ```sh
 # Android: compiles the KMP core via the composite build + unit tests + debug APK
 cd apps/android && ./gradlew :app:testDebugUnitTest :core-design:testDebugUnitTest :app:assembleDebug

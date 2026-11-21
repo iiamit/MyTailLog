@@ -249,7 +249,7 @@ struct PhoneShell: View {
                                 tabs.selected.board.frame(width: rightInset)
                             }
                         }
-                        .padding(.bottom, -bottomInset)
+                        .padding(.bottom, rightInset > 0 ? -bottomInset : 0)
                     }
                 }
             }
