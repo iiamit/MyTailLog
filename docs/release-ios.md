@@ -1,6 +1,6 @@
 # Releasing the iOS app
 
-How to build MyTailLog for iPhone and iPad on a clean Mac and upload it to App Store Connect, where it goes out through TestFlight. Version 2.0.0 is on TestFlight today. The short path, once the Mac is set up, is `apps/ios/scripts/release.sh`.
+How to build MyTailLog for iPhone and iPad on a clean Mac and upload it to App Store Connect, where it goes out through TestFlight. The short path, once the Mac is set up, is `apps/ios/scripts/release.sh`.
 
 ## 1. Tools
 
@@ -21,7 +21,7 @@ Leave about 2 GB free for the Kotlin/Native toolchain in `~/.konan` and the Grad
 
 ## 3. Environment
 
-An App Store Connect API key (Users and Access › Integrations › App Store Connect API), kept outside the repo:
+The release script uses the Apple account already signed in to Xcode. An App Store Connect API key is optional; when all three settings below are present, the script uses it instead. Keep the key outside the repo:
 
 ```sh
 export APP_STORE_CONNECT_KEY_ID=<key id>
@@ -43,7 +43,15 @@ No `https://`: `//` starts a comment in xcconfig files, and the app adds the sch
 
 ## 5. Build and upload
 
-`apps/ios/scripts/release.sh` runs these steps. By hand, from the repo root:
+On the Mac build host, unlock the login keychain and run the release script in the same terminal session:
+
+```sh
+security unlock-keychain "$HOME/Library/Keychains/login.keychain-db"
+source "$HOME/.config/mytaillog/env.sh"
+apps/ios/scripts/release.sh
+```
+
+The script runs these steps. By hand, from the repo root:
 
 ```sh
 # 1. The shared core, as a release XCFramework
@@ -54,10 +62,7 @@ cd apps/ios && xcodegen generate
 
 # 3. Archive. The build number is a UTC timestamp, so it always goes up.
 BUILD=$(date -u +%Y%m%d%H%M)
-AUTH=(-allowProvisioningUpdates
-  -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH"
-  -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID"
-  -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID")
+AUTH=(-allowProvisioningUpdates) # Xcode's signed-in account; API key arguments are optional
 xcodebuild archive -project MyTailLog.xcodeproj -scheme MyTailLog -configuration Release \
   -destination 'generic/platform=iOS' -archivePath build/MyTailLog.xcarchive \
   CURRENT_PROJECT_VERSION="$BUILD" "${AUTH[@]}"

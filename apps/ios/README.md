@@ -2,7 +2,7 @@
 
 The native SwiftUI app for direction D (spec: `docs/redesign/handoff`, especially 05 and 06). iOS/iPadOS 18.0+, Swift 6, SwiftUI + Observation. Bundle id `com.mytaillog.app` (the same as the Capacitor app it replaces), widgets `com.mytaillog.app.widgets`.
 
-Version 2.0.0 is on TestFlight. Building and uploading a release: [`docs/release-ios.md`](../../docs/release-ios.md) (or `scripts/release.sh` once the Mac is set up).
+Building and uploading a release: [`docs/release-ios.md`](../../docs/release-ios.md) (or `scripts/release.sh` once the Mac is set up).
 
 What it covers: sign-in; Status with the Verdict, line ahead, due groups, item detail and Plan ahead; Logbooks with the map, books, pages, entries and the review queue and desk; Capture (page camera, flights and tach); Maintenance, Aircraft and Documents; Share (record rooms, people, PDFs); offline with a mirror and an outbox; notifications, widgets, a Live Activity for reading, App Intents and Spotlight. On iPad, the binder Rail with two leaves.
 
