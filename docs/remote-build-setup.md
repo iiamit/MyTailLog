@@ -26,8 +26,8 @@ Place these files, then releases run unattended:
 
 | File | What it is | How to get it |
 |---|---|---|
-| `~/.config/mytaillog/ios/AuthKey.p8` | App Store Connect API key. Creates/installs the App Store **profiles** and uploads to TestFlight. | App Store Connect → Users and Access → Integrations → App Store Connect API → generate key. Note the **Key ID** and **Issuer ID**. |
-| `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID` | the key's IDs | set in `~/.config/mytaillog/env.sh` |
+| `~/.config/mytaillog/ios/AuthKey.p8` | Optional App Store Connect API key. The release script can use Xcode's signed-in Apple account instead. | App Store Connect → Users and Access → Integrations → App Store Connect API → generate key. Note the **Key ID** and **Issuer ID**. |
+| `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID` | Optional key IDs | set in `~/.config/mytaillog/env.sh` only when using the API key |
 | **Apple Distribution cert** (`.p12`, cert + private key) imported into the login keychain | signs the App Store build. An ASC API key **cannot** create a cloud-managed distribution cert, so this is a one-time human step. | Account Holder/Admin: Developer portal → Certificates → Apple Distribution; export from Keychain as `.p12` with its private key; `security import dist.p12 -k ~/Library/Keychains/login.keychain-db -P <pw> -T /usr/bin/codesign`. Profiles are then created automatically by `apps/ios/scripts/make-profiles.mjs`. |
 | `apps/ios/Config/Release.local.xcconfig` | prod Supabase + API host for iOS | `SUPABASE_HOST = <ref>.supabase.co`, `SUPABASE_PUBLISHABLE_KEY = sb_publishable_…`, `API_HOST = <app API host>` (host only, no scheme) |
 | `~/.config/mytaillog/android/upload-keystore.jks` + `signing.properties` | the Play **upload key** (same one the Capacitor app used) | copy `signing.properties.template`, fill `storeFile/storePassword/keyAlias/keyPassword` |
@@ -54,20 +54,16 @@ xcodebuild build -scheme MyTailLog -destination 'platform=iOS Simulator,name=iPh
 ## Release — iOS (TestFlight → App Store)
 
 ```sh
-apps/ios/scripts/testflight.sh [version]     # default version 2.0.0, build number = UTC timestamp
+security unlock-keychain "$HOME/Library/Keychains/login.keychain-db"
+source "$HOME/.config/mytaillog/env.sh"
+apps/ios/scripts/release.sh
 ```
-Builds the XCFramework, generates the project, archives Release (development
-cloud signing), ensures the App Store profiles exist (`make-profiles.mjs` creates
-them via the API against the imported distribution cert), exports an App Store
-IPA with **manual** signing, and uploads it with `altool`. It then appears in
-TestFlight after processing; promote to a store release in App Store Connect.
-
-Signing note: automatic/cloud signing fails on this account with "Cloud signing
-permission error" because the API key can't create a cloud-managed distribution
-certificate. The pipeline sidesteps that — it signs with the local Apple
-Distribution cert and API-created profiles — so the distribution `.p12` above is
-required and the profiles (`MyTailLog App Store`, `MyTailLog Widgets App Store`)
-are regenerated/installed on each run.
+Run all three commands in the same Mac terminal session. The script builds the
+XCFramework, generates the project, archives Release, and uploads through
+Xcode's signed-in Apple account. It uses an App Store Connect API key only when
+all three key settings are present. The build appears in TestFlight after
+processing; promote it to a store release in App Store Connect. See
+[`release-ios.md`](release-ios.md) for signing and configuration details.
 
 ## Release — Android (internal → closed → production)
 
