@@ -6,6 +6,18 @@ the git log.
 
 ## 2026.11
 
+### Improved — find the next task and the page behind it
+
+- **A binder for your aircraft:** Status, Logbooks, Maintenance, Aircraft, Documents and Share put related tasks together. On a computer, open an aircraft and choose **Try the new design** in the Account navigation to explore it.
+- **From a due item to its evidence:** open a tracked inspection from Status or Maintenance to review the linked log entry and scanned page. The logbook map groups related entries into visits; the review desk keeps extracted fields beside the original scan.
+- **Fewer steps to record an update:** Add opens the relevant oil, flight-reading, squawk or document form. Ask your logbook and writing a log entry now fit into the redesigned web experience.
+
+### Coming soon — redesigned native apps and iPhone Duo layouts
+
+- The redesigned **2.0 native apps are coming soon**. The sneak peek shows builds currently in iOS TestFlight and Android Play internal testing. The public [App Store](https://apps.apple.com/us/app/mytaillog/id6795396758) and [Google Play](https://play.google.com/store/apps/details?id=com.mytaillog.app) apps remain available; the native preview is a separate rollout.
+- The iOS preview includes **iPhone Duo support**: compact navigation on the cover display and a two-pane workspace on the unfolded display, with an entry beside the logbook map. Layouts adapt as the window changes in portrait and landscape, while keeping your selected aircraft and section.
+- The preview improves phone safe-area spacing, map sizing on first load, squawk camera restart and background task handling. Synced aircraft details and maintenance records stay on your phone, and readings, oil, squawks and scans can queue until you reconnect. Managed offline scan downloads are not part of the native preview; AI reading and Ask need a connection.
+
 ### Added — a new design for the web, to try now
 
 - The aircraft is laid out like a records binder with six sections: **Status**, **Logbooks**, **Maintenance**, **Aircraft**, **Documents** and **Share**. Each keeps its own colour, and the same sections are on the phones.
@@ -14,10 +26,10 @@ the git log.
 - The review desk puts the scan beside the fields read from it, least certain first, with a close-up of the field being checked. Keys move between fields and pages.
 - It's opt-in for now: choose **Try the new design** in the app, and **Switch back** at any time. Pages it doesn't cover yet open in the current design.
 
-### Released — new native apps for iPhone, iPad and Android
+### Preview — new native apps for iPhone, iPad and Android
 
 - Rebuilt from scratch in SwiftUI (iOS and iPadOS 18 or later) and Jetpack Compose (Android 10 or later), on the new design, sharing one core for sync and the due rules. Version 2.0 is in TestFlight and Play internal testing, and installs over the current app.
-- Everything opens offline. Scans, flights, oil, squawks and edits made without signal wait on the phone and upload on the next sync. A change made in two places comes back to you to decide, never a silent winner.
+- Synced aircraft details and maintenance records are stored on the phone. Scans, readings, oil and squawks made without signal queue for the next sync. Native Logbooks offline access differs by platform, and managed scan downloads are not yet included. Review conflicting edits before applying them.
 - Scan pages with the camera, which finds the page edges and flattens them. Reading progress shows as a notification, and a Live Activity on iPhone.
 - Widgets for what's next, reminders as notifications, iPad and tablet layouts with the binder rail, and keyboard shortcuts.
 

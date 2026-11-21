@@ -1,0 +1,332 @@
+[
+  {
+    "file": "README.md",
+    "bytes": 7704,
+    "sha256": "1d032ae104c30029e1344ddedd24aa28103cb0b1b09f1065e5eb9aad191b44d3"
+  },
+  {
+    "file": "build_media.py",
+    "bytes": 10135,
+    "sha256": "feb4dbc05335c65b8caf4b2ddd7680100c82ad649ff14fd3613eb5e2f66cafc0"
+  },
+  {
+    "file": "carousel/01.jpg",
+    "bytes": 346818,
+    "sha256": "afa486d8874cfeff2703cfab28996a3034e80a5b1bc0ac0ff1fed4852b4b2289"
+  },
+  {
+    "file": "carousel/02.jpg",
+    "bytes": 395144,
+    "sha256": "5a141de4d317c2ab9ed784b19eccf4c6affbd4668584d8a4ed06382e277ab9cf"
+  },
+  {
+    "file": "carousel/03.jpg",
+    "bytes": 359517,
+    "sha256": "ab870aca8c98c6221e2e2db06d47b56fabe88078ed5134beeb85943b5e121c4b"
+  },
+  {
+    "file": "carousel/04.jpg",
+    "bytes": 332101,
+    "sha256": "a6d5a16a3f11567346eea3b2090ae7ef275860af76084d600f13f74ffb24ded2"
+  },
+  {
+    "file": "carousel/05.jpg",
+    "bytes": 357064,
+    "sha256": "2b4a668b4e0e1dcd121fef82d791acb10a537ccb1c5443c41273905b62da36a4"
+  },
+  {
+    "file": "carousel/06.jpg",
+    "bytes": 392858,
+    "sha256": "39f3f13bf90e1de7118828e3e3a42eeb1bbccf988b235f730da59dae168d0fca"
+  },
+  {
+    "file": "carousel/07.jpg",
+    "bytes": 210161,
+    "sha256": "a85a882e4978f96c6314bddbc8ee6afed2d2f463ac180a0b864a12ac4a509d61"
+  },
+  {
+    "file": "carousel/contact-sheet.jpg",
+    "bytes": 313841,
+    "sha256": "fe4d30458fafc88ec36bbf3bec4fd9bc393f95d333f4927955be7a1be1feb761"
+  },
+  {
+    "file": "facebook/platform-update-1200x630.jpg",
+    "bytes": 148399,
+    "sha256": "cf46cb4ecaa1fa62b6460ab51ace493cc1fc145a380d91ae0e1e0197766e42f4"
+  },
+  {
+    "file": "generate_voiceover.py",
+    "bytes": 4927,
+    "sha256": "749dba66cbd5c38cdd0029b1939b6034ba848501832fd5bafb3dc224188c1b69"
+  },
+  {
+    "file": "prepare_sources.py",
+    "bytes": 1939,
+    "sha256": "27baef1f4674540e580e2e20a6e7dbf666e3465b7fd38412ab068dae1454277e"
+  },
+  {
+    "file": "reel/alignment-01.json",
+    "bytes": 6209,
+    "sha256": "cdcb49181ca2715266b5451fcb7fdf69ab6d26c5fb95b122121317ee9f02ec1c"
+  },
+  {
+    "file": "reel/alignment-02.json",
+    "bytes": 5826,
+    "sha256": "b057a59fd8af24b0009893140f7eef87768e53cd57136bce9e1d125dba398234"
+  },
+  {
+    "file": "reel/alignment-03.json",
+    "bytes": 7630,
+    "sha256": "de780ec9e3a6aea2ab0e8a591dcd9b3d6c591a4cd28acc5b4143284a2b04cc6e"
+  },
+  {
+    "file": "reel/alignment-04.json",
+    "bytes": 8062,
+    "sha256": "5100608ec2589733fb8c82fbbe8d4c3de37e100d6702a1127667f7710153a18c"
+  },
+  {
+    "file": "reel/alignment-05.json",
+    "bytes": 7245,
+    "sha256": "4efbae7d8bc0724f6ace73bc6b026108186582428653b2cde2b4412d0712af87"
+  },
+  {
+    "file": "reel/alignment-06.json",
+    "bytes": 6953,
+    "sha256": "efda378fdede38479ea0333fb34e280d72837380bc27156221617b8664e08bd7"
+  },
+  {
+    "file": "reel/alignment-07.json",
+    "bytes": 9035,
+    "sha256": "6b95b8f42602f7eb78b0a7c94752cf3b2fa339a23a0e5b0bc322fa9c13328482"
+  },
+  {
+    "file": "reel/captions.ass",
+    "bytes": 2042,
+    "sha256": "520c10a026034d15957c62b4a550a827ba1b6fad5937b3650ce2f6d1ded8a9a9"
+  },
+  {
+    "file": "reel/captions.json",
+    "bytes": 1704,
+    "sha256": "1bd640b891304bb99ecfc02068994d7043fe642d895ea473bcaf11bd927d9770"
+  },
+  {
+    "file": "reel/contact-sheet.jpg",
+    "bytes": 193994,
+    "sha256": "2af13f96a72d5c5707b4da3ec7b7c21af5eb0458133dd4f92185b8c66c2ba1f7"
+  },
+  {
+    "file": "reel/cover-1080x1920.jpg",
+    "bytes": 281314,
+    "sha256": "6b432f9fa1104f5c648d520ba31a728ca95882dc13c2d6469bc72a99b6f56e45"
+  },
+  {
+    "file": "reel/duo-open-keyframe.jpg",
+    "bytes": 362386,
+    "sha256": "87de83d613495d080a48ddee40483df902ff58582b8a70e6d1f9ed5d94c7ca2b"
+  },
+  {
+    "file": "reel/keyframe-01.jpg",
+    "bytes": 351065,
+    "sha256": "01bfea1fee522ca10c3868fbc569da8ae563c88b9e17f8c584fd7572ecd24532"
+  },
+  {
+    "file": "reel/keyframe-02.jpg",
+    "bytes": 368297,
+    "sha256": "bbbde6d3bde4a9024763d4e87f280bf6cd9679eca91c9ec80cd8b2753571e4cd"
+  },
+  {
+    "file": "reel/keyframe-03.jpg",
+    "bytes": 340924,
+    "sha256": "05d84c3493edfb98c7191e5efb2afd38911da87fad7310a9678283655676816c"
+  },
+  {
+    "file": "reel/keyframe-04.jpg",
+    "bytes": 378642,
+    "sha256": "8ed0275629a0acf75f06ae1df89b1d2777bf732997cf5227476da6a205a1e3bc"
+  },
+  {
+    "file": "reel/keyframe-05.jpg",
+    "bytes": 316647,
+    "sha256": "f06cc3d4686f36a1d3ef50592734953c27e2fa452db2476ec522ba0be3c55670"
+  },
+  {
+    "file": "reel/keyframe-06.jpg",
+    "bytes": 387524,
+    "sha256": "34c8197a9dbd988d8ded2c408a73ea370f3334e67fec45aa68a0899810865620"
+  },
+  {
+    "file": "reel/keyframe-07.jpg",
+    "bytes": 247184,
+    "sha256": "9e03bae90b9c17837a56f89e94bfacc797853719a9a68ad484e128d2fab70231"
+  },
+  {
+    "file": "reel/mytaillog-platform-update-captioned-1080x1920.mp4",
+    "bytes": 2182054,
+    "sha256": "04ba9d3a970d38902f17408dd631ecfe7533e8d5b0f2000ad836161dff9adedb"
+  },
+  {
+    "file": "reel/mytaillog-platform-update-clean-1080x1920.mp4",
+    "bytes": 2014484,
+    "sha256": "d1a2f7bcfe39c6c73b77e514edefc84ca5be9ead20733e0291dfe6c1cede8fc4"
+  },
+  {
+    "file": "reel/narration.srt",
+    "bytes": 1216,
+    "sha256": "0f35534d3b28e529f349c512af6feb2649c85602f850c4a9fd84abf29671e0e8"
+  },
+  {
+    "file": "reel/narration.txt",
+    "bytes": 660,
+    "sha256": "6bcad659390ade91897203c2f284991cf46f396fb391165be539290499de23fb"
+  },
+  {
+    "file": "reel/original-score.wav",
+    "bytes": 7833640,
+    "sha256": "b8f0467c0c6e6e23b0722f6ec0073dea9200f3465313cc0307a169c71b0bc46e"
+  },
+  {
+    "file": "reel/timing.json",
+    "bytes": 751,
+    "sha256": "f4afe44f32f4a55103d7aa78390f180dd4e6d9dbdb3cc4970de8de3e6a04c3a5"
+  },
+  {
+    "file": "reel/voice-01.mp3",
+    "bytes": 64408,
+    "sha256": "b5f26d2bf8c65bf324aa7302a9974717c0e7ba4bb28574e3e4483e2ca341041d"
+  },
+  {
+    "file": "reel/voice-01.wav",
+    "bytes": 432078,
+    "sha256": "cf21f7f5117814f9b24fa53ecb616b5504de74aa0589cbbe59a1275ab84e954a"
+  },
+  {
+    "file": "reel/voice-02.mp3",
+    "bytes": 65662,
+    "sha256": "693a65449bee51d77c70ad2a515df48350b6e80d82bdb3fb8b427a4d350a404e"
+  },
+  {
+    "file": "reel/voice-02.wav",
+    "bytes": 435278,
+    "sha256": "ee5c619e372fa87dc2f386ffa1a37f8d37a1b6bc189bbf49be57519e3f6b45fc"
+  },
+  {
+    "file": "reel/voice-03.mp3",
+    "bytes": 88650,
+    "sha256": "781dd542eefc74861e0366f68866eb09a2a8470f26b5fffb19a1d4505905438f"
+  },
+  {
+    "file": "reel/voice-03.wav",
+    "bytes": 572878,
+    "sha256": "32bf2fd6a6381640f876e44985759e3472beac475b15fc59df6257d53bd37ea0"
+  },
+  {
+    "file": "reel/voice-04.mp3",
+    "bytes": 91158,
+    "sha256": "78b2a20aba39a070a1198ab052267a9beff48cfa9fba80d7478ca1718c7af4dd"
+  },
+  {
+    "file": "reel/voice-04.wav",
+    "bytes": 588878,
+    "sha256": "0718379fd5ee5da44a6be43b45d9467a9edd13016d1f3fec2b618f0d65f2fede"
+  },
+  {
+    "file": "reel/voice-05.mp3",
+    "bytes": 87396,
+    "sha256": "d2e083c3be7991715275865ce4cbd0f13084ed8265751be26e5b745ac782ba60"
+  },
+  {
+    "file": "reel/voice-05.wav",
+    "bytes": 566478,
+    "sha256": "9be8371b559f762742d315437b7d8027df2b4a0925f1a7374851cbb7c6011886"
+  },
+  {
+    "file": "reel/voice-06.mp3",
+    "bytes": 85724,
+    "sha256": "b51641cef2880e4e784e53c505cc818d1126ee137429245383e5d1a80ae86f7c"
+  },
+  {
+    "file": "reel/voice-06.wav",
+    "bytes": 556878,
+    "sha256": "3e0f870658fa962df2d15d7a24c0eaedcc047260ad08068624869576d935dea3"
+  },
+  {
+    "file": "reel/voice-07.mp3",
+    "bytes": 120833,
+    "sha256": "1e0892d6ba8ba55c924745025aa907447ab3ba275b7ce8be3898fa9e67454259"
+  },
+  {
+    "file": "reel/voice-07.wav",
+    "bytes": 764878,
+    "sha256": "ff8d0362b928d97d691f3bbd41d95ab72c757583a904f435ec82697bb37fceeb"
+  },
+  {
+    "file": "reel/voice-production.json",
+    "bytes": 532,
+    "sha256": "fb8cb033d0133aea1fc1066ac0ddd35c3033bf7f680d5fea2f37586f3313256e"
+  },
+  {
+    "file": "reel/voiceover.mp3",
+    "bytes": 534956,
+    "sha256": "c17b8f836d813640f51bb7c98b8c5cbf865817d20b68c195296716400ada4977"
+  },
+  {
+    "file": "reel/voiceover.wav",
+    "bytes": 3916878,
+    "sha256": "fa92e77b7a68e689ff0a6abb7ab6b5a993f3b921659cca5635888e29aabf0426"
+  },
+  {
+    "file": "render_reel.py",
+    "bytes": 4307,
+    "sha256": "9b7bfa9f8057fae7f69793cc92d3e51028c1b21c82586a085c56126394681db0"
+  },
+  {
+    "file": "source/android-pages.png",
+    "bytes": 236448,
+    "sha256": "2d20025c4c3df8e1d881b33ca5055adf32f87810a2c8cc7a8f956418765cdc1a"
+  },
+  {
+    "file": "source/duo-cover.png",
+    "bytes": 483086,
+    "sha256": "aa6e7ef0f7ba82d633754a0fa5a8bfc9c340085904d63e7fee48c1bdcead4f3a"
+  },
+  {
+    "file": "source/duo-inner.png",
+    "bytes": 611996,
+    "sha256": "40c20faac515af4d7a538f91c8038839bdb3dc6ff33790fb1b4644b88ec77492"
+  },
+  {
+    "file": "source/ios-map.png",
+    "bytes": 310132,
+    "sha256": "e39277f9792f17651fdb02657ab2b89ce4d79c59a0e1a5d44a868294c2c3bea3"
+  },
+  {
+    "file": "source/native-interaction.mp4",
+    "bytes": 221814,
+    "sha256": "50122f5e4969c5f93767623b0d91bc115a43d2aa12db6aeb75977f9f8287cd11"
+  },
+  {
+    "file": "source/web-map.png",
+    "bytes": 198045,
+    "sha256": "320b0498359c325a2731229d7e3edf34067e0ac71cfe251e2d3c02bd83279151"
+  },
+  {
+    "file": "source/web-review.png",
+    "bytes": 206037,
+    "sha256": "194875361da01796546accd8a73df5f05d3173c1b3efc76d06a0559adbd96f69"
+  },
+  {
+    "file": "source/web-status.png",
+    "bytes": 226476,
+    "sha256": "2c78b3f53981b787eae0477d1017ea606deb1fffd7c3938b79a773546268f05b"
+  },
+  {
+    "file": "validate_media.py",
+    "bytes": 2788,
+    "sha256": "3c25552a59b731e7f0d0f30a990e2ac8d84fbe26c1d0f3ea97daeedf943b03bd"
+  },
+  {
+    "file": "verification.json",
+    "bytes": 669,
+    "sha256": "f8ee1b6533dc7a72771f68a1c2e04b09b243069cf00487136a957e5ee2b3b83a"
+  }
+]

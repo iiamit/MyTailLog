@@ -1,0 +1,8 @@
+TITLE
+A sneak peek at the next MyTailLog
+
+MESSAGE
+Coming soon: redesigned native iOS and Android apps, with a clearer logbook map, focused task flows and adaptive iPhone Duo layouts. Get a sneak peek at what’s next—and try the new design on the web today. On a computer, open an aircraft and choose “Try the new design” in Account navigation. Your existing aircraft and records stay with you. See the preview and tell us what you think.
+
+LINK
+/whats-new

@@ -1,0 +1,13 @@
+{
+  "provider": "ElevenLabs",
+  "voice": "Chris - Charming, Down-to-Earth",
+  "voice_id": "iP95p4xoKVk53GoZ742B",
+  "model": "eleven_multilingual_v2",
+  "subscription_tier_at_generation": "free (user confirmed)",
+  "tone": "Friendly, upbeat, conversational American male",
+  "generated_at": "2026-11-21",
+  "total_seconds": 40.8,
+  "synthetic_voice": true,
+  "permitted_campaign_use": "User-stated noncommercial; free-plan title attribution required",
+  "attribution_title": "Coming soon: the new MyTailLog | Voice: elevenlabs.io"
+}

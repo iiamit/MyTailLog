@@ -1,0 +1,32 @@
+{
+  "duration_seconds": 40.8,
+  "carousel_count": 7,
+  "caption_count": 17,
+  "videos": [
+    {
+      "file": "reel/mytaillog-platform-update-clean-1080x1920.mp4",
+      "seconds": 40.8,
+      "codec": "H.264/AAC",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "fps": 30,
+      "integrated_lufs": "-17.37",
+      "true_peak_dbtp": "-1.44"
+    },
+    {
+      "file": "reel/mytaillog-platform-update-captioned-1080x1920.mp4",
+      "seconds": 40.8,
+      "codec": "H.264/AAC",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "fps": 30,
+      "integrated_lufs": "-17.37",
+      "true_peak_dbtp": "-1.44"
+    }
+  ],
+  "checks": "passed"
+}
