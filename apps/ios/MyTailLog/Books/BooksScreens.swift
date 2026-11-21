@@ -225,7 +225,7 @@ struct MapPane: View {
             }
             .buttonStyle(FillButtonStyle(fill: Tokens.Colors.ink, content: Tokens.Colors.leaf, shape: Capsule()))
             .padding(Tokens.Space.s5)
-            .padding(.bottom, Tokens.Space.s8) // clear of the tab bar, whose open tab rises into the leaf
+            .padding(.bottom, Tokens.Space.s8 + Tokens.Space.s4) // clear of the tab bar, whose open tab rises into the leaf
             .accessibilityLabel("Show as list")
         }
     }
