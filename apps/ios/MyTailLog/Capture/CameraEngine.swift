@@ -33,6 +33,11 @@ final class CameraEngine: NSObject, @unchecked Sendable, AVCaptureVideoDataOutpu
 
     /// False when there is no camera (the simulator) or it can't start: the caller offers the fallbacks (05 §15.2).
     func start() -> Bool {
+        if !session.inputs.isEmpty {
+            assert(session.outputs.count == 2)
+            queue.async { self.session.startRunning() }
+            return true
+        }
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
               let input = try? AVCaptureDeviceInput(device: device) else { return false }
         self.device = device
