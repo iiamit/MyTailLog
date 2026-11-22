@@ -142,7 +142,7 @@ async function recoverBatchNotices(svc: Svc, deadline: number): Promise<void> {
     for (const batch of data ?? []) {
       if (Date.now() >= deadline) return;
       try { await completeBatch(svc, batch.id); }
-      catch (error) { console.error(`Reading notice ${batch.id} will retry`, error); }
+      catch (error) { console.error("Reading notice will retry", { batchId: batch.id, error: error instanceof Error ? error.name : "unknown" }); }
     }
     if (!data || data.length < 100) break;
     after = data[data.length - 1].id;
@@ -167,7 +167,7 @@ export async function readQueuedPages(budgetMs = 240_000): Promise<Record<Outcom
     const batches = new Set(claimed.filter((p, i) => p.batch_id && (outcomes[i] === "read" || outcomes[i] === "failed")).map((p) => p.batch_id!));
     for (const b of batches) {
       try { await completeBatch(svc, b); }
-      catch (error) { console.error(`Reading notice ${b} will retry`, error); }
+      catch (error) { console.error("Reading notice will retry", { batchId: b, error: error instanceof Error ? error.name : "unknown" }); }
     }
   }
   return tally;

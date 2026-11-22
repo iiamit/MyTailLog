@@ -6,6 +6,7 @@ pgserver's disposable Postgres lacks pgcrypto; gen_random_uuid is built in.
 from pathlib import Path
 import concurrent.futures, json, os, tempfile, time, unittest, uuid
 import pgserver, psycopg
+from psycopg import sql
 ROOT = Path(__file__).resolve().parents[1]
 DATA = Path(tempfile.mkdtemp(prefix='mtl-audit-pg-',dir=os.environ.get('TMPDIR',str(Path.home()/'.cache'))))
 PG = pgserver.get_server(DATA,cleanup_mode='delete')
@@ -38,7 +39,8 @@ def fixture():
  return user,aircraft,str(book),str(page)
 
 def rpc(db,name,*args):
- return db.execute('select '+name+'('+','.join(['%s']*len(args))+')',args).fetchone()[0]
+ statement=sql.SQL('select {}({})').format(sql.Identifier(name),sql.SQL(',').join([sql.Placeholder() for _ in args]))
+ return db.execute(statement,args).fetchone()[0]
 
 class AuditDatabase(unittest.TestCase):
  @classmethod

@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 import json, runpy, unittest
 import psycopg
+from psycopg import sql
 base = runpy.run_path(str(Path(__file__).with_name('test-audit-database.py')))
 connect, fixture, rpc = (base[k] for k in ('connect', 'fixture', 'rpc'))
 
@@ -33,7 +34,7 @@ class ReviewVersions(unittest.TestCase):
   with connect() as db:
    for table,key in [('log_entry','entryVersions'), ('page','pageVersions')]:
     for record,version in result[key].items():
-     self.assertEqual(db.execute(f'select updated_at from {table} where id=%s', (record,)).fetchone()[0], instant(version))
+     self.assertEqual(db.execute(sql.SQL('select updated_at from {} where id=%s').format(sql.Identifier(table)), (record,)).fetchone()[0], instant(version))
  def test_an_entry_added_after_rendering_cannot_be_silently_page_confirmed(self):
   user,ac,book,page=fixture(); rows=entries(ac,book,page,1); unseen=entries(ac,book,page,1)
   with self.assertRaises(psycopg.errors.SerializationFailure): confirm(user,ac,book,page,rows)
