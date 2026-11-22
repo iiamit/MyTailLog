@@ -68,12 +68,12 @@ final class Uploader {
     /// Returns whether a squawk photo or document reached the server (its waiting change can now be pushed).
     @discardableResult
     func drain() async -> Bool {
-        guard store.uploader === self, !store.isOffline else { return false }
+        guard store.uploader === self, !store.isOffline, !Task.isCancelled else { return false }
         var sentRecord = false
         for job in store.files where job.status == "held" && live[job.id] == nil && !starting.contains(job.id) {
             if let at = nextTry[job.id], at > Date() { continue }
             // The list was read before earlier awaits; another drain may have moved this job on.
-            guard store.uploader === self, store.files.first(where: { $0.id == job.id })?.status == "held", live[job.id] == nil, !starting.contains(job.id) else { continue }
+            guard !Task.isCancelled, store.uploader === self, store.files.first(where: { $0.id == job.id })?.status == "held", live[job.id] == nil, !starting.contains(job.id) else { continue }
             starting.insert(job.id)
             if job.kind == OfflineStore.squawkPhoto || job.kind == OfflineStore.document {
                 if await sendRecord(job) { sentRecord = true }
@@ -85,7 +85,7 @@ final class Uploader {
         return sentRecord
     }
 
-    private func start(_ job: FileJob) async {
+    private func start(_ job: FileJob, retryAuth: Bool = true) async {
         let url = store.apiURL.appending(path: "api/aircraft/\(job.aircraftId)/uploads")
         var request = URLRequest(url: url, timeoutInterval: 30)
         request.httpMethod = "POST"
@@ -101,10 +101,15 @@ final class Uploader {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard store.uploader === self else { return } // closed (sign-out, kill) while asking
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if status == 401 && retryAuth {
+                await SessionStore.shared.refreshIfNeeded(force: true)
+                await start(job, retryAuth: false)
+                return
+            }
             let answer = try? JSONDecoder().decode(Answer.self, from: data)
             guard (200..<300).contains(status), let answer else {
                 // House copy from the status (07 B-UPLOAD), never the server's text; 5xx retries.
-                failed(job, UploadBackoff.refusal(status: status))
+                failed(job, UploadBackoff.refusal(status: status), countAttempt: ![401, 408, 429].contains(status), permanent: Self.permanentRefusal(status))
                 return
             }
             if answer.alreadyUploaded == true {
@@ -128,7 +133,7 @@ final class Uploader {
 
     /// Squawk photos and documents go up in-process through their routes (the blob and documents routes take the bytes
     /// themselves, so there is no signed URL to hand a background session). A photo waits until its squawk is on the server.
-    private func sendRecord(_ job: FileJob) async -> Bool {
+    private func sendRecord(_ job: FileJob, retryAuth: Bool = true) async -> Bool {
         if job.kind == OfflineStore.squawkPhoto, let squawk = job.meta.squawkId, store.items.contains(where: { $0.id == squawk }) { return false }
         guard let bytes = try? Data(contentsOf: store.fileURL(job)) else { failed(job, "Not uploaded: the file is no longer on this phone."); return false }
         let api = RecordsAPI(apiURL: store.apiURL, token: store.token)
@@ -136,7 +141,7 @@ final class Uploader {
             if job.kind == OfflineStore.squawkPhoto {
                 try await api.squawkPhoto(aircraftId: job.aircraftId, squawkId: job.meta.squawkId ?? "", photoId: job.meta.photoId ?? job.id, jpeg: bytes)
             } else {
-                let id = try await api.document(aircraftId: job.aircraftId, meta: job.meta, bytes: bytes)
+                let id = try await api.document(aircraftId: job.aircraftId, jobId: job.id, meta: job.meta, bytes: bytes)
                 // The phone's copy becomes the offline copy under the server's id (documents are never purged).
                 let to = store.docURL(id, fileName: job.meta.fileName)
                 try? FileManager.default.createDirectory(at: to.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -148,13 +153,22 @@ final class Uploader {
             return true
         } catch let e as RecordsAPI.Failure {
             guard store.uploader === self else { return false }
-            // A refusal (4xx) won't change on retry: it is listed with its reason at once.
-            failed(job, "Not uploaded: \(e.message)", countAttempt: true, permanent: (400..<500).contains(e.status))
+            if e.status == 401 && retryAuth {
+                await SessionStore.shared.refreshIfNeeded(force: true)
+                return await sendRecord(job, retryAuth: false)
+            }
+            // Retry authentication, timeouts and rate limits without exhausting file attempts.
+            failed(job, "Not uploaded: \(e.message)", countAttempt: ![401, 408, 429].contains(e.status), permanent: Self.permanentRefusal(e.status))
         } catch {
             guard store.uploader === self else { return false }
             failed(job, "Not uploaded yet: no connection.", countAttempt: false)
         }
         return false
+    }
+
+    /// Auth can recover after reauthentication; timeouts and rate limits must stay queued.
+    static func permanentRefusal(_ status: Int) -> Bool {
+        (400..<500).contains(status) && ![401, 408, 429].contains(status)
     }
 
     private func progress(_ id: String, _ p: Double) {
@@ -175,7 +189,7 @@ final class Uploader {
         } else if (error as? URLError)?.code == .cancelled {
             return
         } else {
-            failed(job, error == nil ? "Not uploaded: storage answered \(status)." : "Not uploaded yet: the connection dropped.", countAttempt: error == nil)
+            failed(job, error == nil ? "Not uploaded: storage answered \(status)." : "Not uploaded yet: the connection dropped.", countAttempt: error == nil && ![401, 408, 429].contains(status))
         }
     }
 

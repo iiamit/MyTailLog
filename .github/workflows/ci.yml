@@ -44,6 +44,23 @@ jobs:
       - run: npm run typecheck --prefix ../mobile
       - run: npm run build --prefix ../mobile
 
+  database-transactions:
+    # pgserver ships Python 3.12 wheels; keep the disposable DB runner explicit.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Disposable database test tools
+        run: |
+          python3.12 -m venv "$RUNNER_TEMP/mtl-database-tests"
+          "$RUNNER_TEMP/mtl-database-tests/bin/pip" install pgserver==0.1.4 'psycopg[binary]==3.3.9'
+      - name: RLS, concurrent commits, rollback and replay receipts
+        run: |
+          "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-database.py
+          "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-record-commands.py
+          "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-sync-receipts.py
+          "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-review-versions.py
+          "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-compliance.py
+
   android:
     runs-on: ubuntu-latest
     defaults:

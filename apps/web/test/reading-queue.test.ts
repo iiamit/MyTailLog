@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { batchComplete, batchProgress, pageReadSummary, readingDoneCopy } from "../src/lib/extraction/queueRules";
+import { batchProgress, pageReadSummary } from "../src/lib/extraction/queueRules";
 import { allowanceSummary, accessAllowance } from "../src/lib/extraction/allowance";
 import { findDuplicate, hamming64, register, duplicateDecision } from "../src/lib/writes/pages";
 import { pickTachPhoto } from "../src/lib/writes/meters";
@@ -36,16 +36,10 @@ test("batch progress counts each state; complete only when every expected page i
   assert.deepEqual(batchProgress([...pages], 6), {
     expected: 6, uploaded: 4, queued: 1, reading: 0, waitingAllowance: 1, read: 2, failed: 0, needsLook: 1, waitingDecision: 1,
   });
-  assert.equal(batchComplete([...pages], 4), false);
-  const done = [{ extraction_status: "extracted" }, { extraction_status: "failed" }] as { extraction_status: "extracted" | "failed"; needs_look: null; duplicate_of_page_id: null }[];
-  assert.equal(batchComplete(done, 2), true);
-  assert.equal(batchComplete(done, 3), false, "a page still on its way keeps the batch open");
+
 });
 
-test("reading-done copy (12 §8)", () => {
-  assert.deepEqual(readingDoneCopy(1, 1), { title: "1 page read", body: "1 entry is ready to review. They don't count until you confirm them." });
-  assert.equal(readingDoneCopy(34, 112).title, "34 pages read");
-});
+
 
 test("allowance: rolling 24 hours, pages approximated, next free when the oldest call ages out", () => {
   const now = Date.parse("2026-11-18T12:00:00Z");
@@ -95,7 +89,14 @@ function fake(editor: boolean, page: Record<string, unknown> | null = null) {
     };
     return q;
   };
-  return { db: { from, rpc: async () => ({ data: editor }) } as unknown as Db, writes };
+  return { db: { from, rpc: async (name: string, args: Record<string, unknown>) => {
+    if (name === "can_edit_aircraft") return { data: editor, error: null };
+    assert.equal(name, "change_pages");
+    assert.deepEqual(args.p_ids, [page?.id]);
+    assert.equal(args.p_action, "keep_both");
+    writes.push({ table: "page", op: "update", patch: { duplicate_of_page_id: null } });
+    return { data: { status: "ok", row: page }, error: null };
+  } } as unknown as Db, writes };
 }
 const ctx = { aircraftId: "ac", userId: "u" };
 const uuid = "11111111-1111-4111-8111-111111111111";

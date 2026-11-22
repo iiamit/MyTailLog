@@ -43,6 +43,7 @@ enum AuthError: Error, Equatable {
         default: break
         }
         if status == 429 || code?.contains("rate_limit") == true { return .rateLimited }
+        if status == 408 { return .server }
         return (400..<500).contains(status) ? .rejected : .server
     }
 }
@@ -52,6 +53,7 @@ struct AuthClient: Sendable {
     let baseURL: URL
     let apiKey: String
     var http: URLSession = .shared
+    var refreshSession: (@Sendable (Session) async throws -> Session)?
 
     /// Reads SupabaseHost / SupabasePublishableKey, set from Config/*.xcconfig through Info.plist.
     static func fromBundle(_ bundle: Bundle = .main) -> AuthClient {
@@ -120,7 +122,8 @@ struct AuthClient: Sendable {
     }
 
     func refresh(_ session: Session) async throws -> Session {
-        try Self.session(from: await post("token", query: "grant_type=refresh_token", body: ["refresh_token": session.refreshToken]))
+        if let refreshSession { return try await refreshSession(session) }
+        return try Self.session(from: await post("token", query: "grant_type=refresh_token", body: ["refresh_token": session.refreshToken]))
     }
 
     /// Revokes the refresh token on the server. Best effort: the device forgets the session either way.

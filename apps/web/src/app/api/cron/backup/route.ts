@@ -160,7 +160,7 @@ async function runDestination(
 
     try {
       const collected = await collectBackupData(supabase, ac.id);
-      const bytes = await totalBlobBytes(collected.blobs.map((b) => b.storagePath));
+      const bytes = await totalBlobBytes(collected.blobs.map((b) => b.storagePath), ac.id);
       // Logged on EVERY run: we need the real size distribution before deciding
       // whether the resumable two-phase upload (phase 4) is worth building.
       console.log(
@@ -174,7 +174,7 @@ async function runDestination(
         continue;
       }
 
-      const archive = buildServerArchive(collected, getBlob);
+      const archive = buildServerArchive(collected, (path) => getBlob(path, ac.id));
       const path = remotePath(collected.tail, archive.filename);
       try {
         const up = await provider.upload(token, path, archive.stream, state);
@@ -226,14 +226,14 @@ function finish(
 }
 
 /** Sum the aircraft's stored blob bytes; an absent file makes the backup incomplete. */
-async function totalBlobBytes(paths: string[]): Promise<number> {
+async function totalBlobBytes(paths: string[], aircraftId: string): Promise<number> {
   let next = 0;
   let total = 0;
   await Promise.all(
     Array.from({ length: Math.min(SIZE_CONCURRENCY, paths.length) }, async () => {
       while (next < paths.length) {
         const path = paths[next++];
-        const size = await blobSize(path);
+        const size = await blobSize(path, aircraftId);
         if (size == null) throw new Error(`Backup could not read file size for ${path}.`);
         total += size;
       }

@@ -96,13 +96,15 @@ export async function extractPage(
   supabase: SupabaseClient<Database>,
   page: PageForExtraction,
 ): Promise<PipelineResult> {
-  await supabase
+  const startedAt = new Date().toISOString();
+  const { error: startError } = await supabase
     .from("page")
     .update({ extraction_status: "processing", extraction_error: null })
     .eq("id", page.id);
+  if (startError) throw new Error(startError.message);
 
   try {
-    const blob = await getBlob(page.storage_path);
+    const blob = await getBlob(page.storage_path, page.aircraft_id);
     if (!blob) {
       throw new Error(`Couldn't download page image: not found`);
     }
@@ -172,15 +174,6 @@ export async function extractPage(
       return !isRescannedEntry(candidate, existing, linkedSigned);
     });
 
-    // Re-extraction is idempotent for machine output: clear prior UNCONFIRMED
-    // entries for this page, but never discard entries a person has confirmed.
-    await supabase
-      .from("log_entry")
-      .delete()
-      .eq("page_id", page.id)
-      .eq("owner_confirmed", false);
-
-    if (freshEntries.length > 0) {
       const rows = freshEntries.map((e, i) => ({
         page_id: page.id,
         logbook_id: page.logbook_id,
@@ -205,33 +198,17 @@ export async function extractPage(
         extraction_model: EXTRACTION_MODEL,
         owner_confirmed: false,
       }));
-      const { error: insertError } = await supabase.from("log_entry").insert(rows);
-      if (insertError) throw new Error(`Failed to save entries: ${insertError.message}`);
-    }
-
-    if (linkedSigned.length) {
-      const { error: linkError } = await supabase.from("signed_entry_scan").upsert(
-        linkedSigned.map((e) => ({ page_id: page.id, entry_id: e.id, aircraft_id: page.aircraft_id })),
-        { onConflict: "page_id,entry_id", ignoreDuplicates: true },
-      );
-      if (linkError) throw new Error(`Could not link signed sticker to scan: ${linkError.message}`);
-    }
-
     const confidences = result.entries.map((e) => e.confidence).filter(Number.isFinite);
     const minConfidence = confidences.length ? Math.min(...confidences) : null;
-
-    await supabase
-      .from("page")
-      .update({
-        ocr_text: result.raw_text || null,
-        extraction_confidence: minConfidence,
-        detected_page_count: result.detected_page_count,
-        unread_rotated_content: result.unread_rotated_content,
-        extraction_status: "extracted",
-        extraction_error: null,
-        extracted_at: new Date().toISOString(),
-      })
-      .eq("id", page.id);
+    const { error: saveError } = await supabase.rpc("replace_page_extraction", {
+      p_page: page.id, p_started_at: startedAt, p_entries: rows,
+      p_stickers: linkedSigned.map((e) => e.id),
+      p_state: {
+        ocr_text: result.raw_text || null, extraction_confidence: minConfidence,
+        detected_page_count: result.detected_page_count, unread_rotated_content: result.unread_rotated_content,
+      },
+    });
+    if (saveError) throw new Error(`Failed to save page reading: ${saveError.message}`);
 
     // Keep the equipment list current: propose installed/removed components from
     // this page's entries. Best-effort — never fail the extraction over it.
@@ -309,21 +286,23 @@ async function extractOtherDocument(
     payload,
   );
 
-  await supabase
+  const { error: stateError } = await supabase
     .from("page")
     .update({
       ocr_text: payload.raw_text || null,
       extraction_confidence: payload.confidence,
       detected_page_count: 1,
       extraction_status: "extracted",
+      review_status: "unreviewed",
+      needs_look: payload.doc_type !== "other",
       extraction_error: null,
       extracted_at: new Date().toISOString(),
     })
     .eq("id", page.id);
+  if (stateError) throw new Error(stateError.message);
 
   return {
-    // A classified document produces no log entries, so there is nothing to
-    // review on it — that is why such a page reads "reviewed" and stays there.
+    // Classified values remain pending until explicitly confirmed beside the scan.
     entryCount: 0,
     unconfirmedCount: 0,
     detectedPageCount: 1,

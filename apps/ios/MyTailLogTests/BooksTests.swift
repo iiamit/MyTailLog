@@ -153,6 +153,15 @@ struct MapScreenTests {
 struct ReviewTests {
     private func review() throws -> Review { try fixture("review-n734dm") }
 
+    @Test func structuredDocumentsWithNoEntriesStayVisibleUntilApprovedOnTheWebsite() throws {
+        var page = try JSONDecoder().decode(PageRow.self, from: Data(#"{"id":"doc","logbook_id":"other","review_status":"unreviewed","extraction_status":"extracted","needs_look":true,"updated_at":"v1"}"#.utf8))
+        #expect(waitsForReview(page, entries: []))
+        #expect(needsWebsiteReview(page, entries: []))
+        page.review_status = "confirmed"
+        #expect(!waitsForReview(page, entries: []))
+        #expect(!needsWebsiteReview(page, entries: []))
+    }
+
     @Test func theQueueIsReadPagesWithUnconfirmedEntriesInLaneOrder() throws {
         let r = try review()
         let queue = reviewQueue(pages: r.pages, entries: r.entries, logbooks: r.logbooks)

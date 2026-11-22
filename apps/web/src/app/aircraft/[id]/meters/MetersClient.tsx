@@ -18,6 +18,7 @@ import {
 } from "./actions";
 
 type ResetRow = {
+  updated_at: string;
   id: string;
   meter: string;
   reset_date: string;
@@ -27,6 +28,7 @@ type ResetRow = {
 };
 
 type ReadingRow = {
+  updated_at: string;
   source?: string | null;
   id: string;
   reading_date: string | null;
@@ -84,20 +86,22 @@ function AdsbSection({
 }: {
   aircraftId: string;
   canEdit: boolean;
-  adsb: { enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
+  adsb: { base: string; enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
 }) {
   const router = useRouter();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [hex, setHex] = useState("");
+  const [adsbVersion, setAdsbVersion] = useState(adsb.base);
   const s = adsb.suggestion;
   const [accept, setAccept] = useState<string | null>(null);
 
   async function toggle(enabled: boolean) {
     setBusy(true);
-    const res = await setAdsbEnabled(aircraftId, enabled, hex || null);
+    const res = await setAdsbEnabled(aircraftId, enabled, hex || null, adsbVersion);
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
+    setAdsbVersion(res.updatedAt);
     setHex("");
     toast.success(enabled ? `Watching ${res.icao24?.toUpperCase()}.` : "ADS-B checks off.");
     router.refresh();
@@ -272,10 +276,10 @@ export function MetersClient({
   estimated: Record<Meter, boolean>;
   resets: ResetRow[];
   readings: ReadingRow[];
-  enrollment: { hobbs: number | null; tach: number | null; airframe: number | null; date: string | null };
+  enrollment: { updated_at: string; hobbs: number | null; tach: number | null; airframe: number | null; date: string | null };
   /** Where each CURRENT reading came from — the answer to "why does it say that?" */
   provenance: Record<Meter, { asOf: string | null; from: ReadingSource | null }>;
-  adsb: { enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
+  adsb: { base: string; enabled: boolean; icao24: string | null; suggestion: AdsbSuggestion | null };
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -293,7 +297,7 @@ export function MetersClient({
     tach: string;
     airframe: string;
   } | null>(null);
-  const [baseForm, setBaseForm] = useState<{ hobbs: string; tach: string; airframe: string } | null>(
+  const [baseForm, setBaseForm] = useState<{ base: string; hobbs: string; tach: string; airframe: string } | null>(
     null,
   );
 
@@ -304,7 +308,7 @@ export function MetersClient({
       hobbs: num(baseForm.hobbs),
       tach: num(baseForm.tach),
       airframe: num(baseForm.airframe),
-    });
+    }, baseForm.base);
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
     toast.success("Starting readings updated.");
@@ -331,7 +335,7 @@ export function MetersClient({
 
   async function removeReset(id: string) {
     setBusy(true);
-    const res = await deleteMeterReset(aircraftId, id);
+    const res = await deleteMeterReset(aircraftId, id, resets.find((r) => r.id === id)?.updated_at ?? "");
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
     router.refresh();
@@ -355,7 +359,7 @@ export function MetersClient({
 
   async function removeReading(id: string) {
     setBusy(true);
-    const res = await deleteMeterReading(aircraftId, id);
+    const res = await deleteMeterReading(aircraftId, id, readings.find((r) => r.id === id)?.updated_at ?? "");
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
     router.refresh();
@@ -414,6 +418,7 @@ export function MetersClient({
             <button
               onClick={() =>
                 setBaseForm({
+                  base: enrollment.updated_at,
                   hobbs: enrollment.hobbs?.toString() ?? "",
                   tach: enrollment.tach?.toString() ?? "",
                   airframe: enrollment.airframe?.toString() ?? "",

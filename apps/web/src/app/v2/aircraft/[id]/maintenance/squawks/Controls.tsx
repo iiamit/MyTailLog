@@ -25,7 +25,7 @@ function useAct() {
   return { act, error, pending, router };
 }
 
-export function SeverityControl({ aircraftId, squawkId, value }: { aircraftId: string; squawkId: string; value: SquawkSeverity }) {
+export function SeverityControl({ aircraftId, squawkId, base, value }: { aircraftId: string; squawkId: string; base: string; value: SquawkSeverity }) {
   const { act, error, pending } = useAct();
   const [v, setV] = useState(value);
   return (
@@ -36,7 +36,7 @@ export function SeverityControl({ aircraftId, squawkId, value }: { aircraftId: s
         disabled={pending}
         onChange={(s) => {
           setV(s);
-          act(() => updateSquawk(aircraftId, squawkId, { severity: s }));
+          act(() => updateSquawk(aircraftId, squawkId, { severity: s }, base));
         }}
       />
       {error && <Notice tone="alarm">{error}</Notice>}
@@ -45,7 +45,7 @@ export function SeverityControl({ aircraftId, squawkId, value }: { aircraftId: s
 }
 
 /** The title, editable inline by editors ("Edit"). */
-export function EditableTitle({ aircraftId, squawkId, text, canEdit }: { aircraftId: string; squawkId: string; text: string; canEdit: boolean }) {
+export function EditableTitle({ aircraftId, squawkId, base, text, canEdit }: { aircraftId: string; squawkId: string; base: string; text: string; canEdit: boolean }) {
   const { act, error, pending } = useAct();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(text);
@@ -64,7 +64,7 @@ export function EditableTitle({ aircraftId, squawkId, text, canEdit }: { aircraf
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        act(() => updateSquawk(aircraftId, squawkId, { description: draft }), () => setEditing(false));
+        act(() => updateSquawk(aircraftId, squawkId, { description: draft }, base), () => setEditing(false));
       }}
     >
       <label className="text-label">
@@ -84,7 +84,7 @@ export function EditableTitle({ aircraftId, squawkId, text, canEdit }: { aircraf
   );
 }
 
-export type PhotoView = { id: string; src: string; thumb: string; caption: string; canDelete: boolean };
+export type PhotoView = { id: string; src: string; thumb: string; caption: string; canDelete: boolean; base: string };
 
 /** Thumbnails 120 × 90; click opens the ScanViewer in a lightbox; "Add a photo" for the reporter and editors. */
 export function Photos({
@@ -139,7 +139,7 @@ export function Photos({
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    act(() => deleteSquawkPhoto(aircraftId, p.id));
+                    act(() => deleteSquawkPhoto(aircraftId, p.id, p.base));
                   }}
                 >
                   <ConfirmSubmit label="Remove" question="Remove this photo? It can't be undone." confirmLabel="Remove photo" />
@@ -185,7 +185,7 @@ export function Photos({
 }
 
 /** Reopen (resolved) and Delete, editors only. */
-export function SquawkActions({ aircraftId, squawkId, resolved, listHref }: { aircraftId: string; squawkId: string; resolved: boolean; listHref: string }) {
+export function SquawkActions({ aircraftId, squawkId, base, resolved, listHref }: { aircraftId: string; squawkId: string; base: string; resolved: boolean; listHref: string }) {
   const { act, error, pending, router } = useAct();
   return (
     <div>
@@ -195,7 +195,7 @@ export function SquawkActions({ aircraftId, squawkId, resolved, listHref }: { ai
             type="button"
             disabled={pending}
             className={buttonClass("secondary", "m")}
-            onClick={() => act(() => reopenSquawk(aircraftId, squawkId), () => router.replace(`${listHref}?squawk=${squawkId}&done=reopened`, { scroll: false }))}
+            onClick={() => act(() => reopenSquawk(aircraftId, squawkId, base), () => router.replace(`${listHref}?squawk=${squawkId}&done=reopened`, { scroll: false }))}
           >
             Reopen
           </button>
@@ -203,7 +203,7 @@ export function SquawkActions({ aircraftId, squawkId, resolved, listHref }: { ai
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            act(() => deleteSquawk(aircraftId, squawkId), () => router.replace(`${listHref}?done=deleted`, { scroll: false }));
+            act(() => deleteSquawk(aircraftId, squawkId, base), () => router.replace(`${listHref}?done=deleted`, { scroll: false }));
           }}
         >
           <ConfirmSubmit label="Delete" size="m" question="Delete this squawk and its photos? This can't be undone." confirmLabel="Delete squawk" />
@@ -240,7 +240,7 @@ export function CopyLink({ url }: { url: string }) {
 }
 
 /** "Add to the visit": puts the open squawks on a planned visit's list. */
-export function AddToVisit({ aircraftId, visitId, squawkIds }: { aircraftId: string; visitId: string; squawkIds: string[] }) {
+export function AddToVisit({ aircraftId, visitId, base, squawkIds }: { aircraftId: string; visitId: string; base: string; squawkIds: string[] }) {
   const { act, error, pending } = useAct();
   const [done, setDone] = useState(false);
   return (
@@ -249,7 +249,7 @@ export function AddToVisit({ aircraftId, visitId, squawkIds }: { aircraftId: str
         type="button"
         disabled={pending || done}
         className={buttonClass("secondary", "s")}
-        onClick={() => act(() => addSquawksToVisit(aircraftId, visitId, squawkIds), () => setDone(true))}
+        onClick={() => act(() => addSquawksToVisit(aircraftId, visitId, squawkIds, base), () => setDone(true))}
       >
         {done ? "Added to the visit" : "Add to the visit"}
       </button>

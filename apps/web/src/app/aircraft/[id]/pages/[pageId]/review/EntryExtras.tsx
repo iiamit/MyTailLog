@@ -7,7 +7,7 @@ import type { ReferenceLink } from "@/lib/database.types";
 import { setEntryLinks } from "./actions";
 import { setDocumentEntry } from "../../../documents/actions";
 
-export type EntryAttachment = { id: string; title: string | null; file_name: string | null };
+export type EntryAttachment = { id: string; title: string | null; file_name: string | null; updated_at: string };
 
 const inputClass =
   "rounded-md border border-line bg-panel2 px-2.5 py-1.5 text-sm text-ink outline-hidden focus:border-accent";
@@ -17,6 +17,7 @@ const inputClass =
 // saved via setEntryLinks. Rendered at the bottom of an entry's review card.
 export function EntryExtras({
   entryId,
+  base,
   aircraftId,
   pageId,
   canEdit,
@@ -24,6 +25,7 @@ export function EntryExtras({
   links,
 }: {
   entryId: string;
+  base: string;
   aircraftId: string;
   pageId: string | null;
   canEdit: boolean;
@@ -45,7 +47,7 @@ export function EntryExtras({
     setBusy(true);
     const { data, error: e } = await createClient()
       .from("document")
-      .select("id, title, file_name")
+      .select("id, title, file_name, updated_at")
       .eq("aircraft_id", aircraftId)
       .is("log_entry_id", null)
       .order("created_at", { ascending: false })
@@ -55,9 +57,9 @@ export function EntryExtras({
     setPicker(data ?? []);
   }
 
-  async function setAttachment(documentId: string, entry: string | null) {
+  async function setAttachment(documentId: string, entry: string | null, documentBase: string) {
     setError(null);
-    const res = await setDocumentEntry(aircraftId, documentId, entry);
+    const res = await setDocumentEntry(aircraftId, documentId, entry, documentBase);
     if (res.error) return setError(res.error);
     setPicker(null);
     router.refresh();
@@ -65,7 +67,7 @@ export function EntryExtras({
 
   async function saveLinks(next: ReferenceLink[]) {
     setError(null);
-    const res = await setEntryLinks(aircraftId, pageId, entryId, next);
+    const res = await setEntryLinks(aircraftId, pageId, entryId, next, base);
     if ("error" in res) return setError(res.error);
     router.refresh();
   }
@@ -116,7 +118,7 @@ export function EntryExtras({
                 </a>
                 {canEdit && (
                   <button
-                    onClick={() => setAttachment(d.id, null)}
+                    onClick={() => setAttachment(d.id, null, d.updated_at)}
                     title="Detach from this entry — the document stays in the Records Vault."
                     className="ml-auto shrink-0 text-xs text-faint hover:text-annun-red"
                   >
@@ -140,7 +142,7 @@ export function EntryExtras({
                 <select
                   aria-label="Link a Vault document"
                   defaultValue=""
-                  onChange={(e) => e.target.value && setAttachment(e.target.value, entryId)}
+                  onChange={(e) => { const d = picker.find((d) => d.id === e.target.value); if (d) void setAttachment(d.id, entryId, d.updated_at); }}
                   className={`${inputClass} max-w-full text-xs`}
                 >
                   <option value="">

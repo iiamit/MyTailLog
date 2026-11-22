@@ -27,7 +27,8 @@ import {
 export type BlobRef = {
   id: string;
   storagePath: string;
-  prefix: "scans" | "docs";
+  prefix: "scans" | "docs" | "squawk-photos" | "meter-photos";
+  url: string;
   /** Path inside the archive, e.g. `scans/<pageId>.jpg`. */
   entry: string;
 };
@@ -49,59 +50,30 @@ export async function collectBackupData(
   supabase: SupabaseClient<Database>,
   aircraftId: string,
 ): Promise<CollectedBackup> {
-  // Order matters: the destructured names MUST line up with the query order
-  // (aircraft, logbook, log_entry, page, …). Getting entries/pages crossed here
-  // writes log entries into the backup's `pages` and vice-versa, and a restore
-  // then fails inserting log-entry rows (with ad_refs) into the `page` table.
-  const [aircraft, logbooks, entries, pages, components, compliance, maintenance, documents, resets] =
-    await Promise.all([
-      supabase.from("aircraft").select("*").eq("id", aircraftId).single(),
-      supabase.from("logbook").select("*").eq("aircraft_id", aircraftId),
-      supabase.from("log_entry").select("*").eq("aircraft_id", aircraftId),
-      supabase.from("page").select("*").eq("aircraft_id", aircraftId),
-      supabase.from("component").select("*").eq("aircraft_id", aircraftId),
-      supabase.from("ad_compliance").select("*").eq("aircraft_id", aircraftId),
-      supabase.from("maintenance_item").select("*").eq("aircraft_id", aircraftId),
-      supabase.from("document").select("*").eq("aircraft_id", aircraftId),
-      supabase.from("meter_reset").select("*").eq("aircraft_id", aircraftId),
-    ]);
-
-  if (aircraft.error || !aircraft.data) {
-    throw new Error(aircraft.error?.message ?? "Aircraft not found.");
-  }
-
-  for (const [name, result] of [
-    ["logbook", logbooks], ["log_entry", entries], ["page", pages],
-    ["component", components], ["ad_compliance", compliance],
-    ["maintenance_item", maintenance], ["document", documents], ["meter_reset", resets],
-  ] as const) {
-    if (result.error) throw new Error(`Backup could not read ${name}: ${result.error.message}`);
-  }
-
-  // Direction D tables (09 §6), keyed by table name so a query can't land under the wrong key.
-  const extra = {
-    service_providers: "service_provider", item_completions: "item_completion", planned_visits: "planned_visit",
-    planned_visit_items: "planned_visit_item", logbook_gaps: "logbook_gap", hours_readings: "hours_reading", squawks: "squawk",
+  const { data: aircraft, error } = await supabase.from("aircraft").select("*").eq("id", aircraftId).single();
+  if (error || !aircraft) throw new Error(error?.message ?? "Aircraft not found.");
+  const tables = {
+    logbooks: "logbook", log_entries: "log_entry", pages: "page", components: "component",
+    ad_compliance: "ad_compliance", maintenance_items: "maintenance_item", documents: "document",
+    meter_resets: "meter_reset", service_providers: "service_provider", item_completions: "item_completion",
+    planned_visits: "planned_visit", planned_visit_items: "planned_visit_item", logbook_gaps: "logbook_gap",
+    hours_readings: "hours_reading", squawks: "squawk", squawk_photos: "squawk_photo",
+    weight_balances: "weight_balance", scanned_documents: "scanned_document",
+    oil_additions: "oil_addition", oil_analysis_samples: "oil_analysis_sample",
   } as const;
-  const extraRows: Record<string, Row[]> = {};
-  await Promise.all(Object.entries(extra).map(async ([key, table]) => {
-    const { data: rows, error } = await supabase.from(table).select("*").eq("aircraft_id", aircraftId);
-    if (error) throw new Error(`Backup could not read ${table}: ${error.message}`);
-    extraRows[key] = (rows ?? []) as Row[];
+  const sets = await Promise.all(Object.entries(tables).map(async ([key, table]) => {
+    const rows: Row[] = [];
+    // PostgREST caps each response. Stable id ordering and explicit ranges include records beyond 1,000.
+    for (let offset = 0; ; offset += 500) {
+      const { data: page, error } = await supabase.from(table).select("*").eq("aircraft_id", aircraftId)
+        .order("id").range(offset, offset + 499);
+      if (error) throw new Error(`Backup could not read ${table}: ${error.message}`);
+      rows.push(...(page ?? []) as Row[]);
+      if (!page || page.length < 500) break;
+    }
+    return [key, rows] as const;
   }));
-
-  const data: BackupData = {
-    ...extraRows,
-    aircraft: aircraft.data as Row,
-    logbooks: (logbooks.data ?? []) as Row[],
-    log_entries: (entries.data ?? []) as Row[],
-    pages: (pages.data ?? []) as Row[],
-    components: (components.data ?? []) as Row[],
-    ad_compliance: (compliance.data ?? []) as Row[],
-    maintenance_items: (maintenance.data ?? []) as Row[],
-    documents: (documents.data ?? []) as Row[],
-    meter_resets: (resets.data ?? []) as Row[],
-  };
+  const data = { aircraft: aircraft as Row, ...Object.fromEntries(sets) } as BackupData;
 
   const blobs = blobRefsFor(data);
   const tail = (data.aircraft.tail_number as string) || "aircraft";
@@ -112,16 +84,20 @@ export async function collectBackupData(
 /** Page originals + document scans, in the order they're written to the zip. */
 export function blobRefsFor(data: BackupData): BlobRef[] {
   const refs: BlobRef[] = [];
-  const add = (rows: Row[], prefix: "scans" | "docs") => {
+  const add = (rows: Row[], prefix: BlobRef["prefix"], column = "storage_path") => {
     for (const r of rows) {
-      const sp = r.storage_path as string | null;
+      const sp = r[column] as string | null;
       if (!sp) continue;
       const id = r.id as string;
-      refs.push({ id, storagePath: sp, prefix, entry: `${prefix}/${id}.${extOf(sp)}` });
+      const url = prefix === "scans" ? `/api/page/${id}/image` : prefix === "docs" ? `/api/document/${id}`
+        : `/api/aircraft/${data.aircraft.id}/blob?path=${encodeURIComponent(sp)}`;
+      refs.push({ id, storagePath: sp, prefix, url, entry: `${prefix}/${id}.${extOf(sp)}` });
     }
   };
   add(data.pages, "scans");
   add(data.documents, "docs");
+  add(data.squawk_photos ?? [], "squawk-photos");
+  add(data.hours_readings ?? [], "meter-photos", "photo_path");
   return refs;
 }
 
@@ -148,6 +124,11 @@ export function buildManifest(data: BackupData, tail: string, scans: number): Ba
       logbook_gaps: data.logbook_gaps?.length ?? 0,
       hours_readings: data.hours_readings?.length ?? 0,
       squawks: data.squawks?.length ?? 0,
+      squawk_photos: data.squawk_photos?.length ?? 0,
+      weight_balances: data.weight_balances?.length ?? 0,
+      scanned_documents: data.scanned_documents?.length ?? 0,
+      oil_additions: data.oil_additions?.length ?? 0,
+      oil_analysis_samples: data.oil_analysis_samples?.length ?? 0,
       scans,
     },
   };

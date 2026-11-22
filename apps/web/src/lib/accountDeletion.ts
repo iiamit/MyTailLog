@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { aircraftStoragePath } from "./storagePath";
 import type { Database } from "@/lib/database.types";
 
 // Account deletion (App Store guideline 5.1.1(v); 09 §8 item 10, 05 §8.6).
@@ -31,11 +32,11 @@ async function storedPaths(svc: Svc, aircraftIds: string[]): Promise<string[]> {
   const paths: string[] = [];
   for (const { table, cols } of STORED_FILES) {
     for (let start = 0; ; start += 500) {
-      const { data, error } = await svc.from(table).select(cols.join(", "))
+      const { data, error } = await svc.from(table).select(["aircraft_id", ...cols].join(", "))
         .in("aircraft_id", aircraftIds).order("id").range(start, start + 499);
       if (error) throw new Error(error.message);
       const rows = (data ?? []) as unknown as Record<string, string | null>[];
-      for (const row of rows) for (const c of cols) if (row[c]) paths.push(row[c]!);
+      for (const row of rows) for (const c of cols) if (row[c] && row.aircraft_id && aircraftStoragePath(row[c]!, row.aircraft_id)) paths.push(row[c]!);
       if (rows.length < 500) break;
     }
   }
@@ -49,7 +50,7 @@ async function storedPaths(svc: Svc, aircraftIds: string[]): Promise<string[]> {
 export async function deleteAccount(
   svc: Svc,
   userId: string,
-  removeBlobs: (paths: string[]) => Promise<void>,
+  removeBlobs: (paths: string[], aircraftIds: string[]) => Promise<void>,
 ): Promise<{ ok: true; deletedAircraft: number } | DeletionError> {
   const { data: owned, error: ownErr } = await svc.from("aircraft").select("id").eq("owner_id", userId);
   if (ownErr) return { error: ownErr.message, code: "server", status: 500 };
@@ -85,7 +86,7 @@ export async function deleteAccount(
     }
     const { error: delErr } = await svc.from("aircraft").delete().in("id", ids);
     if (delErr) return { error: delErr.message, code: "server", status: 500 };
-    await removeBlobs(paths);
+    await removeBlobs(paths, ids);
   }
 
   const { error: userErr } = await svc.auth.admin.deleteUser(userId);

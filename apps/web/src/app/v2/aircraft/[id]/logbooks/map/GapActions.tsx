@@ -14,16 +14,19 @@ const WORD: Partial<Record<Status, string>> = {
 export function GapActions({
   aircraftId,
   gapId,
+  base,
   status,
   note,
   scanHref,
 }: {
   aircraftId: string;
   gapId: string;
+  base: string;
   status: string;
   note: string | null;
   scanHref: string;
 }) {
+  const [version, setVersion] = useState(base);
   const [pending, start] = useTransition();
   const [asking, setAsking] = useState<Status | null>(null);
   const [text, setText] = useState(note ?? "");
@@ -32,8 +35,9 @@ export function GapActions({
 
   const save = (s: Status, n: string | null, undoTo?: Status) =>
     start(async () => {
-      const r = await setGapStatus(aircraftId, gapId, s, n);
+      const r = await setGapStatus(aircraftId, gapId, s, n, version);
       if ("error" in r) return setMsg({ text: r.error });
+      setVersion(r.updatedAt);
       setAsking(null);
       setMsg(
         s === "dismissed"

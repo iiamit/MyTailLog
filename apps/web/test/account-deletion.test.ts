@@ -32,8 +32,8 @@ function fakeSvc(answers: Record<string, { data?: unknown; count?: number; error
 test("deletes owned aircraft, then their files, then the user", async () => {
   const { svc, log } = fakeSvc({
     aircraft: { data: [{ id: "ac1" }] },
-    page: { data: [{ storage_path: "ac1/p.jpg", thumbnail_path: null }] },
-    document: { data: [{ storage_path: "ac1/d.pdf" }] },
+    page: { data: [{ aircraft_id: "ac1", storage_path: "ac1/p.jpg", thumbnail_path: null }, { aircraft_id: "ac1", storage_path: "foreign/private.jpg" }] },
+    document: { data: [{ aircraft_id: "ac1", storage_path: "ac1/d.pdf" }] },
   });
   const removed: string[] = [];
   const result = await deleteAccount(svc, "u1", async (p) => {

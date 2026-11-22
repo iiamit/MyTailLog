@@ -157,11 +157,14 @@ test("fullyConfirmedPages ignores pageless entries and partial pages", () => {
   assert.deepEqual(pages, ["p1"]);
 });
 
-test("isStale: only a newer server row conflicts; no base means no check", () => {
+test("isStale: exact database instant, including microseconds; no base means no check", () => {
   assert.equal(isStale("2026-01-02T00:00:00Z", "2026-01-01T00:00:00Z"), true);
   assert.equal(isStale("2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"), false);
-  assert.equal(isStale("2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z"), false);
+  assert.equal(isStale("2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z"), true);
   assert.equal(isStale("2026-01-02T00:00:00Z", undefined), false);
+  assert.equal(isStale("2026-01-01T00:00:00.123456Z", "2026-01-01T00:00:00.123455Z"), true);
+  assert.equal(isStale("2026-01-01T00:00:00.123456Z", "2026-01-01T02:00:00.123456+02:00"), false);
+  assert.equal(isStale("2026-01-01T00:00:00Z", "invalid"), true);
 });
 
 test("reorderPlan numbers 1..N and rejects duplicates or junk", () => {

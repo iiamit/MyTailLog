@@ -1,3 +1,5 @@
+import { editableAircraft, type Aircraft } from "@/lib/editableAircraft";
+import { withJobLease } from "@/lib/jobLease";
 import { advanceVisits } from "@/lib/writes/visits";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createHash } from "node:crypto";
@@ -21,14 +23,6 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 type Service = SupabaseClient<Database>;
-type Aircraft = {
-  id: string;
-  tail_number: string;
-  enrollment_hobbs: number | null;
-  enrollment_tach: number | null;
-  enrollment_airframe: number | null;
-  enrollment_date: string | null;
-};
 
 // Re-sync a connection when it's never synced or older than ~23h (leaves slack
 // so a job that runs at a slightly-drifting daily time still fires each day).
@@ -109,7 +103,7 @@ async function runSync(supabase: Service, emailById: Map<string, string>): Promi
   for (const c of conns ?? []) {
     if (c.last_synced_at && new Date(c.last_synced_at).getTime() > cutoff) continue;
     try {
-      const aircraft = await accessibleAircraft(supabase, c.user_id, emailById.get(c.user_id));
+      const aircraft = await editableAircraft(supabase, c.user_id, emailById.get(c.user_id));
       const result = await syncUserHours(supabase, c.user_id, aircraft);
       // A failed refresh or partial write must remain eligible for the next run.
       if (!result || result.errors.length) continue;
@@ -142,7 +136,7 @@ async function runReminders(supabase: Service, emailById: Map<string, string>): 
   for (const p of profiles ?? []) {
     try {
       const prefs = (p.preferences ?? {}) as Preferences;
-      if (await remindUser(supabase, byAircraft, p.id, emailById.get(p.id), prefs, p.time_zone ?? null)) emailsSent += 1;
+      if (await withJobLease(supabase, `reminders:${p.id}`, () => remindUser(supabase, byAircraft, p.id, emailById.get(p.id), prefs, p.time_zone ?? null))) emailsSent += 1;
     } catch (e) {
       console.error(`[cron] reminder failed for user ${p.id}: ${(e as Error).message}`);
     }
@@ -179,7 +173,7 @@ async function remindUser(
   tz: string | null,
 ): Promise<boolean> {
   const alerts = resolveAlerts(prefs);
-  const aircraft = await accessibleAircraft(supabase, userId, email, true);
+  const aircraft = await editableAircraft(supabase, userId, email, true);
   if (aircraft.length === 0) return false;
 
   const [{ data: logs, error: logsError }, { data: snoozes, error: snoozeError }] = await Promise.all([
@@ -216,13 +210,13 @@ async function remindUser(
 
   const pending = (channel: Channel) =>
     groups.map((g) => ({ ...g, reminders: pendingFor(g.reminders, channel, g.sent) })).filter((g) => g.reminders.length);
-  const log = async (channel: Channel, gs: Group[]) => {
-    const { error } = await supabase.from("reminder_log").insert(gs.flatMap((g) => g.reminders.map((r) => ({
+  const receipts = (channel: Channel, gs: Group[]) => gs.flatMap((g) => g.reminders.map((r) => ({
       user_id: userId, aircraft_id: g.aircraftId, item_key: r.itemKey, due_signature: r.dueSignature,
       kind: r.kind, channel, nth: r.nth, visit_id: r.visit?.id ?? null,
-    }))));
-    // 23505: a concurrent run logged the same send; the unique key already holds the rule.
-    if (error && error.code !== "23505") throw error;
+    })));
+  const log = async (channel: Channel, gs: Group[]) => {
+    const { error } = await supabase.from("reminder_log").insert(receipts(channel, gs));
+    if (error) throw error;
   };
   const compose = (gs: Group[]) => gs.map((g) => composeAircraft({ id: g.aircraftId, tail: g.tail }, g.reminders, g.today, g.visits));
 
@@ -233,9 +227,8 @@ async function remindUser(
       user_id: userId, aircraft_id: inbox[i].aircraftId, kind: c.kind, title: c.title.slice(0, 140), body: c.body.slice(0, 600),
       deep_link: c.deepLink, actions: c.actions, payload: c.payload,
     }));
-    const { error } = await supabase.from("notification").insert(rows);
+    const { error } = await supabase.rpc("commit_reminder_inbox", { p_notifications: rows, p_receipts: receipts("in_app", inbox) });
     if (error) throw error;
-    await log("in_app", inbox);
   }
 
   // notify_due stays the master switch for email and push, as in v1.
@@ -296,47 +289,6 @@ async function pushReminder(
 }
 
 // --- Shared helpers --------------------------------------------------------
-
-/**
- * Aircraft accessible to this user, resolved WITHOUT a JWT (service role bypasses
- * RLS). Reminders require a real aircraft the user owns or can edit.
- */
-async function accessibleAircraft(
-  supabase: Service,
-  userId: string,
-  email: string | undefined,
-  remindersOnly = false,
-): Promise<Aircraft[]> {
-  const byId = new Map<string, Aircraft>();
-
-  let ownedQuery = supabase
-    .from("aircraft")
-    .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
-    .eq("owner_id", userId);
-  if (remindersOnly) ownedQuery = ownedQuery.eq("is_demo", false);
-  const { data: owned } = await ownedQuery;
-  for (const a of owned ?? []) byId.set(a.id, a);
-
-  if (email) {
-    let sharesQuery = supabase
-      .from("aircraft_share")
-      .select("aircraft_id")
-      .ilike("invited_email", email);
-    if (remindersOnly) sharesQuery = sharesQuery.eq("role", "editor");
-    const { data: shares } = await sharesQuery;
-    const ids = (shares ?? []).map((s) => s.aircraft_id).filter((id) => !byId.has(id));
-    if (ids.length) {
-      let sharedQuery = supabase
-        .from("aircraft")
-        .select("id, tail_number, enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date")
-        .in("id", ids);
-      if (remindersOnly) sharedQuery = sharedQuery.eq("is_demo", false);
-      const { data: shared } = await sharedQuery;
-      for (const a of shared ?? []) byId.set(a.id, a);
-    }
-  }
-  return [...byId.values()];
-}
 
 /** userId → email, from Supabase Auth (admin). ponytail: pages of 1000; the
  *  loop covers larger user bases without change. */

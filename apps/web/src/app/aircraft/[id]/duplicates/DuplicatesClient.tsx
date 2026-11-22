@@ -21,6 +21,7 @@ export type PageRow = {
 
 export type EntryRow = {
   id: string;
+  updated_at: string;
   pageId: string | null;
   keep: boolean;
   confirmed: boolean;
@@ -123,7 +124,7 @@ export function DuplicatesClient({
 
   async function removeEntry(row: EntryRow) {
     setBusyId(row.id);
-    const res = await deleteEntry(aircraftId, row.pageId ?? "", row.id);
+    const res = await deleteEntry(aircraftId, row.pageId ?? "", row.id, row.updated_at);
     setBusyId(null);
     if ("error" in res) return toast.error(res.error);
     setEntryClusters((cs) => prune(cs, row.id));

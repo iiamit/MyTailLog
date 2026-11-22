@@ -89,11 +89,12 @@ class RecordsApi(
 
     override suspend fun document(aircraftId: String, meta: JsonObject, bytes: ByteArray): JsonObject {
         val body = buildJsonObject {
-            meta.forEach { (k, v) -> put(k, v) }
+            meta.filterKeys { it != "uploadId" }.forEach { (k, v) -> put(k, v) }
             put("file", Base64.getEncoder().encodeToString(bytes))
         }
         val o = http.post("$root/api/aircraft/$aircraftId/documents") {
             bearerAuth(accessToken()); contentType(ContentType.Application.Json); setBody(body.toString())
+            meta["uploadId"]?.jsonPrimitive?.contentOrNull?.let { headers.append("Idempotency-Key", it) }
         }.json()
         return o["document"]?.jsonObject ?: error("No document came back")
     }

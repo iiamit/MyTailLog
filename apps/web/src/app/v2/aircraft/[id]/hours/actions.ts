@@ -49,8 +49,8 @@ export async function addReading(id: string, latest: { tach: number | null; hobb
   redirect(`${page(id)}?done=reading`);
 }
 
-export async function removeReading(id: string, readingId: string): Promise<ActResult> {
-  const err = await run(id, ({ supabase, ctx }) => meters.deleteReading(supabase, ctx, { readingId }));
+export async function removeReading(id: string, readingId: string, base: string): Promise<ActResult> {
+  const err = await run(id, ({ supabase, ctx }) => meters.deleteReading(supabase, ctx, { readingId }, base));
   return err ? { error: err } : { ok: "Reading removed." };
 }
 
@@ -68,8 +68,8 @@ export async function addReplacement(id: string, _p: ActResult, form: FormData):
   redirect(`${page(id)}?done=replacement#replaced`);
 }
 
-export async function removeReplacement(id: string, resetId: string): Promise<ActResult> {
-  const err = await run(id, ({ supabase, ctx }) => meters.deleteReset(supabase, ctx, { resetId }));
+export async function removeReplacement(id: string, resetId: string, base: string): Promise<ActResult> {
+  const err = await run(id, ({ supabase, ctx }) => meters.deleteReset(supabase, ctx, { resetId }, base));
   return err ? { error: err } : { ok: "Replacement removed." };
 }
 
@@ -80,21 +80,21 @@ export async function saveStarting(id: string, _p: ActResult, form: FormData): P
       tach: formNumber(form.get("tach")),
       hobbs: formNumber(form.get("hobbs")),
       airframe: formNumber(form.get("airframe")),
-    }),
+    }, String(form.get("base") ?? "") || undefined),
   );
   if (err) return { error: err };
   redirect(`${page(id)}?done=starting#starting`);
 }
 
 export async function saveUsualFlying(id: string, _p: ActResult, form: FormData): Promise<ActResult> {
-  const err = await run(id, ({ supabase, ctx }) => aircraft.setExpectedHours(supabase, ctx, { hoursPerWeek: formNumber(form.get("hours")) }));
+  const err = await run(id, ({ supabase, ctx }) => aircraft.setExpectedHours(supabase, ctx, { hoursPerWeek: formNumber(form.get("hours")) }, String(form.get("base") ?? "") || undefined));
   if (err) return { error: err };
   redirect(`${page(id)}?done=usual`);
 }
 
 export async function setAdsb(id: string, enabled: boolean, _p: ActResult, form: FormData): Promise<ActResult> {
   const hexInput = String(form.get("hex") ?? "").trim() || null;
-  const err = await run(id, ({ supabase, ctx }) => meters.setAdsbEnabled(supabase, ctx, { enabled, hexInput }));
+  const err = await run(id, ({ supabase, ctx }) => meters.setAdsbEnabled(supabase, ctx, { enabled, hexInput }, String(form.get("base") ?? "") || undefined));
   return err ? { error: err } : { ok: enabled ? "ADS-B checks are on." : "ADS-B checks are off." };
 }
 

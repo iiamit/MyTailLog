@@ -29,6 +29,7 @@ export type AircraftRow = {
   home_base?: string | null;
 };
 export type MaintenanceItemRow = {
+  updated_at?: string;
   id: string;
   kind: string;
   label: string;
@@ -98,6 +99,7 @@ export type LogEntryRow = {
 export type LogbookRow = { id: string; type: string };
 export type PageRow = { id: string; logbook_id: string; page_sequence: number | null; extraction_status?: string };
 export type HoursReadingRow = {
+  updated_at?: string;
   id: string;
   reading_date: string | null;
   tach: number | null;
@@ -107,6 +109,7 @@ export type HoursReadingRow = {
 };
 export type MeterResetRow = { meter: MeterName; reset_date: string; prior_value: number | null; new_value: number };
 export type PlannedVisitRow = {
+  updated_at?: string;
   id: string;
   status: string;
   week_of: string;
@@ -205,6 +208,7 @@ export type Ring = { itemKey: string; line: string; date: string; dateKind: "cal
 export type VisitStatus = "suggested" | "planned" | "in_shop" | "awaiting_records" | "done" | "cancelled";
 /** 09 §4.3 VisitView. Squawks riding along have status "open"; `done` marks an item with a completion at this visit. */
 export type VisitView = {
+  updatedAt?: string;
   id: string | null;
   suggestionKey: string | null;
   status: VisitStatus;
@@ -812,10 +816,11 @@ function computeVisits(input: DueInput, items: DueItem[], rate: Rate, today: str
     const d = daysBetween(at, i.firstDate);
     return d > 0 ? { days: d } : null;
   };
-  const view = (v: { id: string | null; key: string | null; status: VisitStatus; weekOf: string; visitDate: string | null; place: string;
+  const view = (v: { updatedAt?: string; id: string | null; key: string | null; status: VisitStatus; weekOf: string; visitDate: string | null; place: string;
     providerIds: (string | null | undefined)[]; members: { key: string; item?: DueItem; done: boolean }[] }): VisitView => {
     const due = v.members.filter((m) => m.item && !m.done && m.item.status !== "overdue");
     return {
+      ...(v.updatedAt ? { updatedAt: v.updatedAt } : {}),
       id: v.id, suggestionKey: v.key, status: v.status, weekOf: v.weekOf, visitDate: v.visitDate, place: v.place,
       providerIds: [...new Set(v.providerIds.filter((p): p is string => !!p))],
       items: v.members.map((m) => ({
@@ -835,7 +840,7 @@ function computeVisits(input: DueInput, items: DueItem[], rate: Rate, today: str
       const members = rows.map((x) => ({ key: x.item_key, item: byKey.get(x.item_key), done: !!x.done_completion_id }));
       const own = v.provider_id ? providerById.get(v.provider_id) : undefined;
       return view({
-        id: v.id, key: v.from_suggestion_key ?? null, status: v.status as VisitStatus, weekOf: v.week_of, visitDate: v.visit_date,
+        updatedAt: v.updated_at, id: v.id, key: v.from_suggestion_key ?? null, status: v.status as VisitStatus, weekOf: v.week_of, visitDate: v.visit_date,
         place: own?.airport?.trim().toUpperCase() || v.airport?.trim().toUpperCase() || home,
         providerIds: [v.provider_id, ...members.map((m) => (m.item ? providerOf(m.item)?.id : null))], members,
       });

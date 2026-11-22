@@ -1,9 +1,10 @@
+import { ScannedDocumentReview } from "@/components/review/ScannedDocumentReview";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Board } from "@/ui/Board";
 import { aircraftTail } from "@/lib/v2/landing";
 import { PAGE_COLUMNS, entriesOnPages, loadBooks, pageLabel, waitingPageIds, withDoubt, type PageRow } from "@/lib/v2/booksLoad";
-import { addDays, fmtDay, fmtMonth } from "@/lib/v2/books";
+import { parseReviewReceipt, addDays, fmtDay, fmtMonth } from "@/lib/v2/books";
 import { BooksHead } from "../../BooksHead";
 import { ReviewDesk } from "./ReviewDesk";
 
@@ -39,7 +40,7 @@ export default async function ReviewDeskPage({
   const [rows, { data: siblings }, { data: scanned }, { data: stickers }] = await Promise.all([
     entriesOnPages(supabase, id, [pageId]),
     supabase.from("page").select("id, page_sequence, created_at").eq("logbook_id", page.logbook_id).order("page_sequence", { ascending: true, nullsFirst: true }).order("created_at"),
-    supabase.from("scanned_document").select("doc_type, document_date, summary").eq("page_id", pageId).maybeSingle(),
+    supabase.from("scanned_document").select("doc_type, document_date, summary, extracted, applied, updated_at").eq("page_id", pageId).maybeSingle(),
     supabase.from("signed_entry_scan").select("entry_id").eq("page_id", pageId),
   ]);
   const entries = withDoubt(books, rows.filter((r) => !r.replaced_by_entry_id));
@@ -84,10 +85,12 @@ export default async function ReviewDeskPage({
           href: rows[0] && firstDate ? `${a}/logbooks/map?stop=${rows.find((r) => r.entry_date === firstDate)!.id}` : `${a}/logbooks/map`,
         }}
       />
+      {scanned && <ScannedDocumentReview pageId={pageId} doc={scanned} canEdit={context.canEdit} />}
       <ReviewDesk
         key={pageId}
         aircraftId={id}
         pageId={pageId}
+        pageBase={page.updated_at}
         logbookId={page.logbook_id}
         canEdit={context.canEdit}
         ownerName={context.isOwner ? null : "the owner"}
@@ -112,7 +115,7 @@ export default async function ReviewDeskPage({
         readError={page.extraction_error}
         ocrText={page.ocr_text}
         initial={{ entry: sp.entry ?? null, field: sp.field ?? null }}
-        undo={sp.undo && sp.from ? { ids: sp.undo.split(",").filter(Boolean).slice(0, 200), pageId: sp.from, n: Number(sp.n ?? 0) } : null}
+        undo={parseReviewReceipt(sp.undo)}
       />
     </Board>
   );

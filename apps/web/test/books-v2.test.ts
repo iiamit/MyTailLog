@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   acceptedLine, confirmPlan, deskEntry, deskFields, deskReducer, entryBox, firstUnsure, groupByYear, highlight, markName, matches,
-  navigate, nextWaiting, pageDoubt, pageIsClean, parseMapParams, patchOf, shelfBooks, withParams, zoomAround, zoomWindow,
+  navigate, nextWaiting, pageDoubt, pageIsClean, parseMapParams, parseReviewReceipt, patchOf, shelfBooks, withParams, zoomAround, zoomWindow,
   type DeskAction, type DeskEntryInput, type DeskState, type Mark,
 } from "../src/lib/v2/books";
 import { v2Rewrite } from "../src/lib/uiV2";
@@ -240,4 +240,30 @@ test("the Pages library lists every book: map lines first, then Other, which the
   // Only Other: still listed; no Other book: nothing added.
   assert.deepEqual(shelfBooks([], [{ id: "o1", type: "other" }]).map((b) => b.name), ["Other"]);
   assert.deepEqual(shelfBooks(linesOf([{ id: "p1", type: "prop" }]), [{ id: "p1", type: "prop" }]).map((b) => b.name), ["Propeller"]);
+});
+
+test("review drafts retain their loaded version until their own confirmation succeeds", () => {
+  const loaded = "2026-11-20T10:00:00Z";
+  let s = state([E({ updated_at: loaded, owner_confirmed: false })]);
+  const plan = confirmPlan(s, 0);
+  assert.ok("writes" in plan);
+  assert.equal(plan.writes[0].base, loaded);
+  s = run(s, { type: "entryConfirmed", entry: 0, base: "2026-11-20T11:00:00Z" });
+  assert.equal(s.entries[0].base, "2026-11-20T11:00:00Z");
+});
+
+test("a newly saved review row adopts its persisted ID and version", () => {
+  const s = state([E()]);
+  s.entries[0] = { ...s.entries[0], id: "temporary", isNew: true };
+  const saved = run(s, { type: "entryConfirmed", entry: 0, id: "persisted", base: "2026-11-20T12:00:00Z" });
+  assert.equal(saved.entries[0].id, "persisted");
+  assert.equal(saved.entries[0].base, "2026-11-20T12:00:00Z");
+  assert.equal(saved.entries[0].isNew, false);
+});
+
+ test("review undo receipts reject malformed or unbounded versions", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  const r = {pageId: id, n: 1, entryVersions: {[id]: "2026-11-21T00:00:00.123456Z"}, pageVersions: {}};
+  assert.deepEqual(parseReviewReceipt(JSON.stringify(r)), r);
+  for (const value of [undefined, "bad", "null", JSON.stringify({...r, entryVersions: {[id]: null}}), JSON.stringify({...r, pageVersions: []}), "x".repeat(6001)]) assert.equal(parseReviewReceipt(value), null);
 });

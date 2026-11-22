@@ -122,10 +122,10 @@ export function VisitPanel({ visit: v, c, panel, booked, err }: { visit: VisitVi
         {c.canEdit && v.status === "planned" && v.id && (
           <>
             <div className="flex flex-wrap gap-2">
-              <form action={setVisitStatus.bind(null, a, v.id, "in_shop", back)}>
+              <form action={setVisitStatus.bind(null, a, v.id, "in_shop", v.updatedAt ?? "", back)}>
                 <button type="submit" className={buttonClass("primary", "m")}>It&apos;s in the shop</button>
               </form>
-              <form action={setVisitStatus.bind(null, a, v.id, "cancelled", back)}>
+              <form action={setVisitStatus.bind(null, a, v.id, "cancelled", v.updatedAt ?? "", back)}>
                 <ConfirmSubmit
                   label="Cancel visit"
                   size="m"
@@ -140,13 +140,13 @@ export function VisitPanel({ visit: v, c, panel, booked, err }: { visit: VisitVi
               providerId={v.providerIds[0] ?? null}
               providerName={providerNames[0] ?? null}
             />
-            <MoveVisitForm aircraftId={a} visitId={v.id} weekOf={v.weekOf < minWeek ? minWeek : v.weekOf} minWeek={minWeek} />
+            <MoveVisitForm aircraftId={a} visitId={v.id} renderedBase={v.updatedAt ?? ""} weekOf={v.weekOf < minWeek ? minWeek : v.weekOf} minWeek={minWeek} />
           </>
         )}
 
         {c.canEdit && working && v.id && (
           <div className="flex flex-wrap items-center gap-2">
-            <form action={setVisitStatus.bind(null, a, v.id, "done", back)}>
+            <form action={setVisitStatus.bind(null, a, v.id, "done", v.updatedAt ?? "", back)}>
               <ConfirmSubmit
                 label="Close this visit"
                 size="m"

@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     .maybeSingle();
   if (!photo) return new Response("Not found", { status: 404 });
   const thumb = new URL(req.url).searchParams.get("thumb") != null;
-  const blob = await getBlob(thumb && photo.thumbnail_path ? photo.thumbnail_path : photo.storage_path);
+  const blob = await getBlob(thumb && photo.thumbnail_path ? photo.thumbnail_path : photo.storage_path, id);
   if (!blob) return new Response("Not found", { status: 404 });
   return new Response(new Uint8Array(blob.data), {
     headers: { "content-type": blob.contentType || "image/jpeg", "cache-control": "private, no-store" },

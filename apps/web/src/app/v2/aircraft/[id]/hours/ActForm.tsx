@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 export type ActResult = { error?: string; ok?: string } | null;
 
@@ -10,16 +10,20 @@ export type ActResult = { error?: string; ok?: string } | null;
  */
 export function ActForm({
   action,
+  base,
   className,
   children,
 }: {
+  base?: string;
   action: (prev: ActResult, form: FormData) => Promise<ActResult>;
   className?: string;
   children: React.ReactNode;
 }) {
+  const [version] = useState(base);
   const [state, run, pending] = useActionState(action, null);
   return (
     <form action={run} className={className} aria-busy={pending || undefined}>
+      {version && <input type="hidden" name="base" value={version} />}
       {children}
       {state?.error && (
         <p role="alert" className="mt-2 w-full text-small font-semibold text-alarm-text">

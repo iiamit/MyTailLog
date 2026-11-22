@@ -162,7 +162,7 @@ export default async function StatusPage({
         <Well key={`r-${v.id}`}>
           The {byKey.get(n.itemKey)?.label ?? "item"} now falls {n.daysBefore} {n.daysBefore === 1 ? "day" : "days"} before the {day} visit.{" "}
           {context.canEdit && v.id && (
-            <form action={moveVisitTo.bind(null, id, v.id, n.moveTo)} className="mt-2">
+            <form action={moveVisitTo.bind(null, id, v.id, n.moveTo, v.updatedAt ?? "")} className="mt-2">
               <button type="submit" className="font-semibold text-board-ink underline decoration-dotted">
                 Move the visit to the week of {monD(n.moveTo)}
               </button>
@@ -175,7 +175,7 @@ export default async function StatusPage({
         <Well key={`s-${v.id}`}>
           Is {context.reg} at the shop this week?{" "}
           {context.canEdit && v.id && (
-            <form action={setVisitStatus.bind(null, id, v.id, "in_shop", "status")} className="mt-2 inline-flex gap-3">
+            <form action={setVisitStatus.bind(null, id, v.id, "in_shop", v.updatedAt ?? "", "status")} className="mt-2 inline-flex gap-3">
               <button type="submit" className="font-semibold text-board-ink underline decoration-dotted">Yes, it&apos;s in the shop</button>
               <Link href={vp} className="font-semibold text-board-ink underline decoration-dotted">Open the visit</Link>
             </form>

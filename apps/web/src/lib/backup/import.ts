@@ -1,6 +1,7 @@
 import { unzip } from "fflate";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { blobRefsFor } from "./collect";
 import { makeThumbnail, thumbnailKey } from "@/lib/capture/thumbnail";
 import {
   BACKUP_FORMAT,
@@ -16,8 +17,7 @@ type TableName = keyof Database["public"]["Tables"];
 
 /**
  * Upload one blob to a storage key under the new aircraft, via the editor-gated
- * server route (the browser can't write GCS directly). Best-effort, like the old
- * direct upload — a failed scan just leaves that page image missing.
+ * server route. An original is required: a failed upload must never report a complete restore.
  */
 async function uploadBlob(
   aircraftId: string,
@@ -28,11 +28,8 @@ async function uploadBlob(
   const fd = new FormData();
   fd.set("path", path);
   fd.set("file", new File([blob], path.split("/").pop() || "blob", { type: contentType }));
-  try {
-    await fetch(`/api/aircraft/${aircraftId}/blob`, { method: "POST", body: fd });
-  } catch {
-    // Best-effort; the record still restores without its scan.
-  }
+  const response = await fetch(`/api/aircraft/${aircraftId}/blob`, { method: "POST", body: fd });
+  if (!response.ok) throw new Error(`Could not restore ${path} (${response.status}). Retry the restore; no complete backup has been restored.`);
 }
 
 /** Drop server-managed fields before re-inserting a backed-up row. */
@@ -56,7 +53,7 @@ function clean(row: Row): Row {
 export function restorableEntry(e: Row): Row {
   const o = clean(e);
   delete o.trust; // generated column (0069)
-  for (const col of ["authored_signed_at", "authored_digest", "authored_by", "supersedes_entry_id", "authored_superseded_by"]) {
+  for (const col of ["authored_signed_at", "authored_digest", "authored_by", "supersedes_entry_id", "authored_superseded_by", "replaced_by_entry_id"]) {
     delete o[col];
   }
   return o;
@@ -107,7 +104,19 @@ export async function importBackup(
   if (manifest.format_version > BACKUP_FORMAT_VERSION) {
     throw new Error("This backup is from a newer version of MyTailLog.");
   }
+  if (!files["data.json"]) throw new Error("Not a MyTailLog backup (no records).");
   const data: BackupData = JSON.parse(dec.decode(files["data.json"]));
+  if (!data.aircraft || typeof data.aircraft !== "object" || Array.isArray(data.aircraft)) throw new Error("Backup has no aircraft record.");
+  for (const key of ["logbooks", "pages", "log_entries", "components", "ad_compliance", "maintenance_items", "documents"] as const) {
+    if (!Array.isArray(data[key]) || data[key].some((row) => !row || typeof row !== "object" || typeof row.id !== "string")) {
+      throw new Error(`Backup has invalid ${key} records.`);
+    }
+  }
+  // Validate all originals before creating anything. Old incomplete archives require the owner to recover the files.
+  for (const ref of blobRefsFor(data)) {
+    if (manifest.format_version < 2 && (ref.prefix === "meter-photos" || ref.prefix === "squawk-photos")) continue;
+    if (!files[ref.entry]) throw new Error(`Backup is missing ${ref.entry}. Nothing has been restored.`);
+  }
 
   // 1. Aircraft (new id + this user as owner).
   const aircraftId = crypto.randomUUID();
@@ -130,12 +139,11 @@ export async function importBackup(
   await insertRows(supabase, "logbook", logbookRows);
 
   // 3. Pages — upload each scan to a fresh storage path, regenerate thumbnail.
-  const pageMap = new Map<string, string>();
+  const pageMap = new Map(data.pages.map((p) => [p.id as string, crypto.randomUUID()]));
   const pageRows: Row[] = [];
   let uploaded = 0;
   for (const p of data.pages) {
-    const nid = crypto.randomUUID();
-    pageMap.set(p.id as string, nid);
+    const nid = pageMap.get(p.id as string)!;
     const newLogbook = logbookMap.get(p.logbook_id as string)!;
     const ext = extOf(p.storage_path as string);
     const newPath = `${aircraftId}/${newLogbook}/${nid}.${ext}`;
@@ -159,12 +167,21 @@ export async function importBackup(
     o.id = nid;
     o.aircraft_id = aircraftId;
     o.logbook_id = newLogbook;
-    o.storage_path = newPath;
+    o.duplicate_of_page_id = null;
+    o.queued_by = null;
+    o.storage_path = p.storage_path ? newPath : null;
     o.thumbnail_path = thumbnailPath;
     pageRows.push(o);
     onProgress?.(`Restoring scans… ${++uploaded}/${data.pages.length}`);
   }
   await insertRows(supabase, "page", pageRows);
+  // A duplicate can point at a page in a later insert chunk.
+  for (const p of data.pages) {
+    const target = p.duplicate_of_page_id ? pageMap.get(p.duplicate_of_page_id as string) : null;
+    if (!target) continue;
+    const { error } = await supabase.from("page").update({ duplicate_of_page_id: target }).eq("id", pageMap.get(p.id as string)!);
+    if (error) throw new Error(`page: ${error.message}`);
+  }
 
   onProgress?.("Restoring records…");
 
@@ -182,7 +199,7 @@ export async function importBackup(
   // Second pass: links may cross insert chunks.
   for (const e of data.log_entries) {
     const links: Row = {};
-    for (const col of ["supersedes_entry_id", "authored_superseded_by"]) {
+    for (const col of ["supersedes_entry_id", "authored_superseded_by", "replaced_by_entry_id"]) {
       const to = e[col] ? entryMap.get(e[col] as string) : undefined;
       if (to) links[col] = to;
     }
@@ -234,6 +251,7 @@ export async function importBackup(
     o.aircraft_id = aircraftId;
     o.provider_id = provider(a);
     o.ad_reference_id = resolveAdReference(a, known);
+    o.verified_report_page_id = a.verified_report_page_id ? pageMap.get(a.verified_report_page_id as string) ?? null : null;
     o.reference_entry_id = a.reference_entry_id
       ? entryMap.get(a.reference_entry_id as string) ?? null
       : null;
@@ -319,8 +337,42 @@ export async function importBackup(
     const lb = remap(logbookMap, g.logbook_id);
     return lb ? [{ ...owned(g, aircraftId), logbook_id: lb }] : [];
   }));
-  // Meter photos are not in the archive, so the reading keeps its values without the photo.
-  await insertRows(supabase, "hours_reading", (data.hours_readings ?? []).map((r) => ({ ...owned(r, aircraftId), photo_path: null })));
+  // Additional record sets were added in format v2; old v1 archives remain importable.
+  for (const [key, table] of [["weight_balances", "weight_balance"], ["scanned_documents", "scanned_document"],
+    ["oil_additions", "oil_addition"], ["oil_analysis_samples", "oil_analysis_sample"]] as const) {
+    await insertRows(supabase, table, (data[key] ?? []).map((r) => {
+      const row = owned(r, aircraftId, crypto.randomUUID());
+      if ("component_id" in row) row.component_id = remap(componentMap, r.component_id);
+      if ("source_page_id" in row) row.source_page_id = remap(pageMap, r.source_page_id);
+      if ("page_id" in row) row.page_id = remap(pageMap, r.page_id);
+      return row;
+    }));
+  }
+  for (const [key, table, prefix, column] of [
+    ["squawk_photos", "squawk_photo", "squawk-photos", "storage_path"],
+    ["hours_readings", "hours_reading", "meter-photos", "photo_path"],
+  ] as const) {
+    const rows: Row[] = [];
+    for (const r of data[key] ?? []) {
+      const nid = crypto.randomUUID();
+      const row = owned(r, aircraftId, nid);
+      if (table === "squawk_photo") {
+        row.squawk_id = remap(squawkMap, r.squawk_id);
+        row.thumbnail_path = null;
+        // Restore is an owner action; satisfy the photographer insert policy.
+        row.created_by = userId;
+      }
+      row[column] = null;
+      if (r[column] && (manifest.format_version >= 2 || files[`${prefix}/${r.id}.${extOf(r[column] as string)}`])) {
+        const ext = extOf(r[column] as string);
+        const newPath = table === "squawk_photo" ? `${aircraftId}/squawks/${row.squawk_id}/${nid}.${ext}` : `${aircraftId}/meters/${nid}.${ext}`;
+        await uploadBlob(aircraftId, newPath, new Blob([files[`${prefix}/${r.id}.${ext}`] as BlobPart]), mimeOf(ext));
+        row[column] = newPath;
+      }
+      rows.push(row);
+    }
+    await insertRows(supabase, table, rows);
+  }
 
   return { aircraftId, tail: (data.aircraft.tail_number as string) || "aircraft" };
 }

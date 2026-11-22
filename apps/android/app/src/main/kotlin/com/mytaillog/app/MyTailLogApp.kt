@@ -20,6 +20,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import java.io.File
 
@@ -41,6 +45,7 @@ class MyTailLogApp : Application() {
     val online = MutableStateFlow(true)
 
     private var offline: OfflineStore? = null
+    private val storeLock = Mutex()
 
     override fun onCreate() {
         super.onCreate()
@@ -58,30 +63,28 @@ class MyTailLogApp : Application() {
     }
 
     /** The signed-in user's store: `filesDir/{userId}` with mirror.db and outbox.db (05 §6.2, §7.1). */
-    @Synchronized
-    fun offline(userId: String): OfflineStore {
-        offline?.takeIf { it.userId == userId }?.let { return it }
+    suspend fun offline(userId: String): OfflineStore = storeLock.withLock {
+        offline?.takeIf { it.userId == userId }?.let { return@withLock it }
         offline?.close()
         val dir = File(filesDir, userId).apply { mkdirs() }
         val mirror = AndroidSqliteDriver(MirrorDatabase.Schema, this, File(dir, MIRROR_DB).path)
         val outbox = AndroidSqliteDriver(OutboxDatabase.Schema, this, File(dir, OUTBOX_DB).path)
-        return OfflineStore(userId, dir, mirror, outbox, syncApi, captureApi, records = recordsApi).also {
+        OfflineStore(userId, dir, mirror, outbox, syncApi, captureApi, records = recordsApi).also {
             it.setOnline(online.value)
             offline = it
         }
     }
 
-    suspend fun currentOffline(): OfflineStore? = account.session.first()?.user?.id?.let(::offline)
+    suspend fun currentOffline(): OfflineStore? = account.session.first()?.user?.id?.let { offline(it) }
 
     /** Sign-out deletes the user's directory: mirror, outbox, held pages and cached copies (05 §7.1). */
-    @Synchronized
-    fun forget(userId: String) {
-        SyncWorker.cancel(this)
+    suspend fun forget(userId: String) = withContext(NonCancellable) { storeLock.withLock {
+        SyncWorker.cancel(this@MyTailLogApp)
         if (offline?.userId == userId) { offline?.close(); offline = null }
         File(filesDir, userId).deleteRecursively()
         // Widgets and launcher shortcuts name the aircraft; they go with the account (05 §8.6).
-        WidgetData.clear(this)
-        ShortcutManagerCompat.removeAllDynamicShortcuts(this)
+        WidgetData.clear(this@MyTailLogApp)
+        ShortcutManagerCompat.removeAllDynamicShortcuts(this@MyTailLogApp)
         scope.launch { refreshWidgets(this@MyTailLogApp) }
-    }
+    } }
 }

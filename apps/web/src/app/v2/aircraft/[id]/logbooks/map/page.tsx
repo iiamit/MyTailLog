@@ -266,7 +266,7 @@ export default async function MapPage({
           </HungSection>
           {canEdit ? (
             <HungSection title="What to do">
-              <GapActions aircraftId={id} gapId={ev.gap.id} status={ev.gap.status} note={ev.gap.note} scanHref={`${a}/logbooks/add`} />
+              <GapActions aircraftId={id} gapId={ev.gap.id} base={gapRow.updated_at ?? ""} status={ev.gap.status} note={ev.gap.note} scanHref={`${a}/logbooks/add`} />
             </HungSection>
           ) : (
             ev.gap.note && (

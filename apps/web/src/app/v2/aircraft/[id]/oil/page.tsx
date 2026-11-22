@@ -338,7 +338,7 @@ export default async function OilPage({
   );
 }
 
-function AddedList({ rows, id, canEdit }: { rows: { id: string; added_date: string | null; quarts: number; tach: number | null; hobbs: number | null }[]; id: string; canEdit: boolean }) {
+function AddedList({ rows, id, canEdit }: { rows: { id: string; updated_at: string; added_date: string | null; quarts: number; tach: number | null; hobbs: number | null }[]; id: string; canEdit: boolean }) {
   return (
     <ul className="divide-y divide-rule">
       {rows.map((r) => (
@@ -347,7 +347,7 @@ function AddedList({ rows, id, canEdit }: { rows: { id: string; added_date: stri
             {r.added_date ? fmtDate(r.added_date) : "undated"} · {r.quarts} qt{r.tach != null ? ` at tach ${r.tach.toFixed(1)}` : r.hobbs != null ? ` at hobbs ${r.hobbs.toFixed(1)}` : ""}
           </span>
           {canEdit && (
-            <ActForm action={removeOil.bind(null, id, r.id)}>
+            <ActForm action={removeOil.bind(null, id, r.id, r.updated_at)}>
               <ConfirmSubmit label="Remove" question={`Remove the ${r.quarts} qt top-off${r.added_date ? ` of ${fmtDate(r.added_date)}` : ""}?`} />
             </ActForm>
           )}

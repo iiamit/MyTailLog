@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveAircraftDetails } from "./actions";
 
 type Details = {
-  id: string; make: string | null; model: string | null; year: number | null;
+  id: string; updated_at: string; make: string | null; model: string | null; year: number | null;
   serial_number: string | null; engine_serials: string[]; prop_serials: string[]; home_base: string | null;
 };
 
@@ -21,15 +21,18 @@ function Field({ label, name, value, hint, type = "text" }: {
 
 export function DetailsForm({ aircraft }: { aircraft: Details }) {
   const router = useRouter();
+  const [base, setBase] = useState(aircraft.updated_at);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
   async function save(formData: FormData) {
+    formData.set("base", base);
     setPending(true);
     setError("");
     setSaved(false);
     const result = await saveAircraftDetails(aircraft.id, formData);
     if ("error" in result) { setError(result.error); setPending(false); return; }
+    setBase(result.version);
     setSaved(true);
     setPending(false);
     router.refresh();

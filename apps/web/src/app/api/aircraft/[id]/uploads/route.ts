@@ -55,7 +55,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Too large to upload. Retake at a lower size or upload from a computer.", code: "too_large" }, { status: 413 });
   }
 
-  if ((await blobSize(path)) != null) return NextResponse.json({ alreadyUploaded: true, storagePath: path });
+  if ((await blobSize(path, id)) != null) return NextResponse.json({ alreadyUploaded: true, storagePath: path });
   const signed = await signedUploadUrl(path, "image/jpeg");
   if ("error" in signed) return NextResponse.json(uploadPrepareFailed(path, signed.error), { status: 503 });
   return NextResponse.json({ uploadUrl: signed.url, method: "PUT", headers: signed.headers, storagePath: path, expiresAt: signed.expiresAt });

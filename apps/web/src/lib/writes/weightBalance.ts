@@ -1,3 +1,5 @@
+import { insertRecords } from "./insert";
+import { writeRecord } from "./conditional";
 import type { WeightBalance } from "@/lib/database.types";
 import { completeWB } from "@/lib/weightBalance";
 import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
@@ -107,26 +109,10 @@ export async function upsert(
   if (input.id) {
     const loaded = await loadWB(supabase, ctx, input.id, base);
     if ("status" in loaded) return loaded;
-    const { data, error } = await supabase
-      .from("weight_balance")
-      .update(v.fields)
-      .eq("id", input.id)
-      .eq("aircraft_id", ctx.aircraftId)
-      .select("*")
-      .maybeSingle();
-    if (error) return { status: "error", message: error.message };
-    if (!data) return { status: "error", message: "Weight & balance revision not found.", httpStatus: 404 };
-    return { status: "ok", row: data };
+    return writeRecord(supabase, ctx, "weight_balance", input.id, loaded.row.updated_at, v.fields);
   }
 
-  const { data, error } = await supabase
-    .from("weight_balance")
-    .insert({ aircraft_id: ctx.aircraftId, ...v.fields })
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Couldn't save the revision." };
-  return { status: "ok", row: data };
+  return insertRecords(supabase, ctx, "weight_balance", { aircraft_id: ctx.aircraftId, ...v.fields });
 }
 
 /** Nothing references weight_balance(id) (checked the migrations). */
@@ -139,13 +125,5 @@ export async function remove(
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
   const loaded = await loadWB(supabase, ctx, input.wbId, base);
   if ("status" in loaded) return loaded;
-  const { data, error } = await supabase
-    .from("weight_balance")
-    .delete()
-    .eq("id", input.wbId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Weight & balance revision not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return writeRecord(supabase, ctx, "weight_balance", input.wbId, loaded.row.updated_at, null);
 }

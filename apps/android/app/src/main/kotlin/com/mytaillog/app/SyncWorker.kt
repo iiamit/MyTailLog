@@ -51,6 +51,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             progress?.cancel()
             if (posted) NotificationManagerCompat.from(applicationContext).cancel(NOTE_ID)
         }
+        if (store.isClosing) return@coroutineScope Result.success()
         // Pages that reached storage now get read: follow them in the reading-progress note (05 §12).
         val left = store.pageJobs().map { it.id }.toSet()
         held.filter { it.id !in left }.groupBy { it.aircraftId }.forEach { (id, sent) ->

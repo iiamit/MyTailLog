@@ -1,3 +1,5 @@
+import { insertRecords } from "./insert";
+import { writeRecord } from "./conditional";
 import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
 // The ONE implementation of every oil top-off write (CONTRACT §3 C3, §4). See
@@ -59,23 +61,7 @@ export async function addTopOff(supabase: Db, ctx: WriteCtx, input: TopOffInput)
   if ("error" in v) return { status: "error", message: v.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
-  const { data, error } = await supabase
-    .from("oil_addition")
-    .upsert(
-      { ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, ...v.row },
-      { onConflict: "id", ignoreDuplicates: true },
-    )
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (data) return { status: "ok", row: data };
-  const { data: existing } = await supabase
-    .from("oil_addition")
-    .select("*")
-    .eq("id", input.id ?? "")
-    .eq("aircraft_id", ctx.aircraftId)
-    .maybeSingle();
-  return existing ? { status: "ok", row: existing } : { status: "error", message: "Couldn't save the top-off." };
+  return insertRecords(supabase, ctx, "oil_addition", { ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, ...v.row });
 }
 
 /** Nothing references oil_addition(id) (checked the migrations). */
@@ -95,13 +81,5 @@ export async function deleteTopOff(
   if (!row) return { status: "error", message: "Top-off not found.", httpStatus: 404 };
   // §2: the row moved on since the phone last saw it — say so, delete nothing.
   if (isStale(row.updated_at, base)) return { status: "conflict", row };
-  const { data, error } = await supabase
-    .from("oil_addition")
-    .delete()
-    .eq("id", input.additionId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Top-off not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return writeRecord(supabase, ctx, "oil_addition", input.additionId, row.updated_at, null);
 }

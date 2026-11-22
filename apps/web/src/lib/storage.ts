@@ -1,4 +1,5 @@
 import "server-only";
+import { aircraftStoragePath } from "./storagePath";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Bucket } from "@google-cloud/storage";
 
@@ -50,7 +51,9 @@ async function toBuffer(body: PutBody): Promise<Buffer> {
 /** Fetch a blob's bytes + content-type, or null if it's missing. */
 export async function getBlob(
   path: string,
+  aircraftId: string,
 ): Promise<{ data: Buffer; contentType: string } | null> {
+  if (!aircraftStoragePath(path, aircraftId)) return null;
   if (BACKEND === "gcs") {
     try {
       const file = (await bucket()).file(path);
@@ -78,7 +81,8 @@ export async function getBlob(
  * `page` has no size column in the DB (only `document` does), so this asks the
  * backend.
  */
-export async function blobSize(path: string): Promise<number | null> {
+export async function blobSize(path: string, aircraftId: string): Promise<number | null> {
+  if (!aircraftStoragePath(path, aircraftId)) return null;
   if (BACKEND === "gcs") {
     try {
       const [meta] = await (await bucket()).file(path).getMetadata();
@@ -156,8 +160,8 @@ export async function signedUploadUrl(
 }
 
 /** Best-effort delete of many blobs. Never throws (cleanup is non-critical). */
-export async function removeBlobs(paths: string[]): Promise<void> {
-  const keys = paths.filter(Boolean);
+export async function removeBlobs(paths: string[], aircraftIds: string | readonly string[]): Promise<void> {
+  const keys = paths.filter((path) => aircraftStoragePath(path, aircraftIds));
   if (!keys.length) return;
   if (BACKEND === "gcs") {
     const b = await bucket();

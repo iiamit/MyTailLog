@@ -36,6 +36,10 @@ final class BooksModel {
         Task { await refresh() }
     }
 
+    func webReviewURL(_ page: PageRow) -> URL {
+        api.apiURL.appending(path: "v2/aircraft/\(aircraft.id)/logbooks/review/\(page.id)")
+    }
+
     func refresh() async {
         loading = true
         failed = false

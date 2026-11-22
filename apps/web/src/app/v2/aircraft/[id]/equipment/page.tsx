@@ -1,3 +1,4 @@
+import { RecordVersion } from "@/components/RecordVersion";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -91,7 +92,8 @@ export default async function EquipmentPage({ params, searchParams }: { params: 
     const c = panel === "edit" ? part : null;
     right = (
       <FormLeaf title={c ? `Edit ${c.name}` : "Add equipment"} closeHref={c ? `${self}?part=${c.id}` : self}>
-        <ActionForm action={saveComponent.bind(null, id, c?.id ?? null)} submit="Save" extra={<Link href={c ? `${self}?part=${c.id}` : self} className={buttonClass("quiet", "m")}>Cancel</Link>}>
+        <ActionForm action={saveComponent.bind(null, id, c?.id ?? null, c?.updated_at ?? null)} submit="Save" extra={<Link href={c ? `${self}?part=${c.id}` : self} className={buttonClass("quiet", "m")}>Cancel</Link>}>
+          {c && <RecordVersion key={c.id} base={c.updated_at} />}
           <Field label="Name">
             <input name="name" required defaultValue={c?.name ?? ""} placeholder="e.g. Vacuum pump" className={fieldClass} />
           </Field>
@@ -131,7 +133,7 @@ export default async function EquipmentPage({ params, searchParams }: { params: 
     const n = adsByPart.get(part.id)?.filter((x) => x.status !== "not_applicable" && x.status !== "superseded").length ?? 0;
     right = (
       <FormLeaf title={`Mark ${part.name} removed`} closeHref={`${self}?part=${part.id}`}>
-        <ActionForm action={markRemoved.bind(null, id, part.id)} submit="Mark removed" extra={<Link href={`${self}?part=${part.id}`} className={buttonClass("quiet", "m")}>Cancel</Link>}>
+        <ActionForm action={markRemoved.bind(null, id, part.id, part.updated_at)} submit="Mark removed" extra={<Link href={`${self}?part=${part.id}`} className={buttonClass("quiet", "m")}>Cancel</Link>}>
           <Field label="Removed on"><input name="removal_date" type="date" required max={today} defaultValue={today} className={fieldClass} /></Field>
           <Field label="Removal entry"><select name="removal_entry_id" defaultValue="" className={fieldClass}>{entryOptions(null)}</select></Field>
           <p className="text-small text-ink-2">
@@ -274,7 +276,7 @@ export default async function EquipmentPage({ params, searchParams }: { params: 
                             <td className="py-2 text-right whitespace-nowrap">
                               <Link href={`${self}?part=${c.id}&panel=edit`} className={buttonClass("quiet", "s")}>Edit</Link>
                               <Link href={`${self}?part=${c.id}&panel=remove`} className={buttonClass("quiet", "s")}>Mark removed</Link>
-                              <form action={deleteComponent.bind(null, id, c.id)} className="inline">
+                              <form action={deleteComponent.bind(null, id, c.id, c.updated_at)} className="inline">
                                 <ConfirmSubmit label="Delete" question={`Delete ${c.name} from the equipment list? Use Mark removed if it came out of the aircraft.`} />
                               </form>
                             </td>
@@ -301,11 +303,11 @@ export default async function EquipmentPage({ params, searchParams }: { params: 
                       </Link>
                       {edit && (
                         <span className="flex gap-1">
-                          <form action={reinstallComponent.bind(null, id, c.id)}>
+                          <form action={reinstallComponent.bind(null, id, c.id, c.updated_at)}>
                             <button type="submit" className={buttonClass("quiet", "s")}>Reinstall</button>
                           </form>
                           <Link href={`${self}?part=${c.id}&panel=edit`} className={buttonClass("quiet", "s")}>Edit</Link>
-                          <form action={deleteComponent.bind(null, id, c.id)}>
+                          <form action={deleteComponent.bind(null, id, c.id, c.updated_at)}>
                             <ConfirmSubmit label="Delete" question={`Delete ${c.name} from the equipment list? Its history goes with it.`} />
                           </form>
                         </span>

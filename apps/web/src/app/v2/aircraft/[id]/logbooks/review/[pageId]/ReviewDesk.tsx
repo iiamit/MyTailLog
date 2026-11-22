@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReviewReceipt } from "@/lib/v2/books";
+
 import { useEffect, useReducer, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,7 +54,8 @@ export function ReviewDesk(p: {
   readError: string | null;
   ocrText: string | null;
   initial: { entry: string | null; field: string | null };
-  undo: { ids: string[]; pageId: string; n: number } | null;
+  undo: ReviewReceipt | null;
+  pageBase: string;
 }) {
   const router = useRouter();
   const boxes = new Map(p.entries.map((e) => [e.input.id, e.boxes]));
@@ -98,15 +101,20 @@ export function ReviewDesk(p: {
     if ("error" in plan) return dispatch({ type: "notice", text: plan.error });
     start(async () => {
       const whole = only == null;
-      const r = await confirmEntries(p.aircraftId, p.pageId, p.logbookId, plan.writes, whole);
+      const r = await confirmEntries(p.aircraftId, p.pageId, p.logbookId, plan.writes, whole, p.pageBase);
       if ("error" in r) return dispatch({ type: "notice", text: r.error });
       if (!whole) {
-        dispatch({ type: "entryConfirmed", entry: only! });
+        const id = r.created.find((c) => c.tempId === s.entries[only!].id)?.id ?? s.entries[only!].id;
+        dispatch({ type: "entryConfirmed", entry: only!, id, base: r.updatedVersions[id] });
         dispatch({ type: "notice", text: `Entry ${only! + 1} confirmed.` });
         return;
       }
       const n = s.entries.length;
-      if (r.next) router.push(`${p.backHref}/${r.next}?undo=${r.confirmed.join(",")}&from=${p.pageId}&n=${n}`);
+      if (r.next) {
+        const receipt = JSON.stringify({ entryVersions: r.versions, pageVersions: r.pageVersions, pageId: p.pageId, n });
+        // shortcut: very large review pages omit navigation Undo; use server receipts if links exceed this bound.
+        router.push(`${p.backHref}/${r.next}${receipt.length <= 6000 ? `?undo=${encodeURIComponent(receipt)}` : ""}`);
+      }
       else router.push(`${p.backHref}?done=${encodeURIComponent(`That was the last page waiting. ${n} ${n === 1 ? "entry" : "entries"} confirmed on it.`)}`);
     });
   }
@@ -183,7 +191,7 @@ export function ReviewDesk(p: {
             <button
               type="button"
               className="block font-semibold text-board-ink underline decoration-dotted"
-              onClick={() => start(async () => { const r = await flagPage(p.aircraftId, p.pageId); dispatch({ type: "notice", text: "error" in r ? r.error : "Page flagged. It stays out of the waiting list until you change it." }); })}
+              onClick={() => start(async () => { const r = await flagPage(p.aircraftId, p.pageId, p.pageBase); dispatch({ type: "notice", text: "error" in r ? r.error : "Page flagged. It stays out of the waiting list until you change it." }); })}
             >
               Flag this page
             </button>
@@ -217,7 +225,7 @@ export function ReviewDesk(p: {
               type="button"
               className="font-semibold text-board-ink underline decoration-dotted"
               onClick={() => start(async () => {
-                const r = await undoConfirm(p.aircraftId, undo.ids, [undo.pageId]);
+                const r = await undoConfirm(p.aircraftId, undo.entryVersions, undo.pageVersions);
                 if ("error" in r) return dispatch({ type: "notice", text: r.error });
                 setUndo(null);
                 router.push(`${p.backHref}/${undo.pageId}`);
@@ -279,7 +287,7 @@ export function ReviewDesk(p: {
                   <p className="mt-2 rounded-control bg-leaf-2 px-3 py-2 text-small">
                     This looks like the rest of an entry from the page before.{" "}
                     {p.canEdit && (
-                      <button type="button" className="font-semibold text-board-ink underline decoration-dotted" onClick={() => start(async () => { const r = await joinContinuation(p.aircraftId, cur.id); if ("error" in r) dispatch({ type: "notice", text: r.error }); else router.refresh(); })}>
+                      <button type="button" className="font-semibold text-board-ink underline decoration-dotted" onClick={() => start(async () => { const r = await joinContinuation(p.aircraftId, cur.id, cur.base ?? ""); if ("error" in r) dispatch({ type: "notice", text: r.error }); else router.refresh(); })}>
                         Join them
                       </button>
                     )}
@@ -323,7 +331,7 @@ export function ReviewDesk(p: {
                         if (cur.isNew) return dispatch({ type: "remove", entry: s.entry });
                         if (!window.confirm("Delete this entry? It is removed from the index. The page stays.")) return;
                         start(async () => {
-                          const r = await deleteEntry(p.aircraftId, cur.id);
+                          const r = await deleteEntry(p.aircraftId, cur.id, cur.base ?? "");
                           if ("error" in r) dispatch({ type: "notice", text: r.error });
                           else dispatch({ type: "remove", entry: s.entry });
                         });
@@ -400,9 +408,8 @@ function display(v: string, f: DeskField, books: { id: string; label: string }[]
   return f === "logbook_id" ? books.find((b) => b.id === v)?.label ?? "" : v;
 }
 
-let seq = 0;
 function blank(logbookId: string) {
-  const id = `new-${Date.now()}-${seq++}`;
+  const id = crypto.randomUUID();
   const e = deskEntry(
     { id, logbook_id: logbookId, entry_date: null, tach: null, hobbs: null, airframe: null, description: null, work_performed: null, parts: null, signature_name: null, mechanic_cert_number: null, ad_refs: [], sb_refs: [], confidence: null, field_confidence: null, owner_confirmed: false },
     NEW_FIELDS.map((field) => ({ field, doubt: null, confidence: null, plausibility: false })),

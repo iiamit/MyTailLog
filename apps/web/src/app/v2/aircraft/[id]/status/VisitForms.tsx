@@ -61,8 +61,8 @@ export function BookVisitForm({
 }
 
 /** "Move": pick another week. */
-export function MoveVisitForm({ aircraftId, visitId, weekOf, minWeek }: { aircraftId: string; visitId: string; weekOf: string; minWeek: string }) {
-  const [state, action, pending] = useActionState<VisitFormState, FormData>(moveVisit.bind(null, aircraftId, visitId), null);
+export function MoveVisitForm({ aircraftId, visitId, renderedBase, weekOf, minWeek }: { aircraftId: string; visitId: string; renderedBase: string; weekOf: string; minWeek: string }) {
+  const [state, action, pending] = useActionState<VisitFormState, FormData>(moveVisit.bind(null, aircraftId, visitId, renderedBase), null);
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
       <Field label="Move to the week of">

@@ -32,16 +32,19 @@ export async function addSquawk(
 }
 
 /** Resolve a squawk — editors only. */
-export async function resolveSquawk(aircraftId: string, id: string, resolutionNotes?: string): Promise<Result> {
+export async function resolveSquawk(aircraftId: string, id: string, resolutionNotes: string | undefined, base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
   return run(aircraftId, (supabase, userId) =>
-    squawks.resolve(supabase, { aircraftId, userId }, { squawkId: id, resolutionNotes }),
+    squawks.resolve(supabase, { aircraftId, userId }, { squawkId: id, resolutionNotes }, base),
   );
 }
 
-export async function reopenSquawk(aircraftId: string, id: string): Promise<Result> {
-  return run(aircraftId, (supabase, userId) => squawks.reopen(supabase, { aircraftId, userId }, { squawkId: id }));
+export async function reopenSquawk(aircraftId: string, id: string, base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
+  return run(aircraftId, (supabase, userId) => squawks.reopen(supabase, { aircraftId, userId }, { squawkId: id }, base));
 }
 
-export async function deleteSquawk(aircraftId: string, id: string): Promise<Result> {
-  return run(aircraftId, (supabase, userId) => squawks.remove(supabase, { aircraftId, userId }, { squawkId: id }));
+export async function deleteSquawk(aircraftId: string, id: string, base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
+  return run(aircraftId, (supabase, userId) => squawks.remove(supabase, { aircraftId, userId }, { squawkId: id }, base));
 }

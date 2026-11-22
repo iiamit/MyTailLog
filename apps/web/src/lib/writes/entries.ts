@@ -1,3 +1,6 @@
+import { insertRecords } from "./insert";
+import { writeRecord } from "./conditional";
+import { replayRpc } from "./replay";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, LogEntry, ReferenceLink } from "@/lib/database.types";
 import { isEntryClean } from "@/lib/extraction/schema";
@@ -12,7 +15,9 @@ import { refreshGaps } from "./gaps";
 // tests load this file under node directly.
 
 export type Db = SupabaseClient<Database>;
-export type WriteCtx = { aircraftId: string; userId: string };
+export type WriteCtx = { aircraftId: string; userId: string;
+  mutation?: { id: string; type: string; payload: Record<string, unknown>; base?: string; resolution?: string };
+};
 export type WriteResult =
   | { status: "ok"; row: Record<string, unknown> | null }
   | { status: "conflict"; row: Record<string, unknown> }
@@ -53,7 +58,15 @@ export async function canEdit(supabase: Db, aircraftId: string): Promise<boolean
 
 /** Optimistic concurrency (§2): the row moved on since the caller saw it. */
 export function isStale(updatedAt: string, base: string | undefined): boolean {
-  return base != null && Date.parse(updatedAt) > Date.parse(base);
+  if (base == null) return false;
+  const micros = (stamp: string): bigint | null => {
+    const millis = Date.parse(stamp);
+    if (!Number.isFinite(millis)) return null;
+    const fraction = (stamp.match(/\.(\d+)/)?.[1] ?? "").padEnd(6, "0");
+    return BigInt(millis) * BigInt(1000) + BigInt(fraction.slice(3, 6));
+  };
+  const actual = micros(updatedAt), expected = micros(base);
+  return actual == null || expected == null || actual !== expected;
 }
 
 export const FOREIGN_ENTRY = "That entry isn't on this aircraft.";
@@ -251,35 +264,11 @@ export async function create(
     return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
   }
 
-  const { data, error } = await supabase
-    .from("log_entry")
-    .upsert(
-      {
-        ...(input.id ? { id: input.id } : {}),
-        page_id: input.pageId ?? null,
-        aircraft_id: ctx.aircraftId,
-        ...picked.fields,
-        logbook_id: input.logbookId,
-        owner_confirmed: true,
-        confidence: null,
-        field_confidence: null,
-        extraction_model: null,
-      },
-      { onConflict: "id", ignoreDuplicates: true },
-    )
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (data) return { status: "ok", row: data };
-  // ignoreDuplicates returned nothing: the id already exists. Ours (a retry) or
-  // someone else's (invisible under RLS) — read back to tell which.
-  const { data: existing } = await supabase
-    .from("log_entry")
-    .select("*")
-    .eq("id", input.id ?? "")
-    .eq("aircraft_id", ctx.aircraftId)
-    .maybeSingle();
-  return existing ? { status: "ok", row: existing } : { status: "error", message: "Couldn't add the entry." };
+  return insertRecords(supabase, ctx, "log_entry", {
+    ...(input.id ? { id: input.id } : {}), page_id: input.pageId ?? null,
+    aircraft_id: ctx.aircraftId, ...picked.fields, logbook_id: input.logbookId,
+    owner_confirmed: true, confidence: null, field_confidence: null, extraction_model: null,
+  });
 }
 
 /** Save edits to an extracted entry. Editing implicitly confirms it — a human
@@ -297,7 +286,7 @@ export async function update(
   if (picked.fields.logbook_id && !(await logbookIsOnAircraft(supabase, ctx.aircraftId, picked.fields.logbook_id))) {
     return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
   }
-  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, { ...picked.fields, owner_confirmed: true }));
+  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, loaded.row.updated_at, { ...picked.fields, owner_confirmed: true }));
 }
 
 export async function setConfirmed(
@@ -308,7 +297,7 @@ export async function setConfirmed(
 ): Promise<WriteResult> {
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
-  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, { owner_confirmed: input.confirmed === true }));
+  return withGaps(supabase, ctx, await patchEntry(supabase, ctx, input.entryId, loaded.row.updated_at, { owner_confirmed: input.confirmed === true }));
 }
 
 /** Replace an entry's external reference links (see {@link cleanLinks}). */
@@ -320,7 +309,7 @@ export async function setLinks(
 ): Promise<WriteResult> {
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
-  return patchEntry(supabase, ctx, input.entryId, { reference_links: cleanLinks(input.links) });
+  return patchEntry(supabase, ctx, input.entryId, loaded.row.updated_at, { reference_links: cleanLinks(input.links) });
 }
 
 /** Confirmed entry dates may have moved: re-detect the aircraft's gaps (09 §3.8) before answering. */
@@ -333,18 +322,10 @@ async function patchEntry(
   supabase: Db,
   ctx: WriteCtx,
   entryId: string,
+  version: string,
   patch: Database["public"]["Tables"]["log_entry"]["Update"],
 ): Promise<WriteResult> {
-  const { data, error } = await supabase
-    .from("log_entry")
-    .update(patch)
-    .eq("id", entryId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Entry not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  return writeRecord(supabase, ctx, "log_entry", entryId, version, patch);
 }
 
 /**
@@ -361,15 +342,9 @@ export async function remove(
 ): Promise<WriteResult> {
   const loaded = await loadEntry(supabase, ctx, input.entryId, base);
   if ("status" in loaded) return loaded;
-  const { data, error } = await supabase
-    .from("log_entry")
-    .delete()
-    .eq("id", input.entryId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Entry not found.", httpStatus: 404 };
-  return withGaps(supabase, ctx, { status: "ok", row: null });
+  const result = await writeRecord(supabase, ctx, "log_entry", input.entryId, loaded.row.updated_at, null);
+  if (result.status !== "ok") return result;
+  return withGaps(supabase, ctx, result);
 }
 
 /**
@@ -417,38 +392,13 @@ export async function mergeContinuation(
   if (!head) return { status: "error", message: "The previous page has no entry to merge into." };
   if (head.id === tail.id) return { status: "error", message: "Nothing to merge." };
 
-  const merged = await patchEntry(supabase, ctx, head.id, mergeEntryFields(head, tail));
-  if (merged.status !== "ok") return merged;
-
-  // Re-point everything that referenced the tail at the head BEFORE deleting it.
-  //
-  // Five tables reference log_entry(id) ON DELETE SET NULL, so deleting the tail
-  // silently severs each one: equipment loses the entry that installed or
-  // removed it, an AD compliance record loses the entry documenting it, an
-  // attached document detaches, and a resolved squawk loses the entry that
-  // cleared it. The merged entry IS the same real-world entry, so anything
-  // pointing at the tail should point at the head.
-  for (const [table, column] of [
-    ["component", "install_entry_id"],
-    ["component", "removal_entry_id"],
-    ["ad_compliance", "reference_entry_id"],
-    ["document", "log_entry_id"],
-    ["squawk", "resolved_log_entry_id"],
-  ] as const) {
-    const { error } = await supabase
-      // dynamic table name — the typed union collapses; cast the arg
-      .from(table as never)
-      .update({ [column]: head.id } as never)
-      .eq(column, tail.id);
-    // A relink failing is worse than the merge not happening: the tail would be
-    // deleted and the reference lost with no way back. Stop before the delete.
-    if (error) return { status: "error", message: `Couldn't move ${table} links onto the merged entry: ${error.message}` };
-  }
-
-  const { error: deleteError } = await supabase.from("log_entry").delete().eq("id", tail.id);
-  if (deleteError) return { status: "error", message: deleteError.message };
-
-  return merged;
+  const { data, error } = await replayRpc(supabase, ctx, "merge_log_entry", {
+    p_aircraft: ctx.aircraftId, p_head: head.id, p_tail: tail.id,
+    p_head_base: head.updated_at, p_tail_base: tail.updated_at,
+    p_fields: mergeEntryFields(head, tail),
+  });
+  if (error) return { status: "error", message: error.message };
+  return data as WriteResult;
 }
 
 /**
@@ -467,12 +417,12 @@ export function bulkConfirmable<T extends Parameters<typeof isEntryClean>[0] & {
   return rows.filter((e) => isEntryClean(e) && !(e.page_id && lookPages.has(e.page_id))).map((e) => e.id);
 }
 
-export async function confirmClean(supabase: Db, ctx: WriteCtx): Promise<WriteResult> {
+export async function confirmClean(supabase: Db, ctx: WriteCtx, input?: { versions?: Record<string, string> }): Promise<WriteResult> {
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
   const { data: entries, error } = await supabase
     .from("log_entry")
-    .select("id, page_id, confidence, field_confidence, is_continuation")
+    .select("id, page_id, confidence, field_confidence, is_continuation, updated_at")
     .eq("aircraft_id", ctx.aircraftId)
     .eq("owner_confirmed", false);
   if (error) return { status: "error", message: error.message };
@@ -483,33 +433,14 @@ export async function confirmClean(supabase: Db, ctx: WriteCtx): Promise<WriteRe
   const lookPages = new Set((flagged ?? []).map((p) => p.id));
 
   const rows = entries ?? [];
-  const cleanIds = bulkConfirmable(rows, lookPages);
+  const expected = input?.versions;
+  if (expected != null && (typeof expected !== "object" || Array.isArray(expected) || Object.values(expected).some((v) => typeof v !== "string" || !Number.isFinite(Date.parse(v))))) return { status: "error", message: "Reload the entries before confirming them." };
+  const cleanIds = bulkConfirmable(rows, lookPages).filter((id) => expected == null || id in expected);
   const remaining = rows.length - cleanIds.length;
   if (cleanIds.length === 0) return { status: "ok", row: { confirmed: 0, remaining } };
 
-  const { data: confirmed, error: upErr } = await supabase
-    .from("log_entry")
-    .update({ owner_confirmed: true })
-    .in("id", cleanIds)
-    .select("id");
-  if (upErr) return { status: "error", message: upErr.message };
-
-  // Flip pages whose entries are now all confirmed. One extra read of (page_id,
-  // owner_confirmed) for the whole aircraft; a personal logbook is small enough
-  // that this is cheaper than tracking affected pages.
-  // ponytail: full re-scan per call; batch by affected pages if libraries get huge.
-  const { data: all } = await supabase
-    .from("log_entry")
-    .select("page_id, owner_confirmed")
-    .eq("aircraft_id", ctx.aircraftId);
-  const fullPages = fullyConfirmedPages(all ?? []);
-  if (fullPages.length > 0) {
-    await supabase
-      .from("page")
-      .update({ review_status: "confirmed" })
-      .in("id", fullPages)
-      .eq("review_status", "unreviewed");
-  }
-
-  return withGaps(supabase, ctx, { status: "ok", row: { confirmed: confirmed?.length ?? 0, remaining } });
+  const versions = Object.fromEntries(rows.filter((r) => cleanIds.includes(r.id)).map((r) => [r.id, expected?.[r.id] ?? r.updated_at]));
+  const { data, error: confirmError } = await replayRpc(supabase, ctx, "confirm_clean_entries", { p_aircraft: ctx.aircraftId, p_versions: versions });
+  if (confirmError) return { status: "error", message: confirmError.message };
+  return withGaps(supabase, ctx, data as WriteResult);
 }

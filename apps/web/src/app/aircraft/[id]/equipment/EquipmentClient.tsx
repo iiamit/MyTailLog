@@ -18,6 +18,7 @@ const LIFE_UNITS = ["hours", "months", "cycles"] as const;
 
 type FormState = {
   id?: string;
+  base?: string;
   name: string;
   make: string;
   category: string;
@@ -39,6 +40,7 @@ function blankForm(): FormState {
 function fromComponent(c: Component): FormState {
   return {
     id: c.id,
+    base: c.updated_at,
     name: c.name,
     make: c.make ?? "",
     category: c.category ?? "",
@@ -59,6 +61,7 @@ function toInput(f: FormState): ComponentInput {
   };
   return {
     id: f.id,
+    base: f.base,
     name: f.name.trim(),
     make: str(f.make),
     category: str(f.category),
@@ -180,7 +183,7 @@ export function EquipmentClient({
     if (date === null) return;
     setBusy(true);
     setError(null);
-    const res = await removeComponent(aircraftId, c.id, date.trim() || null);
+    const res = await removeComponent(aircraftId, c.id, date.trim() || null, c.updated_at);
     setBusy(false);
     if ("error" in res) return setError(res.error);
     setStatus(
@@ -193,7 +196,7 @@ export function EquipmentClient({
 
   async function reinstall(c: Component) {
     setBusy(true);
-    const res = await reinstallComponent(aircraftId, c.id);
+    const res = await reinstallComponent(aircraftId, c.id, c.updated_at);
     setBusy(false);
     if ("error" in res) return setError(res.error);
     router.refresh();
@@ -202,7 +205,7 @@ export function EquipmentClient({
   async function del(c: Component) {
     if (!window.confirm(`Delete "${c.name}" from equipment? This can't be undone.`)) return;
     setBusy(true);
-    const res = await deleteComponent(aircraftId, c.id);
+    const res = await deleteComponent(aircraftId, c.id, c.updated_at);
     setBusy(false);
     if ("error" in res) return setError(res.error);
     router.refresh();

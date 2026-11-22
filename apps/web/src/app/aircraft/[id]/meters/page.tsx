@@ -14,11 +14,12 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
 
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date, icao24, adsb_enabled")
+    .select("enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date, icao24, adsb_enabled, updated_at")
     .eq("id", id)
     .single();
 
   const enrollment = {
+    updated_at: aircraft?.updated_at ?? "",
     hobbs: aircraft?.enrollment_hobbs ?? null,
     tach: aircraft?.enrollment_tach ?? null,
     airframe: aircraft?.enrollment_airframe ?? null,
@@ -28,12 +29,12 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
   const [{ data: resets }, { data: readings }, meters] = await Promise.all([
     supabase
       .from("meter_reset")
-      .select("id, meter, reset_date, prior_value, new_value, notes")
+      .select("id, meter, reset_date, prior_value, new_value, notes, updated_at")
       .eq("aircraft_id", id)
       .order("reset_date", { ascending: false }),
     supabase
       .from("hours_reading")
-      .select("id, reading_date, hobbs, tach, airframe, source")
+      .select("id, reading_date, hobbs, tach, airframe, source, updated_at")
       .eq("aircraft_id", id)
       .eq("source", "manual")
       .order("reading_date", { ascending: false })
@@ -87,6 +88,7 @@ export default async function MetersPage({ params }: { params: Promise<{ id: str
         resets={resets ?? []}
         readings={readings ?? []}
         adsb={{
+          base: aircraft!.updated_at,
           enabled: aircraft?.adsb_enabled ?? false,
           icao24: aircraft?.icao24 ?? null,
           suggestion: adsbSuggestion,

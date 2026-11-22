@@ -114,6 +114,7 @@ export default async function ItemPage({
     <MarkDoneDrawer
       aircraftId={id}
       itemId={mx.id}
+      base={mx.updated_at ?? ""}
       label={item.label}
       kind={item.kind}
       meter={meter}

@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { todayIn } from "@/lib/mapModel";
 import { failMessage, type WriteCtx } from "@/lib/writes/entries";
 import * as maintenance from "@/lib/writes/maintenance";
-import { recordVisitCompletion } from "@/lib/writes/visits";
 import * as visits from "@/lib/writes/visits";
 import { createLink } from "@/lib/mechanicLink";
 import type { Meter } from "@/lib/hobbsTach";
@@ -48,14 +47,8 @@ export async function markItemDone(aircraftId: string, itemId: string, _prev: Ma
   if (hours != null && Number.isFinite(latest) && hours < latest && form.get("confirmLower") !== "1")
     return { warning: `That's lower than the last reading, ${latest.toFixed(1)}. Check the meter.` };
 
-  const r = await maintenance.markDone(supabase, ctx, { itemId, date, hours, meter });
+  const r = await maintenance.markDone(supabase, ctx, { itemId, date, hours, meter, recordCompletion: true }, String(form.get("base") ?? ""));
   if (r.status !== "ok") return { error: failMessage(r) };
-  const { data: completion, error } = await supabase.from("item_completion").insert({
-    aircraft_id: aircraftId, maintenance_item_id: itemId, done_date: date, done_hours: hours,
-    meter: hours != null ? meter : null, source: "mark_done", created_by: user.id,
-  }).select("id").maybeSingle();
-  if (error) return { error: "The item was updated, but its history could not be saved. Try again." };
-  if (completion) await recordVisitCompletion(supabase, aircraftId, `mx:${itemId}`, completion.id);
   revalidatePath(`/aircraft/${aircraftId}/status`);
   redirect(`/aircraft/${aircraftId}/status/item/mx:${itemId}?done=1`);
 }
@@ -92,9 +85,10 @@ export async function dismissVisitSuggestion(aircraftId: string, suggestionKey: 
 }
 
 /** It's in the shop / Close this visit / Cancel visit. Closing returns undone items to the suggestions. */
-export async function setVisitStatus(aircraftId: string, visitId: string, status: VisitStatus, back: "status" | "annual" = "status") {
+export async function setVisitStatus(aircraftId: string, visitId: string, status: VisitStatus, renderedBase: string, back: "status" | "annual" = "status") {
   const { supabase, ctx } = await session(aircraftId);
-  const r = await visits.setStatus(supabase, ctx, { visitId, status });
+  if (!renderedBase) redirect(statusHref(aircraftId, "?err=Reload%20this%20visit%20before%20changing%20it."));
+  const r = await visits.setStatus(supabase, ctx, { visitId, status }, renderedBase);
   revalidatePath(statusHref(aircraftId));
   const closed = status === "done" || status === "cancelled";
   const err = r.status === "ok" ? "" : `err=${encodeURIComponent(failMessage(r))}`;
@@ -103,19 +97,21 @@ export async function setVisitStatus(aircraftId: string, visitId: string, status
 }
 
 /** "Move": a new week (a Monday); the day goes unless it is still inside that week. */
-export async function moveVisit(aircraftId: string, visitId: string, _prev: VisitFormState, form: FormData): Promise<VisitFormState> {
+export async function moveVisit(aircraftId: string, visitId: string, renderedBase: string, _prev: VisitFormState, form: FormData): Promise<VisitFormState> {
   const { supabase, user, ctx } = await session(aircraftId);
   if (!user) return { error: "Not signed in." };
-  const r = await visits.update(supabase, ctx, { visitId, weekOf: str(form, "weekOf") });
+  if (!renderedBase) return { error: "Reload this visit before moving it." };
+  const r = await visits.update(supabase, ctx, { visitId, weekOf: str(form, "weekOf") }, renderedBase);
   if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(statusHref(aircraftId));
   redirect(statusHref(aircraftId, `?visit=${visitId}`));
 }
 
 /** At-risk notice: "Move the visit to the week of {date}" in one press. */
-export async function moveVisitTo(aircraftId: string, visitId: string, weekOf: string) {
+export async function moveVisitTo(aircraftId: string, visitId: string, weekOf: string, renderedBase: string) {
   const { supabase, ctx } = await session(aircraftId);
-  const r = await visits.update(supabase, ctx, { visitId, weekOf });
+  if (!renderedBase) redirect(statusHref(aircraftId, "?err=Reload%20this%20visit%20before%20moving%20it."));
+  const r = await visits.update(supabase, ctx, { visitId, weekOf }, renderedBase);
   revalidatePath(statusHref(aircraftId));
   redirect(statusHref(aircraftId, r.status === "ok" ? `?visit=${visitId}` : `?err=${encodeURIComponent(failMessage(r))}`));
 }

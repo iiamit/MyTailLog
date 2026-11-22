@@ -45,7 +45,7 @@ export default async function DuplicatesPage({
 
   const { data: entryRows } = await supabase
     .from("log_entry")
-    .select("id, page_id, logbook_id, entry_date, tach, hobbs, description, work_performed, owner_confirmed, created_at")
+    .select("id, page_id, logbook_id, entry_date, tach, hobbs, description, work_performed, owner_confirmed, created_at, updated_at")
     .eq("aircraft_id", id);
   const { data: pageRows } = await supabase
     .from("page")
@@ -102,6 +102,7 @@ export default async function DuplicatesPage({
     ]),
   );
   const entryById = new Map(entries.map((e) => [e.id, e]));
+  const entryVersions = new Map((entryRows ?? []).map((e) => [e.id, e.updated_at]));
 
   // Shape the clusters for the client (only what it renders).
   const pageClusterRows: PageRow[][] = pageClusters.map((c) =>
@@ -123,6 +124,7 @@ export default async function DuplicatesPage({
       const m = e.page_id ? pageMeta.get(e.page_id) : undefined;
       return {
         id: eid,
+        updated_at: entryVersions.get(eid)!,
         pageId: e.page_id,
         keep: eid === c.keepId,
         confirmed: e.owner_confirmed,

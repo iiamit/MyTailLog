@@ -25,38 +25,39 @@ export async function saveDocument(aircraftId: string, documentId: string, _prev
   const { user, supabase, ctx } = await writeSession(aircraftId);
   if (!user) return { error: "Not signed in." };
   const type = String(form.get("type") ?? "") as DocumentType;
-  const r1 = await documents.update(supabase, ctx, {
+  const base = str(form, "base");
+  if (!base) return { error: "Reload this document before saving." };
+  const r = await documents.save(supabase, ctx, {
     documentId,
     fields: { type, title: str(form, "title"), reference: str(form, "reference"), document_date: str(form, "document_date"), notes: str(form, "notes") },
-  });
-  if (r1.status !== "ok") return { error: failMessage(r1) };
-  const r2 = await documents.setExpiry(supabase, ctx, {
-    documentId,
-    trackExpiry: form.get("trackExpiry") === "on",
-    expiresOn: str(form, "expiresOn"),
-    renewsEveryMonths: int(form, "renewsEveryMonths"),
-    remindLeadDays: int(form, "remindLeadDays"),
-  });
-  if (r2.status !== "ok") return { error: failMessage(r2) };
-  const r3 = await documents.setEntry(supabase, ctx, { documentId, entryId: str(form, "log_entry_id") });
-  if (r3.status !== "ok") return { error: failMessage(r3) };
+    expiry: {
+      trackExpiry: form.get("trackExpiry") === "on",
+      expiresOn: str(form, "expiresOn"),
+      renewsEveryMonths: int(form, "renewsEveryMonths"),
+      remindLeadDays: int(form, "remindLeadDays"),
+    },
+    entryId: str(form, "log_entry_id"),
+  }, base);
+  if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(`/aircraft/${aircraftId}/documents`);
   revalidatePath(`/aircraft/${aircraftId}/status`);
   redirect(`/aircraft/${aircraftId}/documents?doc=${documentId}&done=saved`);
 }
 
-export async function unlinkDocument(aircraftId: string, documentId: string) {
+export async function unlinkDocument(aircraftId: string, documentId: string, base: string) {
+  if (!base) redirect(`/aircraft/${aircraftId}/documents?done=failed`);
   const { user, supabase, ctx } = await writeSession(aircraftId);
   if (!user) return;
-  const r = await documents.setEntry(supabase, ctx, { documentId, entryId: null });
+  const r = await documents.setEntry(supabase, ctx, { documentId, entryId: null }, base);
   revalidatePath(`/aircraft/${aircraftId}/documents`);
   redirect(`/aircraft/${aircraftId}/documents?doc=${documentId}&done=${r.status === "ok" ? "unlinked" : "failed"}`);
 }
 
-export async function deleteDocument(aircraftId: string, documentId: string) {
+export async function deleteDocument(aircraftId: string, documentId: string, base: string) {
+  if (!base) redirect(`/aircraft/${aircraftId}/documents?done=failed`);
   const { user, supabase, ctx } = await writeSession(aircraftId);
   if (!user) return;
-  const r = await documents.remove(supabase, ctx, { documentId });
+  const r = await documents.remove(supabase, ctx, { documentId }, base);
   revalidatePath(`/aircraft/${aircraftId}/documents`);
   revalidatePath(`/aircraft/${aircraftId}/status`);
   redirect(`/aircraft/${aircraftId}/documents?done=${r.status === "ok" ? "deleted" : "failed"}`);

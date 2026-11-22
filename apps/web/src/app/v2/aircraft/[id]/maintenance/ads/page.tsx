@@ -162,7 +162,9 @@ export default async function AdsPage({ params, searchParams }: { params: Promis
     right = (
       <RecordForm
         aircraftId={id}
+        key={recording.ad.id}
         adId={recording.ad.id}
+        renderedBase={recording.ad.updated_at}
         reference={`${recording.ad.kind.toUpperCase()} ${recording.ad.reference}`}
         today={today}
         tach={snap.meters.tach.face}
@@ -520,7 +522,7 @@ function SelectedAd({
             {official.drs_url && <ExtLink href={official.drs_url}>FAA DRS document</ExtLink>}
           </span>
         ) : ad.kind === "ad" && canEdit ? (
-          <LookupButton aircraftId={aircraftId} adId={ad.id} reference={ad.reference} />
+          <LookupButton aircraftId={aircraftId} adId={ad.id} reference={ad.reference} renderedBase={ad.updated_at} />
         ) : (
           <span className="text-ink-3">not linked</span>
         )}
@@ -536,7 +538,7 @@ function SelectedAd({
           <Link href={sel(ad.id, "&panel=edit")} replace scroll={false} className={buttonClass("quiet", "s")}>
             Edit
           </Link>
-          <form action={stopTracking.bind(null, aircraftId, ad.id)}>
+          <form action={stopTracking.bind(null, aircraftId, ad.id, ad.updated_at)}>
             <ConfirmSubmit
               label="Stop tracking"
               question={`Stop tracking ${name}? Its compliance history is deleted from the index. The logbook entries stay.`}

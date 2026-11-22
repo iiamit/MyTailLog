@@ -339,31 +339,33 @@ final class OfflineStore {
         pending = Task { [weak self] in
             if seconds > 0 { try? await Task.sleep(for: .seconds(seconds)) }
             guard !Task.isCancelled else { return }
-            await self?.sync()
+            _ = await self?.sync()
         }
     }
 
     /// Files first, then push, then pull (07 B-OFFLINE). Offline it only refreshes what the screens show.
-    func sync() async {
-        guard !closed else { return }
+    @discardableResult
+    func sync() async -> Bool {
+        guard !closed else { return false }
         reload()
         recoverSessions(except: openBatch)
-        guard !isOffline, !syncing else { return }
+        guard !isOffline, !syncing, !Task.isCancelled else { return false }
         syncing = true
         // A store closed mid-sync closes its databases once the engine is done with them.
         defer { syncing = false; if closed { core.close() } }
         do {
             core.accessToken = try await token()
+            try Task.checkCancellation()
             await uploader?.drain()
-            guard !closed else { return }
+            guard !closed, !Task.isCancelled else { return false }
             let before = core.cursor()
             var report = try await core.sync()
-            guard !closed else { return }
+            guard !closed, !Task.isCancelled else { return false }
             reload()
             // A squawk that just landed lets its photos go up; their rows then follow in a second push.
             if !recordFiles.isEmpty, await uploader?.drain() == true, !closed {
                 report = try await core.sync()
-                guard !closed else { return }
+                guard !closed, !Task.isCancelled else { return false }
                 reload()
             }
             settleFiles()
@@ -373,10 +375,12 @@ final class OfflineStore {
                 UserDefaults.standard.set(lastSyncAt, forKey: "lastSync.\(userId)")
             }
             if core.cursor() != before || report.ok > 0 || report.conflicts > 0 || report.refused > 0 { revision += 1 }
+            return !report.offline && items.isEmpty && files.isEmpty && !Task.isCancelled
         } catch {
             reload()
             // A network failure is "offline", not a failed sync; a server or auth refusal is.
             failed = !(error as NSError).isNetwork
+            return false
         }
     }
 }

@@ -199,6 +199,7 @@ export const NUMERIC: DeskField[] = ["tach", "hobbs", "airframe"];
 export const PAPER: DeskField[] = ["description", "work_performed", "parts"];
 
 export type DeskEntryInput = {
+  updated_at?: string;
   id: string; logbook_id: string; entry_date: string | null; tach: number | null; hobbs: number | null; airframe: number | null;
   description: string | null; work_performed: string | null; parts: string | null; signature_name: string | null;
   mechanic_cert_number: string | null; ad_refs: string[] | null; sb_refs: string[] | null;
@@ -270,6 +271,7 @@ export const pageIsClean = (es: DeskEntryInput[]) => es.length > 0 && es.every((
 
 export type Outcome = "pending" | "accepted" | "edited" | "absent";
 export type DeskEntry = {
+  base?: string;
   id: string;
   isNew?: boolean;
   confirmed: boolean;
@@ -288,6 +290,7 @@ export function valuesOf(e: Partial<DeskEntryInput>): Record<DeskField, string> 
 export function deskEntry(e: DeskEntryInput, fields: FieldInfo[]): DeskEntry {
   const values = valuesOf(e);
   return {
+    ...(e.updated_at ? { base: e.updated_at } : {}),
     id: e.id, confirmed: e.owner_confirmed, fields, values, original: { ...values },
     outcome: Object.fromEntries(DESK_FIELDS.map((f) => [f, "pending"])) as Record<DeskField, Outcome>,
   };
@@ -304,7 +307,7 @@ export type DeskAction =
   | { type: "next" } | { type: "prev" } | { type: "accept" } | { type: "edit" } | { type: "absent" }
   | { type: "commit"; value: string } | { type: "cancel" } | { type: "select"; entry: number; field?: number }
   | { type: "undo"; entry: number; field: DeskField } | { type: "notice"; text: string | null }
-  | { type: "entryConfirmed"; entry: number } | { type: "add"; entry: DeskEntry } | { type: "remove"; entry: number };
+  | { type: "entryConfirmed"; entry: number; base?: string; id?: string } | { type: "add"; entry: DeskEntry } | { type: "remove"; entry: number };
 
 /** Next field across entries (the desk walks the page as one list), staying put at the end. */
 function step(s: DeskState, dir: 1 | -1): DeskState {
@@ -347,7 +350,7 @@ export function deskReducer(s: DeskState, a: DeskAction): DeskState {
       return { ...s, entries };
     }
     case "entryConfirmed": {
-      const entries = s.entries.map((e, i) => (i === a.entry ? { ...e, confirmed: true, isNew: false, original: { ...e.values } } : e));
+      const entries = s.entries.map((e, i) => (i === a.entry ? { ...e, ...(a.id ? { id: a.id } : {}), ...(a.base ? { base: a.base } : {}), confirmed: true, isNew: false, original: { ...e.values } } : e));
       return { ...s, entries };
     }
     case "add": return { ...s, entries: [...s.entries, a.entry], entry: s.entries.length, field: 0, editing: false };
@@ -392,7 +395,7 @@ export function patchOf(e: DeskEntry): Record<string, unknown> | { error: string
 export type ConfirmPlan =
   | { blocked: { entry: number; field: number; message: string } }
   | { error: string }
-  | { writes: { id: string; isNew: boolean; fields: Record<string, unknown> | null }[] };
+  | { writes: { id: string; isNew: boolean; fields: Record<string, unknown> | null; base?: string }[] };
 
 /**
  * What "Confirm page and next" (or Ctrl+Enter for one entry) sends. Blocked while a field is unsure: focus moves to
@@ -406,15 +409,15 @@ export function confirmPlan(s: DeskState, only?: number): ConfirmPlan {
     const n = e.fields.filter((f) => isUnsure(e, f)).length;
     return { blocked: { ...u, message: `${n === 1 ? "1 field" : `${n} fields`} to check on entry ${u.entry + 1} first.` } };
   }
-  const writes: { id: string; isNew: boolean; fields: Record<string, unknown> | null }[] = [];
+  const writes: { id: string; isNew: boolean; fields: Record<string, unknown> | null; base?: string }[] = [];
   for (const [i, e] of s.entries.entries()) {
     if (only != null && i !== only) continue;
     const changed = e.isNew || DESK_FIELDS.some((f) => e.values[f] !== e.original[f]);
     if (e.confirmed && !changed) continue;
-    if (!changed) { writes.push({ id: e.id, isNew: false, fields: null }); continue; }
+    if (!changed) { writes.push({ id: e.id, isNew: false, fields: null, ...(e.base ? { base: e.base } : {}) }); continue; }
     const p = patchOf(e);
     if ("error" in p) return { error: `Entry ${i + 1}: ${p.error}` };
-    writes.push({ id: e.id, isNew: !!e.isNew, fields: p });
+    writes.push({ id: e.id, isNew: !!e.isNew, fields: p, ...(e.base ? { base: e.base } : {}) });
   }
   return { writes };
 }
@@ -514,4 +517,16 @@ export function shelfBooks(lines: ShelfBook[], logbooks: { id: string; type: str
   const out = lines.map((l) => ({ lineId: l.lineId, logbook: l.logbook, name: l.name, volumes: l.volumes }));
   if (rest.length) out.push({ lineId: rest[0].id, logbook: "other", name: BOOK_NAME.other, volumes: rest.map((b) => ({ id: b.id, from: null, to: null })) });
   return out;
+}
+
+export type ReviewReceipt = { entryVersions: Record<string, string>; pageVersions: Record<string, string>; pageId: string; n: number };
+
+/** The undo link uses exactly the versions returned by the confirmation transaction. */
+export function parseReviewReceipt(value: string | undefined): ReviewReceipt | null {
+  if (!value || value.length > 6000) return null;
+  try {
+    const r = JSON.parse(value) as ReviewReceipt;
+    const versions = (v: unknown) => !!v && typeof v === "object" && !Array.isArray(v) && Object.entries(v).length <= 50 && Object.entries(v).every(([id, stamp]) => /^[0-9a-f-]{36}$/i.test(id) && typeof stamp === "string" && Number.isFinite(Date.parse(stamp)));
+    return /^[0-9a-f-]{36}$/i.test(r.pageId) && versions(r.entryVersions) && versions(r.pageVersions) && Number.isInteger(r.n) ? r : null;
+  } catch { return null; }
 }

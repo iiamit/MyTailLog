@@ -147,6 +147,8 @@ export type SyncMutation = {
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
+  response: unknown | null;
+  request: unknown | null;
 };
 
 export type LogEntry = {
@@ -1108,6 +1110,34 @@ export type Database = {
       record_room_opens: { Row: RecordRoomOpen; Relationships: [] };
     };
     Functions: {
+      record_ad_compliance: { Args: { p_aircraft: string; p_ad: string; p_base: string; p_date: string; p_hours: number | null; p_entry: string | null; p_method: string | null }; Returns: unknown };
+      confirm_review_entries: { Args: { p_aircraft: string; p_page: string | null; p_book: string | null; p_page_base: string | null; p_writes: Record<string, unknown>[]; p_whole: boolean }; Returns: unknown };
+      undo_review_confirmation: { Args: { p_aircraft: string; p_entries: Record<string, string>; p_pages: Record<string, string> }; Returns: unknown };
+
+      create_squawk: { Args: { p_aircraft: string; p_fields: Record<string, unknown>; p_photos: string[] }; Returns: unknown };
+      confirm_clean_entries: { Args: { p_aircraft: string; p_versions: Record<string, string> }; Returns: unknown };
+      create_planned_visit: { Args: { p_aircraft: string; p_visit: Record<string, unknown>; p_keys: string[] }; Returns: unknown };
+      seed_maintenance_items: { Args: { p_aircraft: string; p_items: Record<string, unknown>[] }; Returns: unknown };
+      insert_records: { Args: { p_table: string; p_aircraft: string; p_rows: Record<string, unknown>[]; p_conflict: string; p_ignore: boolean }; Returns: unknown };
+      retire_component: { Args: { p_aircraft: string; p_id: string; p_base: string; p_date: string; p_entry: string | null }; Returns: unknown };
+      confirm_equipment_proposals: { Args: { p_aircraft: string; p_ids: string[]; p_dismiss: boolean }; Returns: unknown };
+      change_pages: { Args: { p_aircraft: string; p_ids: string[]; p_action: string; p_book: string | null }; Returns: unknown };
+
+      apply_sync_write: { Args: { p_mutation: Record<string, unknown>; p_operation: string; p_arguments: Record<string, unknown> }; Returns: unknown };
+      record_sync_result: { Args: { p_mutation: Record<string, unknown>; p_result: Record<string, unknown>; p_resolution: string | null }; Returns: unknown };
+      mark_maintenance_done: { Args: { p_aircraft: string; p_item: string; p_base: string; p_patch: Record<string, unknown>; p_reading: Record<string, unknown> | null; p_entry: Record<string, unknown> | null; p_completion?: Record<string, unknown> | null }; Returns: unknown };
+      save_service_provider: { Args: { p_aircraft: string; p_id: string; p_base: string | null; p_fields: Record<string, unknown> }; Returns: unknown };
+      save_planned_visit: { Args: { p_aircraft: string; p_visit: string; p_base: string; p_patch: Record<string, unknown>; p_add: string[]; p_remove: string[] }; Returns: unknown };
+      set_expected_hours_checked: { Args: { target_aircraft: string; hours_per_week: number | null; p_base: string }; Returns: unknown };
+      write_record: { Args: { p_table: string; p_aircraft: string; p_id: string; p_base: string; p_patch: Record<string, unknown> | null; p_delete: boolean }; Returns: unknown };
+      confirm_scanned_document: { Args: { p_page: string; p_base: string }; Returns: undefined };
+      replace_page_extraction: { Args: { p_page: string; p_started_at: string; p_entries: unknown[]; p_state: Record<string, unknown>; p_stickers: string[] }; Returns: undefined };
+      merge_log_entry: { Args: { p_aircraft: string; p_head: string; p_tail: string; p_head_base: string; p_tail_base: string; p_fields: Record<string, unknown> }; Returns: unknown };
+
+      claim_background_job: { Args: { p_key: string }; Returns: string | null };
+      release_background_job: { Args: { p_key: string; p_token: string }; Returns: undefined };
+      commit_reminder_inbox: { Args: { p_notifications: Record<string, unknown>[]; p_receipts: Record<string, unknown>[] }; Returns: undefined };
+      complete_reading_batch: { Args: { p_batch_id: string }; Returns: boolean };
       onboarding_email_candidates: { Args: { p_preview?: boolean }; Returns: OnboardingEmailCandidate[] };
       unsubscribe_onboarding_email: { Args: { p_token: string }; Returns: boolean };
       has_aircraft_access: {

@@ -20,7 +20,9 @@ function done(aircraftId: string, query: string): never {
 }
 
 /** Equipment form (W-AIRCRAFT-03): create without `id`, edit with it. Validation lives in the write. */
-export async function saveComponent(aircraftId: string, componentId: string | null, _p: ActionState, f: FormData): Promise<ActionState> {
+export async function saveComponent(aircraftId: string, componentId: string | null, _renderedBase: string | null, _p: ActionState, f: FormData): Promise<ActionState> {
+  const renderedBase = str(f, "base");
+  if (componentId && !renderedBase) return { error: "Reload this equipment before editing it." };
   const { supabase, ctx } = await writeSession(aircraftId);
   const life = str(f, "life_limit_value");
   const r = await equipment.upsert(supabase, ctx, {
@@ -37,31 +39,34 @@ export async function saveComponent(aircraftId: string, componentId: string | nu
       life_limit_unit: str(f, "life_limit_unit"),
       notes: str(f, "notes"),
     },
-  });
+  }, renderedBase ?? undefined);
   if (r.status !== "ok") return { error: failMessage(r) };
   done(aircraftId, `part=${componentId ?? r.row?.id ?? ""}&done=saved`);
 }
 
 /** Mark removed: a date in a proper field and the removal entry; linked ADs become not applicable from that date. */
-export async function markRemoved(aircraftId: string, componentId: string, _p: ActionState, f: FormData): Promise<ActionState> {
+export async function markRemoved(aircraftId: string, componentId: string, renderedBase: string, _p: ActionState, f: FormData): Promise<ActionState> {
+  if (!renderedBase) return { error: "Reload this equipment before marking it removed." };
   const date = str(f, "removal_date");
   if (!date) return { error: "Enter the date it came out." };
   const { supabase, ctx } = await writeSession(aircraftId);
-  const r = await equipment.markRemoved(supabase, ctx, { componentId, date, entryId: str(f, "removal_entry_id") });
+  const r = await equipment.markRemoved(supabase, ctx, { componentId, date, entryId: str(f, "removal_entry_id") }, renderedBase);
   if (r.status !== "ok") return { error: failMessage(r) };
   done(aircraftId, `part=${componentId}&done=removed&n=${Number(r.row?.ads_updated ?? 0)}`);
 }
 
-export async function reinstallComponent(aircraftId: string, componentId: string) {
+export async function reinstallComponent(aircraftId: string, componentId: string, renderedBase: string) {
   const { supabase, ctx } = await writeSession(aircraftId);
-  const r = await equipment.reinstall(supabase, ctx, { componentId });
+  if (!renderedBase) redirect(`${base(aircraftId)}?error=1`);
+  const r = await equipment.reinstall(supabase, ctx, { componentId }, renderedBase);
   if (r.status !== "ok") redirect(`${base(aircraftId)}?error=1`);
   done(aircraftId, `part=${componentId}&done=reinstalled`);
 }
 
-export async function deleteComponent(aircraftId: string, componentId: string) {
+export async function deleteComponent(aircraftId: string, componentId: string, renderedBase: string) {
   const { supabase, ctx } = await writeSession(aircraftId);
-  const r = await equipment.remove(supabase, ctx, { componentId });
+  if (!renderedBase) redirect(`${base(aircraftId)}?error=1`);
+  const r = await equipment.remove(supabase, ctx, { componentId }, renderedBase);
   if (r.status !== "ok") redirect(`${base(aircraftId)}?error=1`);
   done(aircraftId, "done=deleted");
 }

@@ -14,12 +14,10 @@
 // ===========================================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, AdStatus, AdCompliance } from "@/lib/database.types";
+import type { Database, AdStatus } from "@/lib/database.types";
 import { generateAi } from "./ai";
 import { safeIsoDate } from "./date";
 import type { ImageMediaType } from "./extract";
-import { completeWB } from "@/lib/weightBalance";
-import { cleanAdNumber, adNumbersMatch } from "@/lib/faa/adNumber";
 
 export type WBPayload = {
   empty_weight: number | null;
@@ -164,11 +162,7 @@ export async function classifyOtherDocument(
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
     weight_balance: normalizeWB(parsed.weight_balance),
     ads: Array.isArray(parsed.ads)
-      ? parsed.ads.filter(isAdLine).map((a) => ({
-          ...a,
-          complied_date: safeIsoDate(a.complied_date),
-          next_due_date: safeIsoDate(a.next_due_date),
-        }))
+      ? parsed.ads.filter(isAdLine).map(normalizeAdLine)
       : [],
   };
 }
@@ -196,6 +190,16 @@ function isAdLine(v: unknown): v is AdLine {
 const coerceStatus = (s: string | null): AdStatus | null =>
   s != null && (AD_STATUSES as string[]).includes(s) ? (s as AdStatus) : null;
 
+/** Model enums are descriptive, so unknown statuses remain unasserted instead of breaking approval. */
+export function normalizeAdLine(a: AdLine): AdLine {
+  const num = (v: unknown) => typeof v === "number" && Number.isFinite(v) ? v : null;
+  return {
+    ...a, status: coerceStatus(a.status), recurring: a.recurring === true,
+    complied_hours: num(a.complied_hours), next_due_hours: num(a.next_due_hours),
+    complied_date: safeIsoDate(a.complied_date), next_due_date: safeIsoDate(a.next_due_date),
+  };
+}
+
 export type ApplyResult = {
   docType: OtherDocPayload["doc_type"];
   wbApplied: boolean;
@@ -204,194 +208,18 @@ export type ApplyResult = {
   summary: string;
 };
 
-/**
- * Apply a classified document. Writes a scanned_document row (upsert per page)
- * and, per type, a weight_balance revision or ad_compliance corroborations.
- * Ground-truth rule for ADs: the report is the baseline, but a compliance record
- * whose complied_date is NEWER than the report date is a later log override and
- * is NOT clobbered — only its verified marker is set.
- */
+/** Save machine output for human review; only confirm_scanned_document changes authoritative records. */
 export async function applyScannedDocument(
   supabase: SupabaseClient<Database>,
   page: { id: string; aircraft_id: string },
   payload: OtherDocPayload,
 ): Promise<ApplyResult> {
-  const result: ApplyResult = {
-    docType: payload.doc_type,
-    wbApplied: false,
-    adsCorrelated: 0,
-    adsCreated: 0,
-    summary: "",
-  };
-
-  if (payload.doc_type === "weight_balance") {
-    result.wbApplied = await applyWeightBalance(supabase, page, payload);
-  } else if (payload.doc_type === "ad_report") {
-    const r = await applyAdReport(supabase, page, payload);
-    result.adsCorrelated = r.correlated;
-    result.adsCreated = r.created;
-  }
-
-  result.summary = summarize(result);
-
-  // Upsert the scanned_document record (one per page).
-  await supabase
-    .from("scanned_document")
-    .upsert(
-      {
-        aircraft_id: page.aircraft_id,
-        page_id: page.id,
-        doc_type: payload.doc_type,
-        document_date: payload.document_date,
-        extracted: payload as unknown as Record<string, unknown>,
-        summary: result.summary,
-        applied: result.wbApplied || result.adsCorrelated > 0 || result.adsCreated > 0,
-        confidence: payload.confidence,
-      },
-      { onConflict: "page_id" },
-    );
-
-  return result;
-}
-
-function summarize(r: ApplyResult): string {
-  if (r.docType === "weight_balance") {
-    return r.wbApplied ? "Applied a W&B revision" : "Weight & Balance — no usable figures";
-  }
-  if (r.docType === "ad_report") {
-    const parts: string[] = [];
-    if (r.adsCorrelated) parts.push(`${r.adsCorrelated} AD${r.adsCorrelated === 1 ? "" : "s"} correlated`);
-    if (r.adsCreated) parts.push(`${r.adsCreated} AD${r.adsCreated === 1 ? "" : "s"} added`);
-    return parts.length ? parts.join(" · ") : "AD report — no AD lines read";
-  }
-  return "Not a W&B or AD document";
-}
-
-async function applyWeightBalance(
-  supabase: SupabaseClient<Database>,
-  page: { id: string; aircraft_id: string },
-  payload: OtherDocPayload,
-): Promise<boolean> {
-  const wb = payload.weight_balance;
-  const revisionDate = payload.document_date;
-  // A W&B revision is keyed by its date; without one we can't place it in the
-  // history, so record only the scanned_document (no revision).
-  if (!revisionDate) return false;
-  if (wb.empty_weight == null && wb.empty_weight_arm == null && wb.empty_weight_moment == null) {
-    return false;
-  }
-
-  const filled = completeWB({
-    weight: wb.empty_weight,
-    arm: wb.empty_weight_arm,
-    moment: wb.empty_weight_moment,
-  });
-
-  const row = {
-    aircraft_id: page.aircraft_id,
-    revision_date: revisionDate,
-    empty_weight: filled.weight,
-    empty_weight_arm: filled.arm,
-    empty_weight_moment: filled.moment,
-    max_gross_weight: wb.max_gross_weight,
-    method: wb.method,
-    reference: wb.reference,
-    reason: "From scanned A&P document",
-    source_page_id: page.id,
-  };
-
-  // Dedupe by date: update an existing same-date revision, else insert.
-  const { data: existing } = await supabase
-    .from("weight_balance")
-    .select("id")
-    .eq("aircraft_id", page.aircraft_id)
-    .eq("revision_date", revisionDate)
-    .maybeSingle();
-
-  if (existing) {
-    await supabase.from("weight_balance").update(row).eq("id", existing.id);
-  } else {
-    await supabase.from("weight_balance").insert(row);
-  }
-  return true;
-}
-
-async function applyAdReport(
-  supabase: SupabaseClient<Database>,
-  page: { id: string; aircraft_id: string },
-  payload: OtherDocPayload,
-): Promise<{ correlated: number; created: number }> {
-  const reportDate = payload.document_date; // ground-truth date
-  const nowIso = new Date().toISOString();
-  let correlated = 0;
-  let created = 0;
-
-  // Existing tracked ADs on this aircraft (for correlation).
-  const { data: records } = await supabase
-    .from("ad_compliance")
-    .select("id, reference, complied_date, status, method, complied_hours, next_due_date, next_due_hours, recurring")
-    .eq("aircraft_id", page.aircraft_id)
-    .eq("kind", "ad");
-
-  for (const line of payload.ads) {
-    const ref = cleanAdNumber(line.reference);
-    if (!ref) continue;
-    const status = coerceStatus(line.status);
-    const match = (records ?? []).find((r) => adNumbersMatch(r.reference, ref));
-
-    if (match) {
-      // Always mark it corroborated. Then decide whether the report is the
-      // authoritative BASELINE for the compliance values: it is, unless a later
-      // log entry already recorded a compliance date NEWER than the report (that
-      // log override wins), or the report has no date to establish recency.
-      const baseline =
-        reportDate != null &&
-        (match.complied_date == null || match.complied_date <= reportDate);
-
-      const update: Partial<AdCompliance> = {
-        verified_report_page_id: page.id,
-        verified_at: nowIso,
-      };
-      // Apply a report field when it's the baseline, or when the existing value
-      // is empty (fill a gap) — never overwrite a populated value we can't prove
-      // is stale. Status defaults to 'open', so treat 'open' as "empty".
-      const put = <K extends keyof AdCompliance>(
-        key: K,
-        incoming: AdCompliance[K] | null,
-        existingEmpty: boolean,
-      ) => {
-        if (incoming != null && (baseline || existingEmpty)) update[key] = incoming;
-      };
-      put("status", status, match.status === "open");
-      put("method", line.method, match.method == null);
-      put("complied_date", line.complied_date, match.complied_date == null);
-      put("complied_hours", line.complied_hours, match.complied_hours == null);
-      put("next_due_date", line.next_due_date, match.next_due_date == null);
-      put("next_due_hours", line.next_due_hours, match.next_due_hours == null);
-      if (line.recurring && !match.recurring && baseline) update.recurring = true;
-
-      await supabase.from("ad_compliance").update(update).eq("id", match.id);
-      correlated++;
-    } else {
-      // Unmatched: create a tracked record from the report line.
-      await supabase.from("ad_compliance").insert({
-        aircraft_id: page.aircraft_id,
-        kind: "ad",
-        reference: ref,
-        title: line.title,
-        status: status ?? "open",
-        method: line.method,
-        complied_date: line.complied_date,
-        complied_hours: line.complied_hours,
-        next_due_date: line.next_due_date,
-        next_due_hours: line.next_due_hours,
-        recurring: line.recurring,
-        notes: "From scanned A&P AD compliance report",
-        verified_report_page_id: page.id,
-        verified_at: nowIso,
-      });
-      created++;
-    }
-  }
-  return { correlated, created };
+  const summary = payload.doc_type === "other" ? "Reference document" : "Awaiting review — no maintenance values have been changed";
+  const { error } = await supabase.from("scanned_document").upsert({
+    aircraft_id: page.aircraft_id, page_id: page.id, doc_type: payload.doc_type,
+    document_date: payload.document_date, extracted: payload as unknown as Record<string, unknown>,
+    summary, applied: false, confidence: payload.confidence,
+  }, { onConflict: "page_id" });
+  if (error) throw new Error(`Could not save document reading: ${error.message}`);
+  return { docType: payload.doc_type, wbApplied: false, adsCorrelated: 0, adsCreated: 0, summary };
 }

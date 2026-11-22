@@ -21,6 +21,7 @@ type Doc = {
   size_bytes: number | null;
   log_entry_id: string | null;
   created_at: string;
+  updated_at: string;
 };
 
 /** The log entry a document is attached to (0041's `document.log_entry_id`). */
@@ -75,15 +76,15 @@ export function DocumentsClient({
     }
   }
 
-  async function remove(id: string) {
-    const res = await deleteDocument(aircraftId, id);
+  async function remove(id: string, base: string) {
+    const res = await deleteDocument(aircraftId, id, base);
     if (res.error) return toast.error(res.error);
     toast.success("Document removed.");
     router.refresh();
   }
 
-  async function unlink(id: string) {
-    const res = await setDocumentEntry(aircraftId, id, null);
+  async function unlink(id: string, base: string) {
+    const res = await setDocumentEntry(aircraftId, id, null, base);
     if (res.error) return toast.error(res.error);
     toast.success("Detached from the entry — still in the Vault.");
     router.refresh();
@@ -187,7 +188,7 @@ export function DocumentsClient({
                         </Link>
                         {canEdit && (
                           <button
-                            onClick={() => unlink(d.id)}
+                            onClick={() => unlink(d.id, d.updated_at)}
                             title="Detach from the entry — the document stays here in the Vault."
                             className="text-faint hover:text-annun-red"
                           >
@@ -206,7 +207,7 @@ export function DocumentsClient({
                     </a>
                     {canEdit && (
                       <ConfirmButton
-                        onConfirm={() => remove(d.id)}
+                        onConfirm={() => remove(d.id, d.updated_at)}
                         confirmLabel="Delete"
                         className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-annun-red hover:text-annun-red"
                       >

@@ -63,11 +63,14 @@ final class SessionStore {
     var linkNeedsCode = false
 
     private let auth: AuthClient
-    private let core: any CoreBridge
+    /// Shared by foreground requests and cold background launches.
+    static let shared = SessionStore(auth: .fromBundle())
+    private(set) var needsSignIn = false
+    private var generation = 0
+    private var refreshing: Task<Session, Error>?
 
-    init(auth: AuthClient, core: any CoreBridge) {
+    init(auth: AuthClient) {
         self.auth = auth
-        self.core = core
         session = SessionKeychain.load()
     }
 
@@ -83,7 +86,7 @@ final class SessionStore {
     /// An email link (Universal Link) or a stray OAuth return opened the app. A link this phone cannot complete
     /// becomes the code prompt, never an error.
     func open(_ url: URL) async {
-        guard session == nil, let callback = AuthFlow.parseCallback(url) else { return }
+        guard session == nil || needsSignIn, let callback = AuthFlow.parseCallback(url) else { return }
         guard case .code(let code) = callback, let verifier = SessionKeychain.emailVerifier else {
             linkNeedsCode = true
             return
@@ -151,39 +154,52 @@ final class SessionStore {
     }
 
     private func adopt(_ session: Session) async {
+        generation += 1
+        refreshing?.cancel()
+        refreshing = nil
+        needsSignIn = false
         SessionKeychain.save(session)
         SessionKeychain.emailVerifier = nil
         notice = nil
         linkNeedsCode = false
         self.session = session
-        await core.setAccessToken(session.accessToken)
     }
 
-    /// On launch and on return to the foreground. Offline or a server hiccup keeps the session (offline first);
-    /// only a refresh the server refuses signs the owner out.
-    func refreshIfNeeded() async {
-        guard let current = session else { return }
-        guard current.expiresAt.timeIntervalSinceNow < 300 else {
-            await core.setAccessToken(current.accessToken)
-            return
+    /// One refresh per session. A rejected login keeps this user's unsent work until they sign in again.
+    func refreshIfNeeded(force: Bool = false) async {
+        guard let current = session, !needsSignIn else { return }
+        guard force || current.expiresAt.timeIntervalSinceNow < 300 else { return }
+        let version = generation
+        let task: Task<Session, Error>
+        if let existing = refreshing { task = existing } else {
+            let auth = auth
+            task = Task { try await auth.refresh(current) }
+            refreshing = task
         }
         do {
-            let fresh = try await auth.refresh(current)
+            let fresh = try await task.value
+            guard version == generation, session == current else { return }
             SessionKeychain.save(fresh)
             session = fresh
-            await core.setAccessToken(fresh.accessToken)
-        } catch AuthError.offline, AuthError.server {
-            return
+            refreshing = nil
         } catch {
-            await forget()
-            notice = "You've been signed out. Sign in again to keep syncing."
+            guard version == generation, session == current else { return }
+            refreshing = nil
+            switch error {
+            case AuthError.offline, AuthError.server, AuthError.rateLimited, is CancellationError:
+                return
+            default:
+                needsSignIn = true
+                notice = "Sign in again to keep syncing. Your unsent work is still on this phone."
+            }
         }
     }
 
     /// The session for an API call, refreshed first when it is about to expire.
     func currentSession() async throws -> Session {
         await refreshIfNeeded()
-        guard let session else { throw AuthError.server }
+        guard let session, !needsSignIn else { throw AuthError.rejected }
+        guard session.expiresAt > Date() else { throw AuthError.server }
         return session
     }
 
@@ -191,14 +207,18 @@ final class SessionStore {
     func signOut() async {
         // This phone stops getting the account's reminders while the session can still say so (06 M-SYS-05).
         await Push.shared.stop()
-        if let session { await auth.signOut(session) }
-        await forget()
+        let old = session
+        forget()
+        if let old { await auth.signOut(old) }
     }
 
-    private func forget() async {
+    private func forget() {
+        generation += 1
+        refreshing?.cancel()
+        refreshing = nil
+        needsSignIn = false
         SessionKeychain.delete()
         SessionKeychain.emailVerifier = nil
         session = nil
-        await core.wipe()
     }
 }

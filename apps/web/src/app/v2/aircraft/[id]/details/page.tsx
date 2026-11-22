@@ -12,7 +12,7 @@ import { registryRows } from "@/lib/v2/details";
 import { Board, BoardHead, HungSection, Leaf, Leaves, Spine } from "@/ui/Board";
 import { Button, buttonClass } from "@/ui/Button";
 import { Field, Notice, fieldClass } from "@/ui/Form";
-import { ActionForm } from "../equipment/ActionForm";
+import { DetailsForm } from "./DetailsForm";
 import { DeleteForm, TransferForm } from "./DangerZone";
 import { applyRegistryValue, deleteIt, saveDetails, transfer } from "./actions";
 
@@ -30,7 +30,7 @@ export default async function DetailsPage({ params, searchParams }: { params: Pr
   const supabase = await createClient();
   const [context, { data: ac }] = await Promise.all([
     getAircraftShellContext(supabase, id),
-    supabase.from("aircraft").select("tail_number, make, model, year, serial_number, engine_serials, prop_serials, home_base, enrollment_date").eq("id", id).maybeSingle(),
+    supabase.from("aircraft").select("tail_number, updated_at, make, model, year, serial_number, engine_serials, prop_serials, home_base, enrollment_date").eq("id", id).maybeSingle(),
   ]);
   if (!context || !ac) notFound();
   const a = `/aircraft/${id}`;
@@ -91,7 +91,7 @@ export default async function DetailsPage({ params, searchParams }: { params: Pr
             {done === "error" && <Notice tone="alarm">That didn&apos;t save. Reload the page and try again.</Notice>}
             {!owner && <p className="text-body text-ink-2">Only the owner can change these details.</p>}
           </div>
-          {owner ? <ActionForm action={saveDetails.bind(null, id)} submit="Save details" className="flex flex-col gap-2">{fields}</ActionForm> : fields}
+          {owner ? <DetailsForm key={id} version={ac.updated_at} action={saveDetails.bind(null, id)}>{fields}</DetailsForm> : fields}
 
           {owner && counts && (
             <>
@@ -133,7 +133,7 @@ async function Registry({
 }: {
   aircraftId: string;
   tail: string;
-  ours: { make: string | null; model: string | null; serial_number: string | null; year: number | null };
+  ours: { updated_at: string; make: string | null; model: string | null; serial_number: string | null; year: number | null };
   owner: boolean;
 }) {
   const rec = await lookupRegistration(tail);
@@ -164,7 +164,7 @@ async function Registry({
                 <span className="mt-0.5 flex flex-wrap items-center gap-2 text-small font-semibold text-alarm-text">
                   Differs from your details
                   {owner && r.field && (
-                    <form action={applyRegistryValue.bind(null, aircraftId, r.field, r.theirs)}>
+                    <form action={applyRegistryValue.bind(null, aircraftId, r.field, r.theirs, ours.updated_at)}>
                       <button type="submit" className={buttonClass("quiet", "s")}>Use the registry&apos;s</button>
                     </form>
                   )}

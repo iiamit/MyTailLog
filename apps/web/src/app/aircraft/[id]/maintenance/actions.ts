@@ -10,7 +10,7 @@ import type { Meter } from "@/lib/hobbsTach";
 // Thin wrappers over lib/writes/maintenance (CONTRACT §4): session, the write,
 // then revalidate. The rules and the validation live in the lib module.
 
-export type MaintenanceInput = MaintenanceItemFields & { id?: string };
+export type MaintenanceInput = MaintenanceItemFields & { id?: string; base?: string };
 
 type Result = { ok: true } | { error: string };
 
@@ -34,14 +34,14 @@ function finish(aircraftId: string, r: WriteResult): Result {
 }
 
 export async function upsertMaintenanceItem(aircraftId: string, input: MaintenanceInput): Promise<Result> {
-  const { id, ...item } = input;
+  const { id, base, ...item } = input;
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await maintenance.upsert(supabase, ctx, { id, item }));
+  return finish(aircraftId, await maintenance.upsert(supabase, ctx, { id, item }, base));
 }
 
-export async function deleteMaintenanceItem(aircraftId: string, id: string): Promise<Result> {
+export async function deleteMaintenanceItem(aircraftId: string, id: string, base: string): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await maintenance.remove(supabase, ctx, { itemId: id }));
+  return finish(aircraftId, await maintenance.remove(supabase, ctx, { itemId: id }, base));
 }
 
 /** Mark an item done at a date/hours, which recomputes its next-due. */
@@ -51,9 +51,10 @@ export async function markMaintenanceDone(
   date: string | null,
   hours: number | null,
   meter: Meter,
+  base: string,
 ): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await maintenance.markDone(supabase, ctx, { itemId: id, date, hours, meter }));
+  return finish(aircraftId, await maintenance.markDone(supabase, ctx, { itemId: id, date, hours, meter }, base));
 }
 
 /** Seed the common Part 91 recurring items (skips any already present). */

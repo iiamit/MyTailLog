@@ -26,8 +26,13 @@ const WHAT: Record<keyof BackupData, string> = {
   planned_visits: "Shop visits you booked, with their week, place and status.",
   planned_visit_items: "What each visit covers: item_key is mx:<maintenance_items id>, ad:<ad_compliance id> or squawk:<squawks id>.",
   logbook_gaps: "Stretches of a logbook with no pages, and what you said about each.",
-  hours_readings: "Hobbs and tach readings over time (meter photos are not included).",
-  squawks: "Reported discrepancies, open and resolved (photos are not included).",
+  hours_readings: "Hobbs and tach readings over time, with photos under meter-photos/.",
+  squawks: "Reported discrepancies, open and resolved.",
+  squawk_photos: "Squawk photo metadata and originals under squawk-photos/.",
+  weight_balances: "Weight and balance revisions with links to source pages.",
+  scanned_documents: "Document readings and reviewed application status, linked to source pages.",
+  oil_additions: "Oil top-offs between changes.",
+  oil_analysis_samples: "Oil-analysis results and their source pages.",
 };
 
 const rule = (c: string) => c.repeat(74);
@@ -65,6 +70,11 @@ export function buildReadme(data: BackupData, manifest: BackupManifest): string 
     ["logbook_gaps", data.logbook_gaps ?? []],
     ["hours_readings", data.hours_readings ?? []],
     ["squawks", data.squawks ?? []],
+    ["squawk_photos", data.squawk_photos ?? []],
+    ["weight_balances", data.weight_balances ?? []],
+    ["scanned_documents", data.scanned_documents ?? []],
+    ["oil_additions", data.oil_additions ?? []],
+    ["oil_analysis_samples", data.oil_analysis_samples ?? []],
   ];
 
   const lines: string[] = [
@@ -113,6 +123,7 @@ export function buildReadme(data: BackupData, manifest: BackupManifest): string 
     "  docs/<documentId>.<ext>    Records Vault files. The file name is the",
     "                             document's `id` in data.json → documents.",
     "",
+    "  squawk-photos/ and meter-photos/ hold original discrepancy and meter photos.",
     "  Thumbnails are not stored — they are regenerated on import.",
     "",
     "DATA.JSON — RECORD SETS AND COLUMNS",

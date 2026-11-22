@@ -28,3 +28,25 @@ test("new design: a read page is confirmed from the review desk", async ({ page,
   await page.goto(`${scratch.path}/logbooks/entries/${entry!.id}`);
   await expect(page.getByText("Inspected landing gear").first()).toBeVisible();
 });
+
+test("review desk refuses to overwrite an entry changed after rendering", async ({ page, scratch }) => {
+  test.setTimeout(60_000);
+  const admin = createClient(process.env.TEST_SUPABASE_URL!, process.env.TEST_SUPABASE_SECRET_KEY!);
+  const { data: book } = await admin.from("logbook").select("id").eq("aircraft_id", scratch.id).eq("type", "airframe").single();
+  const pageId = randomUUID();
+  const { error } = await admin.from("page").insert({ id: pageId, aircraft_id: scratch.id, logbook_id: book!.id,
+    storage_path: `${scratch.id}/e2e-stale-review.jpg`, page_sequence: 1, review_status: "unreviewed", extraction_status: "extracted" });
+  expect(error).toBeNull();
+  const { data: entry, error: insertError } = await admin.from("log_entry").insert({ aircraft_id: scratch.id,
+    logbook_id: book!.id, page_id: pageId, entry_date: "2026-03-14", description: "Inspected landing gear" }).select("id").single();
+  expect(insertError).toBeNull();
+  await page.goto(`/api/ui?design=v2&next=${encodeURIComponent(`${scratch.path}/logbooks/review/${pageId}`)}`);
+  await expect(page.getByRole("button", { name: /Confirm page and next/ })).toBeVisible();
+  const { error: editError } = await admin.from("log_entry").update({ description: "Updated on another device" }).eq("id", entry!.id);
+  expect(editError).toBeNull();
+  await page.getByRole("button", { name: /Confirm page and next/ }).click();
+  // The conflict must return promptly; a serialization retry loop would leave Saving… forever.
+  await expect(page.locator("p[aria-hidden=true]").filter({ hasText: "An entry changed; reload before confirming" })).toBeVisible({ timeout: 10_000 });
+  const { data: saved } = await admin.from("log_entry").select("description, owner_confirmed").eq("id", entry!.id).single();
+  expect(saved).toMatchObject({ description: "Updated on another device", owner_confirmed: false });
+});

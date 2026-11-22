@@ -9,6 +9,7 @@ import * as weightBalance from "@/lib/writes/weightBalance";
 
 export type WBInput = {
   id?: string;
+  base?: string;
   revision_date: string;
   empty_weight: number | null;
   empty_weight_arm: number | null;
@@ -39,10 +40,12 @@ async function run(
 }
 
 export async function upsertWeightBalance(aircraftId: string, input: WBInput): Promise<Result> {
-  const { id, ...fields } = input;
-  return run(aircraftId, (supabase, userId) => weightBalance.upsert(supabase, { aircraftId, userId }, { id, fields }));
+  const { id, base, ...fields } = input;
+  if (id && !base) return { error: "Reload the revision before editing it." };
+  return run(aircraftId, (supabase, userId) => weightBalance.upsert(supabase, { aircraftId, userId }, { id, fields }, base));
 }
 
-export async function deleteWeightBalance(aircraftId: string, id: string): Promise<Result> {
-  return run(aircraftId, (supabase, userId) => weightBalance.remove(supabase, { aircraftId, userId }, { wbId: id }));
+export async function deleteWeightBalance(aircraftId: string, id: string, base: string): Promise<Result> {
+  if (!base) return { error: "Reload the revision before deleting it." };
+  return run(aircraftId, (supabase, userId) => weightBalance.remove(supabase, { aircraftId, userId }, { wbId: id }, base));
 }

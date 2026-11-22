@@ -580,7 +580,7 @@ fun PagesTab(ui: BooksUi, b: Books, nav: BooksNav) {
 
 /** A thumbnail's state mark (M-BOOKS-06): dotted = read by AI and waiting, alarm = needs a look, none = confirmed. */
 fun pageMark(b: Books, p: PageRow): Pair<MarkKind, String>? = when {
-    p.extractionStatus == "failed" || p.unreadRotated -> MarkKind.Overdue to "Needs a look"
+    p.extractionStatus == "failed" || p.unreadRotated || (p.needsLook == true && p.reviewStatus != "confirmed") -> MarkKind.Overdue to "Needs a look"
     p.extractionStatus in setOf("queued", "processing", "waiting_allowance") -> MarkKind.Neutral to "Being read"
     b.entries.any { it.pageId == p.id && it.trust == "ai_read" } -> MarkKind.NoRecord to "Read by AI, waiting"
     else -> null
@@ -633,7 +633,7 @@ fun PageScreen(vm: BooksViewModel, pageId: String, nav: BooksNav) {
                     BoxWithConstraints { ScanViewer(rememberScan(vm, p.id), pageLabel(b, p.id) ?: "", Modifier.fillMaxWidth().height(maxWidth * 1.3f)) }
                     pageMark(b, p)?.let { (k, w) -> StatusMark(k, w, Modifier.padding(top = Tokens.Space.s2)) }
                     entriesOn(b, p.id).forEach { e -> EntryRowView(b, e) { nav.openEntry(e.id) } }
-                    if (b.entries.any { it.pageId == p.id && it.trust == "ai_read" }) DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
+                    if (needsWebsiteReview(b, p) || b.entries.any { it.pageId == p.id && it.trust == "ai_read" }) DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
                 }
             }
         }
@@ -653,7 +653,7 @@ fun QueueTab(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNav) {
         else {
             item { GroupHeader(stringResource(R.string.books_queue_waiting), count = "${queue.size}") }
             items(queue, key = { it.id }) { p -> QueueRow(b, p) { nav.openReview(p.id) } }
-            val clean = queue.count { p -> entriesOn(b, p.id).filter { it.trust == "ai_read" }.all(::isClean) }
+            val clean = queue.count { p -> entriesOn(b, p.id).filter { it.trust == "ai_read" }.let { it.isNotEmpty() && it.all(::isClean) } }
             if (ui.canEdit && clean > 0) item {
                 DButton(stringResource(R.string.books_confirm_clean, clean), { scope.launch { vm.write(listOf(BookWrites.confirmClean(ui.aircraft!!.aircraft.id))) } }, kind = ButtonKind.Secondary, modifier = Modifier.padding(top = Tokens.Space.s4))
             }
@@ -687,7 +687,7 @@ fun QueueRow(b: Books, p: PageRow, selected: Boolean = false, onClick: () -> Uni
     ) {
         Column(Modifier.weight(1f)) {
             Text(pageLabel(b, p.id) ?: "", color = c.ink, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700)))
-            Meta(listOfNotNull(
+            Meta(if (needsWebsiteReview(b, p)) "Review document on website" else listOfNotNull(
                 "${es.size} ${if (es.size == 1) "entry" else "entries"}",
                 if (doubts == 0) "reads cleanly" else "$doubts ${if (doubts == 1) "field" else "fields"} to check",
             ).joinToString(" · "))

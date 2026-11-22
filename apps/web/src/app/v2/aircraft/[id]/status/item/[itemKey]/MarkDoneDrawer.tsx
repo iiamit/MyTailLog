@@ -14,6 +14,7 @@ const field = "mt-1 block h-[42px] w-full rounded-control border border-control-
 export function MarkDoneDrawer({
   aircraftId,
   itemId,
+  base: initialBase,
   label,
   kind,
   meter,
@@ -25,6 +26,7 @@ export function MarkDoneDrawer({
 }: {
   aircraftId: string;
   itemId: string;
+  base: string;
   label: string;
   kind: string;
   meter: MeterName;
@@ -35,6 +37,7 @@ export function MarkDoneDrawer({
   closeHref: string;
 }) {
   const [state, action, pending] = useActionState<MarkDoneState, FormData>(markItemDone.bind(null, aircraftId, itemId), null);
+  const [base] = useState(initialBase);
   const [date, setDate] = useState(today);
   const [hours, setHours] = useState(latest ? latest.value.toFixed(1) : "");
   const h = hours.trim() === "" ? null : Number(hours);
@@ -47,6 +50,7 @@ export function MarkDoneDrawer({
         Mark {label} done
       </h2>
       <form action={action} className="mt-4 flex flex-col gap-4">
+        <input type="hidden" name="base" value={base} />
         <label className="text-label">
           Date done
           <input name="date" type="date" required max={today} value={date} onChange={(e) => setDate(e.target.value)} className={field} />

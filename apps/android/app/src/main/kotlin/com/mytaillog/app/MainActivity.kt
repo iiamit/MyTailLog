@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
@@ -134,7 +135,8 @@ private fun AppRoot(
             // One Status model per signed-in user, so another account never sees the last one's aircraft.
             val user = session.user
             // The user's offline store (05 §6): sync on open and hourly, uploads whenever there is a network.
-            val store = remember(user.id) { app.offline(user.id) }
+            val opened by produceState<OfflineStore?>(initialValue = null, user.id) { value = app.offline(user.id) }
+            val store = opened ?: return
             val capture = remember(store) { CaptureHost(store, app.captureApi, context.applicationContext) }
             LaunchedEffect(store) {
                 SyncWorker.periodic(context)

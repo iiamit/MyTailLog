@@ -5,9 +5,9 @@ import { Button } from "@/ui/Button";
 import { confirmClean, confirmEntries, undoConfirm } from "../actions";
 
 /** "Confirm {c} clean pages" with its toast and Undo (W-BOOKS-08). No dialog: Undo is the safety. */
-export function ConfirmClean({ aircraftId, pages, entries, eyes }: { aircraftId: string; pages: number; entries: number; eyes: number }) {
+export function ConfirmClean({ aircraftId, pages, entries, eyes, versions }: { aircraftId: string; pages: number; entries: number; eyes: number; versions: Record<string, string> }) {
   const [pending, start] = useTransition();
-  const [done, setDone] = useState<{ text: string; ids: string[]; pages: string[] } | null>(null);
+  const [done, setDone] = useState<{ text: string; entryVersions: Record<string, string>; pageVersions: Record<string, string> } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   return (
     <div className="mt-3 space-y-2">
@@ -16,9 +16,9 @@ export function ConfirmClean({ aircraftId, pages, entries, eyes }: { aircraftId:
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const r = await confirmClean(aircraftId);
+            const r = await confirmClean(aircraftId, versions);
             if ("error" in r) return setErr(r.error);
-            setDone({ text: `Confirmed ${r.pages.length || pages} ${pages === 1 ? "page" : "pages"}, ${r.entries} ${r.entries === 1 ? "entry" : "entries"}. ${eyes} still ${eyes === 1 ? "needs" : "need"} your eyes.`, ids: r.ids, pages: r.pages });
+            setDone({ text: `Confirmed ${r.pages.length || pages} ${pages === 1 ? "page" : "pages"}, ${r.entries} ${r.entries === 1 ? "entry" : "entries"}. ${eyes} still ${eyes === 1 ? "needs" : "need"} your eyes.`, entryVersions: r.entryVersions, pageVersions: r.pageVersions });
           })
         }
       >
@@ -33,7 +33,7 @@ export function ConfirmClean({ aircraftId, pages, entries, eyes }: { aircraftId:
             className="font-semibold text-board-ink underline decoration-dotted"
             onClick={() =>
               start(async () => {
-                const r = await undoConfirm(aircraftId, done.ids, done.pages);
+                const r = await undoConfirm(aircraftId, done.entryVersions, done.pageVersions);
                 setDone(null);
                 if ("error" in r) setErr(r.error);
               })
@@ -49,12 +49,12 @@ export function ConfirmClean({ aircraftId, pages, entries, eyes }: { aircraftId:
 }
 
 /** CSV-imported entries without a page: confirm per row or all at once. */
-export function ConfirmImported({ aircraftId, rows }: { aircraftId: string; rows: { id: string; date: string; text: string }[] }) {
+export function ConfirmImported({ aircraftId, rows }: { aircraftId: string; rows: { id: string; date: string; text: string; base: string }[] }) {
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const run = (ids: string[]) =>
     start(async () => {
-      const r = await confirmEntries(aircraftId, null, "", ids.map((id) => ({ id, isNew: false, fields: null })), false);
+      const r = await confirmEntries(aircraftId, null, "", ids.map((id) => ({ id, isNew: false, fields: null, base: rows.find((r) => r.id === id)!.base })), false);
       setErr("error" in r ? r.error : null);
     });
   return (

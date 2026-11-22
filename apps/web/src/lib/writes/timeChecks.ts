@@ -1,3 +1,4 @@
+import { insertRecords } from "./insert";
 import { canEdit, entryIsOnAircraft, FOREIGN_ENTRY, type Db, type WriteCtx, type WriteResult } from "./entries";
 
 // `timeCheck.dismiss` (09 §2.13, §5.3): the owner answered a written-versus-calculated check. The
@@ -19,11 +20,8 @@ export async function dismiss(
     return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
   // One answer per (component, entry): a later answer replaces the earlier one. The unique key is the
   // idempotency key, so the client's `id` is not used as the row id (an upsert must not rewrite a primary key).
-  const { data, error } = await supabase.from("time_check_dismissal").upsert({
+  return insertRecords(supabase, ctx, "time_check_dismissal", {
     aircraft_id: ctx.aircraftId, component: input.component, log_entry_id: input.entryId,
     written_value: input.written, calculated_value: input.calculated, action: input.action, created_by: ctx.userId,
-  }, { onConflict: "aircraft_id,component,log_entry_id" }).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  }, "aircraft_id,component,log_entry_id", false);
 }

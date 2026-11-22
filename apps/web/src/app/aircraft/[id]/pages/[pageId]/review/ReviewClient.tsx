@@ -20,6 +20,7 @@ import {
 
 export type ReviewEntry = {
   id: string;
+  updated_at: string;
   logbook_id: string;
   entry_date: string | null;
   hobbs: number | null;
@@ -42,6 +43,7 @@ export type ReviewEntry = {
 
 const blankEntry = (): ReviewEntry => ({
   id: "",
+  updated_at: "",
   logbook_id: "",
   entry_date: null,
   hobbs: null,
@@ -258,14 +260,15 @@ export function EntryCard({
   // shared sticky scan. Absent in the flat view, which falls back to crops.
   onLocate?: (box: FieldBox | null, key: string) => void;
   activeKey?: string | null;
-  onSaved: (id: string, fields: EntryFields) => void;
-  onCreated: (draftId: string, newId: string, fields: EntryFields) => void;
+  onSaved: (id: string, fields: EntryFields, updatedAt?: string) => void;
+  onCreated: (draftId: string, newId: string, fields: EntryFields, updatedAt?: string) => void;
   onDeleted: (id: string) => void;
   onCancelNew: (draftId: string) => void;
   onMerge: (tailId: string) => void;
   merging: boolean;
 }) {
   const [form, setForm] = useState<FormState>(toForm(entry));
+  const [base, setBase] = useState(entry.updated_at);
   const [selectedLogbookId, setSelectedLogbookId] = useState(entry.logbook_id || logbookId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -300,12 +303,12 @@ export function EntryCard({
       const res = await addEntry(aircraftId, pageId, selectedLogbookId, fields);
       setBusy(false);
       if ("error" in res) setError(res.error);
-      else onCreated(entry.id, res.id, fields);
+      else onCreated(entry.id, res.id, fields, res.updatedAt);
     } else {
-      const res = await saveEntry(aircraftId, pageId, entry.id, fields);
+      const res = await saveEntry(aircraftId, pageId, entry.id, fields, base);
       setBusy(false);
       if ("error" in res) setError(res.error);
-      else onSaved(entry.id, fields);
+      else { if (res.updatedAt) setBase(res.updatedAt); onSaved(entry.id, fields, res.updatedAt); }
     }
   }
 
@@ -315,7 +318,7 @@ export function EntryCard({
       return;
     }
     setBusy(true);
-    const res = await deleteEntry(aircraftId, pageId, entry.id);
+    const res = await deleteEntry(aircraftId, pageId, entry.id, base);
     setBusy(false);
     if ("error" in res) setError(res.error);
     else onDeleted(entry.id);
@@ -323,10 +326,10 @@ export function EntryCard({
 
   async function toggleConfirm() {
     setBusy(true);
-    const res = await setEntryConfirmed(aircraftId, pageId, entry.id, !entry.owner_confirmed);
+    const res = await setEntryConfirmed(aircraftId, pageId, entry.id, !entry.owner_confirmed, base);
     setBusy(false);
     if ("error" in res) setError(res.error);
-    else onSaved(entry.id, toFields(form)); // reuse to bump confirmed via parent
+    else { if (res.updatedAt) setBase(res.updatedAt); onSaved(entry.id, toFields(form), res.updatedAt); } // reuse to bump confirmed via parent
   }
 
   return (
@@ -506,6 +509,7 @@ export function EntryCard({
       {!isNew && (
         <EntryExtras
           entryId={entry.id}
+          base={entry.updated_at}
           aircraftId={aircraftId}
           pageId={pageId}
           canEdit={canEdit}
@@ -526,6 +530,7 @@ export function ReviewClient({
   storagePath,
   rawText,
   reviewStatus,
+  pageBase,
   extractionStatus,
   detectedPageCount,
   unreadRotatedContent,
@@ -542,6 +547,7 @@ export function ReviewClient({
   storagePath: string | null;
   rawText: string | null;
   reviewStatus: ReviewStatus;
+  pageBase: string;
   extractionStatus: ExtractionStatus;
   detectedPageCount: number | null;
   unreadRotatedContent: boolean;
@@ -559,6 +565,7 @@ export function ReviewClient({
   const [editingImage, setEditingImage] = useState(false);
   const [entries, setEntries] = useState<ReviewEntry[]>(initialEntries);
   const [drafts, setDrafts] = useState<ReviewEntry[]>([]);
+  const [pageVersion, setPageVersion] = useState(pageBase);
   const [review, setReview] = useState<ReviewStatus>(reviewStatus);
   const [pageBusy, setPageBusy] = useState(false);
   const [mergingId, setMergingId] = useState<string | null>(null);
@@ -574,7 +581,7 @@ export function ReviewClient({
   async function mergeTail(tailId: string) {
     setMergingId(tailId);
     setMergeError(null);
-    const res = await mergeContinuation(aircraftId, pageId, tailId);
+    const res = await mergeContinuation(aircraftId, pageId, tailId, entries.find((e) => e.id === tailId)?.updated_at ?? "");
     setMergingId(null);
     if ("error" in res) {
       setMergeError(res.error);
@@ -584,10 +591,10 @@ export function ReviewClient({
     router.refresh();
   }
 
-  function patchEntry(id: string, fields: EntryFields) {
+  function patchEntry(id: string, fields: EntryFields, updatedAt?: string) {
     setEntries((es) =>
       es.map((e) =>
-        e.id === id ? { ...e, ...fields, owner_confirmed: true } : e,
+        e.id === id ? { ...e, ...fields, ...(updatedAt ? { updated_at: updatedAt } : {}), owner_confirmed: true } : e,
       ),
     );
   }
@@ -596,21 +603,22 @@ export function ReviewClient({
     setDrafts((d) => [...d, { ...blankEntry(), id: `draft-${Date.now()}` }]);
   }
 
-  function onCreated(draftId: string, newId: string, fields: EntryFields) {
+  function onCreated(draftId: string, newId: string, fields: EntryFields, updatedAt?: string) {
     setDrafts((d) => d.filter((x) => x.id !== draftId));
     setEntries((es) => [
       ...es,
-      { ...blankEntry(), ...fields, id: newId, owner_confirmed: true },
+      { ...blankEntry(), ...fields, id: newId, updated_at: updatedAt ?? "", owner_confirmed: true },
     ]);
   }
 
   async function markReviewed(status: ReviewStatus) {
     setPageBusy(true);
-    const res = await setPageReview(aircraftId, pageId, status);
+    const res = await setPageReview(aircraftId, pageId, status, pageVersion);
     if ("error" in res) {
       setPageBusy(false);
       return;
     }
+    if (res.updatedAt) setPageVersion(res.updatedAt);
     setReview(status);
     // Marking a page reviewed returns you to the pages list (same as Done), so
     // you can move straight to the next page that needs review. Flagging a

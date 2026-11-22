@@ -8,10 +8,10 @@ import { Field, FormLeaf, fieldClass } from "@/ui/Form";
 import { explainGap, type FormState } from "./actions";
 
 /** "Explain the gap" (W-MAINT-05 `?panel=explain`): writes logbook_gap.status and its note. */
-export function ExplainForm({ aircraftId, gapId, title, status, note, closeHref }: {
-  aircraftId: string; gapId: string; title: string; status: string; note: string | null; closeHref: string;
+export function ExplainForm({ aircraftId, gapId, renderedBase, title, status, note, closeHref }: {
+  aircraftId: string; gapId: string; renderedBase: string; title: string; status: string; note: string | null; closeHref: string;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(explainGap.bind(null, aircraftId, gapId), null);
+  const [state, action, pending] = useActionState<FormState, FormData>(explainGap.bind(null, aircraftId, gapId, renderedBase), null);
   return (
     <FormLeaf title="Explain the gap" closeHref={closeHref}>
       <p className="mb-4 text-body text-ink-2">{title}</p>
