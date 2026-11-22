@@ -23,5 +23,16 @@ struct PageThumbnailTests {
             #expect(abs(rendered.size.width - width) < 0.5)
             #expect(abs(rendered.size.height - width * 4 / 3) < 0.5)
         }
+        let grid = ImageRenderer(content:
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 8)], spacing: 8) {
+                ForEach(1...6, id: \.self) { number in
+                    PageThumbnail(image: image)
+                        .overlay(alignment: .bottomTrailing) {
+                            Text("\(number)").foregroundStyle(.black).padding(4).background(.white)
+                        }
+                }
+            }.padding(8).frame(width: 390).background(.white)
+        )
+        Attachment.record(try #require(grid.uiImage?.pngData()), named: "page-grid-\(Int(size.width)).png")
     }
 }
