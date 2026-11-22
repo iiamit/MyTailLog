@@ -1,0 +1,67 @@
+{
+  "checks": "passed",
+  "duration_seconds": 48.36666666666667,
+  "physical_motion_clips": 4,
+  "caption_count": 24,
+  "category_pauses_seconds": [
+    0.93,
+    0.84,
+    0.85
+  ],
+  "ad_pronunciation": "Joined IPA /e\u026a di\u02d0/; no inserted pause",
+  "added_year_overlays": false,
+  "videos": [
+    {
+      "file": "mytaillog-paper-to-map-clean-1080x1920.mp4",
+      "bytes": 24534766,
+      "duration": 48.43,
+      "integrated_lufs": "-16.57",
+      "true_peak_dbtp": "-1.39"
+    },
+    {
+      "file": "mytaillog-paper-to-map-captioned-1080x1920.mp4",
+      "bytes": 22792165,
+      "duration": 48.43,
+      "integrated_lufs": "-16.57",
+      "true_peak_dbtp": "-1.39"
+    }
+  ],
+  "motion_checks": [
+    {
+      "shot": "paper",
+      "mean_pixel_change": 39.93
+    },
+    {
+      "shot": "aircraft",
+      "mean_pixel_change": 46.16
+    },
+    {
+      "shot": "tasks",
+      "mean_pixel_change": 51.04
+    },
+    {
+      "shot": "connected",
+      "mean_pixel_change": 113.19
+    },
+    {
+      "shot": "review",
+      "mean_pixel_change": 63.33
+    },
+    {
+      "shot": "history",
+      "mean_pixel_change": 51.36
+    },
+    {
+      "shot": "maintenance",
+      "mean_pixel_change": 58.34
+    },
+    {
+      "shot": "mobile",
+      "mean_pixel_change": 8.28
+    },
+    {
+      "shot": "duo",
+      "mean_pixel_change": 76.54
+    }
+  ]
+}

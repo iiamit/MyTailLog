@@ -1,0 +1,64 @@
+{
+  "duration_seconds": 40.8,
+  "carousel_count": 7,
+  "caption_count": 17,
+  "videos": [
+    {
+      "file": "reel/mytaillog-platform-update-clean-1080x1920.mp4",
+      "seconds": 40.8,
+      "codec": "H.264/AAC",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "fps": 30,
+      "integrated_lufs": "-17.37",
+      "true_peak_dbtp": "-1.44"
+    },
+    {
+      "file": "reel/mytaillog-platform-update-captioned-1080x1920.mp4",
+      "seconds": 40.8,
+      "codec": "H.264/AAC",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "fps": 30,
+      "integrated_lufs": "-17.37",
+      "true_peak_dbtp": "-1.44"
+    }
+  ],
+  "approved_audio_sha256": "51906d6e84b1b3215a1152a227f67742e1fc38f31f5e3f61e3160e929bb143ea",
+  "motion_checks": [
+    {
+      "scene": 1,
+      "mean_pixel_change": 65.71
+    },
+    {
+      "scene": 2,
+      "mean_pixel_change": 51.39
+    },
+    {
+      "scene": 3,
+      "mean_pixel_change": 70.08
+    },
+    {
+      "scene": 4,
+      "mean_pixel_change": 16.96
+    },
+    {
+      "scene": 5,
+      "mean_pixel_change": 79.48
+    },
+    {
+      "scene": 6,
+      "mean_pixel_change": 61.31
+    }
+  ],
+  "real_interaction_sources": [
+    "native-interaction.mp4",
+    "web-map-interaction.mp4",
+    "web-status-interaction.mp4"
+  ],
+  "checks": "passed"
+}

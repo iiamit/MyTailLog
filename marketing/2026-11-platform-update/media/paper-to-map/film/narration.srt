@@ -1,0 +1,95 @@
+1
+00:00:00,220 --> 00:00:01,566
+Your aircraft's history.
+
+2
+00:00:01,566 --> 00:00:03,912
+Scattered across separate paper logbooks.
+
+3
+00:00:04,352 --> 00:00:04,932
+Airframe.
+
+4
+00:00:05,791 --> 00:00:06,244
+Engine.
+
+5
+00:00:07,011 --> 00:00:07,649
+Propeller.
+
+6
+00:00:08,415 --> 00:00:09,425
+Avionics.
+
+7
+00:00:09,840 --> 00:00:11,860
+Maintenance, inspections, and AD tracking.
+
+8
+00:00:12,308 --> 00:00:14,502
+MyTailLog turns those pages into one connected
+
+9
+00:00:14,502 --> 00:00:15,222
+history.
+
+10
+00:00:16,208 --> 00:00:19,134
+Scan or upload your logbooks, then review the extracted
+
+11
+00:00:19,134 --> 00:00:20,980
+entries right beside the originals.
+
+12
+00:00:21,429 --> 00:00:23,438
+Follow the history across every book.
+
+13
+00:00:23,438 --> 00:00:25,702
+See what's due, and plan what comes next.
+
+14
+00:00:26,163 --> 00:00:28,625
+Track hours, oil, and squawks.
+
+15
+00:00:28,625 --> 00:00:30,540
+Connect MyFlightBook to help keep your records
+
+16
+00:00:30,540 --> 00:00:31,365
+in step.
+
+17
+00:00:31,785 --> 00:00:33,642
+At your desk, or at the aircraft.
+
+18
+00:00:33,642 --> 00:00:35,419
+The new native apps are coming soon.
+
+19
+00:00:35,852 --> 00:00:38,348
+Including layouts that unfold with iPhone Duo,
+
+20
+00:00:38,348 --> 00:00:40,089
+with records side by side.
+
+21
+00:00:40,541 --> 00:00:42,004
+Free and open source.
+
+22
+00:00:42,004 --> 00:00:43,989
+Try the new web design today.
+
+23
+00:00:43,989 --> 00:00:45,626
+Native apps coming soon.
+
+24
+00:00:45,626 --> 00:00:47,310
+MyTailLog dot com.

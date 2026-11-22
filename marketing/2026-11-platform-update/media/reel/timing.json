@@ -1,0 +1,44 @@
+[
+  {
+    "index": 1,
+    "start": 0,
+    "duration": 4.5,
+    "file": "voice-01.wav"
+  },
+  {
+    "index": 2,
+    "start": 4.5,
+    "duration": 4.533333333333333,
+    "file": "voice-02.wav"
+  },
+  {
+    "index": 3,
+    "start": 9.033333333333333,
+    "duration": 5.966666666666667,
+    "file": "voice-03.wav"
+  },
+  {
+    "index": 4,
+    "start": 15.0,
+    "duration": 6.133333333333334,
+    "file": "voice-04.wav"
+  },
+  {
+    "index": 5,
+    "start": 21.133333333333333,
+    "duration": 5.9,
+    "file": "voice-05.wav"
+  },
+  {
+    "index": 6,
+    "start": 27.03333333333333,
+    "duration": 5.8,
+    "file": "voice-06.wav"
+  },
+  {
+    "index": 7,
+    "start": 32.83333333333333,
+    "duration": 7.966666666666667,
+    "file": "voice-07.wav"
+  }
+]

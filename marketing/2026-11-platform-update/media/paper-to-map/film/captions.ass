@@ -1,0 +1,36 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Libre Franklin,40,&H00FFFFFF,&H00FFFFFF,&H001E1917,&H001E1917,-1,0,0,0,100,100,0,0,3,10,0,2,90,90,310,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.22,0:00:01.57,Default,,0,0,0,,Your aircraft's history.
+Dialogue: 0,0:00:01.57,0:00:03.91,Default,,0,0,0,,Scattered across separate paper logbooks.
+Dialogue: 0,0:00:04.35,0:00:04.93,Default,,0,0,0,,Airframe.
+Dialogue: 0,0:00:05.79,0:00:06.24,Default,,0,0,0,,Engine.
+Dialogue: 0,0:00:07.01,0:00:07.65,Default,,0,0,0,,Propeller.
+Dialogue: 0,0:00:08.41,0:00:09.42,Default,,0,0,0,,Avionics.
+Dialogue: 0,0:00:09.84,0:00:11.86,Default,,0,0,0,,Maintenance, inspections, and AD tracking.
+Dialogue: 0,0:00:12.31,0:00:14.50,Default,,0,0,0,,MyTailLog turns those pages into one\Nconnected
+Dialogue: 0,0:00:14.50,0:00:15.22,Default,,0,0,0,,history.
+Dialogue: 0,0:00:16.21,0:00:19.13,Default,,0,0,0,,Scan or upload your logbooks, then review\Nthe extracted
+Dialogue: 0,0:00:19.13,0:00:20.98,Default,,0,0,0,,entries right beside the originals.
+Dialogue: 0,0:00:21.43,0:00:23.44,Default,,0,0,0,,Follow the history across every book.
+Dialogue: 0,0:00:23.44,0:00:25.70,Default,,0,0,0,,See what's due, and plan what comes next.
+Dialogue: 0,0:00:26.16,0:00:28.62,Default,,0,0,0,,Track hours, oil, and squawks.
+Dialogue: 0,0:00:28.62,0:00:30.54,Default,,0,0,0,,Connect MyFlightBook to help keep your\Nrecords
+Dialogue: 0,0:00:30.54,0:00:31.36,Default,,0,0,0,,in step.
+Dialogue: 0,0:00:31.78,0:00:33.64,Default,,0,0,0,,At your desk, or at the aircraft.
+Dialogue: 0,0:00:33.64,0:00:35.42,Default,,0,0,0,,The new native apps are coming soon.
+Dialogue: 0,0:00:35.85,0:00:38.35,Default,,0,0,0,,Including layouts that unfold with iPhone\NDuo,
+Dialogue: 0,0:00:38.35,0:00:40.09,Default,,0,0,0,,with records side by side.
+Dialogue: 0,0:00:40.54,0:00:42.00,Default,,0,0,0,,Free and open source.
+Dialogue: 0,0:00:42.00,0:00:43.99,Default,,0,0,0,,Try the new web design today.
+Dialogue: 0,0:00:43.99,0:00:45.63,Default,,0,0,0,,Native apps coming soon.
+Dialogue: 0,0:00:45.63,0:00:47.31,Default,,0,0,0,,MyTailLog dot com.

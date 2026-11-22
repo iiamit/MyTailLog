@@ -24,6 +24,34 @@ records in the same account. See [account and sign-in help](https://mytaillog.co
 > value it shows is derived from AI extraction or data you entered, and must be
 > confirmed against the physical logbook before you rely on it.
 
+## Coming soon: a new view of your aircraft’s records
+
+The new binder design brings **Status, Logbooks, Maintenance, Aircraft,
+Documents and Share** into one recognisable workspace. Go from an inspection
+that is due to the entry and scanned page behind it, review AI-read fields
+beside the scan, or follow years of maintenance on the logbook map. Add actions
+open the form for the task you chose, and Ask your logbook is part of the new
+web experience. **Try it on the web now:** on a computer, open an aircraft and
+choose **Try the new design** in the Account navigation.
+
+The **redesigned native 2.0 apps are coming soon**. This is a sneak peek of
+builds currently in iOS TestFlight and Android Play internal testing. The iOS
+preview includes **iPhone Duo support**: a compact cover
+layout and an unfolded two-pane workspace, with logbook entries opening beside
+the map. It adapts to window size and orientation. Duo layout checks use Apple's
+simulator; physical-device validation is still needed. The public store links
+above currently provide the existing app release.
+
+Your account and aircraft carry across web and mobile. The native previews keep
+synced aircraft details and maintenance records on the phone and queue readings,
+oil, squawks and scans until reconnection. Managed offline scan downloads are
+not yet included in these previews. AI extraction and Ask need a connection.
+MyTailLog remains **free and MIT licensed**, with a daily allowance for
+shared-key AI reading.
+
+Read [What's new](https://mytaillog.com/whats-new) or
+[the November campaign kit](marketing/2026-11-platform-update/README.md).
+
 ## What it is
 
 MyTailLog turns decades of paper airframe / engine / prop / avionics logbooks
@@ -237,10 +265,11 @@ work happens in `apps/web`.
   (`STORAGE_BACKEND`), with an admin health-check (`/api/admin/storage-check`).
 - **Offline-first sync for the phones.** A self-hosted change feed (`change_log`)
   streams deltas to each phone (`GET /api/sync/v2/pull`); the phone keeps a mirror
-  in SQLite and an outbox of unsent work, so the logbooks browse with no signal and
-  captures, flights, squawks and edits queue offline and upload later. A change made
-  in two places comes back as a conflict for the owner to decide, never a silent
-  winner. No sync vendor — see [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md).
+  in SQLite and an outbox of unsent work. Captures, readings, oil and squawks
+  queue offline and upload later. Offline browsing coverage differs between the
+  public apps and native previews; native scan downloads are not yet included.
+  Clients surface version conflicts for review. No sync vendor — see
+  [`docs/mobile-and-sync.md`](docs/mobile-and-sync.md).
 - **Anthropic or OpenAI** — model routing matches cost to the task. Anthropic uses
   `claude-opus-4-8` for images and `claude-haiku-4-5` for text. OpenAI uses
   `gpt-5.6-sol` for handwritten pages, while printed OCR/PDFs and text-only work
