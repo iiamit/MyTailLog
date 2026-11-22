@@ -30,7 +30,7 @@ The mockups are static HTML in `docs/redesign/`. Open them in a browser (they ne
 - **Direction D phone and tablet:** `docs/redesign/d/mobile.html` — 22 screens (home with line ahead, vertical map, entry sheet, interchange cards, gap sheet, plan ahead, scan, review, widgets, tablet split views).
 - **Direction B (the base):** `docs/redesign/b/web1.html`, `b/web2.html`, `b/mobile.html` — every screen D did not redraw (settings, account, documents, maintenance sub-pages, auth). In D these gain the spine under the board head and D's tokens.
 - **Gallery parameters:** append `?only=<figure-id>` to isolate a screen, `&open=1` to expand notes, `&bare=1` to hide gallery chrome (used for screenshots). Figure IDs are mapped to screen IDs in [screen-index.md](screen-index.md).
-- **Research and rationale:** `docs/redesign/index.html` (the four directions compared), `docs/redesign/analysis.html` (competitors and current-app critique), `docs/redesign/research/*.md` (inventories of the current web and mobile apps, competitor notes, the mockup brief with the demo aircraft N734DM's data).
+- **Research and rationale:** `docs/redesign/index.html` (the four directions compared), `docs/redesign/research/*.md` (inventories of the current web and mobile apps, competitor notes, the mockup brief with the demo aircraft N734DM's data).
 - Published proposal (private, owner's account): https://claude.ai/artifact/Edyo7n8SPfybVnzUSTiH7c
 
 ## How to use this with a coding agent

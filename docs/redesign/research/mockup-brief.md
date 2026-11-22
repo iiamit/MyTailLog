@@ -45,7 +45,7 @@ Write ONLY your one output file, `docs\redesign\<dir>\<page>.html`. Do not edit 
 <body class="g-page">
 <nav class="g-top" aria-label="Proposal"><div class="g-top-in">
   <b>MyTailLog redesign</b>
-  <a href="../index.html">Overview</a><a href="../analysis.html">Analysis</a>
+  <a href="../index.html">Overview</a>
   <a href="../a/index.html">A · Paint Scheme</a><a href="../b/index.html">B · Section Tabs</a><a href="../c/index.html">C · Line Diagram</a>
 </div></nav>
 <nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
