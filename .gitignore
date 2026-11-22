@@ -80,3 +80,9 @@ e2e/.auth/
 /docs/redesign/research/competitors-adjacent.md
 /docs/redesign/research/competitors-ga.md
 /docs/redesign/research/docs-digest.md
+
+# Local-only planning and execution documents
+/internal/
+/docs/internal/
+/docs/plans/
+/docs/plan-*.md
