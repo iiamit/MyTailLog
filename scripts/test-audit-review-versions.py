@@ -2,6 +2,7 @@
 """Exercise review/undo receipts against disposable Postgres with full migrations/RLS."""
 from pathlib import Path
 from datetime import datetime
+from contextlib import contextmanager
 import json, runpy, unittest
 import psycopg
 from psycopg import sql
@@ -26,6 +27,11 @@ def undo(user, ac, result):
  with connect(user) as db: return rpc(db, 'undo_review_confirmation', ac, json.dumps(result['entryVersions']), json.dumps(result['pageVersions']))
 
 class ReviewVersions(unittest.TestCase):
+ @contextmanager
+ def conflict(self):
+  with self.assertRaises(psycopg.DatabaseError) as caught:
+   yield
+  self.assertEqual(caught.exception.sqlstate, "PT409", "business conflicts must not trigger PostgREST serialization retries")
  @classmethod
  def setUpClass(cls): base['bootstrap']()
  def assert_receipt(self, result, expected_entries, expected_pages):
@@ -39,14 +45,14 @@ class ReviewVersions(unittest.TestCase):
      self.assertEqual(db.execute(sql.SQL('select updated_at from {} where id=%s').format(sql.Identifier(table)), (record,)).fetchone()[0], instant(version))
  def test_an_entry_added_after_rendering_cannot_be_silently_page_confirmed(self):
   user,ac,book,page=fixture(); rows=entries(ac,book,page,1); unseen=entries(ac,book,page,1)
-  with self.assertRaises(psycopg.errors.SerializationFailure): confirm(user,ac,book,page,rows)
+  with self.conflict(): confirm(user,ac,book,page,rows)
   with connect() as db:
    self.assertEqual(db.execute('select count(*) from log_entry where page_id=%s and owner_confirmed',(page,)).fetchone()[0],0)
    self.assertEqual(db.execute('select review_status from page where id=%s',(page,)).fetchone()[0],'unreviewed')
  def test_later_entry_failure_rolls_back_earlier_entry_and_page(self):
   user,ac,book,page=fixture(); rows=entries(ac,book,page); before=page_version(page)
   with connect() as db: db.execute("update log_entry set description='changed meanwhile' where id=%s", (rows[-1][0],))
-  with self.assertRaises(psycopg.errors.SerializationFailure): confirm(user,ac,book,page,rows)
+  with self.conflict(): confirm(user,ac,book,page,rows)
   with connect() as db:
    self.assertEqual(db.execute('select count(*) from log_entry where page_id=%s and owner_confirmed', (page,)).fetchone()[0], 0)
    self.assertEqual(db.execute('select review_status,updated_at from page where id=%s', (page,)).fetchone(), ('unreviewed',before))
@@ -73,7 +79,7 @@ class ReviewVersions(unittest.TestCase):
   user,ac,book,page=fixture(); rows=entries(ac,book,page)
   result=confirm(user,ac,book,page,rows)
   with connect() as db: db.execute("update log_entry set description='edited after confirmation' where id=%s", (rows[-1][0],))
-  with self.assertRaises(psycopg.errors.SerializationFailure): undo(user,ac,result)
+  with self.conflict(): undo(user,ac,result)
   with connect() as db:
    self.assertEqual(db.execute('select count(*) from log_entry where page_id=%s and owner_confirmed', (page,)).fetchone()[0], 2)
    self.assertEqual(db.execute('select review_status,updated_at from page where id=%s', (page,)).fetchone(), ('confirmed',instant(result['pageVersions'][page])))
@@ -82,7 +88,7 @@ class ReviewVersions(unittest.TestCase):
   user,ac,book,page=fixture(); rows=entries(ac,book,page)
   result=confirm(user,ac,book,page,rows)
   with connect() as db: db.execute('update page set needs_look=true where id=%s', (page,))
-  with self.assertRaises(psycopg.errors.SerializationFailure): undo(user,ac,result)
+  with self.conflict(): undo(user,ac,result)
   with connect() as db: self.assertEqual(db.execute('select count(*) from log_entry where page_id=%s and owner_confirmed', (page,)).fetchone()[0], 2)
  def test_bulk_clean_only_receipts_rows_and_pages_actually_changed(self):
   user,ac,book,page=fixture(); rows=entries(ac,book,page,1); already=entries(ac,book,page,1,True)
@@ -127,7 +133,7 @@ class ReviewVersions(unittest.TestCase):
   with connect() as db: db.execute('update page set needs_look=true where id=%s', (page,))
   writes=[{'id':entry,'base':version.isoformat(),'fields':{}} for entry,version in rows]
   with connect(user) as db:
-   with self.assertRaises(psycopg.errors.SerializationFailure): rpc(db,'confirm_review_entries',ac,page,book,old,json.dumps(writes),True)
+   with self.conflict(): rpc(db,'confirm_review_entries',ac,page,book,old,json.dumps(writes),True)
  def test_stale_bulk_entry_version_changes_nothing(self):
   user,ac,book,page=fixture(); rows=entries(ac,book,page)
   with connect() as db: db.execute("update log_entry set description='changed' where id=%s", (rows[-1][0],))
@@ -138,7 +144,7 @@ class ReviewVersions(unittest.TestCase):
   user,ac,book,page=fixture(); rows=entries(ac,book,page)
   result=confirm(user,ac,book,page,rows)
   result['entryVersions'][rows[0][0]]=None
-  with self.assertRaises(psycopg.errors.SerializationFailure): undo(user,ac,result)
+  with self.conflict(): undo(user,ac,result)
  def test_null_bulk_version_cannot_bypass_confirmation_check(self):
   user,ac,book,page=fixture(); rows=entries(ac,book,page,1)
   with connect(user) as db: result=rpc(db,'confirm_clean_entries',ac,json.dumps({rows[0][0]:None}))
