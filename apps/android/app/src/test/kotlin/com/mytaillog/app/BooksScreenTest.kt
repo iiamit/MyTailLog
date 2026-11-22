@@ -87,7 +87,7 @@ class BooksScreenTest {
         val page = b.pages.first()
         compose.setContent { MyTailLogTheme(dark = false) { PageScreen(model(AircraftRole.Owner), page.id, BooksNav()) } }
         val bounds = compose.onNodeWithContentDescription(pageLabel(b, page.id)!!).getUnclippedBoundsInRoot()
-        assertTrue("The page image is taller than the landscape viewport", bounds.height < 411.dp)
+        assertTrue("The page image is taller than the landscape viewport", bounds.bottom - bounds.top < 411.dp)
     }
 
 }

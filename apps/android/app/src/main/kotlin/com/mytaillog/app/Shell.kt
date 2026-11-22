@@ -67,7 +67,7 @@ import com.mytaillog.design.TabItem
 import com.mytaillog.design.section
 import kotlinx.coroutines.launch
 
-/** Signed in: the phone binder below 700dp, the rail and list-detail at 700dp and wider. */
+/** Use tablet list-detail only when both dimensions have room for it. */
 @Composable
 fun Shell(
     email: String? = null,
@@ -114,7 +114,7 @@ fun Shell(
     val open: (String?) -> Unit = { raw -> parseAppLink(raw)?.let { l -> l.aircraftId?.let { id -> status?.select?.invoke(id) }; go = landing(l) } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (isTablet(maxWidth.value.toInt(), maxHeight.value.toInt())) TabletShell(account, status, books, recs, go, { go = null }, notify, open)
-        else PhoneShell(compactHeight = maxHeight < 480.dp, account = account, status = status, books = books, capture = capture, recs = recs, go = go, onGone = { go = null }, notify = notify, open = open)
+        else PhoneShell(compactHeight = maxHeight < TABLET_MIN_HEIGHT_DP.dp, account = account, status = status, books = books, capture = capture, recs = recs, go = go, onGone = { go = null }, notify = notify, open = open)
     }
 }
 
@@ -158,7 +158,7 @@ fun AccountSettings(email: String?, onSignOut: () -> Unit, unsent: Long = 0) {
 }
 
 /**
- * One Scaffold with D's PhoneTabBar as bottomBar and one back stack per tab (05 §5.3):
+ * One Scaffold with bottom tabs (a compact rail in short windows) and one back stack per tab (05 §5.3):
  * switching tabs saves and restores each tab's stack; re-selecting the open tab pops it to its root.
  */
 @Composable

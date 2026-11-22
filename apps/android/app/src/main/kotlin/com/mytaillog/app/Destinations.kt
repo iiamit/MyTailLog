@@ -36,7 +36,8 @@ const val DOCUMENTS_ON_PHONE = "aircraft/documents"
 const val SETTINGS_ON_PHONE = "aircraft/settings"
 const val STATUS_ALL_ITEMS = "status/items"
 
-/** Rail and list-detail from this width (01 §6: tablet list-detail at ≥ 700). */
+/** Tablet list-detail needs width and height; a rotated phone keeps its phone navigation. */
 const val TABLET_MIN_WIDTH_DP = 700
+const val TABLET_MIN_HEIGHT_DP = 480
 
-fun isTablet(widthDp: Int, heightDp: Int = Int.MAX_VALUE) = widthDp >= TABLET_MIN_WIDTH_DP && heightDp >= 480
+fun isTablet(widthDp: Int, heightDp: Int = Int.MAX_VALUE) = widthDp >= TABLET_MIN_WIDTH_DP && heightDp >= TABLET_MIN_HEIGHT_DP
