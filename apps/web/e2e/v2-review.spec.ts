@@ -45,7 +45,8 @@ test("review desk refuses to overwrite an entry changed after rendering", async 
   const { error: editError } = await admin.from("log_entry").update({ description: "Updated on another device" }).eq("id", entry!.id);
   expect(editError).toBeNull();
   await page.getByRole("button", { name: /Confirm page and next/ }).click();
-  await expect(page.getByText(/changed|refresh|reload/i).first()).toBeVisible();
+  // The real remote write can queue behind other parallel fixture transactions.
+  await expect(page.getByText("An entry changed; reload before confirming", { exact: true })).toBeVisible({ timeout: 20_000 });
   const { data: saved } = await admin.from("log_entry").select("description, owner_confirmed").eq("id", entry!.id).single();
   expect(saved).toMatchObject({ description: "Updated on another device", owner_confirmed: false });
 });

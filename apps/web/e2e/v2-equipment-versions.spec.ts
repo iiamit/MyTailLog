@@ -17,7 +17,7 @@ for (const mode of ["edit", "remove"] as const) {
     const { error: updateError } = await admin.from("component").update({ name: "Changed on another device" }).eq("id", component!.id);
     expect(updateError).toBeNull();
     await submit.click();
-    await expect(page.getByRole("alert")).toContainText(/changed|reload|refresh/i);
+    await expect(page.getByRole("alert").filter({ hasText: /Someone else changed/ })).toContainText(/changed|reload|refresh/i);
     const { data: saved } = await admin.from("component").select("name, is_installed").eq("id", component!.id).single();
     expect(saved).toMatchObject({ name: "Changed on another device", is_installed: true });
   });
