@@ -194,7 +194,7 @@ fun PhoneShell(
     val captureNav = capture?.let { h ->
         CaptureNav(h, openSync = { nav.navigate("${PhoneTabs[current].graph}/$SYNC") }, openQueue = { nav.openOnItsTab(SCAN_QUEUE) })
     }
-    SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover)
+    SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover && !compactHeight)
     // A link or a key: the tab (Documents lives under Aircraft here), then the screen pushed on it.
     LaunchedEffect(go, recs != null) {
         val l = go ?: return@LaunchedEffect
@@ -220,7 +220,7 @@ fun PhoneShell(
     )
     Scaffold(
         modifier = Modifier.weight(1f).let {
-            if (compactHeight) it.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)) else it
+            if (compactHeight) it.windowInsetsPadding(WindowInsets.safeDrawing.only((if (cover) WindowInsetsSides.Horizontal else WindowInsetsSides.End) + WindowInsetsSides.Bottom)) else it
         },
         containerColor = MyTailLogTheme.colors.section(visible).board,
         floatingActionButton = {

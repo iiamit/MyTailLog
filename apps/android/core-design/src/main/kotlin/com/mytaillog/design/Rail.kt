@@ -55,7 +55,7 @@ fun Rail(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier:
             if (compact) {
                 val s = colors.section(item.section)
                 Column(
-                    Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(Tokens.Radius.s))
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).focusRing(Tokens.Radius.s).clip(RoundedCornerShape(Tokens.Radius.s))
                         .background(s.board)
                         .selectable(i == selected, role = Role.Tab, onClick = { onSelect(i) })
                         .padding(horizontal = 4.dp, vertical = 4.dp),
