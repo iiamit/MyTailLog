@@ -200,12 +200,13 @@ private fun MapTab(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNav) {
     val model = remember(b, book) { shownModel(b, book) }
     Box(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val layout = rememberMapLayout(model, "phone", maxWidth.value)
+            val horizontal = maxWidth >= 600.dp && maxWidth > maxHeight
+            val layout = rememberMapLayout(model, if (horizontal) "routemap" else "phone", maxWidth.value)
             val unit = maxWidth.value / layout.width.toFloat()
             Column(Modifier.fillMaxSize()) {
                 // Column heads stay put while the map scrolls (10 §8.4).
                 Box(Modifier.fillMaxWidth().height(Tokens.Size.phoneTouchMin)) {
-                    if (!list) layout.lanes.forEach { l ->
+                    if (!list && !horizontal) layout.lanes.forEach { l ->
                         Text(
                             l.name, color = c.ink, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight(700)),
                             modifier = Modifier.offset(x = (l.c * unit).dp - 14.dp).align(Alignment.CenterStart).semantics { contentDescription = bookName(l.logbook) ?: l.name },

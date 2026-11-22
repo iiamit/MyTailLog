@@ -90,4 +90,14 @@ class BooksScreenTest {
         assertTrue("The page image is taller than the landscape viewport", bounds.bottom - bounds.top < 411.dp)
     }
 
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeMapUsesTheHorizontalTimeline() {
+        val vm = model(AircraftRole.Owner)
+        compose.setContent { MyTailLogTheme(dark = false) { PhoneShell(books = vm, compactHeight = true) } }
+        compose.onNodeWithText("Logbooks").performClick()
+        val bounds = compose.onNode(hasContentDescription("Route map of the logbooks", substring = true)).getUnclippedBoundsInRoot()
+        assertTrue("The vertical phone map was stretched across landscape", bounds.bottom - bounds.top < 500.dp)
+    }
+
 }
