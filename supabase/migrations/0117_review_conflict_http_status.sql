@@ -6,10 +6,12 @@ declare target regprocedure; definition text;
 begin
   foreach target in array array[
     'public.confirm_review_entries(uuid,uuid,uuid,timestamptz,jsonb,boolean)'::regprocedure,
-    'public.undo_review_confirmation(uuid,jsonb,jsonb)'::regprocedure
+    'public.undo_review_confirmation(uuid,jsonb,jsonb)'::regprocedure,
+    'public.replace_page_extraction(uuid,timestamptz,jsonb,jsonb,uuid[])'::regprocedure,
+    'public.confirm_scanned_document(uuid,timestamptz)'::regprocedure
   ] loop
     definition=pg_get_functiondef(target);
-    if position('''40001''' in definition)=0 then raise exception 'Review conflict definition did not match the expected migration'; end if;
+    if position('''40001''' in definition)=0 then raise exception 'RPC conflict definition did not match the expected migration'; end if;
     execute replace(definition,'''40001''','''PT409''');
   end loop;
 end $$;

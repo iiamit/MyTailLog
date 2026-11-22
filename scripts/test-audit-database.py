@@ -94,7 +94,8 @@ class AuditDatabase(unittest.TestCase):
    started=db.execute('select clock_timestamp()').fetchone()[0]
   with connect() as db: db.execute('update log_entry set owner_confirmed=true where id=%s',(entry,))
   with connect(user) as db:
-   with self.assertRaises(psycopg.errors.SerializationFailure): rpc(db,'replace_page_extraction',page,started,'[]',json.dumps({'detected_page_count':1}),[])
+   with self.assertRaises(psycopg.DatabaseError) as caught: rpc(db,'replace_page_extraction',page,started,'[]',json.dumps({'detected_page_count':1}),[])
+   self.assertEqual(caught.exception.sqlstate,'PT409')
   with connect() as db: self.assertTrue(db.execute('select owner_confirmed from log_entry where id=%s',(entry,)).fetchone()[0])
  def test_merge_relink_failure_rolls_back_text_and_deletion(self):
   user,ac,book,page=fixture()
