@@ -4,6 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.Icon
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -29,20 +38,35 @@ import androidx.compose.ui.unit.sp
  * The open tab runs flush into the board. Tab heights are equal until there are counts to weigh them by.
  */
 @Composable
-fun Rail(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+fun Rail(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
     val colors = MyTailLogTheme.colors
     Column(
         modifier
-            .width(240.dp)
-            .fillMaxHeight()
             .background(colors.cover)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(top = 18.dp, start = 14.dp, bottom = 16.dp)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Top + WindowInsetsSides.Bottom))
+            .width(if (compact) 72.dp else 240.dp)
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
+            .padding(top = if (compact) 4.dp else 18.dp, start = if (compact) 4.dp else 14.dp, bottom = if (compact) 4.dp else 16.dp)
             .selectableGroup(),
         verticalArrangement = Arrangement.spacedBy(Tokens.Space.s1),
     ) {
-        Wordmark(colors.onCover, Modifier.padding(bottom = Tokens.Space.s4))
-        items.forEachIndexed { i, item -> SectionTab(item, i == selected) { onSelect(i) } }
+        if (!compact) Wordmark(colors.onCover, Modifier.padding(bottom = Tokens.Space.s4))
+        items.forEachIndexed { i, item ->
+            if (compact) {
+                val s = colors.section(item.section)
+                Column(
+                    Modifier.padding(end = if (i == selected) 0.dp else 8.dp).fillMaxWidth().heightIn(min = 48.dp).focusRing(Tokens.Radius.s).clip(RoundedCornerShape(Tokens.Radius.s))
+                        .background(s.board)
+                        .selectable(i == selected, role = Role.Tab, onClick = { onSelect(i) })
+                        .semantics { contentDescription = item.label }
+                        .padding(horizontal = 4.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(item.icon, contentDescription = null, tint = s.onBoard, modifier = Modifier.size(24.dp))
+                }
+            } else SectionTab(item, i == selected) { onSelect(i) }
+        }
     }
 }
 

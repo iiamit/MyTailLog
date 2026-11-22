@@ -36,5 +36,9 @@ class DestinationsTest {
     fun tabletFrom700dp() {
         assertFalse(isTablet(699))
         assertTrue(isTablet(700))
+        assertFalse(isTablet(950, 360))
+        assertFalse(isTablet(800, 479))
+        assertTrue(isTablet(800, 480))
+        assertTrue(isTablet(1280, 800))
     }
 }

@@ -67,7 +67,7 @@ import com.mytaillog.design.TabItem
 import com.mytaillog.design.section
 import kotlinx.coroutines.launch
 
-/** Signed in: the phone binder below 700dp, the rail and list-detail at 700dp and wider. */
+/** Use tablet list-detail only when both dimensions have room for it. */
 @Composable
 fun Shell(
     email: String? = null,
@@ -113,8 +113,8 @@ fun Shell(
     // An inbox row's deep link: the same route table, in place.
     val open: (String?) -> Unit = { raw -> parseAppLink(raw)?.let { l -> l.aircraftId?.let { id -> status?.select?.invoke(id) }; go = landing(l) } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (isTablet(maxWidth.value.toInt())) TabletShell(account, status, books, recs, go, { go = null }, notify, open)
-        else PhoneShell(account = account, status = status, books = books, capture = capture, recs = recs, go = go, onGone = { go = null }, notify = notify, open = open)
+        if (isTablet(maxWidth.value.toInt(), maxHeight.value.toInt())) TabletShell(account, status, books, recs, go, { go = null }, notify, open)
+        else PhoneShell(compactHeight = maxHeight < TABLET_MIN_HEIGHT_DP.dp, account = account, status = status, books = books, capture = capture, recs = recs, go = go, onGone = { go = null }, notify = notify, open = open)
     }
 }
 
@@ -158,7 +158,7 @@ fun AccountSettings(email: String?, onSignOut: () -> Unit, unsent: Long = 0) {
 }
 
 /**
- * One Scaffold with D's PhoneTabBar as bottomBar and one back stack per tab (05 §5.3):
+ * One Scaffold with bottom tabs (a compact rail in short windows) and one back stack per tab (05 §5.3):
  * switching tabs saves and restores each tab's stack; re-selecting the open tab pops it to its root.
  */
 @Composable
@@ -173,6 +173,7 @@ fun PhoneShell(
     onGone: () -> Unit = {},
     notify: NotifyApi? = null,
     open: (String?) -> Unit = {},
+    compactHeight: Boolean = false,
 ) {
     val entry by nav.currentBackStackEntryAsState()
     val hierarchy = entry?.destination?.hierarchy
@@ -193,7 +194,7 @@ fun PhoneShell(
     val captureNav = capture?.let { h ->
         CaptureNav(h, openSync = { nav.navigate("${PhoneTabs[current].graph}/$SYNC") }, openQueue = { nav.openOnItsTab(SCAN_QUEUE) })
     }
-    SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover)
+    SystemBarIcons(darkStatusIcons = visible == Section.Books && !cover && !compactHeight)
     // A link or a key: the tab (Documents lives under Aircraft here), then the screen pushed on it.
     LaunchedEffect(go, recs != null) {
         val l = go ?: return@LaunchedEffect
@@ -210,7 +211,17 @@ fun PhoneShell(
     }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalCaptureNav provides captureNav, LocalRecNav provides recNav) {
+    Row(Modifier.fillMaxSize()) {
+    if (compactHeight && !cover) Rail(
+        items = PhoneTabs.map { TabItem(it.section, stringResource(it.tabLabel), it.icon) },
+        selected = current,
+        onSelect = { i -> nav.selectTab(PhoneTabs[i], reselect = i == current) },
+        compact = true,
+    )
     Scaffold(
+        modifier = Modifier.weight(1f).let {
+            if (compactHeight) it.windowInsetsPadding(WindowInsets.safeDrawing.only((if (cover) WindowInsetsSides.Horizontal else WindowInsetsSides.End) + WindowInsetsSides.Bottom)) else it
+        },
         containerColor = MyTailLogTheme.colors.section(visible).board,
         floatingActionButton = {
             // Add (02 §9.8) on the top-level screens; viewers get it for "Report a squawk" only (06 §1.5).
@@ -221,7 +232,7 @@ fun PhoneShell(
         },
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (!cover) PhoneTabBar(
+            if (!cover && !compactHeight) PhoneTabBar(
                 items = PhoneTabs.map { tab ->
                     // 06 §1.3: Status carries an alarm badge with the overdue count.
                     val overdue = if (tab == Destination.Status) status?.ui?.snapshot?.body?.counts?.overdue ?: 0 else 0
@@ -343,6 +354,7 @@ fun PhoneShell(
                 }
             }
         }
+    }
     }
     if (capture != null && aircraft != null) {
         if (adding) AddSheet(

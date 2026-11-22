@@ -201,12 +201,13 @@ private fun MapTab(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNav) {
     val model = remember(b, book) { shownModel(b, book) }
     Box(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val layout = rememberMapLayout(model, "phone", maxWidth.value)
+            val horizontal = maxWidth >= 600.dp && maxWidth > maxHeight
+            val layout = rememberMapLayout(model, if (horizontal) "routemap" else "phone", maxWidth.value)
             val unit = maxWidth.value / layout.width.toFloat()
             Column(Modifier.fillMaxSize()) {
                 // Column heads stay put while the map scrolls (10 §8.4).
                 Box(Modifier.fillMaxWidth().height(Tokens.Size.phoneTouchMin)) {
-                    if (!list) layout.lanes.forEach { l ->
+                    if (!list && !horizontal) layout.lanes.forEach { l ->
                         Text(
                             l.name, color = c.ink, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight(700)),
                             modifier = Modifier.offset(x = (l.c * unit).dp - 14.dp).align(Alignment.CenterStart).semantics { contentDescription = bookName(l.logbook) ?: l.name },
@@ -467,34 +468,37 @@ fun EntryScreen(vm: BooksViewModel, entryId: String, nav: BooksNav) {
     val i = line.indexOfFirst { it.id == e.id }
     BooksBoard(entryTitle(e), vm, ui, back = stringResource(R.string.section_books) to nav.back) {
         PhoneLeaf {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = Tokens.Space.s8)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DButton(stringResource(R.string.books_previous), { id = line[i - 1].id }, kind = ButtonKind.Quiet, enabled = i > 0, icon = LucideIcons.ChevronLeft, modifier = Modifier.weight(1f))
-                    TrustMark(entryTrust(e), entryTrustWords(e))
-                    DButton(stringResource(R.string.books_next), { id = line[i + 1].id }, kind = ButtonKind.Quiet, enabled = i in 0 until line.lastIndex, icon = LucideIcons.ChevronRight, modifier = Modifier.weight(1f))
-                }
-                BoxWithConstraints {
-                    ScanViewer(rememberScan(vm, e.pageId), pageLabel(b, e.pageId) ?: "", Modifier.fillMaxWidth().height(maxWidth * 1.2f).clip(RoundedCornerShape(Tokens.Radius.s)), outline = entryBox(e))
-                }
-                Meta(pageLabel(b, e.pageId)?.replace(" p. ", " logbook, page ") ?: stringResource(R.string.books_no_page), Modifier.padding(top = Tokens.Space.s1))
-                Text(entryTitle(e), color = c.ink, style = MaterialTheme.typography.headlineMedium.copy(fontSize = Tokens.PhoneType.heading.size * 1.22f), modifier = Modifier.padding(top = Tokens.Space.s3).semantics { heading() })
-                Meta(entryMeta(e))
-                SelectionContainer { Text(transcription(e), color = c.ink, style = paper, modifier = Modifier.padding(top = Tokens.Space.s3)) }
-                if (e.adRefs.isNotEmpty()) SelectionContainer { Meta(e.adRefs.joinToString(" · ") { "AD $it" }, Modifier.padding(top = Tokens.Space.s2)) }
-                val also = b.entries.filter { it.id != e.id && it.entryDate == e.entryDate && it.logbookId != e.logbookId && e.entryDate != null }
-                if (also.isNotEmpty()) {
-                    FlowRow(Modifier.padding(top = Tokens.Space.s3), horizontalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                        Meta(stringResource(R.string.books_also_signed))
-                        also.forEach { a ->
-                            PageCite(pageLabel(b, a.pageId) ?: bookTitle(b, a.logbookId), "", Section.Books, Modifier.heightIn(min = Tokens.Size.phoneTouchMin).clickable { id = a.id })
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val scanHeight = minOf(maxWidth * 1.2f, maxHeight)
+                Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = Tokens.Space.s8)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        DButton(stringResource(R.string.books_previous), { id = line[i - 1].id }, kind = ButtonKind.Quiet, enabled = i > 0, icon = LucideIcons.ChevronLeft, modifier = Modifier.weight(1f))
+                        TrustMark(entryTrust(e), entryTrustWords(e))
+                        DButton(stringResource(R.string.books_next), { id = line[i + 1].id }, kind = ButtonKind.Quiet, enabled = i in 0 until line.lastIndex, icon = LucideIcons.ChevronRight, modifier = Modifier.weight(1f))
+                    }
+                    if (e.pageId != null) {
+                        ScanViewer(rememberScan(vm, e.pageId), pageLabel(b, e.pageId) ?: "", Modifier.fillMaxWidth().height(scanHeight).clip(RoundedCornerShape(Tokens.Radius.s)), outline = entryBox(e))
+                    }
+                    Meta(pageLabel(b, e.pageId)?.replace(" p. ", " logbook, page ") ?: stringResource(R.string.books_no_page), Modifier.padding(top = Tokens.Space.s1))
+                    Text(entryTitle(e), color = c.ink, style = MaterialTheme.typography.headlineMedium.copy(fontSize = Tokens.PhoneType.heading.size * 1.22f), modifier = Modifier.padding(top = Tokens.Space.s3).semantics { heading() })
+                    Meta(entryMeta(e))
+                    SelectionContainer { Text(transcription(e), color = c.ink, style = paper, modifier = Modifier.padding(top = Tokens.Space.s3)) }
+                    if (e.adRefs.isNotEmpty()) SelectionContainer { Meta(e.adRefs.joinToString(" · ") { "AD $it" }, Modifier.padding(top = Tokens.Space.s2)) }
+                    val also = b.entries.filter { it.id != e.id && it.entryDate == e.entryDate && it.logbookId != e.logbookId && e.entryDate != null }
+                    if (also.isNotEmpty()) {
+                        FlowRow(Modifier.padding(top = Tokens.Space.s3), horizontalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                            Meta(stringResource(R.string.books_also_signed))
+                            also.forEach { a ->
+                                PageCite(pageLabel(b, a.pageId) ?: bookTitle(b, a.logbookId), "", Section.Books, Modifier.heightIn(min = Tokens.Size.phoneTouchMin).clickable { id = a.id })
+                            }
                         }
                     }
-                }
-                if (e.trust == "ai_read") {
-                    Meta(stringResource(R.string.books_not_confirmed), Modifier.padding(top = Tokens.Space.s3))
-                    e.pageId?.let { p -> DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p) }, modifier = Modifier.padding(top = Tokens.Space.s2)) }
-                } else if (ui.canEdit && e.authoredSignedAt == null) {
-                    DButton(stringResource(R.string.books_edit_entry), { nav.editEntry(e.id) }, kind = ButtonKind.Secondary, icon = LucideIcons.Pencil, modifier = Modifier.padding(top = Tokens.Space.s4))
+                    if (e.trust == "ai_read") {
+                        Meta(stringResource(R.string.books_not_confirmed), Modifier.padding(top = Tokens.Space.s3))
+                        e.pageId?.let { p -> DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p) }, modifier = Modifier.padding(top = Tokens.Space.s2)) }
+                    } else if (ui.canEdit && e.authoredSignedAt == null) {
+                        DButton(stringResource(R.string.books_edit_entry), { nav.editEntry(e.id) }, kind = ButtonKind.Secondary, icon = LucideIcons.Pencil, modifier = Modifier.padding(top = Tokens.Space.s4))
+                    }
                 }
             }
         }
@@ -635,11 +639,14 @@ fun PageScreen(vm: BooksViewModel, pageId: String, nav: BooksNav) {
         HorizontalPager(pager, Modifier.fillMaxSize()) { i ->
             val p = pages[i]
             PhoneLeaf {
-                Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = Tokens.Space.s8)) {
-                    BoxWithConstraints { ScanViewer(rememberScan(vm, p.id), pageLabel(b, p.id) ?: "", Modifier.fillMaxWidth().height(maxWidth * 1.3f)) }
-                    pageMark(b, p)?.let { (k, w) -> StatusMark(k, w, Modifier.padding(top = Tokens.Space.s2)) }
-                    entriesOn(b, p.id).forEach { e -> EntryRowView(b, e) { nav.openEntry(e.id) } }
-                    if (needsWebsiteReview(b, p) || b.entries.any { it.pageId == p.id && it.trust == "ai_read" }) DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val scanHeight = minOf(maxWidth * 1.3f, maxHeight)
+                    Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = Tokens.Space.s8)) {
+                        ScanViewer(rememberScan(vm, p.id), pageLabel(b, p.id) ?: "", Modifier.fillMaxWidth().height(scanHeight))
+                        pageMark(b, p)?.let { (k, w) -> StatusMark(k, w, Modifier.padding(top = Tokens.Space.s2)) }
+                        entriesOn(b, p.id).forEach { e -> EntryRowView(b, e) { nav.openEntry(e.id) } }
+                        if (needsWebsiteReview(b, p) || b.entries.any { it.pageId == p.id && it.trust == "ai_read" }) DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
+                    }
                 }
             }
         }

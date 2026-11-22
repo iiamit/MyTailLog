@@ -1,16 +1,23 @@
 package com.mytaillog.app
 
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.dp
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.mytaillog.core.api.AircraftAccess
 import com.mytaillog.core.api.AircraftRole
 import com.mytaillog.core.api.AircraftSummary
+import com.mytaillog.core.api.Books
 import com.mytaillog.core.api.GapEvidence
 import com.mytaillog.core.domain.Mutation
 import com.mytaillog.core.domain.PushResult
@@ -28,8 +35,8 @@ class BooksScreenTest {
     @get:Rule val compose = createComposeRule()
 
     private val pushed = mutableListOf<Mutation>()
-    private fun model(role: AircraftRole) = BooksViewModel(
-        load = { sampleBooks() },
+    private fun model(role: AircraftRole, data: Books = sampleBooks()) = BooksViewModel(
+        load = { data },
         push = { ms -> pushed += ms; ms.map { PushResult(it.id, PushResult.Status.Ok) } },
         loadEvidence = { _, _ -> GapEvidence(emptyList(), verdict = "The other books show 0 entries in those years.") },
         loadImage = { _, _ -> error("offline") },
@@ -76,4 +83,55 @@ class BooksScreenTest {
         compose.onNodeWithText("You can view this page. The owner confirms entries.").assertExists()
         compose.onNodeWithText("Confirm page and next").assertDoesNotExist()
     }
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeScanFitsTheAvailableHeight() {
+        val b = sampleBooks()
+        val page = b.pages.first()
+        compose.setContent { MyTailLogTheme(dark = false) { PageScreen(model(AircraftRole.Owner), page.id, BooksNav()) } }
+        val bounds = compose.onNodeWithContentDescription(pageLabel(b, page.id)!!).getUnclippedBoundsInRoot()
+        assertTrue("The page image is taller than the landscape viewport", bounds.bottom - bounds.top < 411.dp)
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeEntryScanFitsTheAvailableHeight() {
+        val b = sampleBooks()
+        val entry = b.entries.first { it.pageId != null }
+        compose.setContent { MyTailLogTheme(dark = false) { EntryScreen(model(AircraftRole.Owner), entry.id, BooksNav()) } }
+        val bounds = compose.onNodeWithContentDescription(pageLabel(b, entry.pageId)!!).getUnclippedBoundsInRoot()
+        assertTrue("The entry scan is taller than the landscape viewport", bounds.bottom - bounds.top < 411.dp)
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun entryWithoutAPageShowsItsTextWithoutABlankPreview() {
+        val b = sampleBooks()
+        val entry = b.entries.first().copy(pageId = null)
+        val vm = model(AircraftRole.Owner, b.copy(entries = listOf(entry)))
+        compose.setContent { MyTailLogTheme(dark = false) { EntryScreen(vm, entry.id, BooksNav()) } }
+        compose.onNodeWithText(transcription(entry)).assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeMapUsesTheHorizontalTimeline() {
+        val vm = model(AircraftRole.Owner)
+        compose.setContent { MyTailLogTheme(dark = false) { PhoneShell(books = vm, compactHeight = true) } }
+        compose.onNodeWithContentDescription("Logbooks").performClick()
+        val bounds = compose.onNode(hasContentDescription("Route map of the logbooks", substring = true)).getUnclippedBoundsInRoot()
+        assertTrue("The vertical phone map was stretched across landscape", bounds.bottom - bounds.top < 500.dp)
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeMapSelectionKeepsTheEntryActionReachable() {
+        val vm = model(AircraftRole.Owner)
+        compose.setContent { MyTailLogTheme(dark = false) { PhoneShell(books = vm, compactHeight = true) } }
+        compose.onNodeWithContentDescription("Logbooks").performClick()
+        compose.onNode(hasContentDescription("Replaced landing light, Mar 2, 2026, Airframe", substring = true)).performClick()
+        compose.onNodeWithText("Replaced landing light").assertIsDisplayed()
+        compose.onNodeWithText("Review this page").performScrollTo().assertIsDisplayed()
+    }
+
 }
