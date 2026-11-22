@@ -46,7 +46,7 @@ test("review desk refuses to overwrite an entry changed after rendering", async 
   expect(editError).toBeNull();
   await page.getByRole("button", { name: /Confirm page and next/ }).click();
   // The conflict must return promptly; a serialization retry loop would leave Saving… forever.
-  await expect(page.getByText("An entry changed; reload before confirming", { exact: true })).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator("p[aria-hidden=true]").filter({ hasText: "An entry changed; reload before confirming" })).toBeVisible({ timeout: 10_000 });
   const { data: saved } = await admin.from("log_entry").select("description, owner_confirmed").eq("id", entry!.id).single();
   expect(saved).toMatchObject({ description: "Updated on another device", owner_confirmed: false });
 });
