@@ -12,9 +12,9 @@ Full-motion revision using the four Google Flow clips supplied by Ian.
 
 ## Edit
 
-A–D form the first 32 seconds. Date labels are editorial illustrations, not extractions of the generated paper. Near the end of D, the generated interface is replaced with the actual supplied iOS map image. The film then shows source-page review, map selection, maintenance history, native phone interaction, an editorial Duo cover-to-inner transition and the final website call to action. The product section reuses genuine captured interaction and the previously prepared campaign camera movements.
+A–D form the first 32 seconds. The added year overlays have been removed; dates within the actual app remain. Near the end of D, the generated interface is replaced with the actual supplied iOS map image. The film then shows source-page review, map selection, maintenance history, native phone interaction, an editorial Duo cover-to-inner transition and the final website call to action. The product section reuses genuine captured interaction and the previously prepared campaign camera movements.
 
-The approved musical theme is retained, looped and ducked beneath new ElevenLabs Chris narration. Generated Flow audio is excluded. The narration input spells AD as “ay dee”; displayed captions use AD. Native redesign footage is labeled as a coming-soon preview. The Duo transition is an editorial reveal, not evidence of an operating-system fold animation.
+The approved musical theme is retained, looped and ducked beneath new ElevenLabs Chris narration. Generated Flow audio is excluded. Airframe, Engine, Propeller and Avionics have explicit pauses between them. The AD phrase uses ElevenLabs Flash v2 with explicit IPA phonemes /eɪ/ and /diː/; the rest uses the previously approved Multilingual v2 voice. Displayed captions use AD. Native redesign footage is labeled as a coming-soon preview. The Duo transition is an editorial reveal, not evidence of an operating-system fold animation.
 
 ## Publication copy
 

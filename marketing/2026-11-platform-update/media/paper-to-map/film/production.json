@@ -6,7 +6,7 @@
   ],
   "fps": 30,
   "physical_source": "User-supplied Google Flow A\u2013D; 720p/24fps converted for delivery",
-  "narration": "ElevenLabs Chris; updated script; AD synthesized as ay dee",
+  "narration": "ElevenLabs Chris; logbook types separated by 0.75-second SSML breaks; AD uses explicit IPA /e\u026a/ /di\u02d0/ on Flash v2",
   "music": "Approved original score, looped and ducked under speech",
   "native_status": "Coming soon / preview",
   "generated_audio_from_flow_used": false,

@@ -2,6 +2,8 @@
 
 Status: user supplied the four generated Google Flow clips A–D. The full-motion film is being assembled as a separate revision; the earlier moving-screen Reel remains intact. The shot timings below are the original production targets; the delivered timeline and narration are recorded in `film/timing.json` and `film/narration.txt`.
 
+Latest edit revision: remove added year overlays. Speak “Airframe. Engine. Propeller. Avionics.” with explicit pauses, and pronounce AD as the separate letters /eɪ/ /diː/. The original shot plan below remains the creative reference.
+
 ## Deliverables
 
 - A continuous-feeling 65–70 second vertical film, 1080 × 1920, 30 fps, with clean and captioned exports.
@@ -18,7 +20,7 @@ Times are editorial targets; conform to the final voice recording rather than sq
 | --- | --- | --- |
 | 0–6 s | Macro, open worn aircraft maintenance logbook resting in a field of small yellow flowers. Warm daylight; wind shifts flowers and turns one ruled page. Pull up and back into an oblique overhead view. | “Every aircraft has a story. But on paper, that story lives in separate logbooks.” |
 | 6–13 s | The page lifts naturally, flexes and joins other sheets in a flowing arc. Follow the lead sheet towards a narrow dark track in the field. As it settles, the track resolves into a smooth indigo line. | “Airframe. Engine. Propeller. Avionics.” |
-| 13–22 s | Travel along the first line as pages land and dated markers appear. Additional books turn pages on either side; more sheets fly onto three parallel paths. Four paths become visible, with real paper, shadows and flower movement throughout. | “Different dates, different tasks—and a lot to keep connected. Maintenance, inspections, A-D tracking.” |
+| 13–22 s | Travel along the first line as pages land and markers appear. Additional books turn pages on either side; more sheets fly onto three parallel paths. Four paths become visible, with real paper, shadows and flower movement throughout. | “Different dates, different tasks—and a lot to keep connected. Maintenance, inspections, A-D tracking.” |
 | 22–30 s | Continue down all four paths. Sheets aligned at the same date group into rounded visit markers spanning their lanes. Physical pages remain recognizable until the final graphic transition. | “MyTailLog brings those records together. Scan or upload your pages, then review the extracted details beside the originals.” |
 | 30–36 s | Flowers and shadows gradually resolve into the exact yellow of the captured Logbooks screen. Paths and visit markers align with a close crop of the real map. Match movement and scale, cross into the actual map recording, then pull back to reveal the interface. | “…beside the originals.” continues across the reveal; allow a short musical breath. |
 | 36–44 s | Actual map interaction: select one visit, show the linked entry and its original scanned page. Move deliberately between source and record; keep the important details large. | “Correlate entries across books. Follow your aircraft’s history, see what’s due, and plan what comes next.” |
@@ -44,13 +46,13 @@ Free and open source. Try the new design on the web today. MyTailLog dot com.
 
 ### Recording direction
 
-Use the previously approved male voice and conversational energy. Pronounce AD as the two letters “ay dee”; the synthesis input should spell “ay dee,” while captions display “AD.” Pronounce MyTailLog as “my tail log,” MyFlightBook as “my flight book,” and Duo as “doo-oh.” Do not rush the four logbook categories. Verify those pronunciations by listening, not only by inspecting text/alignment.
+Use the previously approved male voice and conversational energy. Pronounce AD as the two letters “ay dee”; use explicit IPA /eɪ/ and /diː/ on a model supporting phoneme tags, while captions display “AD.” Pronounce MyTailLog as “my tail log,” MyFlightBook as “my flight book,” and Duo as “doo-oh.” Do not rush the four logbook categories. Verify those pronunciations by listening, not only by inspecting text/alignment.
 
 ## Generation method
 
 Produce four connected 6–8 second physical-world clips with controlled start/end reference frames, then a separately edited 4–6 second match transition. Generate silent footage to preserve musical and narration continuity. Reuse the outgoing frame as the next clip’s start reference. Maintain book appearance, field lighting, paper stock, direction of travel and four lane colors across shots.
 
-Use image-to-video or first/last-frame conditioning where supported. Avoid one long prompt asking a model to invent the entire map, dates and app: exact UI reproduction is an editing job. Render date labels and final lane/visit geometry separately, with perspective and motion tracking, so the text remains accurate. Paper and books stay photorealistic; the geometry intentionally becomes graphical only during the transition into the app.
+Use image-to-video or first/last-frame conditioning where supported. Avoid one long prompt asking a model to invent the entire map, dates and app: exact UI reproduction is an editing job. Match final lane/visit geometry in editing and preserve the actual app’s dates. Do not add year labels over the physical-world footage. Paper and books stay photorealistic; the geometry intentionally becomes graphical only during the transition into the app.
 
 Map lane order and colors must be sampled from the actual captured screen: Airframe, Engine, Propeller, Avionics. Choose the actual capture’s date order and a matching camera direction before generating the final physical tracking shot. Dates may differ between books; only group records at their true shared visit/date positions. Four lanes alone do not imply every visit contains all four books.
 
@@ -66,7 +68,7 @@ Continue from the supplied reference frame with exactly the same brown aircraft 
 
 ### C — four books, connected history
 
-Continue the same forward camera movement through the yellow flower field from the supplied last frame. Reveal three additional open aircraft maintenance logbooks at staggered distances beside the first path. Their pages turn and individual cream sheets lift and travel onto three parallel paths. Four smooth paths now run into the distance, indigo, muted magenta, charcoal and teal, with realistic pages landing at staggered positions. Keep the paths parallel and the pages distinct. Camera continues forward and rises, with visible flower movement, paper flex and sunlight. Do not add written labels or dates. Leave clear space near each landing point for editorial date labels. No cartoon styling, no generated software screens, no extra paths.
+Continue the same forward camera movement through the yellow flower field from the supplied last frame. Reveal three additional open aircraft maintenance logbooks at staggered distances beside the first path. Their pages turn and individual cream sheets lift and travel onto three parallel paths. Four smooth paths now run into the distance, indigo, muted magenta, charcoal and teal, with realistic pages landing at staggered positions. Keep the paths parallel and the pages distinct. Camera continues forward and rises, with visible flower movement, paper flex and sunlight. Do not add written labels or dates. No cartoon styling, no generated software screens, no extra paths.
 
 ### D — group, flatten and reveal
 

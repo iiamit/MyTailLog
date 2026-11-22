@@ -3,20 +3,27 @@
   "duration_seconds": 77.0,
   "physical_motion_clips": 4,
   "caption_count": 28,
+  "category_pauses_seconds": [
+    0.93,
+    0.84,
+    0.85
+  ],
+  "ad_pronunciation": "Explicit IPA /e\u026a/ /di\u02d0/",
+  "added_year_overlays": false,
   "videos": [
     {
       "file": "mytaillog-paper-to-map-clean-1080x1920.mp4",
-      "bytes": 56655113,
+      "bytes": 56684781,
       "duration": 77.0,
-      "integrated_lufs": "-17.46",
-      "true_peak_dbtp": "-1.35"
+      "integrated_lufs": "-17.50",
+      "true_peak_dbtp": "-1.41"
     },
     {
       "file": "mytaillog-paper-to-map-captioned-1080x1920.mp4",
-      "bytes": 52221370,
+      "bytes": 52136335,
       "duration": 77.0,
-      "integrated_lufs": "-17.46",
-      "true_peak_dbtp": "-1.35"
+      "integrated_lufs": "-17.50",
+      "true_peak_dbtp": "-1.41"
     }
   ],
   "motion_checks": [
@@ -30,7 +37,7 @@
     },
     {
       "shot": "tasks",
-      "mean_pixel_change": 27.99
+      "mean_pixel_change": 28.21
     },
     {
       "shot": "connected",

@@ -15,9 +15,19 @@ def main():
  assert all(a['end']<=b['start'] for a,b in zip(captions,captions[1:]))
  assert captions[-1]['end']>duration-3
  script=(OUT/'narration.txt').read_text();assert 'AD tracking' in script and 'coming soon' in script.lower()
- assert 'ay dee' in json.loads((OUT/'alignment-03.json').read_text())['_request_text']
+ pronunciation=json.loads((OUT/'alignment-03.json').read_text())
+ assert 'ph="eɪ"' in pronunciation['_synthesis_text'] and 'ph="diː"' in pronunciation['_synthesis_text']
+ spoken_phonemes=''.join(pronunciation['normalized_alignment']['characters'])
+ assert '@ey0' in spoken_phonemes and '@d@iy0' in spoken_phonemes, 'Provider did not report the requested letter phonemes'
+ assert '<break time="0.75s" />' in json.loads((OUT/'alignment-02.json').read_text())['_synthesis_text']
+ a=json.loads((OUT/'alignment-02.json').read_text())['normalized_alignment'];spoken=''.join(a['characters'])
+ words=list(re.finditer(r'Airframe|Engine|Propeller|Avionics',spoken));assert len(words)==4
+ gaps=[a['character_start_times_seconds'][b.start()]-a['character_end_times_seconds'][first.end()-1] for first,b in zip(words,words[1:])]
+ assert min(gaps)>=.65, 'Missing separation between logbook names'
+ assert not any('@' in c['text'] or c['text']=='.' for c in captions)
+
  for name,expected in p['clip_sha256'].items():assert hashlib.sha256((HERE/'footage'/name).read_bytes()).hexdigest()==expected
- results={'checks':'passed','duration_seconds':duration,'physical_motion_clips':4,'caption_count':len(captions),'videos':[]}
+ results={'checks':'passed','duration_seconds':duration,'physical_motion_clips':4,'caption_count':len(captions),'category_pauses_seconds':[round(g,2) for g in gaps],'ad_pronunciation':'Explicit IPA /eɪ/ /diː/','added_year_overlays':False,'videos':[]}
  audio=[]
  for variant in ('clean','captioned'):
   video=OUT/f'mytaillog-paper-to-map-{variant}-1080x1920.mp4'

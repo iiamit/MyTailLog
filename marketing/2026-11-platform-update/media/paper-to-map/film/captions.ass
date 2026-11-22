@@ -12,14 +12,14 @@ Style: Default,Libre Franklin,40,&H00FFFFFF,&H00FFFFFF,&H001E1917,&H001E1917,-1,
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0,0:00:00.29,0:00:02.01,Default,,0,0,0,,Every aircraft has a story.
 Dialogue: 0,0:00:02.01,0:00:04.48,Default,,0,0,0,,But on paper, that story lives in separate\Nlogbooks.
-Dialogue: 0,0:00:08.28,0:00:08.77,Default,,0,0,0,,Airframe.
-Dialogue: 0,0:00:08.77,0:00:09.16,Default,,0,0,0,,Engine.
-Dialogue: 0,0:00:09.16,0:00:09.63,Default,,0,0,0,,Propeller.
-Dialogue: 0,0:00:09.63,0:00:10.29,Default,,0,0,0,,Avionics.
-Dialogue: 0,0:00:16.31,0:00:17.38,Default,,0,0,0,,Different dates.
-Dialogue: 0,0:00:17.38,0:00:18.74,Default,,0,0,0,,Different tasks.
-Dialogue: 0,0:00:18.74,0:00:21.38,Default,,0,0,0,,Maintenance, inspections, and AD tracking.
-Dialogue: 0,0:00:21.38,0:00:22.80,Default,,0,0,0,,A lot to keep connected.
+Dialogue: 0,0:00:08.28,0:00:08.86,Default,,0,0,0,,Airframe.
+Dialogue: 0,0:00:09.72,0:00:10.18,Default,,0,0,0,,Engine.
+Dialogue: 0,0:00:10.94,0:00:11.58,Default,,0,0,0,,Propeller.
+Dialogue: 0,0:00:12.35,0:00:13.36,Default,,0,0,0,,Avionics.
+Dialogue: 0,0:00:16.27,0:00:16.90,Default,,0,0,0,,Different dates.
+Dialogue: 0,0:00:16.90,0:00:17.78,Default,,0,0,0,,Different tasks.
+Dialogue: 0,0:00:17.78,0:00:20.99,Default,,0,0,0,,Maintenance, inspections, and AD tracking.
+Dialogue: 0,0:00:20.99,0:00:22.29,Default,,0,0,0,,A lot to keep connected.
 Dialogue: 0,0:00:24.31,0:00:26.50,Default,,0,0,0,,MyTailLog brings it all together.
 Dialogue: 0,0:00:26.50,0:00:28.74,Default,,0,0,0,,Turn scattered pages into a connected view\Nof your
 Dialogue: 0,0:00:28.74,0:00:29.59,Default,,0,0,0,,aircraft.

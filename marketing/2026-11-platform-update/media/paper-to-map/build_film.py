@@ -1,7 +1,7 @@
 """Assemble supplied Flow motion, real app captures and aligned ElevenLabs narration.
 Run with the campaign media venv. Credentials are read only from protected config.
 """
-import base64, hashlib, json, os, subprocess, sys
+import base64, hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from PIL import Image
@@ -18,7 +18,7 @@ FPS=30
 SHOTS=[
  ('paper',None,"Every aircraft has a story. But on paper, that story lives in separate logbooks.",8),
  ('aircraft',None,"Airframe. Engine. Propeller. Avionics.",8),
- ('tasks',None,"Different dates. Different tasks. Maintenance, inspections, and ay dee tracking. A lot to keep connected.",8),
+ ('tasks',None,"Different dates. Different tasks. Maintenance, inspections, and AD tracking. A lot to keep connected.",8),
  ('connected',None,"My Tail Log brings it all together. Turn scattered pages into a connected view of your aircraft.",8),
  ('review',2,"Scan or upload your logbooks, then review the extracted entries right beside the originals.",7),
  ('history',1,"Follow the history across every book. See what's due, and plan what comes next.",7),
@@ -46,12 +46,29 @@ def narration():
  for i,(name,scene,copy,minimum) in enumerate(SHOTS):
   mp3=OUT/f'voice-{i+1:02}.mp3'; ap=OUT/f'alignment-{i+1:02}.json'
   data=json.loads(ap.read_text()) if ap.exists() else {}
-  if not mp3.exists() or data.get('_request_text')!=copy:
+  speech=copy;model='eleven_multilingual_v2'
+  if name=='aircraft':speech=copy.replace('. ', '. <break time="0.75s" /> ')
+  if name=='tasks':
+   model='eleven_flash_v2'
+   speech=copy.replace('AD', '<phoneme alphabet="ipa" ph="eɪ">A</phoneme><break time="0.15s" /><phoneme alphabet="ipa" ph="diː">D</phoneme>')
+  if not mp3.exists() or data.get('_request_text')!=copy or (name in ('aircraft','tasks') and data.get('_synthesis_text')!=speech):
    if key is None:key=config()
-   r=requests.post('https://api.elevenlabs.io/v1/text-to-speech/iP95p4xoKVk53GoZ742B/with-timestamps',params={'output_format':'mp3_44100_128'},headers={'xi-api-key':key},json={'text':copy,'model_id':'eleven_multilingual_v2','voice_settings':{'stability':.45,'similarity_boost':.8,'style':.2,'use_speaker_boost':True,'speed':1.0}},timeout=120)
+   r=requests.post('https://api.elevenlabs.io/v1/text-to-speech/iP95p4xoKVk53GoZ742B/with-timestamps',params={'output_format':'mp3_44100_128'},headers={'xi-api-key':key},json={'text':speech,'model_id':model,'voice_settings':{'stability':.45,'similarity_boost':.8,'style':.2,'use_speaker_boost':True,'speed':1.0}},timeout=120)
    if not r.ok:raise RuntimeError(f'ElevenLabs narration request failed: HTTP {r.status_code}; no credential logged')
-   data=r.json();mp3.write_bytes(base64.b64decode(data.pop('audio_base64')));data['_request_text']=copy;ap.write_text(json.dumps(data,indent=2))
-  a=data.get('normalized_alignment') or data['alignment']; end=a['character_end_times_seconds'][-1]
+   data=r.json();mp3.write_bytes(base64.b64decode(data.pop('audio_base64')));data['_request_text']=copy;data['_synthesis_text']=speech;data['_model']=model;ap.write_text(json.dumps(data,indent=2))
+  a=data.get('normalized_alignment') or data['alignment']
+  # Provider alignment exposes SSML phonemes as ARPAbet; captions show the letters.
+  if name=='tasks':
+   expanded=[(ch,start+(end-start)*j/len(token),start+(end-start)*(j+1)/len(token)) for token,start,end in zip(a['characters'],a['character_start_times_seconds'],a['character_end_times_seconds']) for j,ch in enumerate(token)]
+   a={'characters':[v[0] for v in expanded],'character_start_times_seconds':[v[1] for v in expanded],'character_end_times_seconds':[v[2] for v in expanded]}
+   aligned=''.join(a['characters']);match=re.search(r'@ey[0-9]*\.?\s+@d@iy[0-9]*',aligned)
+   if match:
+    lo,hi=match.span();middle=aligned.index('@d',lo)
+    a={'characters':a['characters'][:lo]+['A','D']+a['characters'][hi:],
+       'character_start_times_seconds':a['character_start_times_seconds'][:lo]+[a['character_start_times_seconds'][lo],a['character_start_times_seconds'][middle]]+a['character_start_times_seconds'][hi:],
+       'character_end_times_seconds':a['character_end_times_seconds'][:lo]+[a['character_end_times_seconds'][middle-1],a['character_end_times_seconds'][hi-1]]+a['character_end_times_seconds'][hi:]}
+   assert 'AD tracking' in ''.join(a['characters']), 'Unexpected phoneme alignment; inspect before captioning'
+  end=a['character_end_times_seconds'][-1]
   duration=round(max(minimum,end+.8)*FPS)/FPS
   if i<4:
    assert end+.45<=8, f'{name} speech exceeds fixed motion slot; revise pacing before render'
@@ -63,7 +80,7 @@ def narration():
    if not buf:start=a['character_start_times_seconds'][j]
    buf+=ch
    if ch.isspace() or j==len(a['characters'])-1:
-    if buf.strip():words.append((buf.strip(),start,a['character_end_times_seconds'][j]))
+    if buf.strip() and buf.strip()!='.':words.append((buf.strip(),start,a['character_end_times_seconds'][j]))
     buf=''
   group=[]
   for word in words:
@@ -95,11 +112,6 @@ def physical(i):
  src=HERE/'footage'/f'{"ABCD"[i]}.mp4'; out=TMP/f'physical-{i}.mp4'
  # Remove generated audio. Preserve framing; only final delivery is scaled to 1080.
  filt='scale=1080:1920:flags=lanczos,fps=30,setsar=1,tpad=stop_mode=clone:stop_duration=1'
- if i in (1,2):
-  # Dates are editorial labels, not text invented by the video model.
-  labels=[('2005',4.6,6.8,.57,.38)] if i==1 else [('2010',1.4,3.6,.62,.38),('2018',3.0,5.2,.30,.40),('2020',5.0,7.2,.65,.43)]
-  for label,start,end,x,y in labels:
-   filt+=f",drawtext=fontfile={REPO/'apps/web/src/app/fonts/LibreFranklin.ttf'}:text='{label}':fontsize=44:fontcolor=white:box=1:boxcolor=black@0.6:boxborderw=12:x=w*{x}:y=h*{y}+180*(t-{start}):enable='between(t,{start},{end})':alpha='min(1,(t-{start})*5)'"
  if i<3:
   run(['-i',src,'-vf',filt,'-t','8','-an','-c:v','libx264','-threads','2','-preset','veryfast','-crf','18',out])
  else:
@@ -136,6 +148,6 @@ def main():
  for i,s in enumerate(timeline):
   f=OUT/f'keyframe-{i+1:02}.jpg';run(['-ss',s['start']+s['duration']*.6,'-i',clean,'-frames:v','1',f]);im=Image.open(f);im.thumbnail((270,480));sheet.paste(im,((i%5)*270,(i//5)*480))
  sheet.save(OUT/'contact-sheet.jpg',quality=94)
- (OUT/'production.json').write_text(json.dumps({'duration_seconds':total,'dimensions':[1080,1920],'fps':30,'physical_source':'User-supplied Google Flow A–D; 720p/24fps converted for delivery','narration':'ElevenLabs Chris; updated script; AD synthesized as ay dee','music':'Approved original score, looped and ducked under speech','native_status':'Coming soon / preview','generated_audio_from_flow_used':False,'exact_app_handoff_at_seconds':28.3,'clip_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'footage').glob('*.mp4')}},indent=2))
+ (OUT/'production.json').write_text(json.dumps({'duration_seconds':total,'dimensions':[1080,1920],'fps':30,'physical_source':'User-supplied Google Flow A–D; 720p/24fps converted for delivery','narration':'ElevenLabs Chris; logbook types separated by 0.75-second SSML breaks; AD uses explicit IPA /eɪ/ /diː/ on Flash v2','music':'Approved original score, looped and ducked under speech','native_status':'Coming soon / preview','generated_audio_from_flow_used':False,'exact_app_handoff_at_seconds':28.3,'clip_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'footage').glob('*.mp4')}},indent=2))
  print(f'Complete: {total:.2f}s',flush=True)
 if __name__=='__main__':main()

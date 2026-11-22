@@ -1,23 +1,23 @@
 [
   {
     "file": "README.md",
-    "bytes": 3136,
-    "sha256": "748e0047fa24c3dca65b9f564a11136dc6070098e5622054d9ff62954e829982"
+    "bytes": 3308,
+    "sha256": "4a4784efe1bb4f1e0e8904f439aab979818cbb865dbb4bdef0071e44f4e2a74c"
   },
   {
     "file": "mytaillog-paper-to-map-clean-1080x1920.mp4",
-    "bytes": 56655113,
-    "sha256": "492c4cdf694a62abcdef2e4ab8eeba8ed70c09cd64cf39063c90e09f7550673b"
+    "bytes": 56684781,
+    "sha256": "06de643b1e1fd0fbfb49c31e44c9eedfe7d7891e7eb976e8bf8287966ede1c63"
   },
   {
     "file": "mytaillog-paper-to-map-captioned-1080x1920.mp4",
-    "bytes": 52221370,
-    "sha256": "68246c5cd9f104d295815bbbe5fba0f18affe28dcc2d0065bd0489aad147e77b"
+    "bytes": 52136335,
+    "sha256": "29c54823ad647d1b745b334615c6e9817c579ebd53b6c22b2134f5f1d9cebca5"
   },
   {
     "file": "narration.srt",
     "bytes": 1759,
-    "sha256": "af7bef24e4ea2ce7d688c561dfcc0279577d3e7de7cf731040298eb99791ab59"
+    "sha256": "cdc8d6eb10eeb2d00495221b05e4fba714d3eb257261842165925c1ef904bcaf"
   },
   {
     "file": "narration.txt",
@@ -26,13 +26,13 @@
   },
   {
     "file": "voiceover.mp3",
-    "bytes": 784724,
-    "sha256": "d1f80ef6a042ddaa262e92714914b520bb3c55ef0806aca59ebcedcf9999dc62"
+    "bytes": 785084,
+    "sha256": "cbddd02245dffcddb7a30a708eff03592be5d121df5aaf4234e433d1b50e3af5"
   },
   {
     "file": "voiceover.wav",
     "bytes": 7392078,
-    "sha256": "b6887adeb994245cfb2e29f0d149618a6038a427df92023ec92d02e466a02cd1"
+    "sha256": "623416d7ae745ecfdeba9cf2ae5183161fa26410424e8f6043a40711747e92d9"
   },
   {
     "file": "cover-1080x1920.jpg",
@@ -41,17 +41,17 @@
   },
   {
     "file": "contact-sheet.jpg",
-    "bytes": 426695,
-    "sha256": "4e34020afc50e36327d6160bff6de963037a52ad89622b63e0d43aa3d67d2786"
+    "bytes": 426458,
+    "sha256": "041aac884bdcd167d1af9e4a39f3fe721c9a48aee36a66d6a123c18964052cfd"
   },
   {
     "file": "production.json",
-    "bytes": 800,
-    "sha256": "3d3d4737fc40e065ddf607f71fa0a9fe4c7867ba4d1e52cde10d7165d823d29a"
+    "bytes": 865,
+    "sha256": "f32f1059851d81f1e8046dcb7df47b47bcf647bc506a94ea3da9313691bd27e2"
   },
   {
     "file": "verification.json",
-    "bytes": 1166,
-    "sha256": "f12a627e188bf851450ef31ea49a011c1b3af31633e8fb3148954ff7aaef6f95"
+    "bytes": 1322,
+    "sha256": "9a0c17a2cb944e1926dd3c26766c2511856e4314165cf587414a81e00fc0973b"
   }
 ]
