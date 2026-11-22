@@ -55,6 +55,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -119,7 +120,7 @@ fun DocumentsScreen(recs: Recs, back: Pair<String, () -> Unit>?) {
         }
         Field(stringResource(R.string.rec_search), q, { q = it })
         if (held.isNotEmpty()) Well {
-            Lede(pluralsText(held.size, stringResource(R.string.docs_held_one), stringResource(R.string.docs_held_many, held.size)))
+            Lede(pluralStringResource(R.plurals.docs_held, held.size, held.size))
             held.forEach { h -> Note("${docTypeName(h.type)} · ${h.title}" + (h.failed?.let { " · $it" } ?: ""), alarm = h.failed != null) }
         }
         val match: (Rec) -> Boolean = { d -> q.isBlank() || listOfNotNull(d.s("title"), docTypeName(d.s("type")), d.s("reference"), d.s("file_name")).any { it.contains(q, ignoreCase = true) } }

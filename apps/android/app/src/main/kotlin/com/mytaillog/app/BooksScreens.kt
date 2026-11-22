@@ -57,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -218,10 +219,10 @@ private fun MapTab(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNav) {
                 } else {
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 72.dp)) {
                         val reading = beingRead(b)
-                        if (reading.isNotEmpty()) Meta(stringResource(R.string.books_being_read, reading.size), Modifier.padding(bottom = Tokens.Space.s2))
+                        if (reading.isNotEmpty()) Meta(pluralStringResource(R.plurals.books_being_read, reading.size, reading.size), Modifier.padding(bottom = Tokens.Space.s2))
                         if (model.stops.isEmpty()) Meta(stringResource(R.string.books_map_empty), Modifier.padding(bottom = Tokens.Space.s2))
                         RouteMapView(b, model, layout, onTarget = { target = it }, selected = target)
-                        if (layout.more > 0) Meta(stringResource(R.string.books_map_more, layout.more))
+                        if (layout.more > 0) Meta(pluralStringResource(R.plurals.books_map_more, layout.more, layout.more))
                         OffMapBooks(b, nav)
                         if (ui.aircraft?.canEdit == false) Meta(stringResource(R.string.books_viewer), Modifier.padding(top = Tokens.Space.s3))
                     }
@@ -329,7 +330,7 @@ private fun StopSheet(vm: BooksViewModel, b: Books, stopIds: List<String>, onMov
     val stop = stops.first()
     if (entries.size > 1) {
         // A cluster at whole-life zoom: list them; each opens its entry.
-        SheetTitle(stringResource(R.string.books_cluster, entries.size, fmtDate(stops.minOf { it.date }), fmtDate(stops.maxOf { it.date })))
+        SheetTitle(pluralStringResource(R.plurals.books_cluster, entries.size, entries.size, fmtDate(stops.minOf { it.date }), fmtDate(stops.maxOf { it.date })))
         entries.forEach { x -> EntryRowView(b, x) { close(); nav.openEntry(x.id) } }
         return
     }
@@ -361,7 +362,7 @@ private fun VisitSheet(vm: BooksViewModel, b: Books, id: String, nav: BooksNav) 
     val entries = x.stopIds.mapNotNull { sid -> b.map.stops.firstOrNull { it.id == sid } }
         .mapNotNull { s -> s.entryIds.firstNotNullOfOrNull { eid -> b.entries.firstOrNull { it.id == eid } } }
     if (entries.isEmpty()) return
-    SheetTitle(stringResource(R.string.books_visit_title, x.label ?: stringResource(R.string.books_visit), fmtDate(x.date), entries.size))
+    SheetTitle(pluralStringResource(R.plurals.books_visit_title, entries.size, x.label ?: stringResource(R.string.books_visit), fmtDate(x.date), entries.size))
     Meta(listOfNotNull(entries.firstNotNullOfOrNull { it.signatureName }, entries.firstNotNullOfOrNull { it.tach }?.let { "tach ${hours1(it)}" }).joinToString(" · "))
     val pager = rememberPagerState { entries.size }
     HorizontalPager(pager, Modifier.fillMaxWidth().padding(top = Tokens.Space.s3), pageSpacing = Tokens.Space.s3) { i ->
@@ -407,7 +408,7 @@ fun GapSheet(vm: BooksViewModel, ui: BooksUi, b: Books, id: String, nav: BooksNa
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(c.rule))
         }
-        if (ev.unconfirmedPagesInGap > 0) PhoneRow(stringResource(R.string.books_gap_unconfirmed, ev.unconfirmedPagesInGap), { nav.openReview(null) })
+        if (ev.unconfirmedPagesInGap > 0) PhoneRow(pluralStringResource(R.plurals.books_gap_unconfirmed, ev.unconfirmedPagesInGap, ev.unconfirmedPagesInGap), { nav.openReview(null) })
     } ?: Skeleton(0.8f, 60.dp, Modifier.padding(top = Tokens.Space.s2))
     if (ui.canEdit && row != null) {
         Row(Modifier.padding(top = Tokens.Space.s4), horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s3)) {
@@ -554,11 +555,16 @@ fun PagesTab(ui: BooksUi, b: Books, nav: BooksNav) {
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.Radius.m)).background(c.leaf2).padding(Tokens.Space.s3),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s3),
             ) {
-                Text(stringResource(R.string.books_pages_wait, queue.size), color = c.ink, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Text(pluralStringResource(R.plurals.books_pages_wait, queue.size, queue.size), color = c.ink, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 DButton(stringResource(R.string.books_tab_review_plain), { nav.openReview(null) }, kind = ButtonKind.Secondary, modifier = Modifier.width(110.dp).height(Tokens.Size.buttonS))
             }
         }
-        item { Meta(stringResource(R.string.books_pages_summary, b.pages.size, b.entries.count { !it.isContinuation }), Modifier.padding(top = Tokens.Space.s3)) }
+        item {
+            val entries = b.entries.count { !it.isContinuation }
+            Meta(stringResource(R.string.books_pages_summary,
+                pluralStringResource(R.plurals.count_pages, b.pages.size, b.pages.size),
+                pluralStringResource(R.plurals.count_entries, entries, entries)), Modifier.padding(top = Tokens.Space.s3))
+        }
         items(shelf(b), key = { it.id }) { book ->
             val pages = b.pages.count { it.logbookId == book.id }
             val gaps = b.map.gaps.filter { it.logbook == book.type && it.status != "no_pages_exist" }.joinToString(", ") { "gap ${it.from.take(4)} to ${it.to.take(4)}" }
@@ -655,7 +661,7 @@ fun QueueTab(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNav) {
             items(queue, key = { it.id }) { p -> QueueRow(b, p) { nav.openReview(p.id) } }
             val clean = queue.count { p -> entriesOn(b, p.id).filter { it.trust == "ai_read" }.let { it.isNotEmpty() && it.all(::isClean) } }
             if (ui.canEdit && clean > 0) item {
-                DButton(stringResource(R.string.books_confirm_clean, clean), { scope.launch { vm.write(listOf(BookWrites.confirmClean(ui.aircraft!!.aircraft.id))) } }, kind = ButtonKind.Secondary, modifier = Modifier.padding(top = Tokens.Space.s4))
+                DButton(pluralStringResource(R.plurals.books_confirm_clean, clean, clean), { scope.launch { vm.write(listOf(BookWrites.confirmClean(ui.aircraft!!.aircraft.id))) } }, kind = ButtonKind.Secondary, modifier = Modifier.padding(top = Tokens.Space.s4))
             }
         }
         if (reading.isNotEmpty()) {

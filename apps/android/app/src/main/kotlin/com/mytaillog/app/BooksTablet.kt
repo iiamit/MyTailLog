@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -101,7 +102,8 @@ private fun MapWithPages(vm: BooksViewModel, ui: BooksUi, b: Books, nav: BooksNa
     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Tokens.Size.leavesGap)) {
         Column(Modifier.weight(1.3f).fillMaxHeight().clip(RoundedCornerShape(3.dp)).background(c.leaf).padding(Tokens.Space.s5).verticalScroll(rememberScrollState())) {
             Row {
-                Meta(stringResource(R.string.books_tablet_hint, b.entries.count { it.trust != "ai_read" }), Modifier.weight(1f))
+                val confirmed = b.entries.count { it.trust != "ai_read" }
+                Meta(pluralStringResource(R.plurals.books_tablet_hint, confirmed, confirmed), Modifier.weight(1f))
                 BookFilter(book, Modifier) { book = it; target = null }
             }
             BoxWithConstraints {

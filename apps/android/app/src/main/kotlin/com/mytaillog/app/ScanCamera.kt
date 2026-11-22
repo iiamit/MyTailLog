@@ -84,6 +84,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -164,7 +165,7 @@ fun ScanCameraScreen(host: CaptureHost, target: ScanTarget, onDone: () -> Unit, 
     if (confirmingCancel) {
         AlertDialog(
             onDismissRequest = { confirmingCancel = false },
-            title = { Text(stringResource(R.string.scan_keep_title, taken.size)) },
+            title = { Text(pluralStringResource(R.plurals.scan_keep_title, taken.size, taken.size)) },
             confirmButton = { TextButton({ confirmingCancel = false; finish() }) { Text(stringResource(R.string.scan_keep_them), color = c.ink, fontWeight = FontWeight(700)) } },
             dismissButton = {
                 TextButton({
@@ -233,7 +234,9 @@ private fun CameraBody(
     var flash by remember { mutableIntStateOf(0) }
     var landsIn by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    val lowStorage = remember { context.filesDir.usableSpace < 200L * 1024 * 1024 }
+    val lowStorage by androidx.compose.runtime.produceState(false, taken.size, error) {
+        value = withContext(Dispatchers.IO) { lowScanStorage(context) }
+    }
 
     val capture = remember {
         ImageCapture.Builder()
@@ -382,7 +385,7 @@ private fun CameraBody(
                 taken.lastOrNull()?.let { t ->
                     Box(
                         Modifier.size(56.dp, 74.dp).clickable(role = Role.Button, onClick = onOpenStrip)
-                            .semantics { contentDescription = resources.getString(R.string.scan_review_strip, taken.size) },
+                            .semantics { contentDescription = resources.getQuantityString(R.plurals.scan_review_strip, taken.size, taken.size) },
                     ) {
                         t.thumb?.let { Image(it, null, Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)), contentScale = ContentScale.Crop) }
                         Text(
@@ -398,7 +401,7 @@ private fun CameraBody(
                     .semantics { contentDescription = resources.getString(R.string.scan_shutter) },
             )
             Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                TextButton(onDone, Modifier.heightIn(min = 44.dp).semantics { contentDescription = resources.getString(R.string.scan_done_spoken, taken.size) }) {
+                TextButton(onDone, Modifier.heightIn(min = 44.dp).semantics { contentDescription = resources.getQuantityString(R.plurals.scan_done_spoken, taken.size, taken.size) }) {
                     Text(stringResource(R.string.done), color = c.onCover, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700)))
                 }
             }

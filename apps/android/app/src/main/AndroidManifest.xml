@@ -19,11 +19,12 @@
         </intent>
     </queries>
 
-    <!-- allowBackup off: the session is sealed with a Keystore key that can't be restored on
-         another device. outbox.db joins Auto Backup when the offline store lands (05 §6.2). -->
+    <!-- Device-bound encryption keys cannot transfer. New devices sign in and sync afresh. -->
     <application
         android:name=".MyTailLogApp"
         android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

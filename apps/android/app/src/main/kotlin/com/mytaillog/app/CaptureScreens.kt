@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -183,7 +184,7 @@ fun ScanSetupSheet(host: CaptureHost, aircraft: AircraftAccess, books: List<Book
     var afterAsk by remember { mutableStateOf<(() -> Unit)?>(null) }
     val notifyAsk = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { afterAsk?.invoke(); afterAsk = null }
     fun first(go: () -> Unit): () -> Unit = {
-        if (askNotify && !prefs.getBoolean(PREF_NOTIFY_ASKED, false)) {
+        if (Build.VERSION.SDK_INT >= 33 && askNotify && !prefs.getBoolean(PREF_NOTIFY_ASKED, false)) {
             prefs.edit().putBoolean(PREF_NOTIFY_ASKED, true).apply()
             afterAsk = go
             notifyAsk.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -240,7 +241,7 @@ fun ScanSetupSheet(host: CaptureHost, aircraft: AircraftAccess, books: List<Book
                     )
                 }
             }
-            if (book != null) Text(stringResource(R.string.scan_where, soFar, soFar + 1), color = c.ink, style = MaterialTheme.typography.bodyLarge)
+            if (book != null) Text(pluralStringResource(R.plurals.scan_where, soFar.toInt(), soFar, soFar + 1), color = c.ink, style = MaterialTheme.typography.bodyLarge)
             Row(Modifier.fillMaxWidth().heightIn(min = 58.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.scan_handwritten), color = c.ink, style = MaterialTheme.typography.bodyLarge)
@@ -333,7 +334,7 @@ fun ScanQueueScreen(host: CaptureHost, aircraft: AircraftAccess, onBack: () -> U
                     Text(stringResource(R.string.queue_own_key), color = c.ink, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = Tokens.Space.s2))
                 }
                 val failed = batches.sumOf { it.failed }
-                if (failed > 0) Text(stringResource(R.string.queue_failed, failed), color = c.alarmText, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = Tokens.Space.s3))
+                if (failed > 0) Text(pluralStringResource(R.plurals.queue_failed, failed, failed), color = c.alarmText, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = Tokens.Space.s3))
                 if (dupes.isNotEmpty()) {
                     GroupHeader(stringResource(R.string.queue_dupes), count = "${dupes.size}")
                     dupes.forEach { p ->
@@ -351,7 +352,7 @@ fun ScanQueueScreen(host: CaptureHost, aircraft: AircraftAccess, onBack: () -> U
                 else Text(stringResource(R.string.queue_review_empty), color = c.ink, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = Tokens.Space.s2))
                 queue?.allowance?.takeIf { !it.ownKey }?.let { a ->
                     Column(Modifier.fillMaxWidth().padding(top = Tokens.Space.s4).clip(RoundedCornerShape(Tokens.Radius.m)).background(c.leaf2).padding(Tokens.Space.s3)) {
-                        Text(stringResource(R.string.queue_allowance, a.pagesUsed, a.pagesCap), color = c.ink, style = MaterialTheme.typography.bodyLarge)
+                        Text(pluralStringResource(R.plurals.queue_allowance, a.pagesCap, a.pagesUsed, a.pagesCap), color = c.ink, style = MaterialTheme.typography.bodyLarge)
                         Text(stringResource(R.string.queue_allowance_note), color = c.ink3, style = MaterialTheme.typography.bodyMedium)
                     }
                 }

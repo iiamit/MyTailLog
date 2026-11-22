@@ -154,7 +154,7 @@ class ReadingWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                     // Foreground (dataSync) outlives WorkManager's 10-minute cap; Android may refuse it from the background.
                     val n = build(app, id, aircraftId, tail, note)
                     val fg = runCatching {
-                        setForeground(if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) else ForegroundInfo(id, n))
+                        setForeground(ForegroundInfo(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC))
                     }.isSuccess
                     if (!fg) { notify(app, id, n); plain = true }
                 }
@@ -173,7 +173,7 @@ class ReadingWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val n = NotificationCompat.Builder(applicationContext, Channels.READING)
             .setSmallIcon(R.drawable.ic_stat_book).setContentTitle(inputData.getString(TAIL)?.let { "Reading pages for $it" } ?: "Reading pages")
             .setOngoing(true).setProgress(0, 0, true).build()
-        return if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) else ForegroundInfo(id, n)
+        return ForegroundInfo(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
     }
 
     private fun notify(context: Context, id: Int, n: android.app.Notification) {

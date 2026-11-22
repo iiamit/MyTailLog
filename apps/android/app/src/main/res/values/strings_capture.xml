@@ -14,7 +14,10 @@
     <string name="scan_title">Scan pages</string>
     <string name="scan_which_book">Which logbook?</string>
     <string name="scan_no_books">No logbooks yet. Add one on the web.</string>
-    <string name="scan_where">Adds to the end. %1$d pages so far, so these start at page %2$d. Put them in date order later if you like.</string>
+    <plurals name="scan_where">
+        <item quantity="one">Adds to the end. %1$d page so far, so these start at page %2$d. Put them in date order later if you like.</item>
+        <item quantity="other">Adds to the end. %1$d pages so far, so these start at page %2$d. Put them in date order later if you like.</item>
+    </plurals>
     <string name="scan_handwritten">Handwritten entries</string>
     <string name="scan_handwritten_note">Reads cursive as well as typed text. Turn off for printed pages; they come back faster.</string>
     <string name="scan_open_camera">Open the camera</string>
@@ -33,10 +36,19 @@
     <string name="scan_page_taken">Page %1$d taken</string>
     <string name="scan_torch">Torch</string>
     <string name="scan_shutter">Take photo</string>
-    <string name="scan_done_spoken">Done, %1$d pages</string>
-    <string name="scan_review_strip">%1$d pages taken. Review them</string>
+    <plurals name="scan_done_spoken">
+        <item quantity="one">Done, %1$d page</item>
+        <item quantity="other">Done, %1$d pages</item>
+    </plurals>
+    <plurals name="scan_review_strip">
+        <item quantity="one">%1$d page taken. Review it</item>
+        <item quantity="other">%1$d pages taken. Review them</item>
+    </plurals>
     <string name="scan_delete_page">Delete</string>
-    <string name="scan_keep_title">Keep the %1$d pages you took?</string>
+    <plurals name="scan_keep_title">
+        <item quantity="one">Keep the %1$d page you took?</item>
+        <item quantity="other">Keep the %1$d pages you took?</item>
+    </plurals>
     <string name="scan_keep_them">Keep them</string>
     <string name="scan_delete_them">Delete them</string>
     <string name="scan_fifty">That\'s 50 pages. Upload these before shooting more?</string>
@@ -65,7 +77,10 @@
     <string name="queue_as_of">as of %1$s</string>
     <string name="queue_wait_allowance">Waiting for tomorrow\'s allowance</string>
     <string name="queue_own_key">Use your own key in Settings to read them now.</string>
-    <string name="queue_failed">%1$d pages couldn\'t be read.</string>
+    <plurals name="queue_failed">
+        <item quantity="one">%1$d page couldn\'t be read.</item>
+        <item quantity="other">%1$d pages couldn\'t be read.</item>
+    </plurals>
     <string name="queue_dupes">Already scanned?</string>
     <string name="queue_dupe_line">This looks like a page you already have.</string>
     <string name="queue_keep_both">Keep both</string>
@@ -73,7 +88,10 @@
     <string name="queue_review">Waiting for your review</string>
     <string name="queue_review_button">Review</string>
     <string name="queue_review_empty">Pages arrive here once they are read. You can put the phone away; we will tell you.</string>
-    <string name="queue_allowance">%1$d of %2$d pages read in the last 24 hours</string>
+    <plurals name="queue_allowance">
+        <item quantity="one">%1$d of %2$d page read in the last 24 hours</item>
+        <item quantity="other">%1$d of %2$d pages read in the last 24 hours</item>
+    </plurals>
     <string name="queue_allowance_note">Each page frees up 24 hours after it was read.</string>
 
     <!-- M-FLIGHT-02 / 03 -->
@@ -83,12 +101,8 @@
     <string name="tach_slow">Can\'t read it yet. Move closer, or type it.</string>
     <string name="tach_type_it">Type it</string>
     <string name="tach_still">Read this frame</string>
-    <string name="tach_confirm_title">Log a flight</string>
-    <string name="tach_from_photo">Read from your photo. Check it against the meter.</string>
     <string name="tach_allow_camera">Allow the camera in Settings to read the tach from a photo.</string>
     <string name="tach_label">Tach</string>
-    <string name="tach_this_flight">+%1$s hours this flight</string>
-    <string name="tach_date_today">Date: today</string>
     <string name="tach_save">Save flight</string>
 
     <!-- M-SYS-01 and §1.3 -->

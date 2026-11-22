@@ -84,6 +84,11 @@ and APK alignment with `zipalign -c -P 16 -v 4 app-release.apk` for 16 KB device
 The current minimum stays Android 10 (29), with target 36 and compile SDK 37; raising
 the minimum alone does not optimize delivery or replace release testing.
 
+Android 12+ backup and device-transfer rules explicitly exclude local app data:
+session encryption keys belong to the original device. Upload pending changes on
+that device first, then sign in and sync on the new device. Offline copies and
+notification registration are rebuilt there.
+
 References: [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization),
 [DEX scores](https://developer.android.com/google/play/vitals/code-optimization),
 [16 KB pages](https://developer.android.com/guide/practices/page-sizes),
