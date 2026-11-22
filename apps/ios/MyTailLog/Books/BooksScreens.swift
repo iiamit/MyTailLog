@@ -379,7 +379,7 @@ struct BookPagesScreen: View {
         let state = pageState(page)
         return Button { actions.page(page.id, nil) } label: {
             PageImage(model: model, pageId: page.id, thumb: true) { image in
-                Image(uiImage: image).resizable().aspectRatio(contentMode: .fill)
+                PageThumbnail(image: image)
             }
             .aspectRatio(3 / 4, contentMode: .fit)
             .frame(maxWidth: .infinity)
@@ -404,6 +404,20 @@ struct BookPagesScreen: View {
         if page.needs_look == true { return .needsLook }
         if waitsForReview(page, entries: model.entries) { return .waiting }
         return nil
+    }
+}
+
+/// The cell owns its size; a wide scan must not expand the grid or move its badges off-screen.
+struct PageThumbnail: View {
+    let image: UIImage
+
+    var body: some View {
+        Tokens.Colors.leaf2
+            .aspectRatio(3 / 4, contentMode: .fit)
+            .overlay {
+                Image(uiImage: image).resizable().scaledToFit()
+            }
+            .clipped()
     }
 }
 
