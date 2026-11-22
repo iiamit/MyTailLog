@@ -2,6 +2,10 @@ package com.mytaillog.app
 
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.dp
+import org.junit.Assert.assertTrue
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -76,4 +80,14 @@ class BooksScreenTest {
         compose.onNodeWithText("You can view this page. The owner confirms entries.").assertExists()
         compose.onNodeWithText("Confirm page and next").assertDoesNotExist()
     }
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeScanFitsTheAvailableHeight() {
+        val b = sampleBooks()
+        val page = b.pages.first()
+        compose.setContent { MyTailLogTheme(dark = false) { PageScreen(model(AircraftRole.Owner), page.id, BooksNav()) } }
+        val bounds = compose.onNodeWithContentDescription(pageLabel(b, page.id)!!).getUnclippedBoundsInRoot()
+        assertTrue("The page image is taller than the landscape viewport", bounds.height < 411.dp)
+    }
+
 }

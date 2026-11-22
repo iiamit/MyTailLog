@@ -629,11 +629,14 @@ fun PageScreen(vm: BooksViewModel, pageId: String, nav: BooksNav) {
         HorizontalPager(pager, Modifier.fillMaxSize()) { i ->
             val p = pages[i]
             PhoneLeaf {
-                Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = Tokens.Space.s8)) {
-                    BoxWithConstraints { ScanViewer(rememberScan(vm, p.id), pageLabel(b, p.id) ?: "", Modifier.fillMaxWidth().height(maxWidth * 1.3f)) }
-                    pageMark(b, p)?.let { (k, w) -> StatusMark(k, w, Modifier.padding(top = Tokens.Space.s2)) }
-                    entriesOn(b, p.id).forEach { e -> EntryRowView(b, e) { nav.openEntry(e.id) } }
-                    if (needsWebsiteReview(b, p) || b.entries.any { it.pageId == p.id && it.trust == "ai_read" }) DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val scanHeight = minOf(maxWidth * 1.3f, maxHeight)
+                    Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = Tokens.Space.s8)) {
+                        ScanViewer(rememberScan(vm, p.id), pageLabel(b, p.id) ?: "", Modifier.fillMaxWidth().height(scanHeight))
+                        pageMark(b, p)?.let { (k, w) -> StatusMark(k, w, Modifier.padding(top = Tokens.Space.s2)) }
+                        entriesOn(b, p.id).forEach { e -> EntryRowView(b, e) { nav.openEntry(e.id) } }
+                        if (needsWebsiteReview(b, p) || b.entries.any { it.pageId == p.id && it.trust == "ai_read" }) DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
+                    }
                 }
             }
         }

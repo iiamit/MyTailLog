@@ -7,7 +7,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
@@ -17,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.unit.dp
 import com.mytaillog.design.MyTailLogTheme
 import org.junit.Assert.assertTrue
@@ -45,7 +45,7 @@ class LandscapeLayoutTest {
             scroll = rememberScrollState()
             MyTailLogTheme(dark = false) {
                 Column(Modifier.height(200.dp).verticalScroll(scroll)) {
-                    ScanViewer(Scan.Ready(ImageBitmap(300, 600)), "Scanned page", Modifier.fillMaxWidth().height(600.dp))
+                    ScanViewer(Scan.Loading, "Scanned page", Modifier.fillMaxWidth().height(600.dp))
                 }
             }
         }
