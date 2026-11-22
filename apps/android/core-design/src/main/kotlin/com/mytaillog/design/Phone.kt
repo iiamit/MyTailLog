@@ -60,6 +60,7 @@ fun PhoneHeader(
 ) {
     val s = MyTailLogTheme.colors.section(section)
     val compact = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() < 480.dp }
+    val titleStyle = MaterialTheme.typography.headlineMedium
     Column(
         modifier
             .fillMaxWidth()
@@ -101,7 +102,7 @@ fun PhoneHeader(
                 }
             }
         }
-        Text(title, color = s.onBoard, style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+        Text(title, color = s.onBoard, style = if (compact) titleStyle.copy(fontSize = 24.sp, lineHeight = 30.sp) else titleStyle, modifier = Modifier.semantics { heading() })
     }
 }
 
