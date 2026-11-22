@@ -12,6 +12,10 @@ begin
   ] loop
     definition=pg_get_functiondef(target);
     if position('''40001''' in definition)=0 then raise exception 'RPC conflict definition did not match the expected migration'; end if;
-    execute replace(definition,'''40001''','''PT409''');
+    definition=replace(definition,'''40001''','''PT409''');
+    if target='public.confirm_scanned_document(uuid,timestamptz)'::regprocedure then
+      definition=replace(definition,'d.updated_at<>p_base','d.updated_at is distinct from p_base');
+    end if;
+    execute definition;
   end loop;
 end $$;

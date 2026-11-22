@@ -118,6 +118,10 @@ class AuditDatabase(unittest.TestCase):
   with connect() as db:
    version=db.execute("insert into scanned_document(aircraft_id,page_id,doc_type,document_date,extracted,applied) values(%s,%s,'weight_balance','2026-11-21',%s,false) returning updated_at",(ac,page,json.dumps(payload))).fetchone()[0]
    self.assertEqual(db.execute('select count(*) from weight_balance where aircraft_id=%s',(ac,)).fetchone()[0],0)
+  for stale in ['2000-01-01T00:00:00Z',None]:
+   with self.assertRaises(psycopg.DatabaseError) as caught:
+    with connect(user) as db: rpc(db,'confirm_scanned_document',page,stale)
+   self.assertEqual(caught.exception.sqlstate,'PT409')
   with connect(user) as db: rpc(db,'confirm_scanned_document',page,version)
   with connect() as db:
    self.assertEqual(db.execute('select empty_weight from weight_balance where aircraft_id=%s',(ac,)).fetchone()[0],1800)
