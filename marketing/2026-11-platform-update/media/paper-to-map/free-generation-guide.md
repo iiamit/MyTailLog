@@ -1,6 +1,6 @@
 # Free generation route — Google Flow
 
-Documentation checked November 2026. Recommendation is based on published features and limits, not a hands-on comparative video-quality benchmark. No video clip has been generated or purchased yet.
+Documentation checked November 2026. Recommendation is based on published features and limits, not a hands-on comparative video-quality benchmark. The user has since supplied clips A–D from Google Flow. This guide records the generation setup; the assembled revision and delivery notes are in `film/`. No video-generation purchase was made.
 
 ## Recommended route
 

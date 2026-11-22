@@ -12,6 +12,8 @@ Campaign prepared November 21, 2026. Position the mobile redesign as **coming so
 | Website | [CHANGELOG.md](../../CHANGELOG.md) | New November groups feed `/whats-new` and RSS at web build time. |
 | GitHub | [README.md](../../README.md) | New November update section explains the design and mobile rollout. |
 
+The new **paper-to-map film** uses the four supplied Flow clips, updated narration and genuine app demonstrations. Exports and publication copy are in [media/paper-to-map/film](media/paper-to-map/film/README.md).
+
 Media files and their production notes are in `media/`. The revised 40.8-second Reel brings screenshots closer, adds smooth zooms and pans, and includes real interaction in three scenes. The approved narration and music are unchanged.
 
 ## Publish sequence

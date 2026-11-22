@@ -1,6 +1,6 @@
 # Paper to map — full-motion film
 
-Status: pre-production. Final photorealistic motion footage is not generated yet; video-service access and generation budget are pending. The existing moving-screen Reel remains intact.
+Status: user supplied the four generated Google Flow clips A–D. The full-motion film is being assembled as a separate revision; the earlier moving-screen Reel remains intact. The shot timings below are the original production targets; the delivered timeline and narration are recorded in `film/timing.json` and `film/narration.txt`.
 
 ## Deliverables
 
@@ -101,7 +101,7 @@ Use the real map as the final 2–3 seconds of the transformation, enlarged beyo
 
 ## Access gate
 
-ElevenLabs documentation checked during preparation states that video generation requires a paid account and API generation requires Pro or above plus Image & Video / Flows key permission. No video-generation purchase has been made. User approval of a provider and maximum generation budget is pending. Do not label reference stills or an animatic as the finished full-motion film.
+ElevenLabs documentation checked during preparation states that video generation requires a paid account and API generation requires Pro or above plus Image & Video / Flows key permission. No video-generation purchase was made: the user generated and supplied A–D through Google Flow. Do not label reference stills or an animatic as the finished full-motion film.
 
 References:
 - https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video

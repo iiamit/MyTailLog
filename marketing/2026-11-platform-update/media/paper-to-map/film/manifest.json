@@ -1,0 +1,57 @@
+[
+  {
+    "file": "README.md",
+    "bytes": 3136,
+    "sha256": "748e0047fa24c3dca65b9f564a11136dc6070098e5622054d9ff62954e829982"
+  },
+  {
+    "file": "mytaillog-paper-to-map-clean-1080x1920.mp4",
+    "bytes": 56655113,
+    "sha256": "492c4cdf694a62abcdef2e4ab8eeba8ed70c09cd64cf39063c90e09f7550673b"
+  },
+  {
+    "file": "mytaillog-paper-to-map-captioned-1080x1920.mp4",
+    "bytes": 52221370,
+    "sha256": "68246c5cd9f104d295815bbbe5fba0f18affe28dcc2d0065bd0489aad147e77b"
+  },
+  {
+    "file": "narration.srt",
+    "bytes": 1759,
+    "sha256": "af7bef24e4ea2ce7d688c561dfcc0279577d3e7de7cf731040298eb99791ab59"
+  },
+  {
+    "file": "narration.txt",
+    "bytes": 826,
+    "sha256": "15369c5e0974ae9c21a87e35b443e522a683562a3ede3e704f882927c06b22d5"
+  },
+  {
+    "file": "voiceover.mp3",
+    "bytes": 784724,
+    "sha256": "d1f80ef6a042ddaa262e92714914b520bb3c55ef0806aca59ebcedcf9999dc62"
+  },
+  {
+    "file": "voiceover.wav",
+    "bytes": 7392078,
+    "sha256": "b6887adeb994245cfb2e29f0d149618a6038a427df92023ec92d02e466a02cd1"
+  },
+  {
+    "file": "cover-1080x1920.jpg",
+    "bytes": 197684,
+    "sha256": "0e85a4ca0da1c604fa2818e05887c39197b8b7759a859e588de06e8fa49fa566"
+  },
+  {
+    "file": "contact-sheet.jpg",
+    "bytes": 426695,
+    "sha256": "4e34020afc50e36327d6160bff6de963037a52ad89622b63e0d43aa3d67d2786"
+  },
+  {
+    "file": "production.json",
+    "bytes": 800,
+    "sha256": "3d3d4737fc40e065ddf607f71fa0a9fe4c7867ba4d1e52cde10d7165d823d29a"
+  },
+  {
+    "file": "verification.json",
+    "bytes": 1166,
+    "sha256": "f12a627e188bf851450ef31ea49a011c1b3af31633e8fb3148954ff7aaef6f95"
+  }
+]

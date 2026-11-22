@@ -1,0 +1,20 @@
+{
+  "duration_seconds": 77.0,
+  "dimensions": [
+    1080,
+    1920
+  ],
+  "fps": 30,
+  "physical_source": "User-supplied Google Flow A\u2013D; 720p/24fps converted for delivery",
+  "narration": "ElevenLabs Chris; updated script; AD synthesized as ay dee",
+  "music": "Approved original score, looped and ducked under speech",
+  "native_status": "Coming soon / preview",
+  "generated_audio_from_flow_used": false,
+  "exact_app_handoff_at_seconds": 28.3,
+  "clip_sha256": {
+    "A.mp4": "35e1e499bae948d5798fdf9f6df96ea8994dfd82e7702d6b9f8253c4997a33ec",
+    "B.mp4": "5df2c5df722cccff803347afbcbf6221ba1d4fe76849c245489f9b50f864cd71",
+    "C.mp4": "6e73e380bd7d45fc8435f817505974620d06bee048708936013a38ed44655a03",
+    "D.mp4": "ac5e8ac5b322e4c0d8d23dc7a218555a4fd8f0288c8c22e842ef0b1d4ae587b5"
+  }
+}

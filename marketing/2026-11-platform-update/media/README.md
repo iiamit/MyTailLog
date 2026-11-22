@@ -13,6 +13,10 @@ A coming-soon / sneak-peek campaign: seven carousel images, an editorial motion 
 
 The social captions and announcement copy are in the parent package's `copy/` directory.
 
+## Full-motion paper-to-map film
+
+The separate 77-second film is in [paper-to-map/film](paper-to-map/film/README.md). It uses the four user-supplied Flow clips, an early handoff to the original map screenshot, updated ElevenLabs narration, the approved musical theme and real app interactions. The generated opening is illustrative; the native redesign remains a coming-soon preview. Its source footage is 720p/24fps, conformed to the 1080×1920/30fps delivery.
+
 ## Motion edit
 
 The revised Reel uses much larger product views, smooth zooms and pans from the map or fields to the original page, an animated Duo reveal, and staggered final-card entrances. Three scenes contain real interaction: web logbook selection, the native iPhone map scrolling, and web maintenance history/source selection. These are product recordings; camera moves and the Duo reveal are editorial effects. The approved narration and music mix is copied unchanged into the new edit.
@@ -36,7 +40,7 @@ Campaign posture: **try the new design on the web now; native apps are coming so
 - Duo: actual simulator capture `~/.local/share/mytaillog-screens/duo-map-selected.png`, with the tail and mechanic's name anonymized and the source scan blurred for privacy. It demonstrates the real two-pane interface. The cover-to-inner cut in the reel is editorial animation, **not a recording or promise of an OS fold animation**. No hardware certification is implied.
 - `source/web-map-interaction.mp4` and `source/web-status-interaction.mp4`: real browser interactions recorded on the dedicated Mac against the test backend, using the fictional N734DM demo aircraft. Only the product viewport is included; sign-in and the test profile are excluded.
 - `source/native-interaction.mp4`: actual iPhone simulator screen recording from the Mac build host, captured by a passing temporary UI test. It shows scrolling the real logbook map; only the tail label is anonymized. The raw recording, sign-in steps and test credentials are not distributed.
-- Native/UI captures and the web demo are genuine product screenshots; no invented screen or generated product UI appears.
+- Native/UI captures and the web demo are genuine product screenshots; no invented screen or generated product UI appears in the original screen-based Reel. In the separate paper-to-map film, generated UI is visible briefly during the morph and is replaced by the original map capture before the demonstrations.
 - Voice: ElevenLabs **Chris — Charming, Down-to-Earth**, male American English; model `eleven_multilingual_v2`. Friendly, upbeat delivery. Alignment comes directly from ElevenLabs and drives the captions. This is synthetic narration, not a customer testimonial.
 - ElevenLabs API key is held outside the repo in a protected global env file. It can synthesize speech and list voices, but lacks `user_read`, so commercial subscription rights cannot be verified with that key. The user confirmed a **free plan** and described this promotion as noncommercial. Free-plan output has **no commercial clearance** and must credit ElevenLabs in the publication **title**: `Coming soon: the new MyTailLog | Voice: elevenlabs.io`. The end card also credits ElevenLabs. Open source or nonprofit status does not itself grant commercial rights; this package follows the user's stated noncommercial use. Use the narrated video only for the stated noncommercial purpose; a paid plan and newly generated audio would be needed for commercial use. See [ElevenLabs commercial use](https://help.elevenlabs.io/hc/en-us/articles/13313564601361-Can-I-use-the-audio-I-generate-for-commercial-purposes).
 - Music: newly generated original instrumental composition; no third-party recording, sample, recognizable melody, or commercial track used.

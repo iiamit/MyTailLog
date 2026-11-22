@@ -1,0 +1,60 @@
+{
+  "checks": "passed",
+  "duration_seconds": 77.0,
+  "physical_motion_clips": 4,
+  "caption_count": 28,
+  "videos": [
+    {
+      "file": "mytaillog-paper-to-map-clean-1080x1920.mp4",
+      "bytes": 56655113,
+      "duration": 77.0,
+      "integrated_lufs": "-17.46",
+      "true_peak_dbtp": "-1.35"
+    },
+    {
+      "file": "mytaillog-paper-to-map-captioned-1080x1920.mp4",
+      "bytes": 52221370,
+      "duration": 77.0,
+      "integrated_lufs": "-17.46",
+      "true_peak_dbtp": "-1.35"
+    }
+  ],
+  "motion_checks": [
+    {
+      "shot": "paper",
+      "mean_pixel_change": 35.01
+    },
+    {
+      "shot": "aircraft",
+      "mean_pixel_change": 34.31
+    },
+    {
+      "shot": "tasks",
+      "mean_pixel_change": 27.99
+    },
+    {
+      "shot": "connected",
+      "mean_pixel_change": 102.92
+    },
+    {
+      "shot": "review",
+      "mean_pixel_change": 66.78
+    },
+    {
+      "shot": "history",
+      "mean_pixel_change": 51.2
+    },
+    {
+      "shot": "maintenance",
+      "mean_pixel_change": 60.47
+    },
+    {
+      "shot": "mobile",
+      "mean_pixel_change": 16.5
+    },
+    {
+      "shot": "duo",
+      "mean_pixel_change": 77.83
+    }
+  ]
+}

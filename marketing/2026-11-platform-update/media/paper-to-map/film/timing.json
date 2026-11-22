@@ -1,0 +1,72 @@
+[
+  {
+    "name": "paper",
+    "scene": null,
+    "start": 0,
+    "duration": 8,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-0.wav"
+  },
+  {
+    "name": "aircraft",
+    "scene": null,
+    "start": 8,
+    "duration": 8,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-1.wav"
+  },
+  {
+    "name": "tasks",
+    "scene": null,
+    "start": 16,
+    "duration": 8,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-2.wav"
+  },
+  {
+    "name": "connected",
+    "scene": null,
+    "start": 24,
+    "duration": 8,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-3.wav"
+  },
+  {
+    "name": "review",
+    "scene": 2,
+    "start": 32,
+    "duration": 7.0,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-4.wav"
+  },
+  {
+    "name": "history",
+    "scene": 1,
+    "start": 39.0,
+    "duration": 7.0,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-5.wav"
+  },
+  {
+    "name": "maintenance",
+    "scene": 5,
+    "start": 46.0,
+    "duration": 8.0,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-6.wav"
+  },
+  {
+    "name": "mobile",
+    "scene": 3,
+    "start": 54.0,
+    "duration": 7.0,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-7.wav"
+  },
+  {
+    "name": "duo",
+    "scene": 4,
+    "start": 61.0,
+    "duration": 7.0,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-8.wav"
+  },
+  {
+    "name": "close",
+    "scene": 6,
+    "start": 68.0,
+    "duration": 9.0,
+    "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-9.wav"
+  }
+]

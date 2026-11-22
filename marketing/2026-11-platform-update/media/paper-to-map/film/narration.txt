@@ -1,0 +1,19 @@
+Every aircraft has a story. But on paper, that story lives in separate logbooks.
+
+Airframe. Engine. Propeller. Avionics.
+
+Different dates. Different tasks. Maintenance, inspections, and AD tracking. A lot to keep connected.
+
+MyTailLog brings it all together. Turn scattered pages into a connected view of your aircraft.
+
+Scan or upload your logbooks, then review the extracted entries right beside the originals.
+
+Follow the history across every book. See what's due, and plan what comes next.
+
+Track hours, oil, and squawks. Connect MyFlightBook to help keep your records in step.
+
+At your desk, or at the aircraft. The new native apps are coming soon.
+
+Including layouts that unfold with iPhone Duo, with records side by side.
+
+Free and open source. Try the new web design today. Native apps coming soon. MyTailLog dot com.
