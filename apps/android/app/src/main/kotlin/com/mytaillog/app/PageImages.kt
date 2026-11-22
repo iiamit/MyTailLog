@@ -7,7 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
-import android.media.ExifInterface
+import androidx.exifinterface.media.ExifInterface
 import java.io.ByteArrayOutputStream
 import kotlin.math.hypot
 import kotlin.math.max

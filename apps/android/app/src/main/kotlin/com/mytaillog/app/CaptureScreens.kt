@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -167,6 +168,7 @@ fun AddSheet(
 fun ScanSetupSheet(host: CaptureHost, aircraft: AircraftAccess, books: List<BookChoice>, onCamera: (ScanTarget) -> Unit, onImported: () -> Unit, onDismiss: () -> Unit) {
     val c = MyTailLogTheme.colors
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val sync by host.store.sync.collectAsStateWithLifecycle()
     var bookId by rememberSaveable { mutableStateOf(books.firstOrNull()?.id) }
@@ -200,7 +202,7 @@ fun ScanSetupSheet(host: CaptureHost, aircraft: AircraftAccess, books: List<Book
         if (uris.isEmpty()) return
         scope.launch {
             val n = host.import(t, uris)
-            if (n > 0) { onDismiss(); onImported() } else message = context.getString(R.string.scan_not_saved)
+            if (n > 0) { onDismiss(); onImported() } else message = resources.getString(R.string.scan_not_saved)
         }
     }
     val photos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(24)) { imported(it) }
@@ -217,7 +219,7 @@ fun ScanSetupSheet(host: CaptureHost, aircraft: AircraftAccess, books: List<Book
             .build()
         GmsDocumentScanning.getClient(options).getStartScanIntent(activity)
             .addOnSuccessListener { scanner.launch(IntentSenderRequest.Builder(it).build()) }
-            .addOnFailureListener { message = context.getString(R.string.scan_no_system_scanner) }
+            .addOnFailureListener { message = resources.getString(R.string.scan_no_system_scanner) }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.leaf) {

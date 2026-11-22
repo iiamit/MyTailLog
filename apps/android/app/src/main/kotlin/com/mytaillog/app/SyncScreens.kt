@@ -1,5 +1,7 @@
 package com.mytaillog.app
 
+import androidx.compose.ui.platform.LocalResources
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -105,7 +107,7 @@ fun WaitingScreen(host: CaptureHost, section: Section, backLabel: String, onBack
     val store = host.store
     val sync by store.sync.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = LocalResources.current
     val all = remember(sync.version) { store.queued() }
     val pages = remember(sync.version) { store.pageJobs() }
     val activity = remember(sync.version) { store.activity(50) }
@@ -137,7 +139,7 @@ fun WaitingScreen(host: CaptureHost, section: Section, backLabel: String, onBack
                     Text(stringResource(R.string.sync_conflict_why), color = c.ink2, style = MaterialTheme.typography.bodyMedium)
                     diffs.forEach { DiffRow(it) }
                     fun decide(r: Resolution, said: Int) = scope.launch {
-                        runCatching { store.resolve(m.id, r) }.onSuccess { toast = context.getString(said); host.kick() }
+                        runCatching { store.resolve(m.id, r) }.onSuccess { toast = resources.getString(said); host.kick() }
                     }
                     if (com.mytaillog.core.sync.Conflicts.canKeepBoth(diffs)) DButton(stringResource(R.string.sync_keep_both), { decide(Resolution.KeepBoth, R.string.sync_kept_both) }, modifier = Modifier.padding(top = Tokens.Space.s2))
                     Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s2)) {

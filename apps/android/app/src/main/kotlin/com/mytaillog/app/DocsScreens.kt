@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -224,7 +225,7 @@ fun DocViewer(recs: Recs, id: String) {
 
 @Composable
 private fun PdfPages(file: File) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val pages by produceState<List<Bitmap>?>(null, file) {
         value = withContext(Dispatchers.IO) {
             runCatching {
@@ -244,7 +245,7 @@ private fun PdfPages(file: File) {
         }
     }
     val list = pages ?: return
-    if (list.isEmpty()) { Empty(context.getString(R.string.docs_cant_open)); return }
+    if (list.isEmpty()) { Empty(resources.getString(R.string.docs_cant_open)); return }
     val pager = rememberPagerState { list.size }
     Column(Modifier.fillMaxSize()) {
         Note("${pager.currentPage + 1} / ${list.size}")
@@ -348,6 +349,7 @@ private val Picked.mb get() = String.format(java.util.Locale.US, "%.1f MB", (too
 @Composable
 fun AddDocSheet(recs: Recs, startType: String?, onDone: () -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val ready = remember { mutableStateListOf<Picked>() }
     var type by rememberSaveable { mutableStateOf(startType) }
@@ -369,7 +371,7 @@ fun AddDocSheet(recs: Recs, startType: String?, onDone: () -> Unit) {
                     .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL).build()
                 (context as? Activity)?.let { act ->
                     GmsDocumentScanning.getClient(opts).getStartScanIntent(act).addOnSuccessListener { scanner.launch(IntentSenderRequest.Builder(it).build()) }
-                        .addOnFailureListener { error = context.getString(R.string.scan_no_system_scanner) }
+                        .addOnFailureListener { error = resources.getString(R.string.scan_no_system_scanner) }
                 }
             }
             SourceTile(LucideIcons.FileText, stringResource(R.string.docs_choose_file), stringResource(R.string.docs_choose_file_sub), Modifier.weight(1f)) {
@@ -379,7 +381,7 @@ fun AddDocSheet(recs: Recs, startType: String?, onDone: () -> Unit) {
         if (ready.isNotEmpty()) {
             GroupHeader(stringResource(R.string.docs_ready))
             ready.toList().forEach { p ->
-                RecRow(p.name, listOf(p.mb + (p.tooBig?.let { " · " + context.getString(R.string.docs_too_big) } ?: "")), menu = listOf(stringResource(R.string.rec_remove) to { ready.remove(p) }),
+                RecRow(p.name, listOf(p.mb + (p.tooBig?.let { " · " + resources.getString(R.string.docs_too_big) } ?: "")), menu = listOf(stringResource(R.string.rec_remove) to { ready.remove(p) }),
                     trailing = { androidx.compose.material3.TextButton({ ready.remove(p) }) { Icon(LucideIcons.X, stringResource(R.string.rec_remove), tint = c.ink) } })
             }
         }

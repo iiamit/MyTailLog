@@ -1,6 +1,7 @@
 # XcodeGen spec. `xcodegen generate` (in apps/ios) writes MyTailLog.xcodeproj and MyTailLog/Info.plist; neither is committed.
 name: MyTailLog
 options:
+  xcodeVersion: "27.2"
   bundleIdPrefix: com.mytaillog
   deploymentTarget:
     iOS: "18.0"
@@ -11,6 +12,17 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     DEAD_CODE_STRIPPING: YES
+  configs:
+    Release:
+      SWIFT_COMPILATION_MODE: wholemodule
+      SWIFT_OPTIMIZATION_LEVEL: -Osize
+      GCC_OPTIMIZATION_LEVEL: s
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      STRIP_INSTALLED_PRODUCT: YES
+      STRIP_SWIFT_SYMBOLS: YES
+      ENABLE_TESTABILITY: NO
+      VALIDATE_PRODUCT: YES
+      ASSETCATALOG_COMPILER_OPTIMIZATION: space
 targets:
   MyTailLog:
     type: application

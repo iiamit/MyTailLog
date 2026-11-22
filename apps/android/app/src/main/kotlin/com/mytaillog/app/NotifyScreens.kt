@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -187,6 +188,7 @@ fun alertPatch(key: String, value: JsonElement): JsonObject = buildJsonObject { 
 @Composable
 fun RemindersScreen(api: NotifyApi, back: Pair<String, () -> Unit>?) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val prefsDevice = remember { devicePrefs(context) }
     var reading by remember { mutableStateOf(prefsDevice.getBoolean(ReadingWorker.PREF_READING, true)) }
@@ -256,17 +258,16 @@ fun RemindersScreen(api: NotifyApi, back: Pair<String, () -> Unit>?) {
         val limit = stringResource(R.string.reminders_test_limit)
         val offline = stringResource(R.string.reminders_offline)
         val nothing = stringResource(R.string.reminders_test_nothing)
-        val res = context.resources
         DButton(stringResource(R.string.reminders_test), {
             test = sending
             scope.launch {
                 test = try {
                     val r = api.test()
-                    val devices = res.getQuantityString(R.plurals.reminders_devices, r.devices, r.devices)
+                    val devices = resources.getQuantityString(R.plurals.reminders_devices, r.devices, r.devices)
                     when {
-                        r.devices > 0 && r.email -> context.getString(R.string.reminders_test_both, devices)
-                        r.devices > 0 -> context.getString(R.string.reminders_test_devices, devices)
-                        r.email -> context.getString(R.string.reminders_test_email)
+                        r.devices > 0 && r.email -> resources.getString(R.string.reminders_test_both, devices)
+                        r.devices > 0 -> resources.getString(R.string.reminders_test_devices, devices)
+                        r.email -> resources.getString(R.string.reminders_test_email)
                         else -> nothing
                     }
                 } catch (e: CancellationException) {

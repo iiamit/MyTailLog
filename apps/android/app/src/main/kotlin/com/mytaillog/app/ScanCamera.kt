@@ -80,6 +80,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
@@ -215,6 +216,7 @@ private fun CameraBody(
     onFailed: () -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val lifecycle = LocalLifecycleOwner.current
     val view = LocalView.current
     val haptics = LocalHapticFeedback.current
@@ -272,7 +274,7 @@ private fun CameraBody(
                         taken += Taken(pageId.first, pageId.second, android.graphics.BitmapFactory.decodeByteArray(page.thumb, 0, page.thumb.size)?.asImageBitmap())
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         flash++
-                        view.announceForAccessibility(context.getString(R.string.scan_page_taken, taken.size))
+                        view.announceForAccessibility(resources.getString(R.string.scan_page_taken, taken.size))
                         recognizer.process(InputImage.fromBitmap(page.flat, 0)).addOnSuccessListener { text ->
                             val year = PageDates.median(PageDates.years(text.text, Year.now().value)) ?: return@addOnSuccessListener
                             scope.launch {
@@ -282,14 +284,14 @@ private fun CameraBody(
                             }
                         }
                     } catch (e: Exception) {
-                        error = context.getString(R.string.scan_not_saved)
+                        error = resources.getString(R.string.scan_not_saved)
                     } finally {
                         busy = false
                     }
                 }
             }
 
-            override fun onError(e: ImageCaptureException) { busy = false; error = context.getString(R.string.scan_not_saved) }
+            override fun onError(e: ImageCaptureException) { busy = false; error = resources.getString(R.string.scan_not_saved) }
         })
     }
 
@@ -314,7 +316,7 @@ private fun CameraBody(
                 view.post {
                     frameAspect = aspect
                     finding = upright
-                    if (upright.hint == PageHint.HoldStill && lastHint != PageHint.HoldStill) view.announceForAccessibility(context.getString(R.string.scan_page_found))
+                    if (upright.hint == PageHint.HoldStill && lastHint != PageHint.HoldStill) view.announceForAccessibility(resources.getString(R.string.scan_page_found))
                     lastHint = upright.hint
                     if (fire) take(upright.quad)
                 }
@@ -327,13 +329,13 @@ private fun CameraBody(
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
         // Top bar: Cancel · "Airframe · 5 taken"
         Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = Tokens.Space.s2), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onCancel, Modifier.semantics { contentDescription = context.getString(R.string.cancel) }) { Icon(LucideIcons.X, null, tint = c.onCover) }
+            IconButton(onCancel, Modifier.semantics { contentDescription = resources.getString(R.string.cancel) }) { Icon(LucideIcons.X, null, tint = c.onCover) }
             Text(
                 stringResource(R.string.scan_camera_title, target.book, taken.size),
                 color = c.onCover, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700)),
                 modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
-            IconButton({ torch = !torch; camera?.cameraControl?.enableTorch(torch) }, Modifier.semantics { contentDescription = context.getString(R.string.scan_torch) }) {
+            IconButton({ torch = !torch; camera?.cameraControl?.enableTorch(torch) }, Modifier.semantics { contentDescription = resources.getString(R.string.scan_torch) }) {
                 Icon(LucideIcons.Zap, null, tint = if (torch) c.highlight else c.onCover)
             }
         }
@@ -380,7 +382,7 @@ private fun CameraBody(
                 taken.lastOrNull()?.let { t ->
                     Box(
                         Modifier.size(56.dp, 74.dp).clickable(role = Role.Button, onClick = onOpenStrip)
-                            .semantics { contentDescription = context.getString(R.string.scan_review_strip, taken.size) },
+                            .semantics { contentDescription = resources.getString(R.string.scan_review_strip, taken.size) },
                     ) {
                         t.thumb?.let { Image(it, null, Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)), contentScale = ContentScale.Crop) }
                         Text(
@@ -393,10 +395,10 @@ private fun CameraBody(
             Box(
                 Modifier.size(72.dp).clip(CircleShape).background(c.onCover).border(4.dp, c.cover2, CircleShape)
                     .clickable(enabled = !busy, role = Role.Button) { take(finding.quad) }
-                    .semantics { contentDescription = context.getString(R.string.scan_shutter) },
+                    .semantics { contentDescription = resources.getString(R.string.scan_shutter) },
             )
             Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                TextButton(onDone, Modifier.heightIn(min = 44.dp).semantics { contentDescription = context.getString(R.string.scan_done_spoken, taken.size) }) {
+                TextButton(onDone, Modifier.heightIn(min = 44.dp).semantics { contentDescription = resources.getString(R.string.scan_done_spoken, taken.size) }) {
                     Text(stringResource(R.string.done), color = c.onCover, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700)))
                 }
             }

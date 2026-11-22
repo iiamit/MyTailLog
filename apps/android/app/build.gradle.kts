@@ -88,7 +88,8 @@ android {
             buildConfigField("String", "SUPABASE_URL", quoted(releaseSupabaseUrl.getOrElse("")))
             buildConfigField("String", "SUPABASE_KEY", quoted(releaseSupabaseKey.getOrElse("")))
             buildConfigField("String", "API_URL", quoted(releaseApiUrl.getOrElse("")))
-            isMinifyEnabled = false
+            // AGP 9.3+: R8 code/resource shrinking, optimization and obfuscation with platform defaults.
+            optimization { enable = true }
             if (signingFile.isFile) signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -122,6 +123,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.tink.android)
     implementation(libs.core.ktx)
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     // Sign-in (05 §8.2). Android-only, so declared here rather than in the catalog shared with apps/core.
     implementation("androidx.credentials:credentials:1.5.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.5.0")

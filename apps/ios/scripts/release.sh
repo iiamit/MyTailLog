@@ -9,6 +9,11 @@ export PATH="/opt/homebrew/bin:$PATH"
 ios="$(cd "$(dirname "$0")/.." && pwd)"
 [[ -f "$ios/Config/Release.local.xcconfig" ]] || { echo "Missing $ios/Config/Release.local.xcconfig (docs/release-ios.md)" >&2; exit 1; }
 
+# The build host uses the same validated manual-signing path as TestFlight uploads.
+if [[ -n "${APP_STORE_CONNECT_KEY_ID:-}" && -n "${APP_STORE_CONNECT_ISSUER_ID:-}" && -n "${APP_STORE_CONNECT_KEY_PATH:-}" ]]; then
+  exec "$ios/scripts/testflight.sh" "$@"
+fi
+
 build="$(date -u +%Y%m%d%H%M)" # CURRENT_PROJECT_VERSION: a UTC timestamp always goes up
 out="$ios/build/release-$build"
 auth=(-allowProvisioningUpdates)

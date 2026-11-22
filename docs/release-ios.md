@@ -83,3 +83,36 @@ TestFlight and App Store builds register production APNs tokens (`aps-environmen
 ## 7. Universal links
 
 Email sign-in links and `https://mytaillog.com/app/…` open the app through the AASA file served by `apps/web/src/app/.well-known/apple-app-site-association/route.ts`. It names team 38Z53C8X48 and `com.mytaillog.app`; nothing to change for a release. See [`deploy-prerequisites.md`](deploy-prerequisites.md).
+# Release optimization and validation
+
+The native app's XcodeGen spec owns Release settings for the app and widget:
+whole-module Swift compilation optimized for size, dead-code stripping, stripped
+installed products, retained dSYMs and built-product validation. The shared Kotlin
+framework must also be built in **Release**. Keep debug/test settings separate.
+
+The app includes `PrivacyInfo.xcprivacy` declaring its app-private UserDefaults use.
+Review this whenever adding a required-reason API or SDK; do not copy unrelated
+privacy reasons. Store privacy labels remain a separate declaration of actual data
+collection and use.
+
+Both upload entry points request symbol upload. `scripts/testflight.sh` retains the
+archive, dSYMs and signed IPA in ignored `apps/ios/build/release-<build>/`, and validates
+the IPA with App Store Connect before uploading. Keep these files for each shipped
+build; deleting them can prevent symbolication of future crashes. Source the Mac's
+protected release environment before invoking either script.
+
+Inspect the complete archive log for compiler, linker, signing and asset warnings.
+XcodeGen already enables the recommended compiler warnings; fix the cause rather
+than disabling warnings. The minimum remains iOS 18, above Xcode 27.2's recommended
+minimum. Use the current stable Xcode/SDK; SDK submission requirements are independent
+of the app's minimum OS. Asset catalogs and App Store thinning handle device-specific
+delivery; archive and universal IPA sizes are not the user's download size.
+
+Test optimized simulator builds and a signed TestFlight build before public release.
+Simulator tests cannot certify APNs, camera hardware, background execution or Apple's
+review decisions.
+
+References: [size optimization](https://developer.apple.com/documentation/xcode/doing-basic-optimization-to-reduce-your-app-s-size),
+[release testing](https://developer.apple.com/documentation/xcode/testing-a-release-build),
+[required-reason APIs](https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api),
+[submission requirements](https://developer.apple.com/news/upcoming-requirements/).
