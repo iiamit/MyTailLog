@@ -1,6 +1,7 @@
 package com.mytaillog.app
 
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.unit.dp
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.mytaillog.core.api.AircraftAccess
 import com.mytaillog.core.api.AircraftRole
 import com.mytaillog.core.api.AircraftSummary
@@ -95,9 +97,20 @@ class BooksScreenTest {
     fun landscapeMapUsesTheHorizontalTimeline() {
         val vm = model(AircraftRole.Owner)
         compose.setContent { MyTailLogTheme(dark = false) { PhoneShell(books = vm, compactHeight = true) } }
-        compose.onNodeWithText("Logbooks").performClick()
+        compose.onNodeWithContentDescription("Logbooks").performClick()
         val bounds = compose.onNode(hasContentDescription("Route map of the logbooks", substring = true)).getUnclippedBoundsInRoot()
         assertTrue("The vertical phone map was stretched across landscape", bounds.bottom - bounds.top < 500.dp)
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeMapSelectionKeepsTheEntryActionReachable() {
+        val vm = model(AircraftRole.Owner)
+        compose.setContent { MyTailLogTheme(dark = false) { PhoneShell(books = vm, compactHeight = true) } }
+        compose.onNodeWithContentDescription("Logbooks").performClick()
+        compose.onNode(hasContentDescription("Replaced landing light, Mar 2, 2026, Airframe", substring = true)).performClick()
+        compose.onNodeWithText("Replaced landing light").assertIsDisplayed()
+        compose.onNodeWithText("Review this page").performScrollTo().assertIsDisplayed()
     }
 
 }

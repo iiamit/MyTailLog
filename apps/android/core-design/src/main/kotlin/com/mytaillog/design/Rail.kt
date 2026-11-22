@@ -11,7 +11,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.Icon
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -43,7 +44,7 @@ fun Rail(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier:
         modifier
             .background(colors.cover)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Top + WindowInsetsSides.Bottom))
-            .width(if (compact) 88.dp else 240.dp)
+            .width(if (compact) 72.dp else 240.dp)
             .fillMaxHeight()
             .verticalScroll(rememberScrollState())
             .padding(top = if (compact) 4.dp else 18.dp, start = if (compact) 4.dp else 14.dp, bottom = if (compact) 4.dp else 16.dp)
@@ -55,15 +56,14 @@ fun Rail(items: List<TabItem>, selected: Int, onSelect: (Int) -> Unit, modifier:
             if (compact) {
                 val s = colors.section(item.section)
                 Column(
-                    Modifier.fillMaxWidth().heightIn(min = 48.dp).focusRing(Tokens.Radius.s).clip(RoundedCornerShape(Tokens.Radius.s))
+                    Modifier.padding(end = if (i == selected) 0.dp else 8.dp).fillMaxWidth().heightIn(min = 48.dp).focusRing(Tokens.Radius.s).clip(RoundedCornerShape(Tokens.Radius.s))
                         .background(s.board)
                         .selectable(i == selected, role = Role.Tab, onClick = { onSelect(i) })
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                        .semantics { contentDescription = item.label }
+                        .padding(horizontal = 4.dp, vertical = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(item.icon, contentDescription = null, tint = s.onBoard, modifier = Modifier.size(22.dp))
-                    Text(item.label, color = s.onBoard, style = MaterialTheme.typography.labelSmall,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Icon(item.icon, contentDescription = null, tint = s.onBoard, modifier = Modifier.size(24.dp))
                 }
             } else SectionTab(item, i == selected) { onSelect(i) }
         }

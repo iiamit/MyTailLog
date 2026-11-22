@@ -34,6 +34,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -57,13 +59,14 @@ fun PhoneHeader(
     syncLine: SyncLine? = null,
 ) {
     val s = MyTailLogTheme.colors.section(section)
+    val compact = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() < 480.dp }
     Column(
         modifier
             .fillMaxWidth()
             .background(s.board)
             .windowInsetsPadding(WindowInsets.statusBars)
-            .heightIn(min = 96.dp)
-            .padding(start = Tokens.Space.s4, end = Tokens.Space.s4, top = Tokens.Space.s2, bottom = Tokens.Space.s4),
+            .heightIn(min = if (compact) 0.dp else 96.dp)
+            .padding(start = Tokens.Space.s4, end = Tokens.Space.s4, top = if (compact) Tokens.Space.s1 else Tokens.Space.s2, bottom = if (compact) Tokens.Space.s2 else Tokens.Space.s4),
         verticalArrangement = Arrangement.Bottom,
     ) {
         if (back != null) {
@@ -98,7 +101,7 @@ fun PhoneHeader(
                 }
             }
         }
-        Text(title, color = s.onBoard, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+        Text(title, color = s.onBoard, style = if (compact) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
     }
 }
 
