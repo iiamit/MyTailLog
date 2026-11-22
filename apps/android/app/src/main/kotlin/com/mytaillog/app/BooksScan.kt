@@ -118,7 +118,7 @@ fun ScanViewer(scan: Scan, description: String, modifier: Modifier = Modifier, o
     ScanCrop(
         scan, description,
         modifier
-            .transformable(state)
+            .transformable(state, canPan = { scale > 1f })
             .graphicsLayer { scaleX = scale; scaleY = scale; translationX = pan.x; translationY = pan.y },
         outline = outline, highlight = highlight,
     )

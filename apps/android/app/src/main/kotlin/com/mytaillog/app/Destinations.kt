@@ -39,4 +39,4 @@ const val STATUS_ALL_ITEMS = "status/items"
 /** Rail and list-detail from this width (01 §6: tablet list-detail at ≥ 700). */
 const val TABLET_MIN_WIDTH_DP = 700
 
-fun isTablet(widthDp: Int) = widthDp >= TABLET_MIN_WIDTH_DP
+fun isTablet(widthDp: Int, heightDp: Int = Int.MAX_VALUE) = widthDp >= TABLET_MIN_WIDTH_DP && heightDp >= 480
