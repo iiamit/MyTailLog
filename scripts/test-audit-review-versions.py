@@ -34,6 +34,8 @@ class ReviewVersions(unittest.TestCase):
   with connect() as db:
    for table,key in [('log_entry','entryVersions'), ('page','pageVersions')]:
     for record,version in result[key].items():
+     # Fixed test table names are quoted by psycopg.sql.Identifier; record is bound.
+     # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
      self.assertEqual(db.execute(sql.SQL('select updated_at from {} where id=%s').format(sql.Identifier(table)), (record,)).fetchone()[0], instant(version))
  def test_an_entry_added_after_rendering_cannot_be_silently_page_confirmed(self):
   user,ac,book,page=fixture(); rows=entries(ac,book,page,1); unseen=entries(ac,book,page,1)

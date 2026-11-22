@@ -40,6 +40,8 @@ def fixture():
 
 def rpc(db,name,*args):
  statement=sql.SQL('select {}({})').format(sql.Identifier(name),sql.SQL(',').join([sql.Placeholder() for _ in args]))
+ # psycopg.sql.Identifier quotes the function name; every value is bound. This is not SQLAlchemy.
+ # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
  return db.execute(statement,args).fetchone()[0]
 
 class AuditDatabase(unittest.TestCase):
