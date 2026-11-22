@@ -13,5 +13,7 @@
 	<string>automatic</string>
 	<key>manageAppVersionAndBuildNumber</key>
 	<false/>
+	<key>uploadSymbols</key>
+	<true/>
 </dict>
 </plist>

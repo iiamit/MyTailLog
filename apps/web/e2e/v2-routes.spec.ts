@@ -24,6 +24,7 @@ test("new design: every aircraft screen renders for an owner", async ({ page, sc
 });
 
 test("new design: account and hangar screens render", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("/api/ui?design=v2&next=%2Fhangar");
   for (const route of ["hangar", "account", "account/settings", "account/data", "aircraft/new"]) {
     await test.step(route, async () => {

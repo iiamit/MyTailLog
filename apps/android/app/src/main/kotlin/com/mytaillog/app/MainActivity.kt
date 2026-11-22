@@ -74,6 +74,8 @@ class MainActivity : ComponentActivity() {
         if (l != null) link = l else data?.let { authReturn = it }
     }
 
+    // Activity's public event hook; AndroidX marks its inherited implementation library-only.
+    @android.annotation.SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (super.dispatchKeyEvent(event)) return true
         if (event.action != KeyEvent.ACTION_DOWN || event.repeatCount > 0) return false

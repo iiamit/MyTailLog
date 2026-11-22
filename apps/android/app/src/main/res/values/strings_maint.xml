@@ -281,8 +281,10 @@
     <!-- Documents -->
     <string name="docs_add">Add a document</string>
     <string name="docs_empty">Nothing in Documents yet. Add the registration and airworthiness certificate and they travel with you.</string>
-    <string name="docs_held_one">1 document on this phone. It uploads when you have signal.</string>
-    <string name="docs_held_many">%1$d documents on this phone. They upload when you have signal.</string>
+    <plurals name="docs_held">
+        <item quantity="one">%1$d document on this phone. It uploads when you have signal.</item>
+        <item quantity="other">%1$d documents on this phone. They upload when you have signal.</item>
+    </plurals>
     <string name="docs_carry">Carry aboard</string>
     <string name="docs_all_here">All 4 here</string>
     <string name="docs_not_yet">Not in Documents yet</string>

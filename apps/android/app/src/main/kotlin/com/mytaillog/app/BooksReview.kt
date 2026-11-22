@@ -55,6 +55,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -222,7 +223,7 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
         )
         done?.let { d ->
             Row(Modifier.fillMaxWidth().background(c.leaf2).padding(horizontal = Tokens.Space.s4).semantics { liveRegion = LiveRegionMode.Polite }, verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.review_confirmed_toast, d.label, d.count), color = c.ink, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                Text(pluralStringResource(R.plurals.review_confirmed_toast, d.count, d.label, d.count), color = c.ink, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                 TextButton(::undo, Modifier.heightIn(min = Tokens.Size.phoneTouchMin)) { Text(stringResource(R.string.undo), color = c.ink, fontWeight = FontWeight(700)) }
             }
         }
@@ -307,7 +308,7 @@ private fun ReviewEnd(index: Int, confirmed: Int, nav: BooksNav) {
     val c = MyTailLogTheme.colors
     Column(Modifier.fillMaxSize().background(c.leaf).padding(Tokens.Space.s4)) {
         Text(
-            if (index == 0) stringResource(R.string.books_queue_empty) else stringResource(R.string.review_all_done, index, confirmed),
+            if (index == 0) stringResource(R.string.books_queue_empty) else pluralStringResource(R.plurals.review_all_done, index, index, pluralStringResource(R.plurals.count_entries, confirmed, confirmed)),
             color = c.ink, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() },
         )
         DButton(stringResource(if (index == 0) R.string.review_back_to_books else R.string.done), nav.back, modifier = Modifier.padding(top = Tokens.Space.s4))

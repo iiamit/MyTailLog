@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -297,6 +298,7 @@ private fun pluralLapse(n: Int) = androidx.compose.ui.res.pluralStringResource(R
 fun VisitScreen(host: StatusHost, recs: Recs?, key: String, back: Pair<String, () -> Unit>?) {
     val body = host.ui.snapshot?.body ?: return
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var extra by remember { mutableStateOf(emptyList<VisitView>()) }
     var booked by remember { mutableStateOf<VisitView?>(null) }
@@ -330,7 +332,7 @@ fun VisitScreen(host: StatusHost, recs: Recs?, key: String, back: Pair<String, (
                                     val text = visitMessage(recs.tail, null, v, body.items, r.s("url") ?: "")
                                     val to = r.s("mailto")?.removePrefix("mailto:")?.substringBefore('?')?.takeIf { it.contains('@') }
                                     val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
-                                        .putExtra(android.content.Intent.EXTRA_SUBJECT, context.getString(R.string.visit_send_subject, recs.tail, longDate(v.weekOf)))
+                                        .putExtra(android.content.Intent.EXTRA_SUBJECT, resources.getString(R.string.visit_send_subject, recs.tail, longDate(v.weekOf)))
                                         .putExtra(android.content.Intent.EXTRA_TEXT, text)
                                     to?.let { send.putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf(java.net.URLDecoder.decode(it, "UTF-8"))) }
                                     context.startActivity(android.content.Intent.createChooser(send, null))

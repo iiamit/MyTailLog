@@ -41,15 +41,16 @@ required APP_STORE_CONNECT_KEY_PATH
 }
 command -v xcodegen >/dev/null 2>&1 || { echo "xcodegen not installed (brew install xcodegen)." >&2; exit 1; }
 
-OUT=$(mktemp -d "${TMPDIR:-/tmp}/mytaillog-ios-testflight.XXXXXX")
-trap 'rm -rf "$OUT"' EXIT HUP INT TERM
+# Keep the archive and dSYMs for crash symbolication after upload.
+OUT="$ROOT/build/release-$BUILD_NUMBER"
+mkdir -p "$OUT"
 ARCHIVE="$OUT/MyTailLog.xcarchive"
 EXPORT="$OUT/export"
 OPTIONS="$OUT/ExportOptions.plist"
 
 # 1. The KMP core the app links (apps/core -> MyTailLogCore.xcframework, release).
 echo "Building MyTailLogCore.xcframework"
-(cd "$REPO/core" && ./gradlew --console=plain :framework:assembleMyTailLogCoreXCFramework)
+(cd "$REPO/core" && ./gradlew --console=plain :framework:assembleMyTailLogCoreReleaseXCFramework)
 
 # 2. Generate MyTailLog.xcodeproj and the Info.plist/entitlements from project.yml.
 echo "Generating Xcode project"
@@ -72,6 +73,8 @@ cat >"$OPTIONS" <<EOF
   <key>signingStyle</key><string>manual</string>
   <key>teamID</key><string>$TEAM_ID</string>
   <key>signingCertificate</key><string>Apple Distribution</string>
+  <key>uploadSymbols</key><true/>
+  <key>manageAppVersionAndBuildNumber</key><false/>
   <key>provisioningProfiles</key>
   <dict>
     <key>$BUNDLE_ID</key><string>MyTailLog App Store</string>
@@ -104,6 +107,12 @@ xcodebuild \
 
 IPA=$(find "$EXPORT" -name '*.ipa' -type f -print -quit)
 [ -n "$IPA" ] || { echo "Xcode exported no IPA." >&2; exit 1; }
+
+echo "Validating $(basename "$IPA") with App Store Connect"
+xcrun altool --validate-app "$IPA" \
+  --api-key "$APP_STORE_CONNECT_KEY_ID" \
+  --api-issuer "$APP_STORE_CONNECT_ISSUER_ID" \
+  --p8-file-path "$APP_STORE_CONNECT_KEY_PATH"
 
 echo "Uploading $(basename "$IPA") to App Store Connect"
 xcrun altool --upload-package "$IPA" \

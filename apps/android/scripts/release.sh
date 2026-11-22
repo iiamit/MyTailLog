@@ -27,7 +27,12 @@ export MYTAILLOG_ANDROID_DIR="$ANDROID"
 case "$MODE" in
   draft)
     echo "Building signed release AAB"
-    (cd "$ANDROID" && ./gradlew --console=plain :app:bundleRelease)
+    (cd "$ANDROID" && ./gradlew --console=plain :app:lintRelease :app:bundleRelease)
+    python3 "$ANDROID/scripts/verify-release.py" "$ANDROID/app/build/outputs/bundle/release/app-release.aab"
+    # Preserve the exact bundle (including mappings) before Gradle overwrites the next build.
+    ARCHIVE="$ANDROID/build/releases/$(date -u +%Y%m%dT%H%M%SZ)"
+    mkdir -p "$ARCHIVE"
+    cp "$ANDROID/app/build/outputs/bundle/release/app-release.aab" "$ARCHIVE/"
     (cd "$MOBILE" && node scripts/play.mjs draft)
     ;;
   check|internal|closed|production)
