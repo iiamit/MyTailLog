@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -132,6 +133,7 @@ fun TachScreen(recs: Recs, last: LastTach, onClose: () -> Unit) {
 @Composable
 private fun TachCamera(last: LastTach, onFound: (Double) -> Unit, onType: () -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val lifecycle = LocalLifecycleOwner.current
     val view = LocalView.current
     val haptics = LocalHapticFeedback.current
@@ -154,7 +156,7 @@ private fun TachCamera(last: LastTach, onFound: (Double) -> Unit, onType: () -> 
     LaunchedEffect(found) {
         val v = found ?: return@LaunchedEffect
         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        view.announceForAccessibility(context.getString(R.string.tach_found, last.value?.let(::fmtHours) ?: "–"))
+        view.announceForAccessibility(resources.getString(R.string.tach_found, last.value?.let(::fmtHours) ?: "–"))
         delay(800)
         onFound(v)
     }
@@ -179,9 +181,9 @@ private fun TachCamera(last: LastTach, onFound: (Double) -> Unit, onType: () -> 
 
     Column(Modifier.fillMaxSize().background(c.cover).windowInsetsPadding(WindowInsets.safeDrawing)) {
         Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = Tokens.Space.s2), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onCancel, Modifier.semantics { contentDescription = context.getString(R.string.cancel) }) { Icon(LucideIcons.X, null, tint = c.onCover) }
+            IconButton(onCancel, Modifier.semantics { contentDescription = resources.getString(R.string.cancel) }) { Icon(LucideIcons.X, null, tint = c.onCover) }
             Text(stringResource(R.string.tach_title), color = c.onCover, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700)), modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            IconButton({ torch = !torch; camera?.cameraControl?.enableTorch(torch) }, Modifier.semantics { contentDescription = context.getString(R.string.scan_torch) }) {
+            IconButton({ torch = !torch; camera?.cameraControl?.enableTorch(torch) }, Modifier.semantics { contentDescription = resources.getString(R.string.scan_torch) }) {
                 Icon(LucideIcons.Zap, null, tint = if (torch) c.highlight else c.onCover)
             }
         }
@@ -227,7 +229,7 @@ private fun TachCamera(last: LastTach, onFound: (Double) -> Unit, onType: () -> 
             Box(
                 Modifier.size(72.dp).clip(CircleShape).background(c.onCover).border(4.dp, c.cover2, CircleShape)
                     .clickable(role = Role.Button) { stillRead.set(true) }
-                    .semantics { contentDescription = context.getString(R.string.tach_still) },
+                    .semantics { contentDescription = resources.getString(R.string.tach_still) },
             )
             Box(Modifier.weight(1f))
         }

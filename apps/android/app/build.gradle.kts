@@ -51,7 +51,7 @@ android {
         applicationId = "com.mytaillog.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 101 // above the Capacitor app's 14, so Play accepts it as an update
+        versionCode = 102 // 101 is already on Play's internal-testing track.
         versionName = "2.0.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", quoted(googleWebClientId.getOrElse("")))
         listOf("AppId" to "FIREBASE_APP_ID", "ApiKey" to "FIREBASE_API_KEY", "ProjectId" to "FIREBASE_PROJECT_ID", "SenderId" to "FIREBASE_SENDER_ID").forEach { (k, field) ->
@@ -88,7 +88,8 @@ android {
             buildConfigField("String", "SUPABASE_URL", quoted(releaseSupabaseUrl.getOrElse("")))
             buildConfigField("String", "SUPABASE_KEY", quoted(releaseSupabaseKey.getOrElse("")))
             buildConfigField("String", "API_URL", quoted(releaseApiUrl.getOrElse("")))
-            isMinifyEnabled = false
+            // AGP 9.3+: R8 code/resource shrinking, optimization and obfuscation with platform defaults.
+            optimization { enable = true }
             if (signingFile.isFile) signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -122,6 +123,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.tink.android)
     implementation(libs.core.ktx)
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     // Sign-in (05 §8.2). Android-only, so declared here rather than in the catalog shared with apps/core.
     implementation("androidx.credentials:credentials:1.5.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.5.0")

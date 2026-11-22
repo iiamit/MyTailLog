@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -387,6 +388,7 @@ fun openFile(context: Context, bytes: ByteArray, name: String) {
 fun LinkScreen(recs: Recs, roomId: String, made: Boolean, back: Pair<String, () -> Unit>?) {
     val c = MyTailLogTheme.colors
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val rooms = rememberRooms(recs)
     val online = recs.store.sync.collectAsStateWithLifecycleCompat().value.online
@@ -409,7 +411,7 @@ fun LinkScreen(recs: Recs, roomId: String, made: Boolean, back: Pair<String, () 
         if (made) stringResource(R.string.share_link_made) else room?.label ?: stringResource(R.string.share_link), Section.Share, back = back, toast = toast, onToastDone = { toast = null },
         footer = if (url == null || room?.active != true) null else ({
             DButton(stringResource(R.string.share_send_link), {
-                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, room.label).putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_send_text, recs.tail, url)), null))
+                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, room.label).putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_send_text, recs.tail, url)), null))
             }, icon = LucideIcons.Send)
         }),
     ) {
@@ -487,7 +489,7 @@ private fun QrCard(url: String, modifier: Modifier = Modifier, side: androidx.co
 /** The QR full screen at full brightness, for showing a buyer in person. */
 @Composable
 private fun BigQr(url: String, onDismiss: () -> Unit) {
-    val activity = LocalContext.current as? Activity
+    val activity = androidx.activity.compose.LocalActivity.current
     DisposableEffect(Unit) {
         val w = activity?.window
         val before = w?.attributes?.screenBrightness
@@ -566,6 +568,7 @@ fun LinksScreen(recs: Recs, back: Pair<String, () -> Unit>?, onLink: (String) ->
 @Composable
 private fun InviteSheet(recs: Recs, online: Boolean, onDone: () -> Unit, onToast: (String) -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var email by rememberSaveable { mutableStateOf("") }
     var role by rememberSaveable { mutableStateOf(0) }
@@ -583,7 +586,7 @@ private fun InviteSheet(recs: Recs, online: Boolean, onDone: () -> Unit, onToast
                 try {
                     recs.api.setPerson(recs.id, recs.store.userId, email.trim(), if (role == 0) "editor" else "viewer")
                     onToast(recs.str(R.string.share_invited))
-                    context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_EMAIL, arrayOf(email.trim())).putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.share_invite_subject, recs.tail)).putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_invite_text, recs.tail, email.trim(), BuildConfig.API_URL)), null))
+                    context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_EMAIL, arrayOf(email.trim())).putExtra(Intent.EXTRA_SUBJECT, resources.getString(R.string.share_invite_subject, recs.tail)).putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.share_invite_text, recs.tail, email.trim(), BuildConfig.API_URL)), null))
                     onDone()
                 } catch (e: CancellationException) { throw e } catch (e: Exception) { error = e.message } finally { busy = false }
             }

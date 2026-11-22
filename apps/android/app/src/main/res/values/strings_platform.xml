@@ -44,7 +44,6 @@
     <string name="reminders_phone_off">Off on this phone. Email reminders still follow the settings below.</string>
     <string name="reminders_os_off">Notifications are off for MyTailLog in your phone\'s settings.</string>
     <string name="reminders_allow">Allow notifications</string>
-    <string name="reminders_open_settings">Open Settings</string>
     <string name="reminders_failed">This phone couldn\'t register for reminders: %1$s</string>
     <string name="reminders_no_fcm">this build has no FCM settings</string>
     <string name="reminders_master">Email and phone reminders before items come due</string>

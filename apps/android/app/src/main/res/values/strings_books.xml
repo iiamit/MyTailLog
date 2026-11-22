@@ -16,19 +16,31 @@
     <string name="books_show_map">Show as map</string>
     <string name="books_error">We could not load the logbooks right now.</string>
     <string name="books_map_empty">The map draws itself from dated entries. None yet.</string>
-    <string name="books_map_more">%1$d more items: see the list.</string>
-    <string name="books_being_read">%1$d pages are being read. Their entries land on the map as hollow stops.</string>
+    <plurals name="books_map_more">
+        <item quantity="one">%1$d more item: see the list.</item>
+        <item quantity="other">%1$d more items: see the list.</item>
+    </plurals>
+    <plurals name="books_being_read">
+        <item quantity="one">%1$d page is being read. Its entries land on the map as hollow stops.</item>
+        <item quantity="other">%1$d pages are being read. Their entries land on the map as hollow stops.</item>
+    </plurals>
     <string name="books_being_read_short">Being read</string>
     <string name="books_viewer">You can view these logbooks. The owner can make changes.</string>
     <string name="books_page_missing">This page isn\'t on this phone yet.</string>
     <string name="books_no_page">No page: typed in or imported</string>
 
-    <string name="books_cluster">%1$d entries, %2$s to %3$s</string>
+    <plurals name="books_cluster">
+        <item quantity="one">%1$d entry, %2$s to %3$s</item>
+        <item quantity="other">%1$d entries, %2$s to %3$s</item>
+    </plurals>
     <string name="books_not_confirmed">Not confirmed yet. It doesn\'t count toward what\'s due.</string>
     <string name="books_review_this_page">Review this page</string>
     <string name="books_open_page">Open page</string>
     <string name="books_visit">Visit</string>
-    <string name="books_visit_title">%1$s, %2$s, %3$d books</string>
+    <plurals name="books_visit_title">
+        <item quantity="one">%1$s, %2$s, %3$d book</item>
+        <item quantity="other">%1$s, %2$s, %3$d books</item>
+    </plurals>
     <string name="books_card_of">Swipe for the other books · %1$d of %2$d</string>
     <string name="books_open_cite">Open %1$s</string>
 
@@ -36,7 +48,10 @@
     <string name="books_gap_marked_none">You marked this: no pages exist.</string>
     <string name="books_gap_marked_asked">You marked this: you asked the previous owner.</string>
     <string name="books_gap_other_books">What the other books show</string>
-    <string name="books_gap_unconfirmed">Review %1$d pages read in this gap</string>
+    <plurals name="books_gap_unconfirmed">
+        <item quantity="one">Review %1$d page read in this gap</item>
+        <item quantity="other">Review %1$d pages read in this gap</item>
+    </plurals>
     <string name="books_gap_none">No pages exist</string>
     <string name="books_gap_asked">I asked the previous owner</string>
     <string name="books_gap_note">Note (optional)</string>
@@ -52,23 +67,38 @@
     <string name="books_bad_number">Type a number, like 1874.6.</string>
     <string name="books_bad_date">Type the date as 2026-03-02.</string>
 
-    <string name="books_pages_wait">%1$d pages wait for review.</string>
-    <string name="books_pages_summary">%1$d pages · %2$d entries</string>
+    <plurals name="books_pages_wait">
+        <item quantity="one">%1$d page waits for review.</item>
+        <item quantity="other">%1$d pages wait for review.</item>
+    </plurals>
+    <string name="books_pages_summary">%1$s · %2$s</string>
     <string name="books_book_empty">No pages in the %1$s logbook yet.</string>
     <string name="books_pages_in">Pages in %1$s</string>
 
-    <string name="books_tablet_hint">%1$d confirmed entries · tap a stop or a visit</string>
+    <plurals name="books_tablet_hint">
+        <item quantity="one">%1$d confirmed entry · tap a stop or a visit</item>
+        <item quantity="other">%1$d confirmed entries · tap a stop or a visit</item>
+    </plurals>
     <string name="books_tablet_pick">Tap a stop or a visit to see its page here.</string>
     <string name="books_queue_empty">Nothing waiting for review.</string>
     <string name="books_queue_waiting">Waiting for your review</string>
     <string name="books_queue_reading">Being read</string>
-    <string name="books_confirm_clean">Confirm the %1$d clean pages</string>
+    <plurals name="books_confirm_clean">
+        <item quantity="one">Confirm the %1$d clean page</item>
+        <item quantity="other">Confirm the %1$d clean pages</item>
+    </plurals>
 
     <string name="review_n_of">%1$d of %2$d to check</string>
     <string name="review_previous_page">Previous page</string>
     <string name="review_next_page">Next page</string>
-    <string name="review_confirmed_toast">%1$s confirmed, %2$d entries</string>
-    <string name="review_all_done">All %1$d pages are reviewed. %2$d entries confirmed.</string>
+    <plurals name="review_confirmed_toast">
+        <item quantity="one">%1$s confirmed, %2$d entry</item>
+        <item quantity="other">%1$s confirmed, %2$d entries</item>
+    </plurals>
+    <plurals name="review_all_done">
+        <item quantity="one">%1$d page is reviewed. %2$s confirmed.</item>
+        <item quantity="other">All %1$d pages are reviewed. %2$s confirmed.</item>
+    </plurals>
     <string name="review_back_to_books">Back to Logbooks</string>
     <string name="review_back_to_entry">Back to the entry</string>
     <string name="review_no_entries">No entries read on this page.</string>
@@ -89,4 +119,12 @@
     <string name="review_edit">Edit</string>
     <string name="review_absent">Not on this page</string>
     <string name="review_raw">What the reader saw</string>
+    <plurals name="count_pages">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <plurals name="count_entries">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
+    </plurals>
 </resources>

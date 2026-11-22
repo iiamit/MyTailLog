@@ -52,3 +52,44 @@ Call the script directly, not `npm run play:draft`: that npm script builds and u
 Android checks the file at install time. After changing it, or when a test phone installed the app before the file was live, uninstall and reinstall from Play (or run `adb shell pm verify-app-links --re-verify com.mytaillog.app`), then check with `adb shell pm get-app-links com.mytaillog.app`.
 
 The Capacitor build has the same id but a different signing key: uninstall it before installing a debug build of the native app.
+# Release optimization checks
+
+The native 2.0 app uses AGP's R8 optimization in Release: code and resource shrinking,
+obfuscation, and the platform's optimized keep rules. Do not add package-wide keep
+rules to silence runtime problems; preserve only the reflected entry points involved.
+The AAB contains its crash mapping and the baseline profiles supplied by AndroidX.
+Google Play delivers device-specific ABI, density and language splits from this bundle.
+
+On the Mac build host, `apps/android/scripts/release.sh draft` runs full Release lint,
+builds the bundle, and checks its embedded R8 metadata. It refuses bundles with a
+shrinking, optimization or obfuscation score below 25%, or without crash mappings.
+It retains the exact AAB under ignored `apps/android/build/releases/` before upload.
+Python 3 is required. Run the gate's self-check with:
+
+```sh
+python3 apps/android/scripts/test_verify_release.py
+```
+
+For Google's analysis of a built bundle, use the current Android SDK command-line tools:
+
+```sh
+android --no-metrics analyze --analysis=optimization app-release.aab
+```
+
+Before publishing, install and exercise an **optimized Release** build against the test
+backend (override the three release Gradle properties); debug tests cannot detect R8
+reflection failures. Verify login, sync and restart, offline files, document/camera
+entry points, widgets and background work. Check native libraries' ELF load alignment
+and APK alignment with `zipalign -c -P 16 -v 4 app-release.apk` for 16 KB devices.
+The current minimum stays Android 10 (29), with target 36 and compile SDK 37; raising
+the minimum alone does not optimize delivery or replace release testing.
+
+Android 12+ backup and device-transfer rules explicitly exclude local app data:
+session encryption keys belong to the original device. Upload pending changes on
+that device first, then sign in and sync on the new device. Offline copies and
+notification registration are rebuilt there.
+
+References: [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization),
+[DEX scores](https://developer.android.com/google/play/vitals/code-optimization),
+[16 KB pages](https://developer.android.com/guide/practices/page-sizes),
+[target SDK policy](https://developer.android.com/google/play/requirements/target-sdk).

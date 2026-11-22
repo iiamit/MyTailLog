@@ -5,6 +5,18 @@ import Testing
 
 private final class Marker {}
 
+struct PrivacyManifestTests {
+    @Test func appSettingsHaveARequiredReasonInTheShippedBundle() throws {
+        let bundle = Bundle.main
+        let url = try #require(bundle.url(forResource: "PrivacyInfo", withExtension: "xcprivacy"))
+        let manifest = try #require(PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil) as? [String: Any])
+        #expect(manifest["NSPrivacyTracking"] as? Bool == false)
+        let uses = try #require(manifest["NSPrivacyAccessedAPITypes"] as? [[String: Any]])
+        let defaults = try #require(uses.first { $0["NSPrivacyAccessedAPIType"] as? String == "NSPrivacyAccessedAPICategoryUserDefaults" })
+        #expect((defaults["NSPrivacyAccessedAPITypeReasons"] as? [String])?.contains("CA92.1") == true)
+    }
+}
+
 /// The N734DM snapshot (computed 2026-11-18), optionally with extra items, as the server would send them.
 private func snapshot(adding extra: [[String: Any]] = []) throws -> StatusSnapshot {
     let url = try #require(Bundle(for: Marker.self).url(forResource: "status-n734dm", withExtension: "json"))
