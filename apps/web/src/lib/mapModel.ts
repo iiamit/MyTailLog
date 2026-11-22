@@ -26,7 +26,7 @@ export type MapEntryRow = LogEntryRow & {
   description?: string | null;
 };
 export type MapPageRow = { id: string; logbook_id: string; page_sequence: number | null; extraction_status?: string; landing_date?: string | null };
-export type MapGapRow = { id: string; logbook_id: string; from_date: string; to_date: string; status: string; source?: string; note?: string | null };
+export type MapGapRow = { updated_at?: string; id: string; logbook_id: string; from_date: string; to_date: string; status: string; source?: string; note?: string | null };
 export type MapSquawkRow = {
   id: string; description: string; severity: string | null; status: string;
   reported_at?: string | null; resolved_at?: string | null; resolved_log_entry_id?: string | null;

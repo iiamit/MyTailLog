@@ -73,7 +73,64 @@ struct EmailLinkFallbackTests {
         SessionKeychain.delete()
         SessionKeychain.emailVerifier = nil
         // Unroutable host: any request fails fast, and a link with no verifier must not send one.
-        return SessionStore(auth: AuthClient(baseURL: URL(string: "https://127.0.0.1:9")!, apiKey: "k"), core: InMemoryCore())
+        return SessionStore(auth: AuthClient(baseURL: URL(string: "https://127.0.0.1:9")!, apiKey: "k"))
+    }
+
+    private func expired() -> Session {
+        Session(accessToken: "old", refreshToken: "old-refresh", expiresAt: .distantPast, email: "test@example.invalid")
+    }
+
+    @Test func temporaryAndRevokedRefreshesKeepTheOwnerAndUnsentWork() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "auth-preservation-\(UUID().uuidString)")
+        defer { SessionKeychain.delete(); try? FileManager.default.removeItem(at: root) }
+        let offline = OfflineStore(userId: "reauth", apiURL: URL(string: "https://example.invalid")!, root: root)
+        try offline.enqueue(id: "reading", type: "reading.create", aircraftId: "aircraft", payload: ["id": "reading", "date": "2026-11-21", "tach": 105.2], label: "Reading")
+        let image = offline.pagesDir.appending(path: "page.jpg")
+        try Data([1, 2, 3]).write(to: image)
+        try offline.addFile(id: "photo", kind: "page", aircraftId: "aircraft", path: image, bytes: 3,
+                            meta: FileMeta(pageId: "page", logbookId: "book"))
+        for error in [AuthError.rateLimited, .server, .offline, .rejected] {
+            let original = expired()
+            SessionKeychain.save(original)
+            let auth = AuthClient(baseURL: URL(string: "https://example.invalid")!, apiKey: "k", refreshSession: { _ in throw error })
+            let session = SessionStore(auth: auth)
+            await session.refreshIfNeeded()
+            #expect(session.session == original)
+            #expect(SessionKeychain.load() == original)
+            #expect(session.needsSignIn == (error == .rejected))
+        }
+        offline.close()
+        var fresh = expired()
+        fresh.expiresAt = .distantFuture
+        SessionKeychain.save(fresh) // the same owner completed authentication again
+        let signedIn = SessionStore(auth: AuthClient(baseURL: URL(string: "https://example.invalid")!, apiKey: "k"))
+        #expect(signedIn.session == fresh)
+        let reopened = OfflineStore(userId: "reauth", apiURL: URL(string: "https://example.invalid")!, root: root)
+        #expect(reopened.items.map(\.id) == ["reading"])
+        #expect(reopened.files.map(\.id) == ["photo"])
+        #expect(try Data(contentsOf: image) == Data([1, 2, 3]))
+        reopened.close()
+    }
+
+    @Test(.timeLimit(.minutes(1))) func concurrentRefreshesShareOneRequestAndLateResultsCannotUndoSignOut() async throws {
+        let gate = RefreshGate()
+        SessionKeychain.save(expired())
+        let auth = AuthClient(baseURL: URL(string: "https://example.invalid")!, apiKey: "k", refreshSession: { old in
+            await gate.refresh(old)
+        })
+        let session = SessionStore(auth: auth)
+        try #require(session.session != nil, "Test app must be signed for Keychain access")
+        let first = Task { await session.refreshIfNeeded() }
+        while await gate.calls == 0 { await Task.yield() }
+        let second = Task { await session.refreshIfNeeded() }
+        await Task.yield()
+        #expect(await gate.calls == 1)
+        await session.signOut()
+        await gate.finish()
+        await first.value
+        await second.value
+        #expect(session.session == nil)
+        #expect(SessionKeychain.load() == nil)
     }
 
     @Test func linkWithoutVerifierAsksForTheCode() async {
@@ -95,5 +152,18 @@ struct EmailLinkFallbackTests {
         let s = store()
         await s.open(URL(string: "https://mytaillog.com/aircraft/1")!)
         #expect(!s.linkNeedsCode)
+    }
+}
+
+private actor RefreshGate {
+    private(set) var calls = 0
+    private var continuation: CheckedContinuation<Session, Never>?
+    func refresh(_ old: Session) async -> Session {
+        calls += 1
+        return await withCheckedContinuation { continuation = $0 }
+    }
+    func finish() {
+        continuation?.resume(returning: Session(accessToken: "new", refreshToken: "new-refresh", expiresAt: .distantFuture, email: "test@example.invalid"))
+        continuation = nil
     }
 }

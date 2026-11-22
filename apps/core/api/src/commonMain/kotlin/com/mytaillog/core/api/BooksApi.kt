@@ -62,6 +62,7 @@ import kotlin.uuid.Uuid
     @SerialName("extraction_status") val extractionStatus: String? = null,
     @SerialName("ocr_text") val ocrText: String? = null,
     @SerialName("unread_rotated_content") val unreadRotated: Boolean = false,
+    @SerialName("needs_look") val needsLook: Boolean? = null,
     @SerialName("updated_at") val updatedAt: String,
 )
 
@@ -109,7 +110,7 @@ class BooksApi(
     suspend fun load(aircraftId: String): Books = coroutineScope {
         val map = async { parseMap(api("/api/aircraft/$aircraftId/map").bodyAsText()) }
         val entries = async { rest<EntryRow>("log_entry", aircraftId, ENTRY_COLUMNS, "entry_date.desc.nullslast,entry_index") }
-        val pages = async { rest<PageRow>("page", aircraftId, "id,logbook_id,page_sequence,review_status,extraction_status,ocr_text,unread_rotated_content,updated_at", "page_sequence") }
+        val pages = async { rest<PageRow>("page", aircraftId, "id,logbook_id,page_sequence,review_status,extraction_status,ocr_text,unread_rotated_content,needs_look,updated_at", "page_sequence") }
         val books = async { rest<LogbookRow>("logbook", aircraftId, "id,type,title", "type") }
         val gaps = async { rest<GapRow>("logbook_gap", aircraftId, "id,status,note,updated_at", "from_date") }
         Books(map.await(), entries.await(), pages.await(), books.await(), gaps.await())

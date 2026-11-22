@@ -13,7 +13,7 @@ export async function entryComposerProps(id: string, corrects?: string, opts: { 
     db.from("logbook").select("id, type, title").eq("aircraft_id", id),
     db.from("profile").select("full_name").eq("id", user.id).maybeSingle(),
     db.from("signing_credential").select("*").eq("user_id", user.id),
-    db.from("squawk").select("id, description").eq("aircraft_id", id).eq("status", "open").order("created_at", { ascending: false }).limit(100),
+    db.from("squawk").select("id, description, updated_at").eq("aircraft_id", id).eq("status", "open").order("created_at", { ascending: false }).limit(100),
   ]);
   if (!aircraft) notFound();
   const { data: canEdit } = await db.rpc("can_edit_aircraft", { target_aircraft: id });

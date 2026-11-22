@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   const doc = room && (await roomDocument(room, docId));
   if (!room || !doc?.storage_path) return new Response("Not found", { status: 404 });
 
-  const blob = await getBlob(doc.storage_path);
+  const blob = await getBlob(doc.storage_path, doc.aircraft_id);
   if (!blob) return new Response("Not found", { status: 404 });
   await logRoomView(room, `/doc/${docId}`, visitor, `document:${docId}`);
 

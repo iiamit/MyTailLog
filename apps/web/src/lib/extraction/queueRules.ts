@@ -57,16 +57,3 @@ export function batchProgress(pages: PageForProgress[], expected: number) {
     waitingDecision: pages.filter((p) => p.duplicate_of_page_id && (p.extraction_status === "queued" || p.extraction_status === "pending")).length,
   };
 }
-
-/** Every expected page arrived and each is read or failed. */
-export function batchComplete(pages: PageForProgress[], expected: number): boolean {
-  return pages.length >= expected && pages.every((p) => p.extraction_status === "extracted" || p.extraction_status === "failed");
-}
-
-/** 12 §8 "AI finished reading". */
-export function readingDoneCopy(pages: number, entries: number) {
-  return {
-    title: `${pages} ${pages === 1 ? "page" : "pages"} read`,
-    body: `${entries} ${entries === 1 ? "entry is" : "entries are"} ready to review. They don't count until you confirm them.`,
-  };
-}

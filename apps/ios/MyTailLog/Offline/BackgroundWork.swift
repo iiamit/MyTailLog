@@ -42,18 +42,21 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     @MainActor
     static func openStore() -> OfflineStore? {
         if let s = OfflineStore.current { return s }
-        guard let session = SessionKeychain.load(), let userId = session.userId else { return nil }
+        guard let session = SessionStore.shared.session, let userId = session.userId else { return nil }
         let store = OfflineStore.open(userId: userId, apiURL: StatusAPI.fromBundle().apiURL)
-        // Until the app's SessionStore takes over: the stored token (a refresh needs the UI's auth client).
-        store.token = { session.accessToken }
+        store.token = {
+            let fresh = try await SessionStore.shared.currentSession()
+            guard fresh.userId == userId else { throw AuthError.rejected }
+            return fresh.accessToken
+        }
         return store
     }
 
     private static func run(_ task: BGTask) {
         schedule()
         let work = Task { @MainActor in
-            await openStore()?.sync()
-            task.setTaskCompleted(success: true)
+            let completed = await openStore()?.sync() ?? false
+            task.setTaskCompleted(success: completed && !Task.isCancelled)
         }
         task.expirationHandler = { work.cancel() }
     }

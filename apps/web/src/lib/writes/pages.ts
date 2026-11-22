@@ -1,3 +1,6 @@
+import { insertRecords } from "./insert";
+import { replayRpc } from "./replay";
+import { writeRecord } from "./conditional";
 import type { Page, ReviewStatus } from "@/lib/database.types";
 import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
@@ -46,17 +49,14 @@ export async function setReview(
   if (loadErr) return { status: "error", message: loadErr.message };
   if (!page) return { status: "error", message: "Page not found.", httpStatus: 404 };
   if (isStale(page.updated_at, base)) return { status: "conflict", row: page };
+  if (input.status === "confirmed") {
+    const { data: pending, error } = await supabase.from("scanned_document").select("id").eq("page_id", page.id).eq("applied", false).in("doc_type", ["ad_report", "weight_balance"]).maybeSingle();
+    if (error) return { status: "error", message: error.message };
+    if (pending) return { status: "error", message: "Review and apply this AD or weight-and-balance document on the website before marking it reviewed.", httpStatus: 409 };
+  }
 
-  const { data, error } = await supabase
-    .from("page")
-    .update({ review_status: input.status })
-    .eq("id", input.pageId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Page not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+
+  return writeRecord(supabase, ctx, "page", input.pageId, page.updated_at, { review_status: input.status });
 }
 
 /**
@@ -74,26 +74,10 @@ export async function reorder(
   if (plan.rows.length === 0) return { status: "ok", row: null };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
-  // Chunked concurrency rather than one round trip per page. Nudging a page one
-  // step is 2 updates, but re-sequencing a whole logbook off a date sort is
-  // however many pages that book has — sequential awaits made a 150-page book a
-  // minutes-long wait. Chunked so a large logbook doesn't open 150 sockets at once.
-  const CHUNK = 25;
-  for (let start = 0; start < plan.rows.length; start += CHUNK) {
-    const results = await Promise.all(
-      plan.rows.slice(start, start + CHUNK).map(({ id, page_sequence }) => {
-        let q = supabase.from("page").update({ page_sequence }).eq("id", id).eq("aircraft_id", ctx.aircraftId);
-        if (input.logbookId) q = q.eq("logbook_id", input.logbookId);
-        return q.select("id");
-      }),
-    );
-    for (const r of results) {
-      if (r.error) return { status: "error", message: `Couldn't save order: ${r.error.message}` };
-      // RLS makes a non-editor's update match zero rows instead of failing.
-      if (!r.data?.length) return { status: "error", message: "Some of those pages are no longer here.", httpStatus: 404 };
-    }
-  }
-  return { status: "ok", row: null };
+  const { data, error } = await replayRpc(supabase, ctx, "change_pages", {
+    p_aircraft: ctx.aircraftId, p_ids: plan.rows.map((r) => r.id), p_action: "reorder", p_book: input.logbookId || null,
+  });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 /**
@@ -134,23 +118,22 @@ export async function deletePages(
 
   const ids = found.map((p) => p.id);
 
-  const { error: entriesError } = await supabase.from("log_entry").delete().in("page_id", ids);
-  if (entriesError) return { status: "error", message: `Couldn't delete entries: ${entriesError.message}` };
-
-  // .select() so the count is what the database actually removed, not what was
-  // asked for.
-  const { data: gone, error: pageError } = await supabase.from("page").delete().in("id", ids).select("id");
-  if (pageError) return { status: "error", message: `Couldn't delete pages: ${pageError.message}` };
+  const { data, error } = await replayRpc(supabase, ctx, "change_pages", {
+    p_aircraft: ctx.aircraftId, p_ids: ids, p_action: "delete", p_book: null,
+  });
+  if (error) return { status: "error", message: error.message };
+  const result = data as WriteResult;
+  if (result.status !== "ok") return result;
 
   // Best-effort image cleanup — an orphaned object is harmless if this fails,
   // and the records (the part that matters) are already gone.
   const paths = found.map((p) => p.storage_path).filter((p): p is string => Boolean(p));
   if (paths.length) {
     const { removeBlobs } = await import("@/lib/storage");
-    await removeBlobs(paths);
+    await removeBlobs(paths, ctx.aircraftId);
   }
 
-  return { status: "ok", row: { deleted: gone?.length ?? 0 } };
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,17 +271,17 @@ export async function register(
 
   const { blobSize, removeBlobs } = await import("@/lib/storage");
   const { thumbnailKey } = await import("@/lib/capture/thumbnail");
-  const [size, thumbSize] = await Promise.all([blobSize(path), blobSize(thumbnailKey(path))]);
+  const [size, thumbSize] = await Promise.all([blobSize(path, ctx.aircraftId), blobSize(thumbnailKey(path), ctx.aircraftId)]);
   if (size == null) return { status: "error", message: "The page image isn't on the server. Take or upload the page again.", httpStatus: 400 };
   if (size > MAX_PAGE_BYTES) {
-    await removeBlobs([path, thumbnailKey(path)]);
+    await removeBlobs([path, thumbnailKey(path)], ctx.aircraftId);
     return { status: "error", message: "Too large to upload. Retake at a lower size or upload from a computer.", httpStatus: 413 };
   }
 
   const q = await queueFields(supabase, ctx, { queue: true, batchId: input.batchId, phash: input.phash });
   if ("error" in q) return { status: "error", message: q.error, httpStatus: q.httpStatus };
 
-  const { data, error } = await supabase.from("page").insert({
+  return insertRecords(supabase, ctx, "page", {
     id: input.id,
     logbook_id: input.logbookId,
     aircraft_id: ctx.aircraftId,
@@ -308,13 +291,7 @@ export async function register(
     captured_at: input.capturedAt ?? null,
     is_handwritten: input.isHandwritten !== false,
     ...q.fields,
-  }).select("*").maybeSingle();
-  if (error?.code === "23505") {
-    const { data: again } = await supabase.from("page").select("*").eq("id", input.id).maybeSingle();
-    return again ? { status: "ok", row: again } : { status: "error", message: error.message };
-  }
-  if (error) return { status: "error", message: error.message };
-  return { status: "ok", row: data };
+  });
 }
 
 /** `batch.create` (09 §4.8, §5.3): one scanning session into one logbook. `id` is the idempotency key. */
@@ -332,13 +309,11 @@ export async function createBatch(
   if (existing) return existing.aircraft_id === ctx.aircraftId ? { status: "ok", row: existing } : { status: "error", message: "Batch not found.", httpStatus: 404 };
   const { data: book } = await supabase.from("logbook").select("id").eq("id", input.logbookId).eq("aircraft_id", ctx.aircraftId).maybeSingle();
   if (!book) return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
-  const { data, error } = await supabase.from("scan_batch").insert({
+  return insertRecords(supabase, ctx, "scan_batch", {
     id: input.id, aircraft_id: ctx.aircraftId, logbook_id: input.logbookId,
     source: input.source as (typeof BATCH_SOURCES)[number], expected_pages: input.expectedPages,
     is_handwritten: input.isHandwritten !== false, created_by: ctx.userId,
-  }).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  return { status: "ok", row: data };
+  });
 }
 
 /**
@@ -356,20 +331,10 @@ export async function duplicateDecision(
     .eq("id", input.pageId).eq("aircraft_id", ctx.aircraftId).maybeSingle();
   // Already skipped (a retry): the page is gone, which is what was asked.
   if (!page) return input.decision === "skip" ? { status: "ok", row: null } : { status: "error", message: "Page not found.", httpStatus: 404 };
-  if (input.decision === "keep_both") {
-    const { data, error } = await supabase.from("page").update({ duplicate_of_page_id: null })
-      .eq("id", page.id).eq("aircraft_id", ctx.aircraftId).select("*").maybeSingle();
-    if (error) return { status: "error", message: error.message };
-    return { status: "ok", row: data };
-  }
-  const r = await deletePages(supabase, ctx, { pageIds: [page.id] });
-  if (r.status !== "ok") return r;
-  if (page.batch_id) {
-    const { data: batch } = await supabase.from("scan_batch").select("expected_pages").eq("id", page.batch_id).maybeSingle();
-    if (batch && batch.expected_pages > 1)
-      await supabase.from("scan_batch").update({ expected_pages: batch.expected_pages - 1 }).eq("id", page.batch_id);
-  }
-  return { status: "ok", row: null };
+  const { data, error } = await replayRpc(supabase, ctx, "change_pages", {
+    p_aircraft: ctx.aircraftId, p_ids: [page.id], p_action: input.decision, p_book: null,
+  });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 const idList = (x: unknown) => (Array.isArray(x) ? x.filter((v): v is string => typeof v === "string").slice(0, MAX_DELETE) : []);

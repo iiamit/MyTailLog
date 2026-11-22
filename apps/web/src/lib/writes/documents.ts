@@ -1,3 +1,4 @@
+import { writeRecord } from "./conditional";
 import type { DocumentRecord, DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES } from "@/lib/documents";
 import { entryIsOnAircraft, FOREIGN_ENTRY, canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
@@ -71,18 +72,10 @@ async function patchDocument(
   supabase: Db,
   ctx: WriteCtx,
   documentId: string,
+  version: string,
   patch: Partial<DocumentRecord>,
 ): Promise<WriteResult> {
-  const { data, error } = await supabase
-    .from("document")
-    .update(patch)
-    .eq("id", documentId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Document not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  return writeRecord(supabase, ctx, "document", documentId, version, patch);
 }
 
 export async function update(
@@ -95,7 +88,7 @@ export async function update(
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   const loaded = await loadDocument(supabase, ctx, input.documentId, base);
   if ("status" in loaded) return loaded;
-  return patchDocument(supabase, ctx, input.documentId, picked.fields);
+  return patchDocument(supabase, ctx, input.documentId, loaded.row.updated_at, picked.fields);
 }
 
 type Expiry = Pick<DocumentRecord, "track_expiry" | "expires_on" | "renews_every_months" | "remind_lead_days">;
@@ -131,7 +124,25 @@ export async function setExpiry(
   if ("status" in loaded) return loaded;
   const picked = pickExpiry(input, loaded.row.type);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
-  return patchDocument(supabase, ctx, input.documentId, picked.fields);
+  return patchDocument(supabase, ctx, input.documentId, loaded.row.updated_at, picked.fields);
+}
+
+/** Save the rendered document form as one CAS write; invalid later fields never leave a partial save. */
+export async function save(
+  supabase: Db, ctx: WriteCtx,
+  input: { documentId: string; fields: unknown; expiry: Record<string, unknown>; entryId: string | null },
+  base: string,
+): Promise<WriteResult> {
+  const fields = pickDocumentFields(input.fields);
+  if ("error" in fields) return { status: "error", message: fields.error, httpStatus: 400 };
+  const loaded = await loadDocument(supabase, ctx, input.documentId, base);
+  if ("status" in loaded) return loaded;
+  const expiry = pickExpiry(input.expiry, fields.fields.type ?? loaded.row.type);
+  if ("error" in expiry) return { status: "error", message: expiry.error, httpStatus: 400 };
+  if (input.entryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, input.entryId)))
+    return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
+  return patchDocument(supabase, ctx, input.documentId, loaded.row.updated_at,
+    { ...fields.fields, ...expiry.fields, log_entry_id: input.entryId });
 }
 
 /**
@@ -151,7 +162,7 @@ export async function setEntry(
   if (input.entryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, input.entryId))) {
     return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
   }
-  return patchDocument(supabase, ctx, input.documentId, { log_entry_id: input.entryId ?? null });
+  return patchDocument(supabase, ctx, input.documentId, loaded.row.updated_at, { log_entry_id: input.entryId ?? null });
 }
 
 /** Nothing references document(id) (checked the migrations). The row goes
@@ -165,17 +176,11 @@ export async function remove(
 ): Promise<WriteResult> {
   const loaded = await loadDocument(supabase, ctx, input.documentId, base);
   if ("status" in loaded) return loaded;
-  const { data, error } = await supabase
-    .from("document")
-    .delete()
-    .eq("id", input.documentId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Document not found.", httpStatus: 404 };
+  const result = await writeRecord(supabase, ctx, "document", input.documentId, loaded.row.updated_at, null);
+  if (result.status !== "ok") return result;
   if (loaded.row.storage_path) {
     const { removeBlobs } = await import("@/lib/storage");
-    await removeBlobs([loaded.row.storage_path]).catch(() => {});
+    await removeBlobs([loaded.row.storage_path], ctx.aircraftId).catch(() => {});
   }
   return { status: "ok", row: null };
 }

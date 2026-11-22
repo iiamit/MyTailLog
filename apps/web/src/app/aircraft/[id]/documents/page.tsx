@@ -13,7 +13,7 @@ export default async function DocumentsPage({ params }: { params: Promise<{ id: 
   const { data: docs } = await supabase
     .from("document")
     .select(
-      "id, type, title, reference, document_date, notes, file_name, mime_type, size_bytes, log_entry_id, created_at",
+      "id, type, title, reference, document_date, notes, file_name, mime_type, size_bytes, log_entry_id, created_at, updated_at",
     )
     .eq("aircraft_id", id)
     .order("created_at", { ascending: false });

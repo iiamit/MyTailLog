@@ -77,3 +77,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   return NextResponse.json({ ok: true, path });
 }
+
+/** Aircraft-scoped originals for a complete browser backup (including meter and squawk photos). */
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createSyncClient(req);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const { data: aircraft, error } = await supabase.from("aircraft").select("id").eq("id", id).maybeSingle();
+  if (error || !aircraft) return NextResponse.json({ error: "Aircraft not found." }, { status: 404 });
+  const path = new URL(req.url).searchParams.get("path") ?? "";
+  if (!path.startsWith(`${id}/`) || path.includes("..") || path.includes("\\"))
+    return NextResponse.json({ error: "Path must be under this aircraft." }, { status: 400 });
+  const { getBlob } = await import("@/lib/storage");
+  const blob = await getBlob(path, id);
+  if (!blob) return NextResponse.json({ error: "File not found." }, { status: 404 });
+  return new Response(new Uint8Array(blob.data), { headers: { "Content-Type": blob.contentType ?? "application/octet-stream", "Cache-Control": "private, no-store" } });
+}

@@ -14,6 +14,7 @@ const MAX_BYTES = 25 * 1024 * 1024;
 export type EntryOption = { id: string; label: string };
 export type DocValues = {
   id: string;
+  updated_at: string;
   type: DocumentType;
   title: string | null;
   reference: string | null;
@@ -41,6 +42,7 @@ export function DocForm({
   entries: EntryOption[];
   closeHref: string;
 }) {
+  const [base] = useState(doc?.updated_at);
   const router = useRouter();
   const [type, setType] = useState<DocumentType>(doc?.type ?? "airworthiness_cert");
   const [track, setTrack] = useState(doc ? doc.track_expiry : TRACKS_BY_DEFAULT.includes(type));
@@ -68,6 +70,7 @@ export function DocForm({
   return (
     <FormLeaf title={doc ? "Edit details" : "Add a document"} closeHref={closeHref}>
       <form action={action} className="flex flex-col gap-4">
+        {doc && <input type="hidden" name="base" value={base} />}
         <Field label="Category">
           <select
             name="type"

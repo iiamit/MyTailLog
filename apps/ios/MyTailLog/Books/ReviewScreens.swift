@@ -13,12 +13,14 @@ struct ReviewQueueContent: View {
                 .dFont(.body).foregroundStyle(Tokens.Colors.ink)
         }
         if !queue.isEmpty {
-            let doubtful = queue.filter { p in model.entries(on: p).contains { $0.reviewFields.contains(where: \.doubtful) } }.count
+            let documents = queue.filter { needsWebsiteReview($0, entries: model.entries) }.count
+            let doubtful = queue.filter { p in !needsWebsiteReview(p, entries: model.entries) && model.entries(on: p).contains { $0.reviewFields.contains(where: \.doubtful) } }.count
             VStack(alignment: .leading, spacing: 0) {
                 GroupHeader(title: "Waiting for you", count: "\(queue.count)")
                 ForEach(queue) { page in row(page) }
             }
-            Text(summary(queue.count, doubtful)).dFont(.small).foregroundStyle(Tokens.Colors.ink3)
+            if queue.count > documents { Text(summary(queue.count - documents, doubtful)).dFont(.small).foregroundStyle(Tokens.Colors.ink3) }
+            if documents > 0 { Text("Document figures need review on the website before applying them.").dFont(.small).foregroundStyle(Tokens.Colors.ink3) }
             Button(queue.count == 1 ? "Review 1 page" : "Review \(queue.count) pages") { start(nil) }.buttonStyle(.primary)
             if !model.canEdit {
                 Text("You can view \(model.aircraft.tailNumber). The owner confirms these pages.")
@@ -63,7 +65,7 @@ struct ReviewQueueContent: View {
     private func row(_ page: PageRow) -> some View {
         let es = model.entries(on: page)
         let doubts = es.flatMap { $0.reviewFields.filter(\.doubtful) }
-        let detail = (es.count == 1 ? "1 entry" : "\(es.count) entries")
+        let detail = needsWebsiteReview(page, entries: model.entries) ? "Review document on website" : (es.count == 1 ? "1 entry" : "\(es.count) entries")
             + (doubts.isEmpty ? " · reads cleanly" : " · check the \(Set(doubts.map { $0.label.lowercased() }).sorted().joined(separator: " and "))")
         return Button { start(page.id) } label: {
             HStack(spacing: Tokens.Space.s3) {
@@ -159,7 +161,7 @@ final class ReviewSession {
     }
 
     func confirm() async {
-        guard let page, canConfirm else { return }
+        guard let page, canConfirm, !needsWebsiteReview(page, entries: model.entries) else { return }
         busy = true
         let n = entries.filter { !$0.owner_confirmed }.count
         switch await model.confirm(page, outcomes: pageOutcomes) {
@@ -363,7 +365,13 @@ struct ReviewDrawer: View {
             if session.done {
                 endOfQueue
             } else if let page = session.page {
-                if session.opened, let (e, f) = session.selectedField, !desk {
+                if needsWebsiteReview(page, entries: session.model.entries) {
+                    VStack(alignment: .leading, spacing: Tokens.Space.s3) {
+                        Text("Review this document on the website before applying it to aircraft records. Sign in there if asked.")
+                            .dFont(.body).foregroundStyle(Tokens.Colors.ink)
+                        Link("Review document on website", destination: session.model.webReviewURL(page)).buttonStyle(.primary)
+                    }.padding(Tokens.Space.s4)
+                } else if session.opened, let (e, f) = session.selectedField, !desk {
                     FieldPanel(session: session, entry: e, field: f)
                 } else {
                     ScrollView { fields(page).padding(Tokens.Space.s4) }

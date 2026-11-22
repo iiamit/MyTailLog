@@ -55,6 +55,30 @@ class SyncEngineTest {
     }
 
     @Test
+    fun ownEditsRebaseButAnInterveningRemoteEditStillConflicts() = runTest {
+        for (remoteEdit in listOf(false, true)) {
+            val rig = Rig()
+            val target = RowRef("squawk", "s1")
+            rig.queue("first", type = "squawk.update", target = target, base = "t0")
+            rig.queue("second", type = "squawk.update", target = target, base = "t0")
+            var serverVersion = "t0"
+            rig.api.answer = { mutation ->
+                if (mutation.id == "second" && remoteEdit) serverVersion = "remote"
+                if (mutation.base != serverVersion) {
+                    PushResult(mutation.id, PushResult.Status.Conflict, obj("id" to "s1", "updated_at" to serverVersion))
+                } else {
+                    serverVersion = if (mutation.id == "first") "t1" else "t2"
+                    PushResult(mutation.id, PushResult.Status.Ok, obj("id" to "s1", "aircraft_id" to "a1", "updated_at" to serverVersion))
+                }
+            }
+            val result = rig.engine.push()
+            assertEquals("t1", rig.api.batches[1].single().base)
+            assertEquals(if (remoteEdit) 1 else 2, result.ok)
+            assertEquals(if (remoteEdit) 1 else 0, result.conflicts)
+        }
+    }
+
+    @Test
     fun pullLoopsFromTheStoredCursorUntilNoMore() = runTest {
         val change = SyncChange("squawk", "s1", SyncChange.Op.Delete, 3)
         val rig = Rig(FakeApi(mutableListOf({ PullPage(listOf(change), 3, hasMore = true) }, { PullPage(listOf(change), 7, hasMore = false) })))

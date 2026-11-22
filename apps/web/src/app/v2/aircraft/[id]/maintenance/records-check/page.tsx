@@ -55,7 +55,7 @@ export default async function RecordsCheckPage({ params, searchParams }: { param
 
   const [due, entryRes, pageRes, squawks, aircraftRes] = await Promise.all([
     dueSnapshot(id, auth.user.id).catch(() => null),
-    supabase.from("log_entry").select("id, page_id, logbook_id, entry_date, tach, hobbs, description, work_performed, owner_confirmed, created_at").eq("aircraft_id", id).limit(20000),
+    supabase.from("log_entry").select("id, updated_at, page_id, logbook_id, entry_date, tach, hobbs, description, work_performed, owner_confirmed, created_at").eq("aircraft_id", id).limit(20000),
     supabase.from("page").select("id, logbook_id, page_sequence, ocr_text, created_at").eq("aircraft_id", id).limit(20000),
     supabase.from("squawk").select("id", { count: "exact", head: true }).eq("aircraft_id", id).eq("status", "open"),
     supabase.from("aircraft").select("enrollment_hobbs, enrollment_tach, enrollment_airframe, enrollment_date").eq("id", id).maybeSingle(),
@@ -108,6 +108,8 @@ export default async function RecordsCheckPage({ params, searchParams }: { param
 
   // Confirmed entries only (S-UNCONF): pages waiting for review are not checked.
   const entryRows = entryRes.data ?? [];
+  const entryVersions = new Map(entryRows.map((e) => [e.id, e.updated_at]));
+  const readingVersions = new Map((input.hours_reading ?? []).map((r) => [r.id, r.updated_at]));
   const confirmed: AuditEntry[] = entryRows.filter((e) => e.owner_confirmed).map((e) => ({
     date: e.entry_date, text: `${e.description ?? ""} ${e.work_performed ?? ""}`.toLowerCase(),
   }));
@@ -149,7 +151,7 @@ export default async function RecordsCheckPage({ params, searchParams }: { param
 
   let right: React.ReactNode = <SourceMat />;
   if (selGap && sp.panel === "explain" && edit) {
-    right = <ExplainForm aircraftId={id} gapId={selGap.id} title={gapName(selGap)} status={selGap.status} note={selGap.note ?? null} closeHref={sel(`gap:${selGap.id}`)} />;
+    right = <ExplainForm aircraftId={id} gapId={selGap.id} renderedBase={selGap.updated_at ?? ""} title={gapName(selGap)} status={selGap.status} note={selGap.note ?? null} closeHref={sel(`gap:${selGap.id}`)} />;
   } else if (selGap) {
     const ev = evidence(selGap);
     const sides = [ev?.neighbourPages.before ?? null, ev?.neighbourPages.after ?? null];
@@ -326,7 +328,7 @@ export default async function RecordsCheckPage({ params, searchParams }: { param
                       </span>
                     </span>
                     {edit && c.ids.filter((x) => x !== c.keepId).map((eid) => (
-                      <form key={eid} action={deleteDuplicateEntry.bind(null, id, eid)}>
+                      <form key={eid} action={deleteDuplicateEntry.bind(null, id, eid, entryVersions.get(eid) ?? "")}>
                         <ConfirmSubmit
                           variant="secondary"
                           label="Delete the copy"
@@ -364,7 +366,7 @@ export default async function RecordsCheckPage({ params, searchParams }: { param
                         <td className="border-b border-rule py-2.5 pr-3 align-top tabular-nums">{x.reason === "duplicate" ? "clear it" : x.suggested != null ? fmtMeter(x.suggested) : "none"}</td>
                         <td className="border-b border-rule py-2.5 align-top">
                           {edit && (
-                            <form action={fixReading.bind(null, id, x.source, x.readingId, x.field)} className="flex flex-wrap items-center justify-end gap-1">
+                            <form action={fixReading.bind(null, id, x.source, x.readingId, x.field, (x.source === "entry" ? entryVersions : readingVersions).get(x.readingId) ?? "")} className="flex flex-wrap items-center justify-end gap-1">
                               {x.reason === "duplicate" ? (
                                 <button type="submit" name="how" value="clear" className={buttonClass("secondary", "s")}>Clear {x.field}</button>
                               ) : (
@@ -399,7 +401,7 @@ export default async function RecordsCheckPage({ params, searchParams }: { param
                       </span>
                     </span>
                     {edit && (
-                      <form action={reopenGap.bind(null, id, g.id)}>
+                      <form action={reopenGap.bind(null, id, g.id, g.updated_at ?? "")}>
                         <button type="submit" className={buttonClass("quiet", "s")}>Undo</button>
                       </form>
                     )}

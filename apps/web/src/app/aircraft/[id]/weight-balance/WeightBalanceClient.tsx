@@ -11,6 +11,7 @@ import { upsertWeightBalance, deleteWeightBalance, type WBInput } from "./action
 
 type FormState = {
   id?: string;
+  base?: string;
   revision_date: string;
   empty_weight: string;
   empty_weight_arm: string;
@@ -38,6 +39,7 @@ function fromRow(r: WeightBalance): FormState {
   const s = (n: number | null) => (n != null ? String(n) : "");
   return {
     id: r.id,
+    base: r.updated_at,
     revision_date: r.revision_date,
     empty_weight: s(r.empty_weight),
     empty_weight_arm: s(r.empty_weight_arm),
@@ -57,6 +59,7 @@ function toInput(f: FormState): WBInput {
   };
   return {
     id: f.id,
+    base: f.base,
     revision_date: f.revision_date,
     empty_weight: num(f.empty_weight),
     empty_weight_arm: num(f.empty_weight_arm),
@@ -114,7 +117,7 @@ export function WeightBalanceClient({
 
   async function del(r: WeightBalance) {
     setBusy(true);
-    const res = await deleteWeightBalance(aircraftId, r.id);
+    const res = await deleteWeightBalance(aircraftId, r.id, r.updated_at);
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
     toast.success("Revision deleted.");

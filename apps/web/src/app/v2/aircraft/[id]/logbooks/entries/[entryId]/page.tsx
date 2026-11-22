@@ -214,7 +214,7 @@ export default async function EntryPage({
                       Fix the reading
                     </Button>
                   )}
-                  {e.owner_confirmed && <UnconfirmButton aircraftId={id} entryId={e.id} />}
+                  {e.owner_confirmed && <UnconfirmButton aircraftId={id} entryId={e.id} base={e.updated_at} />}
                 </div>
               )}
             </HungSection>

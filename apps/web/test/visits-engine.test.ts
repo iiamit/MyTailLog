@@ -39,3 +39,15 @@ test("suggestion key: sha1 of place, sorted keys and week, 16 hex; a new week is
   assert.equal(k, createHash("sha1").update("KBED|mx:a,mx:b|2026-12-07").digest("hex").slice(0, 16));
   assert.notEqual(k, suggestionKey("KBED", ["mx:a", "mx:b"], "2026-12-14"));
 });
+
+test("persisted visit views retain the exact rendered version for conditional actions", () => {
+  const version = "2026-11-21T11:12:13.123456+00:00";
+  const input: DueInput = {
+    ...worked.input,
+    planned_visit: [{ id: "visit", updated_at: version, status: "planned", week_of: "2026-12-07", visit_date: null, provider_id: null }],
+    planned_visit_item: [],
+  };
+  const visits = computeStatus(input, worked.today).visits;
+  assert.equal(visits.planned.find((v) => v.id === "visit")?.updatedAt, version);
+  assert.ok(visits.suggested.every((v) => v.updatedAt === undefined));
+});

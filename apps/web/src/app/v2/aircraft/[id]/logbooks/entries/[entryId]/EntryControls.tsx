@@ -23,7 +23,7 @@ export function EntryKeys({ prev, next }: { prev: string | null; next: string | 
 }
 
 /** "Unconfirm": back to read by AI (extracted entries only). */
-export function UnconfirmButton({ aircraftId, entryId }: { aircraftId: string; entryId: string }) {
+export function UnconfirmButton({ aircraftId, entryId, base }: { aircraftId: string; entryId: string; base: string }) {
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   return (
@@ -34,7 +34,7 @@ export function UnconfirmButton({ aircraftId, entryId }: { aircraftId: string; e
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const r = await setEntryConfirmed(aircraftId, entryId, false);
+            const r = await setEntryConfirmed(aircraftId, entryId, false, base);
             if ("error" in r) setErr(r.error);
           })
         }

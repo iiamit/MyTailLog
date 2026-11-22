@@ -89,7 +89,8 @@ func trustLabel(_ level: TrustLevel) -> String {
 
 /// A page that waits for review (M-REVIEW-01): read, and at least one entry not yet confirmed.
 func waitsForReview(_ page: PageRow, entries: [EntryRow]) -> Bool {
-    page.extraction_status == "extracted" && entries.contains { $0.page_id == page.id && !$0.owner_confirmed }
+    page.extraction_status == "extracted" && (entries.contains { $0.page_id == page.id && !$0.owner_confirmed }
+        || (page.needs_look == true && page.review_status != "confirmed"))
 }
 
 /// The review queue, in lane then page order (07 review flow).
@@ -228,4 +229,9 @@ func pushProblem(_ results: [PushResult]) -> String? {
     if bad.status == "conflict" { return "Someone changed this while you were looking. Pull to refresh and try again." }
     if let e = bad.error, e.localizedCaseInsensitiveContains("edit access") { return "You can view this aircraft. The owner can make changes." }
     return bad.error ?? "That didn't save. Try again."
+}
+
+func needsWebsiteReview(_ page: PageRow, entries: [EntryRow]) -> Bool {
+    page.extraction_status == "extracted" && page.needs_look == true && page.review_status != "confirmed"
+        && !entries.contains { $0.page_id == page.id }
 }

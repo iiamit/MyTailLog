@@ -122,7 +122,7 @@ export async function deleteAircraft(
   for (const d of docs ?? []) if (d.storage_path) paths.push(d.storage_path);
 
   // Best-effort storage cleanup before the DB rows (which gate storage access) go.
-  await removeBlobs(paths);
+  await removeBlobs(paths, aircraftId);
 
   const { error: delErr } = await supabase.from("aircraft").delete().eq("id", aircraftId);
   if (delErr) return { error: delErr.message };

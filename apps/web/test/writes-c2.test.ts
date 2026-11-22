@@ -101,9 +101,9 @@ test("markDonePlan without a base applies as today (web, legacy phones)", () => 
 
 test("markDonePlan: §2 conflict rule — a base older than the row's updated_at writes nothing", () => {
   assert.deepEqual(markDonePlan(vor, { date: "2026-08-12" }, "2026-07-31T00:00:00.000Z"), { conflict: true });
-  // equal or newer base: the phone saw the current row — apply
+  // Only the exact current version can apply; a future base is invalid.
   assert.ok("patch" in markDonePlan(vor, { date: "2026-08-12" }, "2026-08-01T10:00:00.000Z"));
-  assert.ok("patch" in markDonePlan(vor, { date: "2026-08-12" }, "2026-08-02T00:00:00.000Z"));
+  assert.deepEqual(markDonePlan(vor, { date: "2026-08-12" }, "2026-08-02T00:00:00.000Z"), { conflict: true });
 });
 
 test("markDonePlan: date absent = today, null clears, bad input is an error", () => {

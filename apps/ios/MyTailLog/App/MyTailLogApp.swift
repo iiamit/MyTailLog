@@ -5,12 +5,11 @@ import SwiftUI
 struct MyTailLogApp: App {
     /// Background uploads and BGTasks (05 §9).
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    /// Swap for the KMP-backed bridge when the XCFramework lands (Core/CoreBridge.swift).
     @State private var store: SessionStore
     private let statusAPI = StatusAPI.fromBundle()
 
     init() {
-        _store = State(initialValue: SessionStore(auth: .fromBundle(), core: InMemoryCore()))
+        _store = State(initialValue: SessionStore.shared)
     }
 
     var body: some Scene {

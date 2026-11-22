@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import * as entries from "@/lib/writes/entries";
 import * as pages from "@/lib/writes/pages";
 import * as gaps from "@/lib/writes/gaps";
-import { isEntryClean } from "@/lib/extraction/schema";
+import { randomUUID } from "node:crypto";
 import { BOOK_NAME, nextWaiting } from "@/lib/v2/books";
 import { insertAfter } from "@/lib/v2/capture";
 
@@ -28,16 +28,17 @@ function refresh(aircraftId: string) {
 }
 
 /** `gap.setStatus` from the gap detail (W-BOOKS-04). */
-export async function setGapStatus(aircraftId: string, gapId: string, status: "open" | "no_pages_exist" | "asked_previous_owner" | "dismissed", note: string | null): Promise<{ ok: true } | Fail> {
+export async function setGapStatus(aircraftId: string, gapId: string, status: "open" | "no_pages_exist" | "asked_previous_owner" | "dismissed", note: string | null, base: string): Promise<{ ok: true; updatedAt: string } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  const r = await gaps.setStatus(s.supabase, s.ctx, { gapId, status, note });
+  if (!base) return { error: "Reload the gap before changing it." };
+  const r = await gaps.setStatus(s.supabase, s.ctx, { gapId, status, note }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   refresh(aircraftId);
-  return { ok: true };
+  return { ok: true, updatedAt: String(r.row?.updated_at) };
 }
 
-export type EntryWrite = { id: string; isNew: boolean; fields: Record<string, unknown> | null };
+export type EntryWrite = { id: string; isNew: boolean; fields: Record<string, unknown> | null; base?: string };
 
 /** The next page waiting for review after `pageId` (same book by sequence, then the other books in book order). */
 async function nextPage(supabase: entries.Db, aircraftId: string, pageId: string | null): Promise<string | null> {
@@ -74,81 +75,74 @@ export async function confirmEntries(
   logbookId: string,
   writes: EntryWrite[],
   wholePage: boolean,
-): Promise<{ ok: true; confirmed: string[]; created: { tempId: string; id: string }[]; next: string | null } | Fail> {
+  pageBase?: string,
+): Promise<{ ok: true; pageVersions: Record<string, string>; confirmed: string[]; created: { tempId: string; id: string }[]; updatedVersions: Record<string, string>; versions: Record<string, string>; next: string | null } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  const confirmed: string[] = [];
-  const created: { tempId: string; id: string }[] = [];
-  for (const [i, w] of writes.entries()) {
-    const r = w.isNew
-      ? await entries.create(s.supabase, s.ctx, { logbookId: String(w.fields?.logbook_id || logbookId), pageId, fields: w.fields ?? {} })
-      : w.fields
-        ? await entries.update(s.supabase, s.ctx, { entryId: w.id, fields: w.fields })
-        : await entries.setConfirmed(s.supabase, s.ctx, { entryId: w.id, confirmed: true });
-    if (r.status !== "ok") return { error: `${writes.length > 1 ? `Entry ${i + 1}: ` : ""}${entries.failMessage(r)}` };
-    const id = w.isNew ? String(r.row?.id) : w.id;
-    if (w.isNew) created.push({ tempId: w.id, id });
-    confirmed.push(id);
+  if (pageId && wholePage && !pageBase) return { error: "Reload the page before confirming it." };
+  const prepared: Record<string, unknown>[] = [];
+  for (const w of writes) {
+    if (!w.isNew && !w.base) return { error: "Reload this entry before confirming it." };
+    const picked = w.fields ? entries.pickEntryFields(w.fields) : { fields: null };
+    if ("error" in picked) return { error: picked.error };
+    prepared.push({ ...w, tempId: w.id, id: w.isNew && !/^[0-9a-f-]{36}$/i.test(w.id) ? randomUUID() : w.id, fields: picked.fields });
   }
-  let next: string | null = null;
-  if (pageId && wholePage) {
-    const r = await pages.setReview(s.supabase, s.ctx, { pageId, status: "confirmed" });
-    if (r.status !== "ok") return { error: entries.failMessage(r) };
-    next = await nextPage(s.supabase, aircraftId, pageId);
-  }
+  const { data, error } = await s.supabase.rpc("confirm_review_entries", {
+    p_aircraft: aircraftId, p_page: pageId, p_book: logbookId || null,
+    p_page_base: pageBase || null, p_writes: prepared, p_whole: wholePage,
+  });
+  if (error) return { error: error.message };
+  const result = data as { status: string; row: { confirmed: string[]; created: { tempId: string; id: string }[]; entryVersions: Record<string, string>; updatedVersions: Record<string, string>; pageVersions: Record<string, string> } } | null;
+  if (result?.status !== "ok" || !result.row) return { error: "Could not confirm these entries." };
+  const next = pageId && wholePage ? await nextPage(s.supabase, aircraftId, pageId) : null;
   refresh(aircraftId);
-  return { ok: true, confirmed, created, next };
+  return { ok: true, confirmed: result.row.confirmed, created: result.row.created, versions: result.row.entryVersions, updatedVersions: result.row.updatedVersions, pageVersions: result.row.pageVersions, next };
 }
 
 /** Undo "Confirm page and next" or "Confirm clean pages": back to read by AI, pages back to unreviewed. */
-export async function undoConfirm(aircraftId: string, entryIds: string[], pageIds: string[]): Promise<{ ok: true } | Fail> {
+export async function undoConfirm(aircraftId: string, entryVersions: Record<string, string>, pageVersions: Record<string, string>): Promise<{ ok: true } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  for (const entryId of entryIds.slice(0, 500)) {
-    const r = await entries.setConfirmed(s.supabase, s.ctx, { entryId, confirmed: false });
-    if (r.status !== "ok") return { error: entries.failMessage(r) };
-  }
-  for (const pageId of pageIds.slice(0, 500)) {
-    const r = await pages.setReview(s.supabase, s.ctx, { pageId, status: "unreviewed" });
-    if (r.status !== "ok") return { error: entries.failMessage(r) };
-  }
+  const { error } = await s.supabase.rpc("undo_review_confirmation", { p_aircraft: aircraftId, p_entries: entryVersions, p_pages: pageVersions });
+  if (error) return { error: error.message };
   refresh(aircraftId);
   return { ok: true };
 }
 
-export async function setEntryConfirmed(aircraftId: string, entryId: string, confirmed: boolean): Promise<{ ok: true } | Fail> {
+export async function setEntryConfirmed(aircraftId: string, entryId: string, confirmed: boolean, base: string): Promise<{ ok: true } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  const r = await entries.setConfirmed(s.supabase, s.ctx, { entryId, confirmed });
+  const r = await entries.setConfirmed(s.supabase, s.ctx, { entryId, confirmed }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   refresh(aircraftId);
   return { ok: true };
 }
 
-export async function deleteEntry(aircraftId: string, entryId: string): Promise<{ ok: true } | Fail> {
+export async function deleteEntry(aircraftId: string, entryId: string, base: string): Promise<{ ok: true } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  const r = await entries.remove(s.supabase, s.ctx, { entryId });
+  const r = await entries.remove(s.supabase, s.ctx, { entryId }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   refresh(aircraftId);
   return { ok: true };
 }
 
 /** "Join them": merge a continuation into the entry it continues (entry.merge). */
-export async function joinContinuation(aircraftId: string, tailEntryId: string): Promise<{ ok: true } | Fail> {
+export async function joinContinuation(aircraftId: string, tailEntryId: string, base: string): Promise<{ ok: true } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  const r = await entries.mergeContinuation(s.supabase, s.ctx, { tailEntryId });
+  const r = await entries.mergeContinuation(s.supabase, s.ctx, { tailEntryId }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   refresh(aircraftId);
   return { ok: true };
 }
 
 /** "Flag this page" (page.review disputed). */
-export async function flagPage(aircraftId: string, pageId: string): Promise<{ ok: true } | Fail> {
+export async function flagPage(aircraftId: string, pageId: string, base: string): Promise<{ ok: true } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  const r = await pages.setReview(s.supabase, s.ctx, { pageId, status: "disputed" });
+  if (!base) return { error: "Reload the page before changing it." };
+  const r = await pages.setReview(s.supabase, s.ctx, { pageId, status: "disputed" }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   refresh(aircraftId);
   return { ok: true };
@@ -158,25 +152,15 @@ export async function flagPage(aircraftId: string, pageId: string): Promise<{ ok
  * "Confirm {c} clean pages" (W-BOOKS-08) through entries.confirmClean. The ids it will confirm are read first with
  * the same rule (isEntryClean) so the toast's Undo can put exactly those back.
  */
-export async function confirmClean(aircraftId: string): Promise<{ ok: true; entries: number; ids: string[]; pages: string[] } | Fail> {
+export async function confirmClean(aircraftId: string, versions: Record<string, string>): Promise<{ ok: true; entries: number; ids: string[]; pages: string[]; entryVersions: Record<string, string>; pageVersions: Record<string, string> } | Fail> {
   const s = await session(aircraftId);
   if (!s) return NOT_SIGNED_IN;
-  const { data: before } = await s.supabase
-    .from("log_entry")
-    .select("id, page_id, confidence, field_confidence, is_continuation")
-    .eq("aircraft_id", aircraftId)
-    .eq("owner_confirmed", false);
-  const clean = (before ?? []).filter(isEntryClean);
-  const r = await entries.confirmClean(s.supabase, s.ctx);
+  const r = await entries.confirmClean(s.supabase, s.ctx, { versions });
   if (r.status !== "ok") return { error: entries.failMessage(r) };
-  const { data: flipped } = await s.supabase
-    .from("page")
-    .select("id")
-    .eq("aircraft_id", aircraftId)
-    .eq("review_status", "confirmed")
-    .in("id", [...new Set(clean.map((e) => e.page_id).filter((p): p is string => !!p))].slice(0, 500));
+  const entryVersions = (r.row?.entryVersions ?? {}) as Record<string, string>;
+  const pageVersions = (r.row?.pageVersions ?? {}) as Record<string, string>;
   refresh(aircraftId);
-  return { ok: true, entries: Number((r.row as { confirmed?: number } | null)?.confirmed ?? clean.length), ids: clean.map((e) => e.id), pages: (flipped ?? []).map((p) => p.id) };
+  return { ok: true, entries: Number(r.row?.confirmed ?? 0), ids: Object.keys(entryVersions), pages: Object.keys(pageVersions), entryVersions, pageVersions };
 }
 
 // --- Pages library and Add pages (W-BOOKS-05, W-BOOKS-06) ----------------------------------------------------------

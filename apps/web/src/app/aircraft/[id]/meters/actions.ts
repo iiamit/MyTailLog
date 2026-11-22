@@ -39,9 +39,10 @@ function finish(aircraftId: string, r: WriteResult): Result {
 export async function updateEnrollmentMeters(
   aircraftId: string,
   input: { hobbs: number | null; tach: number | null; airframe: number | null },
+  base: string,
 ): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await meters.updateEnrollmentMeters(supabase, ctx, input));
+  return finish(aircraftId, await meters.updateEnrollmentMeters(supabase, ctx, input, base));
 }
 
 /** Record a meter replacement: the old meter's final reading and the new one's start. */
@@ -62,9 +63,9 @@ export async function addMeterReset(
   );
 }
 
-export async function deleteMeterReset(aircraftId: string, id: string): Promise<Result> {
+export async function deleteMeterReset(aircraftId: string, id: string, base: string): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await meters.deleteReset(supabase, ctx, { resetId: id }));
+  return finish(aircraftId, await meters.deleteReset(supabase, ctx, { resetId: id }, base));
 }
 
 /** Record a meter reading by hand (stored as a `manual` hours_reading). */
@@ -84,9 +85,9 @@ export async function addMeterReading(
   );
 }
 
-export async function deleteMeterReading(aircraftId: string, id: string): Promise<Result> {
+export async function deleteMeterReading(aircraftId: string, id: string, base: string): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await meters.deleteReading(supabase, ctx, { readingId: id }));
+  return finish(aircraftId, await meters.deleteReading(supabase, ctx, { readingId: id }, base));
 }
 
 // --- ADS-B (passive hours) --------------------------------------------------
@@ -96,12 +97,14 @@ export async function setAdsbEnabled(
   aircraftId: string,
   enabled: boolean,
   hexInput?: string | null,
-): Promise<{ ok: true; icao24: string | null } | { error: string }> {
+  base?: string,
+): Promise<{ ok: true; icao24: string | null; updatedAt: string } | { error: string }> {
   const { supabase, ctx } = await session(aircraftId);
-  const r = await meters.setAdsbEnabled(supabase, ctx, { enabled, hexInput });
+  if (!base) return { error: "Reload the aircraft before changing ADS-B settings." };
+  const r = await meters.setAdsbEnabled(supabase, ctx, { enabled, hexInput }, base);
   if (r.status !== "ok") return { error: failMessage(r) };
   revalidateHours(aircraftId);
-  return { ok: true, icao24: (r.row?.icao24 as string | null) ?? null };
+  return { ok: true, icao24: (r.row?.icao24 as string | null) ?? null, updatedAt: String(r.row?.updated_at) };
 }
 
 /** Dismiss the current ADS-B suggestion (the observations stay). */

@@ -14,12 +14,16 @@ export type BooksContext = Awaited<ReturnType<typeof loadBooks>>;
 
 export const loadBooks = cache(async (id: string) => {
   const supabase = await createClient();
-  const [context, { data: auth }] = await Promise.all([getAircraftShellContext(supabase, id), supabase.auth.getUser()]);
+  const [context, { data: auth }, { data: pendingDocuments, error: pendingError }] = await Promise.all([
+    getAircraftShellContext(supabase, id), supabase.auth.getUser(),
+    supabase.from("scanned_document").select("page_id").eq("aircraft_id", id).eq("applied", false).in("doc_type", ["ad_report", "weight_balance"]),
+  ]);
+  if (pendingError) throw new Error(pendingError.message);
   if (!context || !auth.user) notFound();
   const due = await dueSnapshot(id, auth.user.id).catch(() => undefined);
   if (due === null) notFound();
   const model: MapModel | null = due ? buildMapModel(due.loaded.input, due.loaded.today) : null;
-  return { supabase, context, userId: auth.user.id, due: due ?? null, model };
+  return { supabase, context, userId: auth.user.id, due: due ?? null, model, pendingDocumentIds: (pendingDocuments ?? []).map((d) => d.page_id) };
 });
 
 export type EntryRow = Pick<
@@ -70,16 +74,16 @@ export async function entryTexts(supabase: Db, aircraftId: string) {
 
 export type PageRow = {
   id: string; logbook_id: string; page_sequence: number | null; created_at: string; review_status: string; extraction_status: string;
-  extraction_error: string | null; needs_look: boolean | null; unread_rotated_content: boolean; detected_page_count: number | null; ocr_text?: string | null;
+  extraction_error: string | null; needs_look: boolean | null; unread_rotated_content: boolean; detected_page_count: number | null; ocr_text?: string | null; updated_at: string;
 };
-export const PAGE_COLUMNS = "id, logbook_id, page_sequence, created_at, review_status, extraction_status, extraction_error, needs_look, unread_rotated_content, detected_page_count";
+export const PAGE_COLUMNS = "id, logbook_id, page_sequence, created_at, review_status, extraction_status, extraction_error, needs_look, unread_rotated_content, detected_page_count, updated_at";
 
 // --- Review (W-BOOKS-07, W-BOOKS-08) ---------------------------------------------------------------------------
 
 /** Pages that hold entries read by AI and not yet confirmed (the engine's pagesToReview set). */
 export function waitingPageIds(books: BooksContext): string[] {
   const es = books.due?.loaded.input.log_entry ?? [];
-  return [...new Set(es.filter((e) => e.trust === "ai_read" && !e.replaced_by_entry_id && e.page_id).map((e) => e.page_id!))];
+  return [...new Set([...es.filter((e) => e.trust === "ai_read" && !e.replaced_by_entry_id && e.page_id).map((e) => e.page_id!), ...(books.pendingDocumentIds ?? [])])];
 }
 
 /** Each entry with its fields ordered by doubt (09 §3.9.2), checked against the same book and the same page. */

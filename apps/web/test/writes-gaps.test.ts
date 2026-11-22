@@ -20,7 +20,13 @@ function fake(editor: boolean, row: Record<string, unknown> | null) {
     };
     return q;
   };
-  const db = { rpc: async () => ({ data: editor }), from: chain } as unknown as Db;
+  const db = { rpc: async (name: string, args: Record<string, unknown>) => {
+    if (name === "can_edit_aircraft") return { data: editor, error: null };
+    assert.equal(name, "write_record");
+    assert.equal(args.p_base, row?.updated_at, "the loaded version reaches the atomic write");
+    writes.push({ table: args.p_table, update: args.p_patch });
+    return { data: { status: "ok", row: { ...row, ...args.p_patch as object } }, error: null };
+  }, from: chain } as unknown as Db;
   return { db, writes };
 }
 const ctx = { aircraftId: "ac", userId: "u" };

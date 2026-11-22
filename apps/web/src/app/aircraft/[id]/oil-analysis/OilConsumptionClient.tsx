@@ -66,7 +66,7 @@ export function OilConsumptionClient({
   }
 
   async function remove(id: string) {
-    const res = await deleteOilTopOff(aircraftId, id);
+    const res = await deleteOilTopOff(aircraftId, id, additions.find((r) => r.id === id)!.updated_at);
     if ("error" in res) return toast.error(res.error);
     toast.success("Top-off removed.");
     router.refresh();

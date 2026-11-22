@@ -17,12 +17,12 @@ export async function GET(
   const supabase = await createSyncClient(req);
   const { data: doc } = await supabase
     .from("document")
-    .select("storage_path, file_name, mime_type")
+    .select("aircraft_id, storage_path, file_name, mime_type")
     .eq("id", id)
     .single();
   if (!doc || !doc.storage_path) return new Response("Not found", { status: 404 });
 
-  const blob = await getBlob(doc.storage_path);
+  const blob = await getBlob(doc.storage_path, doc.aircraft_id);
   if (!blob) return new Response("Not found", { status: 404 });
 
   const mime = doc.mime_type || blob.contentType || "application/octet-stream";

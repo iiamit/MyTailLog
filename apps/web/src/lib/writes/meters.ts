@@ -1,3 +1,5 @@
+import { insertRecords } from "./insert";
+import { writeRecord } from "./conditional";
 import type { HoursReading, MeterResetRow } from "@/lib/database.types";
 import { METERS, type Meter } from "@/lib/hobbsTach";
 import { normalizeIcao24, resolveIcao24 } from "@/lib/adsb/icao24";
@@ -115,19 +117,7 @@ export async function addReading(
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
   const row = { aircraft_id: ctx.aircraftId, ...picked, source: "manual", synced_by: ctx.userId, ...photo };
-  const { data, error } = input.id
-    ? await supabase
-        .from("hours_reading")
-        .upsert(
-          { ...row, external_ref: input.id, updated_at: new Date().toISOString() },
-          { onConflict: "aircraft_id,source,external_ref" },
-        )
-        .select("*")
-        .maybeSingle()
-    : await supabase.from("hours_reading").insert(row).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  return insertRecords(supabase, ctx, "hours_reading", { ...row, ...(input.id ? { external_ref: input.id } : {}) }, "aircraft_id,source,external_ref");
 }
 
 /** Load a manual reading for an update/delete: edit access, ownership, base check.
@@ -170,17 +160,7 @@ export async function updateReading(
     airframe: "airframe" in input ? input.airframe : cur.airframe,
   });
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
-  const { data, error } = await supabase
-    .from("hours_reading")
-    .update(picked)
-    .eq("id", input.readingId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .in("source", OWNER_SOURCES)
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Reading not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  return writeRecord(supabase, ctx, "hours_reading", input.readingId, cur.updated_at, picked);
 }
 
 /** Delete a manual reading. Nothing references hours_reading(id). */
@@ -192,16 +172,7 @@ export async function deleteReading(
 ): Promise<WriteResult> {
   const loaded = await loadReading(supabase, ctx, input.readingId, base);
   if ("status" in loaded) return loaded;
-  const { data, error } = await supabase
-    .from("hours_reading")
-    .delete()
-    .eq("id", input.readingId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .in("source", OWNER_SOURCES)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Reading not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return writeRecord(supabase, ctx, "hours_reading", input.readingId, loaded.row.updated_at, null);
 }
 
 // ---------------------------------------------------------------------------
@@ -225,6 +196,7 @@ export async function resolveHoursFlag(
   supabase: Db,
   ctx: WriteCtx,
   input: { source: HoursSource; readingId: string; field?: Meter; value?: number | null },
+  base?: string,
 ): Promise<WriteResult> {
   if (input.source !== "entry" && input.source !== "mfb") {
     return { status: "error", message: "Unknown reading source.", httpStatus: 400 };
@@ -246,14 +218,13 @@ export async function resolveHoursFlag(
     ...(input.field !== undefined ? { [input.field]: input.value ?? null } : {}),
   };
 
-  const q =
-    input.source === "entry"
-      ? supabase.from("log_entry").update(patch)
-      : supabase.from("hours_reading").update(patch);
-  const { data, error } = await q.eq("id", input.readingId).eq("aircraft_id", ctx.aircraftId).select("*");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "That reading is no longer there.", httpStatus: 404 };
-  return { status: "ok", row: data[0] };
+  const table = input.source === "entry" ? "log_entry" : "hours_reading";
+  const { data: current, error: readError } = await supabase.from(table).select("*")
+    .eq("id", input.readingId).eq("aircraft_id", ctx.aircraftId).maybeSingle();
+  if (readError) return { status: "error", message: readError.message };
+  if (!current) return { status: "error", message: "That reading is no longer there.", httpStatus: 404 };
+  if (isStale(current.updated_at, base)) return { status: "conflict", row: current };
+  return writeRecord(supabase, ctx, table, input.readingId, current.updated_at, patch);
 }
 
 // ---------------------------------------------------------------------------
@@ -273,24 +244,7 @@ export async function addReset(
   const picked = pickReset(input);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data, error } = await supabase
-    .from("meter_reset")
-    .upsert(
-      { ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, ...picked },
-      { onConflict: "id", ignoreDuplicates: true },
-    )
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (data) return { status: "ok", row: data };
-  // ignoreDuplicates returned nothing: a retry of an id we already wrote.
-  const { data: existing } = await supabase
-    .from("meter_reset")
-    .select("*")
-    .eq("id", input.id ?? "")
-    .eq("aircraft_id", ctx.aircraftId)
-    .maybeSingle();
-  return existing ? { status: "ok", row: existing } : { status: "error", message: "Couldn't save the meter replacement." };
+  return insertRecords(supabase, ctx, "meter_reset", { ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, ...picked });
 }
 
 /** Delete a meter replacement. Nothing references meter_reset(id). */
@@ -310,15 +264,7 @@ export async function deleteReset(
   if (loadErr) return { status: "error", message: loadErr.message };
   if (!row) return { status: "error", message: "Meter replacement not found.", httpStatus: 404 };
   if (isStale((row as MeterResetRow).updated_at, base)) return { status: "conflict", row };
-  const { data, error } = await supabase
-    .from("meter_reset")
-    .delete()
-    .eq("id", input.resetId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Meter replacement not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return writeRecord(supabase, ctx, "meter_reset", input.resetId, row.updated_at, null);
 }
 
 // ---------------------------------------------------------------------------
@@ -334,20 +280,18 @@ export async function updateEnrollmentMeters(
   supabase: Db,
   ctx: WriteCtx,
   input: { hobbs: number | null; tach: number | null; airframe: number | null },
+  base?: string,
 ): Promise<WriteResult> {
   if (![input.hobbs, input.tach, input.airframe].every(validNumber)) {
     return { status: "error", message: "Readings must be zero or a positive number — leave blank to clear.", httpStatus: 400 };
   }
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data, error } = await supabase
-    .from("aircraft")
-    .update({ enrollment_hobbs: input.hobbs, enrollment_tach: input.tach, enrollment_airframe: input.airframe })
-    .eq("id", ctx.aircraftId)
-    .select("id, enrollment_hobbs, enrollment_tach, enrollment_airframe")
-    .maybeSingle();
+  const { data: aircraft, error } = await supabase.from("aircraft").select("updated_at").eq("id", ctx.aircraftId).maybeSingle();
   if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  if (!aircraft) return { status: "error", message: "Aircraft not found.", httpStatus: 404 };
+  if (isStale(aircraft.updated_at, base)) return { status: "conflict", row: aircraft };
+  return writeRecord(supabase, ctx, "aircraft", ctx.aircraftId, aircraft.updated_at,
+    { enrollment_hobbs: input.hobbs, enrollment_tach: input.tach, enrollment_airframe: input.airframe });
 }
 
 // ---------------------------------------------------------------------------
@@ -365,15 +309,17 @@ export async function setAdsbEnabled(
   supabase: Db,
   ctx: WriteCtx,
   input: { enabled: boolean; hexInput?: string | null },
+  base?: string,
 ): Promise<WriteResult> {
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
   const { data: aircraft } = await supabase
     .from("aircraft")
-    .select("tail_number, icao24")
+    .select("tail_number, icao24, updated_at")
     .eq("id", ctx.aircraftId)
     .maybeSingle();
   if (!aircraft) return { status: "error", message: "Aircraft not found.", httpStatus: 404 };
 
+  if (isStale(aircraft.updated_at, base)) return { status: "conflict", row: aircraft };
   let icao24 = aircraft.icao24;
   if (input.hexInput != null && input.hexInput.trim() !== "") {
     icao24 = normalizeIcao24(input.hexInput);
@@ -389,15 +335,7 @@ export async function setAdsbEnabled(
     }
   }
 
-  const { data, error } = await supabase
-    .from("aircraft")
-    .update({ adsb_enabled: input.enabled === true, icao24 })
-    .eq("id", ctx.aircraftId)
-    .select("id, adsb_enabled, icao24")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  return writeRecord(supabase, ctx, "aircraft", ctx.aircraftId, aircraft.updated_at, { adsb_enabled: input.enabled === true, icao24 });
 }
 
 /**

@@ -13,7 +13,7 @@
 // ===========================================================================
 
 export const BACKUP_FORMAT = "mytaillog-backup";
-export const BACKUP_FORMAT_VERSION = 1;
+export const BACKUP_FORMAT_VERSION = 2;
 
 export type BackupManifest = {
   format: typeof BACKUP_FORMAT;
@@ -49,6 +49,11 @@ export type BackupData = {
   logbook_gaps?: Row[];
   hours_readings?: Row[];
   squawks?: Row[];
+  squawk_photos?: Row[];
+  weight_balances?: Row[];
+  scanned_documents?: Row[];
+  oil_additions?: Row[];
+  oil_analysis_samples?: Row[];
 };
 
 /** File extension from a storage path, defaulting to jpg. */
@@ -60,5 +65,8 @@ export function extOf(path: string | null | undefined): string {
 export function mimeOf(ext: string): string {
   if (ext === "png") return "image/png";
   if (ext === "pdf") return "application/pdf";
+  if (ext === "webp") return "image/webp";
+  if (ext === "heic") return "image/heic";
+  if (ext === "heif") return "image/heif";
   return "image/jpeg";
 }

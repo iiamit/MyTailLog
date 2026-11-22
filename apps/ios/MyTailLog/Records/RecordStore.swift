@@ -231,12 +231,14 @@ final class Recs {
         return [e["entry_date"]?.text.map(longDate), pageLabel(entryId)].compactMap { $0 }.joined(separator: " · ")
     }
 
-    /// The last value this phone knows for a meter: the snapshot's or a newer reading saved here.
-    func meter(_ name: String) -> Double? {
-        let server = snapshot?.meters[name]?.stitched
-        let local = records("hours_reading").filter(\.pending).compactMap { $0.d(name) }.max()
-        return [server, local].compactMap { $0 }.max()
+    /// Meter entry uses the physical dial; continuous lifetime hours belong only in due calculations.
+    func meterReading(_ name: String) -> (value: Double?, date: String?) {
+        latestMeterReading(snapshot?.meters[name], readings: records("hours_reading"), meter: name,
+                           resets: records("meter_reset"))
     }
+
+    func meter(_ name: String) -> Double? { meterReading(name).value }
+
 }
 
 /// Phase 4's pushed screens (05 §5.3): on the phone they push onto the tab's stack; on the tablet they fill the right leaf.
@@ -257,4 +259,24 @@ struct RecNav {
 
 extension EnvironmentValues {
     @Entry var recNav = RecNav()
+}
+
+/// Newest effective reading wins across replacements, never the largest historical dial number.
+func latestMeterReading(_ meter: StatusSnapshot.Meter?, readings: [Rec], meter name: String,
+                        resets: [Rec]) -> (value: Double?, date: String?) {
+    var value = meter?.face
+    var date = meter?.asOf.map { String($0.prefix(10)) } ?? ""
+    let reset = resets.filter { $0.s("meter") == name }
+        .sorted { ($0.s("reset_date") ?? "", $0.s("updated_at") ?? "", $0.id) > ($1.s("reset_date") ?? "", $1.s("updated_at") ?? "", $1.id) }.first
+    let resetDate = reset?.s("reset_date") ?? ""
+    if let reset, let next = reset.d("new_value"), resetDate > date || (resetDate == date && reset.pending) {
+        value = next; date = resetDate
+    }
+    let newest = readings.filter { $0.d(name) != nil && ($0.s("reading_date") ?? "") >= resetDate }
+        .sorted { ($0.s("reading_date") ?? "", $0.s("updated_at") ?? "", $0.id) > ($1.s("reading_date") ?? "", $1.s("updated_at") ?? "", $1.id) }.first
+    if let newest, let newerDate = newest.s("reading_date"),
+       value == nil || newerDate > date || (newerDate == date && newest.pending && reset?.pending != true) {
+        return (newest.d(name), newerDate)
+    }
+    return (value, date.isEmpty ? nil : date)
 }

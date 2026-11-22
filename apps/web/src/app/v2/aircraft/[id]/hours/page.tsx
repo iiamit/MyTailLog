@@ -85,8 +85,8 @@ export default async function HoursPage({
   const ac = input.aircraft as typeof input.aircraft & { enrollment_airframe?: number | null; expected_hours_per_week?: number | null };
 
   const [{ data: extra }, { data: resets }, entries, stated, dismissals, mfbStatus, mfbReadings] = await Promise.all([
-    supabase.from("aircraft").select("adsb_enabled, icao24").eq("id", id).maybeSingle(),
-    supabase.from("meter_reset").select("id, meter, reset_date, prior_value, new_value, notes").eq("aircraft_id", id).order("reset_date", { ascending: false }),
+    supabase.from("aircraft").select("adsb_enabled, icao24, updated_at").eq("id", id).maybeSingle(),
+    supabase.from("meter_reset").select("id, meter, reset_date, prior_value, new_value, notes, updated_at").eq("aircraft_id", id).order("reset_date", { ascending: false }),
     loadLogEntries(supabase, id).catch(() => []),
     supabase.from("log_entry").select("id, stated_times").eq("aircraft_id", id).not("stated_times", "is", null),
     supabase.from("time_check_dismissal").select("component, log_entry_id, written_value, calculated_value").eq("aircraft_id", id),
@@ -208,7 +208,7 @@ export default async function HoursPage({
   } else if (panel === "starting") {
     right = (
       <FormLeaf title="Starting readings" closeHref={close}>
-        <ActForm action={saveStarting.bind(null, id)} className="flex flex-col gap-4">
+        <ActForm base={extra?.updated_at} action={saveStarting.bind(null, id)} className="flex flex-col gap-4">
           {(["tach", "hobbs", "airframe"] as const).map((m) => (
             <Field key={m} label={METER_LABEL[m]}>
               <input
@@ -234,7 +234,7 @@ export default async function HoursPage({
   } else if (panel === "usual") {
     right = (
       <FormLeaf title="Usual flying" closeHref={close}>
-        <ActForm action={saveUsualFlying.bind(null, id)} className="flex flex-col gap-4">
+        <ActForm base={extra?.updated_at} action={saveUsualFlying.bind(null, id)} className="flex flex-col gap-4">
           <Field label="Hours a week" help="Used to turn hours into dates when there aren't enough recent readings. Leave blank to clear.">
             <input name="hours" type="number" step="0.5" min="0" max="60" inputMode="decimal" defaultValue={usual ?? ""} className={fieldClass} />
           </Field>
@@ -498,7 +498,7 @@ export default async function HoursPage({
                         </span>
                       </span>
                       {canEdit && (
-                        <ActForm action={removeReplacement.bind(null, id, r.id)}>
+                        <ActForm action={removeReplacement.bind(null, id, r.id, r.updated_at ?? "")}>
                           <ConfirmSubmit label="Remove" question={`Remove the ${r.meter} replacement of ${fmtDate(r.reset_date)}? Countdowns stop counting across it.`} />
                         </ActForm>
                       )}
@@ -530,7 +530,7 @@ export default async function HoursPage({
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="text-body">Watching {extra.icao24?.toUpperCase() ?? "this aircraft"} via OpenSky, once a day.{!adsb ? " Your readings cover every flight seen." : ""}</p>
                   {canEdit && (
-                    <ActForm action={setAdsb.bind(null, id, false)}>
+                    <ActForm base={extra?.updated_at} action={setAdsb.bind(null, id, false)}>
                       <button type="submit" className={buttonClass("quiet", "s")}>Turn off</button>
                     </ActForm>
                   )}
@@ -547,7 +547,7 @@ export default async function HoursPage({
                     <li>Nothing is written for you, and an accepted estimate never counts as compliance evidence.</li>
                   </ul>
                   {canEdit && (
-                    <ActForm action={setAdsb.bind(null, id, true)} className="mt-3 flex flex-wrap items-end gap-2">
+                    <ActForm base={extra?.updated_at} action={setAdsb.bind(null, id, true)} className="mt-3 flex flex-wrap items-end gap-2">
                       <div className="w-52">
                         <Field label="Mode S address (optional)">
                           <input name="hex" placeholder="looked up from the registry" className={fieldClass} />
@@ -572,7 +572,7 @@ function ReadingsTable({
   canEdit,
   id,
 }: {
-  rows: { id: string; reading_date: string | null; tach: number | null; hobbs: number | null; airframe?: number | null; source: string | null }[];
+  rows: { id: string; updated_at?: string; reading_date: string | null; tach: number | null; hobbs: number | null; airframe?: number | null; source: string | null }[];
   canEdit: boolean;
   id: string;
 }) {
@@ -594,7 +594,7 @@ function ReadingsTable({
             <td>{storedSourceWord(r.source)}</td>
             <td className="text-right">
               {canEdit && OWNER_SOURCES.includes(r.source ?? "") && (
-                <ActForm action={removeReading.bind(null, id, r.id)}>
+                <ActForm action={removeReading.bind(null, id, r.id, r.updated_at ?? "")}>
                   <ConfirmSubmit label="Remove" question={`Remove the reading of ${r.reading_date ? fmtDate(r.reading_date) : "this date"}? Countdowns use the next latest reading.`} />
                 </ActForm>
               )}

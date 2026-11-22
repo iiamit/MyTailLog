@@ -9,6 +9,7 @@ import { addSquawk, resolveSquawk, reopenSquawk, deleteSquawk } from "./actions"
 
 type Squawk = {
   id: string;
+  updated_at: string;
   description: string;
   severity: SquawkSeverity;
   status: SquawkStatus;
@@ -127,7 +128,7 @@ export function SquawksClient({
                 </div>
                 {canEdit && (
                   <button
-                    onClick={() => act(() => resolveSquawk(aircraftId, s.id), "Squawk resolved.")}
+                    onClick={() => act(() => resolveSquawk(aircraftId, s.id, undefined, s.updated_at), "Squawk resolved.")}
                     className="shrink-0 rounded-md border border-annun-green/40 px-3 py-1.5 text-sm text-annun-green hover:bg-panel2"
                   >
                     Resolve
@@ -159,13 +160,13 @@ export function SquawksClient({
                 {canEdit && (
                   <div className="flex shrink-0 gap-2">
                     <button
-                      onClick={() => act(() => reopenSquawk(aircraftId, s.id), "Squawk reopened.")}
+                      onClick={() => act(() => reopenSquawk(aircraftId, s.id, s.updated_at), "Squawk reopened.")}
                       className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-line2 hover:text-ink"
                     >
                       Reopen
                     </button>
                     <ConfirmButton
-                      onConfirm={() => act(() => deleteSquawk(aircraftId, s.id), "Squawk deleted.")}
+                      onConfirm={() => act(() => deleteSquawk(aircraftId, s.id, s.updated_at), "Squawk deleted.")}
                       confirmLabel="Delete"
                       className="rounded-md border border-line px-3 py-1.5 text-sm text-dim hover:border-annun-red hover:text-annun-red"
                     >

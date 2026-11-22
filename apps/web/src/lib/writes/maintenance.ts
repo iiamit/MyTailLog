@@ -1,3 +1,6 @@
+import { insertRecords } from "./insert";
+import { replayRpc } from "./replay";
+import { writeRecord } from "./conditional";
 import type { MaintenanceItem } from "@/lib/database.types";
 import { maintenanceNextDue, STANDARD_ITEMS, DEFAULT_SEED_KINDS } from "@/lib/maintenance";
 import { METERS, type Meter } from "@/lib/hobbsTach";
@@ -22,7 +25,7 @@ export type MaintenanceItemFields = {
   notes: string | null;
   /** null = app default (oil → hobbs, everything else → tach). */
   meter: Meter | null;
-};
+} & Partial<Pick<MaintenanceItem, "line" | "shop_kind" | "provider_id" | "ifr_only" | "expires_on" | "visit_window_days" | "visit_window_hours" | "remind_lead_days" | "remind_lead_hours">>;
 
 /** What "mark done" carries. The legacy phone build sends the same fields in
  *  snake_case to /api/aircraft/[id]/actions; that route maps them here. */
@@ -44,6 +47,8 @@ export type MarkDoneInput = {
   hobbs?: number | null;
   /** The log_entry's id — the mutation id, so a retry never writes two. */
   entryId?: string;
+  recordCompletion?: boolean;
+  completionId?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -61,8 +66,32 @@ export function pickMaintenanceFields(input: unknown): { fields: MaintenanceItem
     return { error: "Intervals and hours must be zero or a positive number." };
   }
   if (src.last_done_date != null && !isIsoDate(src.last_done_date)) return { error: "Last done must be a date." };
+  const extras: Record<string, unknown> = {};
+  for (const [key, allowed] of [["line", ["airframe", "engine", "prop", "avionics"]], ["shop_kind", ["mechanic", "avionics_shop", "prop_shop", "engine_shop", "self"]]] as const) {
+    if (!(key in src)) continue;
+    if (src[key] != null && !(allowed as readonly unknown[]).includes(src[key])) return { error: `Unknown ${key.replace("_", " ")}.` };
+    extras[key] = src[key];
+  }
+  for (const key of ["visit_window_days", "visit_window_hours", "remind_lead_days", "remind_lead_hours"] as const) {
+    if (!(key in src)) continue;
+    if (!validNumber(src[key])) return { error: "Reminder and visit windows must be zero or a positive number." };
+    extras[key] = src[key];
+  }
+  if ("provider_id" in src) {
+    if (src.provider_id != null && (typeof src.provider_id !== "string" || !/^[0-9a-f-]{36}$/i.test(src.provider_id))) return { error: "Pick a shop or mechanic." };
+    extras.provider_id = src.provider_id;
+  }
+  if ("expires_on" in src) {
+    if (src.expires_on != null && !isIsoDate(src.expires_on)) return { error: "Pick an expiry date." };
+    extras.expires_on = src.expires_on;
+  }
+  if ("ifr_only" in src) {
+    if (typeof src.ifr_only !== "boolean") return { error: "Invalid IFR-only setting." };
+    extras.ifr_only = src.ifr_only;
+  }
   return {
     fields: {
+      ...extras,
       kind: typeof src.kind === "string" && src.kind ? src.kind : "other",
       label,
       regulatory: src.regulatory === true,
@@ -138,29 +167,23 @@ export async function upsert(
 ): Promise<WriteResult> {
   const picked = pickMaintenanceFields(input.item);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
+  if (picked.fields.provider_id) {
+    const { data: provider } = await supabase.from("service_provider").select("id").eq("id", picked.fields.provider_id).eq("aircraft_id", ctx.aircraftId).maybeSingle();
+    if (!provider) return { status: "error", message: "That shop isn't on this aircraft.", httpStatus: 400 };
+  }
   const row = { aircraft_id: ctx.aircraftId, ...picked.fields, ...maintenanceNextDue(picked.fields) };
 
   if (input.id) {
     const loaded = await loadItem(supabase, ctx, input.id);
     if ("status" in loaded) return loaded;
     if (isStale(loaded.row.updated_at, base)) return { status: "conflict", row: loaded.row };
-    const { data, error } = await supabase
-      .from("maintenance_item")
-      .update(row)
-      .eq("id", input.id)
-      .eq("aircraft_id", ctx.aircraftId)
-      .select("*")
-      .maybeSingle();
-    if (error) return { status: "error", message: error.message };
-    if (!data) return { status: "error", message: "That item isn't on this aircraft.", httpStatus: 404 };
-    return { status: "ok", row: data };
+    const patch = { ...row };
+    delete (patch as Partial<typeof row>).aircraft_id;
+    return writeRecord(supabase, ctx, "maintenance_item", input.id, loaded.row.updated_at, patch);
   }
 
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data, error } = await supabase.from("maintenance_item").insert(row).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  return insertRecords(supabase, ctx, "maintenance_item", row);
 }
 
 /** Delete an item. Nothing references maintenance_item(id). */
@@ -173,15 +196,7 @@ export async function remove(
   const loaded = await loadItem(supabase, ctx, input.itemId);
   if ("status" in loaded) return loaded;
   if (isStale(loaded.row.updated_at, base)) return { status: "conflict", row: loaded.row };
-  const { data, error } = await supabase
-    .from("maintenance_item")
-    .delete()
-    .eq("id", input.itemId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "That item isn't on this aircraft.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return writeRecord(supabase, ctx, "maintenance_item", input.itemId, loaded.row.updated_at, null);
 }
 
 /**
@@ -203,74 +218,34 @@ export async function markDone(
   if ("conflict" in plan) return { status: "conflict", row: loaded.row };
   if ("error" in plan) return { status: "error", message: plan.error, httpStatus: 400 };
 
-  const { data, error } = await supabase
-    .from("maintenance_item")
-    .update(plan.patch)
-    .eq("id", input.itemId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "That item isn't on this aircraft.", httpStatus: 404 };
-
-  // An hours value the owner entered while completing maintenance is a real
-  // dated meter reading. Without it, an aircraft with no prior Hobbs history
-  // estimates Hobbs from Tach and can call a fresh oil change overdue.
-  if (input.meter && plan.patch.last_done_date && plan.patch.last_done_hours != null) {
-    const readingId = input.entryId ?? crypto.randomUUID();
-    const { error: readingError } = await supabase.from("hours_reading").upsert(
-      {
-        id: readingId,
-        aircraft_id: ctx.aircraftId,
-        reading_date: plan.patch.last_done_date,
-        hobbs: input.meter === "hobbs" ? plan.patch.last_done_hours : null,
-        tach: input.meter === "tach" ? plan.patch.last_done_hours : null,
-        airframe: input.meter === "airframe" ? plan.patch.last_done_hours : null,
-        source: "manual",
-        synced_by: ctx.userId,
-        external_ref: readingId,
-      },
-      { onConflict: "id" },
-    );
-    if (readingError) return { status: "error", message: readingError.message };
-  }
-
   const description = input.description?.trim();
-  if (input.logbookId && description) {
-    if (![input.tach, input.hobbs].every(validNumber)) {
-      return { status: "error", message: "Readings must be zero or a positive number.", httpStatus: 400 };
-    }
-    const { error: entryError } = await supabase.from("log_entry").upsert(
-      {
-        ...(input.entryId ? { id: input.entryId } : {}),
-        aircraft_id: ctx.aircraftId,
-        logbook_id: input.logbookId,
-        entry_date: plan.patch.last_done_date,
-        tach: input.tach ?? null,
-        hobbs: input.hobbs ?? null,
-        description,
-        work_performed: input.workPerformed ?? null,
-        signature_name: input.signature ?? null,
-        owner_confirmed: true,
-      },
-      { onConflict: "id", ignoreDuplicates: true },
-    );
-    if (entryError) return { status: "error", message: entryError.message };
+  if (input.logbookId && description && ![input.tach, input.hobbs].every(validNumber)) {
+    return { status: "error", message: "Readings must be zero or a positive number.", httpStatus: 400 };
   }
-  return { status: "ok", row: data };
+  const readingId = input.entryId ?? crypto.randomUUID();
+  // SQL compares the item version and commits all three records together.
+  const { data, error } = await replayRpc(supabase, ctx, "mark_maintenance_done", {
+    p_aircraft: ctx.aircraftId, p_item: input.itemId, p_base: loaded.row.updated_at, p_patch: plan.patch,
+    p_reading: input.meter && plan.patch.last_done_date && plan.patch.last_done_hours != null ? {
+      id: readingId, reading_date: plan.patch.last_done_date,
+      hobbs: input.meter === "hobbs" ? plan.patch.last_done_hours : null,
+      tach: input.meter === "tach" ? plan.patch.last_done_hours : null,
+      airframe: input.meter === "airframe" ? plan.patch.last_done_hours : null,
+    } : null,
+    p_completion: input.recordCompletion ? { id: input.completionId ?? crypto.randomUUID(), done_date: plan.patch.last_done_date, done_hours: plan.patch.last_done_hours, meter: input.meter ?? loaded.row.meter, source: input.logbookId && description ? "vor_check" : "mark_done" } : null,
+    p_entry: input.logbookId && description ? {
+      id: input.entryId ?? readingId, logbook_id: input.logbookId, entry_date: plan.patch.last_done_date,
+      tach: input.tach ?? null, hobbs: input.hobbs ?? null, description,
+      work_performed: input.workPerformed ?? null, signature_name: input.signature ?? null,
+    } : null,
+  });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 /** Seed the common Part 91 recurring items (skips any already present). Returns row `{ added }`. */
 export async function seedStandard(supabase: Db, ctx: WriteCtx): Promise<WriteResult> {
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data: existing, error: loadErr } = await supabase
-    .from("maintenance_item")
-    .select("kind")
-    .eq("aircraft_id", ctx.aircraftId);
-  if (loadErr) return { status: "error", message: loadErr.message };
-  const have = new Set((existing ?? []).map((r) => r.kind));
-
-  const toAdd = STANDARD_ITEMS.filter((s) => DEFAULT_SEED_KINDS.includes(s.kind) && !have.has(s.kind)).map((s) => ({
+  const toAdd = STANDARD_ITEMS.filter((s) => DEFAULT_SEED_KINDS.includes(s.kind)).map((s) => ({
     aircraft_id: ctx.aircraftId,
     kind: s.kind,
     label: s.label,
@@ -278,9 +253,6 @@ export async function seedStandard(supabase: Db, ctx: WriteCtx): Promise<WriteRe
     interval_months: s.interval_months,
     interval_hours: s.interval_hours,
   }));
-  if (toAdd.length === 0) return { status: "ok", row: { added: 0 } };
-
-  const { data, error } = await supabase.from("maintenance_item").insert(toAdd).select("id");
-  if (error) return { status: "error", message: error.message };
-  return { status: "ok", row: { added: data?.length ?? 0 } };
+  const { data, error } = await replayRpc(supabase, ctx, "seed_maintenance_items", { p_aircraft: ctx.aircraftId, p_items: toAdd });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }

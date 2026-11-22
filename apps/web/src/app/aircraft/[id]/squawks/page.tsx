@@ -12,7 +12,7 @@ export default async function SquawksPage({ params }: { params: Promise<{ id: st
 
   const { data: squawks } = await supabase
     .from("squawk")
-    .select("id, description, severity, status, reporter_name, reported_at, resolved_at, resolution_notes")
+    .select("id, updated_at, description, severity, status, reporter_name, reported_at, resolved_at, resolution_notes")
     .eq("aircraft_id", id)
     .order("reported_at", { ascending: false });
 

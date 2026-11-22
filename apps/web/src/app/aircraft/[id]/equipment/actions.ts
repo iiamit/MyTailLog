@@ -9,7 +9,7 @@ import type { ComponentFields } from "@/lib/writes/equipment";
 // Thin wrappers over lib/writes/equipment (CONTRACT §4): session, the write,
 // then revalidate. The rules and the validation live in the lib module.
 
-export type ComponentInput = ComponentFields & { id?: string };
+export type ComponentInput = ComponentFields & { id?: string; base?: string };
 
 type Result = { ok: true } | { error: string };
 
@@ -32,14 +32,16 @@ function finish(aircraftId: string, r: WriteResult): Result {
 }
 
 export async function upsertComponent(aircraftId: string, input: ComponentInput): Promise<Result> {
-  const { id, ...component } = input;
+  const { id, base, ...component } = input;
+  if (id && !base) return { error: "Reload this equipment before editing it." };
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await equipment.upsert(supabase, ctx, { id, component }));
+  return finish(aircraftId, await equipment.upsert(supabase, ctx, { id, component }, base));
 }
 
-export async function deleteComponent(aircraftId: string, id: string): Promise<Result> {
+export async function deleteComponent(aircraftId: string, id: string, base: string): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await equipment.remove(supabase, ctx, { componentId: id }));
+  if (!base) return { error: "Reload this equipment before deleting it." };
+  return finish(aircraftId, await equipment.remove(supabase, ctx, { componentId: id }, base));
 }
 
 /** Mark a component removed on a date; its open ADs become not applicable.
@@ -48,9 +50,11 @@ export async function removeComponent(
   aircraftId: string,
   id: string,
   removalDate: string | null,
+  base: string,
 ): Promise<{ ok: true; adsUpdated: number } | { error: string }> {
   const { supabase, ctx } = await session(aircraftId);
-  const r = await equipment.markRemoved(supabase, ctx, { componentId: id, date: removalDate });
+  if (!base) return { error: "Reload this equipment before marking it removed." };
+  const r = await equipment.markRemoved(supabase, ctx, { componentId: id, date: removalDate }, base);
   if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(equipmentPath(aircraftId));
   revalidatePath(`/aircraft/${aircraftId}/compliance`);
@@ -76,7 +80,8 @@ export async function dismissProposals(aircraftId: string, proposalIds: string[]
 }
 
 /** Reinstall a previously removed component (does not touch AD statuses). */
-export async function reinstallComponent(aircraftId: string, id: string): Promise<Result> {
+export async function reinstallComponent(aircraftId: string, id: string, base: string): Promise<Result> {
   const { supabase, ctx } = await session(aircraftId);
-  return finish(aircraftId, await equipment.reinstall(supabase, ctx, { componentId: id }));
+  if (!base) return { error: "Reload this equipment before reinstalling it." };
+  return finish(aircraftId, await equipment.reinstall(supabase, ctx, { componentId: id }, base));
 }

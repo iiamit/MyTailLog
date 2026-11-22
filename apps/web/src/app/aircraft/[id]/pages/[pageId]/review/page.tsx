@@ -1,3 +1,4 @@
+import { ScannedDocumentReview } from "@/components/review/ScannedDocumentReview";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -23,7 +24,7 @@ export default async function ReviewPage({
   const { data: page } = await supabase
     .from("page")
     .select(
-      "id, aircraft_id, logbook_id, page_sequence, storage_path, ocr_text, review_status, extraction_status, detected_page_count, unread_rotated_content",
+      "id, updated_at, aircraft_id, logbook_id, page_sequence, storage_path, ocr_text, review_status, extraction_status, detected_page_count, unread_rotated_content",
     )
     .eq("id", pageId)
     .single();
@@ -66,7 +67,7 @@ export default async function ReviewPage({
   // surface what the classifier read and what it updated.
   const { data: scanned } = await supabase
     .from("scanned_document")
-    .select("doc_type, document_date, summary")
+    .select("doc_type, document_date, summary, extracted, applied, updated_at")
     .eq("page_id", pageId)
     .maybeSingle();
   const SCANNED_LABEL: Record<string, string> = {
@@ -95,6 +96,7 @@ export default async function ReviewPage({
 
   const reviewEntries: ReviewEntry[] = (entries ?? []).map((e) => ({
     id: e.id,
+          updated_at: e.updated_at,
     logbook_id: e.logbook_id,
     entry_date: e.entry_date,
     hobbs: e.hobbs,
@@ -117,15 +119,15 @@ export default async function ReviewPage({
 
   // Documents attached to this page's entries (Vault items linked to an entry).
   const entryIds = reviewEntries.map((e) => e.id);
-  const attachmentsByEntry: Record<string, { id: string; title: string | null; file_name: string | null }[]> = {};
+  const attachmentsByEntry: Record<string, { id: string; title: string | null; file_name: string | null; updated_at: string }[]> = {};
   if (entryIds.length) {
     const { data: docs } = await supabase
       .from("document")
-      .select("id, title, file_name, log_entry_id")
+      .select("id, title, file_name, log_entry_id, updated_at")
       .in("log_entry_id", entryIds);
     for (const d of docs ?? []) {
       if (!d.log_entry_id) continue;
-      (attachmentsByEntry[d.log_entry_id] ??= []).push({ id: d.id, title: d.title, file_name: d.file_name });
+      (attachmentsByEntry[d.log_entry_id] ??= []).push({ id: d.id, title: d.title, file_name: d.file_name, updated_at: d.updated_at });
     }
   }
 
@@ -178,6 +180,7 @@ export default async function ReviewPage({
         </p>
       </header>
 
+      {scanned && <ScannedDocumentReview pageId={pageId} doc={scanned} canEdit={canEdit} />}
       {scanned && (
         <div
           className="mb-6 rounded-lg border border-annun-green/40 px-4 py-3 text-sm"
@@ -216,6 +219,7 @@ export default async function ReviewPage({
         storagePath={page.storage_path}
         rawText={page.ocr_text}
         reviewStatus={page.review_status}
+        pageBase={page.updated_at}
         extractionStatus={v1ExtractionStatus(page.extraction_status)}
         detectedPageCount={page.detected_page_count}
         unreadRotatedContent={page.unread_rotated_content ?? false}

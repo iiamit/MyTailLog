@@ -26,8 +26,9 @@ export async function reportSquawk(aircraftId: string, input: { description: str
   return run(aircraftId, ({ supabase, ctx }) => squawks.create(supabase, ctx, input));
 }
 
-export async function updateSquawk(aircraftId: string, squawkId: string, patch: { description?: string; severity?: string }): Promise<Result> {
-  return run(aircraftId, ({ supabase, ctx }) => squawks.update(supabase, ctx, { squawkId, ...patch }));
+export async function updateSquawk(aircraftId: string, squawkId: string, patch: { description?: string; severity?: string }, base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
+  return run(aircraftId, ({ supabase, ctx }) => squawks.update(supabase, ctx, { squawkId, ...patch }, base));
 }
 
 /** Resolve with the entry that cleared it, or a written explanation (W-MAINT-03 "Resolve with an entry"). */
@@ -35,7 +36,9 @@ export async function resolveSquawk(
   aircraftId: string,
   squawkId: string,
   input: { entryId: string | null; notes: string; date: string },
+  base: string,
 ): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
   if (!input.entryId && !input.notes.trim()) return { error: "Pick the entry that cleared it, or say what was done." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return { error: "Pick the date it was resolved." };
   return run(aircraftId, ({ supabase, ctx }) =>
@@ -44,16 +47,18 @@ export async function resolveSquawk(
       resolvedEntryId: input.entryId,
       resolutionNotes: input.notes,
       resolvedAt: `${input.date}T12:00:00Z`,
-    }),
+    }, base),
   );
 }
 
-export async function reopenSquawk(aircraftId: string, squawkId: string): Promise<Result> {
-  return run(aircraftId, ({ supabase, ctx }) => squawks.reopen(supabase, ctx, { squawkId }));
+export async function reopenSquawk(aircraftId: string, squawkId: string, base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
+  return run(aircraftId, ({ supabase, ctx }) => squawks.reopen(supabase, ctx, { squawkId }, base));
 }
 
-export async function deleteSquawk(aircraftId: string, squawkId: string): Promise<Result> {
-  return run(aircraftId, ({ supabase, ctx }) => squawks.remove(supabase, ctx, { squawkId }));
+export async function deleteSquawk(aircraftId: string, squawkId: string, base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
+  return run(aircraftId, ({ supabase, ctx }) => squawks.remove(supabase, ctx, { squawkId }, base));
 }
 
 /** The row for a photo the browser already uploaded through POST …/blob (kind squawk_photo). */
@@ -61,13 +66,15 @@ export async function addSquawkPhoto(aircraftId: string, squawkId: string, blobI
   return run(aircraftId, ({ supabase, ctx }) => squawks.addPhoto(supabase, ctx, { id: blobId, squawkId, blobId }));
 }
 
-export async function deleteSquawkPhoto(aircraftId: string, photoId: string): Promise<Result> {
-  return run(aircraftId, ({ supabase, ctx }) => squawks.removePhoto(supabase, ctx, { photoId }));
+export async function deleteSquawkPhoto(aircraftId: string, photoId: string, base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
+  return run(aircraftId, ({ supabase, ctx }) => squawks.removePhoto(supabase, ctx, { photoId }, base));
 }
 
 /** "Add to the visit": the open squawks ride along on a planned visit (visit.update addItemKeys). */
-export async function addSquawksToVisit(aircraftId: string, visitId: string, squawkIds: string[]): Promise<Result> {
-  return run(aircraftId, ({ supabase, ctx }) => visits.update(supabase, ctx, { visitId, addItemKeys: squawkIds.map((id) => `squawk:${id}`) }));
+export async function addSquawksToVisit(aircraftId: string, visitId: string, squawkIds: string[], base: string): Promise<Result> {
+  if (!base) return { error: "Reload this record before changing it." };
+  return run(aircraftId, ({ supabase, ctx }) => visits.update(supabase, ctx, { visitId, addItemKeys: squawkIds.map((id) => `squawk:${id}`) }, base));
 }
 
 /** Send to mechanic: a squawk link (09 §4.12). MyTailLog never sends it; the owner copies or mails it. */

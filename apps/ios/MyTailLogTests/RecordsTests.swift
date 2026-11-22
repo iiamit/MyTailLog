@@ -182,3 +182,22 @@ struct RecordStoreTests {
         s.close()
     }
 }
+
+struct MeterFaceTests {
+    @Test func entryDefaultsUseTheDialAcrossTwoReplacementsAndBackdatedReadings() throws {
+        let meter = try JSONDecoder().decode(StatusSnapshot.Meter.self, from: Data(#"{"face":105.0,"stitched":4105.0,"asOf":"2026-11-20"}"#.utf8))
+        #expect(meter.face == 105 && meter.stitched == 4105)
+        let old = Rec(row: ["id": .string("old"), "reading_date": .string("2026-10-01"), "tach": .number(3990)])
+        let backdated = Rec(row: ["id": .string("backdated"), "reading_date": .string("2026-09-01"), "tach": .number(3980)], pending: true)
+        #expect(latestMeterReading(meter, readings: [old, backdated], meter: "tach", resets: []).value == 105)
+        let reset = Rec(row: ["id": .string("reset2"), "meter": .string("tach"), "reset_date": .string("2026-11-21"), "new_value": .number(0)], pending: true)
+        #expect(latestMeterReading(meter, readings: [old], meter: "tach", resets: [reset]).value == 0)
+        let current = Rec(row: ["id": .string("new"), "reading_date": .string("2026-11-22"), "tach": .number(1.2)], pending: true)
+        #expect(latestMeterReading(meter, readings: [old, current], meter: "tach", resets: [reset]).value == 1.2)
+    }
+
+    @Test @MainActor func transientUploadRefusalsStayRetryable() {
+        for status in [401, 408, 429, 500] { #expect(!Uploader.permanentRefusal(status)) }
+        for status in [403, 413, 422] { #expect(Uploader.permanentRefusal(status)) }
+    }
+}

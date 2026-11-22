@@ -1,3 +1,5 @@
+import { insertRecords } from "./insert";
+import { writeRecord } from "./conditional";
 import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 import { detectGaps, reconcileGaps, type StoredGap } from "../gaps";
 import type { MapEntryRow } from "../mapModel";
@@ -38,11 +40,7 @@ export async function setStatus(
     status: input.status, status_set_by: ctx.userId, status_set_at: new Date().toISOString(),
     ...("note" in input ? { note: note.note } : {}),
   };
-  const { data, error: upErr } = await supabase.from("logbook_gap").update(patch)
-    .eq("id", input.gapId).eq("aircraft_id", ctx.aircraftId).select("*").maybeSingle();
-  if (upErr) return { status: "error", message: upErr.message };
-  if (!data) return { status: "error", message: "Gap not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  return writeRecord(supabase, ctx, "logbook_gap", input.gapId, row.updated_at, patch);
 }
 
 /** `gap.create`: an owner-declared gap. `id` is the idempotency key; a retry finds the row it wrote. */
@@ -63,12 +61,10 @@ export async function create(
   const { data: book } = await supabase.from("logbook").select("id")
     .eq("id", input.logbookId).eq("aircraft_id", ctx.aircraftId).maybeSingle();
   if (!book) return { status: "error", message: "That logbook isn't on this aircraft.", httpStatus: 400 };
-  const { data, error } = await supabase.from("logbook_gap").insert({
+  return insertRecords(supabase, ctx, "logbook_gap", {
     id: input.id, aircraft_id: ctx.aircraftId, logbook_id: input.logbookId, from_date: input.fromDate, to_date: input.toDate,
     source: "owner", note: note.note, status_set_by: ctx.userId, status_set_at: new Date().toISOString(),
-  }).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  return { status: "ok", row: data };
+  });
 }
 
 /**
@@ -82,7 +78,7 @@ export async function refreshGaps(supabase: Db, aircraftId: string): Promise<voi
     const [{ data: aircraft }, { data: logbook }, { data: stored }] = await Promise.all([
       supabase.from("aircraft").select("year").eq("id", aircraftId).maybeSingle(),
       supabase.from("logbook").select("id, type, component_ref, title").eq("aircraft_id", aircraftId),
-      supabase.from("logbook_gap").select("id, logbook_id, from_date, to_date, status, source").eq("aircraft_id", aircraftId),
+      supabase.from("logbook_gap").select("id, logbook_id, from_date, to_date, status, source, updated_at").eq("aircraft_id", aircraftId),
     ]);
     const entries: MapEntryRow[] = [];
     for (let start = 0; ; start += 1000) {
@@ -99,7 +95,7 @@ export async function refreshGaps(supabase: Db, aircraftId: string): Promise<voi
       await supabase.from("logbook_gap").insert(plan.insert.map((g) => ({ ...g, aircraft_id: aircraftId })));
     for (const u of plan.update)
       await supabase.from("logbook_gap").update({ from_date: u.from_date, to_date: u.to_date, ...(u.status ? { status: u.status } : {}) })
-        .eq("id", u.id).eq("aircraft_id", aircraftId);
+        .eq("id", u.id).eq("aircraft_id", aircraftId).eq("updated_at", stored?.find((g) => g.id === u.id)?.updated_at ?? "");
   } catch {
     // Derived data only; see above.
   }

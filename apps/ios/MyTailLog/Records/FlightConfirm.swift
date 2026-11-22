@@ -6,12 +6,7 @@ import SwiftUI
 extension Recs {
     /// The last tach reading and its date: the newest of the snapshot's meter and the readings on this phone.
     var lastTach: (value: Double?, date: String?) {
-        var best: (value: Double, date: String)?
-        if let m = snapshot?.meters["tach"], let v = m.stitched { best = (v, m.asOf ?? "") }
-        for r in records("hours_reading") {
-            if let v = r.d("tach"), v >= (best?.value ?? 0) { best = (v, r.s("reading_date") ?? best?.date ?? "") }
-        }
-        return (best?.value, best?.date.isEmpty == false ? best?.date : nil)
+        meterReading("tach")
     }
 
     /// What the tach camera needs (05 §16 plausibility).

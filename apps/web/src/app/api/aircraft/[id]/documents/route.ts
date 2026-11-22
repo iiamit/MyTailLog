@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { createSyncClient } from "@/lib/supabase/sync";
-import { putBlob, removeBlobs, type PutBody } from "@/lib/storage";
+import { getBlob, putBlob, removeBlobs, type PutBody } from "@/lib/storage";
 import type { DocumentType } from "@/lib/database.types";
 import { DOCUMENT_TYPES } from "@/lib/documents";
 import { entryIsOnAircraft, FOREIGN_ENTRY } from "@/lib/writes/entries";
@@ -91,6 +91,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { data: canEdit } = await supabase.rpc("can_edit_aircraft", { target_aircraft: id });
   if (!canEdit) return NextResponse.json({ error: "You don't have edit access to this aircraft." }, { status: 403 });
 
+  const operation = req.headers.get("idempotency-key");
+  if (operation && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(operation)) {
+    return NextResponse.json({ error: "Invalid upload identifier." }, { status: 400 });
+  }
+  if (operation) {
+    const { data: existing, error } = await supabase.from("document").select("*").eq("id", operation).eq("aircraft_id", id).maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 503 });
+    if (existing) return NextResponse.json({ ok: true, document: existing, replayed: true });
+  }
+  const documentId = operation || randomUUID();
+
   const input = await parseInput(req);
   if (!input || input.bytes === 0) return NextResponse.json({ error: "Attach a file." }, { status: 400 });
   if (!ACCEPTED.includes(input.mime)) {
@@ -122,13 +133,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ("error" in expiry) return NextResponse.json({ error: expiry.error }, { status: 400 });
 
   const ext = (input.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
-  const path = `${id}/docs/${randomUUID()}.${ext}`;
+  const path = `${id}/docs/${documentId}.${ext}`;
   const { error: upErr } = await putBlob(path, input.body, { contentType: input.mime, upsert: false });
-  if (upErr) return NextResponse.json({ error: upErr }, { status: 500 });
+  if (upErr) {
+    // A concurrent retry can observe the object before its metadata commits.
+    // Never overwrite/delete that object; only continue for identical bytes.
+    const stored = operation && await getBlob(path, id);
+    const bytes = input.body instanceof Blob ? Buffer.from(await input.body.arrayBuffer()) : Buffer.from(input.body);
+    if (!stored || !stored.data.equals(bytes)) return NextResponse.json({ error: upErr }, { status: 503 });
+  }
 
   const { data: row, error } = await supabase
     .from("document")
     .insert({
+      id: documentId,
       aircraft_id: id,
       type,
       title,
@@ -146,7 +164,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     .maybeSingle();
   if (error || !row) {
     // Don't leave an orphaned blob if the row insert failed.
-    await removeBlobs([path]);
+    if (operation) {
+      const { data: existing } = await supabase.from("document").select("*").eq("id", operation).eq("aircraft_id", id).maybeSingle();
+      if (existing) return NextResponse.json({ ok: true, document: existing, replayed: true });
+    } else await removeBlobs([path], id);
     return NextResponse.json({ error: error?.message ?? "Couldn't save the document." }, { status: 500 });
   }
 

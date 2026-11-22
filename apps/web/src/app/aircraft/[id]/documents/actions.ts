@@ -30,10 +30,12 @@ export async function updateDocument(
   aircraftId: string,
   id: string,
   fields: { type?: DocumentType; title?: string | null; reference?: string | null; document_date?: string | null; notes?: string | null },
+  base: string,
 ): Promise<{ error?: string }> {
+  if (!base) return { error: "Reload this record before changing it." };
   return run(
     aircraftId,
-    (supabase, userId) => documents.update(supabase, { aircraftId, userId }, { documentId: id, fields }),
+    (supabase, userId) => documents.update(supabase, { aircraftId, userId }, { documentId: id, fields }, base),
     ["documents"],
   );
 }
@@ -43,18 +45,21 @@ export async function setDocumentEntry(
   aircraftId: string,
   documentId: string,
   entryId: string | null,
+  base: string,
 ): Promise<{ error?: string }> {
+  if (!base) return { error: "Reload this record before changing it." };
   return run(
     aircraftId,
-    (supabase, userId) => documents.setEntry(supabase, { aircraftId, userId }, { documentId, entryId }),
+    (supabase, userId) => documents.setEntry(supabase, { aircraftId, userId }, { documentId, entryId }, base),
     ["documents", "timeline"],
   );
 }
 
-export async function deleteDocument(aircraftId: string, id: string): Promise<{ error?: string }> {
+export async function deleteDocument(aircraftId: string, id: string, base: string): Promise<{ error?: string }> {
+  if (!base) return { error: "Reload this record before changing it." };
   return run(
     aircraftId,
-    (supabase, userId) => documents.remove(supabase, { aircraftId, userId }, { documentId: id }),
+    (supabase, userId) => documents.remove(supabase, { aircraftId, userId }, { documentId: id }, base),
     ["documents"],
   );
 }

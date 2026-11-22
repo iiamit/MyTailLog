@@ -1,3 +1,6 @@
+import { insertRecords } from "./insert";
+import { replayRpc } from "./replay";
+import { writeRecord } from "./conditional";
 import type { Squawk, SquawkSeverity } from "@/lib/database.types";
 import { entryIsOnAircraft, FOREIGN_ENTRY, canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
@@ -62,18 +65,10 @@ async function patchSquawk(
   supabase: Db,
   ctx: WriteCtx,
   squawkId: string,
+  version: string,
   patch: Partial<Squawk>,
 ): Promise<WriteResult> {
-  const { data, error } = await supabase
-    .from("squawk")
-    .update(patch)
-    .eq("id", squawkId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Squawk not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  return writeRecord(supabase, ctx, "squawk", squawkId, version, patch);
 }
 
 /** Report a squawk. `id` is the phone's idempotency key (a retry after a lost
@@ -90,39 +85,17 @@ export async function create(
   const { data: profile } = await supabase.from("profile").select("full_name, email").eq("id", ctx.userId).maybeSingle();
   const reporterName = profile?.full_name?.trim() || profile?.email || null;
 
-  const { data, error } = await supabase
-    .from("squawk")
-    .upsert(
-      {
-        ...(input.id ? { id: input.id } : {}),
-        aircraft_id: ctx.aircraftId,
-        description,
-        severity: normalizeSeverity(input.severity),
-        status: "open",
-        reported_by: ctx.userId,
-        reporter_name: reporterName,
-        ...(input.reportedAt ? { reported_at: input.reportedAt } : {}),
-      },
-      { onConflict: "id", ignoreDuplicates: true },
-    )
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (data) {
-    // 09 §5.3 `squawk.create` (extended): photos uploaded with the report, one row each (blob id = photo id).
-    for (const blobId of Array.isArray(input.photoBlobIds) ? input.photoBlobIds.slice(0, 20) : []) {
-      const r = await addPhoto(supabase, ctx, { id: blobId, squawkId: data.id, blobId });
-      if (r.status !== "ok") return r;
-    }
-    return { status: "ok", row: data };
-  }
-  const { data: existing } = await supabase
-    .from("squawk")
-    .select("*")
-    .eq("id", input.id ?? "")
-    .eq("aircraft_id", ctx.aircraftId)
-    .maybeSingle();
-  return existing ? { status: "ok", row: existing } : { status: "error", message: "Couldn't report the squawk." };
+  const { data, error } = await replayRpc(supabase, ctx, "create_squawk", {
+    p_aircraft: ctx.aircraftId,
+    p_fields: {
+      ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId,
+      description, severity: normalizeSeverity(input.severity), status: "open",
+      reported_by: ctx.userId, reporter_name: reporterName,
+      ...(input.reportedAt ? { reported_at: input.reportedAt } : {}),
+    },
+    p_photos: Array.isArray(input.photoBlobIds) ? input.photoBlobIds.slice(0, 20) : [],
+  });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 export async function resolve(
@@ -136,7 +109,7 @@ export async function resolve(
   if (input.resolvedEntryId && !(await entryIsOnAircraft(supabase, ctx.aircraftId, input.resolvedEntryId))) {
     return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
   }
-  return patchSquawk(supabase, ctx, input.squawkId, {
+  return patchSquawk(supabase, ctx, input.squawkId, loaded.row.updated_at, {
     status: "resolved",
     resolved_at: input.resolvedAt || new Date().toISOString(),
     resolved_by: ctx.userId,
@@ -153,7 +126,7 @@ export async function reopen(
 ): Promise<WriteResult> {
   const loaded = await loadSquawk(supabase, ctx, input.squawkId, base);
   if ("status" in loaded) return loaded;
-  return patchSquawk(supabase, ctx, input.squawkId, {
+  return patchSquawk(supabase, ctx, input.squawkId, loaded.row.updated_at, {
     status: "open",
     resolved_at: null,
     resolved_by: null,
@@ -175,7 +148,7 @@ export async function update(
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   const loaded = await loadSquawk(supabase, ctx, input.squawkId, base);
   if ("status" in loaded) return loaded;
-  return patchSquawk(supabase, ctx, input.squawkId, picked.fields);
+  return patchSquawk(supabase, ctx, input.squawkId, loaded.row.updated_at, picked.fields);
 }
 
 /** A delete is final: squawk_photo rows cascade (0076) and their images are removed here. */
@@ -189,15 +162,9 @@ export async function remove(
   if ("status" in loaded) return loaded;
   const { data: photos } = await supabase.from("squawk_photo").select("storage_path, thumbnail_path")
     .eq("squawk_id", input.squawkId).eq("aircraft_id", ctx.aircraftId);
-  const { data, error } = await supabase
-    .from("squawk")
-    .delete()
-    .eq("id", input.squawkId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Squawk not found.", httpStatus: 404 };
-  await dropBlobs((photos ?? []).flatMap((p) => [p.storage_path, p.thumbnail_path]));
+  const result = await writeRecord(supabase, ctx, "squawk", input.squawkId, loaded.row.updated_at, null);
+  if (result.status !== "ok") return result;
+  await dropBlobs((photos ?? []).flatMap((p) => [p.storage_path, p.thumbnail_path]), ctx.aircraftId);
   return { status: "ok", row: null };
 }
 
@@ -212,12 +179,12 @@ export const squawkPhotoPath = (aircraftId: string, squawkId: string, blobId: st
   `${aircraftId}/squawks/${squawkId}/${blobId}.jpg`;
 
 /** Best-effort image cleanup after the row is gone; storage loads lazily so the unit tests never touch it. */
-async function dropBlobs(paths: (string | null)[]) {
+async function dropBlobs(paths: (string | null)[], aircraftId: string) {
   const list = paths.filter((p): p is string => !!p);
   if (!list.length) return;
   try {
     const { removeBlobs } = await import("@/lib/storage");
-    await removeBlobs(list);
+    await removeBlobs(list, aircraftId);
   } catch {
     // An orphaned image is harmless and invisible (the row is what grants access to it).
   }
@@ -239,14 +206,11 @@ export async function addPhoto(
     return { status: "error", message: "You can add photos only to squawks you reported.", httpStatus: 403 };
   const { data: existing } = await supabase.from("squawk_photo").select("*").eq("id", input.id).maybeSingle();
   if (existing) return existing.aircraft_id === ctx.aircraftId ? { status: "ok", row: existing } : { status: "error", message: "Photo not found.", httpStatus: 404 };
-  const { data, error } = await supabase.from("squawk_photo").insert({
+  return insertRecords(supabase, ctx, "squawk_photo", {
     id: input.id, aircraft_id: ctx.aircraftId, squawk_id: input.squawkId,
     storage_path: squawkPhotoPath(ctx.aircraftId, input.squawkId, input.blobId),
     taken_at: input.takenAt ?? null, created_by: ctx.userId,
-  }).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  });
 }
 
 /** The photo's creator or an editor may delete it. */
@@ -256,9 +220,8 @@ export async function removePhoto(supabase: Db, ctx: WriteCtx, input: { photoId:
   if (row.created_by !== ctx.userId && !(await canEdit(supabase, ctx.aircraftId)))
     return { status: "error", message: NO_EDIT, httpStatus: 403 };
   if (isStale(row.updated_at, base)) return { status: "conflict", row };
-  const { data, error } = await supabase.from("squawk_photo").delete().eq("id", input.photoId).eq("aircraft_id", ctx.aircraftId).select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  await dropBlobs([row.storage_path, row.thumbnail_path]);
+  const result = await writeRecord(supabase, ctx, "squawk_photo", input.photoId, row.updated_at, null);
+  if (result.status !== "ok") return result;
+  await dropBlobs([row.storage_path, row.thumbnail_path], ctx.aircraftId);
   return { status: "ok", row: null };
 }

@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import type { Db } from "@/lib/writes";
 import { validateEnvelope, validateMutation, type MutationType, type PushResult } from "@/lib/sync/mutations";
 import { applyMutation, editChecker } from "@/lib/sync/push";
@@ -24,7 +25,7 @@ export const VIEWER_WRITES: ReadonlySet<MutationType> = new Set<MutationType>(["
 export type Resolution = "keep_mine" | "keep_both" | "take_theirs" | "discard";
 export type PushResultV2 = PushResult & { code?: string; replayed?: boolean };
 
-type Ledger = { id: string; status: "ok" | "conflict" | "error"; resolved_at: string | null };
+type Ledger = { id: string; status: "ok" | "conflict" | "error"; resolved_at: string | null; response?: PushResultV2 | null; request?: { type: string; aircraftId: string; payload: unknown } | null };
 
 // ---------------------------------------------------------------------------
 // Pull
@@ -48,25 +49,25 @@ export async function pullV2(supabase: Db, userId: string, cursor: number, limit
 // Push
 // ---------------------------------------------------------------------------
 
-/** One ledger row per answered mutation. Never fails the push: the ledger is bookkeeping. */
-async function record(supabase: Db, userId: string, m: { id: string; type: string; aircraftId?: string; base?: string }, r: PushResultV2, prior: Ledger | undefined, resolution: Resolution | undefined) {
-  const resolves = prior?.status === "conflict" && !prior.resolved_at && r.status === "ok";
-  const { error } = await supabase.from("sync_mutation").upsert({
-    user_id: userId, id: m.id, aircraft_id: m.aircraftId ?? null, type: m.type || "unknown", status: r.status,
-    base: m.base ?? null, error: r.error?.slice(0, 1000) ?? null, code: r.code ?? null,
-    ...(resolves ? { resolution: resolution ?? "keep_mine", resolved_at: new Date().toISOString() } : {}),
-  }, { onConflict: "user_id,id" });
-  if (error) console.error("sync_mutation ledger write failed", error.message);
+/** Failure to persist a response is retryable; a late error cannot overwrite an atomic success. */
+async function record(supabase: Db, m: { id: string; type: string; aircraftId: string; payload: Record<string, unknown>; base?: string }, r: PushResultV2, resolution: Resolution | undefined): Promise<{ error: string } | { result: PushResultV2 }> {
+  const { data, error } = await supabase.rpc("record_sync_result", {
+    p_mutation: m, p_result: r, p_resolution: resolution ?? null,
+  });
+  if (error) return { error: "Could not record this sync response. Try syncing again." };
+  return { result: (data ?? r) as PushResultV2 };
 }
 
-export async function pushV2(supabase: Db, userId: string, body: unknown): Promise<{ status: 400; body: { error: string; code: string } } | { status: 200; body: { results: PushResultV2[] } }> {
+export async function pushV2(supabase: Db, userId: string, body: unknown): Promise<{ status: 400 | 500; body: { error: string; code: string } } | { status: 200; body: { results: PushResultV2[] } }> {
   const envelope = validateEnvelope(body);
   if ("error" in envelope) return { status: 400, body: { error: envelope.error, code: "invalid" } };
 
   const ids = envelope.mutations.map((m) => (m && typeof m === "object" && typeof (m as { id?: unknown }).id === "string" ? (m as { id: string }).id : "")).filter(Boolean);
+  if (new Set(ids).size !== ids.length) return { status: 400, body: { error: "Each change must have a distinct mutation ID.", code: "invalid" } };
   const ledger = new Map<string, Ledger>();
   if (ids.length) {
-    const { data } = await supabase.from("sync_mutation").select("id, status, resolved_at").eq("user_id", userId).in("id", ids);
+    const { data, error } = await supabase.from("sync_mutation").select("id, status, resolved_at, response, request").eq("user_id", userId).in("id", ids);
+    if (error) return { status: 500, body: { error: "Could not check previous changes. Try syncing again.", code: "server_error" } };
     for (const row of (data ?? []) as Ledger[]) ledger.set(row.id, row);
   }
 
@@ -82,7 +83,11 @@ export async function pushV2(supabase: Db, userId: string, body: unknown): Promi
     const prior = ledger.get(m.id);
     // Exact replay detection: this id already landed, so a lost response is not run twice.
     if (prior?.status === "ok") {
-      results.push({ id: m.id, status: "ok", row: null, replayed: true });
+      if (prior.request && (prior.request.type !== m.type || prior.request.aircraftId !== m.aircraftId || !isDeepStrictEqual(prior.request.payload, m.payload))) {
+        results.push({ id: m.id, status: "error", code: "invalid", error: "This mutation ID was already used for another change." });
+      } else {
+        results.push({ ...prior.response, id: m.id, status: "ok", row: prior.response?.row ?? null, replayed: true });
+      }
       continue;
     }
     const resolution = (raw as { resolution?: unknown }).resolution === "keep_both" ? "keep_both" : undefined;
@@ -91,11 +96,14 @@ export async function pushV2(supabase: Db, userId: string, body: unknown): Promi
       r = { id: m.id, status: "error", error: VIEWER_READ_ONLY, code: "viewer_read_only" };
     } else {
       // Access is settled above; the write function and RLS still check it (viewer squawks are inserts AS the viewer).
-      const applied = await applyMutation(supabase, userId, async () => true, m);
+      const applied = await applyMutation(supabase, userId, async () => true, m, true, resolution);
       r = applied.status === "conflict" ? { ...applied, code: "conflict" } : applied.status === "error" ? { ...applied, code: "refused" } : applied;
     }
-    await record(supabase, userId, m, r, prior, resolution);
-    results.push(r);
+    const saved = await record(supabase, m, r, resolution);
+    if ("error" in saved) return { status: 500, body: { error: saved.error, code: "server_error" } };
+    results.push(saved.result);
+    ledger.set(m.id, { id: m.id, status: saved.result.status, resolved_at: null, response: saved.result,
+      request: { type: m.type, aircraftId: m.aircraftId, payload: m.payload } });
   }
   return { status: 200, body: { results } };
 }

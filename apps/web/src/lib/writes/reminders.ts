@@ -1,3 +1,4 @@
+import { insertRecords } from "./insert";
 import type { Db, WriteCtx, WriteResult } from "./entries";
 
 // `reminder.snooze` (09 §5.3, §2.11): "Remind me <date>" on Plan ahead and "Remind me Friday" on a
@@ -21,13 +22,7 @@ export async function snooze(
     if (Number.isNaN(t) || t <= Date.now()) return { status: "error", message: "Pick a date in the future.", httpStatus: 400 };
     until = new Date(t).toISOString();
   }
-  const { data, error } = await supabase.from("reminder_snooze").upsert({
+  return insertRecords(supabase, ctx, "reminder_snooze", {
     user_id: ctx.userId, aircraft_id: ctx.aircraftId, item_key: input.itemKey, due_signature: input.dueSignature, until_at: until,
-  }, { onConflict: "user_id,aircraft_id,item_key,due_signature" }).select("*").maybeSingle();
-  if (error) {
-    // 42501: RLS refused, the aircraft is not shared with this user.
-    if (error.code === "42501") return { status: "error", message: "Aircraft not found.", httpStatus: 404 };
-    return { status: "error", message: error.message };
-  }
-  return { status: "ok", row: data };
+  }, "user_id,aircraft_id,item_key,due_signature", false);
 }

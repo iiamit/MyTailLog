@@ -29,8 +29,9 @@ const num = (f: FormData, k: string) => {
 };
 
 /** The AD editor (W-MAINT-01): create, or edit keeping the compliance history fields it does not show. */
-export async function saveAd(aircraftId: string, adId: string | null, _prev: FormState, f: FormData): Promise<FormState> {
+export async function saveAd(aircraftId: string, adId: string | null, renderedBase: string | null, _prev: FormState, f: FormData): Promise<FormState> {
   const { supabase, ctx } = await writeSession(aircraftId);
+  if (adId && !renderedBase) return { error: "Reload this AD before editing it." };
   const kind = text(f, "kind") as AdKind | null;
   const reference = text(f, "reference");
   const status = text(f, "status") as AdStatus | null;
@@ -66,7 +67,7 @@ export async function saveAd(aircraftId: string, adId: string | null, _prev: For
     component_id: text(f, "component_id"),
     ...kept,
   };
-  const r = await compliance.upsert(supabase, ctx, { id: adId ?? undefined, record });
+  const r = await compliance.upsert(supabase, ctx, { id: adId ?? undefined, record }, renderedBase ?? undefined);
   if (r.status !== "ok") return { error: failMessage(r) };
   const id = adId ?? String((r.row as { id?: string } | null)?.id ?? "");
   done(aircraftId, `ad=${id}&saved=${adId ? "edit" : "new"}`);
@@ -77,7 +78,7 @@ export async function saveAd(aircraftId: string, adId: string | null, _prev: For
  * previous compliance stays in the history: a record with no completion rows yet gets its stored compliance
  * written as one first, because the engine reads completions over the stored pair once any exist.
  */
-export async function recordCompliance(aircraftId: string, adId: string, _prev: FormState, f: FormData): Promise<FormState> {
+export async function recordCompliance(aircraftId: string, adId: string, renderedBase: string, _prev: FormState, f: FormData): Promise<FormState> {
   const { supabase, user, ctx } = await writeSession(aircraftId);
   if (!user) return { error: "Not signed in." };
   const date = text(f, "date");
@@ -87,38 +88,16 @@ export async function recordCompliance(aircraftId: string, adId: string, _prev: 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > todayIn(profile?.time_zone)) return { error: "Pick a date on or before today." };
   if (hours != null && !(Number.isFinite(hours) && hours >= 0)) return { error: "Intervals and hours are zero or more." };
 
-  const { data: ad } = await supabase.from("ad_compliance").select("*").eq("id", adId).eq("aircraft_id", aircraftId).maybeSingle();
-  if (!ad) return { error: "This AD is no longer tracked." };
-  const { count } = await supabase.from("item_completion").select("id", { count: "exact", head: true }).eq("ad_compliance_id", adId);
-  if (!count && ad.complied_date) {
-    const { error } = await supabase.from("item_completion").insert({
-      aircraft_id: aircraftId, ad_compliance_id: adId, done_date: ad.complied_date, done_hours: ad.complied_hours,
-      meter: ad.complied_hours != null ? "tach" : null, log_entry_id: ad.reference_entry_id, source: "import", created_by: user.id,
-    });
-    if (error) return { error: "The earlier compliance could not be kept. Nothing was changed. Try again." };
-  }
-  const { error } = await supabase.from("item_completion").insert({
-    aircraft_id: aircraftId, ad_compliance_id: adId, done_date: date, done_hours: hours, meter: hours != null ? "tach" : null,
-    log_entry_id: entryId, source: entryId ? "owner_link" : "mark_done", created_by: user.id,
-  });
-  if (error) return { error: "The compliance could not be saved. Try again." };
-
-  // Keep the record's own last-compliance pair on the newest one (v1 and the phone read it).
-  if (!ad.complied_date || date >= ad.complied_date) {
-    // pickAdFields takes only the editable fields from the row.
-    const r = await compliance.upsert(supabase, ctx, {
-      id: ad.id,
-      record: { ...ad, status: "complied", complied_date: date, complied_hours: hours, method: text(f, "method") ?? ad.method, reference_entry_id: entryId ?? ad.reference_entry_id },
-    }, ad.updated_at);
-    if (r.status !== "ok") return { error: `The compliance was added to the history, but the AD could not be updated: ${failMessage(r)}` };
-  }
+  const r = await compliance.recordCompliance(supabase, ctx, { recordId: adId, date, hours, entryId, method: text(f, "method") }, renderedBase);
+  if (r.status !== "ok") return { error: failMessage(r) };
   done(aircraftId, `ad=${adId}&saved=record`);
 }
 
-export async function stopTracking(aircraftId: string, adId: string) {
+export async function stopTracking(aircraftId: string, adId: string, renderedBase: string) {
   const { supabase, ctx } = await writeSession(aircraftId);
   const { data: ad } = await supabase.from("ad_compliance").select("kind, reference").eq("id", adId).maybeSingle();
-  const r = await compliance.remove(supabase, ctx, { recordId: adId });
+  if (!renderedBase) done(aircraftId, `ad=${adId}&error=Reload%20this%20AD%20before%20removing%20it.`);
+  const r = await compliance.remove(supabase, ctx, { recordId: adId }, renderedBase);
   if (r.status !== "ok") done(aircraftId, `ad=${adId}&error=${encodeURIComponent(failMessage(r))}`);
   done(aircraftId, `stopped=${encodeURIComponent(ad ? `${ad.kind.toUpperCase()} ${ad.reference}` : "the AD")}`);
 }
@@ -132,18 +111,20 @@ export async function trackReference(aircraftId: string, kind: AdKind, reference
 }
 
 /** Federal Register result looked up in the browser (GPO blocks our egress), saved as the AD's official record. */
-export async function saveReference(aircraftId: string, adId: string, ad: FaaAd): Promise<{ error?: string }> {
+export async function saveReference(aircraftId: string, adId: string, ad: FaaAd, renderedBase: string): Promise<{ error?: string }> {
   const { supabase, ctx } = await writeSession(aircraftId);
-  const r = await compliance.saveAdReference(supabase, ctx, { complianceId: adId, ad });
+  if (!renderedBase) return { error: "Reload this AD before linking its reference." };
+  const r = await compliance.saveAdReference(supabase, ctx, { complianceId: adId, ad }, renderedBase);
   if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(path(aircraftId));
   return {};
 }
 
 /** FAA DRS fallback, server-side. */
-export async function lookupDrs(aircraftId: string, adId: string): Promise<{ error?: string; found?: boolean }> {
+export async function lookupDrs(aircraftId: string, adId: string, renderedBase: string): Promise<{ error?: string; found?: boolean }> {
   const { supabase, ctx } = await writeSession(aircraftId);
-  const r = await compliance.enrichViaDRS(supabase, ctx, { complianceId: adId });
+  if (!renderedBase) return { error: "Reload this AD before linking its reference." };
+  const r = await compliance.enrichViaDRS(supabase, ctx, { complianceId: adId }, renderedBase);
   if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(path(aircraftId));
   return { found: (r.row as { found?: boolean } | null)?.found === true };

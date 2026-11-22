@@ -55,7 +55,7 @@ export default async function SquawksPage({
 
   const [{ data: rows, error }, { data: photoRows }, { data: entryRows }, { data: books }, { data: providers }, due] = await Promise.all([
     supabase.from("squawk").select("*").eq("aircraft_id", id).order("reported_at", { ascending: false }),
-    supabase.from("squawk_photo").select("id, squawk_id, created_by, taken_at, created_at").eq("aircraft_id", id).order("created_at"),
+    supabase.from("squawk_photo").select("id, squawk_id, created_by, taken_at, created_at, updated_at").eq("aircraft_id", id).order("created_at"),
     supabase
       .from("log_entry")
       .select("id, entry_date, description, work_performed, page_id, logbook_id, signature_name, mechanic_cert_number")
@@ -232,9 +232,9 @@ export default async function SquawksPage({
             {nextPlace ? ` at ${nextPlace}` : ""}.{" "}
             {open.length === 1 ? "The open squawk" : `All ${open.length} open squawks`} can be shown to the shop at that visit.
           </p>
-          {context.canEdit && next.id && (
+          {context.canEdit && next.id && next.updatedAt && (
             <div className="mt-2">
-              <AddToVisit aircraftId={id} visitId={next.id} squawkIds={open.map((s) => s.id)} />
+              <AddToVisit aircraftId={id} visitId={next.id} base={next.updatedAt} squawkIds={open.map((s) => s.id)} />
             </div>
           )}
           {!next.id && (
@@ -261,6 +261,7 @@ export default async function SquawksPage({
       <ResolvePanel
         aircraftId={id}
         squawkId={selected.id}
+        base={selected.updated_at}
         description={selected.description}
         entries={options}
         today={today}
@@ -295,6 +296,7 @@ export default async function SquawksPage({
     const canAdd = context!.canEdit || s.reported_by === userId;
     const photos: PhotoView[] = photosOf(s.id).map((p) => ({
       id: p.id,
+      base: p.updated_at,
       src: `/api/aircraft/${id}/squawk-photos/${p.id}`,
       thumb: `/api/aircraft/${id}/squawk-photos/${p.id}?thumb`,
       caption: fmtDay((p.taken_at ?? p.created_at).slice(0, 10)),
@@ -319,7 +321,7 @@ export default async function SquawksPage({
 
     return (
       <Leaf label="Squawk">
-        <EditableTitle aircraftId={id} squawkId={s.id} text={s.description} canEdit={context!.canEdit} />
+        <EditableTitle aircraftId={id} squawkId={s.id} base={s.updated_at} text={s.description} canEdit={context!.canEdit} />
         <p className="mt-1 text-small text-ink-3">
           Reported {fmtDay(s.reported_at.slice(0, 10))} by {s.reporter_name ?? "someone"}
           {s.status !== "open" && s.resolved_at ? ` · resolved ${fmtDay(s.resolved_at.slice(0, 10))}` : ""}
@@ -327,7 +329,7 @@ export default async function SquawksPage({
 
         <HungSection title="Severity" first>
           {context!.canEdit && s.status === "open" ? (
-            <SeverityControl aircraftId={id} squawkId={s.id} value={s.severity} />
+            <SeverityControl aircraftId={id} squawkId={s.id} base={s.updated_at} value={s.severity} />
           ) : (
             <p className="text-body">{SEVERITY_WORD[s.severity]}: {SEVERITY_HELP[s.severity]}</p>
           )}
@@ -411,7 +413,7 @@ export default async function SquawksPage({
                 <Button href={`${self}?squawk=${s.id}&panel=send`}>Send to mechanic</Button>
               </>
             )}
-            <SquawkActions aircraftId={id} squawkId={s.id} resolved={s.status !== "open"} listHref={self} />
+            <SquawkActions aircraftId={id} squawkId={s.id} base={s.updated_at} resolved={s.status !== "open"} listHref={self} />
           </div>
         )}
       </Leaf>

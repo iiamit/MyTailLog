@@ -1,3 +1,5 @@
+import { insertRecords } from "./insert";
+import { replayRpc } from "./replay";
 import type { PlannedVisit, VisitStatus } from "@/lib/database.types";
 import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
@@ -146,22 +148,12 @@ export async function create(
   const booked = await alreadyBooked(supabase, ctx.aircraftId, keys.keys);
   if (booked) return { status: "error", message: booked, httpStatus: 409 };
 
-  const { data: visit, error } = await supabase.from("planned_visit").insert({
-    id: input.id, aircraft_id: ctx.aircraftId, status: "planned", provider_id: input.providerId || null,
-    from_suggestion_key: fromKey, created_by: ctx.userId, ...picked.fields, week_of: input.weekOf,
-  }).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!visit) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  if (keys.keys.length) {
-    const { error: itemErr } = await supabase.from("planned_visit_item")
-      .insert(keys.keys.map((k) => ({ aircraft_id: ctx.aircraftId, visit_id: visit.id, item_key: k })));
-    if (itemErr) {
-      // No half-booked visit: the item rows failed (a race on the open-item index), so take the visit back.
-      await supabase.from("planned_visit").delete().eq("id", visit.id).eq("aircraft_id", ctx.aircraftId);
-      return { status: "error", message: itemErr.code === "23505" ? "One of these items was just booked into another visit." : itemErr.message, httpStatus: 409 };
-    }
-  }
-  return { status: "ok", row: visit };
+  const { data, error } = await replayRpc(supabase, ctx, "create_planned_visit", {
+    p_aircraft: ctx.aircraftId,
+    p_visit: { id: input.id, provider_id: input.providerId || null, from_suggestion_key: fromKey, ...picked.fields, week_of: input.weekOf },
+    p_keys: keys.keys,
+  });
+  return error ? { status: "error", message: error.code === "23505" ? "One of these items was just booked into another visit." : error.message, httpStatus: 409 } : data as WriteResult;
 }
 
 /** `visit.update` (base = the visit's): week, day, shop, notes, and items added or taken out. */
@@ -191,25 +183,13 @@ export async function update(
   const booked = await alreadyBooked(supabase, ctx.aircraftId, add.keys, input.visitId);
   if (booked) return { status: "error", message: booked, httpStatus: 409 };
 
-  if (drop.keys.length) {
-    // Only items not done at this visit come out; a done item stays as the visit's record.
-    const { error } = await supabase.from("planned_visit_item").delete()
-      .eq("visit_id", input.visitId).eq("aircraft_id", ctx.aircraftId).in("item_key", drop.keys).is("done_completion_id", null);
-    if (error) return { status: "error", message: error.message };
-  }
-  if (add.keys.length) {
-    const { error } = await supabase.from("planned_visit_item").upsert(
-      add.keys.map((k) => ({ aircraft_id: ctx.aircraftId, visit_id: input.visitId, item_key: k })),
-      { onConflict: "visit_id,item_key", ignoreDuplicates: true });
-    if (error) return { status: "error", message: error.code === "23505" ? "One of these items was just booked into another visit." : error.message, httpStatus: 409 };
-  }
-  // Always touch the visit so its version moves with its items (09 §5.5 composite edits).
-  const patch = { ...picked.fields, ...("providerId" in input ? { provider_id: input.providerId || null } : {}), updated_at: new Date().toISOString() };
-  const { data, error } = await supabase.from("planned_visit").update(patch)
-    .eq("id", input.visitId).eq("aircraft_id", ctx.aircraftId).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Visit not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  // Touch a field even for an item-only edit; the visit version includes its children.
+  const patch = { notes: loaded.row.notes, ...picked.fields, ...("providerId" in input ? { provider_id: input.providerId || null } : {}) };
+  const { data, error } = await replayRpc(supabase, ctx, "save_planned_visit", {
+    p_aircraft: ctx.aircraftId, p_visit: input.visitId, p_base: loaded.row.updated_at,
+    p_patch: patch, p_add: add.keys, p_remove: drop.keys,
+  });
+  return error ? { status: "error", message: error.code === "23505" ? "One of these items was just booked into another visit." : error.message, httpStatus: 409 } : data as WriteResult;
 }
 
 /** `visit.setStatus` (base). Closing a visit returns its undone items to the suggestions (09 §2.5). */
@@ -226,20 +206,11 @@ export async function setStatus(
   if (loaded.row.status === input.status) return { status: "ok", row: loaded.row };
   if (!canMoveVisit(loaded.row.status, input.status))
     return { status: "error", message: isClosed(loaded.row.status) ? CLOSED : "A visit can't move to that state from here.", httpStatus: 409 };
-  return moveVisit(supabase, ctx.aircraftId, input.visitId, input.status);
-}
-
-async function moveVisit(supabase: Db, aircraftId: string, visitId: string, status: VisitStatus): Promise<WriteResult> {
-  if (isClosed(status)) {
-    const { error } = await supabase.from("planned_visit_item").delete()
-      .eq("visit_id", visitId).eq("aircraft_id", aircraftId).is("done_completion_id", null);
-    if (error) return { status: "error", message: error.message };
-  }
-  const { data, error } = await supabase.from("planned_visit").update({ status })
-    .eq("id", visitId).eq("aircraft_id", aircraftId).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Visit not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  const { data, error } = await replayRpc(supabase, ctx, "save_planned_visit", {
+    p_aircraft: ctx.aircraftId, p_visit: input.visitId, p_base: loaded.row.updated_at,
+    p_patch: { status: input.status }, p_add: [], p_remove: [],
+  });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 /** `visitSuggestion.dismiss`: hide a suggestion; a different item set or week makes a new key, so it can return. */
@@ -251,36 +222,9 @@ export async function dismissSuggestion(
   if (typeof input.suggestionKey !== "string" || !/^[0-9a-f]{16}$/.test(input.suggestionKey))
     return { status: "error", message: "Unknown suggestion.", httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { error } = await supabase.from("visit_suggestion_dismissal").upsert(
-    { ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, suggestion_key: input.suggestionKey, dismissed_by: ctx.userId },
-    { onConflict: "aircraft_id,suggestion_key", ignoreDuplicates: true });
-  if (error) return { status: "error", message: error.message };
-  const { data } = await supabase.from("visit_suggestion_dismissal").select("*")
-    .eq("aircraft_id", ctx.aircraftId).eq("suggestion_key", input.suggestionKey).maybeSingle();
-  return data ? { status: "ok", row: data } : { status: "error", message: NO_EDIT, httpStatus: 403 };
-}
-
-/**
- * An item was done (a completion was recorded): tick it on the open visit holding it, link the
- * completion to that visit, and close an awaiting-records visit whose every item is now done (09 §2.5).
- * Derived bookkeeping: a failure never fails the completion that called it.
- */
-export async function recordVisitCompletion(supabase: Db, aircraftId: string, itemKey: string, completionId: string): Promise<void> {
-  try {
-    const { data: row } = await supabase.from("planned_visit_item").select("id, visit_id")
-      .eq("aircraft_id", aircraftId).eq("item_key", itemKey).is("done_completion_id", null).maybeSingle();
-    if (!row) return;
-    await supabase.from("planned_visit_item").update({ done_completion_id: completionId }).eq("id", row.id).eq("aircraft_id", aircraftId);
-    await supabase.from("item_completion").update({ visit_id: row.visit_id }).eq("id", completionId).eq("aircraft_id", aircraftId);
-    const [{ data: visit }, { data: open }] = await Promise.all([
-      supabase.from("planned_visit").select("status").eq("id", row.visit_id).maybeSingle(),
-      supabase.from("planned_visit_item").select("id").eq("visit_id", row.visit_id).is("done_completion_id", null)
-        .not("item_key", "like", "squawk:%"),
-    ]);
-    if (visit?.status === "awaiting_records" && !(open ?? []).length) await moveVisit(supabase, aircraftId, row.visit_id, "done");
-  } catch {
-    // See above.
-  }
+  return insertRecords(supabase, ctx, "visit_suggestion_dismissal", {
+    aircraft_id: ctx.aircraftId, suggestion_key: input.suggestionKey, dismissed_by: ctx.userId,
+  }, "aircraft_id,suggestion_key");
 }
 
 /** The daily job (09 §2.5): a planned visit moves to awaiting_records the day after `coalesce(visit_date, week_of + 4)`. */

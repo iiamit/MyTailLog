@@ -26,10 +26,11 @@ export async function addOil(id: string, _p: ActResult, form: FormData): Promise
   redirect(`/aircraft/${id}/oil?done=oil`);
 }
 
-export async function removeOil(id: string, additionId: string): Promise<ActResult> {
+export async function removeOil(id: string, additionId: string, base: string): Promise<ActResult> {
   const { supabase, user, ctx } = await writeSession(id);
   if (!user) return { error: "Not signed in." };
-  const r = await oil.deleteTopOff(supabase, ctx, { additionId });
+  if (!base) return { error: "Reload the top-off before removing it." };
+  const r = await oil.deleteTopOff(supabase, ctx, { additionId }, base);
   if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(`/aircraft/${id}/oil`);
   return { ok: "Top-off removed." };

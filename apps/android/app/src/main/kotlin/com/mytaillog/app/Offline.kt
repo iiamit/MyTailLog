@@ -10,6 +10,9 @@ import com.mytaillog.core.domain.Mutation
 import com.mytaillog.core.sync.Resolution
 import com.mytaillog.core.sync.RowRef
 import com.mytaillog.core.sync.SyncEngine
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -103,14 +106,28 @@ class OfflineStore(
         refresh()
     }
 
-    fun close() {
-        mirrorDriver.close()
-        outboxDriver.close()
+    @Volatile private var closing = false
+    @Volatile private var closed = false
+    val isClosing get() = closing
+    @Volatile private var syncJob: Job? = null
+
+    /** Stop the running sync before disposing either database. No later worker may restart it. */
+    suspend fun close() {
+        closing = true
+        syncJob?.takeIf { it != currentCoroutineContext()[Job] }?.cancelAndJoin()
+        lock.withLock {
+            if (!closed) {
+                closed = true
+                mirrorDriver.close()
+                outboxDriver.close()
+            }
+        }
     }
 
     fun setOnline(online: Boolean) = state.update { it.copy(online = online) }
 
     fun refresh() {
+        if (closed) return
         val s = engine.summary()
         val jobs = pageJobs()
         state.update {
@@ -124,6 +141,8 @@ class OfflineStore(
 
     /** One sync run. Returns true when work is left that a retry could finish (no signal, server down). */
     suspend fun syncNow(): Boolean = lock.withLock {
+        if (closing) return@withLock false
+        syncJob = currentCoroutineContext()[Job]
         state.update { it.copy(syncing = true) }
         var retry = false
         try {
@@ -263,7 +282,7 @@ class OfflineStore(
         refresh()
     }
 
-    fun pageJobs(): List<PageJob> = q.filesToUpload().executeAsList().filter { it.kind == "page" }.map { f ->
+    fun pageJobs(): List<PageJob> = if (closed) emptyList() else q.filesToUpload().executeAsList().filter { it.kind == "page" }.map { f ->
         val m = Json.parseToJsonElement(f.meta).jsonObject
         fun s(k: String) = m[k]?.jsonPrimitive?.contentOrNull
         PageJob(
@@ -316,7 +335,7 @@ class OfflineStore(
                     if (q.byId(squawkId).executeAsOneOrNull() != null) continue // its squawk.create hasn't landed yet
                     api.squawkPhoto(f.aircraft_id, squawkId, s("photoId")!!, bytes)
                 } else {
-                    val row = api.document(f.aircraft_id, meta, bytes)
+                    val row = api.document(f.aircraft_id, JsonObject(meta + ("uploadId" to kotlinx.serialization.json.JsonPrimitive(f.id))), bytes)
                     mirror.upsertRow("document", row)
                     // The phone's copy becomes the offline copy under the server's id (documents are never purged).
                     row["id"]?.jsonPrimitive?.contentOrNull?.let { id -> File(f.local_path).renameTo(docFile(id, s("fileName"))) }

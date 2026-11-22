@@ -29,6 +29,7 @@ const DONE: Record<string, string> = {
   saved: "Details saved.",
   unlinked: "Unlinked. It's still in Documents.",
   deleted: "Document deleted.",
+  failed: "The document could not be changed. Reload it and try again; another device may have updated it.",
 };
 
 const summary = (e: { description: string | null; work_performed: string | null }) => {
@@ -65,7 +66,7 @@ export default async function DocumentsPage({
   const [docsRes, entriesRes, wbRes, partsRes, due] = await Promise.all([
     supabase
       .from("document")
-      .select("id, type, title, reference, document_date, notes, file_name, mime_type, size_bytes, log_entry_id, created_at, track_expiry, expires_on, renews_every_months, remind_lead_days")
+      .select("id, type, title, reference, document_date, notes, file_name, mime_type, size_bytes, log_entry_id, created_at, updated_at, track_expiry, expires_on, renews_every_months, remind_lead_days")
       .eq("aircraft_id", id)
       .order("created_at", { ascending: false }),
     canEdit
@@ -137,9 +138,9 @@ export default async function DocumentsPage({
 
   let right: React.ReactNode;
   if (panel === "new") {
-    right = <DocForm aircraftId={id} entries={entryOptions} closeHref={self} />;
+    right = <DocForm key="new" aircraftId={id} entries={entryOptions} closeHref={self} />;
   } else if (panel === "edit" && selected) {
-    right = <DocForm aircraftId={id} doc={selected} entries={entryOptions} closeHref={sel(selected.id)} />;
+    right = <DocForm key={selected.id} aircraftId={id} doc={selected} entries={entryOptions} closeHref={sel(selected.id)} />;
   } else if (selected) {
     const isPdf = selected.mime_type === "application/pdf";
     const src = `/api/document/${selected.id}`;
@@ -177,11 +178,11 @@ export default async function DocumentsPage({
               Edit details
             </Link>
             {entry && (
-              <form action={unlinkDocument.bind(null, id, selected.id)}>
+              <form action={unlinkDocument.bind(null, id, selected.id, selected.updated_at)}>
                 <button type="submit" className={buttonClass("on-mat", "s")}>Unlink</button>
               </form>
             )}
-            <form action={deleteDocument.bind(null, id, selected.id)}>
+            <form action={deleteDocument.bind(null, id, selected.id, selected.updated_at)}>
               <ConfirmSubmit
                 label="Delete"
                 variant="secondary"

@@ -41,6 +41,16 @@ class BooksTextTest {
     private val b = sampleBooks()
 
     @Test
+    fun structuredDocumentsWithNoEntriesStayVisibleAndRequireWebsiteApproval() {
+        val pending = PageRow("doc", "other", extractionStatus = "extracted", needsLook = true, updatedAt = "v1")
+        val books = b.copy(pages = b.pages + pending)
+        assertTrue(reviewQueue(books).any { it.id == pending.id })
+        assertTrue(needsWebsiteReview(books, pending))
+        val approved = pending.copy(reviewStatus = "confirmed")
+        assertTrue(reviewQueue(b.copy(pages = b.pages + approved)).none { it.id == approved.id })
+    }
+
+    @Test
     fun theQueueIsThePagesWithEntriesReadByAiInBookOrder() {
         val q = reviewQueue(b)
         assertEquals(listOf("Airframe p. 6", "Engine p. 3"), q.map { pageLabel(b, it.id) })

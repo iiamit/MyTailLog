@@ -126,6 +126,7 @@ export type EntryOption = { id: string; label: string; date: string | null };
 export function ResolvePanel({
   aircraftId,
   squawkId,
+  base,
   description,
   entries,
   today,
@@ -134,6 +135,7 @@ export function ResolvePanel({
 }: {
   aircraftId: string;
   squawkId: string;
+  base: string;
   description: string;
   entries: EntryOption[];
   today: string;
@@ -155,7 +157,7 @@ export function ResolvePanel({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     start(async () => {
-      const r = await resolveSquawk(aircraftId, squawkId, { entryId: choice === "explain" ? null : choice, notes, date });
+      const r = await resolveSquawk(aircraftId, squawkId, { entryId: choice === "explain" ? null : choice, notes, date }, base);
       if ("error" in r) return setError(r.error);
       router.replace(`${closeHref}&done=resolved`, { scroll: false });
       router.refresh();

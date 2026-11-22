@@ -32,7 +32,7 @@ class BooksApiTest {
                 p.endsWith("/map") -> map
                 p.endsWith("/log_entry") -> """[{"id":"e1","page_id":"p1","logbook_id":"L1","entry_date":"1978-06-02","tach":9.1,"trust":"ai_read",
                     "field_confidence":{"tach":0.6,"hobbs":null},"field_boxes":{"tach":{"x":0.1,"y":0.2,"w":0.1,"h":0.02},"hobbs":null},"updated_at":"2026-11-19T00:00:00Z"}]"""
-                p.endsWith("/page") -> """[{"id":"p1","logbook_id":"L1","page_sequence":1,"review_status":"unreviewed","updated_at":"2026-11-19T00:00:00Z"}]"""
+                p.endsWith("/page") -> """[{"id":"p1","logbook_id":"L1","page_sequence":1,"review_status":"unreviewed","needs_look":null,"updated_at":"2026-11-19T00:00:00Z"}]"""
                 p.endsWith("/logbook") -> """[{"id":"L1","type":"airframe","title":null}]"""
                 else -> """[]"""
             }
@@ -51,6 +51,8 @@ class BooksApiTest {
         assertEquals(0.6, books.entries.single().fieldConfidence?.get("tach"))
         assertEquals(0.02, books.entries.single().fieldBoxes?.get("tach")?.h)
         assertEquals(1, books.pages.single().pageSequence)
+        assertEquals(null, books.pages.single().needsLook)
+        assertTrue(requests.first { it.url.encodedPath.endsWith("/page") }.url.parameters["select"]!!.contains("needs_look"))
         val rest = requests.filter { it.url.host == "x.supabase.co" }
         assertEquals(4, rest.size)
         assertTrue(rest.all { it.url.parameters["aircraft_id"] == "eq.a1" && it.headers["apikey"] == "key" })

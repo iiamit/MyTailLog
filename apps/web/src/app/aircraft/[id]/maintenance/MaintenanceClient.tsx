@@ -30,6 +30,7 @@ export type DueItem = StatusItem;
 
 type FormState = {
   id?: string;
+  base?: string;
   kind: string;
   label: string;
   regulatory: boolean;
@@ -49,6 +50,7 @@ const blank = (): FormState => ({
 function fromItem(m: MaintenanceItem): FormState {
   return {
     id: m.id,
+    base: m.updated_at,
     kind: m.kind,
     label: m.label,
     regulatory: m.regulatory,
@@ -72,6 +74,7 @@ function toInput(f: FormState): MaintenanceInput {
   };
   return {
     id: f.id,
+    base: f.base,
     kind: f.kind,
     label: f.label.trim(),
     regulatory: f.regulatory,
@@ -134,6 +137,7 @@ export function MaintenanceClient({
   const [scanning, setScanning] = useState(false);
   // Inline "mark done" form, keyed by item id (replaces window.prompt).
   const [markId, setMarkId] = useState<string | null>(null);
+  const [markBase, setMarkBase] = useState("");
   const [markDate, setMarkDate] = useState("");
   const [markHours, setMarkHours] = useState("");
   const [markMeter, setMarkMeter] = useState<Meter>("tach");
@@ -205,6 +209,7 @@ export function MaintenanceClient({
 
   function openMark(m: MaintenanceItem, status: StatusItem) {
     setMarkId(m.id);
+    setMarkBase(m.updated_at);
     setMarkDate(new Date().toISOString().slice(0, 10));
     setMarkMeter(status.meter);
     // An estimate is not a physical meter reading and must not be saved as one.
@@ -215,7 +220,7 @@ export function MaintenanceClient({
     const hours =
       markHours.trim() !== "" && Number.isFinite(Number(markHours)) ? Number(markHours) : null;
     setBusy(true);
-    const res = await markMaintenanceDone(aircraftId, m.id, markDate || null, hours, markMeter);
+    const res = await markMaintenanceDone(aircraftId, m.id, markDate || null, hours, markMeter, markBase);
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
     toast.success(`Marked "${m.label}" done.`);
@@ -225,7 +230,7 @@ export function MaintenanceClient({
 
   async function del(m: MaintenanceItem) {
     setBusy(true);
-    const res = await deleteMaintenanceItem(aircraftId, m.id);
+    const res = await deleteMaintenanceItem(aircraftId, m.id, m.updated_at);
     setBusy(false);
     if ("error" in res) return toast.error(res.error);
     toast.success(`Deleted "${m.label}".`);

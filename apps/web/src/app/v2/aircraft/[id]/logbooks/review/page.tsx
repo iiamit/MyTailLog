@@ -113,7 +113,7 @@ export default async function ReviewAllPage({
                 {clean.length ? (
                   <>
                     <ul>{clean.map((p) => row(p, `Read by AI · ${p.es.length} ${p.es.length === 1 ? "entry" : "entries"}, every field clear`))}</ul>
-                    <ConfirmClean aircraftId={id} pages={clean.length} entries={clean.reduce((n, p) => n + p.es.filter((d) => !d.row.owner_confirmed).length, 0)} eyes={eyes.length} />
+                    <ConfirmClean versions={Object.fromEntries(clean.flatMap((p) => p.es).filter((e) => !e.row.owner_confirmed).map((e) => [e.row.id, e.row.updated_at]))} aircraftId={id} pages={clean.length} entries={clean.reduce((n, p) => n + p.es.filter((d) => !d.row.owner_confirmed).length, 0)} eyes={eyes.length} />
                   </>
                 ) : (
                   <p className="text-body text-ink-2">Nothing clean to confirm in one go. The rest need your eyes.</p>
@@ -123,7 +123,7 @@ export default async function ReviewAllPage({
                 <HungSection title="Imported, no page" count={`${imported.length}`}>
                   <ConfirmImported
                     aircraftId={id}
-                    rows={imported.map((e) => ({ id: e.id, date: e.entry_date ? fmtDay(e.entry_date) : "No date", text: [e.description, e.work_performed].filter(Boolean).join(" ") }))}
+                    rows={imported.map((e) => ({ id: e.id, base: e.updated_at, date: e.entry_date ? fmtDay(e.entry_date) : "No date", text: [e.description, e.work_performed].filter(Boolean).join(" ") }))}
                   />
                 </HungSection>
               )}

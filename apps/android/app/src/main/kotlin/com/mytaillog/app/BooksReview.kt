@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -128,6 +129,7 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
     val ui by vm.ui.collectAsStateWithLifecycle()
     val b = ui.books ?: return
     val c = MyTailLogTheme.colors
+    val browser = LocalUriHandler.current
     val queue = rememberSaveable { reviewQueue(b).map { it.id } }
     var index by rememberSaveable { mutableIntStateOf(queue.indexOf(startPageId).coerceAtLeast(0)) }
     var entryIx by remember(index) { mutableIntStateOf(0) }
@@ -159,7 +161,7 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
         if (next != null) { entryIx = entries.indexOf(next.first); field = next.second } else field = null
     }
     fun confirm() {
-        if (page == null || !ready || busy || !ui.canEdit) return
+        if (page == null || needsWebsiteReview(b, page) || !ready || busy || !ui.canEdit) return
         busy = true
         scope.launch {
             val writes = confirmPage(aircraftId, page, entries, outcomes)
@@ -232,7 +234,12 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
         val scan = rememberScan(vm, page.id)
         val name = pageLabel(b, page.id) ?: ""
         val drawer: @Composable ColumnScope.() -> Unit = {
-            Drawer(b, ui.canEdit, entries, entry, field, outcomes, ready, busy, wide, page.unreadRotated, page.ocrText, editKey,
+            if (needsWebsiteReview(b, page)) {
+                Column(Modifier.padding(Tokens.Space.s4), verticalArrangement = Arrangement.spacedBy(Tokens.Space.s3)) {
+                    Text("Review this document on the website before applying it to aircraft records. Sign in there if asked.", color = c.ink, style = MaterialTheme.typography.bodyLarge)
+                    DButton("Review document on website", { browser.openUri("${BuildConfig.API_URL.trimEnd('/')}/v2/aircraft/$aircraftId/logbooks/review/${page.id}") })
+                }
+            } else Drawer(b, ui.canEdit, entries, entry, field, outcomes, ready, busy, wide, page.unreadRotated, page.ocrText, editKey,
                 onEntry = { entryIx = it; field = null }, onField = { field = it }, onOutcome = ::outcome, onConfirm = ::confirm)
         }
         if (wide) {

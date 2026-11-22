@@ -26,6 +26,7 @@ struct StatusSnapshot: Decodable, Equatable, Sendable {
     }
 
     struct Meter: Decodable, Equatable, Sendable {
+        var face: Double? = nil
         let stitched: Double?
         let asOf: String?
     }

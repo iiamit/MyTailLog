@@ -35,8 +35,7 @@ export async function exportBackup(
   // only compress the JSON.
   let done = 0;
   for (const ref of blobs) {
-    const url = ref.prefix === "docs" ? `/api/document/${ref.id}` : `/api/page/${ref.id}/image`;
-    const res = await fetch(url);
+    const res = await fetch(ref.url);
     if (!res.ok) throw new Error(`Backup could not fetch ${ref.entry} (${res.status}).`);
     const buf = new Uint8Array(await res.arrayBuffer());
     files[ref.entry] = [buf, { level: 0 }];

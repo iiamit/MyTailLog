@@ -1,3 +1,5 @@
+import { replayRpc } from "./replay";
+import { writeRecord } from "./conditional";
 import type { Aircraft } from "@/lib/database.types";
 import { LOGBOOK_TYPES } from "@/lib/logbooks";
 import { isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
@@ -81,16 +83,15 @@ export function pickAircraftDetails(input: unknown):
   } };
 }
 
-export async function updateAircraftDetails(supabase: Db, ctx: WriteCtx, input: unknown): Promise<WriteResult> {
+export async function updateAircraftDetails(supabase: Db, ctx: WriteCtx, input: unknown, base?: string): Promise<WriteResult> {
   const picked = pickAircraftDetails(input);
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   // Aircraft identity belongs to the owner; the existing owner RLS policy is
   // the final guard, and the returned row distinguishes a real save from 0 rows.
-  const { data, error } = await supabase.from("aircraft").update(picked.fields)
-    .eq("id", ctx.aircraftId).eq("owner_id", ctx.userId).select("id").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Only the aircraft owner can edit these details.", httpStatus: 403 };
-  return { status: "ok", row: data };
+  const current = await aircraftVersion(supabase, ctx);
+  if (!current || current.owner_id !== ctx.userId) return { status: "error", message: "Only the aircraft owner can edit these details.", httpStatus: 403 };
+  if (isStale(current.updated_at, base)) return { status: "conflict", row: current };
+  return writeRecord(supabase, ctx, "aircraft", ctx.aircraftId, current.updated_at, picked.fields);
 }
 
 /** Load the aircraft for a base check (09 §5.5). */
@@ -108,9 +109,10 @@ export async function setExpectedHours(supabase: Db, ctx: WriteCtx, input: { hou
   if (!row) return { status: "error", message: "Aircraft not found.", httpStatus: 404 };
   if (isStale(row.updated_at, base)) return { status: "conflict", row };
   // Aircraft rows are owner-update only; this definer function lets editors change this one column (0090).
-  const { error } = await supabase.rpc("set_expected_hours", { target_aircraft: ctx.aircraftId, hours_per_week: h === null ? null : Math.round(h * 10) / 10 });
-  if (error) return { status: "error", message: error.code === "42501" ? NO_EDIT : error.message, httpStatus: error.code === "42501" ? 403 : 400 };
-  return { status: "ok", row: await aircraftVersion(supabase, ctx) };
+  const { data, error } = await replayRpc(supabase, ctx, "set_expected_hours_checked", {
+    target_aircraft: ctx.aircraftId, hours_per_week: h === null ? null : Math.round(h * 10) / 10, p_base: row.updated_at,
+  });
+  return error ? { status: "error", message: error.code === "42501" ? NO_EDIT : error.message, httpStatus: error.code === "42501" ? 403 : 400 } : data as WriteResult;
 }
 
 /** `aircraft.setSituation` (base, owner): "I'm selling it" / "It's in the shop", or clear (09 §2.14, §3.6). */
@@ -120,11 +122,8 @@ export async function setSituation(supabase: Db, ctx: WriteCtx, input: { situati
   const row = await aircraftVersion(supabase, ctx);
   if (!row) return { status: "error", message: "Aircraft not found.", httpStatus: 404 };
   if (isStale(row.updated_at, base)) return { status: "conflict", row };
-  const { data, error } = await supabase.from("aircraft").update({ situation_override: input.situation })
-    .eq("id", ctx.aircraftId).eq("owner_id", ctx.userId).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Only the aircraft owner can change this.", httpStatus: 403 };
-  return { status: "ok", row: data };
+  if (row.owner_id !== ctx.userId) return { status: "error", message: "Only the aircraft owner can change this.", httpStatus: 403 };
+  return writeRecord(supabase, ctx, "aircraft", ctx.aircraftId, row.updated_at, { situation_override: input.situation });
 }
 
 // ---------------------------------------------------------------------------

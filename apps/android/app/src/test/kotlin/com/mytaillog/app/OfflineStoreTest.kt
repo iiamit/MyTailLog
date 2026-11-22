@@ -11,6 +11,9 @@ import com.mytaillog.core.domain.PushResult
 import com.mytaillog.core.sync.Resolution
 import com.mytaillog.core.sync.RowRef
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -40,8 +43,11 @@ class OfflineStoreTest {
         /** The PUT lands but the response is lost (the process is killed, or the network drops). */
         var loseResponse = false
         var puts = 0
+        var pause: CompletableDeferred<Unit>? = null
+        val entered = CompletableDeferred<Unit>()
 
         override suspend fun target(aircraftId: String, kind: String, pageId: String, logbookId: String, bytes: Long): UploadTarget? {
+            pause?.let { entered.complete(Unit); it.await() }
             if (offline) throw IOException("Unable to resolve host")
             refuse?.let { throw it }
             val path = "$aircraftId/$logbookId/$pageId.jpg" + if (kind == "page_thumb") ".thumb" else ""
@@ -87,6 +93,25 @@ class OfflineStoreTest {
     }
 
     private fun OfflineStore.capture(batch: String, n: Int) = (1..n).map { addPage(target, batch, ByteArray(1000) { 1 }, ByteArray(100), "00ff00ff00ff00ff") }
+
+    @Test
+    fun closingDuringUploadJoinsTheWorkerBeforeDisposingTheDatabase() = runTest {
+        val store = open()
+        store.capture(store.newBatchId(), 1)
+        storage.pause = CompletableDeferred()
+        val worker = launch { store.syncNow() }
+        storage.entered.await()
+        store.close()
+        assertTrue(worker.isCompleted)
+        assertTrue(worker.isCancelled)
+        storage.pause!!.complete(Unit)
+        runCurrent()
+        assertFalse(store.syncNow()) // a late WorkManager retry cannot touch closed drivers
+        assertTrue(server.received.isEmpty())
+        val reopened = open()
+        assertEquals(1, reopened.sync.value.pages) // interrupted bytes were never acknowledged
+        reopened.close()
+    }
 
     @Test
     fun airplaneModeKeepsEveryPageAndUploadsThemOnReconnect() = runTest {

@@ -80,6 +80,7 @@ export default async function ReviewAllPage({
         const label = logbookLabel.get(e.logbook_id) ?? "Logbook";
         return {
           id: e.id,
+          updated_at: e.updated_at,
           logbook_id: e.logbook_id,
           entry_date: e.entry_date,
           hobbs: e.hobbs,
@@ -108,6 +109,7 @@ export default async function ReviewAllPage({
       const label = logbookLabel.get(page.logbook_id) ?? "Logbook";
       return {
         id: e.id,
+          updated_at: e.updated_at,
         logbook_id: e.logbook_id,
         entry_date: e.entry_date,
         hobbs: e.hobbs,
@@ -146,16 +148,16 @@ export default async function ReviewAllPage({
     });
 
   // Documents attached to any of these entries (Vault items linked to an entry).
-  const attachmentsByEntry: Record<string, { id: string; title: string | null; file_name: string | null }[]> = {};
+  const attachmentsByEntry: Record<string, { id: string; title: string | null; file_name: string | null; updated_at: string }[]> = {};
   const flatIds = flat.map((e) => e.id);
   if (flatIds.length) {
     const { data: docs } = await supabase
       .from("document")
-      .select("id, title, file_name, log_entry_id")
+      .select("id, title, file_name, log_entry_id, updated_at")
       .in("log_entry_id", flatIds);
     for (const d of docs ?? []) {
       if (!d.log_entry_id) continue;
-      (attachmentsByEntry[d.log_entry_id] ??= []).push({ id: d.id, title: d.title, file_name: d.file_name });
+      (attachmentsByEntry[d.log_entry_id] ??= []).push({ id: d.id, title: d.title, file_name: d.file_name, updated_at: d.updated_at });
     }
   }
 

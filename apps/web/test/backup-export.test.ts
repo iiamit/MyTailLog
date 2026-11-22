@@ -25,6 +25,8 @@ function fakeSupabase() {
       const builder: Record<string, unknown> = {
         select: () => builder,
         eq: () => builder,
+        order: () => builder,
+        range: () => builder,
         single: () => Promise.resolve({ data: rows[0] ?? null, error: null }),
         then: (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
           Promise.resolve({ data: rows, error: null }).then(onF, onR),

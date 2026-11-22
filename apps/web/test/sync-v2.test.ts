@@ -10,7 +10,7 @@ import type { Db } from "../src/lib/writes";
 // writes. A minimal Supabase stand-in answers by table and records writes.
 
 type Row = Record<string, unknown>;
-function fake(o: { editor?: boolean; feed?: Row[]; rows?: Record<string, Row[]>; ledger?: Row[]; gap?: Row }) {
+function fake(o: { editor?: boolean; feed?: Row[]; rows?: Record<string, Row[]>; ledger?: Row[]; gap?: Row; ledgerError?: boolean; recordError?: boolean }) {
   const writes: { table: string; op: string; patch: unknown }[] = [];
   const from = (table: string) => {
     let op = "select";
@@ -27,7 +27,7 @@ function fake(o: { editor?: boolean; feed?: Row[]; rows?: Record<string, Row[]>;
       else if (table === "squawk" && op !== "select") data = { id: "sq", ...(patch as object) };
       else data = (o.rows?.[table] ?? []).filter((r) => !inIds || inIds.includes(r.id));
       if (single && Array.isArray(data)) data = data[0] ?? null;
-      return { data, error: null };
+      return { data, error: table === "sync_mutation" && op === "select" && o.ledgerError ? { message: "ledger unavailable" } : null };
     };
     const q = {
       select: () => q, eq: () => q, order: () => q, limit: () => q, or: () => q, is: () => q, range: () => q,
@@ -42,7 +42,36 @@ function fake(o: { editor?: boolean; feed?: Row[]; rows?: Record<string, Row[]>;
     };
     return q;
   };
-  const rpc = async () => ({ data: o.editor !== false });
+  const rpc = async (name: string, args: Row = {}): Promise<{ data: unknown; error: null | { message: string } }> => {
+    if (name === "apply_sync_write") return rpc(args.p_operation as string, args.p_arguments as Row);
+    if (name === "create_squawk") {
+      writes.push({ table: "squawk", op: "insert", patch: args.p_fields });
+      return { data: { status: "ok", row: args.p_fields }, error: null };
+    }
+    if (name === "insert_records") {
+      const rows = args.p_rows as Row[];
+      writes.push({ table: args.p_table as string, op: "insert", patch: rows });
+      return { data: { status: "ok", row: rows[0] ?? null }, error: null };
+    }
+    if (name === "write_record") {
+      const row = o.gap;
+      if (!row) return { data: { status: "error", message: "Not found" }, error: null };
+      if (row.updated_at !== args.p_base) return { data: { status: "conflict", row }, error: null };
+      writes.push({ table: args.p_table as string, op: "update", patch: args.p_patch });
+      return { data: { status: "ok", row: { ...row, ...args.p_patch as Row } }, error: null };
+    }
+    if (name === "record_sync_result") {
+      if (o.recordError) return { data: null, error: { message: "receipt unavailable" } };
+      const m = args.p_mutation as Row, result = args.p_result as Row;
+      const prior = o.ledger?.find((r) => r.id === m.id);
+      const resolves = prior?.status === "conflict" && result.status === "ok";
+      writes.push({ table: "sync_mutation", op: "upsert", patch: { ...m, ...result,
+        ...(resolves ? { resolution: args.p_resolution ?? "keep_mine", resolved_at: "now" } : {}),
+      } });
+      return { data: result, error: null };
+    }
+    return { data: o.editor !== false, error: null };
+  };
   const db = { from, rpc } as unknown as Db;
   return { db, writes };
 }
@@ -80,6 +109,31 @@ test("pull v2: a cursor older than retained history gets 410 resync_required; cu
 
 const gap = { id: "g", aircraft_id: "ac", status: "open", note: null, updated_at: "2026-11-18T10:00:00.000Z" };
 const setGap = (id: string, base: string) => ({ id, type: "gap.setStatus", aircraftId: "ac", payload: { gapId: "g", status: "dismissed" }, base });
+
+test("push v2: duplicate IDs and failed receipt reads run no writes", async () => {
+  const repeated = fake({ gap });
+  assert.equal((await pushV2(repeated.db, "u", { mutations: [setGap("same", gap.updated_at), setGap("same", gap.updated_at)] })).status, 400);
+  assert.deepEqual(repeated.writes, []);
+  const unavailable = fake({ gap, ledgerError: true });
+  assert.equal((await pushV2(unavailable.db, "u", { mutations: [setGap("one", gap.updated_at)] })).status, 500);
+  assert.deepEqual(unavailable.writes, []);
+});
+
+test("push v2: a receipt write failure is retryable instead of acknowledging a lost response", async () => {
+  const f = fake({ gap, recordError: true });
+  assert.equal((await pushV2(f.db, "u", { mutations: [setGap("one", gap.updated_at)] })).status, 500);
+});
+
+test("push v2: replay returns its acknowledged row and refuses an ID reused for other data", async () => {
+  const m = setGap("one", gap.updated_at);
+  const row = { ...gap, status: "dismissed", updated_at: "next" };
+  const f = fake({ ledger: [{ id: m.id, status: "ok", request: m, response: { id: m.id, status: "ok", row } }] });
+  const replay = await pushV2(f.db, "u", { mutations: [m] });
+  assert.deepEqual((replay.body as { results: Row[] }).results[0].row, row);
+  const reused = await pushV2(f.db, "u", { mutations: [{ ...m, payload: { ...m.payload, status: "open" } }] });
+  assert.equal((reused.body as { results: Row[] }).results[0].status, "error");
+  assert.deepEqual(f.writes, []);
+});
 
 test("push v2: a mutation id that already landed answers ok without writing again", async () => {
   const { db, writes } = fake({ gap, ledger: [{ id: "m1", status: "ok", resolved_at: null }] });

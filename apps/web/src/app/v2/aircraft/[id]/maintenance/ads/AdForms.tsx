@@ -11,6 +11,7 @@ import { Field, FormLeaf, fieldClass } from "@/ui/Form";
 import { lookupDrs, recordCompliance, saveAd, saveReference, type FormState } from "./actions";
 
 export type EditorAd = {
+  updated_at: string;
   id: string;
   kind: AdKind;
   reference: string;
@@ -42,7 +43,8 @@ export function AdEditor({
   nextDue: string | null;
   closeHref: string;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(saveAd.bind(null, aircraftId, ad?.id ?? null), null);
+  const [base] = useState(ad?.updated_at ?? null);
+  const [state, action, pending] = useActionState<FormState, FormData>(saveAd.bind(null, aircraftId, ad?.id ?? null, base), null);
   const [status, setStatus] = useState<AdStatus>(ad?.status ?? "open");
   const [recurring, setRecurring] = useState(ad?.recurring ?? false);
   const sideline = status === "not_applicable" || status === "superseded";
@@ -145,6 +147,7 @@ export function AdEditor({
 export function RecordForm({
   aircraftId,
   adId,
+  renderedBase,
   reference,
   today,
   tach,
@@ -155,6 +158,7 @@ export function RecordForm({
 }: {
   aircraftId: string;
   adId: string;
+  renderedBase: string;
   reference: string;
   today: string;
   tach: number | null;
@@ -163,7 +167,8 @@ export function RecordForm({
   entries: { id: string; label: string }[];
   closeHref: string;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(recordCompliance.bind(null, aircraftId, adId), null);
+  const [base] = useState(renderedBase);
+  const [state, action, pending] = useActionState<FormState, FormData>(recordCompliance.bind(null, aircraftId, adId, base), null);
   const [date, setDate] = useState(today);
   const [hours, setHours] = useState(tach != null ? tach.toFixed(1) : "");
   const h = hours.trim() === "" ? null : Number(hours);
@@ -206,7 +211,7 @@ export function RecordForm({
 }
 
 /** "Look up the FAA record": Federal Register from the browser, FAA DRS as the server-side fallback. */
-export function LookupButton({ aircraftId, adId, reference }: { aircraftId: string; adId: string; reference: string }) {
+export function LookupButton({ aircraftId, adId, reference, renderedBase }: { aircraftId: string; adId: string; reference: string; renderedBase: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [miss, setMiss] = useState<string | null>(null);
@@ -214,7 +219,7 @@ export function LookupButton({ aircraftId, adId, reference }: { aircraftId: stri
     setBusy(true);
     setMiss(null);
     const fr = await getADByNumber(reference).catch(() => null);
-    const res = fr ? await saveReference(aircraftId, adId, fr) : await lookupDrs(aircraftId, adId);
+    const res = fr ? await saveReference(aircraftId, adId, fr, renderedBase) : await lookupDrs(aircraftId, adId, renderedBase);
     setBusy(false);
     if (res.error) setMiss(res.error);
     else if ("found" in res && !res.found)

@@ -14,17 +14,19 @@ const FIELDS = ["make", "model", "year", "serial_number", "engine_serials", "pro
 const base = (id: string) => `/aircraft/${id}/details`;
 
 /** "Save details" (owner). The write's owner guard is final; editors and viewers never see the form. */
-export async function saveDetails(aircraftId: string, _p: ActionState, f: FormData): Promise<ActionState> {
+export async function saveDetails(aircraftId: string, _p: ActionState, f: FormData): Promise<{ error?: string; version?: string }> {
+  const expected = String(f.get("base") ?? "");
+  if (!expected) return { error: "Reload the aircraft details before saving." };
   const { supabase, ctx } = await writeSession(aircraftId);
-  const r = await updateAircraftDetails(supabase, ctx, Object.fromEntries(FIELDS.map((k) => [k, String(f.get(k) ?? "")])));
+  const r = await updateAircraftDetails(supabase, ctx, Object.fromEntries(FIELDS.map((k) => [k, String(f.get(k) ?? "")])), expected);
   if (r.status !== "ok") return { error: failMessage(r) };
   revalidatePath(`/aircraft/${aircraftId}`, "layout");
-  redirect(`${base(aircraftId)}?done=saved`);
+  return { version: (r.row as { updated_at: string }).updated_at };
 }
 
 /** "Use the registry's": copy one registry value over the owner's, keeping every other field as it is. */
-export async function applyRegistryValue(aircraftId: string, field: DetailsField, value: string) {
-  if (!["make", "model", "serial_number", "year"].includes(field) || typeof value !== "string") redirect(`${base(aircraftId)}?done=error`);
+export async function applyRegistryValue(aircraftId: string, field: DetailsField, value: string, expected: string) {
+  if (!expected || !["make", "model", "serial_number", "year"].includes(field) || typeof value !== "string") redirect(`${base(aircraftId)}?done=error`);
   const { supabase, ctx } = await writeSession(aircraftId);
   const { data: ac } = await supabase.from("aircraft").select("make, model, year, serial_number, engine_serials, prop_serials, home_base").eq("id", aircraftId).maybeSingle();
   if (!ac) redirect(`${base(aircraftId)}?done=error`);
@@ -32,7 +34,7 @@ export async function applyRegistryValue(aircraftId: string, field: DetailsField
     make: ac.make ?? "", model: ac.model ?? "", year: ac.year?.toString() ?? "", serial_number: ac.serial_number ?? "",
     engine_serials: (ac.engine_serials ?? []).join(", "), prop_serials: (ac.prop_serials ?? []).join(", "), home_base: ac.home_base ?? "",
   };
-  const r = await updateAircraftDetails(supabase, ctx, { ...current, [field]: value });
+  const r = await updateAircraftDetails(supabase, ctx, { ...current, [field]: value }, expected);
   revalidatePath(`/aircraft/${aircraftId}`, "layout");
   redirect(`${base(aircraftId)}?done=${r.status === "ok" ? "saved" : "error"}`);
 }

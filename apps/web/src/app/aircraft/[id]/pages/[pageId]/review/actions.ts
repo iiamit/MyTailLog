@@ -11,7 +11,7 @@ import type { ReviewStatus, ReferenceLink } from "@/lib/database.types";
 
 export type { EntryFields } from "@/lib/writes/entries";
 
-type Result = { ok: true } | { error: string };
+type Result = { ok: true; updatedAt?: string } | { error: string };
 
 async function session(aircraftId: string) {
   const supabase = await createClient();
@@ -37,10 +37,11 @@ export async function setEntryLinks(
   pageId: string | null,
   entryId: string,
   links: ReferenceLink[],
+  base: string,
 ): Promise<Result> {
   const s = await session(aircraftId);
   if (!s) return { error: NOT_SIGNED_IN };
-  const r = await entries.setLinks(s.supabase, s.ctx, { entryId, links });
+  const r = await entries.setLinks(s.supabase, s.ctx, { entryId, links }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   return { ok: true };
@@ -51,10 +52,11 @@ export async function mergeContinuation(
   aircraftId: string,
   pageId: string | null,
   tailId: string,
+  base: string,
 ): Promise<Result> {
   const s = await session(aircraftId);
   if (!s) return { error: NOT_SIGNED_IN };
-  const r = await entries.mergeContinuation(s.supabase, s.ctx, { tailEntryId: tailId });
+  const r = await entries.mergeContinuation(s.supabase, s.ctx, { tailEntryId: tailId }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   revalidatePath(`/aircraft/${aircraftId}`);
@@ -67,14 +69,15 @@ export async function saveEntry(
   pageId: string | null,
   entryId: string,
   fields: entries.EntryFields,
+  base: string,
 ): Promise<Result> {
   const s = await session(aircraftId);
   if (!s) return { error: NOT_SIGNED_IN };
-  const r = await entries.update(s.supabase, s.ctx, { entryId, fields });
+  const r = await entries.update(s.supabase, s.ctx, { entryId, fields }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   revalidatePath(`/aircraft/${aircraftId}/timeline`);
-  return { ok: true };
+  return { ok: true, updatedAt: typeof r.row?.updated_at === "string" ? r.row.updated_at : undefined };
 }
 
 export async function setEntryConfirmed(
@@ -82,23 +85,25 @@ export async function setEntryConfirmed(
   pageId: string | null,
   entryId: string,
   confirmed: boolean,
+  base: string,
 ): Promise<Result> {
   const s = await session(aircraftId);
   if (!s) return { error: NOT_SIGNED_IN };
-  const r = await entries.setConfirmed(s.supabase, s.ctx, { entryId, confirmed });
+  const r = await entries.setConfirmed(s.supabase, s.ctx, { entryId, confirmed }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
-  return { ok: true };
+  return { ok: true, updatedAt: typeof r.row?.updated_at === "string" ? r.row.updated_at : undefined };
 }
 
 export async function deleteEntry(
   aircraftId: string,
   pageId: string | null,
   entryId: string,
+  base: string,
 ): Promise<Result> {
   const s = await session(aircraftId);
   if (!s) return { error: NOT_SIGNED_IN };
-  const r = await entries.remove(s.supabase, s.ctx, { entryId });
+  const r = await entries.remove(s.supabase, s.ctx, { entryId }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   return { ok: true };
@@ -110,13 +115,13 @@ export async function addEntry(
   pageId: string | null,
   logbookId: string,
   fields: entries.EntryFields,
-): Promise<{ ok: true; id: string } | { error: string }> {
+): Promise<{ ok: true; id: string; updatedAt?: string } | { error: string }> {
   const s = await session(aircraftId);
   if (!s) return { error: NOT_SIGNED_IN };
   const r = await entries.create(s.supabase, s.ctx, { logbookId, pageId, fields });
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
-  return { ok: true, id: String(r.row?.id) };
+  return { ok: true, id: String(r.row?.id), updatedAt: typeof r.row?.updated_at === "string" ? r.row.updated_at : undefined };
 }
 
 /** Mark the whole page reviewed (confirmed) or disputed. */
@@ -124,14 +129,16 @@ export async function setPageReview(
   aircraftId: string,
   pageId: string, // a real page — this marks the page itself reviewed
   status: ReviewStatus,
+  base: string,
 ): Promise<Result> {
   const s = await session(aircraftId);
   if (!s) return { error: NOT_SIGNED_IN };
-  const r = await pages.setReview(s.supabase, s.ctx, { pageId, status });
+  if (!base) return { error: "Reload the page before changing it." };
+  const r = await pages.setReview(s.supabase, s.ctx, { pageId, status }, base);
   if (r.status !== "ok") return { error: entries.failMessage(r) };
   revalidatePath(reviewPath(aircraftId, pageId));
   // 'layout' so the persistent shell's Review nav badge re-fetches (it lives in
   // aircraft/[id]/layout.tsx, which a default 'page' revalidate never touches).
   revalidatePath(`/aircraft/${aircraftId}`, "layout");
-  return { ok: true };
+  return { ok: true, updatedAt: String(r.row?.updated_at) };
 }

@@ -22,7 +22,7 @@ export function editChecker(supabase: Db): EditCheck {
   };
 }
 
-export async function applyMutation(supabase: Db, userId: string, canEdit: EditCheck, m: Mutation): Promise<PushResult> {
+export async function applyMutation(supabase: Db, userId: string, canEdit: EditCheck, m: Mutation, withReceipt = false, resolution?: string): Promise<PushResult> {
   // The device only ever queues for aircraft it may edit — but it is the device
   // saying so. Same function RLS uses; a viewer's write would otherwise match
   // zero rows and look like success.
@@ -30,7 +30,7 @@ export async function applyMutation(supabase: Db, userId: string, canEdit: EditC
     return { id: m.id, status: "error", error: "You don't have permission to edit this aircraft." };
   }
   try {
-    const r = await writes[m.type](supabase, { aircraftId: m.aircraftId, userId }, m.payload as never, m.base);
+    const r = await writes[m.type](supabase, { aircraftId: m.aircraftId, userId, ...(withReceipt ? { mutation: { id: m.id, type: m.type, payload: m.payload, base: m.base, resolution } } : {}) }, m.payload as never, m.base);
     if (r.status === "ok") return { id: m.id, status: "ok", row: r.row };
     if (r.status === "conflict") {
       // A retry of a write that already landed (lost response): the row holds

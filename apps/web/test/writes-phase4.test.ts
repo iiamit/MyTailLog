@@ -60,14 +60,62 @@ function fake(editor: boolean, tables: Record<string, Row[]> = {}) {
     };
     return q;
   };
-  // can_edit_aircraft answers `editor`; set_expected_hours (0090) refuses non-editors like the definer function does.
+  // SQL atomicity/rollback is exercised against PostgreSQL; this fake checks each caller's RPC/version contract.
   const rpc = async (name: string, args: Record<string, unknown>) => {
-    if (name !== "set_expected_hours") return { data: editor, error: null };
-    if (!editor) return { data: null, error: { code: "42501", message: "denied" } };
-    const row = (tables.aircraft ?? []).find((a) => a.id === args.target_aircraft);
-    if (row) row.expected_hours_per_week = args.hours_per_week;
-    log.push({ table: "aircraft", op: "rpc", value: args });
-    return { data: "2026-11-18T11:00:00.000Z", error: null };
+    if (name === "can_edit_aircraft") return { data: editor, error: null };
+    if (name === "create_squawk") {
+      const row = args.p_fields as Row;
+      (tables.squawk ??= []).push(row);
+      for (const photo of args.p_photos as string[]) (tables.squawk_photo ??= []).push({ id: photo, squawk_id: row.id, aircraft_id: args.p_aircraft, storage_path: `${args.p_aircraft}/squawks/${row.id}/${photo}.jpg`, created_by: row.reported_by });
+      log.push({ table: "squawk", op: "insert", value: row });
+      return { data: { status: "ok", row }, error: null };
+    }
+    if (name === "insert_records") {
+      const table = String(args.p_table), rows = tables[table] ??= [], added: Row[] = [];
+      const keys = String(args.p_conflict).split(",");
+      for (const input of args.p_rows as Row[]) {
+        const existing = rows.find((r) => keys.every((k) => input[k] !== undefined && r[k] === input[k]));
+        if (existing) { if (!args.p_ignore) Object.assign(existing, input); added.push(existing); }
+        else { const row = { id: `gen-${rows.length + 1}`, updated_at: "2026-11-18T10:00:00.000Z", ...input }; rows.push(row); added.push(row); }
+      }
+      log.push({ table, op: "insert", value: args.p_rows });
+      return { data: { status: "ok", row: added.length === 1 ? added[0] : { added: added.length, rows: added } }, error: null };
+    }
+    if (name === "create_planned_visit") {
+      const row: Row = { ...(args.p_visit as Row), aircraft_id: args.p_aircraft, status: "planned", updated_at: "2026-11-18T10:00:00.000Z" };
+      (tables.planned_visit ??= []).push(row);
+      for (const key of args.p_keys as string[]) (tables.planned_visit_item ??= []).push({ aircraft_id: args.p_aircraft, visit_id: row.id, item_key: key });
+      log.push({ table: "planned_visit", op: "insert", value: row });
+      return { data: { status: "ok", row }, error: null };
+    }
+    const table = name === "write_record" ? String(args.p_table) : name === "save_service_provider" ? "service_provider" : name === "save_planned_visit" ? "planned_visit" : "aircraft";
+    const id = args.p_id ?? args.p_visit ?? args.target_aircraft;
+    const rows = tables[table] ??= [];
+    let row = rows.find((r) => r.id === id);
+    if (name === "set_expected_hours_checked" && !editor) return { data: null, error: { code: "42501", message: "denied" } };
+    if (!["write_record", "save_service_provider", "save_planned_visit", "set_expected_hours_checked"].includes(name)) throw new Error(`Unhandled RPC ${name}`);
+    if (row && row.updated_at !== args.p_base) return { data: { status: "conflict", row: { ...row } }, error: null };
+    if (name === "save_service_provider") {
+      const patch = args.p_fields as Row;
+      if (patch.is_default) for (const other of rows) if (other.id !== id && other.kind === (patch.kind ?? row?.kind)) other.is_default = false;
+      if (!row) { row = { id, aircraft_id: args.p_aircraft }; rows.push(row); }
+      Object.assign(row, patch);
+    } else if (!row) return { data: { status: "error", message: "Record not found.", httpStatus: 404 }, error: null };
+    if (name === "write_record" && args.p_delete) {
+      rows.splice(rows.indexOf(row!), 1); log.push({ table, op: "delete" });
+      return { data: { status: "ok", row: null }, error: null };
+    }
+    if (name === "write_record" || name === "save_planned_visit") Object.assign(row!, args.p_patch);
+    if (name === "set_expected_hours_checked") row!.expected_hours_per_week = args.hours_per_week;
+    if (name === "save_planned_visit") {
+      const items = tables.planned_visit_item ??= [];
+      const closed = row!.status === "done" || row!.status === "cancelled";
+      for (let i = items.length - 1; i >= 0; i--) if (items[i].visit_id === id && !items[i].done_completion_id && (closed || (args.p_remove as string[]).includes(String(items[i].item_key)))) items.splice(i, 1);
+      if (!closed) for (const key of args.p_add as string[]) if (!items.some((item) => item.visit_id === id && item.item_key === key)) items.push({ visit_id: id, aircraft_id: args.p_aircraft, item_key: key });
+    }
+    row!.updated_at = new Date(Date.parse(String(row!.updated_at ?? "2026-11-18T10:00:00Z")) + 1).toISOString();
+    log.push({ table, op: "update", value: name === "save_service_provider" ? args.p_fields : args.p_patch ?? args });
+    return { data: { status: "ok", row: { ...row } }, error: null };
   };
   const db = { rpc, from } as unknown as Db;
   return { db, log, tables, writes: () => log.filter((l) => l.op !== "select") };
@@ -182,23 +230,8 @@ test("visit.setStatus: base checked, illegal moves refused, closing returns undo
   const r = await visits.setStatus(f.db, ctx, { visitId: "v", status: "done" }, "2026-11-18T10:00:00.000Z");
   assert.equal(r.status, "ok");
   assert.deepEqual(f.tables.planned_visit_item.map((i) => i.id), ["a"], "the done item stays as the visit's record");
-  const again = await visits.setStatus(f.db, ctx, { visitId: "v", status: "cancelled" }, "2026-11-18T10:00:00.000Z");
+  const again = await visits.setStatus(f.db, ctx, { visitId: "v", status: "cancelled" }, String(f.tables.planned_visit[0].updated_at));
   assert.deepEqual(again, { status: "error", message: "This visit is closed.", httpStatus: 409 });
-});
-
-test("visit completion: ticks the item, links the completion, closes an awaiting-records visit when all are done", async () => {
-  const f = fake(true, {
-    planned_visit: [{ id: "v", aircraft_id: "ac", status: "awaiting_records" }],
-    planned_visit_item: [
-      { id: "a", aircraft_id: "ac", visit_id: "v", item_key: `mx:${U(1)}`, done_completion_id: null },
-      { id: "s", aircraft_id: "ac", visit_id: "v", item_key: `squawk:${U(3)}`, done_completion_id: null },
-    ],
-    item_completion: [{ id: "c1", aircraft_id: "ac", visit_id: null }],
-  });
-  await visits.recordVisitCompletion(f.db, "ac", `mx:${U(1)}`, "c1");
-  assert.equal(f.tables.planned_visit_item[0].done_completion_id, "c1");
-  assert.equal(f.tables.item_completion[0].visit_id, "v");
-  assert.equal(f.tables.planned_visit[0].status, "done", "squawks riding along don't hold the visit open");
 });
 
 test("daily job: planned visits move to awaiting records the day after their day (or Friday)", () => {

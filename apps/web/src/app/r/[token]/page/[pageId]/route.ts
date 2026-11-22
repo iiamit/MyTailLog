@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   if (!room || !page) return new Response("Not found", { status: 404 });
 
   const thumb = new URL(req.url).searchParams.get("thumb") != null;
-  const blob = await getBlob(thumb && page.thumbnail_path ? page.thumbnail_path : page.storage_path);
+  const blob = await getBlob(thumb && page.thumbnail_path ? page.thumbnail_path : page.storage_path, page.aircraft_id);
   if (!blob) return new Response("Not found", { status: 404 });
   if (!thumb) await logRoomView(room, `/page/${pageId}`, visitor, `page:${pageId}`);
   return new Response(new Uint8Array(blob.data), {

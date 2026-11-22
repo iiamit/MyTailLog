@@ -84,7 +84,7 @@ struct RecordsAPI: Sendable {
     }
 
     /// POST …/documents (JSON, base64): the upload is the create. Returns the new document's id.
-    func document(aircraftId: String, meta: FileMeta, bytes: Data) async throws -> String {
+    func document(aircraftId: String, jobId: String, meta: FileMeta, bytes: Data) async throws -> String {
         var body: [String: Any] = ["file": bytes.base64EncodedString(), "type": meta.type ?? "other",
                                    "fileName": meta.fileName ?? "document", "mimeType": meta.mimeType ?? "application/octet-stream"]
         if let t = meta.title { body["title"] = t }
@@ -92,6 +92,7 @@ struct RecordsAPI: Sendable {
         if let e = meta.expiresOn { body["expiresOn"] = e }
         var r = post("api/aircraft/\(aircraftId)/documents", body)
         r.timeoutInterval = 180
+        r.setValue(jobId, forHTTPHeaderField: "Idempotency-Key")
         let o = try await json(r)
         guard let id = (o["document"] as? [String: Any])?["id"] as? String else { throw Failure(status: 500, message: "No document came back.") }
         return id

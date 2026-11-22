@@ -101,6 +101,7 @@ export default async function ItemsPage({ params, searchParams }: { params: Prom
 
   const right = editing ? (
     <ItemForm
+      key={sp.panel === "edit" ? selected?.id : "new"}
       aircraftId={id}
       item={sp.panel === "edit" ? selected : null}
       providers={providers}
@@ -108,7 +109,7 @@ export default async function ItemsPage({ params, searchParams }: { params: Prom
       askHref={`${a}/ask?q=${encodeURIComponent(`When was the ${selected?.label ?? "item"} last done?`)}`}
     />
   ) : providerOpen ? (
-    <ProviderForm aircraftId={id} provider={provider} closeHref={self} />
+    <ProviderForm key={provider?.id ?? "new"} aircraftId={id} provider={provider} closeHref={self} />
   ) : (
     <ItemMat item={selected ? dueByKey.get(`mx:${selected.id}`) ?? null : null} aircraftId={id} />
   );
@@ -258,7 +259,7 @@ export default async function ItemsPage({ params, searchParams }: { params: Prom
                   {context.canEdit && (
                     <span className="flex gap-1">
                       <Link href={`${self}?provider=${p.id}`} replace scroll={false} className={buttonClass("quiet", "s")}>Edit</Link>
-                      <form action={removeProvider.bind(null, id, p.id)}>
+                      <form action={removeProvider.bind(null, id, p.id, p.updated_at)}>
                         <ConfirmSubmit label="Remove" question={`Remove ${p.name}? Items that use it fall back to the default for their kind.`} />
                       </form>
                     </span>

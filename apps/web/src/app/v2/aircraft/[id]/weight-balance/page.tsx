@@ -1,3 +1,4 @@
+import { RecordVersion } from "@/components/RecordVersion";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -68,6 +69,7 @@ export default async function WeightBalancePage({ params, searchParams }: { para
     right = (
       <FormLeaf title={r ? `Edit the ${fmtDay(r.revision_date)} revision` : "Add a revision"} closeHref={close}>
         <ActionForm action={saveRevision.bind(null, id, r?.id ?? null)} submit="Save" extra={<Link href={close} className={buttonClass("quiet", "m")}>Cancel</Link>}>
+          <RecordVersion key={r?.id ?? "new"} base={r?.updated_at ?? ""} />
           <div className="grid grid-cols-2 gap-3">
             <Field label="Revision date"><input name="revision_date" type="date" required max={today} defaultValue={r?.revision_date ?? ""} className={fieldClass} /></Field>
             <Field label="Method">
@@ -205,7 +207,7 @@ export default async function WeightBalancePage({ params, searchParams }: { para
                         {edit && (
                           <td className="py-2 text-right whitespace-nowrap">
                             <Link href={`${self}?revision=${r.id}&panel=edit`} className={buttonClass("quiet", "s")}>Edit</Link>
-                            <form action={deleteRevision.bind(null, id, r.id)} className="inline">
+                            <form action={deleteRevision.bind(null, id, r.id, r.updated_at)} className="inline">
                               <ConfirmSubmit label="Delete" question={`Delete the ${fmtDay(r.revision_date)} revision? The paperwork itself is not affected.`} />
                             </form>
                           </td>

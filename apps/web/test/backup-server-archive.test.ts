@@ -37,6 +37,8 @@ function fakeSupabase(failedTable?: string) {
       const builder: Record<string, unknown> = {
         select: () => builder,
         eq: () => builder,
+        order: () => builder,
+        range: () => builder,
         single: () => Promise.resolve({ data: rows[0] ?? null, error: null }),
         then: (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
           Promise.resolve(failedTable === table
@@ -140,7 +142,7 @@ test("the manifest counts every record set, and scans counts only stored blobs",
   const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));
 
   assert.equal(manifest.format, "mytaillog-backup");
-  assert.equal(manifest.format_version, 1);
+  assert.equal(manifest.format_version, 2);
   assert.equal(manifest.tail_number, "N734DM");
   assert.equal(manifest.counts.pages, 3);
   assert.equal(manifest.counts.meter_resets, 1);

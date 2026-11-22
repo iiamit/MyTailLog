@@ -32,7 +32,7 @@ struct RootView: View {
         GeometryReader { window in
             let layout = ShellLayout.forWindow(width: window.size.width, height: window.size.height, sizeClass: sizeClass)
             Group {
-                if store.session == nil {
+                if store.session == nil || store.needsSignIn {
                     SignInView()
                 } else if layout == .binder {
                     TabletShell()
@@ -51,7 +51,7 @@ struct RootView: View {
                                safeWidth: window.size.width)
                 }
             }
-            .background { if store.session != nil { KeyCommands(tablet: layout == .binder || layout == .duo) } }
+            .background { if store.session != nil && !store.needsSignIn { KeyCommands(tablet: layout == .binder || layout == .duo) } }
             .onChange(of: layout, initial: true) { _, newValue in windowLayout = newValue }
         }
         // Notifications and Reminders (06 M-SYS-05) over either shell.
@@ -92,11 +92,27 @@ struct RootView: View {
             default: break
             }
         }
+        .onChange(of: store.needsSignIn) { _, required in
+            if !required { offline?.schedule(after: 0) }
+        }
         .task(id: store.session?.userId) {
             if let userId = store.session?.userId {
+                if let previous = offline, previous.userId != userId {
+                    previous.close()
+                    status = nil; books = nil; recs = nil
+                    SharedSnapshots.clear()
+                    WidgetCenter.shared.reloadAllTimelines()
+                    ReadingLive.shared.endAll()
+                    await Spotlight.clear()
+                    guard !Task.isCancelled, store.session?.userId == userId else { return }
+                }
                 let o = OfflineStore.open(userId: userId, apiURL: statusAPI.apiURL)
                 let store = store
-                o.token = { try await store.currentSession().accessToken }
+                o.token = {
+                    let session = try await store.currentSession()
+                    guard session.userId == userId else { throw AuthError.rejected }
+                    return session.accessToken
+                }
                 offline = o
                 status = makeStatus(userId: userId, offline: o)
                 o.schedule(after: 0) // launch: push, then pull
@@ -138,7 +154,7 @@ struct RootView: View {
 
     /// Opens a pending link once the aircraft list is known, switching aircraft first when the link names another.
     private func follow() {
-        guard let link = links.pending, store.session != nil, let status, !status.loading || !status.aircraft.isEmpty else { return }
+        guard let link = links.pending, store.session != nil, !store.needsSignIn, let status, !status.loading || !status.aircraft.isEmpty else { return }
         links.pending = nil
         if let id = link.aircraftId, id != status.currentId, status.aircraft.contains(where: { $0.id == id }) { status.select(id) }
         if link.target == .review { ReadingLive.shared.endAll() }

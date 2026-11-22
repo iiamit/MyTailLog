@@ -18,7 +18,7 @@ const number = (s: string) => s.trim() === "" ? null : Number(s);
 export function EntryComposer({ aircraftId, tailNumber, books, fullName, credentials, correctionId, initialMeters, initialBookId, initialTemplateId, initialSquawkId, openSquawks = [], v2 = false }: {
   aircraftId: string; tailNumber: string; books: Book[]; fullName: string;
   credentials: SigningCredential[]; correctionId: string | null; initialMeters?: { tach: string; hobbs: string; airframe: string }; v2?: boolean;
-  initialBookId?: string; initialTemplateId?: string; initialSquawkId?: string; openSquawks?: { id: string; description: string }[];
+  initialBookId?: string; initialTemplateId?: string; initialSquawkId?: string; openSquawks?: { id: string; description: string; updated_at: string }[];
 }) {
   const router = useRouter();
   const [templateId, setTemplateId] = useState<TemplateId>(TEMPLATES.some((t) => t.id === initialTemplateId) ? initialTemplateId as TemplateId : "oil_filter");
@@ -96,7 +96,7 @@ export function EntryComposer({ aircraftId, tailNumber, books, fullName, credent
       let closeFailed = false;
       if (squawkId) {
         try {
-          const closed = await resolveSquawk(aircraftId, squawkId, { entryId: result.id, notes: "", date: pendingInput.entryDate });
+          const closed = await resolveSquawk(aircraftId, squawkId, { entryId: result.id, notes: "", date: pendingInput.entryDate }, openSquawks.find((s) => s.id === squawkId)!.updated_at);
           closeFailed = "error" in closed;
         } catch { closeFailed = true; }
       }

@@ -50,6 +50,7 @@ const AD_STATUSES: AdStatus[] = [
 
 type FormState = {
   id?: string;
+  base?: string;
   kind: AdKind;
   reference: string;
   title: string;
@@ -98,6 +99,7 @@ function blankForm(seed?: Partial<FormState>): FormState {
 function fromRecord(r: AdCompliance): FormState {
   return {
     id: r.id,
+    base: r.updated_at,
     kind: r.kind,
     reference: r.reference,
     title: r.title ?? "",
@@ -128,6 +130,7 @@ function toInput(f: FormState): AdInput {
   const str = (s: string) => (s.trim() === "" ? null : s.trim());
   return {
     id: f.id,
+    base: f.base,
     kind: f.kind,
     reference: f.reference.trim(),
     title: str(f.title),
@@ -203,7 +206,7 @@ export function ComplianceClient({
     });
   }
 
-  async function enrich(id: string, reference: string) {
+  async function enrich(id: string, reference: string, base: string) {
     setEnrichingId(id);
     setError(null);
     // Federal Register lookup runs here in the browser (datacenter egress is
@@ -216,8 +219,8 @@ export function ComplianceClient({
       frAd = null;
     }
     const res = frAd
-      ? await saveAdReference(aircraftId, id, frAd)
-      : await enrichViaDRS(aircraftId, id);
+      ? await saveAdReference(aircraftId, id, frAd, base)
+      : await enrichViaDRS(aircraftId, id, base);
     setEnrichingId(null);
     if ("error" in res) setError(res.error);
     else if (!res.found)
@@ -245,10 +248,10 @@ export function ComplianceClient({
     router.refresh();
   }
 
-  async function remove(id: string, reference: string) {
+  async function remove(id: string, reference: string, base: string) {
     if (!window.confirm(`Delete tracking for ${reference}?`)) return;
     setBusy(true);
-    const res = await deleteAdRecord(aircraftId, id);
+    const res = await deleteAdRecord(aircraftId, id, base);
     setBusy(false);
     if ("error" in res) setError(res.error);
     else router.refresh();
@@ -644,12 +647,12 @@ export function ComplianceClient({
                     Edit
                   </button>
                   {r.kind === "ad" && !r.ad_reference_id && (
-                    <button onClick={() => enrich(r.id, r.reference)} disabled={enrichingId === r.id} className={rowBtn}>
+                    <button onClick={() => enrich(r.id, r.reference, r.updated_at)} disabled={enrichingId === r.id} className={rowBtn}>
                       {enrichingId === r.id ? "Looking up…" : "Look up FAA record"}
                     </button>
                   )}
                   <button
-                    onClick={() => remove(r.id, r.reference)}
+                    onClick={() => remove(r.id, r.reference, r.updated_at)}
                     disabled={busy}
                     className="rounded-md border border-line2 bg-panel2 px-3 py-1 text-xs text-annun-red hover:border-annun-red/60 disabled:opacity-50"
                   >

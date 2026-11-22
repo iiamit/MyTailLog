@@ -38,6 +38,7 @@ export async function addOilTopOff(aircraftId: string, input: OilTopOffInput): P
   );
 }
 
-export async function deleteOilTopOff(aircraftId: string, id: string): Promise<Result> {
-  return run(aircraftId, (supabase, userId) => oil.deleteTopOff(supabase, { aircraftId, userId }, { additionId: id }));
+export async function deleteOilTopOff(aircraftId: string, id: string, base: string): Promise<Result> {
+  if (!base) return { error: "Reload the top-off before removing it." };
+  return run(aircraftId, (supabase, userId) => oil.deleteTopOff(supabase, { aircraftId, userId }, { additionId: id }, base));
 }

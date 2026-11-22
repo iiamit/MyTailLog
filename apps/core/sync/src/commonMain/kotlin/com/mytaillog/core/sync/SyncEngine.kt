@@ -100,8 +100,19 @@ class SyncEngine(
     }
 
     private fun accepted(m: Queued, r: PushResult) {
-        q.remove(m.id)
         val row = r.row
+        q.transaction {
+            val nextBase = (row?.get("updated_at") as? JsonPrimitive)?.content
+            if (m.base != null && m.target_table != null && m.target_id != null && nextBase != null) {
+                for (next in q.all().executeAsList()) {
+                    if (next.id != m.id && next.target_table == m.target_table && next.target_id == m.target_id
+                        && next.base == m.base && next.status in listOf(PENDING, BLOCKED)) {
+                        q.rebase(nextBase, row.toString(), next.payload, next.resolution, next.id)
+                    }
+                }
+            }
+            q.remove(m.id)
+        }
         if (m.target_table != null && row != null && row["id"] is JsonPrimitive) mirror.upsertRow(m.target_table!!, row)
         log("sent", if (r.replayed) "Already on the server: ${m.label}" else "Sent: ${m.label}", m.id)
     }

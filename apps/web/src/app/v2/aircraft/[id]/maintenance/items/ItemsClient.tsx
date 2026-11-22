@@ -28,6 +28,7 @@ export function ItemForm({
   askHref: string;
 }) {
   const [state, action, pending] = useActionState<FormState, FormData>(saveItem.bind(null, aircraftId, item?.id ?? null), null);
+  const [base] = useState(item?.updated_at);
   const [kind, setKind] = useState(item?.kind ?? "annual");
   const std = (k: string) => ITEM_TYPES.find((t) => t.kind === k);
   const first = item ? null : std(kind);
@@ -52,6 +53,7 @@ export function ItemForm({
   return (
     <FormLeaf title={item ? item.label : "Track an item"} closeHref={closeHref}>
       <form action={action} className="flex flex-col gap-4">
+        <input type="hidden" name="base" value={base ?? ""} />
         <Field label="Type">
           <select name="kind" value={kind} onChange={(e) => pick(e.target.value)} className={fieldClass}>
             {ITEM_TYPES.map((t) => <option key={t.kind} value={t.kind}>{t.label}</option>)}
@@ -151,7 +153,7 @@ export function ItemForm({
         </div>
       </form>
       {item && (
-        <form action={stopTracking.bind(null, aircraftId, item.id)} className="mt-6 border-t border-rule pt-4">
+        <form action={stopTracking.bind(null, aircraftId, item.id, item.updated_at)} className="mt-6 border-t border-rule pt-4">
           <ConfirmSubmit
             label="Stop tracking"
             question={`Stop tracking ${item.label}? Its history stays in the logbooks; it just won't be counted.`}
@@ -164,7 +166,8 @@ export function ItemForm({
 
 /** Provider form (W-MAINT-06 `?provider=new|{id}`). */
 export function ProviderForm({ aircraftId, provider, closeHref }: { aircraftId: string; provider: ServiceProvider | null; closeHref: string }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(saveProvider.bind(null, aircraftId, provider?.id ?? null), null);
+  const [base] = useState(provider?.updated_at ?? null);
+  const [state, action, pending] = useActionState<FormState, FormData>(saveProvider.bind(null, aircraftId, provider?.id ?? null, base), null);
   return (
     <FormLeaf title={provider ? provider.name : "Add a shop or mechanic"} closeHref={closeHref}>
       <form action={action} className="flex flex-col gap-4">

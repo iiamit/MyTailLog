@@ -66,11 +66,11 @@ export function ReviewAllClient({
     setEntries((es) => es.map((e) => (e.id === id ? { ...e, ...next } : e)));
   }
 
-  function onSaved(id: string, fields: EntryFields) {
+  function onSaved(id: string, fields: EntryFields, updatedAt?: string) {
     const current = entries.find((entry) => entry.id === id);
     const label = logbooks.find((book) => book.id === fields.logbook_id)?.label;
     patch(id, {
-      ...fields, owner_confirmed: true,
+      ...fields, ...(updatedAt ? { updated_at: updatedAt } : {}), owner_confirmed: true,
       ...(fields.logbook_id ? { logbookId: fields.logbook_id } : {}),
       ...(!current?.pageId && label ? { pageLabel: `${label} · imported (no scan)` } : {}),
     });
@@ -80,7 +80,7 @@ export function ReviewAllClient({
     const tail = entries.find((e) => e.id === tailId);
     if (!tail?.pageId) return; // no page → no previous page to merge into
     setMergingId(tailId);
-    const res = await mergeContinuation(aircraftId, tail.pageId, tailId);
+    const res = await mergeContinuation(aircraftId, tail.pageId, tailId, tail.updated_at);
     setMergingId(null);
     if ("error" in res) {
       toast.error(res.error);

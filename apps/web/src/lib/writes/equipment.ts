@@ -1,3 +1,6 @@
+import { insertRecords } from "./insert";
+import { replayRpc } from "./replay";
+import { writeRecord } from "./conditional";
 import type { Component } from "@/lib/database.types";
 import { entryIsOnAircraft, FOREIGN_ENTRY, canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 import { isIsoDate, validNumber } from "./meters";
@@ -96,18 +99,10 @@ async function patchComponent(
   supabase: Db,
   ctx: WriteCtx,
   componentId: string,
+  version: string,
   patch: Partial<Component>,
 ): Promise<WriteResult> {
-  const { data, error } = await supabase
-    .from("component")
-    .update(patch)
-    .eq("id", componentId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: "Component not found.", httpStatus: 404 };
-  return { status: "ok", row: data };
+  return writeRecord(supabase, ctx, "component", componentId, version, patch);
 }
 
 /** Add (no id) or edit (id + base) a component. */
@@ -127,17 +122,10 @@ export async function upsert(
   if (input.id) {
     const loaded = await loadComponent(supabase, ctx, input.id, base);
     if ("status" in loaded) return loaded;
-    return patchComponent(supabase, ctx, input.id, picked.fields);
+    return patchComponent(supabase, ctx, input.id, loaded.row.updated_at, picked.fields);
   }
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data, error } = await supabase
-    .from("component")
-    .insert({ aircraft_id: ctx.aircraftId, ...picked.fields })
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  return insertRecords(supabase, ctx, "component", { aircraft_id: ctx.aircraftId, ...picked.fields });
 }
 
 /**
@@ -155,15 +143,9 @@ export async function remove(
 ): Promise<WriteResult> {
   const loaded = await loadComponent(supabase, ctx, input.componentId, base);
   if ("status" in loaded) return loaded;
-  const { data, error } = await supabase
-    .from("component")
-    .delete()
-    .eq("id", input.componentId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Component not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  const result = await writeRecord(supabase, ctx, "component", input.componentId, loaded.row.updated_at, null);
+  if (result.status !== "ok") return result;
+  return result;
 }
 
 /**
@@ -188,29 +170,11 @@ export async function markRemoved(
     return { status: "error", message: FOREIGN_ENTRY, httpStatus: 400 };
   }
 
-  const patched = await patchComponent(supabase, ctx, input.componentId, {
-    is_installed: false,
-    removal_date: date,
-    ...(input.entryId ? { removal_entry_id: input.entryId } : {}),
+  const { data, error } = await replayRpc(supabase, ctx, "retire_component", {
+    p_aircraft: ctx.aircraftId, p_id: input.componentId, p_base: loaded.row.updated_at,
+    p_date: date, p_entry: input.entryId || null,
   });
-  if (patched.status !== "ok") return patched;
-
-  // Retire the ADs tied to this equipment (only ones not already resolved).
-  const { data: retired, error } = await supabase
-    .from("ad_compliance")
-    .update({
-      status: "not_applicable",
-      reason: `Equipment removed: ${loaded.row.name}`,
-      status_changed_on: date,
-      next_due_date: null,
-      next_due_hours: null,
-    })
-    .eq("component_id", input.componentId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .in("status", ["open", "complied", "previously_complied"])
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  return { status: "ok", row: { ...patched.row, ads_updated: retired?.length ?? 0 } };
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 /** Reinstall a previously removed component (does not touch AD statuses). */
@@ -222,7 +186,7 @@ export async function reinstall(
 ): Promise<WriteResult> {
   const loaded = await loadComponent(supabase, ctx, input.componentId, base);
   if ("status" in loaded) return loaded;
-  return patchComponent(supabase, ctx, input.componentId, { is_installed: true, removal_date: null, removal_entry_id: null });
+  return patchComponent(supabase, ctx, input.componentId, loaded.row.updated_at, { is_installed: true, removal_date: null, removal_entry_id: null });
 }
 
 // ---------------------------------------------------------------------------
@@ -248,58 +212,8 @@ export async function confirmProposals(
   if (ids.length === 0) return { status: "ok", row: { added: 0, updated: 0 } };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
-  const { data: proposals, error: loadErr } = await supabase
-    .from("equipment_proposal")
-    .select("*")
-    .eq("aircraft_id", ctx.aircraftId)
-    .in("id", ids);
-  if (loadErr) return { status: "error", message: loadErr.message };
-  if (!proposals?.length) return { status: "error", message: "Proposals not found.", httpStatus: 404 };
-
-  const { data: existing } = await supabase
-    .from("component")
-    .select("id, name, part_number, serial_number")
-    .eq("aircraft_id", ctx.aircraftId);
-  const byKey = new Map((existing ?? []).map((r) => [proposalKey(r), r.id]));
-
-  let added = 0;
-  let updated = 0;
-  for (const p of proposals) {
-    const payload = {
-      name: p.name.trim(),
-      make: p.make,
-      category: p.category,
-      part_number: p.part_number,
-      serial_number: p.serial_number,
-      install_date: p.install_date,
-      removal_date: p.removal_date,
-      is_installed: p.is_installed,
-    };
-    const existingId = byKey.get(proposalKey(p));
-    if (existingId) {
-      const r = await patchComponent(supabase, ctx, existingId, payload);
-      if (r.status !== "ok") return r;
-      updated++;
-    } else {
-      const { data: inserted, error } = await supabase
-        .from("component")
-        .insert({ aircraft_id: ctx.aircraftId, ...payload })
-        .select("id")
-        .maybeSingle();
-      if (error) return { status: "error", message: error.message };
-      if (!inserted) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-      byKey.set(proposalKey(p), inserted.id);
-      added++;
-    }
-  }
-
-  const { error: delErr } = await supabase
-    .from("equipment_proposal")
-    .delete()
-    .eq("aircraft_id", ctx.aircraftId)
-    .in("id", ids);
-  if (delErr) return { status: "error", message: delErr.message };
-  return { status: "ok", row: { added, updated } };
+  const { data, error } = await replayRpc(supabase, ctx, "confirm_equipment_proposals", { p_aircraft: ctx.aircraftId, p_ids: ids, p_dismiss: false });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 /** Dismiss (delete) pending proposals without importing them. Returns row `{ dismissed }`. */
@@ -312,12 +226,6 @@ export async function dismissProposals(
   if (!ids) return { status: "error", message: "Which proposals?", httpStatus: 400 };
   if (ids.length === 0) return { status: "ok", row: { dismissed: 0 } };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data, error } = await supabase
-    .from("equipment_proposal")
-    .delete()
-    .eq("aircraft_id", ctx.aircraftId)
-    .in("id", ids)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  return { status: "ok", row: { dismissed: data?.length ?? 0 } };
+  const { data, error } = await replayRpc(supabase, ctx, "confirm_equipment_proposals", { p_aircraft: ctx.aircraftId, p_ids: ids, p_dismiss: true });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }

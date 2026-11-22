@@ -1,3 +1,5 @@
+import { replayRpc } from "./replay";
+import { writeRecord } from "./conditional";
 import type { ServiceProvider, ShopKind } from "@/lib/database.types";
 import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
 
@@ -46,13 +48,6 @@ export function pickProviderFields(input: unknown, partial = false): { fields: P
   return { fields: out };
 }
 
-/** Only one default per kind (unique index 0072): clear the others before setting this one. */
-async function clearDefault(supabase: Db, aircraftId: string, kind: ShopKind, exceptId?: string) {
-  let q = supabase.from("service_provider").update({ is_default: false }).eq("aircraft_id", aircraftId).eq("kind", kind).eq("is_default", true);
-  if (exceptId) q = q.neq("id", exceptId);
-  return q;
-}
-
 /** `provider.upsert`: edit when the id exists (base checked), else add (the id, when given, is the idempotency key). */
 export async function upsert(
   supabase: Db,
@@ -69,19 +64,11 @@ export async function upsert(
   if ("error" in picked) return { status: "error", message: picked.error, httpStatus: 400 };
   if (existing && isStale(existing.updated_at, base)) return { status: "conflict", row: existing };
 
-  const kind = picked.fields.kind ?? existing?.kind;
-  if (picked.fields.is_default && kind) {
-    const { error } = await clearDefault(supabase, ctx.aircraftId, kind, existing?.id);
-    if (error) return { status: "error", message: error.message };
-  }
-  const { data, error } = existing
-    ? await supabase.from("service_provider").update(picked.fields).eq("id", existing.id).eq("aircraft_id", ctx.aircraftId).select("*").maybeSingle()
-    : await supabase.from("service_provider").insert({
-      ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, ...(picked.fields as ProviderFields),
-    }).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  const { data, error } = await replayRpc(supabase, ctx, "save_service_provider", {
+    p_aircraft: ctx.aircraftId, p_id: existing?.id ?? input.id ?? crypto.randomUUID(),
+    p_base: existing?.updated_at ?? null, p_fields: picked.fields,
+  });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 /** `provider.delete` (base). Items and visits that used it fall back to the default for their kind (FKs set null). */
@@ -90,9 +77,7 @@ export async function remove(supabase: Db, ctx: WriteCtx, input: { providerId: s
   const { data: row } = await supabase.from("service_provider").select("*").eq("id", input.providerId).eq("aircraft_id", ctx.aircraftId).maybeSingle();
   if (!row) return { status: "error", message: "Shop not found.", httpStatus: 404 };
   if (isStale(row.updated_at, base)) return { status: "conflict", row };
-  const { error } = await supabase.from("service_provider").delete().eq("id", input.providerId).eq("aircraft_id", ctx.aircraftId);
-  if (error) return { status: "error", message: error.message };
-  return { status: "ok", row: null };
+  return writeRecord(supabase, ctx, "service_provider", input.providerId, row.updated_at, null);
 }
 
 // ---------------------------------------------------------------------------

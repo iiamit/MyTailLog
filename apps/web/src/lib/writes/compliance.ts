@@ -1,3 +1,5 @@
+import { insertRecords } from "./insert";
+import { writeRecord } from "./conditional";
 import type { AdCompliance, AdKind, AdReference, AdStatus } from "@/lib/database.types";
 import { computeNextDue } from "@/lib/compliance";
 import type { FaaAd } from "@/lib/faa/federalRegister";
@@ -189,23 +191,28 @@ export async function upsert(
     if (isStale(loaded.row.updated_at, base)) return { status: "conflict", row: loaded.row };
     // W-MAINT-02: a first planned due set when tracking an open AD survives later edits until a compliance derives one.
     const keepPlanned = picked.fields.status === "open" && row.next_due_date == null && row.next_due_hours == null;
-    const { data, error } = await supabase
-      .from("ad_compliance")
-      .update(keepPlanned ? { ...row, next_due_date: loaded.row.next_due_date, next_due_hours: loaded.row.next_due_hours } : row)
-      .eq("id", input.id)
-      .eq("aircraft_id", ctx.aircraftId)
-      .select("*")
-      .maybeSingle();
-    if (error) return { status: "error", message: error.message };
-    if (!data) return { status: "error", message: "Record not found.", httpStatus: 404 };
-    return { status: "ok", row: data };
+    const patch: Partial<AdCompliance> = { ...row };
+    delete patch.aircraft_id;
+    return writeRecord(supabase, ctx, "ad_compliance", input.id, loaded.row.updated_at,
+      keepPlanned ? { ...patch, next_due_date: loaded.row.next_due_date, next_due_hours: loaded.row.next_due_hours } : patch);
   }
 
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data, error } = await supabase.from("ad_compliance").insert(row).select("*").maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (!data) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  return { status: "ok", row: data };
+  return insertRecords(supabase, ctx, "ad_compliance", row);
+}
+
+/** Save a compliance completion and its last/next-due summary in one transaction. */
+export async function recordCompliance(
+  supabase: Db, ctx: WriteCtx,
+  input: { recordId: string; date: string; hours: number | null; entryId: string | null; method: string | null },
+  base: string,
+): Promise<WriteResult> {
+  if (!base) return { status: "error", message: "Reload this AD before recording compliance.", httpStatus: 409 };
+  const { data, error } = await supabase.rpc("record_ad_compliance", {
+    p_aircraft: ctx.aircraftId, p_ad: input.recordId, p_base: base, p_date: input.date,
+    p_hours: input.hours, p_entry: input.entryId, p_method: input.method,
+  });
+  return error ? { status: "error", message: error.message } : data as WriteResult;
 }
 
 /** Delete a record. Nothing references ad_compliance(id); its own links to
@@ -219,15 +226,7 @@ export async function remove(
   const loaded = await loadRecord(supabase, ctx, input.recordId);
   if ("status" in loaded) return loaded;
   if (isStale(loaded.row.updated_at, base)) return { status: "conflict", row: loaded.row };
-  const { data, error } = await supabase
-    .from("ad_compliance")
-    .delete()
-    .eq("id", input.recordId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (error) return { status: "error", message: error.message };
-  if (!data?.length) return { status: "error", message: "Record not found.", httpStatus: 404 };
-  return { status: "ok", row: null };
+  return writeRecord(supabase, ctx, "ad_compliance", input.recordId, loaded.row.updated_at, null);
 }
 
 /** Start tracking an AD/SB number — found in the logs or by the explorer —
@@ -236,20 +235,7 @@ export async function track(supabase: Db, ctx: WriteCtx, input: TrackInput): Pro
   const plan = trackPlan(input);
   if ("error" in plan) return { status: "error", message: plan.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
-  const { data, error } = await supabase
-    .from("ad_compliance")
-    .upsert({ aircraft_id: ctx.aircraftId, ...plan.row }, { onConflict: "id", ignoreDuplicates: true })
-    .select("*")
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
-  if (data) return { status: "ok", row: data };
-  const { data: existing } = await supabase
-    .from("ad_compliance")
-    .select("*")
-    .eq("id", input.id ?? "")
-    .eq("aircraft_id", ctx.aircraftId)
-    .maybeSingle();
-  return existing ? { status: "ok", row: existing } : { status: "error", message: "Couldn't track that AD." };
+  return insertRecords(supabase, ctx, "ad_compliance", { aircraft_id: ctx.aircraftId, ...plan.row });
 }
 
 // ---------------------------------------------------------------------------
@@ -264,13 +250,15 @@ async function loadAd(
   supabase: Db,
   ctx: WriteCtx,
   complianceId: string,
-): Promise<{ reference: string } | WriteResult> {
+  base?: string,
+): Promise<{ reference: string; version: string } | WriteResult> {
   const loaded = await loadRecord(supabase, ctx, complianceId);
   if ("status" in loaded) return loaded;
   if (loaded.row.kind !== "ad") {
     return { status: "error", message: "Federal Register lookup is for ADs; SBs come from the manufacturer.", httpStatus: 400 };
   }
-  return { reference: loaded.row.reference };
+  if (isStale(loaded.row.updated_at, base)) return { status: "conflict", row: loaded.row };
+  return { reference: loaded.row.reference, version: loaded.row.updated_at };
 }
 
 /** Upsert the resolved reference and link it to the compliance record. Returns row `{ found: true }`. */
@@ -279,6 +267,7 @@ async function applyReference(
   ctx: WriteCtx,
   complianceId: string,
   row: Partial<AdReference>,
+  base: string,
 ): Promise<WriteResult> {
   const { data: ref, error: refError } = await supabase
     .from("ad_reference")
@@ -287,15 +276,11 @@ async function applyReference(
     .maybeSingle();
   if (refError || !ref) return { status: "error", message: refError?.message ?? "Couldn't save the AD reference." };
 
-  const { data: linked, error: linkError } = await supabase
-    .from("ad_compliance")
-    .update({ ad_reference_id: ref.id })
-    .eq("id", complianceId)
-    .eq("aircraft_id", ctx.aircraftId)
-    .select("id");
-  if (linkError) return { status: "error", message: linkError.message };
-  if (!linked?.length) return { status: "error", message: "Record not found.", httpStatus: 404 };
-  return { status: "ok", row: { found: true } };
+  const loaded = await loadRecord(supabase, ctx, complianceId);
+  if ("status" in loaded) return loaded;
+  if (isStale(loaded.row.updated_at, base)) return { status: "conflict", row: loaded.row };
+  const result = await writeRecord(supabase, ctx, "ad_compliance", complianceId, base, { ad_reference_id: ref.id });
+  return result.status === "ok" ? { status: "ok", row: { found: true } } : result;
 }
 
 /**
@@ -306,8 +291,9 @@ export async function saveAdReference(
   supabase: Db,
   ctx: WriteCtx,
   input: { complianceId: string; ad: FaaAd },
+  base?: string,
 ): Promise<WriteResult> {
-  const rec = await loadAd(supabase, ctx, input.complianceId);
+  const rec = await loadAd(supabase, ctx, input.complianceId, base);
   if ("status" in rec) return rec;
   const ad = input.ad;
   return applyReference(supabase, ctx, input.complianceId, {
@@ -323,7 +309,7 @@ export async function saveAdReference(
     citation: ad.citation,
     rin: ad.rin,
     fetched_at: new Date().toISOString(),
-  });
+  }, rec.version);
 }
 
 /**
@@ -335,8 +321,9 @@ export async function enrichViaDRS(
   supabase: Db,
   ctx: WriteCtx,
   input: { complianceId: string },
+  base?: string,
 ): Promise<WriteResult> {
-  const rec = await loadAd(supabase, ctx, input.complianceId);
+  const rec = await loadAd(supabase, ctx, input.complianceId, base);
   if ("status" in rec) return rec;
   const drsAd = await getADFromDRS(rec.reference);
   if (!drsAd) return { status: "ok", row: { found: false } };
@@ -348,5 +335,5 @@ export async function enrichViaDRS(
     drs_doc_id: drsAd.docUniqueId,
     document_status: drsAd.status,
     fetched_at: new Date().toISOString(),
-  });
+  }, rec.version);
 }

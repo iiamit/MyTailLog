@@ -22,7 +22,7 @@ export async function GET(
   const supabase = await createSyncClient(req);
   const { data: page } = await supabase
     .from("page")
-    .select("storage_path, thumbnail_path")
+    .select("aircraft_id, storage_path, thumbnail_path")
     .eq("id", pageId)
     .single();
   if (!page) return new Response("Not found", { status: 404 });
@@ -31,7 +31,7 @@ export async function GET(
   // fallback for legacy pages that predate thumbnails).
   const path = wantThumb && page.thumbnail_path ? page.thumbnail_path : page.storage_path;
 
-  const blob = await getBlob(path);
+  const blob = await getBlob(path, page.aircraft_id);
   if (!blob) return new Response("Not found", { status: 404 });
 
   return new Response(new Uint8Array(blob.data), {
