@@ -1,6 +1,0 @@
-__pycache__/
-film/work/
-# Large supplied footage and delivery exports live in the downloadable package.
-footage/*.mp4
-film/*.mp4
-film/voiceover.wav

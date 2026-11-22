@@ -45,7 +45,7 @@ Write ONLY your one output file, `docs\redesign\<dir>\<page>.html`. Do not edit 
 <body class="g-page">
 <nav class="g-top" aria-label="Proposal"><div class="g-top-in">
   <b>MyTailLog redesign</b>
-  <a href="../index.html">Overview</a><a href="../analysis.html">Analysis</a>
+  <a href="../index.html">Overview</a>
   <a href="../a/index.html">A · Paint Scheme</a><a href="../b/index.html">B · Section Tabs</a><a href="../c/index.html">C · Line Diagram</a>
 </div></nav>
 <nav class="g-top" style="position:static;border-bottom:0" aria-label="This direction"><div class="g-top-in">
@@ -198,7 +198,7 @@ Group "Scanning at the hangar" (g-flow): M15 Choose the logbook (adds to the end
 Group "Review on the phone" (g-flow): M19 Review: the page fills the screen, entry in a bottom drawer. M20 A doubtful field with its ink highlighted and the three outcomes. M21 Page confirmed, next page one swipe away.
 Group "What is due": M22 Due list. M23 Item detail with its page. M24 Mark done sheet. M25 VOR check log (the 91.171(d) fields: date, place, bearing error, signature). M26 Pick a date (New). M27 ADs.
 Group "The records": M28 Logbooks (books and volumes, pages). M29 Timeline. M30 Entry with its scan. M31 Search and Ask with a cited answer.
-Group "Aircraft and documents": M32 Aircraft (hours, equipment, W&B). M33 Documents with the AROW card. 
+Group "Aircraft and documents": M32 Aircraft (hours, equipment, W&B). M33 Documents with the AROW card.
 Group "Sharing": M34 Share: who is it for. M35 Link made: QR, expiry, copy.
 Group "Sync and settings": M36 Waiting to upload, with a conflict ("yours" and "theirs"). M37 Settings (appearance, offline copy, storage, sign out).
 Group "Tablet": T01 Home in two panes. T02 Review in three panes (pages, scan, fields). T03 Due list with detail.

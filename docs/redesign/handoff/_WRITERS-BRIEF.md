@@ -15,7 +15,7 @@ Repo root: the repository root. Proposal: `docs\redesign\`.
 - Mockup briefs (data, rules, screen intents): `docs\redesign\research\mockup-brief.md` (sections 2, 3, 4, 5, 6-B, 7) and `mockup-brief-d.md`.
 - Current product: `docs\redesign\research\web-inventory.md` (every current web route, field, action), `mobile-inventory.md`,
   `docs-digest.md` (capabilities, rules, backlog, demo data). Code: `apps\web\src`, `apps\mobile\src`, `supabase\migrations`, `packages\`.
-- Research: `docs\redesign\research\competitors-ga.md`, `competitors-adjacent.md`. Analysis page: `docs\redesign\analysis.html`.
+- Competitive research and analysis are maintained privately outside version control.
 - Product truth: `PRODUCT.md`, `README.md`, `SECURITY.md` at repo root.
 To look at a mockup figure: `docs\redesign\research\shot.ps1 -Page "d/web.html" -Out "<name>" -W 1440 -H 900 -Query "only=<figure-id>&bare=1&open=1"`
 (PowerShell; it prints the PNG path; open it with Read). Phone figures: `-W 1500 -H 1000 -Query "only=<id1>,<id2>"`. Figure ids are the `id`

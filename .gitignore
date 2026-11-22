@@ -66,3 +66,23 @@ e2e/.auth/
 
 # npm run at the repo root creates an empty lockfile; the real one is apps/web's
 /package-lock.json
+
+# Private campaign drafts and media
+/marketing/
+
+# Private marketing, onboarding communications, launch and competitive research
+/docs/app-store-launch.md
+/docs/marketing-mobile-and-sign-in.md
+/docs/onboarding-emails.md
+/docs/competitive-squawkfree.md
+/docs/plan-competitive-backlog.md
+/docs/redesign/analysis.html
+/docs/redesign/research/competitors-adjacent.md
+/docs/redesign/research/competitors-ga.md
+/docs/redesign/research/docs-digest.md
+
+# Local-only planning and execution documents
+/internal/
+/docs/internal/
+/docs/plans/
+/docs/plan-*.md

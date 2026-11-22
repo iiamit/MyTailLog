@@ -49,8 +49,7 @@ not yet included in these previews. AI extraction and Ask need a connection.
 MyTailLog remains **free and MIT licensed**, with a daily allowance for
 shared-key AI reading.
 
-Read [What's new](https://mytaillog.com/whats-new) or
-[the November campaign kit](marketing/2026-11-platform-update/README.md).
+Read [What's new](https://mytaillog.com/whats-new).
 
 ## What it is
 
