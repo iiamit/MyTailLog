@@ -1,142 +1,122 @@
 [
   {
-    "start": 0.28500000000000003,
-    "end": 2.0149999999999997,
-    "text": "Every aircraft has a story."
+    "start": 0.22,
+    "end": 1.5659999999999998,
+    "text": "Your aircraft's history."
   },
   {
-    "start": 2.0149999999999997,
-    "end": 4.476,
-    "text": "But on paper, that story lives in separate logbooks."
+    "start": 1.5659999999999998,
+    "end": 3.912,
+    "text": "Scattered across separate paper logbooks."
   },
   {
-    "start": 8.285,
-    "end": 8.865,
+    "start": 4.3516666666666675,
+    "end": 4.9316666666666675,
     "text": "Airframe."
   },
   {
-    "start": 9.724,
-    "end": 10.177,
+    "start": 5.7906666666666675,
+    "end": 6.243666666666668,
     "text": "Engine."
   },
   {
-    "start": 10.943999999999999,
-    "end": 11.582,
+    "start": 7.010666666666667,
+    "end": 7.648666666666667,
     "text": "Propeller."
   },
   {
-    "start": 12.347999999999999,
-    "end": 13.358,
+    "start": 8.414666666666667,
+    "end": 9.424666666666667,
     "text": "Avionics."
   },
   {
-    "start": 16.273,
-    "end": 16.9,
-    "text": "Different dates."
-  },
-  {
-    "start": 16.9,
-    "end": 17.783,
-    "text": "Different tasks."
-  },
-  {
-    "start": 17.783,
-    "end": 20.987000000000002,
+    "start": 9.839666666666668,
+    "end": 11.85966666666667,
     "text": "Maintenance, inspections, and AD tracking."
   },
   {
-    "start": 20.987000000000002,
-    "end": 22.287,
-    "text": "A lot to keep connected."
+    "start": 12.308000000000002,
+    "end": 14.502000000000002,
+    "text": "MyTailLog turns those pages into one connected"
   },
   {
-    "start": 24.308,
-    "end": 26.502,
-    "text": "MyTailLog brings it all together."
+    "start": 14.502000000000002,
+    "end": 15.222000000000001,
+    "text": "history."
   },
   {
-    "start": 26.502,
-    "end": 28.743000000000002,
-    "text": "Turn scattered pages into a connected view of your"
-  },
-  {
-    "start": 28.743000000000002,
-    "end": 29.591,
-    "text": "aircraft."
-  },
-  {
-    "start": 32.308,
-    "end": 35.234,
+    "start": 16.208,
+    "end": 19.134,
     "text": "Scan or upload your logbooks, then review the extracted"
   },
   {
-    "start": 35.234,
-    "end": 37.08,
+    "start": 19.134,
+    "end": 20.979999999999997,
     "text": "entries right beside the originals."
   },
   {
-    "start": 39.296,
-    "end": 41.305,
+    "start": 21.429333333333332,
+    "end": 23.438333333333333,
     "text": "Follow the history across every book."
   },
   {
-    "start": 41.305,
-    "end": 43.569,
+    "start": 23.438333333333333,
+    "end": 25.702333333333332,
     "text": "See what's due, and plan what comes next."
   },
   {
-    "start": 46.296,
-    "end": 48.758,
+    "start": 26.162666666666667,
+    "end": 28.624666666666666,
     "text": "Track hours, oil, and squawks."
   },
   {
-    "start": 48.758,
-    "end": 50.673,
+    "start": 28.624666666666666,
+    "end": 30.53966666666667,
     "text": "Connect MyFlightBook to help keep your records"
   },
   {
-    "start": 50.673,
-    "end": 51.498,
+    "start": 30.53966666666667,
+    "end": 31.36466666666667,
     "text": "in step."
   },
   {
-    "start": 54.285,
-    "end": 56.142,
+    "start": 31.785,
+    "end": 33.642,
     "text": "At your desk, or at the aircraft."
   },
   {
-    "start": 56.142,
-    "end": 57.919,
+    "start": 33.642,
+    "end": 35.419,
     "text": "The new native apps are coming soon."
   },
   {
-    "start": 61.285,
-    "end": 63.781,
+    "start": 35.85166666666667,
+    "end": 38.34766666666667,
     "text": "Including layouts that unfold with iPhone Duo,"
   },
   {
-    "start": 63.781,
-    "end": 65.522,
+    "start": 38.34766666666667,
+    "end": 40.08866666666667,
     "text": "with records side by side."
   },
   {
-    "start": 68.308,
-    "end": 69.771,
+    "start": 40.541333333333334,
+    "end": 42.004333333333335,
     "text": "Free and open source."
   },
   {
-    "start": 69.771,
-    "end": 71.756,
+    "start": 42.004333333333335,
+    "end": 43.989333333333335,
     "text": "Try the new web design today."
   },
   {
-    "start": 71.756,
-    "end": 73.393,
+    "start": 43.989333333333335,
+    "end": 45.626333333333335,
     "text": "Native apps coming soon."
   },
   {
-    "start": 73.393,
-    "end": 75.077,
+    "start": 45.626333333333335,
+    "end": 47.31033333333333,
     "text": "MyTailLog dot com."
   }
 ]

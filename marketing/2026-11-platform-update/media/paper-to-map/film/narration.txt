@@ -1,10 +1,10 @@
-Every aircraft has a story. But on paper, that story lives in separate logbooks.
+Your aircraft's history. Scattered across separate paper logbooks.
 
 Airframe. Engine. Propeller. Avionics.
 
-Different dates. Different tasks. Maintenance, inspections, and AD tracking. A lot to keep connected.
+Maintenance, inspections, and AD tracking.
 
-MyTailLog brings it all together. Turn scattered pages into a connected view of your aircraft.
+MyTailLog turns those pages into one connected history.
 
 Scan or upload your logbooks, then review the extracted entries right beside the originals.
 

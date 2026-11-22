@@ -8,17 +8,18 @@ HERE=Path(__file__).resolve().parent;OUT=HERE/'film'
 
 def main():
  p=json.loads((OUT/'production.json').read_text());duration=p['duration_seconds']
- assert 60<=duration<=90
+ assert 40<=duration<=60
  timing=json.loads((OUT/'timing.json').read_text());assert len(timing)==10
+ assert [s['duration'] for s in timing[:4]]==[4,4,4,4] and timing[4]['start']==16
  assert abs(sum(s['duration'] for s in timing)-duration)<.01
  captions=json.loads((OUT/'captions.json').read_text());assert all(0<=c['start']<c['end']<=duration for c in captions)
  assert all(a['end']<=b['start'] for a,b in zip(captions,captions[1:]))
  assert captions[-1]['end']>duration-3
  script=(OUT/'narration.txt').read_text();assert 'AD tracking' in script and 'coming soon' in script.lower()
  pronunciation=json.loads((OUT/'alignment-03.json').read_text())
- assert 'ph="eɪ"' in pronunciation['_synthesis_text'] and 'ph="diː"' in pronunciation['_synthesis_text']
+ assert 'ph="eɪ diː"' in pronunciation['_synthesis_text'] and '<break' not in pronunciation['_synthesis_text']
  spoken_phonemes=''.join(pronunciation['normalized_alignment']['characters'])
- assert '@ey0' in spoken_phonemes and '@d@iy0' in spoken_phonemes, 'Provider did not report the requested letter phonemes'
+ assert '@ey0@d@iy0' in spoken_phonemes, 'Provider did not report the requested letter phonemes'
  assert '<break time="0.75s" />' in json.loads((OUT/'alignment-02.json').read_text())['_synthesis_text']
  a=json.loads((OUT/'alignment-02.json').read_text())['normalized_alignment'];spoken=''.join(a['characters'])
  words=list(re.finditer(r'Airframe|Engine|Propeller|Avionics',spoken));assert len(words)==4
@@ -27,7 +28,7 @@ def main():
  assert not any('@' in c['text'] or c['text']=='.' for c in captions)
 
  for name,expected in p['clip_sha256'].items():assert hashlib.sha256((HERE/'footage'/name).read_bytes()).hexdigest()==expected
- results={'checks':'passed','duration_seconds':duration,'physical_motion_clips':4,'caption_count':len(captions),'category_pauses_seconds':[round(g,2) for g in gaps],'ad_pronunciation':'Explicit IPA /eɪ/ /diː/','added_year_overlays':False,'videos':[]}
+ results={'checks':'passed','duration_seconds':duration,'physical_motion_clips':4,'caption_count':len(captions),'category_pauses_seconds':[round(g,2) for g in gaps],'ad_pronunciation':'Joined IPA /eɪ diː/; no inserted pause','added_year_overlays':False,'videos':[]}
  audio=[]
  for variant in ('clean','captioned'):
   video=OUT/f'mytaillog-paper-to-map-{variant}-1080x1920.mp4'
@@ -46,7 +47,7 @@ def main():
   frames=[]
   for t in [shot['start']+1,shot['start']+shot['duration']-1]:
    data=subprocess.check_output([FFMPEG,'-threads','2','-filter_threads','1','-v','error','-ss',str(t),'-i',str(video),'-frames:v','1','-f','image2pipe','-vcodec','png','-'])
-   im=Image.open(io.BytesIO(data));im=im if shot['start']<32 else im.crop((0,460,1080,1580));frames.append(im.resize((180,320)).convert('L'))
+   im=Image.open(io.BytesIO(data));im=im if shot['start']<16 else im.crop((0,460,1080,1580));frames.append(im.resize((180,320)).convert('L'))
   change=ImageStat.Stat(ImageChops.difference(*frames)).mean[0];assert change>2,shot['name']
   results['motion_checks'].append({'shot':shot['name'],'mean_pixel_change':round(change,2)})
  ast.parse((HERE/'build_film.py').read_text())

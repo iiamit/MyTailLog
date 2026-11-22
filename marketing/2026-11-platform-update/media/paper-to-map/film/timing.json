@@ -3,70 +3,70 @@
     "name": "paper",
     "scene": null,
     "start": 0,
-    "duration": 8,
+    "duration": 4,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-0.wav"
   },
   {
     "name": "aircraft",
     "scene": null,
-    "start": 8,
-    "duration": 8,
+    "start": 4,
+    "duration": 4,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-1.wav"
   },
   {
     "name": "tasks",
     "scene": null,
-    "start": 16,
-    "duration": 8,
+    "start": 8,
+    "duration": 4,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-2.wav"
   },
   {
     "name": "connected",
     "scene": null,
-    "start": 24,
-    "duration": 8,
+    "start": 12,
+    "duration": 4,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-3.wav"
   },
   {
     "name": "review",
     "scene": 2,
-    "start": 32,
-    "duration": 7.0,
+    "start": 16.0,
+    "duration": 5.233333333333333,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-4.wav"
   },
   {
     "name": "history",
     "scene": 1,
-    "start": 39.0,
-    "duration": 7.0,
+    "start": 21.233333333333334,
+    "duration": 4.733333333333333,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-5.wav"
   },
   {
     "name": "maintenance",
     "scene": 5,
-    "start": 46.0,
-    "duration": 8.0,
+    "start": 25.96666666666667,
+    "duration": 5.633333333333334,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-6.wav"
   },
   {
     "name": "mobile",
     "scene": 3,
-    "start": 54.0,
-    "duration": 7.0,
+    "start": 31.6,
+    "duration": 4.066666666666666,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-7.wav"
   },
   {
     "name": "duo",
     "scene": 4,
-    "start": 61.0,
-    "duration": 7.0,
+    "start": 35.66666666666667,
+    "duration": 4.666666666666667,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-8.wav"
   },
   {
     "name": "close",
     "scene": 6,
-    "start": 68.0,
-    "duration": 9.0,
+    "start": 40.333333333333336,
+    "duration": 8.033333333333333,
     "voice": "/home/codex/projects/MyTailLog/marketing/2026-11-platform-update/media/paper-to-map/film/work/voice-9.wav"
   }
 ]

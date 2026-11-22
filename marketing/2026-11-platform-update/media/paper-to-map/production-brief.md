@@ -108,3 +108,7 @@ ElevenLabs documentation checked during preparation states that video generation
 References:
 - https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video
 - https://elevenlabs.io/docs/overview/capabilities/image-video
+
+## Revised Flow footage — A-2 to D-2
+
+The revised four-second clips replace the original physical sequence. Keep the footage at its native speed; shorten the opening narration and allow speech to flow across the four cuts. Preserve the deliberate category pauses. D-2 makes a more polished map reveal; hand off to the untouched real map at 15 seconds. Use one joined IPA phrase /eɪ diː/ for AD, with no inserted break between the letters. No added year overlays. The parallel paths remain broader than actual map lines; inspect generated page/track geometry during review.

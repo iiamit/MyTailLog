@@ -14,18 +14,18 @@ OUT=HERE/'film'; OUT.mkdir(exist_ok=True)
 TMP=OUT/'work'; TMP.mkdir(exist_ok=True)
 motion_edit.REEL=TMP
 FPS=30
-# Physical sequence slots retain the generated choreography; product slots follow speech.
+# Opening speech flows across four native-speed clips; product slots follow speech.
 SHOTS=[
- ('paper',None,"Every aircraft has a story. But on paper, that story lives in separate logbooks.",8),
- ('aircraft',None,"Airframe. Engine. Propeller. Avionics.",8),
- ('tasks',None,"Different dates. Different tasks. Maintenance, inspections, and AD tracking. A lot to keep connected.",8),
- ('connected',None,"My Tail Log brings it all together. Turn scattered pages into a connected view of your aircraft.",8),
- ('review',2,"Scan or upload your logbooks, then review the extracted entries right beside the originals.",7),
- ('history',1,"Follow the history across every book. See what's due, and plan what comes next.",7),
- ('maintenance',5,"Track hours, oil, and squawks. Connect My Flight Book to help keep your records in step.",8),
- ('mobile',3,"At your desk, or at the aircraft. The new native apps are coming soon.",7),
- ('duo',4,"Including layouts that unfold with iPhone Duo, with records side by side.",7),
- ('close',6,"Free and open source. Try the new web design today. Native apps coming soon. My Tail Log dot com.",9),
+ ('paper',None,"Your aircraft's history. Scattered across separate paper logbooks."),
+ ('aircraft',None,"Airframe. Engine. Propeller. Avionics."),
+ ('tasks',None,"Maintenance, inspections, and AD tracking."),
+ ('connected',None,"My Tail Log turns those pages into one connected history."),
+ ('review',2,"Scan or upload your logbooks, then review the extracted entries right beside the originals."),
+ ('history',1,"Follow the history across every book. See what's due, and plan what comes next."),
+ ('maintenance',5,"Track hours, oil, and squawks. Connect My Flight Book to help keep your records in step."),
+ ('mobile',3,"At your desk, or at the aircraft. The new native apps are coming soon."),
+ ('duo',4,"Including layouts that unfold with iPhone Duo, with records side by side."),
+ ('close',6,"Free and open source. Try the new web design today. Native apps coming soon. My Tail Log dot com."),
 ]
 
 def run(args):
@@ -43,14 +43,14 @@ def config():
 
 def narration():
  key=None; offset=0; timeline=[]; captions=[]
- for i,(name,scene,copy,minimum) in enumerate(SHOTS):
+ for i,(name,scene,copy) in enumerate(SHOTS):
   mp3=OUT/f'voice-{i+1:02}.mp3'; ap=OUT/f'alignment-{i+1:02}.json'
   data=json.loads(ap.read_text()) if ap.exists() else {}
   speech=copy;model='eleven_multilingual_v2'
   if name=='aircraft':speech=copy.replace('. ', '. <break time="0.75s" /> ')
   if name=='tasks':
    model='eleven_flash_v2'
-   speech=copy.replace('AD', '<phoneme alphabet="ipa" ph="eɪ">A</phoneme><break time="0.15s" /><phoneme alphabet="ipa" ph="diː">D</phoneme>')
+   speech=copy.replace('AD', '<phoneme alphabet="ipa" ph="eɪ diː">AD</phoneme>')
   if not mp3.exists() or data.get('_request_text')!=copy or (name in ('aircraft','tasks') and data.get('_synthesis_text')!=speech):
    if key is None:key=config()
    r=requests.post('https://api.elevenlabs.io/v1/text-to-speech/iP95p4xoKVk53GoZ742B/with-timestamps',params={'output_format':'mp3_44100_128'},headers={'xi-api-key':key},json={'text':speech,'model_id':model,'voice_settings':{'stability':.45,'similarity_boost':.8,'style':.2,'use_speaker_boost':True,'speed':1.0}},timeout=120)
@@ -61,7 +61,7 @@ def narration():
   if name=='tasks':
    expanded=[(ch,start+(end-start)*j/len(token),start+(end-start)*(j+1)/len(token)) for token,start,end in zip(a['characters'],a['character_start_times_seconds'],a['character_end_times_seconds']) for j,ch in enumerate(token)]
    a={'characters':[v[0] for v in expanded],'character_start_times_seconds':[v[1] for v in expanded],'character_end_times_seconds':[v[2] for v in expanded]}
-   aligned=''.join(a['characters']);match=re.search(r'@ey[0-9]*\.?\s+@d@iy[0-9]*',aligned)
+   aligned=''.join(a['characters']);match=re.search(r'@ey[0-9]*\.?\s*@d@iy[0-9]*',aligned)
    if match:
     lo,hi=match.span();middle=aligned.index('@d',lo)
     a={'characters':a['characters'][:lo]+['A','D']+a['characters'][hi:],
@@ -69,12 +69,12 @@ def narration():
        'character_end_times_seconds':a['character_end_times_seconds'][:lo]+[a['character_end_times_seconds'][middle-1],a['character_end_times_seconds'][hi-1]]+a['character_end_times_seconds'][hi:]}
    assert 'AD tracking' in ''.join(a['characters']), 'Unexpected phoneme alignment; inspect before captioning'
   end=a['character_end_times_seconds'][-1]
-  duration=round(max(minimum,end+.8)*FPS)/FPS
-  if i<4:
-   assert end+.45<=8, f'{name} speech exceeds fixed motion slot; revise pacing before render'
-   duration=8
+  duration=round((end+.4 if name!='close' else end+1.2)*FPS)/FPS
+  if i==3:
+   assert offset+duration<=16, 'Opening narration exceeds native-speed footage; shorten the copy'
+   duration=16-offset
   voice=TMP/f'voice-{i}.wav'
-  run(['-i',mp3,'-af',f'adelay=250:all=1,apad=whole_dur={duration}','-t',duration,'-ar','48000','-ac','1',voice])
+  run(['-i',mp3,'-af',f'adelay=150:all=1,apad=whole_dur={duration}','-t',duration,'-ar','48000','-ac','1',voice])
   words=[];buf='';start=0
   for j,ch in enumerate(a['characters']):
    if not buf:start=a['character_start_times_seconds'][j]
@@ -86,8 +86,8 @@ def narration():
   for word in words:
    group.append(word)
    if len(' '.join(w[0] for w in group))>45 or word[0].endswith(('.', '!', '?')):
-    captions.append({'start':offset+.25+group[0][1],'end':offset+.25+group[-1][2],'text':' '.join(w[0] for w in group)});group=[]
-  if group:captions.append({'start':offset+.25+group[0][1],'end':offset+.25+group[-1][2],'text':' '.join(w[0] for w in group)})
+    captions.append({'start':offset+.15+group[0][1],'end':offset+.15+group[-1][2],'text':' '.join(w[0] for w in group)});group=[]
+  if group:captions.append({'start':offset+.15+group[0][1],'end':offset+.15+group[-1][2],'text':' '.join(w[0] for w in group)})
   timeline.append({'name':name,'scene':scene,'start':offset,'duration':duration,'voice':str(voice)});offset+=duration
   print(f'Narration {name}: {duration:.2f}s',flush=True)
  (TMP/'voices.txt').write_text(''.join(f"file '{s['voice']}'\n" for s in timeline))
@@ -109,20 +109,22 @@ def normalize_clean(clean):
  run(['-i',clean,'-af',norm,'-c:v','copy','-c:a','aac','-b:a','192k','-ar','48000','-metadata','title=Coming soon: MyTailLog — paper to map | Voice: elevenlabs.io','-movflags','+faststart',tmp]);tmp.replace(clean)
 
 def physical(i):
- src=HERE/'footage'/f'{"ABCD"[i]}.mp4'; out=TMP/f'physical-{i}.mp4'
+ src=HERE/'footage'/f'{"ABCD"[i]}-2.mp4'; out=TMP/f'physical-{i}.mp4'
  # Remove generated audio. Preserve framing; only final delivery is scaled to 1080.
- filt='scale=1080:1920:flags=lanczos,fps=30,setsar=1,tpad=stop_mode=clone:stop_duration=1'
+ filt='scale=1080:1920:flags=lanczos,fps=30,setsar=1'
  if i<3:
-  run(['-i',src,'-vf',filt,'-t','8','-an','-c:v','libx264','-threads','2','-preset','veryfast','-crf','18',out])
+  run(['-i',src,'-vf',filt,'-t','4','-an','-c:v','libx264','-threads','2','-preset','veryfast','-crf','18',out])
  else:
   # D ends on AI-distorted UI: settle into the original untouched screenshot.
   # Source screenshot is tall: contain it at native ratio over the app yellow.
   fit='scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color='+YELLOW+",setsar=1,zoompan=z='1.06-0.06*min(on/128,1)':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s=1080x1920:fps=30"
-  run(['-i',src,'-loop','1','-framerate','30','-i',HERE/'04-real-map-reference.png','-filter_complex',f'[0:v]{filt},trim=duration=4.3,setpts=PTS-STARTPTS[a];[1:v]{fit},trim=duration=4.3,setpts=PTS-STARTPTS[b];[a][b]xfade=transition=fade:duration=0.6:offset=3.7,format=yuv420p[v]','-map','[v]','-t','8','-an','-c:v','libx264','-threads','2','-preset','veryfast','-crf','18',out])
+  run(['-i',src,'-loop','1','-framerate','30','-i',HERE/'04-real-map-reference.png','-filter_complex',f'[0:v]{filt},trim=duration=3.0,setpts=PTS-STARTPTS[a];[1:v]{fit},trim=duration=1.6,setpts=PTS-STARTPTS[b];[a][b]xfade=transition=fade:duration=0.6:offset=2.4,format=yuv420p[v]','-map','[v]','-t','4','-an','-c:v','libx264','-threads','2','-preset','veryfast','-crf','18',out])
  return out
 
 def main():
  timeline,captions,total=narration(); clips=[]
+ for i in range(4):timeline[i].update(start=i*4,duration=4)
+ (OUT/'timing.json').write_text(json.dumps(timeline,indent=2))
  for i,s in enumerate(timeline):
   if i<4:p=physical(i)
   else:
@@ -148,6 +150,6 @@ def main():
  for i,s in enumerate(timeline):
   f=OUT/f'keyframe-{i+1:02}.jpg';run(['-ss',s['start']+s['duration']*.6,'-i',clean,'-frames:v','1',f]);im=Image.open(f);im.thumbnail((270,480));sheet.paste(im,((i%5)*270,(i//5)*480))
  sheet.save(OUT/'contact-sheet.jpg',quality=94)
- (OUT/'production.json').write_text(json.dumps({'duration_seconds':total,'dimensions':[1080,1920],'fps':30,'physical_source':'User-supplied Google Flow A–D; 720p/24fps converted for delivery','narration':'ElevenLabs Chris; logbook types separated by 0.75-second SSML breaks; AD uses explicit IPA /eɪ/ /diː/ on Flash v2','music':'Approved original score, looped and ducked under speech','native_status':'Coming soon / preview','generated_audio_from_flow_used':False,'exact_app_handoff_at_seconds':28.3,'clip_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'footage').glob('*.mp4')}},indent=2))
+ (OUT/'production.json').write_text(json.dumps({'duration_seconds':total,'dimensions':[1080,1920],'fps':30,'physical_source':'User-supplied revised Google Flow A-2–D-2; 720p/24fps, native-speed footage conformed to 30fps','narration':'ElevenLabs Chris; logbook types separated by 0.75-second SSML breaks; AD uses joined IPA /eɪ diː/ without an inserted pause on Flash v2','music':'Approved original score, looped and ducked under speech','native_status':'Coming soon / preview','generated_audio_from_flow_used':False,'exact_app_handoff_at_seconds':15.0,'clip_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE/'footage').glob('*-2.mp4')}},indent=2))
  print(f'Complete: {total:.2f}s',flush=True)
 if __name__=='__main__':main()

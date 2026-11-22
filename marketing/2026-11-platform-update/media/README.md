@@ -15,7 +15,7 @@ The social captions and announcement copy are in the parent package's `copy/` di
 
 ## Full-motion paper-to-map film
 
-The separate 77-second film is in [paper-to-map/film](paper-to-map/film/README.md). It uses the four user-supplied Flow clips, an early handoff to the original map screenshot, updated ElevenLabs narration, the approved musical theme and real app interactions. The generated opening is illustrative; the native redesign remains a coming-soon preview. Its source footage is 720p/24fps, conformed to the 1080×1920/30fps delivery.
+The separate 48-second film is in [paper-to-map/film](paper-to-map/film/README.md). It uses the four revised user-supplied Flow clips at their original speed, an early handoff to the original map screenshot, updated ElevenLabs narration, the approved musical theme and real app interactions. The generated opening is illustrative; the native redesign remains a coming-soon preview. Its source footage is 720p/24fps, conformed to the 1080×1920/30fps delivery.
 
 ## Motion edit
 
