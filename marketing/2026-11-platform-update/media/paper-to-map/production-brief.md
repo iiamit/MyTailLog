@@ -70,7 +70,19 @@ Continue the same forward camera movement through the yellow flower field from t
 
 ### D — group, flatten and reveal
 
-Using the supplied four-path reference frame and target real-map composition, continue moving smoothly along the paths and rising toward an overhead angle. Pages at aligned positions draw together into compact rounded groupings across adjacent paths, preserving individual page texture briefly. The realistic yellow meadow gradually becomes flatter and more uniform as the paths straighten into the exact direction and framing of the reference composition. End on four clean lanes against a golden-yellow field, suitable for a seamless tracked transition into the supplied real MyTailLog map. No readable generated text, no invented controls, no abrupt cut or camera reversal, no cartoon interpretation of the physical field. Final dates and exact map geometry are composited in editing.
+**Supply these two images in Google Flow before using the prompt:**
+
+1. **Start frame:** the final frame exported from your approved sequence C video. This is the four-path field scene; it is not a separate image included in this package.
+2. **End frame:** [`04-real-map-reference.png`](04-real-map-reference.png), the actual iOS Logbooks → Map screenshot included alongside this brief. Use the portrait native map for this vertical film. Preview Flow’s portrait framing and keep all four map lanes visible; the original phone screenshot is taller than 9:16, so do not stretch it.
+
+[`04-web-map-reference.png`](04-web-map-reference.png) is the full desktop screenshot for the later web reveal or a landscape variant. **Do not attach it as D’s end frame:** its timeline is horizontal, whereas the phone map’s lanes are vertical.
+
+**Paste this revised prompt:**
+
+> Continue from the supplied START FRAME: the four-path scene in the yellow wildflower field. Use the supplied END FRAME as the destination composition: the actual MyTailLog phone Logbooks map. Keep the camera moving forward and rising smoothly toward an overhead view. Bring the four paths into four vertical lanes, left to right indigo Airframe, magenta Engine, charcoal Propeller and teal Avionics, matching the target image. Real paper pages at aligned dates gather into rounded visit groupings across their respective lanes. Preserve natural paper texture, wind, sunlight and contact shadows during the field portion. As the camera rises, the meadow’s yellow resolves into the app’s yellow surround and a white map panel emerges beneath the lanes, matching the supplied target. Finish with the same camera direction, lane positions and group shapes as the end frame. No extra lanes, invented buttons or added text. No cartoon styling, camera reversal or abrupt cut. No music or narration.
+
+**Editing handoff:** Any generated lettering or altered interface is temporary. Replace the final matching frames with the supplied original screenshot / real map recording in the edit, then pull back into the actual app. This is where the exact dates, labels and pixel-accurate interface are preserved. A Flow render alone is not the final app reveal.
+
 
 ## App footage and final transition
 

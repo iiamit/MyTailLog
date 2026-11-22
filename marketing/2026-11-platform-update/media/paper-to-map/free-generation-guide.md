@@ -23,6 +23,17 @@ Google supports a visible-watermark toggle, with some regional exceptions; all r
 6. Continue with clips B–D in `production-brief.md`, matching outgoing and incoming frames. Use separate generations, not one request for the whole film.
 7. Send the original MP4s back for assembly with exact map geometry/dates, recorded app interactions, narration and music.
 
+## Sequence D — required attachments
+
+The target map is now included in this folder:
+
+- **`04-real-map-reference.png`** — actual iOS map, with four vertical lanes. Use this as D’s **end frame**.
+- **`04-web-map-reference.png`** — actual desktop map, with horizontal lanes. This is for the subsequent web reveal or a landscape version, not D’s portrait end frame.
+
+In Flow, choose **Frames to Video**, portrait, and a model supporting first and last frames (for example Veo 3.1 Lite). Attach the last frame of your finished **C** clip as **Start frame**, and `04-real-map-reference.png` as **End frame**. Preview framing so all four lanes remain visible; do not stretch the taller phone screenshot. Paste the revised D prompt from `production-brief.md`.
+
+The C start image cannot be supplied in advance: export it from the actual C clip you select. The real app images above are supplied now. In the final edit, replace generated UI frames with the original capture so the app’s dates and labels remain exact.
+
 ## Comparison notes
 
 - Runway: 125 one-time free credits; free exports have a visible watermark; current free model access is account-dependent. Suitable for a proof-of-concept, less attractive for repeated refinement.
