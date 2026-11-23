@@ -58,42 +58,44 @@ export function ZoomableImage({
         onClick={() => dialog.current?.close()}
         className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-auto border-0 bg-black/90 p-0 text-white backdrop:bg-black/90"
       >
-        {open && <>
-        <button
-          type="button"
-          autoFocus
-          onClick={(e) => {
-            e.stopPropagation();
-            dialog.current?.close();
-          }}
-          className="fixed right-4 top-4 z-10 min-h-11 min-w-11 rounded-full bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20"
-          aria-label="Close"
-        >
-          ✕ Close
-        </button>
-        {/* `safe` centering: centered when it fits, but falls back to
-            start-aligned (fully scrollable) when the zoomed image overflows —
-            otherwise the left/top edge is clipped and unreachable. */}
-        <div className="flex min-h-full items-center-safe justify-center-safe p-4">
-          <button
-            type="button"
-            aria-label={zoomed ? "Fit image to screen" : "Show full-size image"}
-            aria-pressed={zoomed}
-            onClick={(e) => {
-              e.stopPropagation();
-              setZoomed((z) => !z);
-            }}
-            className={`block shrink-0 p-0 ${
-              zoomed
-                ? "max-w-none cursor-zoom-out"
-                : "max-h-[92vh] max-w-[96vw] cursor-zoom-in object-contain"
-            }`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={large} alt={alt} className={zoomed ? "block max-w-none" : "block max-h-[92vh] max-w-[96vw] object-contain"} />
-          </button>
-        </div>
-        </>}
+        {open && (
+          <>
+            <button
+              type="button"
+              autoFocus
+              onClick={(e) => {
+                e.stopPropagation();
+                dialog.current?.close();
+              }}
+              className="fixed right-4 top-4 z-10 min-h-11 min-w-11 rounded-full bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20"
+              aria-label="Close"
+            >
+              ✕ Close
+            </button>
+            {/* `safe` centering: centered when it fits, but falls back to
+                start-aligned (fully scrollable) when the zoomed image overflows —
+                otherwise the left/top edge is clipped and unreachable. */}
+            <div className="flex min-h-full items-center-safe justify-center-safe p-4">
+              <button
+                type="button"
+                aria-label={zoomed ? "Fit image to screen" : "Show full-size image"}
+                aria-pressed={zoomed}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setZoomed((z) => !z);
+                }}
+                className={`block shrink-0 p-0 ${
+                  zoomed
+                    ? "max-w-none cursor-zoom-out"
+                    : "max-h-[92vh] max-w-[96vw] cursor-zoom-in object-contain"
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={large} alt={alt} className={zoomed ? "block max-w-none" : "block max-h-[92vh] max-w-[96vw] object-contain"} />
+              </button>
+            </div>
+          </>
+        )}
       </dialog>
     </>
   );
