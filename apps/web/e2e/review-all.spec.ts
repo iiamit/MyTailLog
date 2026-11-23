@@ -77,4 +77,23 @@ test("review all: a page's scan is readable beside its entries, not a thumbnail"
   // And it must be reachable WITHOUT opening the lightbox — that round trip is
   // the whole complaint. The entry's own field is on screen at the same time.
   expect(await values()).toContain(description);
+
+  const trigger = scan.locator("..");
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  const lightbox = page.getByRole("dialog");
+  await expect(lightbox).toBeVisible();
+  await expect(lightbox).toHaveAccessibleName(/airframe/i);
+  await trigger.evaluate((element) => (element as HTMLElement).focus());
+  await expect(lightbox.getByRole("button", { name: "Close", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  const zoom = lightbox.getByRole("button", { name: "Show full-size image" });
+  await expect(zoom).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(lightbox.getByRole("button", { name: "Fit image to screen" })).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Shift+Tab");
+  await expect(lightbox.getByRole("button", { name: "Close", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(lightbox).not.toBeVisible();
+  await expect(trigger).toBeFocused();
 });

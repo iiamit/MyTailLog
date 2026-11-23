@@ -120,7 +120,8 @@ export function ReviewDesk(p: {
   }
 
   function onKey(e: KeyboardEvent) {
-    if (e.defaultPrevented) return;
+    // Safari can clear isComposing before the IME's confirming Enter arrives.
+    if (e.defaultPrevented || e.isComposing || (e.key === "Enter" && e.keyCode === 229)) return;
     if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
       if (s.editing && inputRef.current) dispatch({ type: "commit", value: inputRef.current.value });

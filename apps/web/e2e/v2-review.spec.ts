@@ -22,6 +22,15 @@ test("new design: a read page is confirmed from the review desk", async ({ page,
   await page.goto(`/api/ui?design=v2&next=${encodeURIComponent(`${scratch.path}/logbooks/review`)}`);
   await page.getByRole("link", { name: "Open in the desk" }).first().click();
   await expect.poll(() => new URL(page.url()).pathname).toBe(`${scratch.path}/logbooks/review/${pageId}`);
+  for (const composing of [{ isComposing: true, keyCode: 13 }, { isComposing: false, keyCode: 229 }]) {
+    const prevented = await page.evaluate((composition) => {
+      const event = new KeyboardEvent("keydown", { key: "Enter", shiftKey: true, bubbles: true, cancelable: true, ...composition });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }, composing);
+    expect(prevented, "IME confirmation must not confirm the page").toBe(false);
+  }
+  expect((await admin.from("log_entry").select("owner_confirmed").eq("id", entry!.id).single()).data?.owner_confirmed).toBe(false);
   await page.getByRole("button", { name: /Confirm page and next/ }).click();
   await expect.poll(async () => (await admin.from("log_entry").select("owner_confirmed").eq("id", entry!.id).single()).data?.owner_confirmed).toBe(true);
   await expect.poll(async () => (await admin.from("page").select("review_status").eq("id", pageId).single()).data?.review_status).toBe("confirmed");
