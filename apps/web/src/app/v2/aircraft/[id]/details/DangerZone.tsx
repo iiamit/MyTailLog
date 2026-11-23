@@ -35,7 +35,7 @@ export function TransferForm({ action, tail }: { action: Action; tail: string })
           Transfer {tail}
         </button>
       </div>
-      <dialog ref={dialog} className="m-auto max-w-[440px] rounded-leaf bg-leaf p-6 text-ink shadow-leaf backdrop:bg-mat/60">
+      <dialog ref={dialog} aria-label={`Transfer ${tail}`} className="m-auto max-w-[440px] rounded-leaf bg-leaf p-6 text-ink shadow-leaf backdrop:bg-mat/60">
         <p className="text-body">
           Transfer {tail} to {email.trim()}? You can&apos;t undo this yourself.
         </p>

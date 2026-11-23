@@ -252,6 +252,7 @@ body:has(.public-v2) .app-header { display: none; }
    ============================================================ */
   :root {
     color-scheme: dark;
+    scrollbar-color: var(--faint) var(--bg);
 
     --bg: #0a0d13;
     --panel: #111823;
@@ -324,14 +325,23 @@ body:has(.public-v2) .app-header { display: none; }
   ::selection {
     background: rgba(90, 169, 255, 0.28);
   }
-  ::-webkit-scrollbar {
-    width: 11px;
-    height: 11px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #2a3746;
-    border-radius: 8px;
-    border: 3px solid var(--bg);
+  @supports not (scrollbar-color: auto) {
+    [data-ui="v2"] * {
+      scrollbar-width: auto;
+    }
+    ::-webkit-scrollbar {
+      width: 11px;
+      height: 11px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--faint);
+      border-radius: 8px;
+      border: 3px solid var(--bg);
+    }
+    [data-ui="v2"] ::-webkit-scrollbar-thumb {
+      background: var(--color-ink-3);
+      border-color: var(--color-leaf);
+    }
   }
 
   @keyframes pin {

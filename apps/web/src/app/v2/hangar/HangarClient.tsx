@@ -88,7 +88,7 @@ export function RemoveFromHangar({ aircraftId, tail }: { aircraftId: string; tai
         Remove from my hangar
       </button>
       {error && <span role="alert" className="text-small font-semibold text-alarm-text">{error}</span>}
-      <dialog ref={dialog} className="m-auto max-w-[440px] rounded-leaf bg-leaf p-6 text-ink shadow-leaf backdrop:bg-mat/60">
+      <dialog ref={dialog} aria-label={`Remove ${tail} from my hangar`} className="m-auto max-w-[440px] rounded-leaf bg-leaf p-6 text-ink shadow-leaf backdrop:bg-mat/60">
         <p className="text-body">Remove {tail} from your hangar? You can be invited again later.</p>
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" autoFocus className={buttonClass("quiet", "m")} onClick={() => dialog.current?.close()}>

@@ -30,6 +30,7 @@ export function ConfirmSubmit({
       </button>
       <dialog
         ref={ref}
+        aria-label={label}
         className="m-auto max-w-[440px] rounded-leaf bg-leaf p-6 text-ink shadow-leaf backdrop:bg-mat/60"
       >
         <p className="text-body">{question}</p>

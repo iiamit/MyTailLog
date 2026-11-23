@@ -279,7 +279,7 @@ export function AddPages({
           </div>
 
           <label className="flex items-start gap-3">
-            <input type="checkbox" role="switch" checked={handwritten} onChange={(e) => setHandwritten(e.target.checked)} className="mt-1 size-[18px]" />
+            <input type="checkbox" checked={handwritten} onChange={(e) => setHandwritten(e.target.checked)} className="mt-1 size-[18px]" />
             <span>
               <span className="text-body-strong">Handwritten pages</span>
               <span className="block text-small text-ink-3">Read by the handwriting model. Turn off for typed or printed pages.</span>

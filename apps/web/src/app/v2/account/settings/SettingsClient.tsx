@@ -40,7 +40,7 @@ export function Confirm({ label, question, confirm, run }: { label: string; ques
       <button type="button" className={buttonClass("quiet", "s")} onClick={() => ref.current?.showModal()}>
         {label}
       </button>
-      <dialog ref={ref} className="m-auto max-w-[440px] rounded-leaf bg-leaf p-6 text-ink shadow-leaf backdrop:bg-mat/60">
+      <dialog ref={ref} aria-label={label} className="m-auto max-w-[440px] rounded-leaf bg-leaf p-6 text-ink shadow-leaf backdrop:bg-mat/60">
         <p className="text-body">{question}</p>
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" autoFocus className={buttonClass("quiet", "m")} onClick={() => ref.current?.close()}>

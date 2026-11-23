@@ -42,7 +42,7 @@
 
 [data-ui="v2"] * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-rule-2) transparent;
+  scrollbar-color: var(--color-ink-3) var(--color-leaf);
 }
 
 /* State layer (02 §2.3): 8% of the content colour on hover, 14% pressed, over the component's own fill. */
