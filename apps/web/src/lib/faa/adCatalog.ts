@@ -7,7 +7,7 @@
 // Inc. Airplanes"). The abstract often names other manufacturers' products the
 // AD merely mentions, and the FR full-text search we backfill from matches the
 // whole rule body, so trusting either would file e.g. an Avidyne display AD
-// under Cessna. Models come from extractModels() over title + abstract.
+// under Cessna. Models normally come from extractModels() over title + abstract.
 //
 // Like extractModels itself, this is a reading aid: a listing is matched from
 // FAA prose, not an applicability determination.
@@ -160,6 +160,13 @@ export function isCorrection(ad: Pick<FaaAd, "title" | "abstract">): boolean {
     /;\s*correction\s*$/i.test(ad.title);
 }
 
+// Catalog-only corrections for source documents whose component identifiers
+// are parsed as models. Keep the rule and its equipment-specific abstract.
+const CESSNA_MODEL_CORRECTIONS = new Map<string, readonly string[]>([
+  ["98-24-14", ["340A", "414A"]], // FAA doc 98-32045: WYE-tube part numbers
+  ["98-23-02", ["180", "185", "180K"]], // FAA doc 98-29363: Airglas wheel-ski models
+]);
+
 /**
  * A Federal Register AD → an ad_catalog row, or null when it can't be listed
  * (no AD number, no recognized make, or no parsed model designation).
@@ -169,19 +176,20 @@ export function buildCatalogRow(ad: FaaAd): AdCatalogRow | null {
   const models = [
     ...new Set(extractModels(ad.title, ad.abstract).map(normalizeModel).filter((m) => m.length >= 2)),
   ];
-  if (models.length === 0) return null;
   const makes = detectMakes(ad.title, ad.abstract, models);
   // This table stores makes and models separately. A multi-make rule would
   // invent every cross-pair (for example Cessna B300), so omit it until the
   // catalog can store explicit make/model pairs.
   if (makes.length !== 1) return null;
+  const catalogModels = makes[0] === "cessna" ? CESSNA_MODEL_CORRECTIONS.get(ad.adNumber) ?? models : models;
+  if (catalogModels.length === 0) return null;
   return {
     ad_number: ad.adNumber,
     title: ad.title,
     abstract: ad.abstract,
     effective_date: ad.effectiveOn,
     makes,
-    models,
+    models: [...catalogModels],
     fr_html_url: ad.htmlUrl || null,
     pdf_url: ad.pdfUrl,
     citation: ad.citation,
