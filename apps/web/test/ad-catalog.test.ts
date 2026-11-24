@@ -85,6 +85,50 @@ test("buildCatalogRow: FR document → catalog row with makes and normalized mod
   assert.deepEqual(engine?.models, ["O320D2J", "IO360A1A"]);
 });
 
+test("Cessna catalog keys describe the airframes, not the fitted components", () => {
+  const cases = [
+    {
+      // https://www.govinfo.gov/content/pkg/FR-1998-12-02/pdf/98-32045.pdf
+      rule: ad({
+        adNumber: "98-24-14",
+        documentNumber: "98-32045",
+        title: "Airworthiness Directives; Cessna Aircraft Company Models 340A and 414A Airplanes",
+        abstract: "This AD concerns certain Cessna Models 340A and 414A airplanes equipped with an exhaust WYE tube, part number (P/N) 9910299-25 or P/N 9910299-26, in the engine exhaust system. This AD requires removing from service any P/N 9910299-25 or P/N 9910299-26 engine exhaust system WYE tube.",
+      }),
+      keys: ["340A", "414A"],
+    },
+    {
+      // https://www.govinfo.gov/content/pkg/FR-1998-11-04/html/98-29363.htm
+      rule: ad({
+        adNumber: "98-23-02",
+        documentNumber: "98-29363",
+        title: "Airworthiness Directives; Cessna Aircraft Company 180 and 185 Series Airplanes",
+        abstract: "Certain Cessna 180 and 185 series airplanes have Airglas Model LW3600-180 (single position) or Model LW3600-180A (two position) wheel skis installed. This AD adds Cessna Model 180K airplanes to the applicability section.",
+      }),
+      keys: ["180", "185", "180K"],
+    },
+  ];
+
+  for (const { rule, keys } of cases) {
+    const catalog = buildCatalogRow(rule);
+    assert.ok(catalog);
+    // Both rows must still be upsertable by their existing AD numbers.
+    assert.equal(catalog.ad_number, rule.adNumber);
+    assert.deepEqual(catalog.makes, ["cessna"]);
+    assert.deepEqual(catalog.models, keys);
+    assert.equal(catalog.abstract, rule.abstract); // still show the equipment conditions
+  }
+});
+
+test("catalog still lists standalone propeller models", () => {
+  const row = buildCatalogRow(ad({
+    title: "Airworthiness Directives; Hartzell Propeller Inc. Propellers",
+    abstract: "This AD concerns Hartzell Model HC-C2YK propellers.",
+  }));
+  assert.deepEqual(row?.makes, ["hartzell"]);
+  assert.deepEqual(row?.models, ["HCC2YK"]);
+});
+
 test("buildCatalogRow skips ADs it can't list", () => {
   assert.equal(buildCatalogRow(ad({ adNumber: null })), null);
   assert.equal(buildCatalogRow(ad({ title: "Airworthiness Directives; Various Airplanes", abstract: "Model 172N airplanes" })), null);
