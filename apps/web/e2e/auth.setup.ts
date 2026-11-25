@@ -33,7 +33,7 @@ setup("authenticate", async ({ page }) => {
       tokenDiagnostic = `Password-token transport failed: ${request.failure()?.errorText ?? "unknown network error"}.`;
   });
 
-  await page.goto("/login?next=%2Faccount%2Fsettings");
+  await page.goto("/login?next=%2Fprofile");
   // Default mode is magic-link; switch to password.
   await page
     .getByRole("button", { name: /^(?:Password|Use a password)$/ })
@@ -46,11 +46,13 @@ setup("authenticate", async ({ page }) => {
   // surfaces the real Supabase reason instead of a generic navigation timeout.
   const errorMsg = page.locator("#signin-error[role=alert]");
   await Promise.race([
-    page.waitForURL(/\/account\/settings(?:\?|$)/, { timeout: 45_000 }),
+    page.waitForURL(/\/(?:profile|account\/settings)(?:\?|$)/, {
+      timeout: 45_000,
+    }),
     errorMsg.waitFor({ state: "visible", timeout: 45_000 }),
   ]).catch(() => {});
 
-  if (!/\/account\/settings(?:\?|$)/.test(page.url())) {
+  if (!/\/(?:profile|account\/settings)(?:\?|$)/.test(page.url())) {
     // Missing inline errors must not introduce another locator timeout and hide
     // the useful request diagnostic when the network request is still pending.
     const reason = (await errorMsg.isVisible())
@@ -64,7 +66,7 @@ setup("authenticate", async ({ page }) => {
   }
 
   await expect(
-    page.getByRole("heading", { name: "Settings", exact: true }),
+    page.getByRole("heading", { name: /^(?:Your profile|Settings)$/ }),
   ).toBeVisible();
   fs.mkdirSync("e2e/.auth", { recursive: true });
   await page.context().storageState({ path: authFile });
