@@ -53,7 +53,7 @@ test("compression supports numbered cylinders, repeated identical transcription,
 });
 
 test("identity schema avoids nullable branches and drops empty unknown fields", () => {
-  for (const field of Object.values(PAGE_DETAILS_SCHEMA.identity_suggestions.items.properties.fields.properties)) assert.equal(field.type, "string");
-  const parsed = normalizePageDetails({ content_kinds: ["identity"], identity_suggestions: [{ subject: "aircraft", name: "Aircraft", fields: { make: "Mooney", model: "M20F", serial_number: "", part_number: "", tail_number: "N123AB" }, quote: "Mooney M20F N123AB", confidence: 0.9 }] });
+  assert.equal(PAGE_DETAILS_SCHEMA.identity_suggestions.items.properties.fields.type, "array");
+  const parsed = normalizePageDetails({ content_kinds: ["identity"], identity_suggestions: [{ subject: "aircraft", name: "Aircraft", fields: [{ field: "make", value: "Mooney" }, { field: "model", value: "M20F" }, { field: "serial_number", value: "" }, { field: "tail_number", value: "N123AB" }], quote: "Mooney M20F N123AB", confidence: 0.9 }] });
   assert.deepEqual(parsed.identity_suggestions[0].fields, { make: "Mooney", model: "M20F", tail_number: "N123AB" });
 });
