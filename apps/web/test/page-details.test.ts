@@ -1,3 +1,6 @@
+import { normalizeExtractedEntries } from "../src/lib/extraction/extract";
+import { ENTRY_FIELDS } from "../src/lib/extraction/schema";
+import { PAGE_DETAILS_SCHEMA } from "../src/lib/extraction/pageDetails";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { normalizePageDetails } from "../src/lib/extraction/normalizePageDetails";
@@ -49,4 +52,28 @@ test("compression supports numbered cylinders, repeated identical transcription,
   assert.equal(parseCompression("Compressions: #1:79/80 #2:75/80. Work performed: #1:79/80 #2:75/80").length, 2);
   assert.equal(parseCompression("Compressions: #1:79/80 #1:76/80").length, 0);
   assert.equal(parseCompression("Compression: #1:75, #2:76, #3:77, #4:78").length, 0);
+});
+
+test("identity schema avoids nullable branches and drops empty unknown fields", () => {
+  assert.equal(PAGE_DETAILS_SCHEMA.identity_suggestions.items.properties.fields.type, "array");
+  const parsed = normalizePageDetails({ content_kinds: ["identity"], identity_suggestions: [{ subject: "aircraft", name: "Aircraft", fields: [{ field: "make", value: "Mooney" }, { field: "model", value: "M20F" }, { field: "serial_number", value: "" }, { field: "tail_number", value: "N123AB" }], quote: "Mooney M20F N123AB", confidence: 0.9 }] });
+  assert.deepEqual(parsed.identity_suggestions[0].fields, { make: "Mooney", model: "M20F", tail_number: "N123AB" });
+});
+
+test("compact field scores normalize to the existing review contract in both extraction passes", () => {
+  const [entry] = normalizeExtractedEntries([{ confidence: 0.9, field_confidence: [{ field: "tach", confidence: 0.9 }, { field: "tach", confidence: 0.4 }, { field: "hobbs", confidence: 7 }, { field: "entry_date", confidence: "high" }, { field: "invented", confidence: 1 }] }]);
+  assert.deepEqual(Object.keys(entry.field_confidence), [...ENTRY_FIELDS]);
+  assert.equal(entry.field_confidence.tach, 0.4);
+  assert.equal(entry.field_confidence.hobbs, 1);
+  assert.equal(entry.field_confidence.entry_date, 0);
+  assert.equal(normalizeExtractedEntries([{ confidence: 1, field_confidence: { tach: 0.8 } }])[0].field_confidence.tach, 0.8);
+  assert.equal(normalizeExtractedEntries(null).length, 0);
+});
+
+test("compact field boxes retain review highlights and reject malformed coordinates", () => {
+  const [entry] = normalizeExtractedEntries([{ confidence: 1, field_boxes: [{ field: "tach", box: [0.1, 0.2, 0.3, 0.4] }, { field: "hobbs", box: [9, 0, 0, 0] }, { field: "entry_date", box: [0.1] }] }]);
+  assert.deepEqual(entry.field_boxes.tach, [0.1, 0.2, 0.3, 0.4]);
+  assert.deepEqual(entry.field_boxes.hobbs, [0, 0, 0, 0]);
+  assert.deepEqual(entry.field_boxes.entry_date, [0, 0, 0, 0]);
+  assert.deepEqual(normalizeExtractedEntries([{ confidence: 1, field_boxes: { tach: [0.1, 0.2, 0.3, 0.4] } }])[0].field_boxes.tach, entry.field_boxes.tach);
 });

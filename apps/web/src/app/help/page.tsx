@@ -172,7 +172,7 @@ const SECTIONS: Section[] = [
         <h3 id="owner-workspace" className="text-lg font-semibold">Prepare records, track engines and understand costs</h3>
         <p><strong>Document inbox:</strong> choose Upload documents from Add, or open Documents → Document inbox. Upload PDFs or images once, retain the original, then review the suggested destination. Reading suggestions uses your AI allowance. Logbook pages enter the existing review queue; an invoice becomes a private expense only after approval, and oil reports show dated samples for review. Uploads waiting for connectivity stay on the device or browser that holds the original. Duplicate files are not added twice; likely duplicate pages wait for your decision.</p>
         <p><strong>Engine history:</strong> open Aircraft → Engine history to select an engine and installation or overhaul period. Compression readings retain their original reference pressure. Unassigned historical observations stay visible for review; twins are not automatically combined. Add reviewed observations and lifecycle events with source links where available.</p>
-        <p><strong>Costs:</strong> the aircraft owner can record actual expenses and separate reserve estimates, import or export CSV, and link maintenance entries or supporting documents. Financial access is separate from maintenance viewing or editing. Currency totals stay separate. Cost per hour appears only for a period with reviewed boundary readings on the same meter and no replacement; the measured interval and source are disclosed.</p>
+        <p><strong>Costs:</strong> the aircraft owner can record actual expenses and separate reserve estimates, import or export CSV, and link maintenance entries or supporting documents. See the <L href="#expense-csv">expense CSV column guide and template</L>. Financial access is separate from maintenance viewing or editing. Currency totals stay separate. Cost per hour uses the widest valid interval between verified readings inside your selected dates, including confirmed logbook entries and manually recorded or reviewed meter readings. It uses only expenses within those actual dates, which are shown with the meter and hours used. Readings must increase on the same meter without a replacement or reset; ADS-B estimates are excluded. For example, selecting Jan 1–Dec 31 with verified readings on Jan 13 and Dec 8 uses Jan 13–Dec 8 for the rate, while the total spending still covers Jan 1–Dec 31.</p>
         <p><strong>Annual packet:</strong> open Maintenance → Annual prep → Prepare annual packet. Download a PDF summary, or explicitly select the scans and documents to include in an evidence ZIP. Unreviewed information and missing records remain marked. The packet reflects current records; it is not an airworthiness determination or a maintenance sign-off.</p>
         <p>
           <strong>Documents</strong>{" "}keeps your AROW paperwork to hand, airworthiness certificate,
@@ -263,6 +263,54 @@ const SECTIONS: Section[] = [
           Note: scanned logbook spreads sometimes contain two physical pages side by side, the
           extractor flags these so you can review both halves.
         </p>
+      </>
+    ),
+  },
+  {
+    id: "expense-csv",
+    title: "Import expenses from CSV",
+    body: (
+      <>
+        <p>
+          As the aircraft owner, open <strong>Aircraft → Costs → Import expenses from CSV</strong>.
+          <a href="/templates/expenses.csv" download="mytaillog-expenses-template.csv"> Download the expense CSV template</a>,
+          open it in your spreadsheet editor, and add one expense or reserve estimate per row.
+          Keep the header names and save as comma-separated CSV (UTF-8), then choose the file and import it.
+          The template has no sample expenses to delete. Imports support up to 500 rows and 2 MB.
+        </p>
+        <h4 className="text-lg font-semibold">Required columns</h4>
+        <dl>
+          <dt><code>date</code></dt>
+          <dd>The expense or reserve date, written as YYYY-MM-DD, for example 2026-11-25.</dd>
+          <dt><code>currency</code></dt>
+          <dd>An uppercase currency code: USD, CAD, EUR, GBP, AUD, NZD, CHF, JPY, CNY, HKD, SGD, INR, ZAR, SEK, NOK, DKK, AED, ILS, BRL, MXN, KWD, BHD or OMR. Currency totals stay separate; no conversion is applied.</dd>
+          <dt><code>amount_minor</code></dt>
+          <dd>A whole number in the currency’s smallest unit: USD 125.50 is 12550; JPY 125 is 125; KWD 1.250 is 1250. JPY uses no decimal places, KWD/BHD/OMR use three, and all other supported currencies use two. Do not include currency symbols, decimal points or thousands separators. Negative amounts record refunds; zero is not accepted.</dd>
+          <dt><code>category</code></dt>
+          <dd>What the expense is for. Use exactly one of: maintenance, fuel, oil, insurance, hangar, other.</dd>
+          <dt><code>cost_type</code></dt>
+          <dd>Use fixed for costs incurred regardless of flying, such as insurance or hangar rent; use variable for usage-related costs, such as fuel, oil or engine wear. Choose the classification appropriate to the expense: maintenance can be either.</dd>
+          <dt><code>basis</code></dt>
+          <dd>Use actual for actual spending, or reserve for a future cost allowance or estimate. The app totals these separately. A reserve amount is a total monetary amount, not an hourly rate that the importer multiplies by flight hours.</dd>
+        </dl>
+        <p>Use the category, cost_type and basis values exactly as shown, in lowercase. These are independent choices: an annual inspection can be maintenance/fixed/actual, while an engine overhaul allowance can be maintenance/variable/reserve.</p>
+        <h4 className="text-lg font-semibold">Optional columns</h4>
+        <dl>
+          <dt><code>vendor</code></dt><dd>The supplier or business paid (up to 200 characters).</dd>
+          <dt><code>payer</code></dt><dd>The person or organization that paid (up to 200 characters).</dd>
+          <dt><code>notes</code></dt><dd>A description or other context (up to 4,000 characters).</dd>
+          <dt><code>id</code></dt><dd>The expense’s MTL identifier (UUID). Omit for new expenses. Keep exported IDs when reimporting existing expenses. CSV import does not update an existing expense with different details; edit it in Costs instead.</dd>
+          <dt><code>document_id</code></dt><dd>The UUID of an existing supporting document on this aircraft, not a filename.</dd>
+          <dt><code>log_entry_id</code></dt><dd>The UUID of an existing logbook entry on this aircraft, not a page number.</dd>
+        </dl>
+        <p>The template includes vendor, payer and notes; leave them blank if unused. The identifier columns are optional advanced fields and can be added when needed. Export existing expenses to obtain their identifiers.</p>
+        <h4 className="text-lg font-semibold">Examples</h4>
+        <ul>
+          <li>A $185.75 fuel purchase: amount_minor 18575, category fuel, cost_type variable, basis actual.</li>
+          <li>$450 monthly hangar rent: amount_minor 45000, category hangar, cost_type fixed, basis actual.</li>
+          <li>A $300 engine overhaul allowance: amount_minor 30000, category maintenance, cost_type variable, basis reserve.</li>
+        </ul>
+        <p>For these examples, use currency USD and the appropriate date. If a vendor or note contains a comma, let your spreadsheet editor quote the field when saving. The entire file must validate before anything is imported. Retrying the exact same file does not duplicate expenses; changing a file without expense IDs can create new records, so retain exported IDs when reimporting. If an existing ID has different details, the import is rejected; edit that expense in Costs instead.</p>
       </>
     ),
   },
@@ -1136,7 +1184,7 @@ const GROUPS: { id: string; title: string; topics: string[] }[] = [
   { id: "g-logbooks", title: "Logbooks", topics: ["capture", "csv-import", "extract", "duplicates", "other", "timeline", "ask", "audit"] },
   { id: "g-status", title: "Status", topics: ["status", "maintenance", "projection"] },
   { id: "g-maintenance", title: "Maintenance", topics: ["squawks", "compliance", "oil-analysis"] },
-  { id: "g-aircraft", title: "Aircraft", topics: ["meters", "adsb", "myflightbook", "equipment", "wb"] },
+  { id: "g-aircraft", title: "Aircraft", topics: ["meters", "adsb", "myflightbook", "equipment", "wb", "expense-csv"] },
   { id: "g-documents", title: "Documents", topics: ["records-vault"] },
   { id: "g-share", title: "Share", topics: ["sharing", "export", "developer-api"] },
   { id: "g-account", title: "Account and settings", topics: ["profile", "ai-key", "notifications"] },

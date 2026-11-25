@@ -17,6 +17,7 @@ import { normalizePageDetails } from "./normalizePageDetails";
 import { generateAi } from "./ai";
 import {
   EXTRACTION_JSON_SCHEMA,
+  ENTRY_FIELDS,
   EXTRACTION_SYSTEM_PROMPT,
   type ExtractionResult,
   type ExtractedEntry,
@@ -26,6 +27,29 @@ export type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/
 
 function isEntry(e: unknown): e is ExtractedEntry {
   return typeof e === "object" && e !== null && "confidence" in e;
+}
+
+export function normalizeExtractedEntries(value: unknown): ExtractedEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isEntry).map(entry => {
+    const raw: unknown = entry.field_confidence;
+    const confidence = Object.fromEntries(ENTRY_FIELDS.map(field => {
+      const values: unknown[] = Array.isArray(raw)
+        ? raw.filter(score => score?.field === field).map(score => score.confidence)
+        : [raw && typeof raw === "object" ? (raw as Record<string, unknown>)[field] : undefined];
+      const valid = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+      return [field, valid.length ? Math.max(0, Math.min(1, ...valid)) : 0];
+    })) as ExtractedEntry["field_confidence"];
+    const rawBoxes: unknown = entry.field_boxes;
+    const boxes = Object.fromEntries(ENTRY_FIELDS.map(field => {
+      const values: unknown[] = Array.isArray(rawBoxes)
+        ? rawBoxes.filter(box => box?.field === field).map(box => box.box)
+        : [rawBoxes && typeof rawBoxes === "object" ? (rawBoxes as Record<string, unknown>)[field] : undefined];
+      const box = values.length === 1 ? values[0] : undefined;
+      return [field, Array.isArray(box) && box.length === 4 && box.every(n => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1) ? box : [0, 0, 0, 0]];
+    })) as ExtractedEntry["field_boxes"];
+    return { ...entry, field_confidence: confidence, field_boxes: boxes };
+  });
 }
 
 /**
@@ -75,7 +99,7 @@ export async function extractFromImage(
     ...normalizePageDetails(parsed),
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
     unread_rotated_content: parsed.unread_rotated_content === true,
-    entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
+    entries: normalizeExtractedEntries(parsed.entries),
   };
 }
 
@@ -118,7 +142,7 @@ export async function extractRotatedFromImage(
       ...normalizePageDetails(parsed),
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
       unread_rotated_content: parsed.unread_rotated_content === true,
-      entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
+      entries: normalizeExtractedEntries(parsed.entries),
     };
   } catch {
     return { detected_page_count: 1, raw_text: "", unread_rotated_content: true, entries: [] };

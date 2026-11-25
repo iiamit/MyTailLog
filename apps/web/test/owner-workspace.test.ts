@@ -1,4 +1,5 @@
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import {
   moneyMinor,
@@ -234,7 +235,7 @@ test("new workspace routes reach v2 and retain binder sections", () => {
 
 import { periodUsage } from "../src/lib/owner/usage";
 import type { HoursReading, MeterResetRow } from "../src/lib/database.types";
-test("cost denominator requires reviewed boundary readings and refuses resets, partial coverage and backwards meters", () => {
+test("cost denominator uses verified readings and refuses resets, insufficient coverage and backwards meters", () => {
   const rows = [
     {
       id: "a",
@@ -435,4 +436,44 @@ test("expense CSV rejects malformed quotes instead of changing a numeric amount"
   assert.throws(() =>
     parseCsv(header + '2026-01-01,USD,"123"4,fuel,variable,actual'),
   );
+});
+
+test("downloadable expense template has no sample records and accepts a completed row", () => {
+  const template = readFileSync(new URL("../public/templates/expenses.csv", import.meta.url), "utf8");
+  assert.deepEqual(parseCsv(template), []);
+  const [row] = parseCsv(template + "2026-11-25,USD,18575,fuel,variable,actual,Airport FBO,Owner,Fuel purchase\r\n");
+  const expense = expenseInput({ ...row, id, amount_minor: Number(row.amount_minor) });
+  assert.equal(expense.amount_minor, 18575);
+  assert.equal(expense.category, "fuel");
+  assert.equal(expense.cost_type, "variable");
+  assert.equal(expense.basis, "actual");
+});
+
+test("cost interval uses actual in-period dates and the widest verified meter coverage", () => {
+  const readings = [
+    { id: "tach-start", reading_date: "2026-01-13", tach: 4100, hobbs: null, source: "manual", hours_reviewed_at: null, created_at: "2026-01-13" },
+    { id: "tach-end", reading_date: "2026-12-08", tach: 4200, hobbs: null, source: "manual", hours_reviewed_at: null, created_at: "2026-12-08" },
+    { id: "hobbs-start", reading_date: "2026-03-01", hobbs: 100, tach: null, source: "manual", created_at: "2026-03-01" },
+    { id: "hobbs-end", reading_date: "2026-11-01", hobbs: 110, tach: null, source: "manual", created_at: "2026-11-01" },
+  ] as HoursReading[];
+  const result = periodUsage(readings, [], "2026-01-01", "2026-12-31");
+  assert.equal(result.hours, 100);
+  assert.equal(result.meter, "tach");
+  assert.equal(result.from, "2026-01-13");
+  assert.equal(result.to, "2026-12-08");
+  assert.deepEqual(result.readingIds, ["tach-start", "tach-end"]);
+  assert.equal(periodUsage(readings.slice(0, 2), [{ meter: "tach", reset_date: "2026-01-05" } as MeterResetRow], "2026-01-01", "2026-12-31").hours, 100);
+  assert.equal(periodUsage(readings.slice(0, 2), [{ meter: "tach", reset_date: "2026-06-01" } as MeterResetRow], "2026-01-01", "2026-12-31").hours, null);
+  assert.equal(periodUsage(readings.map(r => ({ ...r, reading_date: "2026-01-13" })), [], "2026-01-01", "2026-12-31").hours, null);
+});
+
+test("confirmed logbook readings count but superseded and unconfirmed entries do not", () => {
+  const entries = [
+    { id: "a", entry_date: "2026-01-13", tach: 4100, hobbs: null, owner_confirmed: true, authored_superseded_by: null, created_at: "2026-01-13" },
+    { id: "b", entry_date: "2026-12-08", tach: 4200, hobbs: null, owner_confirmed: true, authored_superseded_by: null, created_at: "2026-12-08" },
+    { id: "c", entry_date: "2026-07-01", tach: 100, hobbs: null, owner_confirmed: false, authored_superseded_by: null, created_at: "2026-07-01" },
+    { id: "d", entry_date: "2026-07-02", tach: 100, hobbs: null, owner_confirmed: true, authored_superseded_by: "a", created_at: "2026-07-02" },
+  ];
+  assert.equal(periodUsage([], [], "2026-01-01", "2026-12-31", entries).hours, 100);
+  assert.equal(periodUsage([], [], "2026-01-01", "2026-12-31", entries.slice(1)).hours, null);
 });

@@ -35,11 +35,11 @@ export async function GET(
       ownerRows(a.supabase, "hours_reading", id),
       ownerRows(a.supabase, "meter_reset", id),
     ]);
-    denominator = periodUsage(readings, resets, from, to);
     const [entryRows, docs] = await Promise.all([
       loadLogEntries(a.supabase, id),
       ownerRows(a.supabase, "document", id),
     ]);
+    denominator = periodUsage(readings, resets, from, to, entryRows);
     entries = entryRows
       .filter((e) => e.owner_confirmed && !e.authored_superseded_by)
       .sort((a, b) => (b.entry_date ?? "").localeCompare(a.entry_date ?? ""))
@@ -63,9 +63,12 @@ export async function GET(
         "Cache-Control": "private, no-store",
       },
     });
-  let totals;
+  let totals, rateTotals;
   try {
     totals = expenseTotals(data ?? []);
+    rateTotals = new Map(expenseTotals((data ?? []).filter(row =>
+      denominator.hours && denominator.from && denominator.to && row.date >= denominator.from && row.date <= denominator.to,
+    )).map(t => [t.currency, t.actual_minor]));
   } catch (e) {
     return ownerError(e, 413);
   }
@@ -74,8 +77,9 @@ export async function GET(
       expenses: data ?? [],
       totals: totals.map((t) => ({
         ...t,
+        rate_actual_minor: denominator.hours ? (rateTotals.get(t.currency) ?? 0) : null,
         actual_per_hour_minor: denominator.hours
-          ? Math.round(t.actual_minor / denominator.hours)
+          ? Math.round((rateTotals.get(t.currency) ?? 0) / denominator.hours)
           : null,
       })),
       canManage: true,

@@ -3,7 +3,7 @@ import { Leaves, Leaf } from "@/ui/Board";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { Expense } from "@/lib/owner/contracts";
 import { CURRENCIES, currencyDigits, moneyMinor } from "@/lib/owner/validation";
-import { Button } from "@/ui/Button";
+import { Button, buttonClass } from "@/ui/Button";
 import { fieldClass } from "@/ui/Form";
 type Costs = {
   expenses: Expense[];
@@ -14,6 +14,7 @@ type Costs = {
     actual_minor: number;
     reserve_minor: number;
     actual_per_hour_minor: number | null;
+    rate_actual_minor?: number | null;
   }[];
   denominator: { hours: number | null; source: string; coverage: string };
 };
@@ -193,8 +194,9 @@ export function CostsClient({ aircraftId }: { aircraftId: string }) {
               <p>Reserve estimates: {money(t.reserve_minor, t.currency)}</p>
               {t.actual_per_hour_minor != null && (
                 <p>
-                  Recorded spending per measured hour:{" "}
+                  Estimated cost per measured hour:{" "}
                   {money(t.actual_per_hour_minor, t.currency)}
+                  {t.rate_actual_minor != null && <> · {money(t.rate_actual_minor, t.currency)} spending in the measured interval</>}
                 </p>
               )}
             </div>
@@ -204,7 +206,7 @@ export function CostsClient({ aircraftId }: { aircraftId: string }) {
           {data?.denominator.hours
             ? `${data.denominator.hours} measured hours. `
             : "Cost per hour is not calculated: "}
-          {data?.denominator.source ?? "period usage has not been verified"}.
+          {data?.denominator.source ?? "Period usage has not been verified."}{" "}
           Meter-face differences across replacements are not a usage
           denominator.
         </p>
@@ -280,6 +282,15 @@ export function CostsClient({ aircraftId }: { aircraftId: string }) {
             log_entry_id. Use minor units (USD 125.50 = 12550; JPY 125 = 125;
             KWD 1.250 = 1250). Export a CSV above for the exact format.
           </p>
+          <p className="flex flex-wrap items-center gap-3 py-3">
+            <a href="/templates/expenses.csv" download="mytaillog-expenses-template.csv" className={buttonClass("quiet")}>
+              Download CSV template
+            </a>
+            <a href="/help#expense-csv" className="underline underline-offset-4">
+              Column guide and examples
+            </a>
+          </p>
+          <p>The template has headers only. Add one expense per row, keep the column names, then save as CSV and upload below.</p>
           <form
             onSubmit={importCsv}
             aria-label="Import expenses"

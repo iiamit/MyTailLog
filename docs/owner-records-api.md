@@ -71,7 +71,7 @@ The existing offline `oil.create` mutation also accepts optional `componentId`, 
 
 Only the aircraft owner can use `/api/aircraft/{id}/expenses`.
 
-`GET` accepts optional inclusive `from` and `to` ISO dates. It returns `expenses`, separate currency `totals`, source-entry/document choices, and a disclosed usage `denominator`. Actual spending and reserves are never combined. A measured hourly rate is returned only when both period-boundary readings are reviewed, use one meter, remain monotonic and do not cross a reset. ADS-B estimates are excluded. The source and measured interval must remain visible wherever the rate is displayed.
+`GET` accepts optional inclusive `from` and `to` ISO dates. It returns `expenses`, separate currency `totals`, source-entry/document choices, and a disclosed usage `denominator`. Actual spending and reserves are never combined. The hourly estimate uses the widest verified meter interval within the selected dates. Confirmed, non-superseded logbook entries and manual or explicitly reviewed meter readings can supply its endpoints. The readings must use one meter, remain monotonic and not cross a reset. Equal-duration intervals prefer Hobbs. `denominator.from`/`to` disclose the actual reading dates; `rate_actual_minor` and `actual_per_hour_minor` use only actual expenses within that interval. The main currency totals and exported rows still cover the full requested period. ADS-B estimates are excluded. The source and measured interval must remain visible wherever the rate is displayed.
 
 `POST` creates an expense using a stable UUID:
 
@@ -99,6 +99,14 @@ Supported currencies: USD, CAD, EUR, GBP, AUD, NZD, CHF, JPY, CNY, HKD, SGD, INR
 `PATCH /expenses/{expense}` accepts the full fields plus `base`. `DELETE /expenses/{expense}?base=...` deletes an expense. A stale base returns 409, preserving the newer record.
 
 `GET /expenses?format=csv` exports the selected period. `POST /expenses/import` accepts `{ csv }`, up to 500 rows and 2 MB. Required CSV columns are `date,currency,amount_minor,category,cost_type,basis`; optional columns match the fields above. An import validates and commits as one transaction. Exact-file retries do not duplicate rows; exported IDs preserve identity on round trips.
+
+### Expense CSV guide and template
+
+The public [expense import guide](https://mytaillog.com/help#expense-csv) explains every required and optional column, accepted values, currency units, examples and retry behavior. Download the [header-only CSV template](https://mytaillog.com/templates/expenses.csv), add one expense per row, and save as UTF-8 comma-separated CSV. The Costs import panel links to both.
+
+- `category` describes the purchase: `maintenance`, `fuel`, `oil`, `insurance`, `hangar`, `other`.
+- `cost_type` is `fixed` (incurred regardless of flying) or `variable` (usage-related).
+- `basis` is `actual` (spending) or `reserve` (future allowance/estimate). Reserve amounts are total amounts, not automatically multiplied hourly rates.
 
 ## Annual packet and backups
 

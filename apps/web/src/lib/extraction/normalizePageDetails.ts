@@ -11,9 +11,12 @@ export function normalizePageDetails(input: unknown): { content_kinds: ContentKi
   for (const raw of Array.isArray(src.identity_suggestions) ? src.identity_suggestions.slice(0, 30) : []) {
     if (!raw || typeof raw !== "object" || !["aircraft", "engine", "prop", "avionics", "equipment"].includes(raw.subject)) continue;
     const fields: DetailFields = {};
+    const supplied = Array.isArray(raw.fields)
+      ? Object.fromEntries(raw.fields.filter((f: unknown) => f && typeof f === "object" && typeof (f as Record<string, unknown>).field === "string").map((f: { field: string; value: unknown }) => [f.field, f.value]))
+      : raw.fields;
     for (const k of DETAIL_FIELDS) {
       if (raw.subject === "aircraft" ? k === "part_number" : k === "tail_number") continue;
-      if (typeof raw.fields?.[k] === "string" && raw.fields[k].trim()) fields[k] = raw.fields[k].trim().slice(0, 200);
+      if (typeof supplied?.[k] === "string" && supplied[k].trim()) fields[k] = supplied[k].trim().slice(0, 200);
     }
     if (!Object.keys(fields).length || typeof raw.quote !== "string" || !raw.quote.trim()) continue;
     const name = typeof raw.name === "string" ? raw.name.trim().slice(0, 200) : raw.subject;
