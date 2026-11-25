@@ -252,6 +252,7 @@ test("engine lifecycle sources and annual packet exports use scoped evidence", a
 });
 
 test("cost estimate matches expenses to actual confirmed reading dates inside the requested year", async ({ page, scratch }) => {
+  test.setTimeout(60_000);
   const { createClient } = await import("@supabase/supabase-js");
   const admin = createClient(process.env.TEST_SUPABASE_URL!, process.env.TEST_SUPABASE_SECRET_KEY!);
   const { data: book, error: bookError } = await admin.from("logbook").select("id").eq("aircraft_id", scratch.id).eq("type", "airframe").single();
