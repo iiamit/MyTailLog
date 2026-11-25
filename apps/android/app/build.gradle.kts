@@ -51,7 +51,7 @@ android {
         applicationId = "com.mytaillog.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 104 // 103 was an unpublished internal-testing draft.
+        versionCode = 105
         versionName = "2.0.0"
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", quoted(googleWebClientId.getOrElse("")))
         listOf("AppId" to "FIREBASE_APP_ID", "ApiKey" to "FIREBASE_API_KEY", "ProjectId" to "FIREBASE_PROJECT_ID", "SenderId" to "FIREBASE_SENDER_ID").forEach { (k, field) ->
@@ -95,6 +95,7 @@ android {
     }
 
     testOptions { unitTests.isIncludeAndroidResources = true }
+    sourceSets.getByName("debug").assets.srcDir("src/test/resources/owner-workspace")
 }
 
 tasks.matching { it.name == "preReleaseBuild" }.configureEach {
@@ -152,4 +153,5 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+    debugImplementation(libs.ktor.client.mock)
 }

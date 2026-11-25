@@ -1,6 +1,5 @@
 package com.mytaillog.app
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,8 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -73,7 +70,6 @@ fun AircraftTab(recs: Recs, status: StatusHost?, onDocuments: () -> Unit, onSett
     val asOf = recs.snapshot?.meters?.get("tach")?.asOf
     val components = recs.watch { recs.store.records("component", recs.id) }
     val wb = recs.watch { recs.store.records("weight_balance", recs.id).sortedByDescending { it.s("revision_date") } }
-    val oil = recs.watch { recs.store.records("oil_addition", recs.id) }
     val samples = recs.watch { recs.store.records("oil_analysis_sample", recs.id).sortedByDescending { it.s("sample_date") } }
     val docs = recs.watch { recs.store.records("document", recs.id) }
     val plane = recs.watch { recs.store.mirror.raw("aircraft", recs.id) }
@@ -106,12 +102,15 @@ fun AircraftTab(recs: Recs, status: StatusHost?, onDocuments: () -> Unit, onSett
         )
         // Oil and engine
         GroupHeader(stringResource(R.string.ac_oil))
-        val perQuart = hoursPerQuart(oil.mapNotNull { o -> o.d("tach")?.let { it to (o.d("quarts") ?: 0.0) } })
         RecRow(
-            listOfNotNull(perQuart?.let { "Burns about 1 qt in ${fmt1(it)} h" }, samples.firstOrNull()?.let { s -> "last sample ${s.s("sample_date")?.let(::dayDate)}${s.s("status")?.let { ", $it" } ?: ""}" })
+            listOfNotNull(samples.firstOrNull()?.let { s -> "last sample ${s.s("sample_date")?.let(::dayDate)}${s.s("status")?.let { ", $it" } ?: ""}" })
                 .joinToString(" · ").ifEmpty { stringResource(R.string.ac_oil_none) },
             onClick = { nav.open(Routes.OIL) }, trailing = { Chevron() },
         )
+        RecRow("Engine history", listOf("Compression, oil reports and component lifecycle"), onClick = { nav.open(Routes.ENGINE_HISTORY) }, trailing = { Chevron() })
+        if (recs.isOwner) RecRow("Ownership costs", listOf("Recorded spending and reserve estimates"), onClick = { nav.open(Routes.EXPENSES) }, trailing = { Chevron() })
+        RecRow("Document inbox", listOf("Upload, classify and review originals"), onClick = { nav.open(Routes.DOCUMENT_INBOX) }, trailing = { Chevron() })
+        RecRow("Prepare annual packet", listOf("Dated summary and selected evidence"), onClick = { nav.open(Routes.ANNUAL_PACKET) }, trailing = { Chevron() })
         // Documents
         GroupHeader(stringResource(R.string.section_docs))
         val missing = CARRY_ABOARD.filter { t -> docs.none { it.s("type") == t } }
@@ -472,23 +471,13 @@ private val ELEMENTS = listOf("Fe", "Cu", "Al", "Cr", "Ni", "Pb", "Si")
 @Composable
 fun OilScreen(recs: Recs) {
     val nav = LocalRecNav.current
-    val c = MyTailLogTheme.colors
     val adds = recs.watch { recs.store.records("oil_addition", recs.id).sortedByDescending { it.s("added_date") } }
     val samples = recs.watch { recs.store.records("oil_analysis_sample", recs.id).sortedByDescending { it.s("sample_date") } }
     var deleting by remember { mutableStateOf<Rec?>(null) }
     var adding by remember { mutableStateOf(false) }
     Board(stringResource(R.string.ac_oil), Section.Aircraft, back = stringResource(R.string.section_aircraft) to nav.back, toast = recs.toast, onToastDone = { recs.toast = null }) {
-        val pts = adds.mapNotNull { o -> o.d("tach")?.let { it to (o.d("quarts") ?: 0.0) } }
-        val perQuart = hoursPerQuart(pts)
-        GroupHeader(stringResource(R.string.ac_how_much))
-        if (perQuart != null) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(fmt1(perQuart), color = c.ink, style = MaterialTheme.typography.headlineMedium.merge(tabular).copy(fontSize = 28.sp, fontWeight = FontWeight(700)))
-                Lede("  ${stringResource(R.string.ac_hours_per_quart)}")
-            }
-            val bars = burnIntervals(pts)
-            if (bars.size >= 2) BurnChart(bars)
-        } else Note(stringResource(R.string.ac_oil_need_two), Modifier.padding(vertical = Tokens.Space.s2))
+        Note("Consumption and compression trends are grouped by engine and lifecycle period in Engine history.")
+        DButton("Open engine history", { nav.open(Routes.ENGINE_HISTORY) }, kind = ButtonKind.Secondary)
         if (recs.canEdit) DButton(stringResource(R.string.add_oil), { adding = true }, kind = ButtonKind.Secondary, icon = LucideIcons.Droplet, modifier = Modifier.padding(top = Tokens.Space.s2))
         GroupHeader(stringResource(R.string.ac_oil_added), count = adds.size.toString())
         adds.forEach { o ->
@@ -496,6 +485,7 @@ fun OilScreen(recs: Recs) {
                 menu = if (recs.canEdit) listOf(stringResource(R.string.rec_delete) to { deleting = o }) else emptyList())
         }
         GroupHeader(stringResource(R.string.ac_lab))
+        if (recs.canEdit) DButton("Import oil report", { nav.open(Routes.DOCUMENT_INBOX) }, kind = ButtonKind.Secondary)
         if (samples.isEmpty()) Note(stringResource(R.string.ac_no_samples), Modifier.padding(vertical = Tokens.Space.s2))
         else LabTable(samples.take(4))
     }
@@ -505,30 +495,6 @@ fun OilScreen(recs: Recs) {
         }, { deleting = null })
     }
     if (adding) AddOilSheet(recs) { adding = false }
-}
-
-/** Hours per quart over the last intervals: ink bars on the leaf, labelled ends (05 §21; dataviz: one series, no legend). */
-@Composable
-private fun BurnChart(bars: List<Double>) {
-    val c = MyTailLogTheme.colors
-    val max = bars.maxOrNull()?.takeIf { it > 0 } ?: 1.0
-    Column(Modifier.padding(vertical = Tokens.Space.s2).semantics(mergeDescendants = true) {
-        contentDescription = "Hours per quart over the last ${bars.size} top-offs, from ${fmt1(bars.first())} to ${fmt1(bars.last())}"
-    }) {
-        Row {
-            Note(fmt1(max), Modifier.width(36.dp))
-            Canvas(Modifier.weight(1f).height(96.dp)) {
-                val gap = 4.dp.toPx()
-                val w = (size.width - gap * (bars.size - 1)) / bars.size
-                bars.forEachIndexed { i, v ->
-                    val h = (v / max * size.height).toFloat().coerceAtLeast(1f)
-                    drawRect(c.ink, Offset(i * (w + gap), size.height - h), Size(w, h))
-                }
-                drawLine(c.rule2, Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
-            }
-        }
-        Row(Modifier.fillMaxWidth().padding(start = 36.dp)) { Note(stringResource(R.string.ac_older), Modifier.weight(1f)); Note(stringResource(R.string.ac_latest)) }
-    }
 }
 
 @Composable
@@ -553,7 +519,9 @@ private fun LabTable(samples: List<Rec>) {
 
 /** M-FLIGHT-05 Add oil: quarts, date, an optional tach, notes. Saves without creating a reading. */
 @Composable
-fun AddOilSheet(recs: Recs, onDone: () -> Unit) {
+fun AddOilSheet(recs: Recs, initialComponentId: String? = null, onDone: () -> Unit) {
+    val engines = recs.watch { recs.store.records("component", recs.id).filter { it.s("category") == "engine" } }
+    var componentId by rememberSaveable { mutableStateOf(initialComponentId ?: engines.filter { it.b("is_installed") }.singleOrNull()?.id) }
     var q by rememberSaveable { mutableStateOf(1) }
     var other by rememberSaveable { mutableStateOf("") }
     var date by rememberSaveable { mutableStateOf<String?>(LocalDate.now().toString()) }
@@ -562,6 +530,7 @@ fun AddOilSheet(recs: Recs, onDone: () -> Unit) {
     var notes by rememberSaveable { mutableStateOf("") }
     val quarts = when (q) { 0 -> 0.5; 1 -> 1.0; 2 -> 2.0; else -> num(other) }
     Sheet(stringResource(R.string.add_oil), onDone) {
+        if (engines.isNotEmpty()) Choice("Engine", listOf("" to "Unassigned") + engines.map { it.id to (it.s("name") ?: it.id) }, componentId ?: "") { componentId = it.ifEmpty { null } }
         Note(stringResource(R.string.ac_quarts))
         Segmented(listOf("½", "1", "2", stringResource(R.string.ac_other)), q) { q = it }
         if (q == 3) Field(stringResource(R.string.ac_quarts), other, { other = it }, number = true, placeholder = "0.5")
@@ -571,7 +540,7 @@ fun AddOilSheet(recs: Recs, onDone: () -> Unit) {
         Field(stringResource(R.string.maint_notes), notes, { notes = it }, placeholder = "Phillips XC 20W-50")
         DButton(stringResource(R.string.add_oil), {
             val id = newId()
-            recs.change("oil.create", "oil_addition", id, "Oil, ${fmtNum(quarts)} qt", json("id" to id, "date" to date, "quarts" to quarts, "tach" to (if (withTach) num(tach) else null), "notes" to notes.trim().ifEmpty { null }))
+            recs.change("oil.create", "oil_addition", id, "Oil, ${fmtNum(quarts)} qt", json("id" to id, "date" to date, "quarts" to quarts, "componentId" to componentId, "tach" to (if (withTach) num(tach) else null), "notes" to notes.trim().ifEmpty { null }))
             recs.toast = Toast("${fmtNum(quarts)} qt added. " + if (recs.online) recs.str(R.string.rec_saved) else recs.str(R.string.rec_saved_on_phone))
             onDone()
         }, enabled = quarts != null && quarts > 0 && date != null, icon = LucideIcons.Droplet)

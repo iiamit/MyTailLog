@@ -1,0 +1,21 @@
+{
+  "items": [
+    {
+      "id": "invoice",
+      "file_name": "Annual invoice.pdf",
+      "mime_type": "application/pdf",
+      "kind": "invoice",
+      "state": "review",
+      "updated_at": "base",
+      "proposal": {
+        "date": "2026-10-01",
+        "amount_minor": 12345,
+        "currency": "USD",
+        "category": "maintenance",
+        "vendor": "Maintenance shop"
+      }
+    }
+  ],
+  "canEdit": true,
+  "logbooks": []
+}

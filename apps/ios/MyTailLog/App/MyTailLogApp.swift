@@ -17,7 +17,9 @@ struct MyTailLogApp: App {
             // Light and dark follow the system (14-decisions C8); the Settings override arrives with Settings.
             Group {
                 #if DEBUG
-                if let mode = ProcessInfo.processInfo.environment["MTL_UI_TEST_ADD"] {
+                if let mode = ProcessInfo.processInfo.environment["MTL_UI_TEST_OWNER"] {
+                    OwnerWorkspaceUITestScreen(mode: mode)
+                } else if let mode = ProcessInfo.processInfo.environment["MTL_UI_TEST_ADD"] {
                     AddUITestScreen(viewer: mode == "viewer")
                 } else {
                     RootView(statusAPI: statusAPI)

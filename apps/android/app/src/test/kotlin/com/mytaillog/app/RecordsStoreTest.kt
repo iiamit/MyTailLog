@@ -50,6 +50,11 @@ class RecordsStoreTest {
     }
 
     private val files = object : RecordUploads {
+        override suspend fun inbox(aircraftId: String, meta: JsonObject, bytes: ByteArray): JsonObject {
+            if (offline) throw IOException("offline")
+            log += "inbox ${meta.s("id")}"
+            return meta
+        }
         override suspend fun squawkPhoto(aircraftId: String, squawkId: String, photoId: String, jpeg: ByteArray) {
             if (offline) throw IOException("offline")
             log += "photo $photoId of $squawkId"
@@ -120,6 +125,27 @@ class RecordsStoreTest {
         assertTrue(heldDocs(store, aircraft).isEmpty())
         assertEquals("registration", store.records("document", aircraft).single().s("type"))
         assertTrue(File(store.dir, "docs/d1.pdf").exists())
+    }
+
+    @Test
+    fun inboxOriginalSurvivesRestartAndRetriesWithTheSameIdentity() = runTest {
+        var store = open()
+        offline = true
+        val local = File(store.dir, "outbox/inbox/original")
+        store.addFile(OfflineStore.INBOX, aircraft, local, byteArrayOf(1, 2, 3), json("id" to "stable-upload", "fileName" to "annual.pdf", "mimeType" to "application/pdf"))
+        assertEquals(1, store.sync.value.pages)
+        assertTrue(store.syncNow())
+        store.close()
+        store = open()
+        assertEquals(1, store.recordFiles().size)
+        assertTrue(local.exists())
+        offline = false
+        assertFalse(store.syncNow())
+        assertEquals(listOf("inbox stable-upload"), log)
+        assertTrue(store.recordFiles().isEmpty())
+        assertFalse(local.exists())
+        assertEquals(0, store.sync.value.pages)
+        store.close()
     }
 
     @Test

@@ -3,6 +3,7 @@ import type { Database, Preferences } from "@/lib/database.types";
 import { todayIn, type MapInput } from "@/lib/mapModel";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { DUE_AIRCRAFT_COLUMNS, DUE_TABLE_COLUMNS } from "./columns";
 import { computeStatus } from "@/lib/due/engine";
 
 export type LoadedDueInput = {
@@ -20,7 +21,7 @@ export type LoadedDueInput = {
  */
 export async function loadDueInput(supabase: SupabaseClient<Database>, id: string, userId: string): Promise<LoadedDueInput | null> {
   const { data: aircraft } = await supabase.from("aircraft")
-    .select("id, tail_number, enrollment_date, enrollment_tach, enrollment_hobbs, enrollment_airframe, expected_hours_per_week, situation_override, year, home_base")
+    .select(DUE_AIRCRAFT_COLUMNS)
     .eq("id", id).maybeSingle();
   if (!aircraft) return null;
 
@@ -41,23 +42,23 @@ export async function loadDueInput(supabase: SupabaseClient<Database>, id: strin
     maintenance_item, ad_compliance, document, item_completion, log_entry, logbook, page, hours_reading,
     meter_reset, planned_visit, planned_visit_item, service_provider, visit_suggestion_dismissal, record_room, squawk, logbook_gap, profile, seq,
   ] = await Promise.all([
-    all("maintenance_item", "id, updated_at, kind, label, regulatory, interval_months, interval_hours, last_done_date, last_done_hours, next_due_date, next_due_hours, meter, line, provider_id, ifr_only, expires_on, shop_kind, visit_window_days, visit_window_hours"),
-    all("ad_compliance", "id, kind, reference, recurring, status, interval_months, interval_hours, complied_date, complied_hours, next_due_date, next_due_hours, reference_entry_id, provider_id"),
-    all("document", "id, type, title, expires_on, renews_every_months, track_expiry, remind_lead_days"),
-    all("item_completion", "id, maintenance_item_id, ad_compliance_id, log_entry_id, done_date, done_hours"),
-    all("log_entry", "id, logbook_id, page_id, entry_date, tach, hobbs, airframe, trust, replaced_by_entry_id, signature_name, is_continuation, mechanic_cert_number, entry_kind, description, work_performed"),
-    all("logbook", "id, type, component_ref, title"),
-    all("page", "id, logbook_id, page_sequence, extraction_status, landing_date"),
-    all("hours_reading", "id, updated_at, reading_date, tach, hobbs, airframe, source"),
-    all("meter_reset", "meter, reset_date, prior_value, new_value, id"),
-    all("planned_visit", "id, updated_at, status, week_of, visit_date, provider_id, airport, from_suggestion_key"),
-    all("planned_visit_item", "visit_id, item_key, done_completion_id, id"),
-    all("service_provider", "id, name, kind, airport, is_default"),
-    all("visit_suggestion_dismissal", "suggestion_key, id"),
+    all("maintenance_item", DUE_TABLE_COLUMNS.maintenance_item),
+    all("ad_compliance", DUE_TABLE_COLUMNS.ad_compliance),
+    all("document", DUE_TABLE_COLUMNS.document),
+    all("item_completion", DUE_TABLE_COLUMNS.item_completion),
+    all("log_entry", DUE_TABLE_COLUMNS.log_entry),
+    all("logbook", DUE_TABLE_COLUMNS.logbook),
+    all("page", DUE_TABLE_COLUMNS.page),
+    all("hours_reading", DUE_TABLE_COLUMNS.hours_reading),
+    all("meter_reset", DUE_TABLE_COLUMNS.meter_reset),
+    all("planned_visit", DUE_TABLE_COLUMNS.planned_visit),
+    all("planned_visit_item", DUE_TABLE_COLUMNS.planned_visit_item),
+    all("service_provider", DUE_TABLE_COLUMNS.service_provider),
+    all("visit_suggestion_dismissal", DUE_TABLE_COLUMNS.visit_suggestion_dismissal),
     // Viewers cannot read record rooms (RLS); for them a buyer room does not set the situation.
-    all("record_room", "audience, expires_at, revoked_at, id").catch(() => []),
-    all("squawk", "id, description, severity, status, reported_at, resolved_at, resolved_log_entry_id"),
-    all("logbook_gap", "id, updated_at, logbook_id, from_date, to_date, status, source, note"),
+    all("record_room", DUE_TABLE_COLUMNS.record_room).catch(() => []),
+    all("squawk", DUE_TABLE_COLUMNS.squawk),
+    all("logbook_gap", DUE_TABLE_COLUMNS.logbook_gap),
     supabase.from("profile").select("time_zone, preferences").eq("id", userId).maybeSingle(),
     supabase.from("change_log").select("seq").eq("aircraft_id", id).order("seq", { ascending: false }).limit(1).maybeSingle(),
   ]);

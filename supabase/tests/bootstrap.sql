@@ -54,3 +54,6 @@ create table storage.objects (
   created_at timestamptz default now()
 );
 alter table storage.objects enable row level security;
+
+-- Storage API roles receive table privileges; RLS still controls object access.
+grant all on storage.objects, storage.buckets to anon, authenticated, service_role;

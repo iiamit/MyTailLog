@@ -51,7 +51,7 @@ export default async function AnnualPrepPage({
   const due = await dueSnapshot(id, auth.user.id).catch(() => undefined);
   const openSquawks = due?.loaded.input.squawk?.filter((q) => q.status === "open").length ?? null;
   const head = (actions?: React.ReactNode) => (
-    <BoardHead title="Maintenance" subTabs={maintTabs(id, "annual", { squawks: openSquawks })} actions={actions} />
+    <BoardHead title="Maintenance" subTabs={maintTabs(id, "annual", { squawks: openSquawks })} actions={<><Link className={buttonClass("on-board", "s")} href={`${a}/maintenance/annual/packet`}>Prepare annual packet</Link>{actions}</>} />
   );
   if (!due) {
     if (due === null) notFound();

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { dueSnapshot } from "@/lib/due/load";
+import { loadFleetStatus, type FleetStatus } from "@/lib/due/fleet";
 import { Board, BoardHead } from "@/ui/Board";
 import { Button, buttonClass } from "@/ui/Button";
 import { StatusMark } from "@/ui/Marks";
@@ -36,35 +36,32 @@ export default async function HangarPage() {
   const { supabase, user, profile, fleet } = await loadHangarUser("/hangar");
   const email = user.email?.toLowerCase() ?? "";
 
-  const [{ data: shares }, { data: entries }, { data: me }] = await Promise.all([
+  const [{ data: shares }, statuses, { data: me }] = await Promise.all([
     email ? supabase.from("aircraft_share").select("aircraft_id, role").ilike("invited_email", email) : Promise.resolve({ data: [] }),
-    supabase.from("log_entry").select("aircraft_id, page_id, owner_confirmed"),
+    loadFleetStatus(supabase, fleet.map((a) => a.id), user.id).catch(() => new Map<string, FleetStatus>()),
     supabase.from("profile").select("heard_about, created_at").eq("id", user.id).maybeSingle(),
   ]);
   const roleOf = new Map((shares ?? []).map((s) => [s.aircraft_id, s.role]));
   // eslint-disable-next-line react-hooks/purity -- server component: one timestamp for this request
   const askHeard = !!me && me.heard_about == null && Date.parse(me.created_at) > Date.now() - 14 * 86_400_000;
 
-  const cards: Card[] = await Promise.all(
-    fleet.map(async (a) => {
-      const role: Card["role"] = a.owner_id === user.id ? "owner" : roleOf.get(a.id) === "editor" ? "editor" : "viewer";
-      const mine = (entries ?? []).filter((e) => e.aircraft_id === a.id);
-      const due = await dueSnapshot(a.id, user.id).catch(() => null);
-      const type = [a.year, a.make, a.model].filter(Boolean).join(" ");
-      return {
-        id: a.id,
-        tail: a.tail_number,
-        role,
-        demo: Boolean(a.is_demo),
-        typeLine: `${type || "Details not set"} · ${ROLE_LINE[role]}`,
-        verdict: due?.snap.verdict.text ?? null,
-        overdue: due?.snap.counts.overdue ?? null,
-        dueSoon: due?.snap.counts.dueSoon ?? null,
-        waiting: new Set(mine.filter((e) => !e.owner_confirmed && e.page_id).map((e) => e.page_id)).size,
-        confirmed: mine.filter((e) => e.owner_confirmed).length,
-      };
-    }),
-  );
+  const cards: Card[] = fleet.map((a) => {
+    const role: Card["role"] = a.owner_id === user.id ? "owner" : roleOf.get(a.id) === "editor" ? "editor" : "viewer";
+    const due = statuses.get(a.id);
+    const type = [a.year, a.make, a.model].filter(Boolean).join(" ");
+    return {
+      id: a.id,
+      tail: a.tail_number,
+      role,
+      demo: Boolean(a.is_demo),
+      typeLine: `${type || "Details not set"} · ${ROLE_LINE[role]}`,
+      verdict: due?.snap.verdict.text ?? null,
+      overdue: due?.snap.counts.overdue ?? null,
+      dueSoon: due?.snap.counts.dueSoon ?? null,
+      waiting: due?.waiting ?? 0,
+      confirmed: due?.confirmed ?? 0,
+    };
+  });
   const rank = (c: Card) => (c.demo ? 2 : c.role === "owner" ? 0 : 1);
   cards.sort((x, y) => rank(x) - rank(y) || x.tail.localeCompare(y.tail));
   const shelf = cards.filter((c) => !c.demo);

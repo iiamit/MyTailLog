@@ -112,7 +112,7 @@ final class OfflineStore {
     /// Page files not yet on the server (thumbnails ride along with their page).
     var heldPages: [FileJob] { files.filter { $0.kind == "page" && $0.status != "registered" } }
     /// Documents not yet on the server: their upload is their create, so no outbox change stands for them.
-    var heldDocuments: [FileJob] { files.filter { $0.kind == Self.document } }
+    var heldDocuments: [FileJob] { files.filter { $0.kind == Self.document || $0.kind == Self.inboxDocument } }
 
     func reload() {
         guard !closed else { return }
@@ -214,6 +214,7 @@ final class OfflineStore {
         switch job.kind {
         case Self.squawkPhoto: squawkPhotoURL(job.localPath)
         case Self.document: dir.appending(path: "Outbox/docs/\(job.localPath)")
+        case Self.inboxDocument: dir.appending(path: "Outbox/inbox/\(job.localPath)")
         default: pagesDir.appending(path: job.localPath)
         }
     }
@@ -223,6 +224,7 @@ final class OfflineStore {
 
     static let squawkPhoto = "squawk_photo"
     static let document = "document"
+    static let inboxDocument = "inbox_document"
 
     /// A squawk photo kept on this phone; it stays after upload so the squawk shows it offline.
     func squawkPhotoURL(_ name: String) -> URL { dir.appending(path: "squawk_photos/\(name)") }
@@ -235,7 +237,7 @@ final class OfflineStore {
     }
 
     /// Held squawk photos and documents still to upload.
-    var recordFiles: [FileJob] { files.filter { $0.kind == Self.squawkPhoto || $0.kind == Self.document } }
+    var recordFiles: [FileJob] { files.filter { $0.kind == Self.squawkPhoto || $0.kind == Self.document || $0.kind == Self.inboxDocument } }
 
     /// Keeps `bytes` at `url` and records its upload job. Returns the job id.
     @discardableResult

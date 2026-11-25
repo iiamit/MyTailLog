@@ -60,6 +60,7 @@ jobs:
           "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-sync-receipts.py
           "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-review-versions.py
           "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-audit-compliance.py
+          "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-owner-workspace.py
 
   android:
     runs-on: ubuntu-latest

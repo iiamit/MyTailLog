@@ -68,7 +68,7 @@ test("sync/pull: an insert arrives as an upsert with its row, a delete as an exp
     auth: { persistSession: false },
   });
 
-  // Start from the tip so the window holds only what this test does.
+  // Start from the tip; other parallel tests can still write to this account.
   const tip = await drainToTip(request);
 
   const { data: logbooks } = await admin.from("logbook").select("id").eq("aircraft_id", scratch.id).limit(1);
@@ -92,12 +92,16 @@ test("sync/pull: an insert arrives as an upsert with its row, a delete as an exp
   expect((upsert as Extract<Change, { op: "upsert" }>).row.page_sequence).toBe(7);
   expect(afterInsert.nextCursor, "cursor advances past the tip").toBeGreaterThan(tip);
 
-  // --- 2. the cursor CONVERGES: re-pulling from the tip yields nothing ------
+  // --- 2. the cursor CONVERGES: consumed changes are never replayed --------
   const drained = await drainToTip(request, afterInsert.nextCursor);
   const idle = (await (await request.get(`/api/sync/pull?cursor=${drained}`)).json()) as Pull;
-  expect(idle.changes, "a caught-up device pulls an empty window").toEqual([]);
-  expect(idle.hasMore).toBe(false);
-  expect(idle.nextCursor, "an empty window echoes the cursor").toBe(drained);
+  expect(idle.changes.filter((c) => c.table === "page" && c.id === pageId),
+    "a caught-up device must not replay the page").toEqual([]);
+  expect(idle.changes.every((c) => c.seq > drained), "only newer changes may arrive").toBe(true);
+  expect(idle.nextCursor).toBeGreaterThanOrEqual(drained);
+  // Other workers may append changes after draining; only an empty response
+  // must echo the cursor (also covered deterministically in sync-v2.test.ts).
+  if (idle.changes.length === 0 && !idle.hasMore) expect(idle.nextCursor).toBe(drained);
 
   // --- 3. a hard delete propagates as an explicit delete op ----------------
   await admin.from("page").delete().eq("id", pageId);

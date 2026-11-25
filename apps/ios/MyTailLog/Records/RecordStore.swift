@@ -64,7 +64,7 @@ func patchOf(_ type: String, _ p: Row) -> Row? {
     case "squawk.reopen": return ["status": .string("open"), "resolved_at": .null, "resolved_log_entry_id": .null]
     case "squawk.update": return obj([("description", p["description"]), ("severity", p["severity"])])
     case "squawkPhoto.create": return obj([("squawk_id", p["squawkId"]), ("taken_at", p["takenAt"])])
-    case "oil.create": return obj([("added_date", p["date"]), ("quarts", p["quarts"]), ("tach", p["tach"]), ("hobbs", p["hobbs"]), ("notes", p["notes"])])
+    case "oil.create": return obj([("added_date", p["date"]), ("quarts", p["quarts"]), ("tach", p["tach"]), ("hobbs", p["hobbs"]), ("notes", p["notes"]), ("component_id", p["componentId"])])
     case "reading.create": return obj([("reading_date", p["date"]), ("tach", p["tach"]), ("hobbs", p["hobbs"]), ("source", p["source"] ?? .string("manual"))])
     case "reading.update": return obj([("reading_date", p["date"]), ("tach", p["tach"] ?? .null), ("hobbs", p["hobbs"] ?? .null)])
     case "meterReset.create": return obj([("meter", p["meter"]), ("reset_date", p["date"]), ("prior_value", p["prior"]), ("new_value", p["next"])])
@@ -245,7 +245,7 @@ final class Recs {
 enum RecRoute: Hashable {
     case squawk(String), ad(String, record: Bool = false), item(String), findAds
     case hours, equipment, component(String), wb, oil, details
-    case documents, doc(String)
+    case documents, doc(String), documentInbox, engineHistory, expenses, annualPacket
     /// Phase 5: Plan ahead and a visit (Status), a record room link and Links and people (Share).
     case plan, visit(String), link(String, made: Bool = false), links
 }

@@ -71,7 +71,7 @@ fun offlineBarText(s: SyncState): String? {
     return when {
         !s.online && s.pages > 0 && changes == 0L -> "${s.pages} ${if (s.pages == 1) "page" else "pages"} on this phone. They upload when you have signal."
         !s.online && changes + s.pages > 0 -> "${changes + s.pages} ${if (changes + s.pages == 1L) "change" else "changes"} on this phone. They upload when you have signal."
-        !s.online -> "Offline. Everything here works except reading pages and Ask."
+        !s.online -> "Offline. Saved records remain available. Some actions need a connection."
         s.uploading != null -> "Uploading ${s.uploading.first + 1} of ${s.uploading.second}"
         changes + s.pages > 0 -> "Uploading ${changes + s.pages} ${if (changes + s.pages == 1L) "change" else "changes"}"
         else -> null

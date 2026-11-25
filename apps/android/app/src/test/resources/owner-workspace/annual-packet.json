@@ -1,0 +1,22 @@
+{
+  "tail": "N734QA",
+  "generatedAt": "2026-11-25",
+  "cutoff": "2026-11-25",
+  "warnings": [
+    "Review outstanding squawks"
+  ],
+  "evidence": [
+    {
+      "id": "page1",
+      "kind": "page",
+      "label": "Airframe p. 12",
+      "available": true
+    },
+    {
+      "id": "page2",
+      "kind": "page",
+      "label": "Engine p. 4",
+      "available": false
+    }
+  ]
+}

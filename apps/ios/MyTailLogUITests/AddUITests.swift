@@ -17,6 +17,7 @@ final class AddUITests: XCTestCase {
             ("Report a squawk", "New squawk"),
             ("Scan logbook pages", "Scan requested"),
             ("Add a document", "Choose a file"),
+            ("Upload documents", "Choose files"),
         ]
         for (label, destination) in actions {
             let app = launch()
@@ -34,7 +35,7 @@ final class AddUITests: XCTestCase {
         let app = launch("viewer")
         app.buttons["Add"].tap()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Report a squawk")).firstMatch.waitForExistence(timeout: 5))
-        for label in ["Log a flight", "Add oil", "Scan logbook pages", "Add a document"] {
+        for label in ["Log a flight", "Add oil", "Scan logbook pages", "Add a document", "Upload documents"] {
             XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", label)).firstMatch.exists)
         }
     }

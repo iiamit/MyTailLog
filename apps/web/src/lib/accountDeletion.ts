@@ -11,32 +11,65 @@ import type { Database } from "@/lib/database.types";
 export type DeletionError = { error: string; code: string; status: number };
 
 /** The body must say what it does: `{ "confirm": "DELETE" }` (any case). */
-export function parseDeletionRequest(body: unknown): { ok: true } | DeletionError {
-  const confirm = body && typeof body === "object" ? (body as { confirm?: unknown }).confirm : undefined;
-  if (typeof confirm !== "string" || confirm.trim().toLowerCase() !== "delete") {
+export function parseDeletionRequest(
+  body: unknown,
+): { ok: true } | DeletionError {
+  const confirm =
+    body && typeof body === "object"
+      ? (body as { confirm?: unknown }).confirm
+      : undefined;
+  if (
+    typeof confirm !== "string" ||
+    confirm.trim().toLowerCase() !== "delete"
+  ) {
     return { error: 'Type "delete" to confirm.', code: "invalid", status: 400 };
   }
   return { ok: true };
 }
 
 type Svc = SupabaseClient<Database>;
-type StorageCols = { table: "page" | "document" | "squawk_photo" | "hours_reading"; cols: string[] };
+type StorageCols = {
+  table:
+    "page" | "document" | "squawk_photo" | "hours_reading" | "aircraft_inbox";
+  cols: string[];
+};
 const STORED_FILES: StorageCols[] = [
   { table: "page", cols: ["storage_path", "thumbnail_path"] },
   { table: "document", cols: ["storage_path"] },
   { table: "squawk_photo", cols: ["storage_path", "thumbnail_path"] },
   { table: "hours_reading", cols: ["photo_path"] },
+  { table: "aircraft_inbox", cols: ["storage_path", "rendered_pages"] },
 ];
 
 async function storedPaths(svc: Svc, aircraftIds: string[]): Promise<string[]> {
   const paths: string[] = [];
   for (const { table, cols } of STORED_FILES) {
     for (let start = 0; ; start += 500) {
-      const { data, error } = await svc.from(table).select(["aircraft_id", ...cols].join(", "))
-        .in("aircraft_id", aircraftIds).order("id").range(start, start + 499);
+      const { data, error } = await svc
+        .from(table)
+        .select(["aircraft_id", ...cols].join(", "))
+        .in("aircraft_id", aircraftIds)
+        .order("id")
+        .range(start, start + 499);
       if (error) throw new Error(error.message);
-      const rows = (data ?? []) as unknown as Record<string, string | null>[];
-      for (const row of rows) for (const c of cols) if (row[c] && row.aircraft_id && aircraftStoragePath(row[c]!, row.aircraft_id)) paths.push(row[c]!);
+      const rows = (data ?? []) as unknown as Record<string, unknown>[];
+      for (const row of rows) {
+        const aircraft =
+          typeof row.aircraft_id === "string" ? row.aircraft_id : null;
+        if (!aircraft) continue;
+        for (const c of cols) {
+          const path = row[c];
+          if (typeof path === "string" && aircraftStoragePath(path, aircraft))
+            paths.push(path);
+        }
+        if (Array.isArray(row.rendered_pages))
+          for (const page of row.rendered_pages) {
+            const path =
+              page && typeof page === "object" ? page.storagePath : null;
+            if (typeof path === "string" && aircraftStoragePath(path, aircraft))
+              paths.push(path);
+          }
+      }
       if (rows.length < 500) break;
     }
   }
@@ -52,25 +85,37 @@ export async function deleteAccount(
   userId: string,
   removeBlobs: (paths: string[], aircraftIds: string[]) => Promise<void>,
 ): Promise<{ ok: true; deletedAircraft: number } | DeletionError> {
-  const { data: owned, error: ownErr } = await svc.from("aircraft").select("id").eq("owner_id", userId);
+  const { data: owned, error: ownErr } = await svc
+    .from("aircraft")
+    .select("id")
+    .eq("owner_id", userId);
   if (ownErr) return { error: ownErr.message, code: "server", status: 500 };
   const ids = (owned ?? []).map((a) => a.id);
 
   // Signed authored entries are immutable (0061 trigger), so the cascade would
   // fail halfway. Refuse up front, before anything is removed.
   const signedChecks = [
-    svc.from("log_entry").select("id", { count: "exact", head: true })
-      .eq("authored_by", userId).not("authored_signed_at", "is", null),
+    svc
+      .from("log_entry")
+      .select("id", { count: "exact", head: true })
+      .eq("authored_by", userId)
+      .not("authored_signed_at", "is", null),
     ...(ids.length
-      ? [svc.from("log_entry").select("id", { count: "exact", head: true })
-          .in("aircraft_id", ids).not("authored_signed_at", "is", null)]
+      ? [
+          svc
+            .from("log_entry")
+            .select("id", { count: "exact", head: true })
+            .in("aircraft_id", ids)
+            .not("authored_signed_at", "is", null),
+        ]
       : []),
   ];
   for (const { count, error } of await Promise.all(signedChecks)) {
     if (error) return { error: error.message, code: "server", status: 500 };
     if (count) {
       return {
-        error: "This account has logbook entries signed in MyTailLog, which can't be deleted automatically. Email support@mytaillog.com and we'll remove the account.",
+        error:
+          "This account has logbook entries signed in MyTailLog, which can't be deleted automatically. Email support@mytaillog.com and we'll remove the account.",
         code: "signed_entries",
         status: 409,
       };

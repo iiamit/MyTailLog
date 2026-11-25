@@ -9,6 +9,8 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 const b64url = (buf: Buffer) => buf.toString("base64url");
 
 test("authorize → consent → token: full authorization-code + PKCE flow", async ({ page, scratch, baseURL }) => {
+  // Includes cold provider initialization, browser consent and token exchange.
+  test.setTimeout(60_000);
   const url = process.env.TEST_SUPABASE_URL;
   const key = process.env.TEST_SUPABASE_SECRET_KEY;
   const email = process.env.TEST_USER_EMAIL;

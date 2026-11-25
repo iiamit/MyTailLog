@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 
 // 06 §8 Aircraft (M-AIRCRAFT-01..06): the aircraft as an object, every value with its source one tap away.
@@ -52,11 +51,13 @@ struct AircraftHome: View {
             }
 
             GroupHeader(title: "Oil and engine")
-            let perQuart = hoursPerQuart(oil.compactMap { o in o.d("tach").map { ($0, o.d("quarts") ?? 0) } })
-            let line = [perQuart.map { "Burns about 1 qt in \(fmt1($0)) h" },
+            let line = [oil.isEmpty ? nil : "\(oil.count) top-offs recorded",
                         samples.first.map { s in "last sample \(s.s("sample_date").map { dayDate($0) } ?? "")\(s.s("status").map { ", \($0)" } ?? "")" }]
                 .compactMap { $0 }.joined(separator: " · ")
             RecRow(line.isEmpty ? "No oil added or samples on file yet." : line, action: { nav.open(.oil) })
+
+            RecRow("Engine history and compression", action: { nav.open(.engineHistory) })
+            if recs.isOwner { RecRow("Ownership costs", action: { nav.open(.expenses) }) }
 
             GroupHeader(title: "Documents")
             let missing = carryAboard.filter { t in !docs.contains { $0.s("type") == t } }
@@ -65,6 +66,8 @@ struct AircraftHome: View {
             } below: {
                 if let m = missing.first { Note("\(docTypeName(m)) missing", alarm: true) }
             }
+
+            RecRow("Document inbox", lines: ["Upload first, then review where it belongs"], action: { nav.open(.documentInbox) })
 
             GroupHeader(title: "Aircraft details")
             let name = [plane?["year"]?.text, plane?["make"]?.text, plane?["model"]?.text].compactMap { $0 }.joined(separator: " ")
@@ -533,27 +536,17 @@ private let labElements = ["Fe", "Cu", "Al", "Cr", "Ni", "Pb", "Si"]
 
 struct OilScreen: View {
     let recs: Recs
+    @Environment(\.recNav) private var nav
     @State private var deleting: Rec?
     @State private var adding = false
 
     var body: some View {
         let adds = recs.records("oil_addition").sorted { ($0.s("added_date") ?? "") > ($1.s("added_date") ?? "") }
         let samples = recs.records("oil_analysis_sample").sorted { ($0.s("sample_date") ?? "") > ($1.s("sample_date") ?? "") }
-        let pts = adds.compactMap { o in o.d("tach").map { (tach: $0, quarts: o.d("quarts") ?? 0) } }
         RecScreen(section: .aircraft, title: "Oil and engine", back: "Aircraft") {
-            GroupHeader(title: "How much it drinks")
-            if let perQuart = hoursPerQuart(pts) {
-                HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s2) {
-                    Text(fmt1(perQuart)).dFont(.boardTitle).monospacedDigit().foregroundStyle(Tokens.Colors.ink)
-                    Lede("hours per quart")
-                }
-                .accessibilityElement(children: .combine)
-                .padding(.top, Tokens.Space.s2)
-                let bars = burnIntervals(pts)
-                if bars.count >= 2 { BurnChart(bars: bars) }
-            } else {
-                Note("Two top-offs with a tach reading show how much it drinks.").padding(.vertical, Tokens.Space.s2)
-            }
+            GroupHeader(title: "Consumption by engine")
+            Note("Review consumption within the engine's installation and overhaul period. Combining different engines or meter replacements can produce a misleading rate.")
+            Button("Open engine history") { nav.open(.engineHistory) }.buttonStyle(.secondary).padding(.vertical, Tokens.Space.s2)
             if recs.canEdit {
                 Button { adding = true } label: { Label { Text("Add oil") } icon: { Icon("droplet", size: 18) } }
                     .buttonStyle(.secondary).padding(.top, Tokens.Space.s2)
@@ -564,8 +557,9 @@ struct OilScreen: View {
                        rec: o, menu: recs.canEdit ? [RowAction(title: "Delete", role: .destructive) { deleting = o }] : [])
             }
             GroupHeader(title: "What the lab found")
+            if recs.canEdit { Button("Upload a lab report") { nav.open(.documentInbox) }.buttonStyle(.secondary).padding(.vertical, Tokens.Space.s2) }
             if samples.isEmpty {
-                Note("No oil analysis on file. Scan a lab report into Documents and it is read here.").padding(.vertical, Tokens.Space.s2)
+                Note("No oil analysis on file. Upload the original lab report to the document inbox, then review its proposed details before approval.").padding(.vertical, Tokens.Space.s2)
             } else {
                 LabTable(samples: Array(samples.prefix(4)))
             }
@@ -575,26 +569,6 @@ struct OilScreen: View {
                             isPresented: Binding { deleting != nil } set: { if !$0 { deleting = nil } }, titleVisibility: .visible, presenting: deleting) { o in
             Button("Delete", role: .destructive) { recs.delete("oil.delete", "oil_addition", o.id, "Delete oil top-off", ["additionId": o.id]) }
         }
-    }
-}
-
-/// Hours per quart over the last intervals: ink bars, labelled ends (one series, no legend).
-private struct BurnChart: View {
-    let bars: [Double]
-    var body: some View {
-        Chart(Array(bars.enumerated()), id: \.offset) { i, v in
-            BarMark(x: .value("Top-off", i), y: .value("Hours per quart", v)).foregroundStyle(Tokens.Colors.ink)
-        }
-        .chartXAxis {
-            AxisMarks(values: [0, bars.count - 1]) { v in
-                AxisValueLabel { Text(v.as(Int.self) == 0 ? "older" : "latest").dFont(.caption).foregroundStyle(Tokens.Colors.ink3) }
-            }
-        }
-        .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 2)) { AxisValueLabel().foregroundStyle(Tokens.Colors.ink3) } }
-        .frame(height: 96)
-        .padding(.vertical, Tokens.Space.s2)
-        .accessibilityElement()
-        .accessibilityLabel("Hours per quart over the last \(bars.count) top-offs, from \(fmt1(bars.first)) to \(fmt1(bars.last))")
     }
 }
 
@@ -632,6 +606,7 @@ struct AddOilSheet: View {
     @State private var withTach = false
     @State private var tach = ""
     @State private var notes = ""
+    @State private var component = ""
 
     private var quarts: Double? { [0.5, 1, 2][safe: q] ?? num(other) }
 
@@ -641,6 +616,7 @@ struct AddOilSheet: View {
             Segments(label: "Quarts", options: ["½", "1", "2", "Other"], selection: $q)
             if q == 3 { TextBox(label: "Quarts", text: $other, number: true, placeholder: "0.5") }
             DateRow(label: "Date", date: $date)
+            ChoiceRow(label: "Engine", options: [("", "Unassigned — choose an engine when known")] + recs.records("component").filter { $0.s("category") == "engine" }.map { ($0.id, [$0.s("name"), $0.s("serial_number"), $0.b("is_installed") ? nil : "removed"].compactMap { $0 }.joined(separator: " · ")) }, selection: $component)
             if withTach { TextBox(label: "Tach", text: $tach, number: true) }
             else { Button("Add the tach reading") { withTach = true; tach = fmt1(recs.meter("tach")) }.buttonStyle(.quiet) }
             TextBox(label: "Notes", text: $notes, placeholder: "Phillips XC 20W-50")
@@ -655,7 +631,7 @@ struct AddOilSheet: View {
         guard let quarts else { return }
         let id = newId(), n = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         guard recs.change("oil.create", "oil_addition", id, "Oil, \(fmtNum(quarts)) qt", payload([
-            "id": id, "date": date, "quarts": quarts, "tach": withTach ? num(tach) : nil, "notes": n.isEmpty ? nil : n,
+            "id": id, "date": date, "quarts": quarts, "tach": withTach ? num(tach) : nil, "notes": n.isEmpty ? nil : n, "componentId": component.isEmpty ? nil : component,
         ])) != nil else { return }
         recs.say("\(fmtNum(quarts)) qt added. \(recs.savedWord)")
         dismiss()

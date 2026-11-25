@@ -159,7 +159,7 @@ async function runDestination(
     if (!runId) continue;
 
     try {
-      const collected = await collectBackupData(supabase, ac.id);
+      const collected = await collectBackupData(supabase, ac.id,d.user_id);
       const bytes = await totalBlobBytes(collected.blobs.map((b) => b.storagePath), ac.id);
       // Logged on EVERY run: we need the real size distribution before deciding
       // whether the resumable two-phase upload (phase 4) is worth building.

@@ -9,9 +9,12 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -30,11 +33,17 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.util.Base64
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import io.ktor.utils.io.jvm.javaio.toInputStream
 
 /** The file half of squawks and documents, behind an interface so the store's tests run without a server. */
 interface RecordUploads {
     /** POST …/blob kind squawk_photo; the squawk must already be on the server. */
     suspend fun squawkPhoto(aircraftId: String, squawkId: String, photoId: String, jpeg: ByteArray)
+
+    suspend fun inbox(aircraftId: String, meta: JsonObject, bytes: ByteArray): JsonObject
 
     /** POST …/documents (JSON, base64): the upload is the create. Returns the new `document` row. */
     suspend fun document(aircraftId: String, meta: JsonObject, bytes: ByteArray): JsonObject
@@ -97,6 +106,47 @@ class RecordsApi(
             meta["uploadId"]?.jsonPrimitive?.contentOrNull?.let { headers.append("Idempotency-Key", it) }
         }.json()
         return o["document"]?.jsonObject ?: error("No document came back")
+    }
+
+    /** Original files use the same durable file queue and stable ID across upload retries. */
+    override suspend fun inbox(aircraftId: String, meta: JsonObject, bytes: ByteArray): JsonObject =
+        ownerMutation(aircraftId, "inbox", JsonObject(meta + mapOf("file" to kotlinx.serialization.json.JsonPrimitive(Base64.getEncoder().encodeToString(bytes)))))
+
+    suspend fun ownerData(aircraftId: String, path: String): JsonObject =
+        http.get("$root/api/aircraft/$aircraftId/$path") { bearerAuth(accessToken()) }.json()
+
+    suspend fun ownerMutation(aircraftId: String, path: String, body: JsonObject): JsonObject =
+        http.post("$root/api/aircraft/$aircraftId/$path") {
+            bearerAuth(accessToken()); contentType(ContentType.Application.Json); setBody(body.toString())
+            body.s("id")?.let { header("Idempotency-Key", it) }
+        }.json()
+
+    suspend fun ownerUpdate(aircraftId: String, path: String, body: JsonObject): JsonObject =
+        http.patch("$root/api/aircraft/$aircraftId/$path") {
+            bearerAuth(accessToken()); contentType(ContentType.Application.Json); setBody(body.toString())
+        }.json()
+
+    suspend fun ownerDelete(aircraftId: String, path: String, base: String): JsonObject =
+        http.delete("$root/api/aircraft/$aircraftId/$path") {
+            bearerAuth(accessToken()); contentType(ContentType.Application.Json); setBody(json("base" to base).toString())
+        }.json()
+
+    /** Stream evidence archives to a temporary file; interrupted downloads never replace a complete copy. */
+    suspend fun ownerFile(aircraftId: String, path: String, destination: File, body: JsonObject? = null) {
+        val url = "$root/api/aircraft/$aircraftId/$path"
+        val statement = if (body == null) http.prepareGet(url) { bearerAuth(accessToken()) }
+        else http.preparePost(url) { bearerAuth(accessToken()); contentType(ContentType.Application.Json); setBody(body.toString()) }
+        val part = File(destination.parentFile, destination.name + "." + java.util.UUID.randomUUID() + ".part")
+        try {
+            statement.execute { response ->
+                if (!response.status.isSuccess()) response.json()
+                withContext(Dispatchers.IO) {
+                    destination.parentFile?.mkdirs()
+                    response.bodyAsChannel().toInputStream().use { input -> part.outputStream().use { output -> input.copyTo(output) } }
+                    check(part.renameTo(destination)) { "Could not save the downloaded file. Please retry." }
+                }
+            }
+        } finally { withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) { part.delete() } }
     }
 
     /** The stored file (GET /api/document/{id}, RLS-checked). */

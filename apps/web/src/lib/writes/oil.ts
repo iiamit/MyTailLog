@@ -19,13 +19,14 @@ export type TopOffInput = {
   hobbs?: number | null;
   tach?: number | null;
   notes?: string | null;
+  componentId?: string | null;
 };
 
 // ---------------------------------------------------------------------------
 // Pure helpers — tested in apps/web/test/writes-c3.test.ts
 // ---------------------------------------------------------------------------
 
-export type TopOffRow = { added_date: string; quarts: number; hobbs: number | null; tach: number | null; notes: string | null };
+export type TopOffRow = { component_id?: string | null; added_date: string; quarts: number; hobbs: number | null; tach: number | null; notes: string | null };
 
 /** Validate an untrusted top-off at the trust boundary. */
 export function validateTopOff(input: unknown): { row: TopOffRow } | { error: string } {
@@ -40,8 +41,10 @@ export function validateTopOff(input: unknown): { row: TopOffRow } | { error: st
     const n = num(src[k]);
     if (n == null || n < 0) return { error: `${k[0].toUpperCase()}${k.slice(1)} must be zero or a positive number.` };
   }
+  const component = src.componentId;
+  if(component!=null&&component!==""&&(typeof component!=="string"||! /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(component)))return {error:"Choose a valid engine."};
   const notes = typeof src.notes === "string" ? src.notes.trim() || null : null;
-  return { row: { added_date: date, quarts, hobbs: num(src.hobbs), tach: num(src.tach), notes } };
+  return { row: { ...(component?{component_id:String(component)}:{}),added_date: date, quarts, hobbs: num(src.hobbs), tach: num(src.tach), notes } };
 }
 
 function num(v: unknown): number | null {
@@ -61,6 +64,7 @@ export async function addTopOff(supabase: Db, ctx: WriteCtx, input: TopOffInput)
   if ("error" in v) return { status: "error", message: v.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
+  if(v.row.component_id){const {data:engine,error}=await supabase.from("component").select("id").eq("aircraft_id",ctx.aircraftId).eq("id",v.row.component_id).eq("category","engine").maybeSingle();if(error)return {status:"error",message:"Could not check this engine. Try again.",httpStatus:503};if(!engine)return {status:"error",message:"Choose an engine on this aircraft.",httpStatus:400};}
   return insertRecords(supabase, ctx, "oil_addition", { ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, ...v.row });
 }
 

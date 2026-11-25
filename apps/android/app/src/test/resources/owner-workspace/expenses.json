@@ -1,0 +1,26 @@
+{
+  "canManage": true,
+  "expenses": [
+    {
+      "id": "expense",
+      "date": "2026-10-01",
+      "currency": "USD",
+      "amount_minor": 12345,
+      "category": "maintenance",
+      "cost_type": "variable",
+      "basis": "actual",
+      "vendor": "Maintenance shop"
+    }
+  ],
+  "totals": [
+    {
+      "currency": "USD",
+      "actual_minor": 12345,
+      "reserve_minor": 0
+    }
+  ],
+  "denominator": {
+    "hours": null,
+    "coverage": "unavailable"
+  }
+}

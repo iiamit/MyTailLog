@@ -43,6 +43,7 @@ const ADD_ITEMS: { key: string; label: string; detail: string; section: Section;
   { key: "S", label: "Report a squawk", detail: "A photo first, then a few words", section: "maint", icon: Flag, path: "maintenance/squawks?panel=new" },
   { key: "P", label: "Add logbook pages", detail: "Drop scans, or scan with your phone", section: "books", icon: Upload, path: "logbooks/add" },
   { key: "D", label: "Add a document", detail: "Insurance, registration, a Form 337", section: "docs", icon: FilePlus2, path: "documents?panel=new" },
+  { key: "U", label: "Upload documents", detail: "Logbooks, invoices, oil reports", section: "docs", icon: Upload, path: "inbox" },
   { key: "W", label: "Write a logbook entry", detail: "Sign it with a code sent by email", section: "books", icon: Pencil, path: "logbooks/entries/new" },
 ];
 
@@ -128,7 +129,7 @@ export function Rail({ aircraftId, tail, plateLine, tabs, aircraft, canEdit, use
         </div>
       </Popover>
 
-      <nav aria-label="Aircraft sections" className="flex max-h-[620px] min-h-0 flex-1 flex-col gap-1">
+      <nav aria-label="Aircraft sections" className="flex max-h-[620px] min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {tabs.map((t) => {
           const isOpen = open === t.section;
           const name = [t.label, ...t.lines, t.flag].filter(Boolean).join(", ");

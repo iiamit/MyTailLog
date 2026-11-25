@@ -43,4 +43,5 @@ done < <(find "$migrations" -name '*.sql' | LC_ALL=C sort)
 echo "applied $count migrations"
 
 psql -d mtl_test -f "$here/checks.sql"
+psql -d mtl_test -f "$here/owner-workspace.sql"
 echo "checks passed"

@@ -139,7 +139,7 @@ class CaptureLogicTest {
         assertEquals("1 to decide", syncLineState(base.copy(conflicts = 1, waiting = 4), "x"))
         assertEquals("sync failed", syncLineState(base.copy(failed = true), "x"))
         assertNull(offlineBarText(base))
-        assertEquals("Offline. Everything here works except reading pages and Ask.", offlineBarText(base.copy(online = false)))
+        assertEquals("Offline. Saved records remain available. Some actions need a connection.", offlineBarText(base.copy(online = false)))
         assertEquals("3 changes on this phone. They upload when you have signal.", offlineBarText(base.copy(online = false, waiting = 3)))
         assertEquals("2 pages on this phone. They upload when you have signal.", offlineBarText(base.copy(online = false, pages = 2)))
         assertEquals("Uploading 1 of 2", offlineBarText(base.copy(uploading = 0 to 2, pages = 2)))

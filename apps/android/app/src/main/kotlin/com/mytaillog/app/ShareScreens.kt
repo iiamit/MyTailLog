@@ -354,6 +354,8 @@ private fun FileButtons(recs: Recs, online: Boolean, viewer: Boolean, onToast: (
         add(Triple("export?type=due", R.string.share_due_csv, "${recs.tail} due list.csv"))
     }
     GroupHeader(stringResource(R.string.share_files))
+    val nav = LocalRecNav.current
+    DButton("Prepare annual packet", { nav.open(Routes.ANNUAL_PACKET) }, kind = ButtonKind.Secondary, enabled = online)
     files.forEach { (path, label, name) ->
         DButton(
             stringResource(label), {
@@ -369,12 +371,25 @@ private fun FileButtons(recs: Recs, online: Boolean, viewer: Boolean, onToast: (
 }
 
 /** Writes [bytes] under cache/share and opens it: a PDF in the viewer (print and share from there), the CSV in the share sheet. */
+internal fun sharedFile(context: Context, name: String) = File(File(context.cacheDir, "share").apply { mkdirs() }, name.replace(Regex("[^A-Za-z0-9._ -]"), "_"))
+
 fun openFile(context: Context, bytes: ByteArray, name: String) {
-    val f = File(File(context.cacheDir, "share").apply { mkdirs() }, name.replace(Regex("[^A-Za-z0-9._ -]"), "_"))
-    f.writeBytes(bytes)
+    val file = sharedFile(context, name)
+    file.writeBytes(bytes)
+    openFile(context, file)
+}
+
+fun openFile(context: Context, f: File) {
+    val name = f.name
     val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".share", f)
-    val pdf = name.endsWith(".pdf")
-    val intent = if (pdf) Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/pdf") else Intent(Intent.ACTION_SEND).setType("text/csv").putExtra(Intent.EXTRA_STREAM, uri)
+    val mime = when {
+        name.endsWith(".pdf", true) -> "application/pdf"
+        name.endsWith(".zip", true) -> "application/zip"
+        name.endsWith(".csv", true) -> "text/csv"
+        else -> java.net.URLConnection.guessContentTypeFromName(name) ?: "application/octet-stream"
+    }
+    val intent = if (mime == "application/pdf" || mime.startsWith("image/")) Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
+        else Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM, uri)
     context.startActivity(Intent.createChooser(intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), name))
 }
 

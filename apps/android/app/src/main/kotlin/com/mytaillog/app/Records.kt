@@ -46,7 +46,7 @@ fun patchOf(type: String, payload: JsonObject): JsonObject? = when (type) {
     "squawk.reopen" -> obj("status" to JsonPrimitive("open"), "resolved_at" to JsonNull, "resolved_log_entry_id" to JsonNull)
     "squawk.update" -> obj("description" to p(payload, "description"), "severity" to p(payload, "severity"))
     "squawkPhoto.create" -> obj("squawk_id" to p(payload, "squawkId"), "taken_at" to p(payload, "takenAt"))
-    "oil.create" -> obj("added_date" to p(payload, "date"), "quarts" to p(payload, "quarts"), "tach" to p(payload, "tach"), "hobbs" to p(payload, "hobbs"), "notes" to p(payload, "notes"))
+    "oil.create" -> obj("component_id" to p(payload, "componentId"), "added_date" to p(payload, "date"), "quarts" to p(payload, "quarts"), "tach" to p(payload, "tach"), "hobbs" to p(payload, "hobbs"), "notes" to p(payload, "notes"))
     "reading.create" -> obj("reading_date" to p(payload, "date"), "tach" to p(payload, "tach"), "hobbs" to p(payload, "hobbs"), "source" to (p(payload, "source") ?: JsonPrimitive("manual")))
     "reading.update" -> obj("reading_date" to p(payload, "date"), "tach" to (p(payload, "tach") ?: JsonNull), "hobbs" to (p(payload, "hobbs") ?: JsonNull))
     "meterReset.create" -> obj("meter" to p(payload, "meter"), "reset_date" to p(payload, "date"), "prior_value" to p(payload, "prior"), "new_value" to p(payload, "next"))

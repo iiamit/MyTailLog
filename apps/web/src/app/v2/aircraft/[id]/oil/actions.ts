@@ -16,6 +16,7 @@ export async function addOil(id: string, _p: ActResult, form: FormData): Promise
   const date = String(form.get("date") ?? "");
   const r = await oil.addTopOff(supabase, ctx, {
     date,
+    componentId: String(form.get("componentId") ?? "").trim() || null,
     quarts: Number(form.get("quarts")),
     tach: formNumber(form.get("tach")),
     hobbs: formNumber(form.get("hobbs")),

@@ -37,6 +37,25 @@ struct OfflineStoreTests {
         again.close()
     }
 
+    @Test func inboxOriginalQueueRetainsStableIdentityAcrossRestart() throws {
+        let root = tempRoot()
+        defer { UserDefaults.standard.removeObject(forKey: "MTLForceOffline"); try? FileManager.default.removeItem(at: root) }
+        let first = store(root)
+        let original = Data("original PDF bytes".utf8)
+        let id = try first.addRecordFile(kind: OfflineStore.inboxDocument, aircraftId: aircraft,
+            url: first.dir.appending(path: "Outbox/inbox/original.pdf"), bytes: original,
+            meta: FileMeta(fileName: "Annual.pdf", mimeType: "application/pdf"))
+        #expect(first.heldDocuments.count == 1)
+        #expect(first.recordFiles.count == 1)
+        first.close()
+        let restored = store(root)
+        let job = try #require(restored.recordFiles.first)
+        #expect(job.id == id)
+        #expect(job.meta.fileName == "Annual.pdf")
+        #expect(try Data(contentsOf: restored.fileURL(job)) == original)
+        restored.close()
+    }
+
     @Test func onlineOnlyTypesAreNeverQueued() throws {
         let root = tempRoot()
         defer { UserDefaults.standard.removeObject(forKey: "MTLForceOffline"); try? FileManager.default.removeItem(at: root) }

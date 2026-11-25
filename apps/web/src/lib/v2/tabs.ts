@@ -1,7 +1,7 @@
 import type { SubTab } from "@/ui/Board";
 
 export type MaintTab = "items" | "ads" | "squawks" | "annual" | "records-check";
-export type AircraftTab = "hours" | "oil" | "equipment" | "weight-balance" | "details";
+export type AircraftTab = "hours" | "oil" | "equipment" | "weight-balance" | "details" | "engine-history" | "costs";
 
 /** Maintenance sub-tabs (03 §4): Squawks and Records check carry their open counts when known. */
 export function maintTabs(aircraftId: string, current: MaintTab, counts: { squawks?: number | null; findings?: number | null } = {}): SubTab[] {
@@ -27,6 +27,8 @@ export function aircraftTabs(aircraftId: string, current: AircraftTab): SubTab[]
   const labels: [AircraftTab, string][] = [
     ["hours", "Hours and engine"],
     ["oil", "Oil analysis"],
+    ["engine-history", "Engine history"],
+    ["costs", "Costs"],
     ["equipment", "Equipment"],
     ["weight-balance", "W&B"],
     ["details", "Details"],

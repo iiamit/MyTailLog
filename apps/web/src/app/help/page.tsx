@@ -157,6 +157,11 @@ const SECTIONS: Section[] = [
           <strong><L href="#ask">Ask your logbook</L></strong>{" "}answers from the phone with the entries
           it used listed underneath.
         </p>
+        <h3 id="owner-workspace" className="text-lg font-semibold">Prepare records, track engines and understand costs</h3>
+        <p><strong>Document inbox:</strong> choose Upload documents from Add, or open Documents → Document inbox. Upload PDFs or images once, retain the original, then review the suggested destination. Reading suggestions uses your AI allowance. Logbook pages enter the existing review queue; an invoice becomes a private expense only after approval, and oil reports show dated samples for review. Uploads waiting for connectivity stay on the device or browser that holds the original. Duplicate files are not added twice; likely duplicate pages wait for your decision.</p>
+        <p><strong>Engine history:</strong> open Aircraft → Engine history to select an engine and installation or overhaul period. Compression readings retain their original reference pressure. Unassigned historical observations stay visible for review; twins are not automatically combined. Add reviewed observations and lifecycle events with source links where available.</p>
+        <p><strong>Costs:</strong> the aircraft owner can record actual expenses and separate reserve estimates, import or export CSV, and link maintenance entries or supporting documents. Financial access is separate from maintenance viewing or editing. Currency totals stay separate. Cost per hour appears only for a period with reviewed boundary readings on the same meter and no replacement; the measured interval and source are disclosed.</p>
+        <p><strong>Annual packet:</strong> open Maintenance → Annual prep → Prepare annual packet. Download a PDF summary, or explicitly select the scans and documents to include in an evidence ZIP. Unreviewed information and missing records remain marked. The packet reflects current records; it is not an airworthiness determination or a maintenance sign-off.</p>
         <p>
           <strong>Documents</strong>{" "}keeps your AROW paperwork to hand, airworthiness certificate,
           registration, POH/AFM and weight &amp; balance, for a ramp check with no signal.{" "}
