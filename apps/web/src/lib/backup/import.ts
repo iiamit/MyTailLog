@@ -193,6 +193,11 @@ export async function importBackup(
   const pageMap = new Map(
     data.pages.map((p) => [p.id as string, crypto.randomUUID()]),
   );
+  const componentMap = new Map(data.components.map((c) => [c.id as string, crypto.randomUUID()]));
+  const remapIdentitySources = (value: unknown) => Object.fromEntries(Object.entries(value && typeof value === "object" ? value : {}).map(([key, source]) => {
+    const row = source && typeof source === "object" ? source as Record<string, unknown> : {};
+    return [key, { ...row, pageId: pageMap.get(String(row.pageId)) ?? null }];
+  }));
   const pageRows: Row[] = [];
   let uploaded = 0;
   for (const p of data.pages) {
@@ -222,6 +227,7 @@ export async function importBackup(
     o.logbook_id = newLogbook;
     o.duplicate_of_page_id = null;
     o.queued_by = null;
+    if (Array.isArray(p.identity_suggestions)) o.identity_suggestions = p.identity_suggestions.map((v: Record<string, unknown>) => ({ ...v, targetId: v.targetId ? componentMap.get(String(v.targetId)) ?? null : null }));
     o.storage_path = p.storage_path ? newPath : null;
     o.thumbnail_path = thumbnailPath;
     pageRows.push(o);
@@ -276,22 +282,25 @@ export async function importBackup(
   }
 
   // 5. Components (reference log entries).
-  const componentMap = new Map<string, string>();
   const componentRows = data.components.map((c) => {
-    const nid = crypto.randomUUID();
-    componentMap.set(c.id as string, nid);
+    const nid = componentMap.get(c.id as string)!;
     const o = clean(c);
     o.id = nid;
     o.aircraft_id = aircraftId;
     o.install_entry_id = c.install_entry_id
       ? (entryMap.get(c.install_entry_id as string) ?? null)
       : null;
+    if (c.identity_sources) o.identity_sources = remapIdentitySources(c.identity_sources);
     o.removal_entry_id = c.removal_entry_id
       ? (entryMap.get(c.removal_entry_id as string) ?? null)
       : null;
     return o;
   });
   await insertRows(supabase, "component", componentRows);
+  if (data.aircraft.identity_sources) {
+    const { error } = await supabase.from("aircraft").update({ identity_sources: remapIdentitySources(data.aircraft.identity_sources) }).eq("id", aircraftId);
+    if (error) throw new Error(`aircraft identity sources: ${error.message}`);
+  }
 
   // 5b. Service providers (0072), before the rows that name one.
   const providerMap = new Map<string, string>();

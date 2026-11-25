@@ -1,6 +1,6 @@
 import type { Db, WriteCtx } from "./entries";
 
-export type ReplayOperation = "write_record" | "merge_log_entry" | "mark_maintenance_done"
+export type ReplayOperation = "review_page_details" | "write_record" | "merge_log_entry" | "mark_maintenance_done"
   | "save_service_provider" | "save_planned_visit" | "set_expected_hours_checked"
   | "retire_component" | "confirm_equipment_proposals" | "change_pages" | "insert_records"
   | "create_planned_visit" | "seed_maintenance_items" | "confirm_clean_entries" | "create_squawk";

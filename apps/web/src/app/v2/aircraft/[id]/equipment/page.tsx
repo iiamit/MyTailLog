@@ -100,10 +100,16 @@ export default async function EquipmentPage({ params, searchParams }: { params: 
           <Field label="Manufacturer" help="Decides which ADs apply to this part.">
             <input name="make" defaultValue={c?.make ?? ""} className={fieldClass} />
           </Field>
+          <Field label="Model"><input name="model" defaultValue={c?.model ?? ""} className={fieldClass} /></Field>
           <Field label="Category">
             <select name="category" defaultValue={c?.category ?? ""} className={fieldClass}>
               <option value="">Not set</option>
               {CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </Field>
+          <Field label="This record represents" help="Engine-system accessories are not complete engines in Engine history.">
+            <select name="component_kind" defaultValue={c?.component_kind ?? ""} className={fieldClass}>
+              <option value="">Not classified</option><option value="engine">Complete engine</option><option value="propeller">Complete propeller</option><option value="accessory">Accessory or engine part</option><option value="equipment">Other equipment</option>
             </select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
@@ -291,14 +297,14 @@ export default async function EquipmentPage({ params, searchParams }: { params: 
           )}
 
           {removed.length > 0 && (
-            <HungSection title="Removed" count={`${removed.length}`}>
+            <HungSection title="Historical or removed equipment" count={`${removed.length}`}>
               <ul className="divide-y divide-rule">
                 {removed.map((c) => {
                   const na = (adsByPart.get(c.id) ?? []).filter((x) => x.status === "not_applicable").length;
                   return (
                     <li key={c.id} className="flex flex-wrap items-center gap-3 py-2.5 text-ink-2">
                       <Link href={`${self}?part=${c.id}`} replace scroll={false} className="min-w-0 flex-1 text-body hover:underline">
-                        {c.name}{c.make ? `, ${c.make}` : ""} removed {c.removal_date ? fmtDay(c.removal_date) : "(date unknown)"}
+                        {c.name}{[c.make, c.model].filter(Boolean).length ? `, ${[c.make, c.model].filter(Boolean).join(" ")}` : ""} {c.identity_historical ? "· historical record; current installation not confirmed" : `removed ${c.removal_date ? fmtDay(c.removal_date) : "(date unknown)"}`}
                         {na > 0 && <span className="block text-small text-ink-3">its {na === 1 ? "AD" : `${na} ADs`} marked not applicable from that date</span>}
                       </Link>
                       {edit && (

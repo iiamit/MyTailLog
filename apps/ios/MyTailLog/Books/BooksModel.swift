@@ -13,6 +13,7 @@ final class BooksModel {
     private(set) var logbooks: [LogbookRow] = []
     private(set) var pages: [PageRow] = []
     private(set) var entries: [EntryRow] = []
+    private(set) var identityTargets: [IdentityTarget] = []
     private(set) var loading = true
     private(set) var failed = false
     /// Shown from the phone's copy because the server couldn't be reached.
@@ -54,6 +55,7 @@ final class BooksModel {
             let m = try await api.map(token: t, aircraftId: id)
             map = m
             saveMap(m)
+            identityTargets = try await api.identityTargets(token: t, aircraftId: id)
             fromPhone = false
             if offline?.hasPulled != true || logbooks.isEmpty {
                 async let b = api.logbooks(token: t, aircraftId: id)
@@ -75,6 +77,10 @@ final class BooksModel {
         let id = aircraft.id
         let b: [LogbookRow] = offline.rows("logbook", aircraftId: id)
         guard !b.isEmpty else { return }
+        let componentTargets: [IdentityTarget] = offline.rawRows("component", aircraftId: id).compactMap { row in
+            (try? JSONEncoder().encode(row)).flatMap { try? JSONDecoder().decode(IdentityTarget.self, from: $0) }
+        }
+        identityTargets = (offline.rows("aircraft", aircraftId: id) as [IdentityTarget]).filter { $0.id == id } + componentTargets
         logbooks = b
         pages = (offline.rows("page", aircraftId: id) as [PageRow]).sorted { ($0.page_sequence ?? .max, $0.id) < ($1.page_sequence ?? .max, $1.id) }
         entries = (offline.rows("log_entry", aircraftId: id) as [MirrorEntry]).filter { $0.replaced_by_entry_id == nil }.map(\.entry)
@@ -100,6 +106,47 @@ final class BooksModel {
     func readingQueue() async -> ReadingQueue? {
         guard offline?.isOffline != true, let t = try? await token() else { return nil }
         return try? await api.readingQueue(token: t, aircraftId: aircraft.id)
+    }
+
+    func detailsPending(_ page: PageRow) -> Bool {
+        offline?.items.contains { $0.type == "page.details" && $0.targetId == page.id } == true
+    }
+
+    func reviewIdentity(_ page: PageRow, decision: [String: Any]) async -> String? {
+        guard canEdit else { return "The owner or an editor reviews these details." }
+        guard let offline else {
+            do {
+                let value = try JSONDecoder().decode(AnyJSON.self, from: JSONSerialization.data(withJSONObject: decision))
+                let mutation = Mutation(type: "page.details", aircraftId: aircraft.id, payload: ["pageId": .value(.string(page.id)), "decision": .json(value)], base: page.updated_at)
+                let (_, problem) = await push([mutation])
+                if problem == nil { await refresh() }
+                return problem
+            } catch { return "Could not save this decision. Try again." }
+        }
+        do {
+            try offline.enqueue(type: "page.details", aircraftId: aircraft.id,
+                payload: ["pageId": page.id, "decision": decision], label: "Review aircraft details",
+                target: ("page", page.id), base: page.updated_at)
+            if !offline.isOffline { await offline.sync(); readMirror(offline) }
+            if let item = offline.items.first(where: { $0.type == "page.details" && $0.targetId == page.id }) {
+                return item.error ?? "Saved on this phone. Sync this decision before reviewing more details on this page."
+            }
+            await refresh()
+            return nil
+        } catch { return "Could not save this decision. Try again." }
+    }
+
+    func rereadIdentity(_ page: PageRow) async -> String? {
+        do {
+            var request = URLRequest(url: api.apiURL.appending(path: "api/pages/\(page.id)/extract"))
+            request.httpMethod = "POST"
+            request.setValue("Bearer \(try await token())", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = Data("{\"queue\":true}".utf8)
+            let (_, response) = try await api.http.data(for: request)
+            guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else { return "Could not queue this page. Try again when online." }
+            await refresh(); return nil
+        } catch { return "Connect to read this page for aircraft details." }
     }
 
     func logbook(_ id: String) -> LogbookRow? { logbooks.first { $0.id == id } }

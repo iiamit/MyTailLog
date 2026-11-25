@@ -121,7 +121,7 @@ export async function extractPage(
       .eq("id", page.logbook_id)
       .single();
     if (logbook?.type === "other") {
-      return await extractOtherDocument(supabase, page, base64);
+      return await extractOtherDocument(supabase, page, base64, startedAt);
     }
 
     const isHandwritten = page.is_handwritten !== false;
@@ -205,6 +205,7 @@ export async function extractPage(
       p_stickers: linkedSigned.map((e) => e.id),
       p_state: {
         ocr_text: result.raw_text || null, extraction_confidence: minConfidence,
+        content_kinds: result.content_kinds ?? [], identity_suggestions: result.identity_suggestions ?? [],
         detected_page_count: result.detected_page_count, unread_rotated_content: result.unread_rotated_content,
       },
     });
@@ -278,6 +279,7 @@ async function extractOtherDocument(
   supabase: SupabaseClient<Database>,
   page: PageForExtraction,
   base64: string,
+  startedAt: string,
 ): Promise<PipelineResult> {
   const payload = await classifyOtherDocument(base64, "image/jpeg");
   const applied = await applyScannedDocument(
@@ -300,6 +302,11 @@ async function extractOtherDocument(
     })
     .eq("id", page.id);
   if (stateError) throw new Error(stateError.message);
+  const { error: identityError } = await supabase.rpc("replace_page_extraction", { p_page: page.id, p_started_at: startedAt, p_entries: [], p_stickers: [], p_state: {
+    ocr_text: payload.raw_text || null, extraction_confidence: payload.confidence, detected_page_count: 1,
+    content_kinds: payload.content_kinds ?? ["reference"], identity_suggestions: payload.identity_suggestions ?? [],
+  } });
+  if (identityError) throw new Error(identityError.message);
 
   return {
     // Classified values remain pending until explicitly confirmed beside the scan.

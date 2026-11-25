@@ -54,8 +54,8 @@ class BooksApiTest {
         assertEquals(null, books.pages.single().needsLook)
         assertTrue(requests.first { it.url.encodedPath.endsWith("/page") }.url.parameters["select"]!!.contains("needs_look"))
         val rest = requests.filter { it.url.host == "x.supabase.co" }
-        assertEquals(4, rest.size)
-        assertTrue(rest.all { it.url.parameters["aircraft_id"] == "eq.a1" && it.headers["apikey"] == "key" })
+        assertEquals(6, rest.size)
+        assertTrue(rest.all { (if (it.url.encodedPath.endsWith("/aircraft")) it.url.parameters["id"] == "eq.a1" else it.url.parameters["aircraft_id"] == "eq.a1") && it.headers["apikey"] == "key" })
         assertEquals("Bearer tok", requests.first { it.url.encodedPath.endsWith("/map") }.headers[HttpHeaders.Authorization])
     }
 

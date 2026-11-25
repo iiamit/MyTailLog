@@ -159,9 +159,13 @@ private fun AppRoot(
             val onPhoneTach = remember(ui.currentId, sync.version) { ui.currentId?.let { lastTach(null, store, it) }?.takeIf { it.onPhone }?.value }
             val books = viewModel(key = "books-${user.id}") {
                 BooksViewModel(
-                    app.booksApi::load, app.syncApi::push, app.booksApi::evidence, app.booksApi::pageImage,
+                    { aircraftId -> lastKnown(java.io.File(store.dir, "cache/books/$aircraftId.json"),
+                        { app.booksApi.load(aircraftId) },
+                        ::encodeBooks,
+                        ::decodeBooks) }, app.syncApi::push, app.booksApi::evidence, app.booksApi::pageImage,
                     queue = { queueBookWrites(store, it); capture.kick() },
                     unqueue = { ids -> ids.forEach(store::discard) },
+                    rereadPage = app.booksApi::reread,
                 )
             }
             // Logbooks follows the aircraft Status has open (one switcher, 06 §1.3).

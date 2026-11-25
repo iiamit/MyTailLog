@@ -30,7 +30,9 @@ export async function saveComponent(aircraftId: string, componentId: string | nu
     component: {
       name: str(f, "name") ?? "",
       make: str(f, "make"),
+      model: str(f, "model"),
       category: str(f, "category"),
+      component_kind: str(f, "component_kind"),
       part_number: str(f, "part_number"),
       serial_number: str(f, "serial_number"),
       install_date: str(f, "install_date"),

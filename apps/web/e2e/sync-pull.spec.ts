@@ -31,11 +31,15 @@ type Pull = { changes: Change[]; nextCursor: number; hasMore: boolean };
  * accumulates change_log rows across runs, so every assertion below is made on
  * a WINDOW that starts at the tip — deterministic regardless of history size.
  */
-async function drainToTip(api: APIRequestContext, from = 0): Promise<number> {
-  let cursor = from;
+async function drainToTip(api: APIRequestContext, from?: number): Promise<number> {
+  // Assert a fresh window; replaying this shared account's entire history repeatedly exhausts TEST disk IO.
+  const admin = createClient(env("TEST_SUPABASE_URL"), env("TEST_SUPABASE_SECRET_KEY"));
+  const tip = from == null ? await admin.from("change_log").select("seq").order("seq", { ascending: false }).limit(1).maybeSingle() : null;
+  expect(tip?.error ?? null).toBeNull();
+  let cursor = from ?? tip?.data?.seq ?? 0;
   for (let i = 0; i < 100; i++) {
     const res = await api.get(`/api/sync/pull?cursor=${cursor}&limit=1000`);
-    expect(res.status(), "drain should stay authorized").toBe(200);
+    expect(res.status(), res.ok() ? "drain stays authorized" : await res.text()).toBe(200);
     const body = (await res.json()) as Pull;
     cursor = body.nextCursor;
     if (!body.hasMore) return cursor;

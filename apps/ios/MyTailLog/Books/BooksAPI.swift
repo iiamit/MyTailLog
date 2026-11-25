@@ -12,6 +12,20 @@ struct LogbookRow: Decodable, Equatable, Sendable, Identifiable {
 }
 
 /// A scanned page (the columns the Logbooks screens read).
+struct IdentitySuggestion: Decodable, Equatable, Sendable, Identifiable {
+    let id, subject, name: String
+    let fields: [String: String]
+    let quote: String
+    let confidence: Double
+    let status: String
+}
+struct IdentityTarget: Decodable, Equatable, Sendable, Identifiable {
+    let id, updated_at: String
+    let name, category, make, model, serial_number, part_number, tail_number: String?
+    func value(_ field: String) -> String? {
+        switch field { case "make": make; case "model": model; case "serial_number": serial_number; case "part_number": part_number; case "tail_number": tail_number; default: nil }
+    }
+}
 struct PageRow: Decodable, Equatable, Sendable, Identifiable {
     let id: String
     let logbook_id: String
@@ -20,6 +34,8 @@ struct PageRow: Decodable, Equatable, Sendable, Identifiable {
     var review_status: String
     /// "queued", "processing", "waiting_allowance", "extracted", "failed" …
     let extraction_status: String
+    var content_kinds: [String]? = nil
+    var identity_suggestions: [IdentitySuggestion]? = nil
     let landing_date: String?
     let needs_look: Bool?
     let unread_rotated_content: Bool?
@@ -100,10 +116,12 @@ struct Mutation: Encodable, Equatable, Sendable {
     enum PayloadValue: Encodable, Equatable, Sendable {
         case value(JSONValue)
         case object([String: JSONValue])
+        case json(AnyJSON)
         func encode(to encoder: Encoder) throws {
             switch self {
             case .value(let v): try v.encode(to: encoder)
             case .object(let o): try o.encode(to: encoder)
+            case .json(let value): try value.encode(to: encoder)
             }
         }
     }
@@ -138,9 +156,15 @@ extension StatusAPI {
         try await get(rest("logbook", ["select": "id,type,title", "aircraft_id": "eq.\(aircraftId)"]), token)
     }
 
+    func identityTargets(token: String, aircraftId: String) async throws -> [IdentityTarget] {
+        async let aircraft: [IdentityTarget] = get(rest("aircraft", ["select": "id,updated_at,tail_number,make,model,serial_number", "id": "eq.\(aircraftId)"]), token)
+        async let components: [IdentityTarget] = get(rest("component", ["select": "id,updated_at,name,category,make,model,serial_number,part_number", "aircraft_id": "eq.\(aircraftId)"]), token)
+        return try await aircraft + components
+    }
+
     func pages(token: String, aircraftId: String) async throws -> [PageRow] {
         try await get(rest("page", [
-            "select": "id,logbook_id,page_sequence,review_status,extraction_status,landing_date,needs_look,unread_rotated_content,updated_at",
+            "select": "id,logbook_id,page_sequence,review_status,extraction_status,landing_date,needs_look,unread_rotated_content,content_kinds,identity_suggestions,updated_at",
             "aircraft_id": "eq.\(aircraftId)", "order": "page_sequence.asc.nullslast",
         ]), token)
     }

@@ -1,3 +1,5 @@
+import { normalizePageDetails } from "./normalizePageDetails";
+import { PAGE_DETAILS_SCHEMA, PAGE_DETAILS_PROMPT, type ContentKind, type IdentitySuggestion } from "./pageDetails";
 // ===========================================================================
 // "Other" document classification + apply.
 //
@@ -41,6 +43,8 @@ export type AdLine = {
 };
 
 export type OtherDocPayload = {
+  content_kinds?: ContentKind[];
+  identity_suggestions?: IdentitySuggestion[];
   doc_type: "weight_balance" | "ad_report" | "other";
   document_date: string | null;
   confidence: number;
@@ -98,6 +102,7 @@ const OTHER_DOC_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
+    ...PAGE_DETAILS_SCHEMA,
     doc_type: { type: "string", description: "Classify the document — exactly one of: \"weight_balance\" (an empty-weight / CG / moment sheet), \"ad_report\" (an Airworthiness Directive compliance listing), or \"other\" (neither)." },
     document_date: { type: ["string", "null"], description: "The date printed on the document (revision/report date), YYYY-MM-DD, or null." },
     confidence: { type: "number", description: "0 to 1 confidence in the classification and extraction." },
@@ -105,10 +110,10 @@ const OTHER_DOC_SCHEMA = {
     weight_balance: WB_SCHEMA,
     ads: { type: "array", items: AD_LINE_SCHEMA },
   },
-  required: ["doc_type", "document_date", "confidence", "raw_text", "weight_balance", "ads"],
+  required: ["doc_type", "document_date", "confidence", "raw_text", "weight_balance", "ads", "content_kinds", "identity_suggestions"],
 } as const;
 
-const SYSTEM_PROMPT = `You read a single scanned aircraft-maintenance DOCUMENT (not a running logbook page) and classify it, then extract its structured data.
+const SYSTEM_PROMPT = PAGE_DETAILS_PROMPT + `You read a single scanned aircraft-maintenance DOCUMENT (not a running logbook page) and classify it, then extract its structured data.
 
 These documents are produced by A&P shops and are usually PRINTED. They are one of:
 - A WEIGHT & BALANCE document: shows the aircraft's current empty weight, empty-weight CG arm, empty-weight moment, and often max gross weight and a revision date. Set doc_type = "weight_balance" and fill the weight_balance object. Leave ads = [].
@@ -154,6 +159,7 @@ export async function classifyOtherDocument(
   }
 
   return {
+    ...normalizePageDetails(parsed),
     doc_type: isDocType(parsed.doc_type) ? parsed.doc_type : "other",
     // Sanitize every date at the parse boundary — the model can emit impossible
     // dates ("1987-11-31") that throw on insert into a `date` column downstream.

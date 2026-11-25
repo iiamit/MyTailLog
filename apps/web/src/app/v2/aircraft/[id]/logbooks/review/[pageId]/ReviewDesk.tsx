@@ -1,5 +1,7 @@
 "use client";
 
+import { PageDetailsReview, type IdentityTarget } from "@/components/review/PageDetailsReview";
+import type { IdentitySuggestion } from "@/lib/extraction/pageDetails";
 import type { ReviewReceipt } from "@/lib/v2/books";
 
 import { useEffect, useReducer, useRef, useState, useTransition } from "react";
@@ -34,6 +36,9 @@ const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isConte
  */
 export function ReviewDesk(p: {
   aircraftId: string;
+  contentKinds: string[];
+  identitySuggestions: IdentitySuggestion[];
+  identityTargets: IdentityTarget[];
   pageId: string;
   logbookId: string;
   canEdit: boolean;
@@ -92,6 +97,7 @@ export function ReviewDesk(p: {
 
   function confirm(only?: number) {
     if (!p.canEdit || pending) return;
+    if (only == null && p.identitySuggestions.some((s) => s.status === "pending")) { dispatch({ type: "notice", text: "Accept or dismiss the aircraft details above before marking the whole page reviewed." }); return; }
     const plan = confirmPlan(s, only);
     if ("blocked" in plan) {
       dispatch({ type: "select", entry: plan.blocked.entry, field: plan.blocked.field });
@@ -239,6 +245,7 @@ export function ReviewDesk(p: {
         {!p.canEdit && (
           <p className="mt-2 rounded-control bg-leaf-2 px-3 py-2 text-small">You can view this page. Ask {p.ownerName ?? "the owner"} for edit access to confirm it.</p>
         )}
+        {p.readState === "read" && <details open={p.identitySuggestions.some((s) => s.status === "pending") || !s.entries.length}><summary className="min-h-12 cursor-pointer py-3 text-body font-semibold">Page contents and aircraft details</summary><PageDetailsReview aircraftId={p.aircraftId} pageId={p.pageId} base={p.pageBase} kinds={p.contentKinds} suggestions={p.identitySuggestions} targets={p.identityTargets} canEdit={p.canEdit} /></details>}
         {p.notices.map((n) => (
           <p key={n} className="mt-2 rounded-control border border-rule px-3 py-2 text-small">{n}</p>
         ))}
@@ -250,7 +257,7 @@ export function ReviewDesk(p: {
           </div>
         ) : s.entries.length === 0 ? (
           <div className="mt-4 space-y-3">
-            <p className="text-body">The reader found no entries on this page.</p>
+            <p className="text-body">No maintenance entries on this page. Review its details above, then mark the page reviewed.</p>
             {p.canEdit && <Button onClick={() => dispatch({ type: "add", entry: blank(p.logbookId) })}><Plus aria-hidden size={16} /> Add an entry the AI missed</Button>}
           </div>
         ) : (
@@ -351,11 +358,11 @@ export function ReviewDesk(p: {
         <div className="sticky bottom-0 -mx-7 mt-auto border-t-2 border-ink bg-leaf px-7 pt-3 pb-4">
           <div className="flex flex-wrap items-center gap-3">
             {p.canEdit && (
-              <Button variant="primary" disabled={pending} onClick={() => confirm()} aria-keyshortcuts="Shift+Enter">
-                {pending ? "Saving…" : "Confirm page and next"} <Kbd>Shift Enter</Kbd>
+              <Button variant="primary" disabled={pending || p.identitySuggestions.some((s) => s.status === "pending")} onClick={() => confirm()} aria-keyshortcuts="Shift+Enter">
+                {pending ? "Saving…" : s.entries.length ? "Confirm page and next" : "Mark page reviewed and next"} <Kbd>Shift Enter</Kbd>
               </Button>
             )}
-            <span className="text-small text-ink-2">{acceptedLine(s)}</span>
+            <span className="text-small text-ink-2">{s.entries.length ? acceptedLine(s) : "Reference page · no maintenance entry required."}</span>
             <span className="ml-auto">{pageActions}</span>
           </div>
           <p aria-hidden className="mt-1 min-h-5 text-small font-semibold text-alarm-text">{s.notice}</p>

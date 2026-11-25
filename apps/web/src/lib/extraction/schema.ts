@@ -1,3 +1,4 @@
+import { PAGE_DETAILS_SCHEMA, PAGE_DETAILS_PROMPT, type ContentKind, type IdentitySuggestion } from "./pageDetails";
 // ===========================================================================
 // Extraction schema + prompt — VERSIONED.
 //
@@ -10,7 +11,7 @@
 // the prompt changes materially.
 // ===========================================================================
 
-export const EXTRACTION_SCHEMA_VERSION = 5;
+export const EXTRACTION_SCHEMA_VERSION = 6;
 
 // Data fields that carry a per-field confidence score and a source-image box.
 // Single source of truth — the pipeline and review UI both key off this list.
@@ -75,6 +76,8 @@ export type ExtractedEntry = {
 };
 
 export type ExtractionResult = {
+  content_kinds?: ContentKind[];
+  identity_suggestions?: IdentitySuggestion[];
   // A single scanned image is often a two-page spread; the model reports how
   // many distinct logbook pages it sees so the review UI can prompt for a split.
   detected_page_count: number;
@@ -150,6 +153,7 @@ export const EXTRACTION_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
+    ...PAGE_DETAILS_SCHEMA,
     detected_page_count: {
       type: "integer",
       description: "Number of distinct logbook pages visible in this image (1, or 2 for a two-page spread).",
@@ -162,10 +166,10 @@ export const EXTRACTION_JSON_SCHEMA = {
     },
     entries: { type: "array", items: ENTRY_SCHEMA },
   },
-  required: ["detected_page_count", "raw_text", "unread_rotated_content", "entries"],
+  required: ["detected_page_count", "raw_text", "unread_rotated_content", "entries", "content_kinds", "identity_suggestions"],
 };
 
-export const EXTRACTION_SYSTEM_PROMPT = `You extract structured data from photographed or scanned aircraft maintenance logbook pages (airframe, engine, or propeller logs).
+export const EXTRACTION_SYSTEM_PROMPT = PAGE_DETAILS_PROMPT + `You extract structured data from photographed or scanned aircraft maintenance logbook pages (airframe, engine, or propeller logs).
 
 This tool is an index of the physical logbooks, which remain the legal record. Accuracy and honesty about uncertainty matter far more than completeness — a wrong AD-due date or hobbs reading has real safety consequences.
 

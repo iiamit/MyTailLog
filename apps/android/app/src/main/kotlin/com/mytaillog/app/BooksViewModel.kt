@@ -43,12 +43,16 @@ class BooksViewModel(
     private val loadImage: suspend (String, Boolean) -> ByteArray,
     private val queue: ((List<Mutation>) -> Unit)? = null,
     private val unqueue: ((List<String>) -> Unit)? = null,
+    private val rereadPage: (suspend (String) -> Unit)? = null,
 ) : ViewModel() {
     private val state = MutableStateFlow(BooksUi())
     val ui: StateFlow<BooksUi> = state.asStateFlow()
     private val cache = mutableMapOf<String, Books>()
     private val images = LruCache<String, ImageBitmap>(48)
     private var job: Job? = null
+    private val pendingDetails = mutableMapOf<String, String>()
+    fun detailsPending(pageId: String): Boolean = pageId in pendingDetails
+    suspend fun reread(pageId: String): String? = try { rereadPage?.invoke(pageId) ?: error("Reading is unavailable."); refresh(); null } catch (e: CancellationException) { throw e } catch (e: Exception) { e.message ?: "Connect to read this page." }
 
     /** Follows Status's current aircraft. */
     fun show(access: AircraftAccess?) {
@@ -67,6 +71,7 @@ class BooksViewModel(
             state.update { it.copy(loading = true, failed = false) }
             try {
                 val b = load(id)
+                pendingDetails.entries.removeAll { (pageId, base) -> b.pages.any { it.id == pageId && it.updatedAt != base } }
                 cache[id] = b
                 state.update { if (it.aircraft?.aircraft?.id == id) it.copy(books = b, loading = false) else it }
             } catch (e: CancellationException) {
@@ -92,6 +97,7 @@ class BooksViewModel(
         } catch (e: Exception) {
             if (queue != null && e !is com.mytaillog.core.api.SyncHttpException) {
                 queue(mutations)
+                mutations.filter { it.type == "page.details" }.forEach { m -> (m.payload["pageId"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.let { pendingDetails[it] = m.base.orEmpty() } }
                 state.update { it.copy(message = SAVED_ON_PHONE) }
                 return emptyList()
             }

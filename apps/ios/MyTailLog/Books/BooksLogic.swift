@@ -90,7 +90,8 @@ func trustLabel(_ level: TrustLevel) -> String {
 /// A page that waits for review (M-REVIEW-01): read, and at least one entry not yet confirmed.
 func waitsForReview(_ page: PageRow, entries: [EntryRow]) -> Bool {
     page.extraction_status == "extracted" && (entries.contains { $0.page_id == page.id && !$0.owner_confirmed }
-        || (page.needs_look == true && page.review_status != "confirmed"))
+        || ((page.needs_look == true || !(page.content_kinds ?? []).isEmpty) && page.review_status != "confirmed")
+        || (page.identity_suggestions ?? []).contains { $0.status == "pending" })
 }
 
 /// The review queue, in lane then page order (07 review flow).

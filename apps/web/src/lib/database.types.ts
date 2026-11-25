@@ -1,3 +1,4 @@
+import type { ContentKind, IdentitySuggestion } from "./extraction/pageDetails";
 import type { InboxItem, Expense, EngineEvent } from "./owner/contracts";
 /**
  * Hand-maintained types mirroring supabase/migrations/*.sql (schema v1).
@@ -43,6 +44,7 @@ export type DocumentType =
   | "other";
 
 export type Aircraft = {
+  identity_sources: Record<string, unknown>;
   id: string;
   owner_id: string;
   tail_number: string;
@@ -99,6 +101,8 @@ export type Logbook = {
 }
 
 export type Page = {
+  content_kinds: ContentKind[];
+  identity_suggestions: IdentitySuggestion[];
   id: string;
   logbook_id: string;
   aircraft_id: string;
@@ -269,6 +273,10 @@ export type DocumentRecord = {
 export type ReferenceLink = { label: string; url: string };
 
 export type Component = {
+  component_kind?: "engine" | "propeller" | "accessory" | "equipment" | null;
+  model: string | null;
+  identity_historical: boolean;
+  identity_sources: Record<string, unknown>;
   position?: string | null;
   id: string;
   aircraft_id: string;

@@ -50,6 +50,7 @@ export async function setReview(
   if (!page) return { status: "error", message: "Page not found.", httpStatus: 404 };
   if (isStale(page.updated_at, base)) return { status: "conflict", row: page };
   if (input.status === "confirmed") {
+    if ((page.identity_suggestions ?? []).some((s) => s.status === "pending")) return { status: "error", message: "Accept or dismiss the aircraft details before marking this page reviewed.", httpStatus: 409 };
     const { data: pending, error } = await supabase.from("scanned_document").select("id").eq("page_id", page.id).eq("applied", false).in("doc_type", ["ad_report", "weight_balance"]).maybeSingle();
     if (error) return { status: "error", message: error.message };
     if (pending) return { status: "error", message: "Review and apply this AD or weight-and-balance document on the website before marking it reviewed.", httpStatus: 409 };

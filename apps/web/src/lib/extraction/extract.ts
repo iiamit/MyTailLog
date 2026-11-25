@@ -1,3 +1,4 @@
+import { normalizePageDetails } from "./normalizePageDetails";
 // ===========================================================================
 // Vision extraction — turn a page image into structured entries via Claude.
 //
@@ -71,6 +72,7 @@ export async function extractFromImage(
       Number.isFinite(parsed.detected_page_count) && parsed.detected_page_count > 0
         ? Math.round(parsed.detected_page_count)
         : 1,
+    ...normalizePageDetails(parsed),
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
     unread_rotated_content: parsed.unread_rotated_content === true,
     entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
@@ -113,7 +115,8 @@ export async function extractRotatedFromImage(
     const parsed = JSON.parse(text) as ExtractionResult;
     return {
       detected_page_count: 1,
-      raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
+      ...normalizePageDetails(parsed),
+    raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
       unread_rotated_content: parsed.unread_rotated_content === true,
       entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
     };

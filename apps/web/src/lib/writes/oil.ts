@@ -1,3 +1,4 @@
+import { isEngineComponent } from "@/lib/engineComponent";
 import { insertRecords } from "./insert";
 import { writeRecord } from "./conditional";
 import { canEdit, isStale, type Db, type WriteCtx, type WriteResult } from "./entries";
@@ -64,7 +65,7 @@ export async function addTopOff(supabase: Db, ctx: WriteCtx, input: TopOffInput)
   if ("error" in v) return { status: "error", message: v.error, httpStatus: 400 };
   if (!(await canEdit(supabase, ctx.aircraftId))) return { status: "error", message: NO_EDIT, httpStatus: 403 };
 
-  if(v.row.component_id){const {data:engine,error}=await supabase.from("component").select("id").eq("aircraft_id",ctx.aircraftId).eq("id",v.row.component_id).eq("category","engine").maybeSingle();if(error)return {status:"error",message:"Could not check this engine. Try again.",httpStatus:503};if(!engine)return {status:"error",message:"Choose an engine on this aircraft.",httpStatus:400};}
+  if(v.row.component_id){const {data:engine,error}=await supabase.from("component").select("*").eq("aircraft_id",ctx.aircraftId).eq("id",v.row.component_id).maybeSingle();if(error)return {status:"error",message:"Could not check this engine. Try again.",httpStatus:503};if(!engine || !isEngineComponent(engine))return {status:"error",message:"Choose an engine on this aircraft.",httpStatus:400};}
   return insertRecords(supabase, ctx, "oil_addition", { ...(input.id ? { id: input.id } : {}), aircraft_id: ctx.aircraftId, ...v.row });
 }
 

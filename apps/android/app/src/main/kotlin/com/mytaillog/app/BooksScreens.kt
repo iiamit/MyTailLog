@@ -645,7 +645,7 @@ fun PageScreen(vm: BooksViewModel, pageId: String, nav: BooksNav) {
                         ScanViewer(rememberScan(vm, p.id), pageLabel(b, p.id) ?: "", Modifier.fillMaxWidth().height(scanHeight))
                         pageMark(b, p)?.let { (k, w) -> StatusMark(k, w, Modifier.padding(top = Tokens.Space.s2)) }
                         entriesOn(b, p.id).forEach { e -> EntryRowView(b, e) { nav.openEntry(e.id) } }
-                        if (needsWebsiteReview(b, p) || b.entries.any { it.pageId == p.id && it.trust == "ai_read" }) DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
+                        if (p.extractionStatus == "extracted") DButton(stringResource(R.string.books_review_this_page), { nav.openReview(p.id) }, modifier = Modifier.padding(top = Tokens.Space.s3))
                     }
                 }
             }
@@ -700,7 +700,7 @@ fun QueueRow(b: Books, p: PageRow, selected: Boolean = false, onClick: () -> Uni
     ) {
         Column(Modifier.weight(1f)) {
             Text(pageLabel(b, p.id) ?: "", color = c.ink, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight(700)))
-            Meta(if (needsWebsiteReview(b, p)) "Review document on website" else listOfNotNull(
+            Meta(if (needsWebsiteReview(b, p)) "Review document on website" else if (entriesOn(b, p.id).isEmpty()) "Reference page · review its details" else listOfNotNull(
                 "${es.size} ${if (es.size == 1) "entry" else "entries"}",
                 if (doubts == 0) "reads cleanly" else "$doubts ${if (doubts == 1) "field" else "fields"} to check",
             ).joinToString(" · "))

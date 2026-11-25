@@ -65,7 +65,7 @@ struct ReviewQueueContent: View {
     private func row(_ page: PageRow) -> some View {
         let es = model.entries(on: page)
         let doubts = es.flatMap { $0.reviewFields.filter(\.doubtful) }
-        let detail = needsWebsiteReview(page, entries: model.entries) ? "Review document on website" : (es.count == 1 ? "1 entry" : "\(es.count) entries")
+        let detail = needsWebsiteReview(page, entries: model.entries) ? "Review document on website" : es.isEmpty ? "Reference page · review its details" : (es.count == 1 ? "1 entry" : "\(es.count) entries")
             + (doubts.isEmpty ? " · reads cleanly" : " · check the \(Set(doubts.map { $0.label.lowercased() }).sorted().joined(separator: " and "))")
         return Button { start(page.id) } label: {
             HStack(spacing: Tokens.Space.s3) {
@@ -117,7 +117,10 @@ final class ReviewSession {
     var entries: [EntryRow] { page.map(model.entries(on:)) ?? [] }
     var pageOutcomes: [String: [String: FieldOutcome]] { page.flatMap { outcomes[$0.id] } ?? [:] }
     var clean: Bool { !entries.contains { $0.reviewFields.contains(where: \.doubtful) } }
-    var canConfirm: Bool { model.canEdit && !entries.isEmpty && MyTailLog.canConfirm(entries, outcomes: pageOutcomes) && !busy }
+    var canConfirm: Bool {
+        guard let page, page.extraction_status == "extracted", !model.detailsPending(page) else { return false }
+        return model.canEdit && !(page.identity_suggestions ?? []).contains(where: { $0.status == "pending" }) && MyTailLog.canConfirm(entries, outcomes: pageOutcomes) && !busy
+    }
 
     func outcome(_ entry: String, _ key: String) -> FieldOutcome? { pageOutcomes[entry]?[key] }
 
@@ -230,6 +233,7 @@ struct ReviewFlow: View {
     @State private var detent: PresentationDetent = .fraction(0.34)
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(model: BooksModel, start: String?) {
         _session = State(initialValue: ReviewSession(model: model, start: start))
@@ -238,7 +242,8 @@ struct ReviewFlow: View {
     var body: some View {
         GeometryReader { window in
             Group {
-                if window.size.width >= 900 {
+                let layout = ShellLayout.forWindow(width: window.size.width, height: window.size.height, sizeClass: sizeClass)
+                if layout == .binder || layout == .duo {
                     ReviewDesk(session: session, close: { dismiss() })
                 } else {
                     phone
@@ -366,6 +371,7 @@ struct ReviewDrawer: View {
                 endOfQueue
             } else if let page = session.page {
                 if needsWebsiteReview(page, entries: session.model.entries) {
+                    PageIdentityReview(model: session.model, page: page).padding(Tokens.Space.s4)
                     VStack(alignment: .leading, spacing: Tokens.Space.s3) {
                         Text("Review this document on the website before applying it to aircraft records. Sign in there if asked.")
                             .dFont(.body).foregroundStyle(Tokens.Colors.ink)
@@ -388,12 +394,17 @@ struct ReviewDrawer: View {
 
     @ViewBuilder private func fields(_ page: PageRow) -> some View {
         VStack(alignment: .leading, spacing: Tokens.Space.s3) {
+            if page.extraction_status == "extracted" {
+                if !session.entries.isEmpty && !(page.identity_suggestions ?? []).contains(where: { $0.status == "pending" }) {
+                    DisclosureGroup("Page contents and aircraft details") { PageIdentityReview(model: session.model, page: page) }
+                } else { PageIdentityReview(model: session.model, page: page) }
+            }
             if !beingRead.contains(page.extraction_status) && page.extraction_status != "extracted" {
                 Text("Reading this page didn't work last time.").dFont(.body).foregroundStyle(Tokens.Colors.ink)
             } else if beingRead.contains(page.extraction_status) {
                 Text("Being read now. Entries appear here when it's done.").dFont(.body).foregroundStyle(Tokens.Colors.ink)
             } else if session.entries.isEmpty {
-                Text("This page hasn't been read yet.").dFont(.body).foregroundStyle(Tokens.Colors.ink)
+                Text("No maintenance entries on this page. Review its details, then mark it reviewed.").dFont(.body).foregroundStyle(Tokens.Colors.ink)
             }
             if page.unread_rotated_content == true {
                 Text("Some writing on this page runs sideways. Check it against the page.")
@@ -451,7 +462,7 @@ struct ReviewDrawer: View {
         VStack(spacing: Tokens.Space.s2) {
             if session.model.canEdit {
                 Button { Task { await session.confirm() } } label: {
-                    HStack { Text("Confirm page and next"); if desk { KeyHint("Return") } }
+                    HStack { Text(session.entries.isEmpty ? "Mark page reviewed and next" : "Confirm page and next"); if desk { KeyHint("Return") } }
                 }
                 .buttonStyle(.primary)
                 .disabled(!session.canConfirm)
