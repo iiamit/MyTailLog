@@ -17,6 +17,7 @@ import { normalizePageDetails } from "./normalizePageDetails";
 import { generateAi } from "./ai";
 import {
   EXTRACTION_JSON_SCHEMA,
+  ENTRY_FIELDS,
   EXTRACTION_SYSTEM_PROMPT,
   type ExtractionResult,
   type ExtractedEntry,
@@ -26,6 +27,21 @@ export type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/
 
 function isEntry(e: unknown): e is ExtractedEntry {
   return typeof e === "object" && e !== null && "confidence" in e;
+}
+
+export function normalizeExtractedEntries(value: unknown): ExtractedEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isEntry).map(entry => {
+    const raw: unknown = entry.field_confidence;
+    const confidence = Object.fromEntries(ENTRY_FIELDS.map(field => {
+      const values: unknown[] = Array.isArray(raw)
+        ? raw.filter(score => score?.field === field).map(score => score.confidence)
+        : [raw && typeof raw === "object" ? (raw as Record<string, unknown>)[field] : undefined];
+      const valid = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+      return [field, valid.length ? Math.max(0, Math.min(1, ...valid)) : 0];
+    })) as ExtractedEntry["field_confidence"];
+    return { ...entry, field_confidence: confidence };
+  });
 }
 
 /**
@@ -75,7 +91,7 @@ export async function extractFromImage(
     ...normalizePageDetails(parsed),
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
     unread_rotated_content: parsed.unread_rotated_content === true,
-    entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
+    entries: normalizeExtractedEntries(parsed.entries),
   };
 }
 
@@ -118,7 +134,7 @@ export async function extractRotatedFromImage(
       ...normalizePageDetails(parsed),
     raw_text: typeof parsed.raw_text === "string" ? parsed.raw_text : "",
       unread_rotated_content: parsed.unread_rotated_content === true,
-      entries: Array.isArray(parsed.entries) ? parsed.entries.filter(isEntry) : [],
+      entries: normalizeExtractedEntries(parsed.entries),
     };
   } catch {
     return { detected_page_count: 1, raw_text: "", unread_rotated_content: true, entries: [] };

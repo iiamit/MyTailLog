@@ -114,11 +114,11 @@ const ENTRY_SCHEMA = {
     sb_refs: { type: "array", items: { type: "string" }, description: "Service Bulletin numbers referenced." },
     confidence: { type: "number", description: "Overall confidence for this entry, 0 to 1." },
     field_confidence: {
-      type: "object",
-      additionalProperties: false,
-      description: "Per-field confidence from 0 (guess) to 1 (certain). Score every field, even null ones (a confidently-absent field is 1).",
-      properties: Object.fromEntries(ENTRY_FIELDS.map((f) => [f, { type: "number" }])),
-      required: [...ENTRY_FIELDS],
+      // Named scores avoid another ten-property object in the compiled grammar.
+      type: "array",
+      description: "One {field, confidence} item for every entry field, even absent ones. Confidence ranges from 0 to 1.",
+      items: { type: "object", additionalProperties: false,
+        properties: { field: { type: "string" }, confidence: { type: "number" } }, required: ["field", "confidence"] },
     },
     field_boxes: {
       type: "object",
@@ -181,7 +181,7 @@ Rules:
 - One logbook page may contain multiple dated entries — return one object per entry. Order them by reading position (top-to-bottom for upright content), but ORDER NEVER JUSTIFIES OMITTING ONE: an entry that doesn't fit the normal flow still gets its own object.
 - ORIENTATION. Shops affix adhesive stickers wherever there is room, so a single page often carries SEVERAL text regions at DIFFERENT orientations: some upright, others ROTATED 90° (reading bottom-to-top or top-to-bottom along the page edge), occasionally upside down. Read the page in every orientation before you answer. A rotated certification may belong to the SAME dated maintenance event as nearby handwriting, or it may be its OWN separate entry. Decide from the dates, work, and signatures; never omit it or automatically count it twice.
 - If you can see rotated or sideways content that you could NOT fully represent in structured entries, set unread_rotated_content=true EVEN IF you transcribed it into raw_text. Setting it is not a failure — it asks for a focused follow-up. Set it false only when every material certification and maintenance fact is represented in entries. Unclear handwritten values need low confidence or null, not plausible guesses.
-- For every entry, set confidence (0 to 1) for how sure you are overall, AND fill field_confidence with a separate 0-to-1 score for EVERY field — including fields you set to null (a field that is confidently absent scores high; an illegible one scores low). Be conservative: a smudged or ambiguous value should score low so the owner checks it.
+- For every entry, set confidence (0 to 1) for how sure you are overall, AND fill field_confidence as a list of {field, confidence} objects with a separate 0-to-1 score for EVERY field (${ENTRY_FIELDS.join(", ")}) — including fields you set to null (a field that is confidently absent scores high; an illegible one scores low). Be conservative: a smudged or ambiguous value should score low so the owner checks it.
 - Also fill field_boxes: for each field, give the bounding box of where that value appears on the image as the array [x, y, w, h] in fractions of the FULL image — x,y is the top-left corner and w,h the size, all between 0 and 1 (e.g. a hobbs reading in the upper-right might be [0.72, 0.08, 0.14, 0.05]). If a field is absent or you cannot locate it, use [0, 0, 0, 0]. Boxes may be approximate; they only help the owner find the value on the page.
 - Numbers like hobbs/tach: transcribe digits exactly as written; if a digit is ambiguous, score that field low rather than guessing.
 - A single entry can SPAN A PAGE BREAK: it begins near the bottom of one page and finishes at the top of the next. You only see one page, so judge from this page alone: set continues_next=true on an entry that reaches the bottom of the page still mid-work, without its closing signature/date-out (it will finish on the next page); set is_continuation=true on an entry that starts partway through — no date or header of its own, beginning in the middle of a work item — because it began on the previous page. These are usually the last and first entries respectively; for a normal self-contained entry both are false. Do not fabricate the missing half; just flag it.

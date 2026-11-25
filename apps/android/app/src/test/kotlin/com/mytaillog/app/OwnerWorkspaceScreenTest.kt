@@ -142,7 +142,7 @@ class OwnerWorkspaceScreenTest {
         awaitText("Recorded 123.45 · reserves 0.00")
         compose.onNodeWithText("Apply period").performScrollTo().performClick()
         awaitText("Recorded 50.00 · reserves 0.00")
-        compose.onNodeWithText("About USD 5.00 per hour · recorded spending only").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("About USD 5.00 per measured hour · spending within the measured dates").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Reviewed boundary tach readings for the applied period.").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("USD 50.00 · Period shop").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("USD 123.45 · Maintenance shop").assertDoesNotExist()
@@ -158,7 +158,7 @@ class OwnerWorkspaceScreenTest {
         compose.waitUntil(5000) { compose.onAllNodes(hasText("Show all dates") and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Show all dates").performScrollTo().performClick()
         awaitText("Recorded 123.45 · reserves 0.00")
-        compose.onNodeWithText("About USD 5.00 per hour · recorded spending only").assertDoesNotExist()
+        compose.onNodeWithText("About USD 5.00 per measured hour · spending within the measured dates").assertDoesNotExist()
     }
 
     @Test fun costLedgerShowsActualTotalsAndKeepsAnAddDraftOnScreen() {

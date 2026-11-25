@@ -278,7 +278,7 @@ const SECTIONS: Section[] = [
           Keep the header names and save as comma-separated CSV (UTF-8), then choose the file and import it.
           The template has no sample expenses to delete. Imports support up to 500 rows and 2 MB.
         </p>
-        <h3 className="text-lg font-semibold">Required columns</h3>
+        <h4 className="text-lg font-semibold">Required columns</h4>
         <dl>
           <dt><code>date</code></dt>
           <dd>The expense or reserve date, written as YYYY-MM-DD, for example 2026-11-25.</dd>
@@ -294,7 +294,7 @@ const SECTIONS: Section[] = [
           <dd>Use actual for actual spending, or reserve for a future cost allowance or estimate. The app totals these separately. A reserve amount is a total monetary amount, not an hourly rate that the importer multiplies by flight hours.</dd>
         </dl>
         <p>Use the category, cost_type and basis values exactly as shown, in lowercase. These are independent choices: an annual inspection can be maintenance/fixed/actual, while an engine overhaul allowance can be maintenance/variable/reserve.</p>
-        <h3 className="text-lg font-semibold">Optional columns</h3>
+        <h4 className="text-lg font-semibold">Optional columns</h4>
         <dl>
           <dt><code>vendor</code></dt><dd>The supplier or business paid (up to 200 characters).</dd>
           <dt><code>payer</code></dt><dd>The person or organization that paid (up to 200 characters).</dd>
@@ -304,7 +304,7 @@ const SECTIONS: Section[] = [
           <dt><code>log_entry_id</code></dt><dd>The UUID of an existing logbook entry on this aircraft, not a page number.</dd>
         </dl>
         <p>The template includes vendor, payer and notes; leave them blank if unused. The identifier columns are optional advanced fields and can be added when needed. Export existing expenses to obtain their identifiers.</p>
-        <h3 className="text-lg font-semibold">Examples</h3>
+        <h4 className="text-lg font-semibold">Examples</h4>
         <ul>
           <li>A $185.75 fuel purchase: amount_minor 18575, category fuel, cost_type variable, basis actual.</li>
           <li>$450 monthly hangar rent: amount_minor 45000, category hangar, cost_type fixed, basis actual.</li>
