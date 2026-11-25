@@ -13,12 +13,12 @@ export type IdentitySuggestion = {
 };
 
 export const PAGE_DETAILS_SCHEMA = {
-  content_kinds: { type: "array", items: { type: "string", enum: CONTENT_KINDS } },
+  content_kinds: { type: "array", items: { type: "string", description: "One of identity, equipment, maintenance, reference, blank." } },
   identity_suggestions: {
     type: "array", items: {
       type: "object", additionalProperties: false,
       properties: {
-        subject: { type: "string", enum: ["aircraft", "engine", "prop", "avionics", "equipment"] },
+        subject: { type: "string", description: "One of aircraft, engine, prop, avionics, equipment." },
         name: { type: "string" },
         // A compact list avoids the grammar explosion of another fixed-field object.
         fields: { type: "array", items: { type: "object", additionalProperties: false,

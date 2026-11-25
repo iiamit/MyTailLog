@@ -40,7 +40,15 @@ export function normalizeExtractedEntries(value: unknown): ExtractedEntry[] {
       const valid = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
       return [field, valid.length ? Math.max(0, Math.min(1, ...valid)) : 0];
     })) as ExtractedEntry["field_confidence"];
-    return { ...entry, field_confidence: confidence };
+    const rawBoxes: unknown = entry.field_boxes;
+    const boxes = Object.fromEntries(ENTRY_FIELDS.map(field => {
+      const values: unknown[] = Array.isArray(rawBoxes)
+        ? rawBoxes.filter(box => box?.field === field).map(box => box.box)
+        : [rawBoxes && typeof rawBoxes === "object" ? (rawBoxes as Record<string, unknown>)[field] : undefined];
+      const box = values.length === 1 ? values[0] : undefined;
+      return [field, Array.isArray(box) && box.length === 4 && box.every(n => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1) ? box : [0, 0, 0, 0]];
+    })) as ExtractedEntry["field_boxes"];
+    return { ...entry, field_confidence: confidence, field_boxes: boxes };
   });
 }
 

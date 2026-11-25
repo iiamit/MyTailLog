@@ -69,3 +69,11 @@ test("compact field scores normalize to the existing review contract in both ext
   assert.equal(normalizeExtractedEntries([{ confidence: 1, field_confidence: { tach: 0.8 } }])[0].field_confidence.tach, 0.8);
   assert.equal(normalizeExtractedEntries(null).length, 0);
 });
+
+test("compact field boxes retain review highlights and reject malformed coordinates", () => {
+  const [entry] = normalizeExtractedEntries([{ confidence: 1, field_boxes: [{ field: "tach", box: [0.1, 0.2, 0.3, 0.4] }, { field: "hobbs", box: [9, 0, 0, 0] }, { field: "entry_date", box: [0.1] }] }]);
+  assert.deepEqual(entry.field_boxes.tach, [0.1, 0.2, 0.3, 0.4]);
+  assert.deepEqual(entry.field_boxes.hobbs, [0, 0, 0, 0]);
+  assert.deepEqual(entry.field_boxes.entry_date, [0, 0, 0, 0]);
+  assert.deepEqual(normalizeExtractedEntries([{ confidence: 1, field_boxes: { tach: [0.1, 0.2, 0.3, 0.4] } }])[0].field_boxes.tach, entry.field_boxes.tach);
+});
