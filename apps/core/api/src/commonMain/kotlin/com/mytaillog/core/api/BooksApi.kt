@@ -5,6 +5,8 @@ import com.mytaillog.core.domain.map.MapModel
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -54,10 +56,28 @@ import kotlin.uuid.Uuid
     @SerialName("updated_at") val updatedAt: String,
 )
 
+@Serializable data class IdentitySuggestion(
+    val id: String, val subject: String, val name: String, val fields: Map<String, String>,
+    val quote: String, val confidence: Double, val status: String = "pending",
+)
+@Serializable data class IdentityTarget(
+    val id: String,
+    @SerialName("updated_at") val updatedAt: String,
+    val name: String? = null, val category: String? = null,
+    val make: String? = null, val model: String? = null,
+    @SerialName("serial_number") val serialNumber: String? = null,
+    @SerialName("part_number") val partNumber: String? = null,
+    @SerialName("tail_number") val tailNumber: String? = null,
+) {
+    fun value(key: String): String? = when(key) { "make" -> make; "model" -> model; "serial_number" -> serialNumber; "part_number" -> partNumber; "tail_number" -> tailNumber; else -> null }
+}
+
 @Serializable data class PageRow(
     val id: String,
     @SerialName("logbook_id") val logbookId: String,
     @SerialName("page_sequence") val pageSequence: Int? = null,
+    @SerialName("content_kinds") val contentKinds: List<String> = emptyList(),
+    @SerialName("identity_suggestions") val identitySuggestions: List<IdentitySuggestion> = emptyList(),
     @SerialName("review_status") val reviewStatus: String = "unreviewed",
     @SerialName("extraction_status") val extractionStatus: String? = null,
     @SerialName("ocr_text") val ocrText: String? = null,
@@ -86,12 +106,13 @@ import kotlin.uuid.Uuid
 )
 
 /** One aircraft's logbooks: the map and the rows the sheets, pages and review read. */
-data class Books(
+@Serializable data class Books(
     val map: MapModel,
     val entries: List<EntryRow>,
     val pages: List<PageRow>,
     val logbooks: List<LogbookRow>,
     val gaps: List<GapRow>,
+    val identityTargets: List<IdentityTarget> = emptyList(),
 )
 
 private const val ENTRY_COLUMNS = "id,page_id,logbook_id,entry_date,tach,hobbs,airframe,description,work_performed,parts," +
@@ -110,10 +131,21 @@ class BooksApi(
     suspend fun load(aircraftId: String): Books = coroutineScope {
         val map = async { parseMap(api("/api/aircraft/$aircraftId/map").bodyAsText()) }
         val entries = async { rest<EntryRow>("log_entry", aircraftId, ENTRY_COLUMNS, "entry_date.desc.nullslast,entry_index") }
-        val pages = async { rest<PageRow>("page", aircraftId, "id,logbook_id,page_sequence,review_status,extraction_status,ocr_text,unread_rotated_content,needs_look,updated_at", "page_sequence") }
+        val pages = async { rest<PageRow>("page", aircraftId, "id,logbook_id,page_sequence,review_status,extraction_status,ocr_text,unread_rotated_content,needs_look,content_kinds,identity_suggestions,updated_at", "page_sequence") }
         val books = async { rest<LogbookRow>("logbook", aircraftId, "id,type,title", "type") }
         val gaps = async { rest<GapRow>("logbook_gap", aircraftId, "id,status,note,updated_at", "from_date") }
-        Books(map.await(), entries.await(), pages.await(), books.await(), gaps.await())
+        val components = async { rest<IdentityTarget>("component", aircraftId, "id,updated_at,name,category,make,model,serial_number,part_number", "name") }
+        val aircraft: List<IdentityTarget> = http.get("${supabaseUrl.trimEnd('/')}/rest/v1/aircraft") {
+            header("apikey", supabaseKey); bearerAuth(accessToken()); parameter("id", "eq.$aircraftId")
+            parameter("select", "id,updated_at,tail_number,make,model,serial_number")
+        }.orThrow().body()
+        Books(map.await(), entries.await(), pages.await(), books.await(), gaps.await(), aircraft + components.await())
+    }
+
+    suspend fun reread(pageId: String) {
+        http.post("${apiBaseUrl.trimEnd('/')}/api/pages/$pageId/extract") {
+            bearerAuth(accessToken()); header("Content-Type", "application/json"); setBody("{\"queue\":true}")
+        }.orThrow()
     }
 
     suspend fun evidence(aircraftId: String, gapId: String): GapEvidence =
@@ -182,6 +214,9 @@ object BookWrites {
 
     fun reviewPage(aircraftId: String, pageId: String, status: String, base: String) =
         m("page.review", aircraftId, base, buildJsonObject { put("pageId", pageId); put("status", status) })
+
+    fun details(aircraftId: String, page: PageRow, decision: JsonObject) =
+        m("page.details", aircraftId, page.updatedAt, buildJsonObject { put("pageId", page.id); put("decision", decision) })
 
     fun confirmClean(aircraftId: String) = m("entries.confirmClean", aircraftId, null, JsonObject(emptyMap()))
 

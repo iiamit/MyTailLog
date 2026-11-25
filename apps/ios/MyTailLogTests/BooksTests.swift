@@ -256,3 +256,26 @@ struct ReviewTests {
         #expect(json?["base"] as? String == "b")
     }
 }
+
+@Test func referencePagesWaitForReviewWithoutMaintenanceEntries() throws {
+    let raw = #"{"id":"p","logbook_id":"b","review_status":"unreviewed","extraction_status":"extracted","content_kinds":["identity"],"identity_suggestions":[{"id":"aaaaaaaaaaaaaaaaaaaaaaaa","subject":"aircraft","name":"Aircraft","fields":{"serial_number":"000123"},"quote":"Serial 000123","confidence":0.9,"status":"pending"}],"updated_at":"2026-11-25T12:00:00Z"}"#
+    var page = try JSONDecoder().decode(PageRow.self, from: Data(raw.utf8))
+    #expect(page.identity_suggestions?.first?.fields["serial_number"] == "000123")
+    #expect(waitsForReview(page, entries: []))
+    page.identity_suggestions = []
+    #expect(waitsForReview(page, entries: []))
+    page.review_status = "confirmed"
+    #expect(!waitsForReview(page, entries: []))
+}
+
+@Test func engineSystemAccessoriesAreNotCompleteEngines() {
+    func row(_ name: String, _ kind: String? = nil) -> Rec {
+        var fields: [String: AnyJSON] = ["id": .string("component"), "name": .string(name), "category": .string("engine")]
+        if let kind { fields["component_kind"] = .string(kind) }
+        return Rec(row: fields)
+    }
+    for name in ["Vacuum pump", "Magneto", "Engine oil filter", "Alternator", "Exhaust system", "Engine monitor"] { #expect(!isCompleteEngine(row(name))) }
+    for name in ["Engine", "Lycoming IO-360-A1A", "Continental TSIO-520", "Rotax 912"] { #expect(isCompleteEngine(row(name))) }
+    #expect(!isCompleteEngine(row("Engine", "accessory")))
+    #expect(isCompleteEngine(row("Powerplant", "engine")))
+}

@@ -1,3 +1,4 @@
+import { isEngineComponent } from "@/lib/engineComponent";
 import { ownerJson } from "@/lib/owner/body";
 import { NextResponse } from "next/server";
 import { ownerAccess, ownerError } from "@/lib/owner/access";
@@ -16,12 +17,13 @@ export async function POST(
       typeof b.base !== "string"
     )
       throw new Error("Enter a position and reload the current engine first.");
+    const { data: current } = await a.supabase.from("component").select("*").eq("aircraft_id", id).eq("id", component).maybeSingle();
+    if (!current || !isEngineComponent(current)) throw new Error("Choose a complete engine, not an accessory.");
     const { data, error } = await a.supabase
       .from("component")
       .update({ position: b.position.trim() || null })
       .eq("aircraft_id", id)
       .eq("id", component)
-      .eq("category", "engine")
       .eq("updated_at", b.base)
       .select("*")
       .maybeSingle();

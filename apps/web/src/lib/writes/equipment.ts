@@ -17,7 +17,9 @@ const LIFE_UNITS = ["hours", "months", "cycles"] as const;
 /** The editable fields of a component (the web form's shape, minus id). */
 export type ComponentFields = {
   name: string;
+  component_kind?: "engine" | "propeller" | "accessory" | "equipment" | null;
   make: string | null;
+  model?: string | null;
   category: string | null;
   part_number: string | null;
   serial_number: string | null;
@@ -42,6 +44,7 @@ export function pickComponentFields(input: unknown): { fields: ComponentFields }
   if (!input || typeof input !== "object" || Array.isArray(input)) return { error: "Component fields are missing." };
   const src = input as Record<string, unknown>;
   const name = typeof src.name === "string" ? src.name.trim() : "";
+  if (src.component_kind != null && !["engine", "propeller", "accessory", "equipment"].includes(String(src.component_kind))) return { error: "Choose what this equipment record represents." };
   if (!name) return { error: "Name is required." };
   if (!validNumber(src.life_limit_value)) return { error: "Life limit must be zero or a positive number." };
   if (src.life_limit_unit != null && !LIFE_UNITS.includes(src.life_limit_unit as never)) {
@@ -51,7 +54,9 @@ export function pickComponentFields(input: unknown): { fields: ComponentFields }
   return {
     fields: {
       name,
+      ...("component_kind" in src ? { component_kind: src.component_kind as ComponentFields["component_kind"] } : {}),
       make: str(src.make, 200),
+      ...("model" in src ? { model: str(src.model, 200) } : {}),
       category: str(src.category, 200),
       part_number: str(src.part_number, 200),
       serial_number: str(src.serial_number, 200),
@@ -186,7 +191,7 @@ export async function reinstall(
 ): Promise<WriteResult> {
   const loaded = await loadComponent(supabase, ctx, input.componentId, base);
   if ("status" in loaded) return loaded;
-  return patchComponent(supabase, ctx, input.componentId, loaded.row.updated_at, { is_installed: true, removal_date: null, removal_entry_id: null });
+  return patchComponent(supabase, ctx, input.componentId, loaded.row.updated_at, { is_installed: true, identity_historical: false, removal_date: null, removal_entry_id: null });
 }
 
 // ---------------------------------------------------------------------------

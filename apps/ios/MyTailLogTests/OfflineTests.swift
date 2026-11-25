@@ -140,6 +140,22 @@ struct OfflineStoreTests {
         #expect(!FileManager.default.fileExists(atPath: s.fileURL(job).path()))
         s.close()
     }
+    @Test func referenceIdentityDecisionSurvivesOfflineRestart() throws {
+        let root = tempRoot()
+        defer { UserDefaults.standard.removeObject(forKey: "MTLForceOffline"); try? FileManager.default.removeItem(at: root) }
+        let first = store(root)
+        let decision: [String: Any] = ["action": "accept", "suggestionId": String(repeating: "a", count: 24), "fields": ["serial_number": "000123"], "targetId": "11190000-0000-4000-a000-000000000004", "installed": false]
+        try first.enqueue(type: "page.details", aircraftId: aircraft, payload: ["pageId": "p1", "decision": decision], label: "Review aircraft details", target: ("page", "p1"), base: "2026-11-25T12:00:00Z")
+        first.close()
+        let again = store(root)
+        let item = try #require(again.waiting.first)
+        #expect(item.type == "page.details")
+        #expect(item.targetId == "p1")
+        #expect(item.payload["decision"] == .object(["action": .string("accept"), "suggestionId": .string(String(repeating: "a", count: 24)), "fields": .object(["serial_number": .string("000123")]), "targetId": .string("11190000-0000-4000-a000-000000000004"), "installed": .bool(false)]))
+        #expect(again.rawRows("component", aircraftId: aircraft).isEmpty)
+        again.close()
+    }
+
 }
 
 struct OfflineRulesTests {
@@ -188,4 +204,6 @@ struct OfflineRulesTests {
         #expect(AnyJSON.number(3).display == "3")
         #expect(FieldDiffRow(field: "next_due_date", base: .null, mine: .null, theirs: .null, clash: false, changedByMe: false, changedByThem: false).label == "Next due date")
     }
+
+
 }

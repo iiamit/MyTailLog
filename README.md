@@ -112,6 +112,7 @@ mechanic, with the page it's on. Entries read by AI don't count toward Status un
 you confirm them.
 
 **Capture → extract → review**
+- Identification pages and original-equipment lists produce source-linked details for review without requiring maintenance entries. Aircraft setup reuses confirmed information; historical equipment stays separate from confirmed current installations. See the [logbook review guide](docs/logbook-review.md).
 - Camera capture with automatic document edge-detection / deskew / crop, or
   upload scans (PDF / JPEG / PNG). Offline-friendly: pages queue on-device and
   upload when back online.

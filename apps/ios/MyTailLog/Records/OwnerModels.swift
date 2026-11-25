@@ -138,3 +138,11 @@ func engineHoursPerQuart(_ additions: [Row]) -> (value: Double, meter: String)? 
     guard totalQuarts.isFinite, totalQuarts > 0 else { return nil }
     return ((readings.last! - readings.first!) / totalQuarts, meter)
 }
+
+func isCompleteEngine(_ c: Rec) -> Bool {
+    if let kind = c.s("component_kind") { return kind == "engine" }
+    guard c.s("category") == "engine" else { return false }
+    let name = c.s("name") ?? ""
+    if name.range(of: #"\b(pump|magneto|alternator|starter|exhaust|muffler|filter|monitor|mount|cylinder|baffle|hose|belt|injector|governor|sensor|tachometer)\b"#, options: [.regularExpression, .caseInsensitive]) != nil { return false }
+    return "\(name) \(c.s("model") ?? "")".range(of: #"\bengine\b|\b(AEIO|AIO|IO|O|TSIO|TIO|GTSIO|GO|HIO|LIO)-?\d{3}\b|\b(Rotax|Rotec|PT6)[ -]*\w+"#, options: [.regularExpression, .caseInsensitive]) != nil
+}

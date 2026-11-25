@@ -1,3 +1,4 @@
+import { isEngineComponent } from "@/lib/engineComponent";
 import type {
   Component,
   OilAddition,
@@ -21,7 +22,7 @@ export function buildEngineHistory(
   );
   const trends = engineTrends(entries, resets),
     groups: EngineGroup[] = [];
-  const engines = components.filter((c) => c.category === "engine");
+  const engines = components.filter(isEngineComponent);
   for (const c of engines) {
     const boundaries = [
       ...new Set(

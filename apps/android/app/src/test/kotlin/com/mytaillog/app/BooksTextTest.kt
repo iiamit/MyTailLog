@@ -150,4 +150,15 @@ class BooksTextTest {
         val layout = layoutMap(m, LayoutOptions("phone", renderedWidth = 358.0))
         assertEquals(m.stops.size, layout.stops.size)
     }
+    @org.junit.Test fun referenceIdentitySurvivesCachedBooksRoundTrip() {
+        val b = sampleBooks()
+        val page = b.pages.first().copy(contentKinds = listOf("identity"), identitySuggestions = listOf(
+            com.mytaillog.core.api.IdentitySuggestion("a".repeat(24), "aircraft", "Aircraft", mapOf("serial_number" to "000123"), "Serial 000123", 0.9)))
+        val cached = b.copy(entries = emptyList(), pages = listOf(page))
+        val restored = decodeBooks(encodeBooks(cached))
+        assertEquals("000123", restored.pages.single().identitySuggestions.single().fields["serial_number"])
+        assertEquals(1, reviewQueue(restored).size)
+        assertEquals(emptyList<com.mytaillog.core.api.EntryRow>(), restored.entries)
+    }
+
 }

@@ -1,5 +1,7 @@
 "use server";
 
+import { reviewDetails } from "@/lib/writes/pageDetails";
+
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import * as entries from "@/lib/writes/entries";
@@ -50,7 +52,8 @@ async function nextPage(supabase: entries.Db, aircraftId: string, pageId: string
     .is("replaced_by_entry_id", null)
     .not("page_id", "is", null)
     .limit(5000);
-  const ids = [...new Set((waiting ?? []).map((w) => w.page_id!).filter((p) => p !== pageId))];
+  const { data: referencePages } = await supabase.from("page").select("id").eq("aircraft_id", aircraftId).eq("extraction_status", "extracted").eq("review_status", "unreviewed").not("content_kinds", "eq", "{}");
+  const ids = [...new Set([...(waiting ?? []).map((w) => w.page_id!), ...(referencePages ?? []).map((p) => p.id)].filter((p) => p !== pageId))];
   if (!ids.length) return null;
   const [{ data: rows }, { data: books }] = await Promise.all([
     supabase.from("page").select("id, logbook_id, page_sequence, created_at, extraction_status").in("id", ids.slice(0, 500)),
@@ -231,4 +234,14 @@ export async function pendingDuplicates(aircraftId: string): Promise<DuplicatePa
     const o = (originals ?? []).find((x) => x.id === h.duplicate_of_page_id);
     return o ? [{ pageId: h.id, label: label(h.logbook_id, h.page_sequence), of: { pageId: o.id, label: label(o.logbook_id, o.page_sequence), scannedAt: o.created_at } }] : [];
   });
+}
+
+/** Identity decisions share the native outbox transaction; an old page or destination cannot overwrite a newer one. */
+export async function reviewPageDetails(aircraftId: string, pageId: string, base: string, decision: unknown): Promise<{ ok: true } | Fail> {
+  const s = await session(aircraftId);
+  if (!s) return NOT_SIGNED_IN;
+  const r = await reviewDetails(s.supabase, s.ctx, { pageId, decision }, base);
+  if (r.status !== "ok") return { error: entries.failMessage(r) };
+  refresh(aircraftId);
+  return { ok: true };
 }

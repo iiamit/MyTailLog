@@ -3,6 +3,7 @@ import { stubs } from "./_stubs";
 import type { WriteFn } from "./_stubs";
 import * as entries from "./entries";
 import * as pages from "./pages";
+import { reviewDetails } from "./pageDetails";
 import * as meters from "./meters";
 import * as maintenance from "./maintenance";
 import * as compliance from "./compliance";
@@ -65,6 +66,7 @@ export const writes: Record<MutationType | Phase4MutationType, WriteFn> = {
   "entry.setLinks": entries.setLinks,
   "entries.confirmClean": entries.confirmClean,
   "page.review": pages.setReview,
+  "page.details": reviewDetails,
   "page.reorder": pages.reorder,
   "page.delete": pages.deletePages,
   "page.register": pages.register,

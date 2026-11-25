@@ -1,3 +1,4 @@
+import { isEngineComponent } from "@/lib/engineComponent";
 import type { Metadata } from "next";
 import { Fragment } from "react";
 import Link from "next/link";
@@ -50,7 +51,7 @@ export default async function OilPage({
     loadLogEntries(supabase, id).catch(() => null),
     supabase.from("meter_reset").select("meter, reset_date").eq("aircraft_id", id),
     dueSnapshot(id, auth.user.id).catch(() => null),
-    supabase.from("component").select("id,name,serial_number").eq("aircraft_id", id).eq("category", "engine"),
+    supabase.from("component").select("*").eq("aircraft_id", id),
   ]);
   const head = (actions?: React.ReactNode) => (
     <BoardHead title="Aircraft" subTabs={aircraftTabs(id, "oil")} actions={actions} />
@@ -97,7 +98,7 @@ export default async function OilPage({
         <ActForm action={addOil.bind(null, id)} className="flex flex-col gap-4">
           <Field label="Date"><input name="date" type="date" required defaultValue={today} max={today} className={fieldClass} /></Field>
           <Field label="Quarts added"><input name="quarts" type="number" step="0.25" min="0.25" required inputMode="decimal" className={fieldClass} /></Field>
-          <Field label="Engine"><select name="componentId" className={fieldClass}><option value="">Not specified — keep unassigned if ambiguous</option>{(enginesQ.data ?? []).map(c => <option key={c.id} value={c.id}>{c.name} · {c.serial_number ?? "serial not recorded"}</option>)}</select></Field>
+          <Field label="Engine"><select name="componentId" className={fieldClass}><option value="">Not specified — keep unassigned if ambiguous</option>{(enginesQ.data ?? []).filter(isEngineComponent).map(c => <option key={c.id} value={c.id}>{c.name} · {c.serial_number ?? "serial not recorded"}</option>)}</select></Field>
           <Field label="Tach" help="The burn rate is measured on tach when it can be."><input name="tach" type="number" step="0.1" min="0" inputMode="decimal" defaultValue={context.tach ?? ""} className={fieldClass} /></Field>
           <Field label="Hobbs"><input name="hobbs" type="number" step="0.1" min="0" inputMode="decimal" defaultValue={context.hobbs ?? ""} className={fieldClass} /></Field>
           <Field label="Notes"><input name="notes" className={fieldClass} /></Field>

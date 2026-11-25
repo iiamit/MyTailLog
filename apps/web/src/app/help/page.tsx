@@ -87,10 +87,11 @@ const SECTIONS: Section[] = [
           (annual, transponder, pitot-static, ELT) are added for you.
         </li>
         <li>
-          <strong>Get started</strong>: on the web, enrolling opens a three-step setup: today&apos;s
-          tach and hobbs, then a photo of the page with your last annual sign-off (or just its date),
-          then your status. That&apos;s enough to start counting down what&apos;s due. Status reminds you
-          until setup is done, and the logbook map shows how far back each book goes and where it skips.
+          <strong>Start with the logbooks or enter details manually</strong>: setup is optional.
+          Upload identification pages and recent service records, then review the extracted information.
+          Confirmed details, inspection history and recorded meter readings are reused, so you only need
+          to supply missing information. A last service reading may be older than today&apos;s actual meter reading;
+          check its date and source. You can choose <strong>Skip for now</strong>{" "}at any time.
         </li>
         <li>
           <strong>Capture or upload</strong>{" "}your logbook pages (and A&amp;P documents into Other).
@@ -108,6 +109,17 @@ const SECTIONS: Section[] = [
         </li>
       </ol>
     ),
+  },
+  {
+    id: "identification-pages",
+    title: "Identification and reference pages",
+    body: <>
+      <p>A cover, original-equipment list or reference page is a valid part of a logbook. It does not need a maintenance entry, date, meter reading or signature. In Logbooks → Review, check the page type and any suggested aircraft or equipment details beside the original scan. Mixed pages can contain both details and maintenance entries.</p>
+      <p>Compare each suggestion with the current record, edit any misread characters, then accept or dismiss it. Accepted details keep a source-page link. Old equipment lists create historical records unless you explicitly confirm that the equipment is installed today. Resolve the suggestions, then mark the reference page reviewed; it stays in Pages and search without creating a maintenance completion or an artificial timeline event.</p>
+      <p>For existing uploads, open aircraft setup and choose <strong>Find aircraft details in existing pages</strong>. On the native apps, open a page, choose Review, then <strong>Find aircraft details in this page</strong>. Reading uses the usual allowance and keeps confirmed entries and prior review decisions.</p>
+      <p>Mobile decisions can be saved offline. Sync before continuing review of the same page; if another person changed the destination record, review its current values before accepting again. Viewers cannot accept changes.</p>
+      <p>In Equipment, <strong>This record represents</strong>{" "}distinguishes a complete engine from its accessories. The Engine category also includes pumps and magnetos. Engine history uses complete engines, and keeps compression readings with uncertain engine assignments under <strong>Unassigned observations</strong>. A missing test reference pressure is never assumed.</p>
+    </>,
   },
   {
     id: "mobile",

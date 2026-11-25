@@ -240,8 +240,8 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
                     Text("Review this document on the website before applying it to aircraft records. Sign in there if asked.", color = c.ink, style = MaterialTheme.typography.bodyLarge)
                     DButton("Review document on website", { browser.openUri("${BuildConfig.API_URL.trimEnd('/')}/v2/aircraft/$aircraftId/logbooks/review/${page.id}") })
                 }
-            } else Drawer(b, ui.canEdit, entries, entry, field, outcomes, ready, busy, wide, page.unreadRotated, page.ocrText, editKey,
-                onEntry = { entryIx = it; field = null }, onField = { field = it }, onOutcome = ::outcome, onConfirm = ::confirm)
+            } else Drawer(b, ui.canEdit, entries, entry, field, outcomes, ready && page.identitySuggestions.none { it.status == "pending" } && !vm.detailsPending(page.id), busy, wide, page.unreadRotated, page.ocrText, editKey,
+                onEntry = { entryIx = it; field = null }, onField = { field = it }, onOutcome = ::outcome, onConfirm = ::confirm, identity = { PageIdentityReview(vm, b, page, aircraftId, ui.canEdit) })
         }
         if (wide) {
             Row(Modifier.fillMaxSize()) {
@@ -258,14 +258,23 @@ fun ReviewScreen(vm: BooksViewModel, startPageId: String?, nav: BooksNav, wide: 
         } else {
             val box = field?.let { entry?.box(it) }
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                val drawerHeight = maxHeight * (if (field != null) 0.62f else 0.5f)
-                Column(Modifier.fillMaxSize()) {
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        // M-REVIEW-02 zooms the page to the field's ink; otherwise the whole page.
-                        if (box != null) ScanCrop(scan, name, Modifier.fillMaxSize(), crop = box.grown(0.06), outline = entry?.let(::entryBox), highlight = box)
-                        else ScanViewer(scan, name, Modifier.fillMaxSize(), outline = entry?.let(::entryBox))
+                if (maxWidth > maxHeight) {
+                    Row(Modifier.fillMaxSize()) {
+                        Box(Modifier.weight(1f).fillMaxHeight()) {
+                            ScanViewer(scan, name, Modifier.fillMaxSize(), outline = entry?.let(::entryBox), highlight = box)
+                        }
+                        Column(Modifier.weight(1f).fillMaxHeight().background(c.leaf), content = drawer)
                     }
-                    Column(Modifier.fillMaxWidth().height(drawerHeight).background(c.leaf), content = drawer)
+                } else {
+                    val drawerHeight = maxHeight * (if (field != null) 0.62f else 0.5f)
+                    Column(Modifier.fillMaxSize()) {
+                        Box(Modifier.weight(1f).fillMaxWidth()) {
+                            // M-REVIEW-02 zooms the page to the field's ink; otherwise the whole page.
+                            if (box != null) ScanCrop(scan, name, Modifier.fillMaxSize(), crop = box.grown(0.06), outline = entry?.let(::entryBox), highlight = box)
+                            else ScanViewer(scan, name, Modifier.fillMaxSize(), outline = entry?.let(::entryBox))
+                        }
+                        Column(Modifier.fillMaxWidth().height(drawerHeight).background(c.leaf), content = drawer)
+                    }
                 }
             }
         }
@@ -334,14 +343,16 @@ private fun ColumnScope.Drawer(
     onField: (Field?) -> Unit,
     onOutcome: (Outcome) -> Unit,
     onConfirm: () -> Unit,
+    identity: @Composable () -> Unit = {},
 ) {
     val c = MyTailLogTheme.colors
     Column(Modifier.fillMaxWidth().padding(horizontal = Tokens.Space.s4)) {
         Box(Modifier.padding(top = Tokens.Space.s2).align(Alignment.CenterHorizontally).size(36.dp, 4.dp).clip(RoundedCornerShape(Tokens.Radius.pill)).background(c.rule2))
     }
     Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = Tokens.Space.s4)) {
+        if (field == null) identity()
         if (entry == null) {
-            Text(stringResource(R.string.review_no_entries), color = c.ink, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = Tokens.Space.s3))
+            Text("No maintenance entries on this page. Review its details, then mark it reviewed.", color = c.ink, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = Tokens.Space.s3))
             return@Column
         }
         val ix = entries.indexOf(entry)
@@ -368,9 +379,9 @@ private fun ColumnScope.Drawer(
         fields.forEach { f -> FieldRow(entry, f, outcomes[entry.id]?.get(f)) { onField(f) } }
         if (!canEdit) Meta(stringResource(R.string.review_viewer), Modifier.padding(top = Tokens.Space.s3))
     }
-    if (canEdit && field == null && entry != null) {
+    if (canEdit && field == null) {
         DButton(
-            stringResource(R.string.review_confirm_next) + if (keyHints) "  ⏎" else "",
+            (if (entries.isEmpty()) "Mark page reviewed and next" else stringResource(R.string.review_confirm_next)) + if (keyHints) "  ⏎" else "",
             onConfirm, enabled = ready, busyText = if (busy) stringResource(R.string.saving) else null,
             modifier = Modifier.padding(Tokens.Space.s4),
         )

@@ -145,7 +145,7 @@ private struct InboxReviewSheet: View {
                     ChoiceRow(label: "Logbook", options: [("", "Choose a logbook")] + logbooks.map { ($0["id"]?.text ?? "", bookName($0["type"]?.text) ?? "Logbook") }, selection: $logbook)
                 }
                 if kind == "oil_report" {
-                    ChoiceRow(label: "Engine", options: [("", "Unassigned — review later")] + recs.records("component").filter { ($0.s("category") ?? "").localizedCaseInsensitiveContains("engine") }.map { ($0.id, $0.s("name") ?? "Engine") }, selection: $component)
+                    ChoiceRow(label: "Engine", options: [("", "Unassigned — review later")] + recs.records("component").filter(isCompleteEngine).map { ($0.id, $0.s("name") ?? "Engine") }, selection: $component)
                 }
                 Button("Read suggested details") { analyze() }.buttonStyle(.secondary).disabled(!recs.online || busy)
                 Note("Reading uses the account's AI allowance. Nothing is accepted automatically. Check the original, currency, amounts, dates and component before approval.")

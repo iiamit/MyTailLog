@@ -43,12 +43,12 @@ export default async function ReviewAllPage({
     .map((pg) => {
       const es = doubted.filter((d) => d.row.page_id === pg.id);
       const clean =
-        !pg.needs_look && !pg.unread_rotated_content && (pg.detected_page_count ?? 1) <= 1 &&
+        es.length > 0 && !(pg.identity_suggestions ?? []).some((s) => s.status === "pending") && !pg.needs_look && !pg.unread_rotated_content && (pg.detected_page_count ?? 1) <= 1 &&
         pageIsClean(es.map((d) => ({ ...d.row, ad_refs: d.row.ad_refs ?? [], sb_refs: d.row.sb_refs ?? [] }))) &&
         !es.some((d) => !d.row.owner_confirmed && d.fields.some((f) => f.plausibility));
       const doubt =
         pageDoubt(es.map((d) => ({ fields: d.fields, confirmed: d.row.owner_confirmed }))) ??
-        (es.some((d) => d.row.is_continuation) ? "Starts with the rest of an entry from the page before" : pg.unread_rotated_content ? "Sideways text that couldn't be read in full" : (pg.detected_page_count ?? 1) > 1 ? "Read as a two-page spread" : "Needs a look");
+        (es.some((d) => d.row.is_continuation) ? "Starts with the rest of an entry from the page before" : pg.unread_rotated_content ? "Sideways text that couldn't be read in full" : (pg.detected_page_count ?? 1) > 1 ? "Read as a two-page spread" : (pg.identity_suggestions ?? []).some((s) => s.status === "pending") ? "Aircraft details to review" : es.length === 0 ? "Reference page — no maintenance entry required" : "Needs a look");
       return { pg, es, clean, doubt, label: pageLabel(model, logbooks, pg.logbook_id, pg.page_sequence) };
     })
     .sort((x, y) => x.label.type.localeCompare(y.label.type) || (x.pg.page_sequence ?? 0) - (y.pg.page_sequence ?? 0));

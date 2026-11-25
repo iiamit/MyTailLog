@@ -37,11 +37,13 @@ export default async function ReviewDeskPage({
   const input = due?.loaded.input;
   const logbooks = input?.logbook ?? [];
   const label = pageLabel(model, logbooks, page.logbook_id, page.page_sequence);
-  const [rows, { data: siblings }, { data: scanned }, { data: stickers }] = await Promise.all([
+  const [rows, { data: siblings }, { data: scanned }, { data: stickers }, { data: identityAircraft }, { data: identityComponents }] = await Promise.all([
     entriesOnPages(supabase, id, [pageId]),
     supabase.from("page").select("id, page_sequence, created_at").eq("logbook_id", page.logbook_id).order("page_sequence", { ascending: true, nullsFirst: true }).order("created_at"),
     supabase.from("scanned_document").select("doc_type, document_date, summary, extracted, applied, updated_at").eq("page_id", pageId).maybeSingle(),
     supabase.from("signed_entry_scan").select("entry_id").eq("page_id", pageId),
+    supabase.from("aircraft").select("id, updated_at, tail_number, make, model, serial_number").eq("id", id).single(),
+    supabase.from("component").select("id, updated_at, name, category, make, model, serial_number, part_number").eq("aircraft_id", id),
   ]);
   const entries = withDoubt(books, rows.filter((r) => !r.replaced_by_entry_id));
   const order = siblings ?? [];
@@ -89,6 +91,9 @@ export default async function ReviewDeskPage({
       <ReviewDesk
         key={pageId}
         aircraftId={id}
+        contentKinds={page.content_kinds ?? []}
+        identitySuggestions={page.identity_suggestions ?? []}
+        identityTargets={[...(identityAircraft ? [identityAircraft] : []), ...(identityComponents ?? [])]}
         pageId={pageId}
         pageBase={page.updated_at}
         logbookId={page.logbook_id}

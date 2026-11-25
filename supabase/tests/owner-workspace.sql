@@ -15,7 +15,7 @@ do $$ declare stamp timestamptz; begin
  select updated_at into stamp from aircraft_inbox where id='11180000-0000-4000-a000-000000000004';
  begin
  perform approve_aircraft_inbox('11180000-0000-4000-a000-000000000001','11180000-0000-4000-a000-000000000004',stamp-interval '1 second','invoice',null,null,'{"date":"2026-01-01","currency":"USD","amount_minor":12500}');
- raise exception 'stale approval accepted'; exception when serialization_failure then null; end;
+ raise exception 'stale approval accepted'; exception when sqlstate 'PT409' then null; end;
  perform approve_aircraft_inbox('11180000-0000-4000-a000-000000000001','11180000-0000-4000-a000-000000000004',stamp,'invoice',null,null,'{"date":"2026-01-01","currency":"USD","amount_minor":12500}');
  perform approve_aircraft_inbox('11180000-0000-4000-a000-000000000001','11180000-0000-4000-a000-000000000004',stamp,'invoice',null,null,'{"date":"2026-01-01","currency":"USD","amount_minor":12500}');
  assert (select count(*) from aircraft_expense where inbox_id='11180000-0000-4000-a000-000000000004')=1,'approval duplicated expense';
@@ -59,7 +59,7 @@ do $$ declare stamp timestamptz; begin
  select updated_at into stamp from aircraft_inbox where id='11180000-0000-4000-a000-000000000030';
  begin
  perform approve_aircraft_inbox('11180000-0000-4000-a000-000000000001','11180000-0000-4000-a000-000000000030',stamp,'oil_report',null,'11180000-0000-4000-a000-000000000003','{"samples":[{"sample_date":"2026-01-01","elements_ppm":{"iron":15}}]}');
- raise exception 'corrected oil report silently skipped'; exception when serialization_failure then null; end;
+ raise exception 'corrected oil report silently skipped'; exception when sqlstate 'PT409' then null; end;
  assert (select state from aircraft_inbox where id='11180000-0000-4000-a000-000000000030')='uploaded','conflicted report was approved';
  assert (select elements_ppm->>'iron' from oil_analysis_sample where aircraft_id='11180000-0000-4000-a000-000000000001' and sample_date='2026-01-01')='10','existing oil sample overwritten';
  perform approve_aircraft_inbox('11180000-0000-4000-a000-000000000001','11180000-0000-4000-a000-000000000030',stamp,'invoice',null,null,'{"date":"2026-01-01","currency":"USD","amount_minor":100}');

@@ -180,7 +180,7 @@ private fun InboxReviewSheet(recs: Recs, item: JsonObject, books: List<JsonObjec
     var proposal by rememberSaveable(item.id) { mutableStateOf((item["proposal"] as? JsonObject)?.toString() ?: "{}") }
     var component by rememberSaveable(item.id) { mutableStateOf<String?>(null) }
     var progress by remember { mutableStateOf<String?>(null) }
-    val components = recs.watch { recs.store.records("component", recs.id).filter { it.s("category") == "engine" } }
+    val components = recs.watch { recs.store.records("component", recs.id).filter { com.mytaillog.core.domain.isCompleteEngine(it.s("name").orEmpty(), it.s("category"), it.s("component_kind"), it.s("model")) } }
     val online by recs.store.sync.collectAsStateWithLifecycleCompat()
     val editable = recs.canEdit && current.s("state") != "approved"
     Sheet(current.s("file_name") ?: "Review document", onDone, full = true, dirty = editable && (kind != item.s("kind") || proposal != ((item["proposal"] as? JsonObject)?.toString() ?: "{}"))) {
@@ -384,7 +384,7 @@ private fun EngineEventSheet(recs: Recs, componentId: String, event: JsonObject?
     val request = remember { OwnerRequest() }
     val id = rememberSaveable(event?.id) { event?.s("id") ?: newId() }
     var engine by rememberSaveable { mutableStateOf(componentId) }
-    val components = recs.watch { recs.store.records("component", recs.id).filter { it.s("category") == "engine" } }
+    val components = recs.watch { recs.store.records("component", recs.id).filter { com.mytaillog.core.domain.isCompleteEngine(it.s("name").orEmpty(), it.s("category"), it.s("component_kind"), it.s("model")) } }
     var kind by rememberSaveable { mutableStateOf(event?.s("kind") ?: if (event?.rows("readings")?.isNotEmpty() == true) "compression" else "overhaul") }
     var date by rememberSaveable { mutableStateOf<String?>(event?.s("event_date") ?: event?.s("date") ?: LocalDate.now().toString()) }
     var notes by rememberSaveable { mutableStateOf(event?.s("notes") ?: "") }

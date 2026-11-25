@@ -259,6 +259,7 @@ struct EquipmentScreen: View {
         let installed = all.filter { $0.b("is_installed") }.sorted { ($0.s("name") ?? "") < ($1.s("name") ?? "") }
         let removed = all.filter { !$0.b("is_installed") }.sorted { ($0.s("removal_date") ?? "") > ($1.s("removal_date") ?? "") }
         RecScreen(section: .aircraft, title: "Equipment", back: "Aircraft") {
+            Note("Aircraft details can come from your logbooks: open a page in Logbooks, choose Review, then find and accept its details. You do not need to enter them again.")
             if !proposals.isEmpty {
                 GroupHeader(title: "Found in your logbooks", count: "\(proposals.count)")
                 ForEach(proposals) { p in
@@ -289,9 +290,9 @@ struct EquipmentScreen: View {
                        rec: c, action: recs.canEdit ? { nav.open(.component(c.id)) } : nil)
             }
             if !removed.isEmpty {
-                GroupHeader(title: "Removed", count: "\(removed.count)")
+                GroupHeader(title: "Historical or removed equipment", count: "\(removed.count)")
                 ForEach(removed) { c in
-                    RecRow(title: c.s("name") ?? "", lines: ["removed \(c.s("removal_date").map { String($0.prefix(4)) } ?? "")"], rec: c) {
+                    RecRow(title: c.s("name") ?? "", lines: [c.b("identity_historical") ? "Historical record · current installation not confirmed" : "removed \(c.s("removal_date").map { String($0.prefix(4)) } ?? "")"], rec: c) {
                         EmptyView()
                     } below: {
                         if recs.canEdit {
@@ -332,6 +333,8 @@ struct ComponentEditor: View {
     @State private var name = ""
     @State private var make = ""
     @State private var category = ""
+    @State private var componentKind = ""
+    @State private var componentModel = ""
     @State private var pn = ""
     @State private var sn = ""
     @State private var installed: String?
@@ -348,7 +351,9 @@ struct ComponentEditor: View {
         RecScreen(section: .aircraft, title: c0?.s("name") ?? "Record an installation", back: "Equipment") {
             TextBox(label: "Name", text: $name)
             TextBox(label: "Manufacturer", text: $make)
+            TextBox(label: "Model", text: $componentModel)
             TextBox(label: "Type", text: $category)
+            ChoiceRow(label: "This record represents", options: [("", "Not classified"), ("engine", "Complete engine"), ("propeller", "Complete propeller"), ("accessory", "Accessory or engine part"), ("equipment", "Other equipment")], selection: $componentKind)
             TextBox(label: "Part number", text: $pn)
             TextBox(label: "Serial number", text: $sn)
             DateRow(label: "Installed on", date: $installed, clearable: true)
@@ -379,7 +384,7 @@ struct ComponentEditor: View {
         guard !loaded else { return }
         loaded = true
         guard let c = c0 else { return }
-        name = c.s("name") ?? ""; make = c.s("make") ?? ""; category = c.s("category") ?? ""; pn = c.s("part_number") ?? ""
+        name = c.s("name") ?? ""; make = c.s("make") ?? ""; category = c.s("category") ?? ""; componentKind = c.s("component_kind") ?? ""; componentModel = c.s("model") ?? ""; pn = c.s("part_number") ?? ""
         sn = c.s("serial_number") ?? ""; installed = c.s("install_date"); entry = c.s("install_entry_id")
         life = fmtNum(c.d("life_limit_value")); unit = c.s("life_limit_unit") ?? "hours"; notes = c.s("notes") ?? ""
     }
@@ -387,7 +392,7 @@ struct ComponentEditor: View {
     private func save() {
         func t(_ s: String) -> String? { let v = s.trimmingCharacters(in: .whitespacesAndNewlines); return v.isEmpty ? nil : v }
         let comp = payload([
-            "name": name.trimmingCharacters(in: .whitespaces), "make": t(make), "category": t(category), "part_number": t(pn), "serial_number": t(sn),
+            "name": name.trimmingCharacters(in: .whitespaces), "make": t(make), "category": t(category), "component_kind": t(componentKind), "model": t(componentModel), "part_number": t(pn), "serial_number": t(sn),
             "install_date": installed, "install_entry_id": entry, "life_limit_value": num(life), "life_limit_unit": num(life) != nil ? unit : nil, "notes": t(notes),
         ])
         let rowId = c0?.id ?? newId()
@@ -616,7 +621,7 @@ struct AddOilSheet: View {
             Segments(label: "Quarts", options: ["½", "1", "2", "Other"], selection: $q)
             if q == 3 { TextBox(label: "Quarts", text: $other, number: true, placeholder: "0.5") }
             DateRow(label: "Date", date: $date)
-            ChoiceRow(label: "Engine", options: [("", "Unassigned — choose an engine when known")] + recs.records("component").filter { $0.s("category") == "engine" }.map { ($0.id, [$0.s("name"), $0.s("serial_number"), $0.b("is_installed") ? nil : "removed"].compactMap { $0 }.joined(separator: " · ")) }, selection: $component)
+            ChoiceRow(label: "Engine", options: [("", "Unassigned — choose an engine when known")] + recs.records("component").filter(isCompleteEngine).map { ($0.id, [$0.s("name"), $0.s("serial_number"), $0.b("is_installed") ? nil : "removed"].compactMap { $0 }.joined(separator: " · ")) }, selection: $component)
             if withTach { TextBox(label: "Tach", text: $tach, number: true) }
             else { Button("Add the tach reading") { withTach = true; tach = fmt1(recs.meter("tach")) }.buttonStyle(.quiet) }
             TextBox(label: "Notes", text: $notes, placeholder: "Phillips XC 20W-50")

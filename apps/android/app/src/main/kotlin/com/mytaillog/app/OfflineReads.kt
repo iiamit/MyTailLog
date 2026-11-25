@@ -59,6 +59,7 @@ fun queueBookWrites(store: OfflineStore, mutations: List<Mutation>) = mutations.
     fun id(k: String) = m.payload[k]?.jsonPrimitive?.contentOrNull
     val (label, target) = when {
         m.type.startsWith("entry.") -> "Logbook entry" to id("entryId")?.let { RowRef("log_entry", it) }
+        m.type == "page.details" -> "Aircraft details review" to id("pageId")?.let { RowRef("page", it) }
         m.type == "page.review" -> "Page review" to id("pageId")?.let { RowRef("page", it) }
         m.type == "gap.setStatus" -> "Logbook gap" to id("gapId")?.let { RowRef("logbook_gap", it) }
         m.type == "entries.confirmClean" -> "Confirm clean pages" to null
@@ -66,3 +67,6 @@ fun queueBookWrites(store: OfflineStore, mutations: List<Mutation>) = mutations.
     }
     store.enqueue(m, label, target)
 }
+
+fun encodeBooks(b: com.mytaillog.core.api.Books): String = json.encodeToString(com.mytaillog.core.api.Books.serializer(), b)
+fun decodeBooks(s: String): com.mytaillog.core.api.Books = json.decodeFromString(com.mytaillog.core.api.Books.serializer(), s)

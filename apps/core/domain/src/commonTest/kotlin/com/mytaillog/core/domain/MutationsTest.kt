@@ -11,10 +11,12 @@ import kotlin.test.assertTrue
 class MutationsTest {
     @Test
     fun catalogueMatchesTheServerCount() {
-        // 63 types in apps/web/src/lib/sync/mutations.ts: phase 3 added page.register, batch.create,
+        // 64 types in apps/web/src/lib/sync/mutations.ts: phase 3 added page.register, batch.create,
         // page.duplicateDecision; phase 4 added the 12 of PHASE4_MUTATIONS (lib/writes/index.ts);
-        // phase 6 added reminder.snooze.
-        assertEquals(63, Mutations.catalogue.size)
+        // phase 6 added reminder.snooze; page.details reviews reference-page identity through the outbox.
+        assertEquals(64, Mutations.catalogue.size)
+        assertTrue(Mutations.needsBase("page.details", JsonObject(emptyMap())))
+        assertFalse(Mutations.isOnlineOnly("page.details"))
         assertFalse(Mutations.needsBase("reminder.snooze", JsonObject(emptyMap())))
         assertTrue(Mutations.needsBase("visit.setStatus", JsonObject(emptyMap())))
         assertFalse(Mutations.needsBase("visit.create", JsonObject(emptyMap())))

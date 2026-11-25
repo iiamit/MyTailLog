@@ -134,4 +134,26 @@ class BooksScreenTest {
         compose.onNodeWithText("Review this page").performScrollTo().assertIsDisplayed()
     }
 
+    @Test
+    fun identityReferencePageHasReviewableDetailsWithoutMaintenanceEntries() {
+        val original = sampleBooks()
+        val page = original.pages.first().copy(contentKinds = listOf("identity"), identitySuggestions = listOf(
+            com.mytaillog.core.api.IdentitySuggestion("a".repeat(24), "aircraft", "Aircraft identification", mapOf("serial_number" to "000123"), "Serial number: 000123", 0.9)))
+        val vm = model(AircraftRole.Owner, original.copy(entries = emptyList(), pages = listOf(page)))
+        compose.setContent { MyTailLogTheme(dark = false) { ReviewScreen(vm, page.id, BooksNav()) } }
+        compose.onNodeWithText("Mark page reviewed and next").assertIsNotEnabled()
+        compose.onNodeWithText("Accept details").performScrollTo().performClick()
+        compose.waitUntil(3000) { pushed.any { it.type == "page.details" } }
+        val write = pushed.first { it.type == "page.details" }
+        assertTrue(write.payload.toString().contains("000123"))
+        assertEquals(page.updatedAt, write.base)
+        assertTrue(pushed.none { it.type == "entry.create" })
+    }
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-land")
+    fun landscapeReferenceDetailsRemainScrollableAndCanBeAccepted() {
+        identityReferencePageHasReviewableDetailsWithoutMaintenanceEntries()
+    }
+
 }

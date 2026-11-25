@@ -19,6 +19,7 @@ export const MUTATIONS = {
   "entry.setLinks": { base: "always" },
   "entries.confirmClean": { base: "never" },
   "page.review": { base: "always" },
+  "page.details": { base: "always" },
   "page.reorder": { base: "never" },
   "page.delete": { base: "never" },
   "page.extract": { base: "never", online: true },

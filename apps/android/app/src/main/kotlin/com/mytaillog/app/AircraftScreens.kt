@@ -294,6 +294,7 @@ fun EquipmentScreen(recs: Recs) {
         }
         val installed = all.filter { it.b("is_installed") }.sortedBy { it.s("name") }
         val removed = all.filter { !it.b("is_installed") }.sortedByDescending { it.s("removal_date") }
+        Note("Aircraft details can come from your logbooks: open a page in Logbooks, choose Review, then find and accept its details. You do not need to enter them again.")
         GroupHeader(stringResource(R.string.ac_installed), count = installed.size.toString())
         if (installed.isEmpty()) Note(stringResource(R.string.ac_no_equipment), Modifier.padding(vertical = Tokens.Space.s2))
         installed.forEach { comp ->
@@ -302,9 +303,9 @@ fun EquipmentScreen(recs: Recs) {
                 onClick = if (recs.canEdit) ({ nav.open(Routes.of(Routes.COMPONENT, comp.id)) }) else null, trailing = { if (recs.canEdit) Chevron() })
         }
         if (removed.isNotEmpty()) {
-            GroupHeader(stringResource(R.string.ac_removed), count = removed.size.toString())
+            GroupHeader("Historical or removed equipment", count = removed.size.toString())
             removed.forEach { comp ->
-                RecRow(comp.s("name") ?: "", listOf("removed ${comp.s("removal_date")?.take(4) ?: ""}"), comp, below = {
+                RecRow(comp.s("name") ?: "", listOf(if (comp.b("identity_historical")) "Historical record · current installation not confirmed" else "removed ${comp.s("removal_date")?.take(4) ?: ""}"), comp, below = {
                     if (recs.canEdit) DButton(stringResource(R.string.ac_reinstalled), {
                         recs.change("component.reinstall", "component", comp.id, "Reinstalled ${comp.s("name")}", json("componentId" to comp.id))
                     }, kind = ButtonKind.Quiet)
@@ -332,6 +333,8 @@ fun ComponentEditor(recs: Recs, id: String) {
     var name by rememberSaveable { mutableStateOf(c0?.s("name") ?: "") }
     var make by rememberSaveable { mutableStateOf(c0?.s("make") ?: "") }
     var category by rememberSaveable { mutableStateOf(c0?.s("category") ?: "") }
+    var componentModel by rememberSaveable { mutableStateOf(c0?.s("model") ?: "") }
+    var componentKind by rememberSaveable { mutableStateOf(c0?.s("component_kind") ?: "") }
     var pn by rememberSaveable { mutableStateOf(c0?.s("part_number") ?: "") }
     var sn by rememberSaveable { mutableStateOf(c0?.s("serial_number") ?: "") }
     var installed by rememberSaveable { mutableStateOf(c0?.s("install_date")) }
@@ -344,7 +347,7 @@ fun ComponentEditor(recs: Recs, id: String) {
     Board(c0?.s("name") ?: stringResource(R.string.ac_record_installation), Section.Aircraft, back = stringResource(R.string.ac_equipment) to nav.back, footer = {
         DButton(stringResource(R.string.save), {
             val comp = json(
-                "name" to name.trim(), "make" to make.trim().ifEmpty { null }, "category" to category.trim().ifEmpty { null }, "part_number" to pn.trim().ifEmpty { null },
+                "name" to name.trim(), "make" to make.trim().ifEmpty { null }, "model" to componentModel.trim().ifEmpty { null }, "category" to category.trim().ifEmpty { null }, "component_kind" to componentKind.ifEmpty { null }, "part_number" to pn.trim().ifEmpty { null },
                 "serial_number" to sn.trim().ifEmpty { null }, "install_date" to installed, "install_entry_id" to entry, "life_limit_value" to num(life),
                 "life_limit_unit" to (if (num(life) != null) unit else null), "notes" to notes.trim().ifEmpty { null },
             )
@@ -355,7 +358,9 @@ fun ComponentEditor(recs: Recs, id: String) {
     }) {
         Field(stringResource(R.string.maint_name), name, { name = it })
         Field(stringResource(R.string.ac_manufacturer), make, { make = it })
+        Field("Model", componentModel, { componentModel = it })
         Field(stringResource(R.string.ac_type), category, { category = it })
+        Choice("This record represents", listOf("" to "Not classified", "engine" to "Complete engine", "propeller" to "Complete propeller", "accessory" to "Accessory or engine part", "equipment" to "Other equipment"), componentKind) { componentKind = it }
         Field(stringResource(R.string.ac_part_number), pn, { pn = it })
         Field(stringResource(R.string.ac_serial_number), sn, { sn = it })
         DateRow(stringResource(R.string.ac_installed_on), installed, { installed = it }, pastOnly = true, clearable = true)
@@ -520,7 +525,7 @@ private fun LabTable(samples: List<Rec>) {
 /** M-FLIGHT-05 Add oil: quarts, date, an optional tach, notes. Saves without creating a reading. */
 @Composable
 fun AddOilSheet(recs: Recs, initialComponentId: String? = null, onDone: () -> Unit) {
-    val engines = recs.watch { recs.store.records("component", recs.id).filter { it.s("category") == "engine" } }
+    val engines = recs.watch { recs.store.records("component", recs.id).filter { com.mytaillog.core.domain.isCompleteEngine(it.s("name").orEmpty(), it.s("category"), it.s("component_kind"), it.s("model")) } }
     var componentId by rememberSaveable { mutableStateOf(initialComponentId ?: engines.filter { it.b("is_installed") }.singleOrNull()?.id) }
     var q by rememberSaveable { mutableStateOf(1) }
     var other by rememberSaveable { mutableStateOf("") }

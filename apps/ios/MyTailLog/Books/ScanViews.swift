@@ -168,6 +168,7 @@ struct ScanViewerScreen: View {
     let pageIds: [String]
     @State var current: String
     var highlight: [String: FieldBox] = [:]
+    @State private var reviewing = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -206,9 +207,11 @@ struct ScanViewerScreen: View {
                 Text(n == 1 ? "1 entry on this page" : "\(n) entries on this page")
                     .dFont(.small).foregroundStyle(Tokens.Colors.onCover2)
                     .frame(maxWidth: .infinity, minHeight: 44).background(Tokens.Colors.cover)
+                if page.extraction_status == "extracted" { Button("Review page and aircraft details") { reviewing = true }.buttonStyle(.secondary).padding(Tokens.Space.s3) }
             }
         }
         .background(Tokens.Colors.cover.ignoresSafeArea())
+        .fullScreenCover(isPresented: $reviewing) { ReviewFlow(model: model, start: current) }
     }
 
     private var position: String {

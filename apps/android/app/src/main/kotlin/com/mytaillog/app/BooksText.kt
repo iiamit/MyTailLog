@@ -59,7 +59,7 @@ fun parseField(f: Field, text: String): Result<Any?> {
 /** Pages with entries read by AI and not yet confirmed, book by book in filed order: the review queue. */
 fun reviewQueue(b: Books): List<PageRow> {
     val waiting = b.entries.filter { it.trust == "ai_read" }.mapNotNull { it.pageId }.toSet()
-    return b.pages.filter { it.extractionStatus == "extracted" && (it.id in waiting || (it.needsLook == true && it.reviewStatus != "confirmed")) }.sortedWith(compareBy({ bookRank(b, it.logbookId) }, { it.pageSequence ?: Int.MAX_VALUE }))
+    return b.pages.filter { it.extractionStatus == "extracted" && (it.id in waiting || ((it.needsLook == true || it.contentKinds.isNotEmpty()) && it.reviewStatus != "confirmed") || it.identitySuggestions.any { s -> s.status == "pending" }) }.sortedWith(compareBy({ bookRank(b, it.logbookId) }, { it.pageSequence ?: Int.MAX_VALUE }))
 }
 
 /** Pages still being read (queued, processing, waiting for allowance). */

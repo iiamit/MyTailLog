@@ -44,4 +44,5 @@ echo "applied $count migrations"
 
 psql -d mtl_test -f "$here/checks.sql"
 psql -d mtl_test -f "$here/owner-workspace.sql"
+psql -d mtl_test -f "$here/logbook-identity.sql"
 echo "checks passed"

@@ -57,6 +57,12 @@ export function parseCompression(text: string): CompressionReading[] {
     readings.push({ cylinder: Number(match[1]), psi: Number(match[2]), reference: Number(match[3]) });
   }
   if (readings.length === 0) {
+    const context = text.match(/\bcompress(?:ion|ions)?\b([\s\S]{0,600})/i)?.[1] ?? "";
+    for (const m of context.matchAll(/\b([1-9]\d?)[.)]\s*(\d{1,3})\s*\/\s*(\d{2,3})\b/g)) {
+      readings.push({ cylinder: Number(m[1]), psi: Number(m[2]), reference: Number(m[3]) });
+    }
+  }
+  if (readings.length === 0) {
     const after = text.match(/\bcompress(?:ion|ions)?\b[\s\S]{0,35}?((?:\d{1,3}\s*\/\s*){2,11}\d{1,3})\s+(?:over|\/|of)\s*(\d{2,3})/i);
     if (after) {
       const values = after[1].split(/\s*\/\s*/).map(Number);
@@ -70,8 +76,13 @@ export function parseCompression(text: string): CompressionReading[] {
     }
   }
   if (!readings.length || readings.some((r) => !validReading(r.cylinder, r.psi, r.reference))) return [];
-  if (new Set(readings.map((r) => r.cylinder)).size !== readings.length) return [];
-  return readings.sort((a, b) => a.cylinder - b.cylinder);
+  const unique = new Map<number, CompressionReading>();
+  for (const r of readings) {
+    const old = unique.get(r.cylinder);
+    if (old && (old.psi !== r.psi || old.reference !== r.reference)) return [];
+    unique.set(r.cylinder, r);
+  }
+  return [...unique.values()].sort((a, b) => a.cylinder - b.cylinder);
 }
 
 export function isOilChange(text: string): boolean {
