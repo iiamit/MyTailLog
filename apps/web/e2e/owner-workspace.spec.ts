@@ -279,3 +279,20 @@ test("cost estimate matches expenses to actual confirmed reading dates inside th
   await expect(page.getByText("Estimated cost per measured hour:", { exact: false })).toContainText("$2.00");
   await expect(page.getByText("Cost per hour uses recorded spending", { exact: false })).toContainText("2026-01-13 through 2026-12-08");
 });
+
+test("expense import guide exposes a blank downloadable template on desktop and phone", async ({ page }) => {
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/help#expense-csv");
+    const guide = page.locator("#expense-csv").locator("..");
+    await expect(guide.getByRole("heading", { name: "Import expenses from CSV", exact: true })).toBeVisible();
+    await expect(guide).toContainText("cost_type");
+    await expect(guide).toContainText("basis");
+    const downloaded = page.waitForEvent("download");
+    await guide.getByRole("link", { name: "Download the expense CSV template" }).click();
+    const file = await downloaded;
+    expect(file.suggestedFilename()).toBe("mytaillog-expenses-template.csv");
+    expect((await readFile((await file.path())!, "utf8")).trim()).toBe("date,currency,amount_minor,category,cost_type,basis,vendor,payer,notes");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+  }
+});
