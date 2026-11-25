@@ -273,9 +273,12 @@ test("cost estimate matches expenses to actual confirmed reading dates inside th
   const csv = await page.request.get(`${endpoint}?from=2026-01-01&to=2026-12-31&format=csv`);
   expect(await csv.text()).toContain("2026-01-05");
   await page.goto(`/api/ui?design=v2&next=${encodeURIComponent(scratch.path + "/costs")}`);
+  await expect(page.getByText("Recorded spending: $600.00", { exact: true })).toBeVisible();
   await page.getByLabel("From", { exact: true }).fill("2026-01-01");
   await page.getByLabel("Through", { exact: true }).fill("2026-12-31");
+  const applied = page.waitForResponse(r => r.url().endsWith(`${endpoint}?from=2026-01-01&to=2026-12-31`));
   await page.getByRole("button", { name: "Apply period", exact: true }).click();
+  expect((await applied).ok()).toBeTruthy();
   await expect(page.getByText("Estimated cost per measured hour:", { exact: false })).toContainText("$2.00");
   await expect(page.getByText("Cost per hour uses recorded spending", { exact: false })).toContainText("2026-01-13 through 2026-12-08");
 });
