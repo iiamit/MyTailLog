@@ -1,14 +1,14 @@
 import type { createClient } from "@/lib/supabase/server";
 import type { LogEntry, Page } from "@/lib/database.types";
 
-type EntryRow = Pick<LogEntry, "id" | "page_id" | "logbook_id" | "entry_date" | "hobbs" | "tach" | "description" | "work_performed" | "parts" | "owner_confirmed" | "authored_superseded_by">;
+type EntryRow = Pick<LogEntry, "id" | "page_id" | "logbook_id" | "entry_date" | "hobbs" | "tach" | "description" | "work_performed" | "parts" | "owner_confirmed" | "authored_superseded_by" | "created_at">;
 
 /** Supabase caps result sets; a dossier must not silently omit older pages. */
 export async function loadLogEntries(supabase: Awaited<ReturnType<typeof createClient>>, aircraftId: string) {
   const rows: EntryRow[] = [];
   for (let start = 0; ; start += 500) {
     const { data, error } = await supabase.from("log_entry")
-      .select("id, page_id, logbook_id, entry_date, hobbs, tach, description, work_performed, parts, owner_confirmed, authored_superseded_by")
+      .select("id, page_id, logbook_id, entry_date, hobbs, tach, description, work_performed, parts, owner_confirmed, authored_superseded_by, created_at")
       .eq("aircraft_id", aircraftId).order("id").range(start, start + 499);
     if (error) throw error;
     rows.push(...(data ?? []));

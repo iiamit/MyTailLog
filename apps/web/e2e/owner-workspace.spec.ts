@@ -250,3 +250,31 @@ test("engine lifecycle sources and annual packet exports use scoped evidence", a
   });
   expect(foreignEvidence.status()).toBe(400);
 });
+
+test("cost estimate matches expenses to actual confirmed reading dates inside the requested year", async ({ page, scratch }) => {
+  const { createClient } = await import("@supabase/supabase-js");
+  const admin = createClient(process.env.TEST_SUPABASE_URL!, process.env.TEST_SUPABASE_SECRET_KEY!);
+  const { data: book, error: bookError } = await admin.from("logbook").select("id").eq("aircraft_id", scratch.id).eq("type", "airframe").single();
+  expect(bookError).toBeNull();
+  expect((await admin.from("log_entry").insert([
+    { aircraft_id: scratch.id, logbook_id: book!.id, entry_date: "2026-01-13", tach: 4100, owner_confirmed: true, description: "Synthetic opening reading" },
+    { aircraft_id: scratch.id, logbook_id: book!.id, entry_date: "2026-12-08", tach: 4200, owner_confirmed: true, description: "Synthetic closing reading" },
+  ])).error).toBeNull();
+  const endpoint = `/api/aircraft/${scratch.id}/expenses`;
+  for (const [date, amount, basis] of [["2026-01-05",10000,"actual"],["2026-01-20",20000,"actual"],["2026-12-12",30000,"actual"],["2026-06-01",7500,"reserve"]] as const) {
+    expect((await page.request.post(endpoint, { data: { id: randomUUID(), date, currency: "USD", amount_minor: amount, category: "maintenance", cost_type: "variable", basis } })).ok()).toBeTruthy();
+  }
+  const response = await page.request.get(`${endpoint}?from=2026-01-01&to=2026-12-31`);
+  expect(response.ok()).toBeTruthy();
+  const result = await response.json();
+  expect(result.denominator).toMatchObject({ from: "2026-01-13", to: "2026-12-08", meter: "tach", hours: 100 });
+  expect(result.totals[0]).toMatchObject({ actual_minor: 60000, reserve_minor: 7500, rate_actual_minor: 20000, actual_per_hour_minor: 200 });
+  const csv = await page.request.get(`${endpoint}?from=2026-01-01&to=2026-12-31&format=csv`);
+  expect(await csv.text()).toContain("2026-01-05");
+  await page.goto(`/api/ui?design=v2&next=${encodeURIComponent(scratch.path + "/costs")}`);
+  await page.getByLabel("From", { exact: true }).fill("2026-01-01");
+  await page.getByLabel("Through", { exact: true }).fill("2026-12-31");
+  await page.getByRole("button", { name: "Apply period", exact: true }).click();
+  await expect(page.getByText("Estimated cost per measured hour:", { exact: false })).toContainText("$2.00");
+  await expect(page.getByText("Cost per hour uses recorded spending", { exact: false })).toContainText("2026-01-13 through 2026-12-08");
+});

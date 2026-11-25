@@ -11,7 +11,7 @@ import { PAGE_DETAILS_SCHEMA, PAGE_DETAILS_PROMPT, type ContentKind, type Identi
 // the prompt changes materially.
 // ===========================================================================
 
-export const EXTRACTION_SCHEMA_VERSION = 6;
+export const EXTRACTION_SCHEMA_VERSION = 7;
 
 // Data fields that carry a per-field confidence score and a source-image box.
 // Single source of truth — the pipeline and review UI both key off this list.

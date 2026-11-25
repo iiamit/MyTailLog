@@ -26,6 +26,7 @@ struct ExpensesAnswer: Decodable {
         let actual_minor: Int64
         let reserve_minor: Int64
         let actual_per_hour_minor: Double?
+        let rate_actual_minor: Int64?
         var id: String { currency }
     }
     struct Denominator: Decodable {

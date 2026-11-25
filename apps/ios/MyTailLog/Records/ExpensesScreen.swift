@@ -32,10 +32,10 @@ struct ExpensesScreen: View {
                         RecRow("Recorded spending", lines: [expenseAmount(total.actual_minor, currency: total.currency)])
                         RecRow("Reserve estimates", lines: [expenseAmount(total.reserve_minor, currency: total.currency)])
                         if let rate = total.actual_per_hour_minor, let hours = answer.denominator?.hours, hours > 0 {
-                            RecRow("Recorded cost per hour", lines: ["\(expenseRateAmount(rate, currency: total.currency))/h · \(fmt1(hours)) \(answer.denominator?.meter ?? "") hours", answer.denominator?.source].compactMap { $0 })
+                            RecRow("Estimated cost per measured hour", lines: ["\(expenseRateAmount(rate, currency: total.currency))/h · \(fmt1(hours)) \(answer.denominator?.meter ?? "") hours", total.rate_actual_minor.map { "Spending in measured interval: \(expenseAmount($0, currency: total.currency))" }, answer.denominator?.source].compactMap { $0 })
                         }
                     }
-                    Note(answer.denominator?.source ?? "Cost per hour needs reviewed boundary readings for this period. Meter-face subtraction across a replacement is not valid usage.")
+                    Note(answer.denominator?.source ?? "Cost per hour needs at least two verified readings within this period. Meter-face subtraction across a replacement is not valid usage.")
                     GroupHeader(title: "Expenses", count: "\(answer.expenses.count)")
                     if answer.expenses.isEmpty { EmptyLine(text: "No expenses for this period. Add a cost, upload an invoice, or import a CSV.") }
                     ForEach(answer.expenses.map { Rec(row: $0) }) { expense in

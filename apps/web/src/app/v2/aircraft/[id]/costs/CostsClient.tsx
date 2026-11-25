@@ -14,6 +14,7 @@ type Costs = {
     actual_minor: number;
     reserve_minor: number;
     actual_per_hour_minor: number | null;
+    rate_actual_minor?: number | null;
   }[];
   denominator: { hours: number | null; source: string; coverage: string };
 };
@@ -193,8 +194,9 @@ export function CostsClient({ aircraftId }: { aircraftId: string }) {
               <p>Reserve estimates: {money(t.reserve_minor, t.currency)}</p>
               {t.actual_per_hour_minor != null && (
                 <p>
-                  Recorded spending per measured hour:{" "}
+                  Estimated cost per measured hour:{" "}
                   {money(t.actual_per_hour_minor, t.currency)}
+                  {t.rate_actual_minor != null && <> · {money(t.rate_actual_minor, t.currency)} spending in the measured interval</>}
                 </p>
               )}
             </div>
@@ -204,7 +206,7 @@ export function CostsClient({ aircraftId }: { aircraftId: string }) {
           {data?.denominator.hours
             ? `${data.denominator.hours} measured hours. `
             : "Cost per hour is not calculated: "}
-          {data?.denominator.source ?? "period usage has not been verified"}.
+          {data?.denominator.source ?? "Period usage has not been verified."}{" "}
           Meter-face differences across replacements are not a usage
           denominator.
         </p>

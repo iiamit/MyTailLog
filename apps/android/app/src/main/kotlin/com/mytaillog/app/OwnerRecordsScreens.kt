@@ -490,10 +490,10 @@ fun ExpensesScreen(recs: Recs) {
             GroupHeader(code)
             Lede("Recorded ${moneyMinor(actual, code)} · reserves ${moneyMinor(reserve, code)}")
             val rate = totals.firstOrNull { it.s("currency") == code }?.d("actual_per_hour_minor")
-            if (appliedFrom != null && rate != null && rate.isFinite()) Note("About $code ${BigDecimal.valueOf(rate).movePointLeft(currencyDigits(code)).setScale(currencyDigits(code), java.math.RoundingMode.HALF_UP).toPlainString()} per hour · recorded spending only")
+            if (appliedFrom != null && rate != null && rate.isFinite()) Note("About $code ${BigDecimal.valueOf(rate).movePointLeft(currencyDigits(code)).setScale(currencyDigits(code), java.math.RoundingMode.HALF_UP).toPlainString()} per measured hour · spending within the measured dates")
         }
         val denominator = data?.get("denominator") as? JsonObject
-        Note(denominator?.s("source") ?: "Cost per hour needs verified usage covering the same reporting period. No rate is inferred from incomplete or replaced meter faces.")
+        Note(denominator?.s("source") ?: "Cost per hour needs at least two verified readings within this period. Meter replacements cannot be used as a usage interval.")
         if (appliedFrom != null && denominator?.d("hours") != null) Note("${fmt1(denominator.d("hours"))} ${denominator.s("meter") ?: ""} hours · ${denominator.s("from") ?: ""} → ${denominator.s("to") ?: ""}")
         if (data != null && expenses.isEmpty()) Empty("No expenses in this period. Add one or import a CSV.")
         expenses.forEach { expense ->

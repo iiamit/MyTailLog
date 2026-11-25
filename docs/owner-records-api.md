@@ -71,7 +71,7 @@ The existing offline `oil.create` mutation also accepts optional `componentId`, 
 
 Only the aircraft owner can use `/api/aircraft/{id}/expenses`.
 
-`GET` accepts optional inclusive `from` and `to` ISO dates. It returns `expenses`, separate currency `totals`, source-entry/document choices, and a disclosed usage `denominator`. Actual spending and reserves are never combined. A measured hourly rate is returned only when both period-boundary readings are reviewed, use one meter, remain monotonic and do not cross a reset. ADS-B estimates are excluded. The source and measured interval must remain visible wherever the rate is displayed.
+`GET` accepts optional inclusive `from` and `to` ISO dates. It returns `expenses`, separate currency `totals`, source-entry/document choices, and a disclosed usage `denominator`. Actual spending and reserves are never combined. The hourly estimate uses the widest verified meter interval within the selected dates. Confirmed, non-superseded logbook entries and manual or explicitly reviewed meter readings can supply its endpoints. The readings must use one meter, remain monotonic and not cross a reset. Equal-duration intervals prefer Hobbs. `denominator.from`/`to` disclose the actual reading dates; `rate_actual_minor` and `actual_per_hour_minor` use only actual expenses within that interval. The main currency totals and exported rows still cover the full requested period. ADS-B estimates are excluded. The source and measured interval must remain visible wherever the rate is displayed.
 
 `POST` creates an expense using a stable UUID:
 

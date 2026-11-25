@@ -1,3 +1,4 @@
+import { PAGE_DETAILS_SCHEMA } from "../src/lib/extraction/pageDetails";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { normalizePageDetails } from "../src/lib/extraction/normalizePageDetails";
@@ -49,4 +50,10 @@ test("compression supports numbered cylinders, repeated identical transcription,
   assert.equal(parseCompression("Compressions: #1:79/80 #2:75/80. Work performed: #1:79/80 #2:75/80").length, 2);
   assert.equal(parseCompression("Compressions: #1:79/80 #1:76/80").length, 0);
   assert.equal(parseCompression("Compression: #1:75, #2:76, #3:77, #4:78").length, 0);
+});
+
+test("identity schema avoids nullable branches and drops empty unknown fields", () => {
+  for (const field of Object.values(PAGE_DETAILS_SCHEMA.identity_suggestions.items.properties.fields.properties)) assert.equal(field.type, "string");
+  const parsed = normalizePageDetails({ content_kinds: ["identity"], identity_suggestions: [{ subject: "aircraft", name: "Aircraft", fields: { make: "Mooney", model: "M20F", serial_number: "", part_number: "", tail_number: "N123AB" }, quote: "Mooney M20F N123AB", confidence: 0.9 }] });
+  assert.deepEqual(parsed.identity_suggestions[0].fields, { make: "Mooney", model: "M20F", tail_number: "N123AB" });
 });
