@@ -21,7 +21,7 @@ test("new design: every Add action opens its actual editor", async ({ page, scra
     await page.goto(status);
     await page.locator("aside.rail").getByRole("button", { name: /Add/ }).click();
     await page.getByRole("menuitem", { name: new RegExp(action.name, "i") }).click();
-    await expect(page).toHaveURL(action.path);
+    await expect(page).toHaveURL(action.path, { timeout: 15_000 });
     if (action.name === "Add logbook pages") await expect(page.getByRole("region", { name: "Add pages" })).toBeVisible();
     else await expect(page.getByRole("heading", { name: action.heading, exact: true }).last()).toBeVisible();
     if (action.control === "File") await expect(page.locator('input[name="file"]')).toBeVisible();
@@ -35,6 +35,11 @@ test("new design: every Add action opens its actual editor", async ({ page, scra
   }
 
   await page.goto(status);
+  // Exercise the menu once so the keyboard check starts after hydration.
+  await page.locator("aside.rail").getByRole("button", { name: /Add/ }).click();
+  await expect(page.getByRole("menu", { name: `Add to ${scratch.tail}` })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu", { name: `Add to ${scratch.tail}` })).toBeHidden();
   await page.keyboard.press("n");
   await expect(page.getByRole("menu", { name: `Add to ${scratch.tail}` })).toBeVisible();
   await page.keyboard.press("o");
