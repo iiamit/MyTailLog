@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 // Developer portal (P3): RFC 8414 discovery responds, and a user can self-serve
@@ -12,7 +13,7 @@ test("RFC8414 discovery + self-serve register/delete an OAuth app", async ({ pag
   expect(m.token_endpoint).toBe(`${baseURL}/api/oidc/token`);
 
   const admin = createClient(process.env.TEST_SUPABASE_URL!, process.env.TEST_SUPABASE_SECRET_KEY!);
-  const appName = "Portal E2E App";
+  const appName = `Portal E2E App ${randomUUID()}`;
   let clientId: string | null = null;
   try {
     await page.goto("/developers");
@@ -25,7 +26,7 @@ test("RFC8414 discovery + self-serve register/delete an OAuth app", async ({ pag
 
     // client_id is surfaced, and the app shows in the list.
     await expect(page.getByText(/client_id/i)).toBeVisible();
-    await expect(page.getByText(appName)).toBeVisible();
+    await expect(page.getByText(appName)).toBeVisible({ timeout: 15_000 });
 
     // It persisted with exactly the requested config (+ implicit openid).
     const { data } = await admin
