@@ -293,3 +293,39 @@ extension RecordsAPI {
         guard (200..<300).contains(status) else { throw Failure(status: status, message: "Not removed (\(status)).") }
     }
 }
+
+// Owner workspaces use the same authenticated routes as the web; proposals never write compliance directly.
+extension RecordsAPI {
+    func ownerData(aircraftId: String, path: String, query: [URLQueryItem] = []) async throws -> Data {
+        var request = get("api/aircraft/\(aircraftId)/\(path)", query)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 180
+        return try await body(request)
+    }
+
+    func ownerWrite(aircraftId: String, path: String, fields: [String: Any], method: String = "POST", query: [URLQueryItem] = []) async throws -> Data {
+        try await ownerWriteEncoded(aircraftId: aircraftId, path: path, encoded: JSONSerialization.data(withJSONObject: fields), method: method, query: query)
+    }
+
+    func ownerWriteEncoded(aircraftId: String, path: String, encoded: Data, method: String = "POST", query: [URLQueryItem] = []) async throws -> Data {
+        var request = post("api/aircraft/\(aircraftId)/\(path)")
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = encoded
+        if !query.isEmpty {
+            var components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!
+            components.queryItems = query
+            request.url = components.url
+        }
+        request.timeoutInterval = 180
+        return try await body(request)
+    }
+
+    func uploadInbox(aircraftId: String, id: String, meta: FileMeta, bytes: Data) async throws {
+        var request = post("api/aircraft/\(aircraftId)/inbox", ["id": id, "file": bytes.base64EncodedString(),
+            "fileName": meta.fileName ?? "Document", "mimeType": meta.mimeType ?? "application/octet-stream"])
+        request.timeoutInterval = 180
+        request.setValue(id, forHTTPHeaderField: "Idempotency-Key")
+        _ = try await body(request)
+    }
+}

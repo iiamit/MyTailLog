@@ -9,7 +9,7 @@ import { buildMapModel } from "@/lib/mapModel";
 import { aircraftTail } from "@/lib/v2/landing";
 import { aircraftTabs } from "@/lib/v2/tabs";
 import { BOOK, fmtMeter, leftText, ratePhrase } from "@/lib/v2/status";
-import { SOURCE_WORD, dateX, engineVerdict, oilSpread, storedSourceWord } from "@/lib/v2/hours";
+import { SOURCE_WORD, dateX, engineVerdict, storedSourceWord } from "@/lib/v2/hours";
 import { engineTrends } from "@/lib/engineTrends";
 import { loadLogEntries } from "@/lib/loadLogEntries";
 import { computeTimeChecks, type TimeCheckInput } from "@/lib/timeCheck";
@@ -120,8 +120,7 @@ export default async function HoursPage({
 
   const trends = engineTrends(entries, (resets ?? []).map((r) => ({ meter: r.meter, reset_date: r.reset_date })));
   const oil = trends.oilChanges.filter((c) => c.confirmed && c.date).reverse();
-  const after = new Map(trends.oilIntervals.map((iv) => [iv.to.entryId, `${iv.hours} h`]));
-  const spread = oilSpread(trends.oilIntervals.map((iv) => iv.hours));
+  const spread = null;
 
   // Written against calculated (09 §3.10).
   const statedById = new Map((stated.data ?? []).map((r) => [r.id, r.stated_times]));
@@ -400,39 +399,20 @@ export default async function HoursPage({
               <>
                 <table className="w-full text-small">
                   <thead className="text-left text-ink-3">
-                    <tr><th className="py-1 font-semibold">Date</th><th className="font-semibold">Tach</th><th className="font-semibold">After</th><th className="font-semibold">Page</th></tr>
+                    <tr><th className="py-1 font-semibold">Date</th><th className="font-semibold">Tach</th><th className="font-semibold">Page</th></tr>
                   </thead>
                   <tbody className="divide-y divide-rule tabular-nums">
                     {oil.slice(0, 3).map((c) => (
                       <tr key={c.entryId}>
                         <td className="py-1.5">{fmtDate(c.date!)}</td>
                         <td>{fmt1(c.tach)}</td>
-                        <td>{after.get(c.entryId) ?? "none"}</td>
                         <td>{citeOf(c.pageId)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {trends.oilIntervals.length > 0 && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-small font-semibold text-board-ink">Show all {oil.length}</summary>
-                    <table className="mt-2 w-full text-small">
-                      <thead className="text-left text-ink-3">
-                        <tr><th className="py-1 font-semibold">From</th><th className="font-semibold">To</th><th className="font-semibold">Interval</th></tr>
-                      </thead>
-                      <tbody className="divide-y divide-rule tabular-nums">
-                        {[...trends.oilIntervals].reverse().map((iv) => (
-                          <tr key={`${iv.from.entryId}-${iv.to.entryId}`}>
-                            <td className="py-1.5">{iv.from.date ? fmtDate(iv.from.date) : "undated"}</td>
-                            <td>{iv.to.date ? fmtDate(iv.to.date) : "undated"}</td>
-                            <td>{iv.hours} {iv.meter} h</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <p className="mt-1 text-caption text-ink-3">Intervals that cross a meter replacement are left out.</p>
-                  </details>
-                )}
+                <Link href={`${a}/engine-history`} className="mt-3 block text-small font-semibold underline">Oil service intervals by engine and service period</Link>
+
               </>
             )}
           </HungSection>

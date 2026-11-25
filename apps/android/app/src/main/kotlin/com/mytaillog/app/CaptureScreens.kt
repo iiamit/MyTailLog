@@ -91,12 +91,12 @@ import kotlinx.serialization.json.put
 import java.util.UUID
 
 /** Capture's shared state for the signed-in user: the store, the phone routes and the scan being set up. */
-class CaptureHost(val store: OfflineStore, val api: CaptureApi, private val context: Context) {
+class CaptureHost(val store: OfflineStore, val api: CaptureApi, private val context: Context, private val startSync: () -> Unit = { SyncWorker.now(context) }) {
     /** The book chosen on M-SCAN-01, read by the camera route. */
     var target by mutableStateOf<ScanTarget?>(null)
 
     /** Upload and sync now if there is a network, or as soon as there is (05 §6.7). */
-    fun kick() = SyncWorker.now(context)
+    fun kick() = startSync()
 
     /** Photos or system-scanner pages: through the same file-job path as the camera, as one scan. */
     suspend fun import(t: ScanTarget, uris: List<Uri>): Int = withContext(Dispatchers.Default) {

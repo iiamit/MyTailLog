@@ -12,15 +12,12 @@ import { aircraftTabs } from "@/lib/v2/tabs";
 import { BOOK } from "@/lib/v2/status";
 import { avgOf, metalFlag, oilVerdict, ppm } from "@/lib/v2/oil";
 import { OIL_ELEMENTS, OIL_PROPERTIES, PROPERTY_LABEL, elementLabel } from "@/lib/oilElements";
-import { oilConsumption } from "@/lib/oilConsumption";
 import { engineTrends } from "@/lib/engineTrends";
 import { loadLogEntries } from "@/lib/loadLogEntries";
 import { Board, BoardHead, HungSection, Leaf, Leaves, SourceMat, Spine } from "@/ui/Board";
 import { Button, buttonClass } from "@/ui/Button";
 import { ConfirmSubmit, Field, FormLeaf, Notice, fieldClass } from "@/ui/Form";
 import { ActForm } from "../hours/ActForm";
-import { ImportReport } from "./ImportReport";
-import { WearChart, type ChartSample } from "./WearChart";
 import { addOil, removeOil } from "./actions";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -28,7 +25,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: `Oil analysis · ${await aircraftTail(id)}` };
 }
 
-const short = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 const num = (n: number | null | undefined) => (n == null ? "none" : Number.isInteger(n) ? String(n) : n.toFixed(2));
 
 /** W-AIRCRAFT-02 Oil analysis: lab reports and wear metals, oil added and burn rate, compressions from the entries. */
@@ -48,12 +44,13 @@ export default async function OilPage({
   const self = `${a}/oil`;
   const canEdit = context.canEdit;
 
-  const [samplesQ, additionsQ, entries, resetsQ, due] = await Promise.all([
+  const [samplesQ, additionsQ, entries, resetsQ, due, enginesQ] = await Promise.all([
     supabase.from("oil_analysis_sample").select("*").eq("aircraft_id", id).order("sample_date", { ascending: true }),
     supabase.from("oil_addition").select("*").eq("aircraft_id", id).order("added_date", { ascending: true }),
     loadLogEntries(supabase, id).catch(() => null),
     supabase.from("meter_reset").select("meter, reset_date").eq("aircraft_id", id),
     dueSnapshot(id, auth.user.id).catch(() => null),
+    supabase.from("component").select("id,name,serial_number").eq("aircraft_id", id).eq("category", "engine"),
   ]);
   const head = (actions?: React.ReactNode) => (
     <BoardHead title="Aircraft" subTabs={aircraftTabs(id, "oil")} actions={actions} />
@@ -75,7 +72,6 @@ export default async function OilPage({
   }
   const samples = samplesQ.data ?? [];
   const additions = additionsQ.data ?? [];
-  const burn = oilConsumption(additions, context.bridge);
   const trends = entries ? engineTrends(entries, resetsQ.data ?? []) : null;
   const books = new Map((due?.loaded.input.logbook ?? []).map((b) => [b.id, b.type]));
   const pageLabel = new Map(
@@ -84,19 +80,12 @@ export default async function OilPage({
   const today = due?.snap.today ?? new Date().toISOString().slice(0, 10);
   const latest = samples[samples.length - 1] ?? null;
   const selected = samples.find((s) => s.id === sp.sample) ?? latest;
-  const chart: ChartSample[] = samples.map((s) => ({
-    id: s.id,
-    date: s.sample_date,
-    label: short(s.sample_date),
-    oilHours: s.oil_hours,
-    ppm: (s.elements_ppm as Record<string, number>) ?? {},
-    avg: (s.universal_averages as Record<string, number> | null) ?? {},
-  }));
+
 
   const actions = canEdit ? (
     <>
       <Button variant="quiet" href={`${self}?panel=oil`} className="text-on-board">Add oil</Button>
-      <ImportReport aircraftId={id} />
+      <Button variant="quiet" href={`${a}/inbox`} className="text-on-board">Upload report</Button>
     </>
   ) : null;
 
@@ -108,6 +97,7 @@ export default async function OilPage({
         <ActForm action={addOil.bind(null, id)} className="flex flex-col gap-4">
           <Field label="Date"><input name="date" type="date" required defaultValue={today} max={today} className={fieldClass} /></Field>
           <Field label="Quarts added"><input name="quarts" type="number" step="0.25" min="0.25" required inputMode="decimal" className={fieldClass} /></Field>
+          <Field label="Engine"><select name="componentId" className={fieldClass}><option value="">Not specified — keep unassigned if ambiguous</option>{(enginesQ.data ?? []).map(c => <option key={c.id} value={c.id}>{c.name} · {c.serial_number ?? "serial not recorded"}</option>)}</select></Field>
           <Field label="Tach" help="The burn rate is measured on tach when it can be."><input name="tach" type="number" step="0.1" min="0" inputMode="decimal" defaultValue={context.tach ?? ""} className={fieldClass} /></Field>
           <Field label="Hobbs"><input name="hobbs" type="number" step="0.1" min="0" inputMode="decimal" defaultValue={context.hobbs ?? ""} className={fieldClass} /></Field>
           <Field label="Notes"><input name="notes" className={fieldClass} /></Field>
@@ -168,15 +158,12 @@ export default async function OilPage({
       <Leaves split="1.6fr 1fr">
         <Leaf label="Oil analysis">
           {sp.done === "oil" && <div className="mb-3"><Notice>Oil added.</Notice></div>}
-          <h2 className="mb-1 max-w-[52ch] text-lede text-ink">{oilVerdict(samples, burn.avgHoursPerQuart, fmtDate)}</h2>
+          <h2 className="mb-1 max-w-[52ch] text-lede text-ink">{oilVerdict(samples, null, fmtDate)}</h2>
           {samples.length > 0 && <p className="mb-3 text-small text-ink-3">The lab&apos;s own assessment is what counts. The averages and marks below are a guide.</p>}
 
-          <HungSection title="Wear metals" first>
-            {samples.length === 0 ? (
-              <p className="text-body text-ink-2">No oil analysis yet. Import a lab report to start the trend.</p>
-            ) : (
-              <WearChart samples={chart} />
-            )}
+          <HungSection title="Engine trends" first>
+            <p className="mb-3 text-body text-ink-2">Compare wear metals, compression and oil use within one engine installation and service period. Reports below remain the original source inventory.</p>
+            <Link href={`${a}/engine-history`} className={buttonClass("quiet")}>Open engine history</Link>
           </HungSection>
 
           {samples.length > 0 && (
@@ -248,21 +235,7 @@ export default async function OilPage({
           )}
 
           <HungSection title="Oil added" count={additions.length ? `last ${Math.min(3, additions.length)} of ${additions.length}` : undefined}>
-            <p className="mb-2 text-body">
-              {burn.avgHoursPerQuart != null
-                ? <><b className="tabular-nums">{burn.avgHoursPerQuart.toFixed(1)} hrs per quart</b> · average on {burn.meter}</>
-                : "Not enough top-offs yet to work out a burn rate."}
-            </p>
-            {burn.excluded > 0 && (
-              <p className="mb-2 text-small text-ink-3">
-                {burn.excluded === 1 ? "1 top-off has" : `${burn.excluded} top-offs have`} no {burn.meter ?? "tach or hobbs"} reading, so {burn.excluded === 1 ? "it isn't" : "they aren't"} in the burn rate.
-              </p>
-            )}
-            {burn.bridged > 0 && (
-              <p className="mb-2 text-small text-ink-3">
-                {burn.bridged === 1 ? "1 top-off has" : `${burn.bridged} top-offs have`} no tach reading, so the tach is estimated from the hobbs.
-              </p>
-            )}
+            <p className="mb-2 text-body text-ink-2">Consumption is calculated in Engine history, with each engine and service period kept separate.</p>
             {additions.length === 0 ? (
               <p className="text-body text-ink-2">No top-offs logged.</p>
             ) : (
@@ -279,7 +252,8 @@ export default async function OilPage({
             {canEdit && <Link href={`${self}?panel=oil`} replace scroll={false} className={`mt-2 ${buttonClass("secondary", "s")}`}>Add oil</Link>}
           </HungSection>
 
-          <HungSection title="Compressions" count="over 80 psi">
+          <HungSection title="Compression source records">
+            <p className="mb-3 text-body"><Link href={`${a}/engine-history`} className="font-semibold text-board-ink underline">Open engine history</Link> to compare readings within an engine installation and overhaul period.</p>
             {!trends ? (
               <p className="text-body text-ink-2">Compressions could not be loaded.</p>
             ) : confirmedCompressions.length === 0 ? (
@@ -300,7 +274,7 @@ export default async function OilPage({
                         <td className="py-1.5">{t.date ? fmtDate(t.date) : "undated"}</td>
                         {cylinders.map((c) => {
                           const r = t.readings.find((x) => x.cylinder === c);
-                          return <td key={c}>{r ? r.psi : ""}</td>;
+                          return <td key={c}>{r ? `${r.psi}/${r.reference}` : ""}</td>;
                         })}
                         <td>
                           {t.confirmed ? (
@@ -317,12 +291,6 @@ export default async function OilPage({
                     ))}
                   </tbody>
                 </table>
-                {confirmedCompressions.filter((t) => t.confirmed && t.date).length > 1 && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-small font-semibold text-board-ink">Show the trend</summary>
-                    <CompressionTrend tests={confirmedCompressions.filter((t) => t.confirmed && t.date) as { date: string; readings: { cylinder: number; psi: number }[] }[]} cylinders={cylinders} />
-                  </details>
-                )}
               </>
             )}
             {(trends?.needsReview.length ?? 0) > 0 && (
@@ -354,38 +322,5 @@ function AddedList({ rows, id, canEdit }: { rows: { id: string; updated_at: stri
         </li>
       ))}
     </ul>
-  );
-}
-
-/** One line per cylinder, labelled at its end (never colour alone). */
-function CompressionTrend({ tests, cylinders }: { tests: { date: string; readings: { cylinder: number; psi: number }[] }[]; cylinders: number[] }) {
-  const W = 640;
-  const H = 170;
-  const t0 = Date.parse(tests[0].date);
-  const t1 = Date.parse(tests[tests.length - 1].date);
-  const x = (d: string) => 40 + ((Date.parse(d) - t0) / Math.max(1, t1 - t0)) * (W - 100);
-  const y = (psi: number) => 150 - ((psi - 40) / 50) * 130;
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 block h-auto w-full" role="img" aria-label="Compression by cylinder over time. The table above lists every reading.">
-      {[40, 60, 80].map((v) => (
-        <g key={v} aria-hidden>
-          <line x1={40} x2={W - 60} y1={y(v)} y2={y(v)} stroke="var(--color-rule)" strokeDasharray={v === 60 ? undefined : "4 4"} />
-          <text x={34} y={y(v) + 4} textAnchor="end" fill="var(--color-ink-3)" className="text-map-tick">{v}</text>
-        </g>
-      ))}
-      {cylinders.map((c) => {
-        const pts = tests.flatMap((t) => t.readings.filter((r) => r.cylinder === c).map((r) => ({ x: x(t.date), y: y(r.psi) })));
-        const last = pts[pts.length - 1];
-        return (
-          <g key={c} aria-hidden>
-            {pts.length > 1 && <polyline points={pts.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" stroke="var(--color-line-engine)" strokeWidth="2" />}
-            {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="var(--color-leaf)" stroke="var(--color-ink)" strokeWidth="2" />)}
-            {last && <text x={last.x + 8} y={last.y + 4} fill="var(--color-ink)" className="text-map-tick">#{c}</text>}
-          </g>
-        );
-      })}
-      <text x={40} y={H - 2} fill="var(--color-ink-3)" className="text-map-tick">{fmtDate(tests[0].date)}</text>
-      <text x={W - 60} y={H - 2} textAnchor="end" fill="var(--color-ink-3)" className="text-map-tick">{fmtDate(tests[tests.length - 1].date)}</text>
-    </svg>
   );
 }

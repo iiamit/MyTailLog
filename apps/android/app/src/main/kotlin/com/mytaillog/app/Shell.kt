@@ -80,6 +80,7 @@ fun Shell(
     link: AppLink? = null,
     onLinkHandled: () -> Unit = {},
     keys: kotlinx.coroutines.flow.Flow<KeyCommand>? = null,
+    initialLanding: Landing? = null,
 ) {
     val unsent = capture?.store?.sync?.collectAsStateWithLifecycle()?.value?.let { it.waiting + it.pages } ?: 0
     val account: @Composable () -> Unit = { AccountSettings(email, onSignOut, unsent) }
@@ -91,7 +92,7 @@ fun Shell(
         if (capture != null && records != null && aircraft != null) Recs(capture.store, records, aircraft, snapshot, capture::kick, context::getString) else null
     }
     // A link (notification, widget, shortcut, App Action) or a keyboard command becomes a landing (05 §5.5).
-    var go by remember { mutableStateOf<Landing?>(null) }
+    var go by remember { mutableStateOf(initialLanding) }
     val known = status?.ui?.aircraft.orEmpty()
     // Wait for the linked aircraft to be open, so its screens exist; an aircraft not on this account opens the current one.
     val ready = aircraft != null && (link?.aircraftId == null || link.aircraftId == aircraft.aircraft.id || known.none { it.aircraft.id == link.aircraftId })
@@ -112,9 +113,11 @@ fun Shell(
     }
     // An inbox row's deep link: the same route table, in place.
     val open: (String?) -> Unit = { raw -> parseAppLink(raw)?.let { l -> l.aircraftId?.let { id -> status?.select?.invoke(id) }; go = landing(l) } }
+    androidx.compose.runtime.CompositionLocalProvider(LocalOwnerBooks provides books) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (isTablet(maxWidth.value.toInt(), maxHeight.value.toInt())) TabletShell(account, status, books, recs, go, { go = null }, notify, open)
         else PhoneShell(compactHeight = maxHeight < TABLET_MIN_HEIGHT_DP.dp, account = account, status = status, books = books, capture = capture, recs = recs, go = go, onGone = { go = null }, notify = notify, open = open)
+    }
     }
 }
 

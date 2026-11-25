@@ -1,3 +1,4 @@
+import type { InboxItem, Expense, EngineEvent } from "./owner/contracts";
 /**
  * Hand-maintained types mirroring supabase/migrations/*.sql (schema v1).
  * Once the Supabase CLI is linked, regenerate with:
@@ -268,6 +269,7 @@ export type DocumentRecord = {
 export type ReferenceLink = { label: string; url: string };
 
 export type Component = {
+  position?: string | null;
   id: string;
   aircraft_id: string;
   name: string;
@@ -793,6 +795,7 @@ export type OilAddition = {
 }
 
 export type OilAnalysisSample = {
+  source_inbox_id?: string | null;
   id: string;
   aircraft_id: string;
   component_id: string | null;
@@ -1046,6 +1049,9 @@ export type Database = {
       page: { Row: Page; Insert: Partial<Page>; Update: Partial<Page>; Relationships: [] };
       log_entry: { Row: LogEntry; Insert: Partial<LogEntry>; Update: Partial<LogEntry>; Relationships: [] };
       signed_entry_scan: { Row: { page_id: string; entry_id: string; aircraft_id: string; created_at: string }; Insert: { page_id: string; entry_id: string; aircraft_id: string }; Update: never; Relationships: [] };
+      aircraft_inbox: { Row: InboxItem; Insert: Partial<InboxItem>; Update: Partial<InboxItem>; Relationships: [] };
+      aircraft_expense: { Row: Expense; Insert: Partial<Expense>; Update: Partial<Expense>; Relationships: [] };
+      engine_observation: { Row: EngineEvent; Insert: Partial<EngineEvent>; Update: Partial<EngineEvent>; Relationships: [] };
       document: { Row: DocumentRecord; Insert: Partial<DocumentRecord>; Update: Partial<DocumentRecord>; Relationships: [] };
       record_room: { Row: RecordRoom; Insert: Partial<RecordRoom> & Pick<RecordRoom, "aircraft_id" | "created_by" | "label" | "token_hash" | "token_enc" | "expires_at">; Update: Partial<RecordRoom>; Relationships: [] };
       record_room_view: { Row: RecordRoomView; Insert: Partial<RecordRoomView> & Pick<RecordRoomView, "room_id" | "path">; Update: never; Relationships: [] };
@@ -1130,6 +1136,12 @@ export type Database = {
       save_planned_visit: { Args: { p_aircraft: string; p_visit: string; p_base: string; p_patch: Record<string, unknown>; p_add: string[]; p_remove: string[] }; Returns: unknown };
       set_expected_hours_checked: { Args: { target_aircraft: string; hours_per_week: number | null; p_base: string }; Returns: unknown };
       write_record: { Args: { p_table: string; p_aircraft: string; p_id: string; p_base: string; p_patch: Record<string, unknown> | null; p_delete: boolean }; Returns: unknown };
+      can_read_inbox_blob: { Args: { p_path:string }; Returns:boolean };
+      restore_inbox_destination: { Args: { p_aircraft: string; p_id: string; p_kind: string; p_proposal: Record<string,unknown>; p_approved: boolean; p_document?:string|null; p_pages?:string[] }; Returns: undefined };
+      complete_inbox_analysis: { Args: { p_aircraft: string; p_id: string; p_base: string; p_kind: string; p_proposal: Record<string, unknown>; p_error?: string | null }; Returns: unknown };
+      stage_inbox_page: { Args: { p_aircraft: string; p_id: string; p_page: unknown }; Returns: unknown };
+      import_aircraft_expenses: { Args: { p_aircraft: string; p_rows: unknown }; Returns: undefined };
+      approve_aircraft_inbox: { Args: { p_aircraft: string; p_id: string; p_base: string; p_kind: string; p_book?: string | null; p_component?: string | null; p_proposal?: Record<string, unknown>; p_count?: number }; Returns: unknown };
       confirm_scanned_document: { Args: { p_page: string; p_base: string }; Returns: undefined };
       replace_page_extraction: { Args: { p_page: string; p_started_at: string; p_entries: unknown[]; p_state: Record<string, unknown>; p_stickers: string[] }; Returns: undefined };
       merge_log_entry: { Args: { p_aircraft: string; p_head: string; p_tail: string; p_head_base: string; p_tail_base: string; p_fields: Record<string, unknown> }; Returns: unknown };

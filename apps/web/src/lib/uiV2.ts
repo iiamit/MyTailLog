@@ -34,6 +34,9 @@ const SEGMENT_SECTION: Record<string, Section> = {
   "weight-balance": "aircraft",
   details: "aircraft",
   documents: "docs",
+  inbox: "docs",
+  costs: "aircraft",
+  "engine-history": "aircraft",
   share: "share",
 };
 
@@ -44,7 +47,7 @@ export function sectionFor(segment: string | null | undefined): Section | null {
 // Per-aircraft paths the v2 tree serves. The section landings exist for every section from phase 0; deeper
 // screens are added here as their phase lands, so an unbuilt screen keeps working in v1.
 const V2_AIRCRAFT =
-  /^\/aircraft\/([^/]+)(?:\/(?:status|setup|logbooks|ask|maintenance|hours|oil|equipment|weight-balance|details|documents|share)|\/status\/(?:plan|item\/[^/]+)|\/share\/(?:dossier|summary)|\/logbooks\/(?:map|list|pages|add|review(?:\/[^/]+)?|entries\/[^/]+)|\/maintenance\/(?:items|ads(?:\/find)?|squawks|annual|records-check))?\/?$/;
+  /^\/aircraft\/([^/]+)(?:\/(?:status|setup|logbooks|ask|maintenance|hours|oil|equipment|weight-balance|details|documents|inbox|costs|engine-history|share)|\/status\/(?:plan|item\/[^/]+)|\/share\/(?:dossier|summary)|\/logbooks\/(?:map|list|pages|add|review(?:\/[^/]+)?|entries\/[^/]+)|\/maintenance\/(?:items|ads(?:\/find)?|squawks|annual|records-check)|\/maintenance\/annual\/packet)?\/?$/;
 
 // Account-level screens (03 §9.2), new in the v2 tree.
 const V2_ACCOUNT = /^\/(?:hangar|account(?:\/(?:settings|data))?|aircraft\/new)\/?$/;

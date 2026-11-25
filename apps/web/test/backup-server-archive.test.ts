@@ -32,6 +32,7 @@ const rowsByTable: Record<string, Record<string, unknown>[]> = {
 
 function fakeSupabase(failedTable?: string) {
   return {
+    auth:{getUser:async()=>({data:{user:{id:"owner"}}})},
     from(table: string) {
       const rows = rowsByTable[table] ?? [];
       const builder: Record<string, unknown> = {
@@ -142,7 +143,7 @@ test("the manifest counts every record set, and scans counts only stored blobs",
   const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));
 
   assert.equal(manifest.format, "mytaillog-backup");
-  assert.equal(manifest.format_version, 2);
+  assert.equal(manifest.format_version, 3);
   assert.equal(manifest.tail_number, "N734DM");
   assert.equal(manifest.counts.pages, 3);
   assert.equal(manifest.counts.meter_resets, 1);

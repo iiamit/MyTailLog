@@ -3,6 +3,7 @@ import type * as ReactPdf from "@react-pdf/renderer";
 import type { ReactNode } from "react";
 import { layoutMap } from "@/ui/map/map-layout";
 import type { DossierModel, SummaryModel } from "@/lib/share/model";
+import type { AnnualPacket } from "@/lib/annualPacket";
 
 // ===========================================================================
 // Server-side PDF of the maintenance summary (W-SHARE-04) and the pre-buy dossier (W-SHARE-03), light paper only.
@@ -86,7 +87,7 @@ function Section({ title, children, empty }: { title: string; children?: ReactNo
 
 // --- Summary -------------------------------------------------------------------------
 
-function SummaryDoc({ m }: { m: SummaryModel }) {
+function SummaryDoc({ m, packet }: { m: SummaryModel; packet?: AnnualPacket }) {
   return (
     <P.Document title={m.title} author="MyTailLog" creator="MyTailLog" producer="MyTailLog">
       <P.Page size="LETTER" style={s.page}>
@@ -94,6 +95,17 @@ function SummaryDoc({ m }: { m: SummaryModel }) {
         <P.Text style={[s.faint, { marginTop: 2 }]}>Generated {m.generatedOn}</P.Text>
         <P.Text style={[s.dim, { marginTop: 6 }]}>{m.identity}</P.Text>
         <P.Text style={[s.lead, { marginTop: 6, fontWeight: 600 }]}>{m.verdict}</P.Text>
+        {packet && <>
+          <P.Text style={[s.faint, { marginTop: 6 }]}>Records evaluated on {packet.cutoff}. Generated {packet.generatedAt}. This is a current snapshot, not an inspection sign-off.</P.Text>
+          <P.Text style={[s.dim, { marginTop: 6 }]}>Airframe S/N {packet.serials.airframe ?? "not recorded"}; engine S/N {packet.serials.engines.join(", ") || "not recorded"}; propeller S/N {packet.serials.propellers.join(", ") || "not recorded"}.</P.Text>
+          <Section title="Unresolved before the annual">
+            {packet.warnings.map((warning, i) => <P.Text key={i} style={{ marginBottom: 3 }}>{warning}</P.Text>)}
+          </Section>
+          <Section title="Meter readings and provenance">
+            <Table cols={[0.15, 0.15, 0.2, 0.2, 0.3]} head={["Meter", "Reading", "As of", "Source", "Basis"]}
+              rows={packet.meters.map((meter) => [meter.meter, meter.reading?.toFixed(1) ?? null, meter.asOf, meter.source, meter.estimated ? "Estimated" : meter.reading == null ? "Missing" : "Recorded"])} />
+          </Section>
+        </>}
         <Section title={`Inspections, items and recurring ADs (${m.items.length})`} empty={!m.items.length && "Nothing is tracked yet."}>
           <Table cols={[0.3, 0.17, 0.2, 0.14, 0.1, 0.09]} head={["Item", "Last done", "Next due", "Left", "Status", "Page"]} mono={[5]}
             rows={m.items.map((i) => [i.label, i.lastDone, i.nextDue, i.left, i.status, i.page])} />
@@ -111,6 +123,18 @@ function SummaryDoc({ m }: { m: SummaryModel }) {
           <Table cols={[0.4, 0.2, 0.2, 0.2]} head={["Item", "Make", "Part number", "Serial"]}
             rows={m.equipment.map((e) => [e.name, e.make, e.partNumber, e.serial])} />
         </Section>
+        {packet && <>
+          <Section title="Directive review details" empty={!packet.directives.length && "No directives recorded. Verify applicability; an empty list is not an AD clearance."}>
+            {packet.directives.map((ad) => <P.View key={ad.reference} style={{ marginBottom: 6 }}>
+              <P.Text style={{ fontWeight: 600 }}>{ad.reference} · {ad.status.replaceAll("_", " ")}</P.Text>
+              <P.Text>Method: {ad.method || "not recorded"}. Rationale: {ad.rationale || "not recorded"}. Applicability: {ad.applicability || "verify with IA"}.</P.Text>
+            </P.View>)}
+          </Section>
+          <Section title="Evidence index" empty={!packet.evidence.length && "No evidence files are recorded."}>
+            <P.Text style={[s.dim, { marginBottom: 5 }]}>Files are not embedded in this PDF. An evidence ZIP includes only the files explicitly selected at export. Online source links require permission to this aircraft.</P.Text>
+            {packet.evidence.map((e) => <P.Text key={`${e.kind}:${e.id}`} style={[s.faint, { marginBottom: 3 }]}>{e.label} · {e.available ? <P.Link src={`https://mytaillog.com${e.href}`}>Open source</P.Link> : "source unavailable"}</P.Text>)}
+          </Section>
+        </>}
         <Section title="Weight and balance" empty={!m.wb && "No weight and balance on file."}>
           {m.wb && (
             <P.Text>
@@ -284,6 +308,11 @@ function DossierDoc({ m }: { m: DossierModel }) {
 export async function summaryPdf(m: SummaryModel): Promise<Buffer> {
   const rp = await lib();
   return rp.renderToBuffer(<SummaryDoc m={m} />);
+}
+
+export async function annualPacketPdf(packet: AnnualPacket): Promise<Buffer> {
+  const rp = await lib();
+  return rp.renderToBuffer(<SummaryDoc m={packet.summary} packet={packet} />);
 }
 
 export async function dossierPdf(m: DossierModel): Promise<Buffer> {

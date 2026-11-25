@@ -95,6 +95,7 @@ android {
     }
 
     testOptions { unitTests.isIncludeAndroidResources = true }
+    sourceSets.getByName("debug").assets.srcDir("src/test/resources/owner-workspace")
 }
 
 tasks.matching { it.name == "preReleaseBuild" }.configureEach {
@@ -152,4 +153,5 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+    debugImplementation(libs.ktor.client.mock)
 }

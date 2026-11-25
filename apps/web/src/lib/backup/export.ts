@@ -26,7 +26,14 @@ export async function exportBackup(
 ): Promise<{ blob: Blob; tail: string }> {
   onProgress?.("Reading records…");
 
-  const { data, manifest, blobs, tail } = await collectBackupData(supabase, aircraftId);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data, manifest, blobs, tail } = await collectBackupData(
+    supabase,
+    aircraftId,
+    user?.id,
+  );
 
   const files: AsyncZippable = {};
 
@@ -36,14 +43,18 @@ export async function exportBackup(
   let done = 0;
   for (const ref of blobs) {
     const res = await fetch(ref.url);
-    if (!res.ok) throw new Error(`Backup could not fetch ${ref.entry} (${res.status}).`);
+    if (!res.ok)
+      throw new Error(`Backup could not fetch ${ref.entry} (${res.status}).`);
     const buf = new Uint8Array(await res.arrayBuffer());
     files[ref.entry] = [buf, { level: 0 }];
     onProgress?.(`Packing scans… ${++done}/${blobs.length}`);
   }
 
   const enc = new TextEncoder();
-  files["manifest.json"] = [enc.encode(JSON.stringify(manifest, null, 2)), { level: 6 }];
+  files["manifest.json"] = [
+    enc.encode(JSON.stringify(manifest, null, 2)),
+    { level: 6 },
+  ];
   files["data.json"] = [enc.encode(JSON.stringify(data)), { level: 6 }];
   // Human-readable export manifest: what every file and column in this archive
   // is, so it's still legible without MyTailLog years from now.

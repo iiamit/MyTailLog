@@ -75,6 +75,7 @@ struct DocumentsScreen: View {
         if docs.isEmpty && held.isEmpty {
             EmptyLine(text: "Nothing in Documents yet. Add the registration and airworthiness certificate and they travel with you.")
         }
+        RecRow("Document inbox", lines: ["Review uploaded logs, invoices and oil reports"], action: { nav.open(.documentInbox) })
         TextBox(label: "Search", text: $query)
         if !held.isEmpty {
             Well {

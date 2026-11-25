@@ -75,7 +75,7 @@ final class Uploader {
             // The list was read before earlier awaits; another drain may have moved this job on.
             guard !Task.isCancelled, store.uploader === self, store.files.first(where: { $0.id == job.id })?.status == "held", live[job.id] == nil, !starting.contains(job.id) else { continue }
             starting.insert(job.id)
-            if job.kind == OfflineStore.squawkPhoto || job.kind == OfflineStore.document {
+            if job.kind == OfflineStore.squawkPhoto || job.kind == OfflineStore.document || job.kind == OfflineStore.inboxDocument {
                 if await sendRecord(job) { sentRecord = true }
             } else {
                 await start(job)
@@ -140,6 +140,8 @@ final class Uploader {
         do {
             if job.kind == OfflineStore.squawkPhoto {
                 try await api.squawkPhoto(aircraftId: job.aircraftId, squawkId: job.meta.squawkId ?? "", photoId: job.meta.photoId ?? job.id, jpeg: bytes)
+            } else if job.kind == OfflineStore.inboxDocument {
+                try await api.uploadInbox(aircraftId: job.aircraftId, id: job.id, meta: job.meta, bytes: bytes)
             } else {
                 let id = try await api.document(aircraftId: job.aircraftId, jobId: job.id, meta: job.meta, bytes: bytes)
                 // The phone's copy becomes the offline copy under the server's id (documents are never purged).
@@ -150,6 +152,7 @@ final class Uploader {
             guard store.uploader === self else { return false }
             nextTry[job.id] = nil
             store.recordFileDone(job)
+            if job.kind == OfflineStore.inboxDocument { try? FileManager.default.removeItem(at: store.fileURL(job)) }
             return true
         } catch let e as RecordsAPI.Failure {
             guard store.uploader === self else { return false }

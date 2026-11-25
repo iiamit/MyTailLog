@@ -1,4 +1,9 @@
-import { BACKUP_FORMAT, BACKUP_FORMAT_VERSION, type BackupData, type BackupManifest } from "./format";
+import {
+  BACKUP_FORMAT,
+  BACKUP_FORMAT_VERSION,
+  type BackupData,
+  type BackupManifest,
+} from "./format";
 
 // ===========================================================================
 // README.txt — the export manifest that ships inside every backup .zip, so the
@@ -12,33 +17,58 @@ import { BACKUP_FORMAT, BACKUP_FORMAT_VERSION, type BackupData, type BackupManif
 
 /** What each record set in data.json holds, in the owner's terms. */
 const WHAT: Record<keyof BackupData, string> = {
-  aircraft: "The aircraft itself — registration, make/model, serials, enrollment meter baselines.",
-  logbooks: "One row per physical logbook volume (airframe, engine, prop, avionics, other).",
+  aircraft:
+    "The aircraft itself — registration, make/model, serials, enrollment meter baselines.",
+  logbooks:
+    "One row per physical logbook volume (airframe, engine, prop, avionics, other).",
   pages: "One row per scanned logbook page, incl. its file name under scans/.",
   log_entries: "Every maintenance entry transcribed from those pages.",
-  components: "Installed and removed equipment (avionics, engines, props) with part/serial numbers.",
-  ad_compliance: "Airworthiness Directive and Service Bulletin compliance records.",
-  maintenance_items: "Tracked inspections and intervals (annual, 100-hr, transponder, ELT, oil…).",
-  documents: "Records Vault files (certificates, POH/AFM, 337s, STCs…), incl. names under docs/.",
-  meter_resets: "Hobbs/tach meter replacements, so hour counts stay continuous across a new meter.",
+  components:
+    "Installed and removed equipment (avionics, engines, props) with part/serial numbers.",
+  ad_compliance:
+    "Airworthiness Directive and Service Bulletin compliance records.",
+  maintenance_items:
+    "Tracked inspections and intervals (annual, 100-hr, transponder, ELT, oil…).",
+  documents:
+    "Records Vault files (certificates, POH/AFM, 337s, STCs…), incl. names under docs/.",
+  meter_resets:
+    "Hobbs/tach meter replacements, so hour counts stay continuous across a new meter.",
   service_providers: "Shops and mechanics you use for this aircraft.",
-  item_completions: "Each time a tracked item or AD was done, and the entry that proves it.",
+  item_completions:
+    "Each time a tracked item or AD was done, and the entry that proves it.",
   planned_visits: "Shop visits you booked, with their week, place and status.",
-  planned_visit_items: "What each visit covers: item_key is mx:<maintenance_items id>, ad:<ad_compliance id> or squawk:<squawks id>.",
-  logbook_gaps: "Stretches of a logbook with no pages, and what you said about each.",
-  hours_readings: "Hobbs and tach readings over time, with photos under meter-photos/.",
+  planned_visit_items:
+    "What each visit covers: item_key is mx:<maintenance_items id>, ad:<ad_compliance id> or squawk:<squawks id>.",
+  logbook_gaps:
+    "Stretches of a logbook with no pages, and what you said about each.",
+  hours_readings:
+    "Hobbs and tach readings over time, with photos under meter-photos/.",
   squawks: "Reported discrepancies, open and resolved.",
   squawk_photos: "Squawk photo metadata and originals under squawk-photos/.",
   weight_balances: "Weight and balance revisions with links to source pages.",
-  scanned_documents: "Document readings and reviewed application status, linked to source pages.",
+  scanned_documents:
+    "Document readings and reviewed application status, linked to source pages.",
   oil_additions: "Oil top-offs between changes.",
   oil_analysis_samples: "Oil-analysis results and their source pages.",
+  inbox_items:
+    "Original mixed-document uploads and their reviewed destinations; included only in owner exports.",
+  expenses:
+    "Private owner expenses, exact minor-unit amounts, currencies and separate reserve estimates.",
+  engine_observations:
+    "Engine lifecycle and reviewed compression observations with original reference pressures.",
 };
 
 const rule = (c: string) => c.repeat(74);
 
-function columnBlock(key: string, rows: Record<string, unknown>[], what: string): string[] {
-  const out = [`  ${key} — ${rows.length} row${rows.length === 1 ? "" : "s"}`, `    ${what}`];
+function columnBlock(
+  key: string,
+  rows: Record<string, unknown>[],
+  what: string,
+): string[] {
+  const out = [
+    `  ${key} — ${rows.length} row${rows.length === 1 ? "" : "s"}`,
+    `    ${what}`,
+  ];
   const cols = Object.keys(rows[0] ?? {});
   out.push(
     cols.length > 0
@@ -52,7 +82,10 @@ function columnBlock(key: string, rows: Record<string, unknown>[], what: string)
  * Build the README.txt written into the archive root. Documents every file and,
  * for data.json, every column actually present in this export.
  */
-export function buildReadme(data: BackupData, manifest: BackupManifest): string {
+export function buildReadme(
+  data: BackupData,
+  manifest: BackupManifest,
+): string {
   const sets: [keyof BackupData, Record<string, unknown>[]][] = [
     ["aircraft", [data.aircraft]],
     ["logbooks", data.logbooks],
@@ -75,6 +108,9 @@ export function buildReadme(data: BackupData, manifest: BackupManifest): string 
     ["scanned_documents", data.scanned_documents ?? []],
     ["oil_additions", data.oil_additions ?? []],
     ["oil_analysis_samples", data.oil_analysis_samples ?? []],
+    ["inbox_items", data.inbox_items ?? []],
+    ["expenses", data.expenses ?? []],
+    ["engine_observations", data.engine_observations ?? []],
   ];
 
   const lines: string[] = [
@@ -124,6 +160,8 @@ export function buildReadme(data: BackupData, manifest: BackupManifest): string 
     "                             document's `id` in data.json → documents.",
     "",
     "  squawk-photos/ and meter-photos/ hold original discrepancy and meter photos.",
+    "  inbox-files/ holds original document inbox files (owner exports only).",
+    "  Pending raster pages are regenerated from the retained original on import.",
     "  Thumbnails are not stored — they are regenerated on import.",
     "",
     "DATA.JSON — RECORD SETS AND COLUMNS",
@@ -135,12 +173,15 @@ export function buildReadme(data: BackupData, manifest: BackupManifest): string 
     "",
   ];
 
-  for (const [key, rows] of sets) lines.push(...columnBlock(key, rows, WHAT[key]), "");
+  for (const [key, rows] of sets)
+    lines.push(...columnBlock(key, rows, WHAT[key]), "");
 
   lines.push(
     "COUNTS AS EXPORTED",
     rule("-"),
-    ...Object.entries(manifest.counts).map(([k, v]) => `  ${k.padEnd(20)} ${v}`),
+    ...Object.entries(manifest.counts).map(
+      ([k, v]) => `  ${k.padEnd(20)} ${v}`,
+    ),
     "",
     `Generated by ${manifest.app}.`,
     "",

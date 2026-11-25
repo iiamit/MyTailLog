@@ -93,3 +93,34 @@ node packages/shared/scripts/build-tokens.mjs --check   # CI: fail if stale
 ```
 
 Fonts in `core-design/src/main/res/font/` are copies of `apps/web/src/app/fonts/LibreFranklin.ttf` and `Literata.ttf` (variable, SIL OFL; licences in `core-design/src/main/assets/licenses/`).
+
+### Owner workspace visual checks
+
+The debug-only `OwnerWorkspacePreviewActivity` renders the real shell and native
+owner-record screens with fictional, deterministic data. Its HTTP client is a
+mock: it needs no account and sends no requests to a backend. It is excluded from
+release APKs along with its fixtures and mock engine.
+
+On the build Mac, install the debug APK, then run this for each phone and tablet
+emulator (use a capture directory outside the checkout):
+
+```sh
+bash scripts/owner-workspace-visuals.sh emulator-5554 /tmp/mtl-owner-phone
+bash scripts/owner-workspace-visuals.sh emulator-5556 /tmp/mtl-owner-tablet
+```
+
+The sweep captures engine history, document inbox, ownership costs and annual
+preparation in portrait and both landscape rotations, plus offline, error,
+viewer-permission, dark-theme and enlarged-text states. Review the PNGs together
+with their accessibility trees. Rotation, text size and night mode are restored
+afterward. These captures check native layout; backend behavior is covered by
+the API/transaction tests and live testing against the test project.
+
+For interactive inspection of a single screen:
+
+```sh
+adb -s emulator-5554 shell am start -n com.mytaillog.app/.OwnerWorkspacePreviewActivity --es screen engine
+```
+
+Use `inbox`, `expenses` or `annual` for the other screens. Optional boolean extras
+`offline`, `error`, and `viewer` exercise the corresponding recovery/access state.

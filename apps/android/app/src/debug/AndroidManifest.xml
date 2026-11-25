@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug-only fixture data, never included in store builds. -->
+        <!-- nosemgrep: java.android.security.exported_activity.exported_activity -->
+        <activity android:name=".OwnerWorkspacePreviewActivity" android:exported="true" android:windowSoftInputMode="adjustResize" />
+    </application>
+</manifest>

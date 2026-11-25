@@ -18,11 +18,15 @@ export type TrendEntry = {
 export type CompressionReading = { cylinder: number; psi: number; reference: number };
 export type CompressionTest = {
   entryId: string;
+  observationId?: string;
+  sourceEntryId?: string | null;
   pageId: string | null;
   date: string | null;
   confirmed: boolean;
   readings: CompressionReading[];
   source: string;
+  meterBasis?: "tach" | "hobbs" | null;
+  meterReading?: number | null;
 };
 export type OilChange = {
   entryId: string;
@@ -95,6 +99,8 @@ export function engineTrends(entries: TrendEntry[], resets: { meter: string; res
       entryId: e.id, pageId: e.page_id, date: e.entry_date,
       confirmed: e.owner_confirmed, readings,
       source: text.slice(0, 240),
+      meterBasis: e.tach != null ? "tach" : e.hobbs != null ? "hobbs" : null,
+      meterReading: e.tach ?? e.hobbs,
     });
     if (isOilChange(text)) oilChanges.push({
       entryId: e.id, pageId: e.page_id, date: e.entry_date,

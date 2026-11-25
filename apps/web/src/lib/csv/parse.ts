@@ -56,7 +56,11 @@ export function sniffDelimiter(text: string): string {
  * (the mapper only reads mapped indexes, and truncating would silently lose a
  * value the user might be mapping).
  */
-export function parseCsv(input: string, delimiter?: string): ParsedCsv {
+export function parseCsv(
+  input: string,
+  delimiter?: string,
+  strict = false,
+): ParsedCsv {
   // Strip a UTF-8 BOM. Excel writes one; left in place it becomes part of the
   // first header name and every column mapping for that column silently misses.
   const text = input.charCodeAt(0) === 0xfeff ? input.slice(1) : input;
@@ -66,11 +70,13 @@ export function parseCsv(input: string, delimiter?: string): ParsedCsv {
   let row: string[] = [];
   let field = "";
   let inQuotes = false;
+  let closedQuote = false;
   let i = 0;
 
   const endField = () => {
     row.push(field);
     field = "";
+    closedQuote = false;
   };
   const endRow = () => {
     endField();
@@ -88,6 +94,7 @@ export function parseCsv(input: string, delimiter?: string): ParsedCsv {
           continue;
         }
         inQuotes = false;
+        closedQuote = true;
         i++;
         continue;
       }
@@ -95,6 +102,10 @@ export function parseCsv(input: string, delimiter?: string): ParsedCsv {
       i++;
       continue;
     }
+    if (strict && closedQuote && c !== d && c !== "\r" && c !== "\n")
+      throw new Error("Unexpected text after a CSV closing quote.");
+    if (strict && c === '"' && field !== "")
+      throw new Error("Quotes must enclose an entire CSV field.");
     if (c === '"' && field === "") {
       inQuotes = true;
       i++;
@@ -119,14 +130,19 @@ export function parseCsv(input: string, delimiter?: string): ParsedCsv {
     field += c;
     i++;
   }
+  if (strict && inQuotes) throw new Error("Unclosed CSV quote.");
   // Trailing field/row, unless the file simply ended with a newline.
   if (field !== "" || row.length > 0) endRow();
 
   // Drop blank lines anywhere (a single empty cell and nothing else).
   const clean = rows.filter((r) => r.some((c) => c.trim() !== ""));
   const header = (clean.shift() ?? []).map((h) => h.trim());
+  if (strict && clean.some((r) => r.length !== header.length))
+    throw new Error("CSV column count differs from the header.");
   const data = clean.map((r) =>
-    r.length < header.length ? [...r, ...Array(header.length - r.length).fill("")] : r,
+    r.length < header.length
+      ? [...r, ...Array(header.length - r.length).fill("")]
+      : r,
   );
   return { delimiter: d, header, rows: data };
 }

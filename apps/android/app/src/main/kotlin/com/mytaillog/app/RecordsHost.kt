@@ -100,8 +100,14 @@ object Routes {
     const val OIL = "aircraft/oil"
     const val DETAILS = "aircraft/details"
     const val DOC = "docs/doc/{id}"
+    const val DOCUMENT_INBOX = "aircraft/inbox"
+    const val ENGINE_HISTORY = "aircraft/enginehistory"
+    const val EXPENSES = "aircraft/expenses"
+    const val ANNUAL_PACKET = "aircraft/annualpacket"
+    const val SOURCE_ENTRY = "aircraft/sourceentry/{id}"
+    const val SOURCE_PAGE = "aircraft/sourcepage/{id}"
 
-    val all = listOf(SQUAWK, AD, ITEM, FIND_ADS, HOURS, EQUIPMENT, COMPONENT, WB, OIL, DETAILS, DOC)
+    val all = listOf(SQUAWK, AD, ITEM, FIND_ADS, HOURS, EQUIPMENT, COMPONENT, WB, OIL, DETAILS, DOC, DOCUMENT_INBOX, ENGINE_HISTORY, EXPENSES, ANNUAL_PACKET, SOURCE_ENTRY, SOURCE_PAGE)
 
     fun of(pattern: String, id: String) = pattern.replace("{id}", id)
 }
@@ -123,5 +129,11 @@ fun RecordsRoute(recs: Recs, route: String) {
         "aircraft/oil" -> OilScreen(recs)
         "aircraft/details" -> DetailsScreen(recs)
         "docs/doc" -> DocViewer(recs, arg)
+        "aircraft/inbox" -> DocumentInboxScreen(recs)
+        "aircraft/enginehistory" -> EngineHistoryScreen(recs)
+        "aircraft/expenses" -> ExpensesScreen(recs)
+        "aircraft/annualpacket" -> AnnualPacketScreen(recs)
+        "aircraft/sourceentry" -> OwnerSourceScreen(recs, arg, page = false)
+        "aircraft/sourcepage" -> OwnerSourceScreen(recs, arg, page = true)
     }
 }

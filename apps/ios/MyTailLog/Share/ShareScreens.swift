@@ -82,6 +82,7 @@ struct ShareHome: View {
                 PhoneRow(title: "Live links \(live.count)") { nav.open(.links) }
                 if let first = live.first { Note("\(first.label) · \(roomLine(first))") }
             }
+            if recs.canEdit { PhoneRow(title: "Prepare annual packet") { nav.open(.annualPacket) } }
             FileButtons(recs: recs)
             if reader {
                 Note(recs.aircraft.isDemo ? "This is the demo aircraft. Add your own from the hangar."

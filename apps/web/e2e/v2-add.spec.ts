@@ -6,6 +6,7 @@ const actions = [
   { name: "Report a squawk", path: /\/maintenance\/squawks\?panel=new$/, heading: "Report a squawk", control: "Report squawk" },
   { name: "Add logbook pages", path: /\/logbooks\/add$/, heading: "Add pages", control: "choose files" },
   { name: "Add a document", path: /\/documents\?panel=new$/, heading: "Add a document", control: "File" },
+  { name: "Upload documents", path: /\/inbox$/, heading: "Document inbox", control: "Upload documents" },
   { name: "Write a logbook entry", path: /\/logbooks\/entries\/new$/, heading: "Write an entry", control: "Work performed" },
 ] as const;
 

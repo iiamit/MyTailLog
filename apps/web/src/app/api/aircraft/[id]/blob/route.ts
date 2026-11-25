@@ -69,6 +69,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
+  if(path.startsWith(`${id}/inbox/`))return NextResponse.json({error:"Inbox originals and rendered pages are immutable. Use the document inbox upload."},{status:403});
   const { error } = await putBlob(path, file, {
     contentType: file.type || "application/octet-stream",
     upsert: true,
@@ -89,6 +90,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const path = new URL(req.url).searchParams.get("path") ?? "";
   if (!path.startsWith(`${id}/`) || path.includes("..") || path.includes("\\"))
     return NextResponse.json({ error: "Path must be under this aircraft." }, { status: 400 });
+  if(path.startsWith(`${id}/inbox/`)){const {data:allowed,error}=await supabase.rpc("can_read_inbox_blob",{p_path:path});if(error||!allowed)return NextResponse.json({error:"File not found."},{status:404});}
   const { getBlob } = await import("@/lib/storage");
   const blob = await getBlob(path, id);
   if (!blob) return NextResponse.json({ error: "File not found." }, { status: 404 });

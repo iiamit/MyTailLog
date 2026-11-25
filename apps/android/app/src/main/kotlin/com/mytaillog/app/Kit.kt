@@ -270,10 +270,13 @@ fun Empty(text: String, button: String? = null, onClick: () -> Unit = {}) {
 
 /** A text field restyled per 06 §1.8; [number] brings the decimal keypad and keeps only digits and one point. */
 @Composable
-fun Field(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, number: Boolean = false, lines: Int = 1, placeholder: String? = null) {
+fun Field(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, number: Boolean = false, lines: Int = 1, placeholder: String? = null, signed: Boolean = false) {
     OutlinedTextField(
         value,
-        { v -> onChange(if (number) v.filter { it.isDigit() || it == '.' }.let { s -> val i = s.indexOf('.'); if (i < 0) s else s.take(i + 1) + s.drop(i + 1).replace(".", "") }.take(10) else v) },
+        { v -> onChange(if (number) {
+            val sign = if (signed && v.startsWith('-')) "-" else ""
+            sign + v.filter { it.isDigit() || it == '.' }.let { s -> val i = s.indexOf('.'); if (i < 0) s else s.take(i + 1) + s.drop(i + 1).replace(".", "") }.take(if (signed) 17 else 10)
+        } else v) },
         label = { Text(label) },
         placeholder = placeholder?.let { { Text(it) } },
         singleLine = lines == 1, minLines = lines,

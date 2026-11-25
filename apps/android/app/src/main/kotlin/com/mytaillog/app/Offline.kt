@@ -130,8 +130,9 @@ class OfflineStore(
         if (closed) return
         val s = engine.summary()
         val jobs = pageJobs()
+        val originals = recordFiles()
         state.update {
-            it.copy(waiting = s.waiting, conflicts = s.conflicts, refused = s.refused, pages = jobs.count { j -> !j.uploaded }, failedPages = jobs.count { j -> j.gaveUp }, version = it.version + 1)
+            it.copy(waiting = s.waiting, conflicts = s.conflicts, refused = s.refused, pages = jobs.count { j -> !j.uploaded } + originals.size, failedPages = jobs.count { j -> j.gaveUp } + originals.count { f -> f.attempts >= MAX_TRIES }, version = it.version + 1)
         }
     }
 
@@ -318,7 +319,13 @@ class OfflineStore(
         return jobId
     }
 
-    fun recordFiles() = q.filesToUpload().executeAsList().filter { it.kind == SQUAWK_PHOTO || it.kind == DOCUMENT }
+    fun retryRecordFile(jobId: String) {
+        val job = recordFiles().firstOrNull { it.id == jobId } ?: return
+        q.setFileStatus(HELD, 0.0, null, -job.attempts, jobId)
+        refresh()
+    }
+
+    fun recordFiles() = q.filesToUpload().executeAsList().filter { it.kind == SQUAWK_PHOTO || it.kind == DOCUMENT || it.kind == INBOX }
 
     /** Uploads held squawk photos (once their squawk is on the server) and documents. (any sent, any left for later) */
     private suspend fun uploadRecordFiles(): Pair<Boolean, Boolean> {
@@ -334,6 +341,8 @@ class OfflineStore(
                     val squawkId = s("squawkId") ?: continue
                     if (q.byId(squawkId).executeAsOneOrNull() != null) continue // its squawk.create hasn't landed yet
                     api.squawkPhoto(f.aircraft_id, squawkId, s("photoId")!!, bytes)
+                } else if (f.kind == INBOX) {
+                    api.inbox(f.aircraft_id, meta, bytes)
                 } else {
                     val row = api.document(f.aircraft_id, JsonObject(meta + ("uploadId" to kotlinx.serialization.json.JsonPrimitive(f.id))), bytes)
                     mirror.upsertRow("document", row)
@@ -341,6 +350,7 @@ class OfflineStore(
                     row["id"]?.jsonPrimitive?.contentOrNull?.let { id -> File(f.local_path).renameTo(docFile(id, s("fileName"))) }
                 }
                 q.removeFile(f.id)
+                if (f.kind == INBOX) File(f.local_path).delete()
                 sent = true
             } catch (e: CancellationException) {
                 throw e
@@ -425,6 +435,7 @@ class OfflineStore(
         private const val HELD = "held"
         const val SQUAWK_PHOTO = "squawk_photo"
         const val DOCUMENT = "document"
+        const val INBOX = "inbox"
         private const val LAST_SYNC = "last_sync"
 
         fun writeAtomically(f: File, bytes: ByteArray) {

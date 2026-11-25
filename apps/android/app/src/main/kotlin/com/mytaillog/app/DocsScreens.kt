@@ -118,6 +118,7 @@ fun DocumentsScreen(recs: Recs, back: Pair<String, () -> Unit>?) {
         if (docs.isEmpty() && held.isEmpty()) {
             Empty(stringResource(R.string.docs_empty))
         }
+        DButton("Document inbox", { nav.open(Routes.DOCUMENT_INBOX) }, kind = ButtonKind.Secondary)
         Field(stringResource(R.string.rec_search), q, { q = it })
         if (held.isNotEmpty()) Well {
             Lede(pluralStringResource(R.plurals.docs_held, held.size, held.size))
@@ -341,7 +342,7 @@ fun readPicked(context: Context, uri: Uri): Picked? {
     val mime = cr.getType(uri) ?: if (name.endsWith(".pdf", true)) "application/pdf" else "image/jpeg"
     val size = cr.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { if (it.moveToFirst()) it.getLong(0) else -1 } ?: -1
     if (size > MAX_DOC_BYTES) return Picked(name, mime, ByteArray(0), size)
-    val bytes = cr.openInputStream(uri)?.use { it.readBytes() } ?: return null
+    val bytes = cr.openInputStream(uri)?.use { readBoundedDocument(it) } ?: return null
     return Picked(name, mime, bytes, bytes.size.toLong().takeIf { it > MAX_DOC_BYTES })
 }
 
@@ -421,4 +422,16 @@ private fun SourceTile(icon: androidx.compose.ui.graphics.vector.ImageVector, ti
         Text(title, color = c.ink, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight(700)))
         Note(sub)
     }
+}
+
+/** Bound streams even when providers report no size. */
+internal fun readBoundedDocument(input: java.io.InputStream): ByteArray {
+    val output = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(8192)
+    while (output.size().toLong() <= MAX_DOC_BYTES) {
+        val count = input.read(buffer, 0, minOf(buffer.size.toLong(), MAX_DOC_BYTES + 1 - output.size()).toInt())
+        if (count < 0) break
+        output.write(buffer, 0, count)
+    }
+    return output.toByteArray()
 }

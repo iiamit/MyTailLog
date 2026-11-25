@@ -20,6 +20,9 @@ const rowsByTable: Record<string, Record<string, unknown>[]> = {
 
 function fakeSupabase() {
   return {
+    auth: {
+      getUser: async () => ({ data: { user: { id: "owner" } }, error: null }),
+    },
     from(table: string) {
       const rows = rowsByTable[table] ?? [];
       const builder: Record<string, unknown> = {
@@ -70,19 +73,31 @@ test("the archive carries a README.txt documenting every file and column", async
   const readme = new TextDecoder().decode(files["README.txt"]);
 
   // Every file the archive can contain is named in it.
-  for (const f of ["README.txt", "manifest.json", "data.json", "scans/", "docs/"]) {
+  for (const f of [
+    "README.txt",
+    "manifest.json",
+    "data.json",
+    "scans/",
+    "docs/",
+  ]) {
     assert.ok(readme.includes(f), `README.txt should document ${f}`);
   }
 
   // Every record set in data.json is documented...
   const data = await readData(blob);
   for (const key of Object.keys(data)) {
-    assert.ok(readme.includes(key), `README.txt should document the ${key} record set`);
+    assert.ok(
+      readme.includes(key),
+      `README.txt should document the ${key} record set`,
+    );
   }
 
   // ...with its columns read from the rows themselves, so a migration that adds
   // a column can't leave the manifest silently stale.
-  assert.ok(readme.includes("tail_number"), "aircraft columns should be listed");
+  assert.ok(
+    readme.includes("tail_number"),
+    "aircraft columns should be listed",
+  );
   assert.ok(readme.includes("ad_refs"), "log_entry columns should be listed");
   assert.ok(readme.includes("storage_path"), "page columns should be listed");
 

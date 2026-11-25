@@ -60,7 +60,7 @@ exception when unique_violation then null; end $$;
 
 -- 0075 / 0077: the new enum values are usable.
 insert into document (aircraft_id, type, title, storage_path, track_expiry, expires_on)
-values (:'AC', 'insurance', 'Policy', 'x/d.pdf', true, '2027-03-01');
+values (:'AC', 'insurance', 'Policy', '10000000-0000-0000-0000-000000000001/docs/d.pdf', true, '2027-03-01');
 update page set extraction_status = 'queued' where id = '30000000-0000-0000-0000-000000000001';
 
 -- 0084: synced tables write change_log; back-fill rows exist.
@@ -158,8 +158,8 @@ exception when insufficient_privilege then null; end $$;
 reset role;
 commit;
 insert into page (id, logbook_id, aircraft_id, storage_path, extraction_status, duplicate_of_page_id) values
-  ('30000000-0000-0000-0000-000000000086', '20000000-0000-0000-0000-000000000001', :'AC', 'x/dup.jpg', 'queued', '30000000-0000-0000-0000-000000000001'),
-  ('30000000-0000-0000-0000-000000000087', '20000000-0000-0000-0000-000000000001', :'AC', 'x/q.jpg', 'queued', null);
+  ('30000000-0000-0000-0000-000000000086', '20000000-0000-0000-0000-000000000001', :'AC', '10000000-0000-0000-0000-000000000001/pages/dup.jpg', 'queued', '30000000-0000-0000-0000-000000000001'),
+  ('30000000-0000-0000-0000-000000000087', '20000000-0000-0000-0000-000000000001', :'AC', '10000000-0000-0000-0000-000000000001/pages/q.jpg', 'queued', null);
 do $$ begin
   -- p1 was queued by an earlier check; the duplicate (…086) must stay behind.
   assert (select string_agg(id::text, ',' order by id) from claim_reading_pages(10))

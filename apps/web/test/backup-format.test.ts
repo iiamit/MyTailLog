@@ -1,10 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { BACKUP_FORMAT, BACKUP_FORMAT_VERSION, extOf, mimeOf } from "../src/lib/backup/format";
+import {
+  BACKUP_FORMAT,
+  BACKUP_FORMAT_VERSION,
+  extOf,
+  mimeOf,
+} from "../src/lib/backup/format";
 
 test("backup format id + version are the stable gate the importer checks", () => {
   assert.equal(BACKUP_FORMAT, "mytaillog-backup");
-  assert.equal(BACKUP_FORMAT_VERSION, 2);
+  assert.equal(BACKUP_FORMAT_VERSION, 3);
 });
 
 test("extOf: takes the final extension, lowercased", () => {

@@ -13,7 +13,7 @@
 // ===========================================================================
 
 export const BACKUP_FORMAT = "mytaillog-backup";
-export const BACKUP_FORMAT_VERSION = 2;
+export const BACKUP_FORMAT_VERSION = 3;
 
 export type BackupManifest = {
   format: typeof BACKUP_FORMAT;
@@ -54,6 +54,9 @@ export type BackupData = {
   scanned_documents?: Row[];
   oil_additions?: Row[];
   oil_analysis_samples?: Row[];
+  inbox_items?: Row[];
+  expenses?: Row[];
+  engine_observations?: Row[];
 };
 
 /** File extension from a storage path, defaulting to jpg. */

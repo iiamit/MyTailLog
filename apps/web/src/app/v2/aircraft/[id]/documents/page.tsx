@@ -86,7 +86,7 @@ export default async function DocumentsPage({
   if (docsRes.error) {
     return (
       <Board section="docs">
-        <BoardHead title="Documents" />
+        <BoardHead title="Documents" actions={<Link href={`${a}/inbox`}>Document inbox</Link>} />
         <Spine tail={context.reg} context="The whole life" href={`${a}/logbooks/map`} />
         <Leaves split="2fr 1fr">
           <Leaf label="Documents">
@@ -204,7 +204,7 @@ export default async function DocumentsPage({
   return (
     <Board section="docs">
       <style>{PRINT_CSS}</style>
-      <BoardHead title="Documents" actions={actions} />
+      <BoardHead title="Documents" actions={<><Link href={`${a}/inbox`}>Document inbox</Link>{actions}</>} />
       <Spine
         tail={context.reg}
         context={selected?.document_date ? `Dated ${fmtDate(selected.document_date)}` : "The whole life"}

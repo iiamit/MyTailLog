@@ -1,0 +1,122 @@
+{
+  "canEdit": true,
+  "components": [
+    {
+      "id": "22222222-2222-4222-a222-222222222222",
+      "name": "Lycoming",
+      "serial_number": "SN123"
+    }
+  ],
+  "events": [
+    {
+      "id": "event1",
+      "component_id": "22222222-2222-4222-a222-222222222222",
+      "kind": "overhaul",
+      "event_date": "2026-01-01",
+      "notes": "Documented engine overhaul",
+      "cylinders": [],
+      "updated_at": "2026-11-25T00:00:00Z"
+    }
+  ],
+  "groups": [
+    {
+      "componentId": "22222222-2222-4222-a222-222222222222",
+      "name": "Lycoming",
+      "position": "single",
+      "segmentId": "engine:2020",
+      "start": "2020-01-01",
+      "end": "2026-01-01",
+      "compression": [
+        {
+          "date": "2025-06-01",
+          "confirmed": true,
+          "readings": [
+            {
+              "cylinder": 1,
+              "psi": 76,
+              "reference": 80
+            },
+            {
+              "cylinder": 2,
+              "psi": 65,
+              "reference": 70
+            }
+          ]
+        }
+      ],
+      "oilChanges": [],
+      "oilIntervals": [],
+      "samples": [],
+      "additions": []
+    },
+    {
+      "componentId": "22222222-2222-4222-a222-222222222222",
+      "name": "Lycoming",
+      "position": "single",
+      "segmentId": "engine:2026",
+      "start": "2026-01-01",
+      "end": null,
+      "compression": [
+        {
+          "date": "2026-05-01",
+          "confirmed": true,
+          "readings": [
+            {
+              "cylinder": 1,
+              "psi": 78,
+              "reference": 80
+            }
+          ]
+        },
+        {
+          "date": "2026-10-01",
+          "confirmed": true,
+          "readings": [
+            {
+              "cylinder": 1,
+              "psi": 76,
+              "reference": 80
+            }
+          ]
+        }
+      ],
+      "oilChanges": [],
+      "oilIntervals": [],
+      "samples": [
+        {
+          "id": "sample",
+          "sample_date": "2026-10-01",
+          "lab": "Oil laboratory",
+          "engine_hours": 1475,
+          "lab_comments": "Review these observations with your mechanic.",
+          "elements_ppm": {
+            "Fe": 17,
+            "Cu": 4,
+            "Al": 3
+          }
+        }
+      ],
+      "additions": [
+        {
+          "id": "addition1",
+          "added_date": "2026-10-01",
+          "tach": 4100,
+          "quarts": 1
+        },
+        {
+          "id": "addition2",
+          "added_date": "2026-10-05",
+          "tach": 4110,
+          "quarts": 1
+        }
+      ]
+    }
+  ],
+  "unassigned": {
+    "compression": [],
+    "samples": [],
+    "additions": [],
+    "oilChanges": []
+  },
+  "needsReview": []
+}

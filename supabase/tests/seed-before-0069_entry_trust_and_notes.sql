@@ -19,7 +19,7 @@ insert into logbook (id, aircraft_id, type) values
   ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'engine');
 
 insert into page (id, logbook_id, aircraft_id, storage_path) values
-  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'x/p1.jpg');
+  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001/pages/p1.jpg');
 
 -- signed (paper signature + cert, confirmed), confirmed, ai_read, ai_read with signer
 insert into log_entry (id, page_id, logbook_id, aircraft_id, entry_date, tach, owner_confirmed, signature_name, mechanic_cert_number) values

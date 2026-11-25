@@ -27,6 +27,10 @@ struct RecordScreen: View {
         case .oil: OilScreen(recs: recs)
         case .details: DetailsScreen(recs: recs)
         case .documents: DocumentsScreen(recs: recs)
+        case .documentInbox: DocumentInboxScreen(recs: recs)
+        case .engineHistory: EngineHistoryScreen(recs: recs)
+        case .expenses: ExpensesScreen(recs: recs)
+        case .annualPacket: AnnualPacketScreen(recs: recs)
         case .doc(let id): DocViewer(recs: recs, id: id)
         case .plan: PlanAheadScreen(recs: recs)
         case .visit(let key): VisitScreen(recs: recs, key: key)
@@ -101,7 +105,7 @@ private extension Section {
 
 /// What the Add sheet starts.
 enum AddAction: Identifiable {
-    case flight, oil, squawk, scan, document
+    case flight, oil, squawk, scan, document, inboxUpload
     var id: Self { self }
 }
 
@@ -112,6 +116,7 @@ struct AddSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Add to \(recs.tail)").dFont(.heading).foregroundStyle(Tokens.Colors.ink).accessibilityAddTraits(.isHeader)
@@ -127,11 +132,14 @@ struct AddSheet: View {
             if recs.canEdit {
                 row(.books, "camera", "Scan logbook pages", "Adds to the end of a logbook", .scan)
                 row(.docs, "file-plus-2", "Add a document", "Insurance, registration, a Form 337", .document)
+                row(.docs, "file-plus-2", "Upload documents", "Review logs, invoices and oil reports", .inboxUpload)
             }
             Note("Each colour is the tab where it will be filed.").padding(.top, Tokens.Space.s2)
         }
         .padding(Tokens.Space.s4)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Tokens.Colors.leaf)
+        }
         .background(Tokens.Colors.leaf)
     }
 
@@ -194,8 +202,12 @@ struct AddHost: ViewModifier {
             .fullScreenCover(item: Binding { action == .flight || action == .squawk ? action : nil } set: { if $0 == nil { action = nil } }) { a in
                 if let recs { if a == .flight { LogFlightFlow(recs: recs) } else { NewSquawk(recs: recs) } }
             }
-            .sheet(item: Binding { action == .oil || action == .document ? action : nil } set: { if $0 == nil { action = nil } }) { a in
-                if let recs { if a == .oil { AddOilSheet(recs: recs) } else { AddDocSheet(recs: recs, startType: nil) } }
+            .sheet(item: Binding { action == .oil || action == .document || action == .inboxUpload ? action : nil } set: { if $0 == nil { action = nil } }) { a in
+                if let recs {
+                    if a == .oil { AddOilSheet(recs: recs) }
+                    else if a == .inboxUpload { InboxUploadSheet(recs: recs) }
+                    else { AddDocSheet(recs: recs, startType: nil) }
+                }
             }
     }
 }
