@@ -1,4 +1,5 @@
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import {
   moneyMinor,
@@ -435,4 +436,15 @@ test("expense CSV rejects malformed quotes instead of changing a numeric amount"
   assert.throws(() =>
     parseCsv(header + '2026-01-01,USD,"123"4,fuel,variable,actual'),
   );
+});
+
+test("downloadable expense template has no sample records and accepts a completed row", () => {
+  const template = readFileSync(new URL("../public/templates/expenses.csv", import.meta.url), "utf8");
+  assert.deepEqual(parseCsv(template), []);
+  const [row] = parseCsv(template + "2026-11-25,USD,18575,fuel,variable,actual,Airport FBO,Owner,Fuel purchase\r\n");
+  const expense = expenseInput({ ...row, id, amount_minor: Number(row.amount_minor) });
+  assert.equal(expense.amount_minor, 18575);
+  assert.equal(expense.category, "fuel");
+  assert.equal(expense.cost_type, "variable");
+  assert.equal(expense.basis, "actual");
 });

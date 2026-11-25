@@ -3,7 +3,7 @@ import { Leaves, Leaf } from "@/ui/Board";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { Expense } from "@/lib/owner/contracts";
 import { CURRENCIES, currencyDigits, moneyMinor } from "@/lib/owner/validation";
-import { Button } from "@/ui/Button";
+import { Button, buttonClass } from "@/ui/Button";
 import { fieldClass } from "@/ui/Form";
 type Costs = {
   expenses: Expense[];
@@ -280,6 +280,15 @@ export function CostsClient({ aircraftId }: { aircraftId: string }) {
             log_entry_id. Use minor units (USD 125.50 = 12550; JPY 125 = 125;
             KWD 1.250 = 1250). Export a CSV above for the exact format.
           </p>
+          <p className="flex flex-wrap items-center gap-3 py-3">
+            <a href="/templates/expenses.csv" download="mytaillog-expenses-template.csv" className={buttonClass("quiet")}>
+              Download CSV template
+            </a>
+            <a href="/help#expense-csv" className="underline underline-offset-4">
+              Column guide and examples
+            </a>
+          </p>
+          <p>The template has headers only. Add one expense per row, keep the column names, then save as CSV and upload below.</p>
           <form
             onSubmit={importCsv}
             aria-label="Import expenses"

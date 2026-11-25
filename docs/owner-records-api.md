@@ -100,6 +100,14 @@ Supported currencies: USD, CAD, EUR, GBP, AUD, NZD, CHF, JPY, CNY, HKD, SGD, INR
 
 `GET /expenses?format=csv` exports the selected period. `POST /expenses/import` accepts `{ csv }`, up to 500 rows and 2 MB. Required CSV columns are `date,currency,amount_minor,category,cost_type,basis`; optional columns match the fields above. An import validates and commits as one transaction. Exact-file retries do not duplicate rows; exported IDs preserve identity on round trips.
 
+### Expense CSV guide and template
+
+The public [expense import guide](https://mytaillog.com/help#expense-csv) explains every required and optional column, accepted values, currency units, examples and retry behavior. Download the [header-only CSV template](https://mytaillog.com/templates/expenses.csv), add one expense per row, and save as UTF-8 comma-separated CSV. The Costs import panel links to both.
+
+- `category` describes the purchase: `maintenance`, `fuel`, `oil`, `insurance`, `hangar`, `other`.
+- `cost_type` is `fixed` (incurred regardless of flying) or `variable` (usage-related).
+- `basis` is `actual` (spending) or `reserve` (future allowance/estimate). Reserve amounts are total amounts, not automatically multiplied hourly rates.
+
 ## Annual packet and backups
 
 `GET /api/aircraft/{id}/annual-packet?format=json|pdf` prepares the current summary. `POST` to the same endpoint with `{ format: "zip", pageIds: [], documentIds: [] }` produces the PDF plus explicitly selected evidence and its index. Foreign source IDs are rejected. There is no historical-snapshot date filter. Originals are never included by default, and the ZIP is limited to 100 MB.
