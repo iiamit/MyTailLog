@@ -21,6 +21,7 @@ test("reference-page identity review fills setup without creating maintenance", 
   await page.goto(`${scratch.path}/logbooks/review`);
   await page.getByRole("link", { name: "Open in the desk" }).first().click();
   await expect(page.getByText("No maintenance entries on this page.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Mark page reviewed and next/ })).toBeDisabled();
   for (const [name, width, height] of [["desktop", 1440, 1000], ["phone", 390, 844], ["phone-landscape", 844, 390]] as const) {
     await page.setViewportSize({ width, height });
     const accept = page.getByRole("button", { name: "Accept details", exact: true });

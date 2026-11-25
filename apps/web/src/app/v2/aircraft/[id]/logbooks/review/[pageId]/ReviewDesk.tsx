@@ -358,11 +358,11 @@ export function ReviewDesk(p: {
         <div className="sticky bottom-0 -mx-7 mt-auto border-t-2 border-ink bg-leaf px-7 pt-3 pb-4">
           <div className="flex flex-wrap items-center gap-3">
             {p.canEdit && (
-              <Button variant="primary" disabled={pending} onClick={() => confirm()} aria-keyshortcuts="Shift+Enter">
+              <Button variant="primary" disabled={pending || p.identitySuggestions.some((s) => s.status === "pending")} onClick={() => confirm()} aria-keyshortcuts="Shift+Enter">
                 {pending ? "Saving…" : s.entries.length ? "Confirm page and next" : "Mark page reviewed and next"} <Kbd>Shift Enter</Kbd>
               </Button>
             )}
-            <span className="text-small text-ink-2">{acceptedLine(s)}</span>
+            <span className="text-small text-ink-2">{s.entries.length ? acceptedLine(s) : "Reference page · no maintenance entry required."}</span>
             <span className="ml-auto">{pageActions}</span>
           </div>
           <p aria-hidden className="mt-1 min-h-5 text-small font-semibold text-alarm-text">{s.notice}</p>
