@@ -233,6 +233,7 @@ struct ReviewFlow: View {
     @State private var detent: PresentationDetent = .fraction(0.34)
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(model: BooksModel, start: String?) {
         _session = State(initialValue: ReviewSession(model: model, start: start))
@@ -241,7 +242,8 @@ struct ReviewFlow: View {
     var body: some View {
         GeometryReader { window in
             Group {
-                if window.size.width >= 900 {
+                let layout = ShellLayout.forWindow(width: window.size.width, height: window.size.height, sizeClass: sizeClass)
+                if layout == .binder || layout == .duo {
                     ReviewDesk(session: session, close: { dismiss() })
                 } else {
                     phone

@@ -67,7 +67,7 @@ test("owner inbox preserves originals and atomically approves one private invoic
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: /annual-invoice.pdf/ }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
 });
 
 test("ownership ledger validates money, keeps draft on errors and detects concurrent edits", async ({

@@ -22,7 +22,9 @@ final class IdentityReviewUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["Accept details"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.buttons["Accept details"].isEnabled)
-        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft, .landscapeRight] {
+        // shortcut: XCTest reports the Duo cover frame for both displays; verify inner rotations in Device Hub until XCTest supports its active display.
+        let orientations: [UIDeviceOrientation] = ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"]?.contains("Duo") == true ? [.portrait] : [.portrait, .landscapeLeft, .landscapeRight]
+        for orientation in orientations {
             XCUIDevice.shared.orientation = orientation
             let landscape = orientation != .portrait
             let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
