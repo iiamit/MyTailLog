@@ -1184,7 +1184,7 @@ const GROUPS: { id: string; title: string; topics: string[] }[] = [
   { id: "g-logbooks", title: "Logbooks", topics: ["capture", "csv-import", "extract", "duplicates", "other", "timeline", "ask", "audit"] },
   { id: "g-status", title: "Status", topics: ["status", "maintenance", "projection"] },
   { id: "g-maintenance", title: "Maintenance", topics: ["squawks", "compliance", "oil-analysis"] },
-  { id: "g-aircraft", title: "Aircraft", topics: ["meters", "adsb", "myflightbook", "equipment", "wb"] },
+  { id: "g-aircraft", title: "Aircraft", topics: ["meters", "adsb", "myflightbook", "equipment", "wb", "expense-csv"] },
   { id: "g-documents", title: "Documents", topics: ["records-vault"] },
   { id: "g-share", title: "Share", topics: ["sharing", "export", "developer-api"] },
   { id: "g-account", title: "Account and settings", topics: ["profile", "ai-key", "notifications"] },
