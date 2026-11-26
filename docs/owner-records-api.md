@@ -2,6 +2,27 @@
 
 These first-party endpoints accept a signed-in Supabase bearer token or the web session cookie. They are separate from the third-party `/api/v1` OAuth API. Aircraft row-level access applies throughout; maintenance editing does **not** grant access to financial records.
 
+## Access and endpoint map
+
+The new web design and native 2.0 test builds use these contracts. Native public-store availability is a separate rollout. Third-party OAuth clients cannot call these endpoints using `/api/v1` access tokens; no expense, inbox or engine-history OAuth scope has been added.
+
+| Path below `/api/aircraft/{id}` | Methods | Access |
+| --- | --- | --- |
+| `/inbox` | GET, POST | Owner or editor; editors see their own uploads |
+| `/inbox/{item}/file` | GET | Same private inbox access |
+| `/inbox/{item}/analyze`, `/pages`, `/approve` | POST | Owner or editor; invoice approval is owner-only |
+| `/engine-history` | GET; POST | Aircraft access to read; edit access to write |
+| `/engine-history/{observation}` | PATCH, DELETE | Editor |
+| `/engine-history/components/{component}/position` | POST, PATCH | Editor |
+| `/expenses` | GET, POST | Owner only |
+| `/expenses/{expense}` | PATCH, DELETE | Owner only |
+| `/expenses/import` | POST | Owner only |
+| `/annual-packet` | GET, POST | Aircraft access; evidence limited to accessible records |
+
+Keep stable upload/expense/observation UUIDs across retries. Versioned edits use the last returned `updated_at` as `base`; reload after a 409 rather than retrying with an invented version. Authentication failures return 401, denied roles 403, and inaccessible aircraft 404. Server failures must not be treated as empty records. Mutation requests with an unrecognized browser Origin are refused.
+
+[User guides](https://mytaillog.com/help#document-inbox) explain the review workflow; [OAuth API documentation](https://mytaillog.com/developers/docs) describes third-party access separately.
+
 ## Document inbox
 
 `GET /api/aircraft/{id}/inbox` returns `items`, `logbooks`, `canEdit` and `canManageFinances`. An editor sees their own uploads; the aircraft owner can see all uploads. Viewers cannot read the inbox. Originals and proposals remain private until a reviewed non-financial destination explicitly shares them.
@@ -51,6 +72,8 @@ For invoices, supply reviewed `proposal` fields from the expense schema below. A
 - `unassigned` observations and `needsReview` entries.
 - `sources.entries` and `sources.pages` for source selection.
 
+Only complete engines are returned as `components`; Engine-category accessories are excluded. `component_kind` describes what the record represents, while `category` describes its aircraft system. Record actual installation/removal evidence in Equipment; accepting an identification page does not infer an installation date. If the installation interval is missing or more than one engine could match a dated source, its observations stay `unassigned`.
+
 Intervals end at documented component removal, overhaul, cylinder replacement or meter-reset boundaries. Historical rows attach automatically only to one documented installation interval; ambiguous twin-engine records remain unassigned.
 
 `POST /engine-history` accepts a stable UUID `id`, `component_id`, `event_date`, `kind` (`overhaul`, `cylinder_replacement`, `compression`), optional notes/source references, and:
@@ -71,7 +94,7 @@ The existing offline `oil.create` mutation also accepts optional `componentId`, 
 
 Only the aircraft owner can use `/api/aircraft/{id}/expenses`.
 
-`GET` accepts optional inclusive `from` and `to` ISO dates. It returns `expenses`, separate currency `totals`, source-entry/document choices, and a disclosed usage `denominator`. Actual spending and reserves are never combined. The hourly estimate uses the widest verified meter interval within the selected dates. Confirmed, non-superseded logbook entries and manual or explicitly reviewed meter readings can supply its endpoints. The readings must use one meter, remain monotonic and not cross a reset. Equal-duration intervals prefer Hobbs. `denominator.from`/`to` disclose the actual reading dates; `rate_actual_minor` and `actual_per_hour_minor` use only actual expenses within that interval. The main currency totals and exported rows still cover the full requested period. ADS-B estimates are excluded. The source and measured interval must remain visible wherever the rate is displayed.
+`GET` accepts optional inclusive `from` and `to` ISO dates. It returns `expenses`, separate currency `totals`, source-entry/document choices, and a disclosed usage `denominator`. Actual spending and reserves are never combined. The hourly estimate uses the widest verified meter interval within the selected dates. Confirmed, non-superseded logbook entries and manual or explicitly reviewed meter readings can supply its endpoints. The readings must use one meter, remain monotonic and not cross a reset. Equal-duration intervals prefer Hobbs. `denominator.from`/`to` disclose the actual reading dates; `rate_actual_minor` and `actual_per_hour_minor` use only actual expenses within that interval. The main currency totals and exported rows still cover the full requested period. ADS-B estimates are excluded. The source and measured interval must remain visible wherever the rate is displayed. Without two valid dated readings on one meter inside a requested `from`–`to` interval, `denominator.hours` and hourly totals are null; ordinary spending totals remain available. Dates are not extrapolated. For a Jan 1–Dec 31 request with usable readings on Jan 13 and Dec 8, the rate uses Jan 13–Dec 8 spending and hours, while `totals.actual_minor` still covers Jan 1–Dec 31.
 
 `POST` creates an expense using a stable UUID:
 
@@ -110,7 +133,7 @@ The public [expense import guide](https://mytaillog.com/help#expense-csv) explai
 
 ## Annual packet and backups
 
-`GET /api/aircraft/{id}/annual-packet?format=json|pdf` prepares the current summary. `POST` to the same endpoint with `{ format: "zip", pageIds: [], documentIds: [] }` produces the PDF plus explicitly selected evidence and its index. Foreign source IDs are rejected. There is no historical-snapshot date filter. Originals are never included by default, and the ZIP is limited to 100 MB.
+`GET /api/aircraft/{id}/annual-packet?format=json|pdf` prepares the current summary. `POST` to the same endpoint with `{ format: "zip", pageIds: [], documentIds: [] }` produces the PDF plus explicitly selected evidence and its index. Foreign source IDs are rejected. There is no historical-snapshot date filter. Originals are never included by default, and the ZIP is limited to 100 MB and 100 selected files. Private inbox originals and the ownership ledger are not automatically added. A downloaded packet is an independent copy; revoking a room link cannot revoke that file.
 
 Backup format 3 includes engine observations and, in owner exports, the private inbox originals and ownership ledger. Restoring creates a new aircraft, remaps references and reconnects existing destinations without reapplying extracted entries or charging invoices twice. Pending raster pages can be regenerated from the retained originals. Older backup formats remain readable.
 

@@ -115,7 +115,7 @@ const SECTIONS: Section[] = [
     title: "Identification and reference pages",
     body: <>
       <p>A cover, original-equipment list or reference page is a valid part of a logbook. It does not need a maintenance entry, date, meter reading or signature. In Logbooks → Review, check the page type and any suggested aircraft or equipment details beside the original scan. Mixed pages can contain both details and maintenance entries.</p>
-      <p>Compare each suggestion with the current record, edit any misread characters, then accept or dismiss it. Accepted details keep a source-page link. Old equipment lists create historical records unless you explicitly confirm that the equipment is installed today. Resolve the suggestions, then mark the reference page reviewed; it stays in Pages and search without creating a maintenance completion or an artificial timeline event.</p>
+      <p>Compare each suggestion with the current record, edit any misread characters, then accept or dismiss it. Keep the complete registration, including its country prefix (for example N9363V), even if an old cover abbreviates it. Accepted details keep a source-page link. Old equipment lists create historical records unless you explicitly confirm that the equipment is installed today. Resolve the suggestions, then mark the reference page reviewed; it stays in Pages and search without creating a maintenance completion or an artificial timeline event.</p>
       <p>For existing uploads, open aircraft setup and choose <strong>Find aircraft details in existing pages</strong>. On the native apps, open a page, choose Review, then <strong>Find aircraft details in this page</strong>. Reading uses the usual allowance and keeps confirmed entries and prior review decisions.</p>
       <p>Mobile decisions can be saved offline. Sync before continuing review of the same page; if another person changed the destination record, review its current values before accepting again. Viewers cannot accept changes.</p>
       <p>In Equipment, <strong>This record represents</strong>{" "}distinguishes a complete engine from its accessories. The Engine category also includes pumps and magnetos. Engine history uses complete engines, and keeps compression readings with uncertain engine assignments under <strong>Unassigned observations</strong>. A missing test reference pressure is never assumed.</p>
@@ -169,11 +169,15 @@ const SECTIONS: Section[] = [
           <strong><L href="#ask">Ask your logbook</L></strong>{" "}answers from the phone with the entries
           it used listed underneath.
         </p>
-        <h3 id="owner-workspace" className="text-lg font-semibold">Prepare records, track engines and understand costs</h3>
-        <p><strong>Document inbox:</strong> choose Upload documents from Add, or open Documents → Document inbox. Upload PDFs or images once, retain the original, then review the suggested destination. Reading suggestions uses your AI allowance. Logbook pages enter the existing review queue; an invoice becomes a private expense only after approval, and oil reports show dated samples for review. Uploads waiting for connectivity stay on the device or browser that holds the original. Duplicate files are not added twice; likely duplicate pages wait for your decision.</p>
-        <p><strong>Engine history:</strong> open Aircraft → Engine history to select an engine and installation or overhaul period. Compression readings retain their original reference pressure. Unassigned historical observations stay visible for review; twins are not automatically combined. Add reviewed observations and lifecycle events with source links where available.</p>
-        <p><strong>Costs:</strong> the aircraft owner can record actual expenses and separate reserve estimates, import or export CSV, and link maintenance entries or supporting documents. See the <L href="#expense-csv">expense CSV column guide and template</L>. Financial access is separate from maintenance viewing or editing. Currency totals stay separate. Cost per hour uses the widest valid interval between verified readings inside your selected dates, including confirmed logbook entries and manually recorded or reviewed meter readings. It uses only expenses within those actual dates, which are shown with the meter and hours used. Readings must increase on the same meter without a replacement or reset; ADS-B estimates are excluded. For example, selecting Jan 1–Dec 31 with verified readings on Jan 13 and Dec 8 uses Jan 13–Dec 8 for the rate, while the total spending still covers Jan 1–Dec 31.</p>
-        <p><strong>Annual packet:</strong> open Maintenance → Annual prep → Prepare annual packet. Download a PDF summary, or explicitly select the scans and documents to include in an evidence ZIP. Unreviewed information and missing records remain marked. The packet reflects current records; it is not an airworthiness determination or a maintenance sign-off.</p>
+        <p id="owner-workspace">
+          The native 2.0 test builds also include <L href="#document-inbox">Document inbox</L>,{" "}
+          <L href="#engine-history">Engine history</L>, <L href="#ownership-costs">Costs</L>{" "}
+          and <L href="#annual-packet">annual packets</L>. These are available in the new web design now;
+          the redesigned native release is in TestFlight and Play internal testing, ahead of its public rollout.
+          Inbox files can queue offline, and saved engine history and expense reports can be read offline.
+          Reading and approving inbox proposals, changing engine observations or expenses, CSV operations,
+          and generating annual packets need a connection.
+        </p>
         <p>
           <strong>Documents</strong>{" "}keeps your AROW paperwork to hand, airworthiness certificate,
           registration, POH/AFM and weight &amp; balance, for a ramp check with no signal.{" "}
@@ -265,6 +269,62 @@ const SECTIONS: Section[] = [
         </p>
       </>
     ),
+  },
+  {
+    id: "document-inbox",
+    title: "Document inbox: review before filing",
+    body: <>
+      <p>Open <strong>Documents → Document inbox</strong>, or choose <strong>Upload documents</strong> from Add. Upload a PDF, JPEG, PNG or WebP up to 25 MB. The original is retained. Choose <strong>Read suggested details</strong> to prepare a draft using your AI allowance, then compare it with the original and correct the destination and values before approving.</p>
+      <ul>
+        <li><strong>Logbook:</strong> choose the destination book. PDF pages are prepared for the normal logbook review queue; approving the upload does not confirm the extracted maintenance entries.</li>
+        <li><strong>Invoice:</strong> the aircraft owner reviews the expense details and approves one private actual expense. It does not create a maintenance sign-off.</li>
+        <li><strong>Oil report:</strong> check each sample date, measurement and engine assignment before adding it to Oil analysis. Conflicting existing measurements require review.</li>
+        <li><strong>Other document:</strong> file the original in Documents without creating log entries. Check who can access aircraft Documents before filing something sensitive.</li>
+      </ul>
+      <p>Editors see their own inbox uploads; the aircraft owner sees all uploads. Viewers cannot open the inbox, and only the owner can approve financial records. An invoice original remains private in the inbox unless you separately share a copy as a Document.</p>
+      <p>Queued originals stay on the browser or device that holds them until upload succeeds. Keep that device and its local data until sync completes. Retry a failed read or upload in place; identical uploads are deduplicated and likely duplicate logbook pages wait for your decision.</p>
+      <Effects>Only the reviewed destination is updated. A draft invoice, oil report or logbook suggestion does not silently change your ledger, trends or maintenance status.</Effects>
+    </>,
+  },
+  {
+    id: "engine-history",
+    title: "Engine history and compression readings",
+    body: <>
+      <p>Open <strong>Aircraft → Engine history</strong> and choose the engine and service period. Compression readings, oil services, lab samples and oil additions are grouped around documented installations, removals, overhauls, cylinder changes and meter resets. Measurements retain their written test pressure; a missing reference pressure is never assumed to be 80 psi. These are observations to discuss with your mechanic, not a diagnosis.</p>
+      <ol>
+        <li>In <strong>Aircraft → Equipment</strong>, check that <strong>This record represents</strong> identifies a complete engine, with the right serial number. Pumps, magnetos and other accessories can have the Engine category without being complete engines.</li>
+        <li>Record the installation date and, when known, its source entry. A cover or equipment list identifies an engine but does not prove when it was installed. Set its removal date when applicable; do not invent dates to fill a chart.</li>
+        <li>Return to Engine history. Historical readings attach automatically only when their date falls within one documented engine installation. Review <strong>Unassigned records</strong> and readings needing review if a trend is empty.</li>
+        <li>To identify an ambiguous compression record, record a reviewed compression observation for the correct engine, date and cylinder readings, linking its existing source entry or scanned page. A linked observation replaces that entry’s automatic compression interpretation in the trend without deleting the source entry.</li>
+      </ol>
+      <p>For twins or replaced engines, keep each engine and service period separate. Add overhaul and cylinder-replacement observations with sources where available. Correct or delete a mistaken observation from its record; its original log entry remains intact.</p>
+      <Effects>Reviewing identity details does not establish an installation. Engine history does not merge accessories into the engine list or combine uncertain observations across engines.</Effects>
+    </>,
+  },
+  {
+    id: "ownership-costs",
+    title: "Ownership costs and cost per hour",
+    body: <>
+      <p>The aircraft owner can open <strong>Aircraft → Costs</strong> to record expenses, link an entry or document, select a reporting period, and import or export CSV. Maintenance viewers and editors cannot access the ledger. Totals remain separate by currency, with no exchange-rate conversion.</p>
+      <p><strong>Actual</strong> means spending; <strong>reserve</strong> means an allowance for future work. Reserves are total amounts you enter, not hourly rates that MyTailLog multiplies automatically. Fixed and variable classify whether a cost depends on flying. See the <L href="#expense-csv">expense CSV column guide and template</L> for accepted values, currency units and examples.</p>
+      <p>Cost per hour uses the widest valid interval between verified readings inside your selected dates, including confirmed logbook entries and manually recorded or reviewed meter readings. It uses only actual expenses within those measured dates. The result shows the actual dates, meter and hours used; full-period spending totals still cover your entire selection.</p>
+      <p>For example, selecting Jan 1–Dec 31 with verified readings on Jan 13 and Dec 8 uses Jan 13–Dec 8 for the hourly estimate. Readings must increase on the same meter without a replacement or reset. ADS-B estimates and meter-face differences across replacements are excluded. If there is no valid interval, spending totals remain available but cost per hour is withheld; no hours are extrapolated to the selected endpoints.</p>
+      <Effects>Expenses do not complete maintenance or change meter readings. Keep private invoices in the inbox; attaching a separately shared Document does not make the ledger itself visible to other aircraft users.</Effects>
+    </>,
+  },
+  {
+    id: "annual-packet",
+    title: "Prepare an annual packet",
+    body: <>
+      <p>Open <strong>Maintenance → Annual prep → Prepare annual packet</strong>. Review the current maintenance summary, meter dates and sources, serial numbers, AD information, open squawks and records warnings before downloading.</p>
+      <ol>
+        <li>Download the PDF summary on its own, or select the specific scanned pages and Documents you want your mechanic to receive.</li>
+        <li>Download the evidence ZIP to include the summary, selected originals and a source index. No originals are included by default. The combined archive is limited to 100 MB.</li>
+        <li>Check the exported files before sending them. A downloaded archive is a copy: changing records or revoking a record-room link does not revoke a copy already sent.</li>
+      </ol>
+      <p>The packet reflects the records available when generated, not a reconstruction of an earlier date. Unconfirmed entries, missing evidence and records gaps remain marked; unconfirmed entries are excluded from completed-maintenance evidence. Private inbox originals and the ownership ledger are not automatically included.</p>
+      <Effects>Generating a packet does not sign an inspection, complete a tracked item or determine airworthiness. Use the original records and your IA’s review to resolve the flagged questions.</Effects>
+    </>,
   },
   {
     id: "expense-csv",
@@ -1181,11 +1241,11 @@ const SECTIONS: Section[] = [
 // Eight groups for the contents list, in the app's own order: start, then the six sections, then the account.
 const GROUPS: { id: string; title: string; topics: string[] }[] = [
   { id: "g-start", title: "Start here", topics: ["idea", "designs", "start", "mobile"] },
-  { id: "g-logbooks", title: "Logbooks", topics: ["capture", "csv-import", "extract", "duplicates", "other", "timeline", "ask", "audit"] },
+  { id: "g-logbooks", title: "Logbooks", topics: ["capture", "identification-pages", "csv-import", "extract", "duplicates", "other", "timeline", "ask", "audit"] },
   { id: "g-status", title: "Status", topics: ["status", "maintenance", "projection"] },
-  { id: "g-maintenance", title: "Maintenance", topics: ["squawks", "compliance", "oil-analysis"] },
-  { id: "g-aircraft", title: "Aircraft", topics: ["meters", "adsb", "myflightbook", "equipment", "wb", "expense-csv"] },
-  { id: "g-documents", title: "Documents", topics: ["records-vault"] },
+  { id: "g-maintenance", title: "Maintenance", topics: ["squawks", "compliance", "oil-analysis", "annual-packet"] },
+  { id: "g-aircraft", title: "Aircraft", topics: ["meters", "adsb", "myflightbook", "equipment", "engine-history", "wb", "ownership-costs", "expense-csv"] },
+  { id: "g-documents", title: "Documents", topics: ["document-inbox", "records-vault"] },
   { id: "g-share", title: "Share", topics: ["sharing", "export", "developer-api"] },
   { id: "g-account", title: "Account and settings", topics: ["profile", "ai-key", "notifications"] },
 ];

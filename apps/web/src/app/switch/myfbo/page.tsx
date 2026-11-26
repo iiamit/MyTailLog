@@ -11,6 +11,14 @@ export const metadata: Metadata = {
 
 const MOVES: { what: string; how: string }[] = [
   {
+    what: "Owner expense history",
+    how: "Save the spreadsheet as CSV, map it to the expense template, and import it under Aircraft → Costs. Actual spending and reserves stay separate, as do currencies. This is a private ownership ledger, not customer invoicing or payment processing.",
+  },
+  {
+    what: "Invoices, oil reports and annual evidence",
+    how: "Upload originals into Document inbox and review the suggested destination before approval. Build a current annual packet with the scans and Documents you explicitly select. The packet is preparation for your IA, not a maintenance sign-off.",
+  },
+  {
     what: "Maintenance & inspection history",
     how: "Upload the PDFs, scans, or photos of the pages. A vision model reads each one into structured entries (date, hours, work performed, parts, AD/SB references, signature) with a confidence score per field.",
   },
@@ -236,6 +244,12 @@ export default function SwitchMyFboPage() {
             </table>
           </div>
         </MarketingSection>
+
+        <p className="px-4 text-body text-ink-2">
+          The new web design includes Document inbox, Engine history, Costs and annual packets; native 2.0 builds are
+          in testing ahead of their public release. See the <Link href="/help#document-inbox">feature guides</Link>{" "}
+          and <Link href="/help#expense-csv">expense CSV guide and template</Link> before importing.
+        </p>
 
         <MarketingSection id="lockin" title="Why this can't happen to you again here">
           <ul>

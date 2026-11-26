@@ -34,6 +34,10 @@ const KEEPS: [string, string][] = [
   ["What is due", "Inspections, recurring work and ADs by date or hours, each traced back to the entry and page behind it."],
   ["Answers with sources", "Search across your books or ask in plain English. Answers cite the entries and open the scanned page."],
   ["The small things", "Tach and hobbs, oil added, squawks, installed equipment, weight and balance, and the documents you carry aboard."],
+  ["Incoming documents", "Keep the original PDF or photo, then review suggested logbook pages, oil samples or a private invoice expense before filing them."],
+  ["Engine history", "Review historical compression readings and oil records by documented engine service period, with the original test pressures and sources."],
+  ["Ownership costs", "Keep spending and reserves separate, import expense CSV, and see hourly estimates with the actual measured dates. The ledger is owner-only."],
+  ["Annual preparation", "Download a current summary and choose the scans and documents to include in an evidence packet for your IA."],
   ["New entries", "Write a maintenance entry from a preventive-maintenance template, sign it with your certificate and an emailed code, and print a logbook sticker."],
 ];
 
@@ -144,6 +148,7 @@ export default async function Home() {
         <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1.62fr)_minmax(0,1fr)]">
           <section aria-labelledby="keeps-h" className="rounded-leaf bg-leaf px-[30px] pt-[26px] pb-7 text-ink shadow-leaf max-sm:px-4">
             <h2 id="keeps-h" className="mb-4 text-heading">What it keeps track of</h2>
+            <p className="mb-4 text-body text-ink-2">Document inbox, Engine history, Costs and annual packets are available in the new web design now and in the native 2.0 test builds. <Link href="/help#document-inbox">Read the feature guides</Link>. The redesigned public mobile release is coming soon.</p>
             {KEEPS.map(([t, b], i) => (
               <ReadSection key={t} title={t} first={i === 0} level={3}><p>{b}</p></ReadSection>
             ))}

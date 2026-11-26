@@ -10,6 +10,7 @@ const GUIDES = {
     lede: "Turn paper aircraft logbooks into a searchable index while keeping the originals as the legal record.",
     sections: [
       ["Prepare before scanning", "Inventory every airframe, engine, propeller, and avionics volume. Photograph the cover and identifying pages first, keep books in order, and avoid removing bound pages. A phone document scanner is usually enough; even lighting and a flat page matter more than expensive hardware."],
+      ["Review identification pages", "Covers and original-equipment lists can fill source-linked aircraft and equipment details without inventing maintenance entries. Compare suggestions with the current record, keep the full registration including its country prefix, and do not treat a historical equipment list as proof of a current installation."],
       ["Capture in small batches", "Scan one logbook at a time and preserve page order. MyTailLog accepts camera captures and PDF uploads, then extracts dates, times, maintenance descriptions, signatures, AD references, and service-bulletin references. Handwritten pages are read by a stronger AI model that copes better with handwriting; typed and printed pages use a simpler, cheaper text reader."],
       ["Review every extraction", "Machine extraction is a draft, not a maintenance determination. Compare each result with the page image, correct uncertain fields, and confirm it only when the transcription matches. MyTailLog keeps the source scan beside the structured entry so later checks remain possible."],
       ["Protect the originals", "Keep physical records secure and backed by a complete export of the digital index and scans. MyTailLog is not the legal maintenance record; verify anything used for an airworthiness decision against the original records and applicable current data."],
@@ -23,6 +24,9 @@ const GUIDES = {
       ["Start with the evidence", "Add the aircraft and its logbooks, then scan or import the records you already rely on. Confirm extracted entries before treating them as trusted. The timeline remains linked to the original page image, so a date or tach value can always be checked."],
       ["Record the current meters", "Enter tach, Hobbs, or airframe time readings as they become available. MyTailLog separates recorded readings from estimates and accounts for meter replacements, so an old or estimated value does not silently outrank a newer owner-confirmed reading."],
       ["Turn entries into status", "Track annual and recurring inspections, life-limited equipment, AD and service-bulletin compliance, oil history, and open squawks. Due dates and projected hour limits are planning aids; they do not replace an A&P or IA review."],
+      ["Follow engine history", "In the new web design, Engine history groups historical compression readings and oil records by documented engine installation and service period. Test pressures remain as written. Accessories are separate from complete engines; ambiguous records stay available for review rather than being combined across engines."],
+      ["Track ownership spending", "Costs keeps an owner-only ledger of actual expenses and reserve estimates, with CSV import/export and separate currency totals. Hourly estimates disclose the dates covered by verified readings inside the selected period and use spending only within those dates; hours are not extrapolated across missing dates or meter replacements."],
+      ["Prepare an annual packet", "Use Document inbox to review incoming logbook pages, invoices and oil reports before filing. For the annual, download a current PDF summary and explicitly select scans and Documents for an evidence ZIP. Missing records remain flagged. These workspaces are live in the new web design and included in native 2.0 test builds ahead of the public mobile rollout."],
       ["Share a concise snapshot", "The maintenance summary combines current status, upcoming attention items, equipment counts, AD/SB counts, and weight-and-balance figures. Print it to PDF or share a redacted text snapshot with an IA, co-owner, or prospective buyer."],
     ],
   },
@@ -72,6 +76,13 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </MarketingSection>
         )}
       </div>
+      <MarketingSection id="feature-help" title="Put this into practice">
+        <p>Follow the <Link href="/help#identification-pages">identification-page guide</Link>,{" "}
+          <Link href="/help#document-inbox">Document inbox guide</Link>,{" "}
+          <Link href="/help#engine-history">Engine history guide</Link>{" "}
+          or <Link href="/help#annual-packet">annual packet guide</Link>. For spending records, start with the{" "}
+          <Link href="/help#expense-csv">expense CSV guide and template</Link>.</p>
+      </MarketingSection>
       <MarketingSection id="start" title="Try it on your own books">
         <p>
           A free account opens with the demo aircraft N734DM, so you can look around before adding yours.{" "}

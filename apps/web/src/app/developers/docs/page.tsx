@@ -33,6 +33,7 @@ export default function DeveloperDocsPage() {
         { id: "call", title: "Call the API" },
         { id: "confidential", title: "Server-to-server apps" },
         { id: "scopes", title: "Scopes" },
+        { id: "owner-records", title: "First-party owner records" },
       ]}
     >
       <ReadSection id="discovery" title="Discovery" first>
@@ -102,7 +103,7 @@ GET /api/v1/aircraft/{id}/weightbalance`}</CodeWell>
   -d code=THE_CODE \\
   -d redirect_uri=YOUR_REGISTERED_URI \\
   -d code_verifier=THE_VERIFIER`}</CodeWell>
-        <p>Public apps skip the secret and rely on PKCE. Either way, access is per aircraft and read-only.</p>
+        <p>Public apps skip the secret and rely on PKCE. Either way, access is per aircraft. Reads require the matching scope; adding meter readings requires hours:write.</p>
       </ReadSection>
 
       <ReadSection id="scopes" title="Scopes">
@@ -115,6 +116,27 @@ GET /api/v1/aircraft/{id}/weightbalance`}</CodeWell>
           </tbody>
         </table>
         <p>Log entries (the transcribed history) are never shared. All access is read-only, except <code>hours:write</code>, which adds hour readings.</p>
+      </ReadSection>
+
+      <ReadSection id="owner-records" title="First-party owner records">
+        <p>
+          Document inbox, annual packets, Engine history and Costs use first-party session APIs under{" "}
+          <code>/api/aircraft/{"{id}"}</code>. They accept a MyTailLog web session or signed-in Supabase bearer token,
+          not a third-party OAuth access token. They are not additional <code>/api/v1</code> endpoints or OAuth scopes.
+          Registering an OAuth app does not grant access to private expenses, inbox originals or logbook scans.
+        </p>
+        <CodeWell label="First-party endpoint families">{`GET, POST /api/aircraft/{id}/inbox
+GET, POST /api/aircraft/{id}/engine-history
+GET, POST /api/aircraft/{id}/expenses
+POST /api/aircraft/{id}/expenses/import
+GET, POST /api/aircraft/{id}/annual-packet`}</CodeWell>
+        <p>
+          The <a href="https://github.com/iiamit/MyTailLog/blob/main/docs/owner-records-api.md">owner records API contract</a>{" "}
+          covers payloads, upload limits, retry identifiers, conflicts, financial permissions and the measured interval
+          used for hourly cost estimates. The <a href="https://github.com/iiamit/MyTailLog/blob/main/docs/logbook-review.md">logbook review contract</a>{" "}
+          covers identification-page review and native sync mutations. See <Link href="/help#document-inbox">Help</Link>{" "}
+          for user instructions and the <Link href="/help#expense-csv">expense CSV guide and template</Link>.
+        </p>
       </ReadSection>
     </InformationShell>
   );
