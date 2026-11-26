@@ -1,5 +1,9 @@
 # Simulator tests need one Debug slice. Archives continue to use project.yml's Release XCFramework.
 include: project.yml
+settings:
+  base:
+    # Test targets also import the app's public shared-core types.
+    FRAMEWORK_SEARCH_PATHS: ["$(inherited)", "$(SRCROOT)/../core/framework/build/bin/iosSimulatorArm64/debugFramework"]
 targets:
   MyTailLog:
     dependencies:REPLACE:
