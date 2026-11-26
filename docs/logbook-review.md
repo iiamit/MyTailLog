@@ -6,7 +6,7 @@ You can upload logbooks before completing aircraft setup. Enter the minimum info
 
 A cover, original-equipment list or reference page does not need a maintenance entry. In Logbooks → Review, check its page type and any aircraft/equipment suggestions beside the scan. Pages may contain both identification information and maintenance entries.
 
-For each suggestion, compare the current record with the proposed values. Correct any transcription errors, then accept or dismiss it. Keep the complete aircraft registration, including its country prefix (for example `N9363V`), even when an old cover omits the prefix. Select the existing equipment record when appropriate. Accepted details retain their source page; conflicting changes made elsewhere require another review.
+For each suggestion, compare the current record with the proposed values. Correct any transcription errors, then accept or dismiss it. Keep the complete aircraft registration, including its country prefix (for example `N123AB`), even when an old cover omits the prefix. Select the existing equipment record when appropriate. Accepted details retain their source page; conflicting changes made elsewhere require another review.
 
 Old equipment lists describe historical equipment. New equipment records from those lists remain historical unless you explicitly confirm that the equipment is installed today. They do not establish an installation date or complete an inspection. Mark the reference page reviewed when its suggestions are resolved; it remains in Pages without an artificial timeline event.
 
