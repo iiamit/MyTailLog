@@ -16,12 +16,8 @@ final class OwnerWorkspaceUITests: XCTestCase {
         for (mode, action) in screens {
             open(mode, in: app)
             for orientation in [UIDeviceOrientation.portrait, .landscapeLeft, .landscapeRight] {
-                XCUIDevice.shared.orientation = orientation
+                rotate(orientation, in: app)
                 let landscape = orientation != .portrait
-                let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-                    landscape ? app.frame.width > app.frame.height : app.frame.height > app.frame.width
-                }, object: nil)
-                XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 10), .completed, "The application did not adopt the requested orientation")
                 let button = app.buttons[action]
                 XCTAssertTrue(button.waitForExistence(timeout: 10), "\(mode): missing \(action)")
                 if !button.isHittable { app.swipeUp() }
@@ -36,7 +32,7 @@ final class OwnerWorkspaceUITests: XCTestCase {
                 capture.lifetime = .keepAlways
                 add(capture)
             }
-            XCUIDevice.shared.orientation = .portrait
+            rotate(.portrait, in: app)
             returnHome(app)
         }
     }
@@ -81,11 +77,21 @@ final class OwnerWorkspaceUITests: XCTestCase {
     }
 
     @MainActor private func returnHome(_ app: XCUIApplication) {
+        XCTAssertTrue(app.buttons["Test home"].isHittable)
         app.buttons["Test home"].tap()
         XCTAssertTrue(app.buttons["Test home"].waitForNonExistence(timeout: 5))
         for mode in ["annual", "inbox", "engine", "expenses"] {
             XCTAssertTrue(app.buttons["Open \(mode)"].isHittable, "Did not return to the workspace chooser")
         }
+    }
+
+    @MainActor private func rotate(_ orientation: UIDeviceOrientation, in app: XCUIApplication) {
+        XCUIDevice.shared.orientation = orientation
+        let landscape = orientation != .portrait
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            landscape ? app.frame.width > app.frame.height : app.frame.height > app.frame.width
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 10), .completed, "The application did not adopt the requested orientation")
     }
 
     @MainActor private func recordScreen(_ name: String) {
