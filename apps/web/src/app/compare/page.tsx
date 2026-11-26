@@ -175,7 +175,7 @@ export default function ComparePage() {
       <div className="mx-auto grid max-w-[1180px] gap-2.5 pt-2.5">
         <section aria-labelledby="ledger-h" className="rounded-leaf bg-leaf px-[30px] pt-[26px] pb-7 text-ink shadow-leaf max-sm:px-4">
           <h2 id="ledger-h" className="text-heading">The ledger</h2>
-          <p className="mt-1 max-w-[54ch] text-body text-ink-2">Thirteen questions an owner asks of a records system, answered for each approach.</p>
+          <p className="mt-1 max-w-[54ch] text-body text-ink-2">Questions an owner asks of a records system, answered for each approach.</p>
 
           {/* Wide screens: a ruled ledger that stays inside the leaf. Every column is drawn the same, ours included. */}
           <table className="mt-5 w-full table-fixed border-collapse text-[14px] leading-[1.45] max-[1099px]:hidden">
@@ -231,7 +231,16 @@ export default function ComparePage() {
               timeline across logbooks, a status list, a Part 91 forecast, AD tracking with FAA reference lookup, an
               equipment list rebuilt from what the logs say was installed and removed, weight and balance revisions, oil
               wear-metal and consumption trends, a records gap audit, and plain-English questions answered with the source
-              entries cited.
+              entries cited. Engine history groups compression and oil records by documented engine service period.
+              The Document inbox keeps originals while you review their destination, annual packets bundle selected
+              evidence for your IA, and Costs separates actual spending from reserves in an owner-only ledger.
+              <Link href="/help#document-inbox"> Read the feature guides</Link>. These additions are live in the new web
+              design and included in native 2.0 testing; the redesigned public mobile rollout is still upcoming.
+            </p>
+            <p>
+              Cost estimates show the dates supported by verified meter readings, even when those dates are inside
+              your requested reporting period. They do not extrapolate hours across missing dates or meter replacements.
+              Expense tracking does not include customer invoicing, dispatch or pilot maneuver analysis.
             </p>
             <p>
               The second thing is the exit: the MIT licence, a full ZIP of your rows and original scans on demand, and a

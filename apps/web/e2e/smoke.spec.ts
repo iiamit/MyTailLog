@@ -5,12 +5,17 @@ import { test, expect } from "./fixtures";
 // asserts no CSP violation on the dashboard (via the fixture guard).
 test("dashboard shows the demo aircraft for the logged-in test account", async ({ page }) => {
   await page.goto("/dashboard");
-  await expect(page.getByText("N734DM")).toBeVisible();
+  await expect(page.getByText("N734DM", { exact: true }).first()).toBeVisible();
 });
 
 test("help page renders every documented section without a CSP violation", async ({ page }) => {
   await page.goto("/help");
-  await expect(page.getByRole("heading", { name: /oil analysis/i })).toBeVisible();
+  for (const id of ["oil-analysis", "identification-pages", "document-inbox", "engine-history", "ownership-costs", "annual-packet", "expense-csv"]) {
+    await expect(page.locator(`h3#${id}`)).toBeVisible();
+  }
+  const ids = await page.locator("main [id]").evaluateAll(nodes => nodes.map(node => node.id));
+  expect(new Set(ids).size).toBe(ids.length);
+  await expect(page.locator('a[download="mytaillog-expenses-template.csv"]')).toBeVisible();
 });
 
 // /whats-new renders CHANGELOG.md, which lives outside apps/web and is inlined at
@@ -23,6 +28,10 @@ test("whats-new renders the changelog grouped by version", async ({ page }) => {
   await expect(page.getByText("Release 2026.07", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Open API & integrations" })).toBeVisible();
   await expect(page.getByText("Security", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: /document inbox, annual packets, engine history and costs/i })).toBeVisible();
+  for (const id of ["document-inbox", "annual-packet", "engine-history", "ownership-costs", "expense-csv", "identification-pages"]) {
+    await expect(page.locator(`a[href="https://mytaillog.com/help#${id}"]`).first()).toBeVisible();
+  }
 });
 
 test("maintenance summary renders every section for the demo aircraft", async ({ page, demoBase }) => {
@@ -50,6 +59,7 @@ test.describe("public marketing pages", () => {
     ["/", /indexed and cited to the page/i],
     ["/faq", /questions before you sign up/i],
     ["/compare", /six ways to keep aircraft records/i],
+    ["/developers/docs", /API documentation/i],
     ["/guides/digitize-aircraft-logbooks", /how to digitize aircraft logbooks/i],
     ["/guides/aircraft-maintenance-tracking", /aircraft maintenance tracking for owners/i],
     ["/guides/airworthiness-directive-tracking", /airworthiness directive tracking/i],
@@ -70,6 +80,9 @@ test.describe("public marketing pages", () => {
     await page.goto("/");
     // Signed out: account creation is a primary CTA, not a buried "Sign in".
     await expect(page.getByRole("link", { name: /create a free account/i }).first()).toBeVisible();
+    for (const feature of ["Incoming documents", "Engine history", "Ownership costs", "Annual preparation"]) {
+      await expect(page.getByRole("heading", { name: feature, exact: true })).toBeVisible();
+    }
     const badges = page.getByRole("group", { name: "Mobile apps" }).first();
     for (const [name, href] of [
       ["Download on the App Store", "https://apps.apple.com/us/app/mytaillog/id6795396758"],

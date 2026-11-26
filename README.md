@@ -101,9 +101,9 @@ phones:
 - **Logbooks**: the map of every book, pages, entries, the review desk, search and
   Ask.
 - **Maintenance**: tracked items, ADs, squawks and the annual.
-- **Aircraft**: hours, oil, equipment and weight & balance.
-- **Documents**: registration, airworthiness certificate, POH, insurance and the
-  rest, with their expiry dates.
+- **Aircraft**: hours, oil, engine history, ownership costs, equipment and weight & balance.
+- **Documents**: a review inbox for incoming PDFs and images, plus registration,
+  airworthiness certificate, POH, insurance and the rest, with their expiry dates.
 - **Share**: record rooms, people, the maintenance summary, the pre-buy dossier and
   exports.
 
@@ -133,7 +133,37 @@ you confirm them.
   state, corroborates matching tracked ADs (with a "✓ A&P report" badge), and
   adds any it lists that you weren't tracking.
 
+**Review incoming documents and prepare the annual**
+- **Document inbox** — retain the original PDF or image, review AI suggestions,
+  then approve its destination: logbook pages, a private invoice expense, dated
+  oil samples, or Documents. Logbook entries still require confirmation. Editors
+  see their own uploads; the owner sees all; finances remain owner-only.
+- **Annual packet** — a current PDF summary, plus an optional ZIP of explicitly
+  selected scans and documents and a source index. Missing and unconfirmed
+  evidence stays marked. No originals are included by default; this is preparation
+  for your IA, not an inspection sign-off.
+
+**Ownership costs**
+- Owner-only expenses and reserve estimates, fixed/variable classification,
+  source links, and separate totals for each currency. CSV import/export includes
+  a [blank template](https://mytaillog.com/templates/expenses.csv) and
+  [column guide](https://mytaillog.com/help#expense-csv).
+- Cost per hour uses actual spending between verified, increasing readings on
+  one meter inside the selected reporting period. The measured dates and hours
+  are disclosed; full-period spending totals stay unchanged. No extrapolation,
+  ADS-B estimates, or subtraction across meter replacements.
+- These workspaces are live in the new web design and included in the native
+  2.0 test builds. The redesigned public mobile rollout is still upcoming.
+  [User instructions](https://mytaillog.com/help#document-inbox) and
+  [first-party API contract](docs/owner-records-api.md).
+
 **Engine health**
+- **Engine history and compression** — group historical readings, oil services,
+  lab samples and additions by documented engine installation and service period.
+  Keep each test’s original reference pressure. Complete engines are separate from
+  accessories; uncertain assignments remain in Unassigned records for review.
+  Record source-linked compression, overhaul and cylinder-replacement observations.
+  [Installation and unassigned-record guidance](https://mytaillog.com/help#engine-history).
 - **Oil analysis** — import a lab report (Blackstone, AVLab, …) as a PDF or a
   photo; AI reads every sample in it (wear metals in ppm, oil properties, the
   lab's written comments), and each metal is charted over time against the lab's
@@ -175,7 +205,8 @@ you confirm them.
 - **MyTailLog is its own OAuth 2.1 Authorization + Resource Server**: other apps
   can read an aircraft's **airworthiness / AD / inspection status, equipment,
   hours, oil, and weight & balance** — **only with the owner's consent**, and
-  **read-only** (log entries and scans are never shared). On the consent screen
+  **read-only except `hours:write`**, which adds meter readings (log entries, scans,
+  private inbox uploads and expenses are not exposed by this OAuth API). On the consent screen
   owners choose **all their aircraft** (the default — including any added later,
   so an app keeps working as the fleet grows) or **only the ones they pick**, and
   revoke any app anytime (**Profile → Connected apps**).

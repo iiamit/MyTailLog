@@ -514,6 +514,15 @@ const SECTIONS: { id: string; title: string; body: React.ReactNode }[] = [
       </>
     ),
   },
+  {
+    id: "owner-records",
+    title: "Can I track expenses and prepare records for my mechanic?",
+    body: <>
+      <p>Yes. In the new web design, Document inbox retains uploaded originals and lets you review logbook, invoice and oil-report suggestions before approval. Annual packets combine a current summary with the scans and Documents you choose. Engine history brings compression readings and oil records together by documented engine service period.</p>
+      <p>Costs is private to the aircraft owner: sharing maintenance access does not share the ledger or inbox invoices. Actual spending and reserves stay separate, with no currency conversion. Hourly estimates show the dates covered by verified meter readings; they do not invent hours for missing dates. Expense tracking does not include invoicing renters or taking payments.</p>
+      <p>These features are also in native 2.0 test builds; the redesigned public mobile rollout is coming soon. <Link href="/help#document-inbox">Read the feature guides</Link>{" "}or start with the <Link href="/help#expense-csv">expense CSV guide and template</Link>.</p>
+    </>,
+  },
 ];
 
 function A({ href, children }: { href: string; children: React.ReactNode }) {
@@ -528,7 +537,7 @@ const GROUPS: { id: string; title: string; topics: string[] }[] = [
   { id: "g-cost", title: "Cost", topics: ["cost"] },
   { id: "g-data", title: "Your data and privacy", topics: ["data", "ai-training", "api-key"] },
   { id: "g-accuracy", title: "Accuracy and the paper", topics: ["paper", "accuracy", "wrong"] },
-  { id: "g-in-out", title: "Getting records in and out", topics: ["import", "export", "cloud-backup"] },
+  { id: "g-in-out", title: "Getting records in and out", topics: ["import", "owner-records", "export", "cloud-backup"] },
   { id: "g-future", title: "If the project stops", topics: ["stops", "selfhost"] },
   { id: "g-aircraft", title: "Aircraft and people", topics: ["supported", "coowners"] },
 ];

@@ -6,6 +6,21 @@ the git log.
 
 ## 2026.11
 
+### Added — document inbox, annual packets, engine history and costs
+
+- **Upload once, review before filing:** the [Document inbox](https://mytaillog.com/help#document-inbox) retains PDFs and images, then lets you review suggestions for logbook pages, invoices, oil reports or Documents. Logbook entries still need confirmation. Invoices become private owner expenses only after approval; repeated uploads are deduplicated.
+- **Prepare the records for your IA:** [annual packets](https://mytaillog.com/help#annual-packet) combine a current PDF summary with explicitly selected scans and documents in an evidence ZIP. Missing records and unconfirmed evidence stay visible. This prepares a conversation with your mechanic; it does not sign off an inspection.
+- **Follow the engine through its service periods:** [Engine history](https://mytaillog.com/help#engine-history) brings historical compression readings, oil services, samples and additions together around documented installations and lifecycle events. Test pressures stay as written. Ambiguous records remain available for review instead of being assigned to an engine by guesswork.
+- **Understand ownership spending:** [Costs](https://mytaillog.com/help#ownership-costs) separates actual spending from reserves, fixed from variable costs, and totals by currency. The ledger is private to the aircraft owner. [Import and export CSV, or download a blank template](https://mytaillog.com/help#expense-csv) to start from a spreadsheet.
+- These workspaces are available in the **new web design** and the **native 2.0 test builds** for iOS and Android. The redesigned public mobile release is still coming; store availability and test-track access are separate.
+
+### Improved — identification pages and measured cost estimates
+
+- **Build the aircraft profile from its logbooks:** review covers and original-equipment lists without inventing maintenance entries. Accepted details keep their source page. Historical equipment does not become a current installation without your confirmation. [How identification review works](https://mytaillog.com/help#identification-pages).
+- **Engine history uses complete engines:** accessories such as magnetos and vacuum pumps no longer appear as separate engines. Historical compression formats are recognized; review unassigned records and document the engine installation before expecting them in a service-period trend.
+- **Hourly costs use the dates the records support:** a Jan 1–Dec 31 report with verified readings on Jan 13 and Dec 8 calculates its rate for Jan 13–Dec 8, showing those dates and using spending only within them. Full-year spending totals remain unchanged. No extrapolation, ADS-B estimates or meter-face subtraction across replacements is used.
+- **Clearer reading and page layouts:** cover-page reading no longer exceeds the reader’s structured-output grammar limit. Wide iOS scan thumbnails stay within their grid with page labels, and Android phone landscape uses compact navigation and a scrollable records view.
+
 ### Improved — find the next task and the page behind it
 
 - **A binder for your aircraft:** Status, Logbooks, Maintenance, Aircraft, Documents and Share put related tasks together. On a computer, open an aircraft and choose **Try the new design** in the Account navigation to explore it.
