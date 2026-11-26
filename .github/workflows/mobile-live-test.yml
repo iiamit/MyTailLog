@@ -43,7 +43,7 @@ jobs:
           cache: gradle
       - name: Build shared iOS framework
         working-directory: apps/core
-        run: ./gradlew --console=plain :framework:assembleMyTailLogCoreXCFramework
+        run: ./gradlew --console=plain :framework:linkDebugFrameworkIosSimulatorArm64
       - name: Sync and reopen offline on iOS simulator
         working-directory: apps/ios
         env:
@@ -52,6 +52,6 @@ jobs:
         run: |
           test -n "$MTL_QA_USER_JSON" || { echo 'Configure MTL_QA_USER_JSON with the test-backend QA account'; exit 1; }
           brew install xcodegen
-          xcodegen generate
+          xcodegen generate --spec project-ci.yml
           SIM=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [^(]+' | sed 's/ *$//')
           xcodebuild test -scheme MyTailLog -destination "platform=iOS Simulator,name=$SIM" -only-testing:MyTailLogTests/LiveOfflineTests

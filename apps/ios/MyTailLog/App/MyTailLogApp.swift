@@ -66,7 +66,10 @@ private struct AddUITestScreen: View {
     var body: some View {
         VStack {
             Button("Add") { presented = true }
-            if tabs.scanPending { Text("Scan requested") }
+            if tabs.scanPending {
+                Text("Scan requested")
+                Button("Reset scan request") { tabs.scanPending = false }
+            }
         }
         .modifier(AddHost(recs: recs, showButton: false, presented: $presented))
         .environment(tabs)

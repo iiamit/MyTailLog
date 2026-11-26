@@ -10,9 +10,11 @@ final class OwnerWorkspaceUITests: XCTestCase {
     }
 
     @MainActor func testOwnerWorkspacesAcrossOrientations() {
+        let app = launch("home")
+        defer { app.terminate(); XCUIDevice.shared.orientation = .portrait }
         let screens = [("annual", "Make PDF summary"), ("inbox", "Upload documents"), ("engine", "Record compression or engine event"), ("expenses", "Add expense")]
         for (mode, action) in screens {
-            let app = launch(mode)
+            open(mode, in: app)
             for orientation in [UIDeviceOrientation.portrait, .landscapeLeft, .landscapeRight] {
                 XCUIDevice.shared.orientation = orientation
                 let landscape = orientation != .portrait
@@ -34,31 +36,56 @@ final class OwnerWorkspaceUITests: XCTestCase {
                 capture.lifetime = .keepAlways
                 add(capture)
             }
-            app.terminate()
+            XCUIDevice.shared.orientation = .portrait
+            returnHome(app)
         }
-        XCUIDevice.shared.orientation = .portrait
     }
 
     @MainActor func testInboxReviewAndExpenseFormsAreNativeAndReachable() {
-        var app = launch("inbox")
+        let app = launch("home")
+        defer { app.terminate() }
+        open("inbox", in: app)
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Oil and filter invoice.pdf")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Review document"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["Open original"].exists)
         app.swipeUp()
         XCTAssertTrue(app.textFields["Vendor"].waitForExistence(timeout: 5))
         recordScreen("owner-inbox-review")
-        app.terminate()
-        app = launch("expenses")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["Discard"].waitForExistence(timeout: 5))
+        app.buttons["Discard"].tap()
+        XCTAssertTrue(app.textFields["Vendor"].waitForNonExistence(timeout: 5))
+        returnHome(app)
+        open("expenses", in: app)
         app.buttons["Add expense"].tap()
         XCTAssertTrue(app.textFields["Amount (negative for refund)"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Currency"].exists)
         recordScreen("owner-expense-form")
-        app.terminate()
-        app = launch("engine")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.textFields["Amount (negative for refund)"].waitForNonExistence(timeout: 5))
+        returnHome(app)
+        open("engine", in: app)
         app.buttons["Record compression or engine event"].tap()
         XCTAssertTrue(app.textFields["Cylinder 1 pressure (psi)"].waitForExistence(timeout: 5))
         recordScreen("owner-compression-form")
-        app.terminate()
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.textFields["Cylinder 1 pressure (psi)"].waitForNonExistence(timeout: 5))
+        returnHome(app)
+    }
+
+    @MainActor private func open(_ mode: String, in app: XCUIApplication) {
+        let button = app.buttons["Open \(mode)"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5))
+        button.tap()
+        XCTAssertTrue(app.buttons["Test home"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor private func returnHome(_ app: XCUIApplication) {
+        app.buttons["Test home"].tap()
+        XCTAssertTrue(app.buttons["Test home"].waitForNonExistence(timeout: 5))
+        for mode in ["annual", "inbox", "engine", "expenses"] {
+            XCTAssertTrue(app.buttons["Open \(mode)"].isHittable, "Did not return to the workspace chooser")
+        }
     }
 
     @MainActor private func recordScreen(_ name: String) {

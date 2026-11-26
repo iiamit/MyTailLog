@@ -17,6 +17,11 @@ on:
 permissions:
   contents: read
 
+# Keep production-commit checks; only superseded PR commits are cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   semgrep:
     runs-on: ubuntu-latest

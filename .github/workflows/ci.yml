@@ -6,6 +6,11 @@ on:
   pull_request:
   push:
     branches: [main, "redesign/**"]
+  schedule:
+    - cron: "41 7 * * 0"
+  workflow_dispatch:
+  release:
+    types: [published]
 
 # Least privilege for GITHUB_TOKEN: every step here only reads the repo.
 # Without this the workflow inherits the repository default, which can be
@@ -13,13 +18,51 @@ on:
 permissions:
   contents: read
 
+# Keep production-commit checks; only superseded PR commits are cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      android: ${{ steps.native.outputs.android }}
+      apple: ${{ steps.native.outputs.apple }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - run: python3 scripts/test-ci-native-changes.py
+      - name: Select native checks
+        id: native
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          # Schedules, releases, manual runs and new branches get complete coverage.
+          if [[ "$EVENT_NAME" != pull_request && "$EVENT_NAME" != push ]] ||
+             [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            printf 'android=true\napple=true\n' >> "$GITHUB_OUTPUT"
+          else
+            git diff --no-renames --name-only -z "$BASE_SHA" "$HEAD_SHA" -- |
+              python3 scripts/ci-native-changes.py >> "$GITHUB_OUTPUT"
+          fi
+
   check:
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: apps/web
     steps:
+      - name: Require successful change detection
+        working-directory: .
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+        run: test "$CHANGES_RESULT" = success
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -63,6 +106,8 @@ jobs:
           "$RUNNER_TEMP/mtl-database-tests/bin/python" scripts/test-owner-workspace.py
 
   android:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -74,10 +119,15 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
-      # Builds the KMP core (../core) through the composite build.
-      - run: ./gradlew --console=plain :app:testDebugUnitTest :core-design:testDebugUnitTest :app:assembleDebug
+      # Library compilation does not execute its tests; include each shared host suite explicitly.
+      - run: >-
+          ./gradlew --console=plain :app:testDebugUnitTest :core-design:testDebugUnitTest :app:assembleDebug
+          :core:domain:testAndroidHostTest :core:api:testAndroidHostTest
+          :core:db:testAndroidHostTest :core:sync:testAndroidHostTest
 
   apple:
+    needs: changes
+    if: needs.changes.outputs.apple == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,14 +136,30 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
-      - name: KMP core tests and XCFramework
+      - name: Identify the native compiler toolchain
+        id: xcode
+        run: echo "version=$(xcodebuild -version | shasum -a 256 | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-${{ runner.arch }}-konan-${{ steps.xcode.outputs.version }}-${{ hashFiles('apps/core/gradle/**', 'apps/core/gradle.properties', 'apps/core/**/build.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-konan-${{ steps.xcode.outputs.version }}-
+      - name: Shared iOS tests and simulator framework
         working-directory: apps/core
-        run: ./gradlew --console=plain check :framework:assembleMyTailLogCoreXCFramework
+        run: >-
+          ./gradlew --console=plain :domain:iosSimulatorArm64Test :api:iosSimulatorArm64Test
+          :db:iosSimulatorArm64Test :sync:iosSimulatorArm64Test
+          :framework:linkDebugFrameworkIosSimulatorArm64
+      - name: Release framework verification
+        if: github.event_name != 'pull_request'
+        working-directory: apps/core
+        run: ./gradlew --console=plain :framework:assembleMyTailLogCoreReleaseXCFramework
       - name: iOS tests
         working-directory: apps/ios
         run: |
           brew install xcodegen
-          xcodegen generate
+          xcodegen generate --spec project-ci.yml
           # Runner images change their simulator set; use the first available iPhone.
           SIM=$(xcrun simctl list devices available | grep -m1 -oE 'iPhone [^(]+' | sed 's/ *$//')
           xcodebuild test -scheme MyTailLog -destination "platform=iOS Simulator,name=$SIM"

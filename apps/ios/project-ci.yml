@@ -1,0 +1,8 @@
+# Simulator tests need one Debug slice. Archives continue to use project.yml's Release XCFramework.
+include: project.yml
+targets:
+  MyTailLog:
+    dependencies:REPLACE:
+      - framework: ../core/framework/build/bin/iosSimulatorArm64/debugFramework/MyTailLogCore.framework
+        embed: false
+      - target: MyTailLogWidgets
