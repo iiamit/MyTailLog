@@ -4,12 +4,14 @@ import SwiftUI
 /// Deterministic simulator coverage of real owner screens, without changing a user's records or calling a service.
 struct OwnerWorkspaceUITestScreen: View {
     let mode: String
+    @State private var selectedMode: String?
     @State private var tabs = TabModel()
     private let recs: Recs
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(mode: String) {
         self.mode = mode
+        _selectedMode = State(initialValue: mode == "home" ? nil : mode)
         let base = URL(string: "https://owner-workspace.test")!
         let offline = OfflineStore(userId: "owner-workspace-ui", apiURL: base, root: FileManager.default.temporaryDirectory)
         offline.forcedOffline = false
@@ -20,7 +22,7 @@ struct OwnerWorkspaceUITestScreen: View {
     }
 
     private var route: RecRoute {
-        switch mode {
+        switch selectedMode {
         case "annual": .annualPacket
         case "engine": .engineHistory
         case "expenses", "viewer": .expenses
@@ -33,9 +35,19 @@ struct OwnerWorkspaceUITestScreen: View {
             let tablet = window.size.width >= 700 && window.size.height >= 500
             VStack(spacing: 0) {
                 Text("Sample records · UI test").dFont(.caption).foregroundStyle(Tokens.Colors.ink3).padding(8).frame(maxWidth: .infinity).background(Tokens.Colors.leaf)
-                RecordScreen(recs: recs, route: route)
-                    .environment(\.recNav, RecNav(tablet: tablet))
-                    .padding(tablet ? Tokens.Space.s4 : 0)
+                if mode == "home", selectedMode != nil {
+                    Button("Test home") { selectedMode = nil }
+                }
+                if selectedMode != nil {
+                    RecordScreen(recs: recs, route: route)
+                        .id(selectedMode)
+                        .environment(\.recNav, RecNav(tablet: tablet))
+                        .padding(tablet ? Tokens.Space.s4 : 0)
+                } else {
+                    ForEach(["annual", "inbox", "engine", "expenses"], id: \.self) { screen in
+                        Button("Open \(screen)") { selectedMode = screen }
+                    }
+                }
             }
             .background(Section.aircraft.board)
         }

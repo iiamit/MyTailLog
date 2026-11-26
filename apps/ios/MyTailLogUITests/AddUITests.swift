@@ -11,6 +11,8 @@ final class AddUITests: XCTestCase {
     }
 
     @MainActor func testEveryOwnerActionOpensItsDestination() {
+        let app = launch()
+        defer { app.terminate() }
         let actions = [
             ("Log a flight", "Tach"),
             ("Add oil", "Quarts"),
@@ -20,14 +22,22 @@ final class AddUITests: XCTestCase {
             ("Upload documents", "Choose files"),
         ]
         for (label, destination) in actions {
-            let app = launch()
             app.buttons["Add"].tap()
             let action = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", label)).firstMatch
             XCTAssertTrue(action.waitForExistence(timeout: 5))
             action.tap()
             let opened = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", destination)).firstMatch
             XCTAssertTrue(opened.waitForExistence(timeout: 10), "\(label) did not open \(destination)")
-            app.terminate()
+            if label == "Scan logbook pages" {
+                app.buttons["Reset scan request"].tap()
+                XCTAssertFalse(app.staticTexts["Scan requested"].exists)
+            } else {
+                let cancel = app.buttons["Cancel"].firstMatch
+                XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+                cancel.tap()
+            }
+            XCTAssertTrue(opened.waitForNonExistence(timeout: 5), "\(label) left its destination open")
+            XCTAssertTrue(app.buttons["Add"].isHittable, "\(label) did not return to the start")
         }
     }
 
