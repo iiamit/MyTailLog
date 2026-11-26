@@ -30,14 +30,14 @@ test.describe("RLS multi-tenant isolation", () => {
     admin = createClient(env("TEST_SUPABASE_URL"), env("TEST_SUPABASE_SECRET_KEY"), {
       auth: { persistSession: false },
     });
-    attackerEmail = env("TEST_USER_EMAIL");
-    const { data: prof, error: pe } = await admin
-      .from("profile")
-      .select("id")
-      .eq("email", attackerEmail)
-      .single();
-    if (pe || !prof) throw new Error(`harness profile not found: ${pe?.message}`);
-    attackerId = prof.id;
+    // Cancellation can skip teardown: fake secrets must never poison the shared harness account.
+    attackerEmail = `attacker-${randomUUID()}@e2e.invalid`;
+    const attackerPassword = randomUUID();
+    const actor = await admin.auth.admin.createUser({
+      email: attackerEmail, password: attackerPassword, email_confirm: true,
+    });
+    if (actor.error || !actor.data.user) throw new Error(`attacker creation failed: ${actor.error?.message}`);
+    attackerId = actor.data.user.id;
 
     // Victim user (profile auto-created by the handle_new_user trigger) + an
     // owned aircraft + a child row.
@@ -65,7 +65,7 @@ test.describe("RLS multi-tenant isolation", () => {
     });
     const { error } = await attackerDb.auth.signInWithPassword({
       email: attackerEmail,
-      password: env("TEST_USER_PASSWORD"),
+      password: attackerPassword,
     });
     if (error) throw new Error(`attacker sign-in failed: ${error.message}`);
   });
@@ -73,20 +73,7 @@ test.describe("RLS multi-tenant isolation", () => {
   test.afterAll(async () => {
     if (admin && victimAc) await admin.from("aircraft").delete().eq("id", victimAc); // cascades children
     if (admin && victimId) await admin.auth.admin.deleteUser(victimId);
-    if (admin && attackerId) await admin.rpc("delete_ai_key", { p_user_id: attackerId });
-    // Fully reset the seeded MFB connection — the harness account is reused
-    // across runs, so a leftover fake connection would skew later tests. Three
-    // calls because upsert deliberately KEEPS the secret when passed null.
-    if (admin && attackerId) {
-      await admin.rpc("disconnect_mfb", { p_user_id: attackerId });
-      await admin.rpc("set_mfb_client_secret", { p_user_id: attackerId, p_cipher: null });
-      await admin.rpc("upsert_mfb_credentials", {
-        p_user_id: attackerId,
-        p_client_id: null,
-        p_mfb_username: null,
-        p_client_secret_cipher: null,
-      });
-    }
+    if (admin && attackerId) await admin.auth.admin.deleteUser(attackerId);
   });
 
   test("cannot read another user's aircraft", async () => {
