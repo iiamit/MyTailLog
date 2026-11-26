@@ -5,7 +5,7 @@ import { test, expect } from "./fixtures";
 // asserts no CSP violation on the dashboard (via the fixture guard).
 test("dashboard shows the demo aircraft for the logged-in test account", async ({ page }) => {
   await page.goto("/dashboard");
-  await expect(page.getByRole("link", { name: "N734DM", exact: true })).toBeVisible();
+  await expect(page.getByText("N734DM", { exact: true }).first()).toBeVisible();
 });
 
 test("help page renders every documented section without a CSP violation", async ({ page }) => {

@@ -44,7 +44,7 @@ export const test = base.extend<{ demoBase: string; scratch: ScratchAircraft }>(
   demoBase: async ({ page }, use) => {
     await page.goto("/dashboard");
     await expect(page.getByText("N734DM").first()).toBeVisible();
-    const href = await page.getByRole("link", { name: "N734DM", exact: true }).getAttribute("href");
+    const href = await page.locator('a[href^="/aircraft/"]').filter({ hasText: /\bN734DM\b/ }).first().getAttribute("href");
     // Dashboard links now open Status; callers need the aircraft root before appending their route.
     const aircraftRoot = href?.match(/^\/aircraft\/[0-9a-f-]{36}(?=\/|$)/i)?.[0];
     if (!aircraftRoot) throw new Error("Demo aircraft link not found on /dashboard");
